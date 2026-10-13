@@ -3,14 +3,15 @@ using System.Globalization;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
-using Meziantou.Framework.Imaging.TestHarness.Avif;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
+using static Meziantou.Framework.Imaging.Tests.HeifEncoderTestImages;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
 /// <summary>
 /// AVIF encoding through the public save API. The structure of the output is validated with the independent harness reader
-/// (<see cref="ReferenceAvif"/>: boxes, items, properties). The harness has no AV1 decoder: the samples are read back with
+/// (<see cref="ReferenceHeif"/>: boxes, items, properties). The harness has no AV1 decoder: the samples are read back with
 /// the decoder of the library, which the conformance vectors pin to the reference decoders byte for byte, and the reference
 /// decoders themselves decode the output of the encoder in the interoperability tests.
 /// </summary>
@@ -74,7 +75,7 @@ public sealed class AvifEncoderTests
             using var image = CreateImage(5, 3, seed: 1, transparent: false);
             var path = directory / name;
             image.Save(path);
-            var reader = ReferenceAvif.Parse(File.ReadAllBytes(path));
+            var reader = ReferenceHeif.Parse(File.ReadAllBytes(path));
             Assert.Equal("avif", reader.MajorBrand);
             Assert.Equal(ImageFormat.Avif, Image.Identify(path).Format);
         }
@@ -93,7 +94,7 @@ public sealed class AvifEncoderTests
     {
         using var image = CreateImage(width, height, seed: width + height, transparent: false);
         var data = Encode(image, new AvifEncoder());
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
 
         // The structure: one AV1 item of the High profile, 8-bit 4:4:4 with the identity matrix in full range
         Assert.Equal("avif", reader.MajorBrand);
@@ -106,8 +107,8 @@ public sealed class AvifEncoderTests
         Assert.Equal("av01", item.Type);
         Assert.Equal((width, height), item.Size);
         Assert.Equal([8, 8, 8], item.PixelInformation);
-        Assert.Equal(new ReferenceAvif.Av1Configuration(SequenceProfile: 1, Av1Levels.GetLevelIndex(width, height), BitDepth: 8, IsMonochrome: false, SubsamplingX: 0, SubsamplingY: 0, ChromaSamplePosition: 0), item.Configuration);
-        Assert.Equal(new ReferenceAvif.ColorDescription(2, 2, 0, FullRange: true), item.Nclx);
+        Assert.Equal(new ReferenceHeif.Av1Configuration(SequenceProfile: 1, Av1Levels.GetLevelIndex(width, height), BitDepth: 8, IsMonochrome: false, SubsamplingX: 0, SubsamplingY: 0, ChromaSamplePosition: 0), item.Configuration);
+        Assert.Equal(new ReferenceHeif.ColorDescription(2, 2, 0, FullRange: true), item.Nclx);
         Assert.Null(item.IccProfile);
         Assert.Null(reader.AlphaItem);
         Assert.Single(reader.Items);
@@ -132,13 +133,13 @@ public sealed class AvifEncoderTests
         using var image = CreateImage(19, 11, seed: 2, transparent: true);
         var source = GetBytes(image);
         var data = Encode(image, new AvifEncoder { ClearTransparentColors = clear });
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
         var color = reader.PrimaryItem;
         var alpha = reader.AlphaItem;
         Assert.NotNull(color);
         Assert.NotNull(alpha);
         Assert.Equal("av01", alpha.Type);
-        Assert.Equal(ReferenceAvif.AlphaAuxiliaryType, alpha.AuxiliaryType);
+        Assert.Equal(ReferenceHeif.AlphaAuxiliaryType, alpha.AuxiliaryType);
         Assert.Equal((19, 11), alpha.Size);
         Assert.Equal([8], alpha.PixelInformation);
         Assert.True(alpha.Configuration!.IsMonochrome);
@@ -166,7 +167,7 @@ public sealed class AvifEncoderTests
     public void AnOpaqueImageOfAPixelFormatWithAlphaHasNoAlphaItem()
     {
         using var image = CreateImage(9, 9, seed: 3, transparent: false);
-        var reader = ReferenceAvif.Parse(Encode(image, new AvifEncoder()));
+        var reader = ReferenceHeif.Parse(Encode(image, new AvifEncoder()));
         Assert.Null(reader.AlphaItem);
         Assert.Single(reader.Items);
     }
@@ -183,12 +184,12 @@ public sealed class AvifEncoderTests
 
         using var image = Image.ImportPixelData<Gray8>(pixels, 13, 6);
         var data = Encode(image, new AvifEncoder());
-        var item = ReferenceAvif.Parse(data).PrimaryItem;
+        var item = ReferenceHeif.Parse(data).PrimaryItem;
         Assert.NotNull(item);
         Assert.Equal([8], item.PixelInformation);
         Assert.True(item.Configuration!.IsMonochrome);
         Assert.Equal(0, item.Configuration.SequenceProfile);
-        Assert.Contains("MA1B", ReferenceAvif.Parse(data).CompatibleBrands);
+        Assert.Contains("MA1B", ReferenceHeif.Parse(data).CompatibleBrands);
 
         using var decoded = Image.Load(data);
         Assert.Equal(PixelFormat.Gray8, decoded.PixelFormat);
@@ -216,7 +217,7 @@ public sealed class AvifEncoderTests
         Assert.Equal((ImageFormat.Avif, "Bit depth reduction"), (exception.Format, exception.Feature));
 
         var data = Encode(image, new AvifEncoder { BitDepth = bitDepth });
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
         Assert.Equal(bitDepth, reader.PrimaryItem!.Configuration!.BitDepth);
         Assert.Equal(bitDepth, reader.AlphaItem!.Configuration!.BitDepth);
         Assert.Equal(bitDepth is 12 ? 2 : 1, reader.PrimaryItem.Configuration.SequenceProfile);
@@ -226,7 +227,7 @@ public sealed class AvifEncoderTests
         Assert.Equal(pixels, actual);
 
         // Without a bit depth, the consent to reduce the samples selects 12 bits
-        var reduced = ReferenceAvif.Parse(Encode(image, new AvifEncoder { AllowBitDepthReduction = true }));
+        var reduced = ReferenceHeif.Parse(Encode(image, new AvifEncoder { AllowBitDepthReduction = true }));
         Assert.Equal(12, reduced.PrimaryItem!.Configuration!.BitDepth);
 
         ushort Scale(int value) => (ushort)(((value * 65535L) + (max / 2)) / max);
@@ -237,7 +238,7 @@ public sealed class AvifEncoderTests
     {
         using var image = CreateImage(8, 5, seed: 6, transparent: true);
         var data = Encode(image, new AvifEncoder { BitDepth = 10 });
-        Assert.Equal(10, ReferenceAvif.Parse(data).PrimaryItem!.Configuration!.BitDepth);
+        Assert.Equal(10, ReferenceHeif.Parse(data).PrimaryItem!.Configuration!.BitDepth);
         using var decoded = Image.Load<Rgba32>(data);
         Assert.Equal(GetBytes(image), GetBytes(decoded));
     }
@@ -272,12 +273,12 @@ public sealed class AvifEncoderTests
     {
         // irot rotates anti-clockwise by quarter turns; imir then exchanges the top and the bottom (0) or the left and the
         // right (1) of the rotated image (ISO/IEC 23008-12, sections 6.5.10 and 6.5.12)
-        Assert.Equal((angle, axis), AvifFileWriter.GetTransformations(orientation));
+        Assert.Equal((angle, axis), HeifFileWriter.GetTransformations(orientation));
 
         using var image = CreateImage(6, 4, seed: 9, transparent: true);
         image.Metadata.Orientation = orientation;
         var data = Encode(image, new AvifEncoder());
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
         var item = reader.PrimaryItem;
         Assert.NotNull(item);
         Assert.Equal((int)orientation, item.Orientation);
@@ -315,7 +316,7 @@ public sealed class AvifEncoderTests
     {
         using var image = CreateSmoothImage(width, height, transparent: true);
         var data = Encode(image, new AvifEncoder { GridTileSize = new Size(tileWidth, tileHeight), Effort = 0 });
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
 
         // ISO/IEC 23008-12, section 6.6.2.3: the primary item is a grid, whose data are its descriptor, derived from its
         // tiles in row-major order; the tiles are hidden items of one size
@@ -367,14 +368,14 @@ public sealed class AvifEncoderTests
         image.Metadata.PixelAspectRatio = new PixelAspectRatio(4, 3);
         var aperture = new Rectangle(10, 20, 100, 70);
         var data = Encode(image, new AvifEncoder { GridTileSize = new Size(64, 64), CleanAperture = aperture, Effort = 0 });
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
         var grid = reader.PrimaryItem!;
         var alpha = reader.AlphaItem!;
 
         // The grids describe the image: its size, its colors, its transformations, the shape of its pixels
         Assert.Equal(["ispe", "pixi", "colr", "pasp", "clap", "irot"], grid.Associations.Select(association => association.Property.Type));
         Assert.Equal(["ispe", "pixi", "auxC", "pasp", "clap", "irot"], alpha.Associations.Select(association => association.Property.Type));
-        Assert.Equal(new ReferenceAvif.ColorDescription(12, 13, 0, FullRange: true), grid.Nclx);
+        Assert.Equal(new ReferenceHeif.ColorDescription(12, 13, 0, FullRange: true), grid.Nclx);
         Assert.Equal((10, 20, 100, 70), grid.CleanAperture!.GetRectangle(150, 100));
         Assert.Equal((int)ExifOrientation.RightTop, grid.Orientation);
 
@@ -414,7 +415,7 @@ public sealed class AvifEncoderTests
 
         // An opaque image of a pixel format with alpha has no alpha grid
         using var opaque = CreateSmoothImage(100, 70, transparent: false);
-        var reader = ReferenceAvif.Parse(Encode(opaque, new AvifEncoder { GridTileSize = new Size(64, 64), Effort = 0 }));
+        var reader = ReferenceHeif.Parse(Encode(opaque, new AvifEncoder { GridTileSize = new Size(64, 64), Effort = 0 }));
         Assert.Equal("grid", reader.PrimaryItem!.Type);
         Assert.Null(reader.AlphaItem);
         Assert.Equal(["dimg"], reader.ItemReferences.Select(reference => reference.Type));
@@ -424,7 +425,7 @@ public sealed class AvifEncoderTests
         opaque.AppendFrame(frame.Frames[0]);
         opaque.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
         opaque.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
-        var sequence = ReferenceAvif.Parse(Encode(opaque, new AvifEncoder { GridTileSize = new Size(64, 64), Effort = 0 }));
+        var sequence = ReferenceHeif.Parse(Encode(opaque, new AvifEncoder { GridTileSize = new Size(64, 64), Effort = 0 }));
         Assert.True(sequence.IsSequence);
         Assert.Equal("av01", sequence.PrimaryItem!.Type);
     }
@@ -438,7 +439,7 @@ public sealed class AvifEncoderTests
         using var oddHeight = CreateSmoothImage(100, 71, transparent: false);
 
         // 4:2:0: the widths and the heights of the tiles and of the image are even
-        Assert.Equal("grid", ReferenceAvif.Parse(Encode(even, Lossy(AvifChromaSubsampling.Ratio420, 64, 64))).PrimaryItem!.Type);
+        Assert.Equal("grid", ReferenceHeif.Parse(Encode(even, Lossy(AvifChromaSubsampling.Ratio420, 64, 64))).PrimaryItem!.Type);
         var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Encode(oddWidth, Lossy(AvifChromaSubsampling.Ratio420, 64, 64)));
         Assert.Equal(ImageFormat.Avif, exception.Format);
         Assert.Throws<UnsupportedImageFeatureException>(() => Encode(oddHeight, Lossy(AvifChromaSubsampling.Ratio420, 64, 64)));
@@ -446,12 +447,12 @@ public sealed class AvifEncoderTests
         Assert.Throws<UnsupportedImageFeatureException>(() => Encode(even, Lossy(AvifChromaSubsampling.Ratio420, 64, 65)));
 
         // 4:2:2: only the widths; 4:4:4, the lossless coding and gray pixels: any size
-        Assert.Equal("grid", ReferenceAvif.Parse(Encode(oddHeight, Lossy(AvifChromaSubsampling.Ratio422, 64, 65))).PrimaryItem!.Type);
+        Assert.Equal("grid", ReferenceHeif.Parse(Encode(oddHeight, Lossy(AvifChromaSubsampling.Ratio422, 64, 65))).PrimaryItem!.Type);
         Assert.Throws<UnsupportedImageFeatureException>(() => Encode(oddWidth, Lossy(AvifChromaSubsampling.Ratio422, 64, 64)));
-        Assert.Equal("grid", ReferenceAvif.Parse(Encode(oddWidth, Lossy(AvifChromaSubsampling.Ratio444, 65, 65))).PrimaryItem!.Type);
-        Assert.Equal("grid", ReferenceAvif.Parse(Encode(oddWidth, new AvifEncoder { GridTileSize = new Size(65, 65), Effort = 0 })).PrimaryItem!.Type);
+        Assert.Equal("grid", ReferenceHeif.Parse(Encode(oddWidth, Lossy(AvifChromaSubsampling.Ratio444, 65, 65))).PrimaryItem!.Type);
+        Assert.Equal("grid", ReferenceHeif.Parse(Encode(oddWidth, new AvifEncoder { GridTileSize = new Size(65, 65), Effort = 0 })).PrimaryItem!.Type);
         using var gray = oddWidth.CloneAs<Gray8>();
-        Assert.Equal("grid", ReferenceAvif.Parse(Encode(gray, Lossy(AvifChromaSubsampling.Ratio420, 65, 65))).PrimaryItem!.Type);
+        Assert.Equal("grid", ReferenceHeif.Parse(Encode(gray, Lossy(AvifChromaSubsampling.Ratio420, 65, 65))).PrimaryItem!.Type);
 
         // At most 256 columns and 256 rows
         using var wide = new Image<Gray8>(64 * 257, 64);
@@ -474,7 +475,7 @@ public sealed class AvifEncoderTests
         }
 
         var data = Encode(image, new AvifEncoder { Compression = compression, PremultiplyAlpha = true });
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
 
         // ISO/IEC 23008-12, section 6.6.2.2: the color image refers to the alpha plane that its colors are multiplied by
         var item = reader.PrimaryItem;
@@ -520,14 +521,14 @@ public sealed class AvifEncoderTests
     {
         // Colors and alpha are independent by default
         using var transparent = CreateImage(7, 5, seed: 33, transparent: true);
-        var straight = ReferenceAvif.Parse(Encode(transparent, new AvifEncoder()));
+        var straight = ReferenceHeif.Parse(Encode(transparent, new AvifEncoder()));
         Assert.DoesNotContain(straight.ItemReferences, reference => reference.Type == "prem");
         Assert.False(straight.IsPremultiplied);
 
         // An opaque still image has no alpha plane, and its colors are not changed
         using var opaque = CreateImage(7, 5, seed: 35, transparent: false);
         var data = Encode(opaque, new AvifEncoder { PremultiplyAlpha = true });
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
         Assert.Null(reader.AlphaItem);
         Assert.DoesNotContain(reader.ItemReferences, reference => reference.Type == "prem");
         using var decoded = Image.Load<Rgba32>(data);
@@ -535,7 +536,7 @@ public sealed class AvifEncoderTests
 
         // A gray pixel format has no alpha
         using var gray = opaque.CloneAs<Gray8>();
-        Assert.DoesNotContain(ReferenceAvif.Parse(Encode(gray, new AvifEncoder { PremultiplyAlpha = true })).ItemReferences, reference => reference.Type == "prem");
+        Assert.DoesNotContain(ReferenceHeif.Parse(Encode(gray, new AvifEncoder { PremultiplyAlpha = true })).ItemReferences, reference => reference.Type == "prem");
 
         // Clearing the transparent colors changes nothing: they are already black
         Assert.Equal(Encode(transparent, new AvifEncoder { PremultiplyAlpha = true }), Encode(transparent, new AvifEncoder { PremultiplyAlpha = true, ClearTransparentColors = true }));
@@ -555,13 +556,13 @@ public sealed class AvifEncoderTests
         image.Metadata.Orientation = ExifOrientation.RightTop;
         var aperture = new Rectangle(x, y, width, height);
         var data = Encode(image, new AvifEncoder { CleanAperture = aperture });
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
         var item = reader.PrimaryItem;
         Assert.NotNull(item);
 
         // The whole image is coded; the aperture is a property a reader must apply, before the rotation
         Assert.Equal((9, 6), item.Size);
-        Assert.Equal(new ReferenceAvif.CleanAperture((uint)width, 1, (uint)height, 1, horizontalOffsetNumerator, horizontalOffsetDenominator, verticalOffsetNumerator, verticalOffsetDenominator), item.CleanAperture);
+        Assert.Equal(new ReferenceHeif.CleanAperture((uint)width, 1, (uint)height, 1, horizontalOffsetNumerator, horizontalOffsetDenominator, verticalOffsetNumerator, verticalOffsetDenominator), item.CleanAperture);
         Assert.Equal((x, y, width, height), item.CleanAperture!.GetRectangle(9, 6));
         Assert.Equal(["clap", "irot"], item.Transforms.Select(property => property.Type));
         Assert.True(item.HasMiafTransformOrder);
@@ -588,7 +589,7 @@ public sealed class AvifEncoderTests
         using var image = CreateImage(8, 6, seed: 22, transparent: false);
 
         // The whole image is no aperture
-        var whole = ReferenceAvif.Parse(Encode(image, new AvifEncoder { CleanAperture = new Rectangle(0, 0, 8, 6) })).PrimaryItem;
+        var whole = ReferenceHeif.Parse(Encode(image, new AvifEncoder { CleanAperture = new Rectangle(0, 0, 8, 6) })).PrimaryItem;
         Assert.NotNull(whole);
         Assert.Null(whole.CleanAperture);
 
@@ -602,14 +603,14 @@ public sealed class AvifEncoderTests
         Assert.Equal(ImageFormat.Avif, exception.Format);
         Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, Lossy(new Rectangle(0, 1, 4, 4))));
         Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, Lossy(new Rectangle(1, 0, 4, 4), AvifChromaSubsampling.Ratio422)));
-        Assert.Equal((0, 1, 4, 4), ReferenceAvif.Parse(Encode(image, Lossy(new Rectangle(0, 1, 4, 4), AvifChromaSubsampling.Ratio422))).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
-        Assert.Equal((1, 1, 4, 4), ReferenceAvif.Parse(Encode(image, Lossy(new Rectangle(1, 1, 4, 4), AvifChromaSubsampling.Ratio444))).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
-        Assert.Equal((2, 2, 3, 3), ReferenceAvif.Parse(Encode(image, Lossy(new Rectangle(2, 2, 3, 3)))).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
+        Assert.Equal((0, 1, 4, 4), ReferenceHeif.Parse(Encode(image, Lossy(new Rectangle(0, 1, 4, 4), AvifChromaSubsampling.Ratio422))).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
+        Assert.Equal((1, 1, 4, 4), ReferenceHeif.Parse(Encode(image, Lossy(new Rectangle(1, 1, 4, 4), AvifChromaSubsampling.Ratio444))).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
+        Assert.Equal((2, 2, 3, 3), ReferenceHeif.Parse(Encode(image, Lossy(new Rectangle(2, 2, 3, 3)))).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
 
         // The lossless coding and the gray pixel formats have no subsampled plane
-        Assert.Equal((1, 1, 4, 4), ReferenceAvif.Parse(Encode(image, new AvifEncoder { CleanAperture = new Rectangle(1, 1, 4, 4) })).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
+        Assert.Equal((1, 1, 4, 4), ReferenceHeif.Parse(Encode(image, new AvifEncoder { CleanAperture = new Rectangle(1, 1, 4, 4) })).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
         using var gray = image.CloneAs<Gray8>();
-        Assert.Equal((1, 1, 4, 4), ReferenceAvif.Parse(Encode(gray, Lossy(new Rectangle(1, 1, 4, 4)))).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
+        Assert.Equal((1, 1, 4, 4), ReferenceHeif.Parse(Encode(gray, Lossy(new Rectangle(1, 1, 4, 4)))).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
 
     }
 
@@ -635,7 +636,7 @@ public sealed class AvifEncoderTests
         image.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
         image.Metadata.Orientation = orientation;
         var data = Encode(image, new AvifEncoder());
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
 
         // Both tracks have the matrix: the orientation of the color images is the one of their alpha planes
         int[] expected = [a * One, b * One, 0, c * One, d * One, 0, x * One, y * One, 0x40000000];
@@ -671,7 +672,7 @@ public sealed class AvifEncoderTests
         image.Metadata.Orientation = ExifOrientation.BottomRight;
         var aperture = new Rectangle(1, 2, 5, 3);
         var data = Encode(image, new AvifEncoder { CleanAperture = aperture });
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
 
         // The images are coded whole, and the tracks show the aperture. The track headers keep the size of the coded
         // images, which libavif and FFmpeg take for the size the aperture applies to, and the half turn moves that size
@@ -728,7 +729,7 @@ public sealed class AvifEncoderTests
         byte[] expectedShape = [0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x03];
 
         // The primary item, which is the first image of a sequence, has the three properties; none is needed to decode it
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
         var item = reader.PrimaryItem;
         Assert.NotNull(item);
         Assert.Equal(expectedLightLevel, item.Find("clli")!.Payload.ToArray());
@@ -776,7 +777,7 @@ public sealed class AvifEncoderTests
     public void AnImageWithoutLightLevelsMasteringDisplayOrPixelShapeHasNoBoxForThem()
     {
         using var image = CreateImage(6, 4, seed: 12, transparent: false);
-        var item = ReferenceAvif.Parse(Encode(image, new AvifEncoder())).PrimaryItem;
+        var item = ReferenceHeif.Parse(Encode(image, new AvifEncoder())).PrimaryItem;
         Assert.NotNull(item);
         Assert.Null(item.Find("clli"));
         Assert.Null(item.Find("mdcv"));
@@ -786,7 +787,7 @@ public sealed class AvifEncoderTests
         image.Metadata.ContentLightLevel = new ContentLightLevel(1000, 400);
         image.Metadata.PixelAspectRatio = new PixelAspectRatio(2, 1);
         var data = Encode(image, new AvifEncoder { MetadataHandling = MetadataHandling.Strip });
-        item = ReferenceAvif.Parse(data).PrimaryItem;
+        item = ReferenceHeif.Parse(data).PrimaryItem;
         Assert.NotNull(item);
         Assert.Null(item.Find("clli"));
         Assert.Null(item.Find("pasp"));
@@ -805,13 +806,13 @@ public sealed class AvifEncoderTests
         using var image = CreateSmoothImage(75, 41, transparent: true);
         var source = GetBytes(image);
         var data = Encode(image, new AvifEncoder { Compression = AvifCompression.Lossy, Quality = 90, ChromaSubsampling = subsampling });
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
         var color = reader.PrimaryItem;
         Assert.NotNull(color);
-        Assert.Equal(new ReferenceAvif.Av1Configuration(profile, Av1Levels.GetLevelIndex(75, 41), BitDepth: 8, IsMonochrome: false, subsamplingX, subsamplingY, ChromaSamplePosition: 0), color.Configuration);
+        Assert.Equal(new ReferenceHeif.Av1Configuration(profile, Av1Levels.GetLevelIndex(75, 41), BitDepth: 8, IsMonochrome: false, subsamplingX, subsamplingY, ChromaSamplePosition: 0), color.Configuration);
 
         // BT.601 in full range, with the primaries and the transfer function left unspecified
-        Assert.Equal(new ReferenceAvif.ColorDescription(2, 2, 6, FullRange: true), color.Nclx);
+        Assert.Equal(new ReferenceHeif.ColorDescription(2, 2, 6, FullRange: true), color.Nclx);
         Assert.NotNull(reader.AlphaItem);
 
         using var decoded = Image.Load<Rgba32>(data);
@@ -867,7 +868,7 @@ public sealed class AvifEncoderTests
 
         using var image = Image.ImportPixelData<Gray8>(pixels, 40, 30);
         var data = Encode(image, new AvifEncoder { Compression = AvifCompression.Lossy, Quality = 95 });
-        var item = ReferenceAvif.Parse(data).PrimaryItem;
+        var item = ReferenceHeif.Parse(data).PrimaryItem;
         Assert.True(item!.Configuration!.IsMonochrome);
         using var decoded = Image.Load(data);
         Assert.Equal(PixelFormat.Gray8, decoded.PixelFormat);
@@ -885,13 +886,13 @@ public sealed class AvifEncoderTests
         using var image = CreateSmoothImage(32, 32, transparent: false);
         image.Metadata.Cicp = new CicpColorDescription(9, 16, 9, fullRange: false);
         var data = Encode(image, new AvifEncoder { Compression = AvifCompression.Lossy, Quality = 90, BitDepth = 10 });
-        Assert.Equal(new ReferenceAvif.ColorDescription(9, 16, 9, FullRange: false), ReferenceAvif.Parse(data).PrimaryItem!.Nclx);
+        Assert.Equal(new ReferenceHeif.ColorDescription(9, 16, 9, FullRange: false), ReferenceHeif.Parse(data).PrimaryItem!.Nclx);
         using var decoded = Image.Load(data);
         Assert.Equal(new CicpColorDescription(9, 16, 9, fullRange: false), decoded.Metadata.Cicp);
 
         // The lossless coding has no matrix: the description keeps the primaries and the transfer function
         var lossless = Encode(image, new AvifEncoder());
-        Assert.Equal(new ReferenceAvif.ColorDescription(9, 16, 0, FullRange: true), ReferenceAvif.Parse(lossless).PrimaryItem!.Nclx);
+        Assert.Equal(new ReferenceHeif.ColorDescription(9, 16, 0, FullRange: true), ReferenceHeif.Parse(lossless).PrimaryItem!.Nclx);
     }
 
     [Theory]
@@ -915,7 +916,7 @@ public sealed class AvifEncoderTests
 
         image.Animation = new AnimationMetadata { TotalPlays = totalPlays };
         var data = Encode(image, new AvifEncoder { Compression = compression, Quality = 95 });
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
         Assert.Equal("avis", reader.MajorBrand);
         Assert.True(reader.IsSequence);
         Assert.Contains("avif", reader.CompatibleBrands);
@@ -935,7 +936,7 @@ public sealed class AvifEncoderTests
         Assert.Equal("av01", track.SampleEntryType);
         Assert.Equal((40, 26), (track.Width, track.Height));
         Assert.Equal(totalPlays, track.TotalPlays);
-        Assert.Equal("co64", track.ChunkOffsetBox);
+        Assert.Equal("stco", track.ChunkOffsetBox);
 
         // The first image is the only key frame of both tracks: the others are predicted from the image before them
         Assert.Equal([1u], track.SyncSamples);
@@ -944,7 +945,7 @@ public sealed class AvifEncoderTests
         if (transparent)
         {
             Assert.NotNull(alpha);
-            Assert.Equal(ReferenceAvif.AlphaAuxiliaryType, alpha.AuxiliaryType);
+            Assert.Equal(ReferenceHeif.AlphaAuxiliaryType, alpha.AuxiliaryType);
             Assert.HasCount(durations.Length, alpha.Samples);
             Assert.Equal(("auxl", 1u), (Assert.Single(alpha.References).Type, Assert.Single(Assert.Single(alpha.References).TrackIds)));
         }
@@ -1031,7 +1032,7 @@ public sealed class AvifEncoderTests
         {
             var data = Encode(image, new AvifEncoder { Compression = compression, Quality = 90, KeyFrameInterval = interval });
             sizes[interval] = data.Length;
-            var reader = ReferenceAvif.Parse(data);
+            var reader = ReferenceHeif.Parse(data);
             Assert.True(reader.IsSequence);
 
             // A track without sync sample box has only sync samples
@@ -1090,7 +1091,7 @@ public sealed class AvifEncoderTests
         {
             image.Animation = new AnimationMetadata { TotalPlays = totalPlays };
             var data = Encode(image, new AvifEncoder());
-            var reader = ReferenceAvif.Parse(data);
+            var reader = ReferenceHeif.Parse(data);
             foreach (var track in new[] { reader.ColorTrack!, reader.AlphaTrack! })
             {
                 Assert.Equal([0u, 0u], track.Samples.Select(sample => sample.Duration));
@@ -1115,6 +1116,39 @@ public sealed class AvifEncoderTests
         // A number of plays is the ratio of two durations
         image.Animation = new AnimationMetadata { TotalPlays = 3 };
         Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new AvifEncoder()));
+    }
+
+    [Fact]
+    public void APlayCountThatTheDurationOfATrackCannotHoldIsRejected()
+    {
+        // The duration of a track is the duration of all the plays, in 64 bits: 3 x 4,000,000,000 seconds, 2^31 - 1 times
+        using var image = CreateSmoothImage(8, 8, transparent: false);
+        for (var i = 1; i < 3; i++)
+        {
+            using var next = CreateSmoothImage(8, 8, transparent: false, phase: i);
+            image.AppendFrame(next.Frames[0]);
+        }
+
+        foreach (var frame in image.Frames)
+        {
+            frame.Metadata.Duration = new FrameDuration(4_000_000_000, 1);
+        }
+
+        image.Animation = new AnimationMetadata { TotalPlays = int.MaxValue };
+        using var stream = new MemoryStream();
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, new AvifEncoder { Effort = 0 }));
+        Assert.Equal((ImageFormat.Avif, "AVIF play count"), (exception.Format, exception.Feature));
+
+        // The largest play count of durations that fit is stored
+        foreach (var frame in image.Frames)
+        {
+            frame.Metadata.Duration = new FrameDuration(1, 1);
+        }
+
+        var data = Encode(image, new AvifEncoder { Effort = 0 });
+        Assert.Equal(3ul * int.MaxValue, ReferenceHeif.Parse(data).ColorTrack!.Duration);
+        using var decoded = Image.Load(data);
+        Assert.Equal(int.MaxValue, decoded.Animation?.TotalPlays);
     }
 
     [Fact]
@@ -1153,26 +1187,9 @@ public sealed class AvifEncoderTests
 
         // Rounded to microseconds: 0 and 250,000 (0.25 s)
         var data = Encode(image, new AvifEncoder { DurationRounding = FrameDurationRounding.RoundToNearest });
-        var track = ReferenceAvif.Parse(data).ColorTrack;
+        var track = ReferenceHeif.Parse(data).ColorTrack;
         Assert.Equal(1_000_000u, track!.Timescale);
         Assert.Equal([0u, 250_000u], track.Samples.Select(sample => sample.Duration));
-    }
-
-    private static Image<Rgba32> CreateSmoothImage(int width, int height, bool transparent, int phase = 0)
-    {
-        var pixels = new Rgba32[width * height];
-        for (var y = 0; y < height; y++)
-        {
-            for (var x = 0; x < width; x++)
-            {
-                var r = (byte)(128 + (100 * Math.Sin((x + phase) / 11.0)));
-                var g = (byte)(128 + (100 * Math.Cos((x + y) / 17.0)));
-                var b = (byte)((x * 255 / width / 2) + (y * 255 / height / 2));
-                pixels[(y * width) + x] = new Rgba32(r, g, b, transparent ? (byte)((x * 7) ^ (y * 13)) : byte.MaxValue);
-            }
-        }
-
-        return Image.ImportPixelData<Rgba32>(pixels, width, height);
     }
 
     private static byte[] Encode(Image image, AvifEncoder encoder)
@@ -1181,26 +1198,5 @@ public sealed class AvifEncoderTests
         image.Save(stream, encoder);
 
         return stream.ToArray();
-    }
-
-    private static byte[] GetBytes(Image image, int frame = 0)
-    {
-        var bytes = new byte[image.Width * image.Height * 4];
-        image.Frames[frame].CopyPixelBytesTo(bytes);
-        return bytes;
-    }
-
-    private static Image<Rgba32> CreateImage(int width, int height, int seed, bool transparent)
-    {
-        ReadOnlySpan<byte> alphas = [0, 255, 128, 1, 254];
-        var random = new Random(seed);
-        var pixels = new Rgba32[width * height];
-        for (var i = 0; i < pixels.Length; i++)
-        {
-            var alpha = transparent ? alphas[i % alphas.Length] : (byte)255;
-            pixels[i] = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256), alpha);
-        }
-
-        return Image.ImportPixelData<Rgba32>(pixels, width, height);
     }
 }

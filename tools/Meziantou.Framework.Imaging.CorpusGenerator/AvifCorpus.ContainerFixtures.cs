@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
-using Meziantou.Framework.Imaging.TestHarness.Avif;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 using Meziantou.Framework.Imaging.TestHarness.Color;
 
 namespace Meziantou.Framework.Imaging.CorpusGenerator;
@@ -18,7 +18,7 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 // - avifenc needs tiles of 64 samples or more for a grid, and rejects matrix coefficients 10, 13 and 14, and YCgCo (8) in
 //   limited range;
 // - avifenc crashes (exit code 139, no file) when several input frames are combined with --exif, --irot, --imir or
-//   --crop; --xmp and --icc work for a sequence. The sequences with Exif data are assembled (AvifFileBuilder);
+//   --crop; --xmp and --icc work for a sequence. The sequences with Exif data are assembled (HeifFileBuilder);
 // - avifenc always writes a full-range alpha plane: a limited-range one cannot be obtained from it;
 // - avifenc repeats the irot, imir and clap properties of a grid on its tiles, where the clap box is the one of the
 //   grid (its own strict check then reports an invalid crop for the tiles);
@@ -349,7 +349,7 @@ internal static partial class AvifCorpus
         Assembled(context, "hdr-mastering-display", "lossy-420-bt2020-limited-10bit", builder =>
         {
             var item = builder.GetItem(builder.PrimaryItemId!.Value);
-            item.Associations.Add((builder.AddProperty(AvifFileBuilder.Box("clli", AvifFileBuilder.U16(4000), AvifFileBuilder.U16(1000))), false));
+            item.Associations.Add((builder.AddProperty(HeifFileBuilder.Box("clli", HeifFileBuilder.U16(4000), HeifFileBuilder.U16(1000))), false));
             item.Associations.Add((builder.AddProperty(MasteringDisplayBox()), false));
         }, ["avif.mdcv", "avif.clli", "avif.bitDepth=10"], "The mastering display color volume of an HDR image (BT.2020 primaries, D65, 0.005 to 4000 cd/m2) and its light levels: the mdcv box stores the primaries in the order green, blue, red.", "BuildStills");
 
@@ -468,7 +468,7 @@ internal static partial class AvifCorpus
         // A quarter turn anti-clockwise shows the 8x6 image as 6 columns and 8 rows, the column c of the result being
         // the row c of the image and the row r of the result its column 7 - r. The centered 4x4 aperture is the columns
         // 1 to 4 and the rows 2 to 5 of the result: the rows 1 to 4 and the columns 5 down to 2 of the image
-        var afterRotation = Assembled(context, "clap-after-irot", "irot-1", builder => builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.CleanAperture(4, 1, 4, 1, 0, 1, 0, 1)), true)),
+        var afterRotation = Assembled(context, "clap-after-irot", "irot-1", builder => builder.GetItem(1).Associations.Add((builder.AddProperty(HeifFileBuilder.CleanAperture(4, 1, 4, 1, 0, 1, 0, 1)), true)),
             ["avif.clap", "avif.irot=1", "avif.transformOrder=association"], "The clap property is associated after the irot property: the aperture, 4x4 in the center of the rotated image (6x8), selects the samples (2, 1) to (5, 4) of the coded image.", "BuildStills");
         AssertDecodesTo("clap-after-irot", afterRotation, new Img(4, 4, "rgb", 8, CommonCorpus.Grid(4, 4, (x, y) => oriented.Pixels[((y + 1) * 8) + x + 2])));
 
@@ -478,8 +478,8 @@ internal static partial class AvifCorpus
         var afterMirror = Assembled(context, "clap-between-imir-irot", "imir-1", builder =>
         {
             var item = builder.GetItem(1);
-            item.Associations.Add((builder.AddProperty(AvifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1)), true));
-            item.Associations.Add((builder.AddProperty(AvifFileBuilder.Rotation(3)), true));
+            item.Associations.Add((builder.AddProperty(HeifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1)), true));
+            item.Associations.Add((builder.AddProperty(HeifFileBuilder.Rotation(3)), true));
         }, ["avif.clap", "avif.imir=1", "avif.irot=3", "avif.transformOrder=association"], "The properties are associated in the order imir, clap, irot: the aperture, 5x4 at (2, 1) of the mirrored image, selects the samples (1, 1) to (5, 4) of the coded image.", "BuildStills");
         AssertDecodesTo("clap-between-imir-irot", afterMirror, new Img(5, 4, "rgb", 8, CommonCorpus.Grid(5, 4, (x, y) => oriented.Pixels[((y + 1) * 8) + x + 1])));
 
@@ -509,7 +509,7 @@ internal static partial class AvifCorpus
     private static string PropertyType(byte[] box) => Bytes.Latin1(box.AsSpan(4, 4));
 
     /// <summary>The index in the associations of an item of its first property of a type, or -1.</summary>
-    private static int FindAssociation(AvifFileBuilder builder, AvifFileBuilder.Item item, string type)
+    private static int FindAssociation(HeifFileBuilder builder, HeifFileBuilder.Item item, string type)
     {
         for (var i = 0; i < item.Associations.Count; i++)
         {
@@ -520,7 +520,7 @@ internal static partial class AvifCorpus
         return -1;
     }
 
-    private static void ReplaceProperty(AvifFileBuilder builder, AvifFileBuilder.Item item, string type, byte[] box)
+    private static void ReplaceProperty(HeifFileBuilder builder, HeifFileBuilder.Item item, string type, byte[] box)
     {
         var index = FindAssociation(builder, item, type);
         Py.Assert(index >= 0, type);
@@ -529,11 +529,11 @@ internal static partial class AvifCorpus
 
     // ISO/IEC 14496-12, section 12.1.7: the BT.2020 primaries in the order green, blue, red and the D65 white point, in
     // units of 0.00002; 4000 and 0.005 cd/m2 in units of 0.0001
-    private static byte[] MasteringDisplayBox() => AvifFileBuilder.Box("mdcv",
-        AvifFileBuilder.U16(8500), AvifFileBuilder.U16(39850), AvifFileBuilder.U16(6550), AvifFileBuilder.U16(2300), AvifFileBuilder.U16(35400), AvifFileBuilder.U16(14600),
-        AvifFileBuilder.U16(15635), AvifFileBuilder.U16(16450), AvifFileBuilder.U32(40_000_000), AvifFileBuilder.U32(50));
+    private static byte[] MasteringDisplayBox() => HeifFileBuilder.Box("mdcv",
+        HeifFileBuilder.U16(8500), HeifFileBuilder.U16(39850), HeifFileBuilder.U16(6550), HeifFileBuilder.U16(2300), HeifFileBuilder.U16(35400), HeifFileBuilder.U16(14600),
+        HeifFileBuilder.U16(15635), HeifFileBuilder.U16(16450), HeifFileBuilder.U32(40_000_000), HeifFileBuilder.U32(50));
 
-    private static void RemoveProperty(AvifFileBuilder builder, AvifFileBuilder.Item item, string type)
+    private static void RemoveProperty(HeifFileBuilder builder, HeifFileBuilder.Item item, string type)
     {
         var index = FindAssociation(builder, item, type);
         Py.Assert(index >= 0, type);
@@ -542,9 +542,9 @@ internal static partial class AvifCorpus
 
     /// <summary>A valid file assembled from the description of a file written by an encoder.</summary>
     /// <param name="sourceLayer">The spatial layer of the source that is the image of the assembled file (see <see cref="AddValidAvif"/>), or <see langword="null"/>.</param>
-    private static AvifReference Assembled(ContainerContext context, string name, string source, Action<AvifFileBuilder> change, string[] requires, string notes, string function = "BuildLayouts", int? sourceLayer = null)
+    private static AvifReference Assembled(ContainerContext context, string name, string source, Action<HeifFileBuilder> change, string[] requires, string notes, string function = "BuildLayouts", int? sourceLayer = null)
     {
-        var builder = AvifFileBuilder.From(context.Inputs[source]);
+        var builder = HeifFileBuilder.From(context.Inputs[source]);
         change(builder);
         return AddValidAvif(context, name, builder.Build(), "hand-authored", function, AssemblyTools(context), null, new Obj { ["payloadsOf"] = "avif/" + source }, notes, requires, source, sourceLayer);
     }
@@ -561,7 +561,7 @@ internal static partial class AvifCorpus
     /// <param name="height">The height of the derivation.</param>
     /// <param name="describe">Whether the derivation gets the colr, pixi and auxC properties of its input.</param>
     /// <param name="transforms">The transformative properties of the derivation, in order.</param>
-    private static AvifFileBuilder.Item WrapInIdentity(AvifFileBuilder builder, uint id, uint inputId, uint width, uint height, bool describe, params byte[][] transforms)
+    private static HeifFileBuilder.Item WrapInIdentity(HeifFileBuilder builder, uint id, uint inputId, uint width, uint height, bool describe, params byte[][] transforms)
     {
         var input = builder.GetItem(id);
         input.Id = inputId;
@@ -574,8 +574,8 @@ internal static partial class AvifCorpus
         }
 
         var derived = builder.AddItem(id, "iden", []);
-        derived.Storage = AvifFileBuilder.ItemStorage.None;
-        derived.Associations.Add((builder.AddProperty(AvifFileBuilder.ImageSize(width, height)), false));
+        derived.Storage = HeifFileBuilder.ItemStorage.None;
+        derived.Associations.Add((builder.AddProperty(HeifFileBuilder.ImageSize(width, height)), false));
         if (describe)
         {
             foreach (var association in input.Associations.Where(association => PropertyType(builder.Properties[association.PropertyIndex - 1]) is "colr" or "pixi" or "auxC"))
@@ -591,17 +591,17 @@ internal static partial class AvifCorpus
 
     /// <summary>The clean aperture that shows a rectangle of whole samples of an image.</summary>
     private static byte[] ApertureOf(int imageWidth, int imageHeight, int x, int y, int width, int height) =>
-        AvifFileBuilder.CleanAperture((uint)width, 1, (uint)height, 1, (2 * x) + width - imageWidth, 2, (2 * y) + height - imageHeight, 2);
+        HeifFileBuilder.CleanAperture((uint)width, 1, (uint)height, 1, (2 * x) + width - imageWidth, 2, (2 * y) + height - imageHeight, 2);
 
     /// <summary>
     /// Adds a derived image item (ISO/IEC 23008-12, section 6.6): its size, its transformative properties, and its input
     /// images. The data of a grid or of an overlay are its descriptor, stored in the <c>idat</c> box.
     /// </summary>
-    private static AvifFileBuilder.Item AddDerivedItem(AvifFileBuilder builder, uint id, string type, byte[] data, uint width, uint height, uint[] inputs, params byte[][] transforms)
+    private static HeifFileBuilder.Item AddDerivedItem(HeifFileBuilder builder, uint id, string type, byte[] data, uint width, uint height, uint[] inputs, params byte[][] transforms)
     {
         var item = builder.AddItem(id, type, data);
-        item.Storage = data.Length == 0 ? AvifFileBuilder.ItemStorage.None : AvifFileBuilder.ItemStorage.ItemData;
-        item.Associations.Add((builder.AddProperty(AvifFileBuilder.ImageSize(width, height)), false));
+        item.Storage = data.Length == 0 ? HeifFileBuilder.ItemStorage.None : HeifFileBuilder.ItemStorage.ItemData;
+        item.Associations.Add((builder.AddProperty(HeifFileBuilder.ImageSize(width, height)), false));
         foreach (var transform in transforms)
             item.Associations.Add((builder.AddProperty(transform), true));
 
@@ -614,12 +614,12 @@ internal static partial class AvifCorpus
     /// bits each), the size of the canvas and the offset of each input image, in 16-bit fields.
     /// </summary>
     private static byte[] OverlayDescriptor((ushort R, ushort G, ushort B, ushort A) fill, ushort width, ushort height, params (int X, int Y)[] offsets) =>
-        AvifFileBuilder.Concat(
-            [0, 0], AvifFileBuilder.U16(fill.R), AvifFileBuilder.U16(fill.G), AvifFileBuilder.U16(fill.B), AvifFileBuilder.U16(fill.A), AvifFileBuilder.U16(width), AvifFileBuilder.U16(height),
-            AvifFileBuilder.Concat([.. offsets.Select(offset => AvifFileBuilder.Concat(AvifFileBuilder.U16(unchecked((ushort)(short)offset.X)), AvifFileBuilder.U16(unchecked((ushort)(short)offset.Y))))]));
+        HeifFileBuilder.Concat(
+            [0, 0], HeifFileBuilder.U16(fill.R), HeifFileBuilder.U16(fill.G), HeifFileBuilder.U16(fill.B), HeifFileBuilder.U16(fill.A), HeifFileBuilder.U16(width), HeifFileBuilder.U16(height),
+            HeifFileBuilder.Concat([.. offsets.Select(offset => HeifFileBuilder.Concat(HeifFileBuilder.U16(unchecked((ushort)(short)offset.X)), HeifFileBuilder.U16(unchecked((ushort)(short)offset.Y))))]));
 
     /// <summary>Makes a derived item the primary item, and hides the images it is built from.</summary>
-    private static void Present(AvifFileBuilder builder, uint id)
+    private static void Present(HeifFileBuilder builder, uint id)
     {
         builder.PrimaryItemId = id;
         foreach (var item in builder.Items.Where(item => item.Id != id))
@@ -639,7 +639,7 @@ internal static partial class AvifCorpus
         }, ["avif.iovl", "avif.alpha"], "An overlay of 20x14 filled with an opaque orange, and the same 12x9 image with an alpha plane four times: at (2, 1), over itself at (6, 4), and across the left and the top edges of the canvas at (-4, 8) and (15, -3).", Function);
         Assembled(context, "iovl-transparent-fill", "lossless-rgba8", builder =>
         {
-            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0x1234, 0x5678, 0x9ABC, 0), 18, 13, (3, 2)), 18, 13, [1], ApertureOf(18, 13, 2, 1, 14, 10), AvifFileBuilder.Rotation(1));
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0x1234, 0x5678, 0x9ABC, 0), 18, 13, (3, 2)), 18, 13, [1], ApertureOf(18, 13, 2, 1, 14, 10), HeifFileBuilder.Rotation(1));
             Present(builder, 10);
         }, ["avif.iovl", "avif.clap", "avif.irot=1"], "An overlay whose fill color is fully transparent: the canvas is transparent black where no image is. The overlay is the primary item: its clean aperture keeps 14x10 at (2, 1) and its rotation is the orientation of the image.", Function);
         Assembled(context, "iovl-grid-and-iden-layers", "grid-2x2-lossless", builder =>
@@ -647,7 +647,7 @@ internal static partial class AvifCorpus
             var grid = builder.PrimaryItemId!.Value;
             var tile = builder.References.Single(reference => reference.Type == "dimg" && reference.FromItemId == grid).ToItemIds[0];
             var next = builder.Items.Max(item => item.Id) + 1;
-            AddDerivedItem(builder, next, "iden", [], 64, 64, [tile], AvifFileBuilder.Rotation(1), ApertureOf(64, 64, 8, 8, 40, 30));
+            AddDerivedItem(builder, next, "iden", [], 64, 64, [tile], HeifFileBuilder.Rotation(1), ApertureOf(64, 64, 8, 8, 40, 30));
             AddDerivedItem(builder, next + 1, "iovl", OverlayDescriptor((0, 0xFFFF, 0, 0x8000), 150, 140, (10, 5), (90, 100)), 150, 140, [grid, next]);
             Present(builder, next + 1);
         }, ["avif.iovl", "avif.derived.iden"], "An overlay of 150x140 filled with a half transparent green: a grid of four tiles at (10, 5), then an identity derivation of the first tile, turned a quarter turn and cropped to 40x30, at (90, 100).", Function);
@@ -656,17 +656,17 @@ internal static partial class AvifCorpus
             var grid = builder.PrimaryItemId!.Value;
             var tiles = builder.References.Single(reference => reference.Type == "dimg" && reference.FromItemId == grid).ToItemIds;
             var next = builder.Items.Max(item => item.Id) + 1;
-            AddDerivedItem(builder, next, "iden", [], 64, 64, [tiles[0]], AvifFileBuilder.Mirror(1));
-            AddDerivedItem(builder, next + 1, "iden", [], 64, 64, [tiles[3]], AvifFileBuilder.Rotation(2));
-            AddDerivedItem(builder, next + 2, "grid", AvifFileBuilder.GridDescriptor(1, 2, 120, 60), 120, 60, [next, next + 1], ApertureOf(120, 60, 10, 4, 100, 52), AvifFileBuilder.Mirror(0));
+            AddDerivedItem(builder, next, "iden", [], 64, 64, [tiles[0]], HeifFileBuilder.Mirror(1));
+            AddDerivedItem(builder, next + 1, "iden", [], 64, 64, [tiles[3]], HeifFileBuilder.Rotation(2));
+            AddDerivedItem(builder, next + 2, "grid", HeifFileBuilder.GridDescriptor(1, 2, 120, 60), 120, 60, [next, next + 1], ApertureOf(120, 60, 10, 4, 100, 52), HeifFileBuilder.Mirror(0));
             Present(builder, next + 2);
         }, ["avif.derived.grid", "avif.derived.iden", "avif.clap", "avif.imir=0"], "A grid of 120x60 whose two tiles are identity derivations of 64x64 images, one mirrored and one turned: the tiles exceed the image. The grid is the primary item, with a clean aperture and a mirror that is its orientation.", Function);
         Assembled(context, "iden-of-iovl-10bit", "lossless-rgba10", builder =>
         {
-            var source = ReferenceAvif.Parse(context.Inputs["lossless-rgba10"]).PrimaryItem!.Size!.Value;
+            var source = ReferenceHeif.Parse(context.Inputs["lossless-rgba10"]).PrimaryItem!.Size!.Value;
             var (width, height) = ((ushort)(source.Width + 5), (ushort)(source.Height + 3));
-            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF), width, height, (0, 0), (5, 3)), width, height, [1, 1], AvifFileBuilder.Mirror(1));
-            AddDerivedItem(builder, 11, "iden", [], width, height, [10], AvifFileBuilder.Rotation(2));
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF), width, height, (0, 0), (5, 3)), width, height, [1, 1], HeifFileBuilder.Mirror(1));
+            AddDerivedItem(builder, 11, "iden", [], width, height, [10], HeifFileBuilder.Rotation(2));
             Present(builder, 11);
         }, ["avif.iovl", "avif.derived.iden", "avif.bitDepth=10", "avif.irot=2"], "An identity derivation of an overlay of two 10-bit images with alpha on a white canvas. The overlay is mirrored, which moves its pixels; the rotation of the identity derivation, which is the primary item, is the orientation of the image.", Function);
         Assembled(context, "iovl-lossy-matrixed", "lossy-420-alpha", builder =>
@@ -679,13 +679,13 @@ internal static partial class AvifCorpus
         // images (their colr boxes, or else their bitstream). Black is the same color in every color space
         Assembled(context, "iovl-icc-from-layers", "lossless-rgb8", builder =>
         {
-            builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.ColorProfile(CommonCorpus.IccProfile("RGB "))), false));
+            builder.GetItem(1).Associations.Add((builder.AddProperty(HeifFileBuilder.ColorProfile(CommonCorpus.IccProfile("RGB "))), false));
             AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0xFFFF), 16, 12, (0, 0), (4, 3)), 16, 12, [1, 1]);
             Present(builder, 10);
         }, ["avif.iovl"], "An overlay without colr box, on an opaque black canvas, of an image that has an ICC profile: the profile is the one of the image.", Function);
         Assembled(context, "iovl-layers-without-colr", "lossy-422-bt709-limited", builder =>
         {
-            var source = ReferenceAvif.Parse(context.Inputs["lossy-422-bt709-limited"]).PrimaryItem!.Size!.Value;
+            var source = ReferenceHeif.Parse(context.Inputs["lossy-422-bt709-limited"]).PrimaryItem!.Size!.Value;
             var (width, height) = ((ushort)(source.Width + 2), (ushort)(source.Height + 2));
             RemoveProperty(builder, builder.GetItem(1), "colr");
             AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0), width, height, (0, 0), (2, 2)), width, height, [1, 1]);
@@ -693,7 +693,7 @@ internal static partial class AvifCorpus
         }, ["avif.iovl"], "No colr box at all: the input image of the overlay is converted with the color description of its AV1 sequence header (BT.709, limited range), whose color primaries and transfer characteristics are those of the image.", Function);
         Assembled(context, "iovl-black-fill-pq", "lossless-rgb8", builder =>
         {
-            ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(9, 16, 0, fullRange: true));
+            ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(9, 16, 0, fullRange: true));
             AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0xFFFF), 14, 11, (1, 1)), 14, 11, [1]);
             Present(builder, 10);
         }, ["avif.iovl"], "An overlay of an image with the BT.2020 primaries and the PQ transfer characteristics on an opaque black canvas: black needs no conversion.", Function);
@@ -704,15 +704,15 @@ internal static partial class AvifCorpus
             [], "The primary item is an identity derivation of the coded image, without transformation.", Function);
         Assembled(context, "iden-clap-after-irot", "lossless-rgb8", builder =>
         {
-            builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.Rotation(1)), true));
-            WrapInIdentity(builder, 1, 2, 9, 12, describe: true, ApertureOf(9, 12, 2, 3, 5, 6), AvifFileBuilder.Mirror(1));
+            builder.GetItem(1).Associations.Add((builder.AddProperty(HeifFileBuilder.Rotation(1)), true));
+            WrapInIdentity(builder, 1, 2, 9, 12, describe: true, ApertureOf(9, 12, 2, 3, 5, 6), HeifFileBuilder.Mirror(1));
         }, ["avif.clap", "avif.irot=1", "avif.imir=1"], "The coded image is turned a quarter turn (12x9 to 9x12); the identity derivation, which is the primary item, keeps a clean aperture of 5x6 at (2, 3) of the turned image, then mirrors it.", Function);
         Assembled(context, "iden-nested-alpha", "lossless-rgba8", builder =>
         {
             var aperture = ApertureOf(12, 9, 1, 2, 8, 6);
             WrapInIdentity(builder, 1, 10, 12, 9, describe: true, aperture);
-            WrapInIdentity(builder, 1, 11, 8, 6, describe: true, AvifFileBuilder.Rotation(3));
-            WrapInIdentity(builder, 2, 12, 12, 9, describe: true, aperture, AvifFileBuilder.Rotation(3));
+            WrapInIdentity(builder, 1, 11, 8, 6, describe: true, HeifFileBuilder.Rotation(3));
+            WrapInIdentity(builder, 2, 12, 12, 9, describe: true, aperture, HeifFileBuilder.Rotation(3));
         }, ["avif.alpha", "avif.clap", "avif.irot=3"], "Two nested identity derivations: the inner one keeps a clean aperture of 8x6 at (1, 2) of the coded image and the outer one, which is the primary item, turns it. The alpha plane of the primary item is an identity derivation of the coded alpha plane, with the same clean aperture and rotation.", Function);
         Assembled(context, "iden-alpha-derived", "lossless-rgba8", builder =>
         {
@@ -727,7 +727,7 @@ internal static partial class AvifCorpus
             var id = builder.PrimaryItemId!.Value;
             WrapInIdentity(builder, id, builder.Items.Max(item => item.Id) + 1, 128, 128, describe: true, ApertureOf(128, 128, 20, 30, 90, 70));
         }, ["avif.grid=2x2", "avif.clap"], "The primary item is an identity derivation of a grid, with a clean aperture of 90x70 at (20, 30) that spans the four tiles.", Function);
-        Assembled(context, "iden-color-from-input", "lossy-444-bt601-full", builder => WrapInIdentity(builder, 1, 2, 8, 8, describe: false, AvifFileBuilder.Rotation(2)),
+        Assembled(context, "iden-color-from-input", "lossy-444-bt601-full", builder => WrapInIdentity(builder, 1, 2, 8, 8, describe: false, HeifFileBuilder.Rotation(2)),
             ["avif.matrix=6", "avif.irot=2"], "The identity derivation has no colr property: the color description is the one of its input image (BT.601, full range).", Function);
     }
 
@@ -737,13 +737,13 @@ internal static partial class AvifCorpus
         Assembled(context, "layout-mdat-first", Source, builder =>
         {
             builder.Layout.Clear();
-            foreach (var box in new[] { AvifFileBuilder.FileTypeBox, AvifFileBuilder.MediaDataBox, AvifFileBuilder.MetaBox })
+            foreach (var box in new[] { HeifFileBuilder.FileTypeBox, HeifFileBuilder.MediaDataBox, HeifFileBuilder.MetaBox })
                 builder.Layout.Add(box);
         }, ["avif.layout=media-first"], "The mdat box precedes the meta box: a forward-only reader keeps the media data until the items are known.");
         Assembled(context, "layout-idat", Source, builder =>
         {
-            builder.GetItem(1).Storage = AvifFileBuilder.ItemStorage.ItemData;
-            builder.Layout.Remove(AvifFileBuilder.MediaDataBox);
+            builder.GetItem(1).Storage = HeifFileBuilder.ItemStorage.ItemData;
+            builder.Layout.Remove(HeifFileBuilder.MediaDataBox);
         }, ["avif.idat"], "The data of the primary item is in the idat box of the meta box (construction method 1); the file has no mdat box.");
         Assembled(context, "layout-extents", Source, builder =>
         {
@@ -753,11 +753,11 @@ internal static partial class AvifCorpus
         }, ["avif.extents=3"], "The data of the primary item is in three extents that are not contiguous (7 bytes, 1 byte, the rest).");
         Assembled(context, "layout-free-unknown-trailing", Source, builder =>
         {
-            builder.ExtraBoxes["free1"] = AvifFileBuilder.Box("free", new byte[5]);
-            builder.ExtraBoxes["unknown"] = AvifFileBuilder.Box("zzzz", Bytes.Ascii("not an image"));
-            builder.ExtraBoxes["free2"] = AvifFileBuilder.Box("free", new byte[11]);
+            builder.ExtraBoxes["free1"] = HeifFileBuilder.Box("free", new byte[5]);
+            builder.ExtraBoxes["unknown"] = HeifFileBuilder.Box("zzzz", Bytes.Ascii("not an image"));
+            builder.ExtraBoxes["free2"] = HeifFileBuilder.Box("free", new byte[11]);
             builder.Layout.Clear();
-            foreach (var box in new[] { AvifFileBuilder.FileTypeBox, "free1", AvifFileBuilder.MetaBox, "unknown", AvifFileBuilder.MediaDataBox, "free2" })
+            foreach (var box in new[] { HeifFileBuilder.FileTypeBox, "free1", HeifFileBuilder.MetaBox, "unknown", HeifFileBuilder.MediaDataBox, "free2" })
                 builder.Layout.Add(box);
         }, ["avif.boxes=free", "avif.boxes=unknown", "avif.trailingData"], "A free box before the meta box, an unknown box before the mdat box and a free box after it, which a forward-only reader never reads.");
         Assembled(context, "layout-mif1-large-size-to-end", Source, builder =>
@@ -766,23 +766,23 @@ internal static partial class AvifCorpus
             builder.CompatibleBrands.Clear();
             foreach (var brand in new[] { "mif1", "avif", "miaf" })
                 builder.CompatibleBrands.Add(brand);
-            builder.LargeSizeBoxes.Add(AvifFileBuilder.MetaBox);
+            builder.LargeSizeBoxes.Add(HeifFileBuilder.MetaBox);
             builder.MediaDataExtendsToEnd = true;
         }, ["avif.majorBrand=mif1", "avif.boxes=large-size", "avif.boxes=to-end"], "The major brand is mif1 and avif is a compatible brand; the meta box has a 64-bit size; the size field of the mdat box is 0 (it extends to the end of the file).");
 
         // Color descriptions: the colr box wins over the bitstream, which describes the colors when there is no colr box
         Assembled(context, "nclx-overrides-bitstream", "lossy-422-bt709-limited", builder =>
-            ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(1, 13, 6, fullRange: true)),
+            ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(1, 13, 6, fullRange: true)),
             ["avif.matrix=6", "avif.range=full"], "The bitstream signals BT.709 limited range and the colr box BT.601 full range: the colr box describes the colors.");
         Assembled(context, "no-colr-bitstream-bt709", "lossy-422-bt709-limited", builder => RemoveProperty(builder, builder.GetItem(1), "colr"),
             ["avif.colr=none", "avif.matrix=1", "avif.range=limited"], "No colr box: the color description of the AV1 sequence header (BT.709, limited range) applies.");
 
         // Without colr box, a header identification reads on to the sequence header of the bitstream, which tells RGB
         // planes (identity matrix) from YCbCr ones; when the bitstream precedes the meta box it has already gone by
-        void MediaFirst(AvifFileBuilder builder)
+        void MediaFirst(HeifFileBuilder builder)
         {
             builder.Layout.Clear();
-            foreach (var box in new[] { AvifFileBuilder.FileTypeBox, AvifFileBuilder.MediaDataBox, AvifFileBuilder.MetaBox })
+            foreach (var box in new[] { HeifFileBuilder.FileTypeBox, HeifFileBuilder.MediaDataBox, HeifFileBuilder.MetaBox })
                 builder.Layout.Add(box);
         }
 
@@ -816,8 +816,8 @@ internal static partial class AvifCorpus
         Assembled(context, "grid-2x2-cropped", "grid-2x2-lossless", builder =>
         {
             var grid = builder.GetItem(1);
-            grid.Data = AvifFileBuilder.GridDescriptor(2, 2, 100, 90);
-            ReplaceProperty(builder, grid, "ispe", AvifFileBuilder.ImageSize(100, 90));
+            grid.Data = HeifFileBuilder.GridDescriptor(2, 2, 100, 90);
+            ReplaceProperty(builder, grid, "ispe", HeifFileBuilder.ImageSize(100, 90));
         }, ["avif.grid=2x2"], "The grid of avif/grid-2x2-lossless declared as 100x90: the tiles of the last column and of the last row exceed the image.");
 
         // A grid of three columns and two rows, assembled from six 16x16 images that avifenc coded one by one. The tiles
@@ -825,14 +825,14 @@ internal static partial class AvifCorpus
         // not write such a grid and avifdec rejects it; ISO/IEC 23008-12 sets no minimum, and a 3x2 grid of 64-sample
         // tiles would cost every generic suite a 192x128 image
         var mosaic = CommonCorpus.PatternSmoothColor(48, 32);
-        var tiles = new List<AvifFileBuilder>();
+        var tiles = new List<HeifFileBuilder>();
         var tileCommands = new List<string>();
         for (var i = 0; i < 6; i++)
         {
             var (left, top) = (i % 3 * 16, i / 3 * 16);
             var tile = new Img(16, 16, "rgb", 8, CommonCorpus.Grid(16, 16, (x, y) => mosaic.Pixels[((top + y) * 48) + left + x]));
             var (tileData, tileCommand) = Avifenc(context, Inv($"grid-3x2-tile{i}"), new Dictionary<string, byte[]>(StringComparer.Ordinal) { ["source.png"] = Png(tile) }, "-l @source.png");
-            tiles.Add(AvifFileBuilder.From(tileData));
+            tiles.Add(HeifFileBuilder.From(tileData));
             tileCommands.Add(tileCommand);
         }
 
@@ -840,7 +840,7 @@ internal static partial class AvifCorpus
         var firstTile = grid.GetItem(1);
         firstTile.Id = 2;
         firstTile.IsHidden = true;
-        var gridItem = grid.AddItem(1, "grid", AvifFileBuilder.GridDescriptor(2, 3, 48, 32), grid.AddProperty(AvifFileBuilder.ImageSize(48, 32)));
+        var gridItem = grid.AddItem(1, "grid", HeifFileBuilder.GridDescriptor(2, 3, 48, 32), grid.AddProperty(HeifFileBuilder.ImageSize(48, 32)));
         foreach (var (index, _) in firstTile.Associations.Where(association => PropertyType(grid.Properties[association.PropertyIndex - 1]) is "colr" or "pixi"))
             gridItem.Associations.Add((index, false));
 
@@ -903,7 +903,7 @@ internal static partial class AvifCorpus
         }, ["avif.sequence", "avif.seq.matrix=6"], "The matrix of the track header turns the images a quarter turn clockwise: the orientation is 6, and the images are returned as they are stored.", "BuildSequences");
         Assembled(context, "sequence-matrix-mirror-clap", "sequence-alpha-repeat-2", builder =>
         {
-            var aperture = AvifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1);
+            var aperture = HeifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1);
             foreach (var track in builder.Tracks)
             {
                 track.Matrix = [-0x00010000, 0, 0, 0, 0x00010000, 0, track.Width << 16, 0, 0x40000000];
@@ -952,16 +952,16 @@ internal static partial class AvifCorpus
 
         // Fragmented sequences (ISO/IEC 14496-12, section 8.8): the moov box announces fragments (mvex), and each moof box
         // describes more images, whose samples follow it. The samples of the source are distributed in fragments
-        void Fragmented(string name, string source, int kept, int[] split, Action<AvifFileBuilder>? configure, string[] requires, string notes) =>
+        void Fragmented(string name, string source, int kept, int[] split, Action<HeifFileBuilder>? configure, string[] requires, string notes) =>
             Assembled(context, name, source, builder =>
             {
                 var first = kept;
                 foreach (var count in split)
                 {
-                    var fragment = new AvifFileBuilder.Fragment();
+                    var fragment = new HeifFileBuilder.Fragment();
                     foreach (var track in builder.Tracks)
                     {
-                        var part = new AvifFileBuilder.TrackFragment(track.Id);
+                        var part = new HeifFileBuilder.TrackFragment(track.Id);
                         for (var i = first; i < first + count; i++)
                             part.Samples.Add((track.Samples[i].Data, track.Samples[i].Duration));
 
@@ -988,7 +988,7 @@ internal static partial class AvifCorpus
         {
             foreach (var track in builder.Fragments.SelectMany(fragment => fragment.Tracks))
             {
-                track.Base = AvifFileBuilder.FragmentBase.Explicit;
+                track.Base = HeifFileBuilder.FragmentBase.Explicit;
                 track.RunCount = 2;
                 track.OmitDecodeTime = true;
             }
@@ -998,7 +998,7 @@ internal static partial class AvifCorpus
         Fragmented("sequence-fragmented-alpha", "sequence-alpha-repeat-2", 0, [1, 1], builder =>
         {
             foreach (var track in builder.Fragments.SelectMany(fragment => fragment.Tracks))
-                track.Base = AvifFileBuilder.FragmentBase.Implicit;
+                track.Base = HeifFileBuilder.FragmentBase.Implicit;
         }, ["avif.seq.fragments=2", "avif.alpha"], "A fragment for each image and its alpha plane. The track fragments have neither base flag: the data of the color track are at the offset of its run from the moof box, and the data of the alpha track follow them.");
         Fragmented("sequence-fragmented-defaults", "sequence-10bit-once", 0, [1, 1], builder =>
         {
@@ -1011,7 +1011,7 @@ internal static partial class AvifCorpus
             var both = builder.Fragments[0];
             var alpha = both.Tracks.Single(track => track.TrackId == builder.Tracks.Single(candidate => candidate.HandlerType == "auxv").Id);
             both.Tracks.Remove(alpha);
-            var next = new AvifFileBuilder.Fragment();
+            var next = new HeifFileBuilder.Fragment();
             next.Tracks.Add(alpha);
             builder.Fragments.Add(next);
         }, ["avif.seq.fragments=2", "avif.alpha"], "The two color images are described by the first fragment and their alpha planes by the second one: the images wait for their alpha planes.");
@@ -1022,15 +1022,15 @@ internal static partial class AvifCorpus
         {
             var boxes = builder.Tracks.Single(track => track.HandlerType == "pict").SampleEntryBoxes;
             var index = Enumerable.Range(0, boxes.Count).Single(i => PropertyType(boxes[i]) == "colr");
-            boxes[index] = AvifFileBuilder.ColorNclx(9, 18, 14, fullRange: false);
+            boxes[index] = HeifFileBuilder.ColorNclx(9, 18, 14, fullRange: false);
         }, ["avif.sequence", "avif.matrix=14", "avif.range=limited", "avif.bitDepth=10"], "The colr box of the sample entry declares the ICtCp matrix coefficients with the HLG transfer characteristics, in limited range: the planes of a sequence of other colors, most of which are outside of the gamut and are clipped.", "BuildSequences");
 
         // The boxes of the visual sample entry that describe how the samples are presented
         Assembled(context, "sequence-hdr-boxes", "sequence-10bit-once", builder =>
         {
             var track = builder.Tracks[0];
-            track.SampleEntryBoxes.Add(AvifFileBuilder.Box("pasp", AvifFileBuilder.U32(16), AvifFileBuilder.U32(15)));
-            track.SampleEntryBoxes.Add(AvifFileBuilder.Box("clli", AvifFileBuilder.U16(4000), AvifFileBuilder.U16(1000)));
+            track.SampleEntryBoxes.Add(HeifFileBuilder.Box("pasp", HeifFileBuilder.U32(16), HeifFileBuilder.U32(15)));
+            track.SampleEntryBoxes.Add(HeifFileBuilder.Box("clli", HeifFileBuilder.U16(4000), HeifFileBuilder.U16(1000)));
             track.SampleEntryBoxes.Add(MasteringDisplayBox());
         }, ["avif.sequence", "avif.pasp", "avif.clli", "avif.mdcv"], "The pixel aspect ratio (16:15), the content light level and the mastering display color volume of an image sequence are boxes of the sample entry of its track.", "BuildSequences");
 
@@ -1080,10 +1080,10 @@ internal static partial class AvifCorpus
         // samples; the meta box of the track. The Exif orientation (6) is not the orientation of the images
         const string Plain = "sequence-lossless-infinite";
         var otherXmp = Bytes.Utf8("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"><rdf:Description rdf:about=\"file\"/></rdf:RDF></x:xmpmeta>");
-        void AddFileMetadata(AvifFileBuilder builder, AvifFileBuilder.ItemStorage storage, byte[] packet)
+        void AddFileMetadata(HeifFileBuilder builder, HeifFileBuilder.ItemStorage storage, byte[] packet)
         {
             // As avifenc links its XMP item: content descriptions of the first image, which is the primary item
-            var exifItem = builder.AddItem(100, "Exif", AvifFileBuilder.ExifItemData(exif));
+            var exifItem = builder.AddItem(100, "Exif", HeifFileBuilder.ExifItemData(exif));
             var xmpItem = builder.AddItem(101, "mime", packet);
             xmpItem.ContentType = "application/rdf+xml";
             exifItem.Storage = xmpItem.Storage = storage;
@@ -1091,43 +1091,43 @@ internal static partial class AvifCorpus
             builder.References.Add(("cdsc", 101, [builder.PrimaryItemId!.Value]));
         }
 
-        void AddTrackMetadata(AvifFileBuilder builder, AvifFileBuilder.ItemStorage storage, bool withExif = true)
+        void AddTrackMetadata(HeifFileBuilder builder, HeifFileBuilder.ItemStorage storage, bool withExif = true)
         {
             var track = builder.Tracks.Single(candidate => candidate.HandlerType == "pict");
             if (withExif)
-                track.MetaItems.Add(new AvifFileBuilder.Item(1, "Exif", AvifFileBuilder.ExifItemData(exif)) { Storage = storage });
+                track.MetaItems.Add(new HeifFileBuilder.Item(1, "Exif", HeifFileBuilder.ExifItemData(exif)) { Storage = storage });
 
-            track.MetaItems.Add(new AvifFileBuilder.Item(2, "mime", xmp) { ContentType = "application/rdf+xml", Storage = storage });
+            track.MetaItems.Add(new HeifFileBuilder.Item(2, "mime", xmp) { ContentType = "application/rdf+xml", Storage = storage });
         }
 
-        Assembled(context, "sequence-file-meta-exif-xmp", Plain, builder => AddFileMetadata(builder, AvifFileBuilder.ItemStorage.MediaData, xmp),
+        Assembled(context, "sequence-file-meta-exif-xmp", Plain, builder => AddFileMetadata(builder, HeifFileBuilder.ItemStorage.MediaData, xmp),
             ["avif.metadata=exif", "avif.metadata=xmp", "avif.seq.metadataSource=file"], "Exif and XMP items in the meta box of the file, which precedes the moov box; their data are in the mdat box, before the samples.", "BuildSequences");
-        Assembled(context, "sequence-file-meta-idat", Plain, builder => AddFileMetadata(builder, AvifFileBuilder.ItemStorage.ItemData, xmp),
+        Assembled(context, "sequence-file-meta-idat", Plain, builder => AddFileMetadata(builder, HeifFileBuilder.ItemStorage.ItemData, xmp),
             ["avif.metadata=exif", "avif.metadata=xmp", "avif.seq.metadataSource=file", "avif.idat"], "Exif and XMP items in the meta box of the file, their data in its idat box.", "BuildSequences");
         Assembled(context, "sequence-file-meta-after-samples", Plain, builder =>
         {
-            AddFileMetadata(builder, AvifFileBuilder.ItemStorage.MediaData, xmp);
+            AddFileMetadata(builder, HeifFileBuilder.ItemStorage.MediaData, xmp);
             builder.ItemDataFollowsSamples = true;
         }, ["avif.metadata=exif", "avif.metadata=xmp", "avif.seq.metadataSource=file", "avif.seq.metadataAfterSamples"], "The data of the Exif and XMP items of the meta box of the file follow the samples in the mdat box: the last image is complete once they are read.", "BuildSequences");
-        Assembled(context, "sequence-track-meta-exif-xmp", Plain, builder => AddTrackMetadata(builder, AvifFileBuilder.ItemStorage.MediaData),
+        Assembled(context, "sequence-track-meta-exif-xmp", Plain, builder => AddTrackMetadata(builder, HeifFileBuilder.ItemStorage.MediaData),
             ["avif.metadata=exif", "avif.metadata=xmp", "avif.seq.metadataSource=track"], "Exif and XMP items in the meta box of the track (hdlr, iloc and iinf boxes, as libavif writes it for XMP); their data are in the mdat box.", "BuildSequences");
-        Assembled(context, "sequence-track-meta-idat", Plain, builder => AddTrackMetadata(builder, AvifFileBuilder.ItemStorage.ItemData),
+        Assembled(context, "sequence-track-meta-idat", Plain, builder => AddTrackMetadata(builder, HeifFileBuilder.ItemStorage.ItemData),
             ["avif.metadata=exif", "avif.metadata=xmp", "avif.seq.metadataSource=track", "avif.idat"], "Exif and XMP items in the meta box of the track, their data in the idat box of that meta box.", "BuildSequences");
         Assembled(context, "sequence-track-meta-after-samples", Plain, builder =>
         {
-            AddTrackMetadata(builder, AvifFileBuilder.ItemStorage.MediaData);
+            AddTrackMetadata(builder, HeifFileBuilder.ItemStorage.MediaData);
             builder.ItemDataFollowsSamples = true;
         }, ["avif.metadata=exif", "avif.metadata=xmp", "avif.seq.metadataSource=track", "avif.seq.metadataAfterSamples"], "The data of the items of the meta box of the track follow the samples in the mdat box.", "BuildSequences");
         Assembled(context, "sequence-track-meta-wins", Plain, builder =>
         {
-            AddFileMetadata(builder, AvifFileBuilder.ItemStorage.MediaData, otherXmp);
-            AddTrackMetadata(builder, AvifFileBuilder.ItemStorage.MediaData, withExif: false);
+            AddFileMetadata(builder, HeifFileBuilder.ItemStorage.MediaData, otherXmp);
+            AddTrackMetadata(builder, HeifFileBuilder.ItemStorage.MediaData, withExif: false);
         }, ["avif.metadata=xmp", "avif.seq.metadataSource=track", "avif.seq.fileMetadataNotRead"], "The meta box of the file has an Exif item and an XMP item, the meta box of the track another XMP item: the items of the track are the metadata of the sequence, so it has no Exif data.", "BuildSequences");
         Assembled(context, "sequence-file-meta-after-moov", Plain, builder =>
         {
-            AddFileMetadata(builder, AvifFileBuilder.ItemStorage.MediaData, xmp);
+            AddFileMetadata(builder, HeifFileBuilder.ItemStorage.MediaData, xmp);
             builder.Layout.Clear();
-            foreach (var box in new[] { AvifFileBuilder.FileTypeBox, AvifFileBuilder.MovieBox, AvifFileBuilder.MetaBox, AvifFileBuilder.MediaDataBox })
+            foreach (var box in new[] { HeifFileBuilder.FileTypeBox, HeifFileBuilder.MovieBox, HeifFileBuilder.MetaBox, HeifFileBuilder.MediaDataBox })
                 builder.Layout.Add(box);
         }, ["avif.seq.fileMetadataNotRead"], "The meta box of the file, which has Exif and XMP items, follows the moov box: a sequence only takes its metadata from a meta box of the file that precedes the moov box (libavif never reads it for a sequence), so this one has none.", "BuildSequences");
 
@@ -1161,7 +1161,7 @@ internal static partial class AvifCorpus
         Assembled(context, "sequence-mdat-first", Source, builder =>
         {
             builder.Layout.Clear();
-            foreach (var box in new[] { AvifFileBuilder.FileTypeBox, AvifFileBuilder.MediaDataBox, AvifFileBuilder.MetaBox, AvifFileBuilder.MovieBox })
+            foreach (var box in new[] { HeifFileBuilder.FileTypeBox, HeifFileBuilder.MediaDataBox, HeifFileBuilder.MetaBox, HeifFileBuilder.MovieBox })
                 builder.Layout.Add(box);
         }, ["avif.layout=media-first"], "The mdat box precedes the moov box.", "BuildSequences");
         Assembled(context, "sequence-co64-stz2", Source, builder =>

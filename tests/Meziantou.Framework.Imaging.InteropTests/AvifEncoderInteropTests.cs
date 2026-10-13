@@ -4,7 +4,7 @@ using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
-using Meziantou.Framework.Imaging.TestHarness.Avif;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
@@ -94,7 +94,7 @@ public sealed class AvifEncoderInteropTests
                 };
 
                 var path = await SaveAsync(image, encoder, name);
-                var reader = ReferenceAvif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+                var reader = ReferenceHeif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
                 foreach (var (item, kind) in new[] { (reader.PrimaryItem, "color"), (reader.AlphaItem, "alpha") })
                 {
                     if (item is null)
@@ -165,7 +165,7 @@ public sealed class AvifEncoderInteropTests
 
             var path = await SaveAsync(image, encoder, name);
             var data = await File.ReadAllBytesAsync(path, XunitCancellationToken);
-            var reader = ReferenceAvif.Parse(data);
+            var reader = ReferenceHeif.Parse(data);
             foreach (var (track, kind) in new[] { (reader.ColorTrack, "color"), (reader.AlphaTrack, "alpha") })
             {
                 if (track is null)
@@ -252,7 +252,7 @@ public sealed class AvifEncoderInteropTests
 
             var path = await SaveAsync(image, encoder, name);
             var data = await File.ReadAllBytesAsync(path, XunitCancellationToken);
-            var reader = ReferenceAvif.Parse(data);
+            var reader = ReferenceHeif.Parse(data);
             foreach (var (track, kind) in new[] { (reader.ColorTrack, "color"), (reader.AlphaTrack, "alpha") })
             {
                 if (track is null)
@@ -322,7 +322,7 @@ public sealed class AvifEncoderInteropTests
         };
 
         var path = await SaveAsync(image, encoder, name);
-        var reader = ReferenceAvif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        var reader = ReferenceHeif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
         var payload = reader.ReadItemData(reader.PrimaryItem!);
         var stream = directory / $"{name}.obu";
         await File.WriteAllBytesAsync(stream, [0x12, 0x00, .. payload], XunitCancellationToken);
@@ -379,7 +379,7 @@ public sealed class AvifEncoderInteropTests
         using var image = CreateImage(samples, width, height, format is "400", deep);
         var encoder = new AvifEncoder { Effort = effort, BitDepth = bitDepth };
         var path = await SaveAsync(image, encoder, name);
-        var reader = ReferenceAvif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        var reader = ReferenceHeif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
         Assert.Equal(format is "400", reader.AlphaItem is null);
         foreach (var (item, kind) in new[] { (reader.PrimaryItem, "color"), (reader.AlphaItem, "alpha") })
         {
@@ -583,7 +583,7 @@ public sealed class AvifEncoderInteropTests
         var libavif = await RequiredTools.LibAvifAsync();
         using var image = CreateImage(width, height, monochrome: false, bitDepth: 8, seed: 91, transparent);
         var path = await SaveAsync(image, new AvifEncoder { Compression = compression, ChromaSubsampling = subsampling, Quality = 85, Effort = 0, GridTileSize = new Size(tileWidth, tileHeight) }, $"grid-{compression}-{subsampling}-{width}x{height}-{tileWidth}x{tileHeight}");
-        var reader = ReferenceAvif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        var reader = ReferenceHeif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
         Assert.Equal("grid", reader.PrimaryItem!.Type);
         Assert.Equal(transparent, reader.AlphaItem is not null);
 

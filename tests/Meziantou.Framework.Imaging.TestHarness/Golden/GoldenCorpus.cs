@@ -59,6 +59,42 @@ public sealed class GoldenCorpus
         return (Manifest.Av1Vectors?.Entries ?? []).FirstOrDefault(vector => vector.Id == id) ?? throw new KeyNotFoundException($"The golden corpus has no AV1 vector '{id}'.");
     }
 
+    /// <summary>
+    /// Gets the HEVC conformance vectors (raw byte streams with plane digests), ordered by id. They are not fixtures: they
+    /// have no pixel reference and are never returned by <see cref="Fixtures"/> or <see cref="GetIds"/>.
+    /// </summary>
+    public IEnumerable<HevcVectorEntry> HevcVectors => (Manifest.HevcVectors?.Entries ?? []).OrderBy(vector => vector.Id, StringComparer.Ordinal);
+
+    /// <summary>Gets an HEVC conformance vector.</summary>
+    /// <param name="id">The vector id, e.g. <c>hevc/x265-lossless-intra-gbr-8bit-34x36</c>.</param>
+    /// <returns>The vector.</returns>
+    /// <exception cref="KeyNotFoundException">Unknown id.</exception>
+    public HevcVectorEntry GetHevcVector(string id)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        return (Manifest.HevcVectors?.Entries ?? []).FirstOrDefault(vector => vector.Id == id) ?? throw new KeyNotFoundException($"The golden corpus has no HEVC vector '{id}'.");
+    }
+
+    /// <summary>Gets the identifiers of the HEVC conformance vectors that declare every specified feature, e.g. as theory data.</summary>
+    /// <param name="features">The required features: <c>key</c> or <c>key=value</c> (see <see cref="HevcVectorEntry.HasFeature"/> and <see cref="HevcVectorEntry.HasFeatureKey"/>).</param>
+    /// <returns>The ids, ordered.</returns>
+    public IEnumerable<string> GetHevcVectorIds(params string[] features)
+    {
+        ArgumentNullException.ThrowIfNull(features);
+        return HevcVectors
+            .Where(vector => features.All(feature => feature.Contains('=', StringComparison.Ordinal) ? vector.HasFeature(feature) : vector.HasFeatureKey(feature)))
+            .Select(vector => vector.Id);
+    }
+
+    /// <summary>Gets the full path of the stream of an HEVC conformance vector.</summary>
+    /// <param name="vector">The vector.</param>
+    /// <returns>The path of the <c>.hevc</c> file.</returns>
+    public FullPath GetHevcVectorPath(HevcVectorEntry vector)
+    {
+        ArgumentNullException.ThrowIfNull(vector);
+        return RootDirectory / vector.Input.Path;
+    }
+
     /// <summary>Loads and validates a corpus.</summary>
     /// <param name="rootDirectory">The corpus root (containing manifest.json).</param>
     /// <returns>The corpus.</returns>

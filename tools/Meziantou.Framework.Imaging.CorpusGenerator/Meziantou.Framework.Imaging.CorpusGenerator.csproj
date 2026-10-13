@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <!-- `verify` re-decodes the corpus with the tools of the interop tests: keep the same version as the TestHarness project -->
-    <PackageReference Include="Meziantou.Prebuilt" Version="3.4.0" />
+    <PackageReference Include="Meziantou.Prebuilt" Version="3.5.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,6 +37,7 @@
       derives the AVIF references with them (they have no dependency on the library under test)
     -->
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Avif\*.cs" LinkBase="TestHarness\Avif" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Heif\*.cs" LinkBase="TestHarness\Heif" />
     <!--
       The decimal reference of ICC color conversion of the test harness (its own profile reader, no dependency on the
       library under test): the generator converts the inks of the CMYK JPEG fixtures with it

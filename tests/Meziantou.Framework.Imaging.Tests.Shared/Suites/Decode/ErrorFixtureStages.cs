@@ -162,6 +162,43 @@ internal static class ErrorFixtureStages
         "limit/avif/height-over-limit",
         "limit/avif/icc-over-metadata-limit",
         "limit/avif/width-over-limit",
+        // HEIC: as for AVIF, the file type box and the box that describes the image. The configuration record of an HEVC
+        // image is one of its item properties (or a box of the sample entry of a track): its version, the size of the
+        // lengths of its NAL units, its sample format and its own length are known there, and so is the type of the coded
+        // item, the brands that go with it, and a clean aperture on the tile of a grid
+        "invalid/heic/alpha-different-size",
+        "invalid/heic/bitstream-unequal-bit-depths",
+        "invalid/heic/child-box-exceeds-parent",
+        "invalid/heic/clap-fractional",
+        "invalid/heic/derived-iden",
+        "invalid/heic/derived-iovl",
+        "invalid/heic/essential-unknown-property",
+        "invalid/heic/ftyp-without-heic-brand",
+        "invalid/heic/grid-missing-tile",
+        "invalid/heic/grid-tile-clap",
+        "invalid/heic/grid-tiles-differ",
+        "invalid/heic/hvcc-length-size-reserved",
+        "invalid/heic/hvcc-truncated",
+        "invalid/heic/hvcc-version",
+        "invalid/heic/item-av01",
+        "invalid/heic/item-lhv1",
+        "invalid/heic/layer-selector",
+        "invalid/heic/matrix-ictcp",
+        "invalid/heic/missing-ftyp",
+        "invalid/heic/missing-hvcc",
+        "invalid/heic/missing-ispe",
+        "invalid/heic/missing-pitm",
+        "invalid/heic/premultiplied-alpha",
+        "invalid/heic/sequence-edit-list-offset",
+        "invalid/heic/sequence-fragmented",
+        "invalid/heic/sequence-missing-chunk-offsets",
+        "invalid/heic/sequence-no-hevc-track",
+        "invalid/heic/truncated-meta",
+        "limit/heic/clap-picture-over-limit",
+        "limit/heic/frame-pixels-over-limit",
+        "limit/heic/height-over-limit",
+        "limit/heic/icc-over-metadata-limit",
+        "limit/heic/width-over-limit",
     };
 
     private static readonly HashSet<string> StructureDefects = new(StringComparer.Ordinal)
@@ -262,6 +299,28 @@ internal static class ErrorFixtureStages
         "limit/avif/exif-over-metadata-limit",
         "limit/avif/sequence-frames-over-limit",
         "limit/avif/sequence-xmp-over-metadata-limit",
+        // HEIC: as for AVIF, what follows the box that describes the image: the location of the item data and of the
+        // samples, the grid descriptor, the Exif and XMP items, the composition times of the samples. A full scan parses
+        // the sequence parameter set of each coded item and of each track (it is in the configuration record, or else in
+        // the coded data) and compares it with the record: a sample format that the record does not announce, a feature
+        // of the bitstream that is not decoded and a chroma sample location that is not converted are found there
+        "invalid/heic/bitstream-16bit",
+        "invalid/heic/bitstream-extended-precision",
+        "invalid/heic/chroma-sample-location-3",
+        "invalid/heic/grid-size-mismatch",
+        "invalid/heic/grid-tile-count-mismatch",
+        "invalid/heic/hvcc-bit-depth-mismatch",
+        "invalid/heic/hvcc-chroma-format-mismatch",
+        "invalid/heic/item-outside-file",
+        "invalid/heic/sequence-ctts-collision",
+        "invalid/heic/sequence-record-mismatch",
+        "invalid/heic/sequence-track-meta-malformed",
+        "invalid/heic/sequence-truncated",
+        "invalid/heic/truncated-item-data",
+        "limit/heic/encoded-bytes-over-limit",
+        "limit/heic/exif-over-metadata-limit",
+        "limit/heic/sequence-frames-over-limit",
+        "limit/heic/sequence-xmp-over-metadata-limit",
     };
 
     private static readonly HashSet<string> PixelDefects = new(StringComparer.Ordinal)
@@ -339,6 +398,23 @@ internal static class ErrorFixtureStages
         "limit/avif/live-allocation-over-limit",
         "limit/avif/sequence-hidden-frames-total-pixels",
         "limit/avif/sequence-total-pixels-over-limit",
+        // HEIC: the NAL units of an item or of a sample are only split and interpreted by the decoder (their lengths, the
+        // pictures they hold, the type of the first one, the slice data, the reference pictures), and the size of a
+        // picture after its conformance window is only compared with the size the file declares once it is decoded;
+        // displayed frames are charged when they are decoded
+        "invalid/heic/cabac-garbage",
+        "invalid/heic/first-picture-not-irap",
+        "invalid/heic/ispe-mismatch",
+        "invalid/heic/nal-length-exceeds-item",
+        "invalid/heic/nal-length-truncated",
+        "invalid/heic/no-picture",
+        "invalid/heic/sequence-missing-reference",
+        "invalid/heic/sequence-padded-pictures",
+        "invalid/heic/sequence-size-mismatch",
+        "invalid/heic/slice-data-truncated",
+        "invalid/heic/two-pictures",
+        "limit/heic/live-allocation-over-limit",
+        "limit/heic/sequence-total-pixels-over-limit",
     };
 
     /// <summary>Gets a value indicating whether a header identification detects the defect.</summary>

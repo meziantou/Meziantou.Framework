@@ -455,6 +455,52 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveHeicWritesALossyPhotoALosslessImageAndAnImageSequence()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var photo = GetPath("photo.png");
+        using (var source = new Image<Rgba64>(32, 16, new Rgba64(65535, 32768, 0, 65535)))
+        {
+            source.Save(photo);
+        }
+
+        var heic = GetPath("photo.heic");
+        var lossless = GetPath("lossless.heic");
+        var animated = GetPath("animation.heics");
+        Examples.SaveHeic(photo, heic, lossless, apngPath, animated);
+
+        using (var image = Image.Load<Rgba64>(heic))
+        {
+            // A 12-bit lossy image: the samples are within the error of the quantizer
+            Assert.Equal(ImageFormat.Heic, image.Metadata.SourceFormat);
+            Assert.Equal(12, Image.Identify(heic).BitsPerComponent);
+            var pixel = image.Frames[0][16, 8];
+            Assert.InRange(pixel.R, 63000, 65535);
+            Assert.InRange(pixel.G, 30500, 35000);
+            Assert.InRange(pixel.B, 0, 2500);
+        }
+
+        using (var image = Image.Load<Rgba64>(lossless))
+        {
+            // 16-bit samples rounded to 12 bits: 65535 is 4095, and 32768 is 2048 (which is decoded as 32776)
+            Assert.Equal(ImageFormat.Heic, image.Metadata.SourceFormat);
+            Assert.Equal(new Rgba64(65535, 32776, 0, 65535), image.Frames[0][16, 8]);
+        }
+
+        // A lossy sequence: the frames, their exact durations and the plays of the animation
+        using var animation = Image.Load<Rgba32>(animated);
+        using var expected = Image.Load<Rgba32>(apngPath);
+        Assert.Equal(ImageFormat.Heic, animation.Metadata.SourceFormat);
+        Assert.Equal(2, animation.Frames.Count);
+        Assert.Equal(3, animation.Animation!.TotalPlays);
+        Assert.Equal(expected.Frames[1].Metadata.Duration, animation.Frames[1].Metadata.Duration);
+        var (reference, actual) = (expected.Frames[1][63, 63], animation.Frames[1][63, 63]);
+        Assert.InRange(actual.R, reference.R - 24, reference.R + 24);
+        Assert.InRange(actual.G, reference.G - 24, reference.G + 24);
+        Assert.InRange(actual.B, reference.B - 24, reference.B + 24);
+    }
+
+    [Fact]
     public void SaveJpegXlWritesLosslessFilesAndAnimations()
     {
         var (apngPath, _) = BuildAnimation();
@@ -489,6 +535,30 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(3, animation.Animation!.TotalPlays);
         Assert.Equal(new FrameDuration(33, 1000), animation.Frames[1].Metadata.Duration); // nearest millisecond
         Assert.Equal(expected.Frames[1][63, 63], animation.Frames[1][63, 63]);
+    }
+
+    [Fact]
+    public void ConvertHeicTurnsThePhotoUprightAndSavesItAsJpeg()
+    {
+        // The layout of the photos of a phone: a grid of tiles, a rotation property, an ICC profile and an EXIF block
+        var fixture = GoldenCorpus.Default.Get("heic/phone-grid-420");
+        var jpeg = GetPath("photo.jpg");
+        Assert.Equal("64x24 Rgb24, orientation: RightTop", Examples.ConvertHeic(fixture.InputPath, jpeg));
+
+        using var source = Image.Load<Rgb24>(fixture.InputPath);
+        using var converted = Image.Load<Rgb24>(jpeg);
+        Assert.Equal(ImageFormat.Jpeg, converted.Metadata.SourceFormat);
+        Assert.Equal((24, 64), (converted.Width, converted.Height));
+        Assert.Equal(ExifOrientation.TopLeft, converted.Metadata.Orientation);
+        Assert.NotNull(source.Metadata.IccProfile);
+        Assert.Equal(source.Metadata.IccProfile.Data.ToArray(), converted.Metadata.IccProfile?.Data.ToArray());
+        Assert.NotNull(converted.Metadata.ExifProfile);
+
+        // The row 0 of the stored image is the right column of the upright one
+        var (stored, upright) = (source.Frames[0][10, 0], converted.Frames[0][23, 10]);
+        Assert.InRange(upright.R, stored.R - 24, stored.R + 24);
+        Assert.InRange(upright.G, stored.G - 24, stored.G + 24);
+        Assert.InRange(upright.B, stored.B - 24, stored.B + 24);
     }
 
     [Fact]

@@ -372,6 +372,10 @@ internal sealed class MetadataWritePlan
         // light levels, the mastering display and the shape of the pixels in clli, mdcv and pasp boxes
         private static readonly FormatCapabilities Avif = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, nativeOrientation: true, cicp: true, contentLightLevel: true, masteringDisplay: true, pixelAspectRatio: true);
 
+        // HEIC has the container of AVIF; its codec does not write the clli, mdcv and pasp boxes yet
+        // (HeifContainerFeatures.DisplayMetadata)
+        private static readonly FormatCapabilities Heic = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, nativeOrientation: true, cicp: true);
+
         // JPEG XL stores the orientation, the linear transfer function and an enumerable CICP description in its image header
         private static readonly FormatCapabilities JpegXl = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true, enumeratedCicp: true);
 
@@ -454,6 +458,7 @@ internal sealed class MetadataWritePlan
             ImageFormat.Tiff => Tiff,
             ImageFormat.Ani => Ani,
             ImageFormat.Avif => Avif,
+            ImageFormat.Heic => Heic,
             ImageFormat.JpegXl => JpegXl,
             _ => None,
         };

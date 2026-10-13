@@ -317,7 +317,7 @@ internal static class AvifQualityReport
         byte Mix(byte a, byte b) => (byte)(((a * (last - index)) + (b * index) + (last / 2)) / last);
     }
 
-    private static void Report(string mode, string setting, Rgba32[] source, int width, int height, int runs, Func<byte[]> encode)
+    internal static void Report(string mode, string setting, Rgba32[] source, int width, int height, int runs, Func<byte[]> encode)
         => Report(mode, setting, [source], width, height, runs, encode);
 
     private static void Report(string mode, string setting, Rgba32[][] source, int width, int height, int runs, Func<byte[]> encode)
@@ -376,7 +376,7 @@ internal static class AvifQualityReport
         static double Psnr(double squares, int count) => squares == 0 ? double.PositiveInfinity : 10 * Math.Log10(255.0 * 255.0 * count / squares);
     }
 
-    private static byte[] Save(Image image, ImageEncoder encoder)
+    internal static byte[] Save(Image image, ImageEncoder encoder)
     {
         using var stream = new MemoryStream();
         image.Save(stream, encoder);

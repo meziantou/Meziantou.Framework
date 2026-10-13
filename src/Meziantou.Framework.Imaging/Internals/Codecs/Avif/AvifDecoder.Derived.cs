@@ -30,7 +30,7 @@ internal sealed partial class AvifDecoder
 {
     // Renders the image and writes the rows that its clean aperture keeps: the rotation and the mirroring of the image
     // itself are its orientation, like those of a coded image
-    private void RenderDerivedImage(AvifStructureParser structure, AvifImagePlan plan, AvifImageNode root)
+    private void RenderDerivedImage(HeifStructureParser structure, HeifImagePlan plan, HeifImageNode root)
     {
         var max = plan.RootBitDepth > 8 ? ushort.MaxValue : byte.MaxValue;
         using var surface = RenderNode(structure, root, max, applyOperations: false);
@@ -63,7 +63,7 @@ internal sealed partial class AvifDecoder
     }
 
     // Renders an image of the tree: what its item reconstructs, then its own transformations
-    private Surface RenderNode(AvifStructureParser structure, AvifImageNode node, int max, bool applyOperations)
+    private Surface RenderNode(HeifStructureParser structure, HeifImageNode node, int max, bool applyOperations)
     {
         _context.CancellationToken.ThrowIfCancellationRequested();
         Surface? surface = null;
@@ -71,9 +71,9 @@ internal sealed partial class AvifDecoder
         {
             surface = node.Kind switch
             {
-                AvifImageNodeKind.Coded => RenderCodedImage(structure, node, max),
-                AvifImageNodeKind.Identity => RenderNode(structure, node.Inputs[0], max, applyOperations: true),
-                AvifImageNodeKind.Grid => RenderGrid(structure, node, max),
+                HeifImageNodeKind.Coded => RenderCodedImage(structure, node, max),
+                HeifImageNodeKind.Identity => RenderNode(structure, node.Inputs[0], max, applyOperations: true),
+                HeifImageNodeKind.Grid => RenderGrid(structure, node, max),
                 _ => RenderOverlay(structure, node, max),
             };
 
@@ -98,19 +98,20 @@ internal sealed partial class AvifDecoder
     }
 
     // A coded image and its alpha plane, converted with the color description of its item
-    private Surface RenderCodedImage(AvifStructureParser structure, AvifImageNode node, int max)
+    private Surface RenderCodedImage(HeifStructureParser structure, HeifImageNode node, int max)
     {
         using var color = DecodeImage(structure, node.Image);
         using var alpha = node.Alpha is null ? null : DecodeImage(structure, node.Alpha);
         var size = node.Image.Size;
         _context.Tracker?.ChargeHiddenPixels((long)size.Width * size.Height * (alpha is null ? 1 : 2));
         var nclx = node.Nclx;
-        var matrix = nclx?.MatrixCoefficients ?? color.Sequence.MatrixCoefficients;
-        var fullRange = nclx?.FullRange ?? color.Sequence.FullRange;
-        var primaries = nclx?.ColorPrimaries ?? color.Sequence.ColorPrimaries;
-        var transfer = nclx?.TransferCharacteristics ?? color.Sequence.TransferCharacteristics;
+        var format = color.Format;
+        var matrix = nclx?.MatrixCoefficients ?? format.MatrixCoefficients;
+        var fullRange = nclx?.FullRange ?? format.FullRange;
+        var primaries = nclx?.ColorPrimaries ?? format.ColorPrimaries;
+        var transfer = nclx?.TransferCharacteristics ?? format.TransferCharacteristics;
         var layout = DefaultPixelFormats.ForAvif(node.Image.IsMonochrome, alpha is not null, Math.Max(node.Image.BitDepth, node.Alpha?.BitDepth ?? 0));
-        var converter = new AvifYuvConverter(color.Sequence, matrix, fullRange, alpha?.Sequence, layout, alpha is not null && node.IsPremultiplied, primaries, transfer);
+        var converter = new HeifYuvConverter(AvifBinding.Instance, format, matrix, fullRange, alpha?.Format, layout, alpha is not null && node.IsPremultiplied, primaries, transfer);
         var (width, height) = (size.Width, size.Height);
         using var rows = Av1PooledArray<ushort>.Rent(_context.Scope, 2L * width, clear: false);
         using var pixels = _context.Scope.Rent(checked(width * converter.BytesPerPixel), AllocationKind.DecoderState, clear: false);
@@ -183,7 +184,7 @@ internal sealed partial class AvifDecoder
 
     // The tiles of a grid of derived images, side by side: they have the same size once they are transformed, and the
     // last row and column may exceed the image (the descriptor was verified when the data of the items were read)
-    private Surface RenderGrid(AvifStructureParser structure, AvifImageNode node, int max)
+    private Surface RenderGrid(HeifStructureParser structure, HeifImageNode node, int max)
     {
         var size = node.Image.Size;
         var tile = node.Inputs[0].OutputSize;
@@ -214,7 +215,7 @@ internal sealed partial class AvifDecoder
 
     // ISO/IEC 23008-12, section 6.6.2.2 "Image overlay": the canvas is filled with a color, then the input images are
     // composited in their order, each at its offset, which may be outside of the canvas
-    private Surface RenderOverlay(AvifStructureParser structure, AvifImageNode node, int max)
+    private Surface RenderOverlay(HeifStructureParser structure, HeifImageNode node, int max)
     {
         // The 16-bit values of the fill color in the samples of the image, rounded to nearest. A canvas that is filled
         // with a transparent color is transparent black: its colors would never show

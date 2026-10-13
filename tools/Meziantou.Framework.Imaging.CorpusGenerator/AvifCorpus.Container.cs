@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
-using Meziantou.Framework.Imaging.TestHarness.Avif;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 using Meziantou.Prebuilt;
 
 namespace Meziantou.Framework.Imaging.CorpusGenerator;
@@ -18,9 +18,9 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 // This generator is the reviewed, reproducible recipe of every committed AVIF fixture. It is NEVER run by the tests and
 // does not use the library under test.
 // - Inputs: written by libavif avifenc (and one by the FFmpeg avif muxer) from hand-defined patterns, or assembled box by
-//   box (AvifFileBuilder, linked from the test harness) around the AV1 payloads of such a file or of a committed AV1 vector
+//   box (HeifFileBuilder, linked from the test harness) around the AV1 payloads of such a file or of a committed AV1 vector
 //   for what the encoders do not write. Malformed, unsupported and over-limit inputs are assembled the same way.
-// - References: the structure of every input is read by ReferenceAvif (an independent reader written from the
+// - References: the structure of every input is read by ReferenceHeif (an independent reader written from the
 //   specifications, linked from the test harness); the AV1 payloads of the items and of the samples are extracted and
 //   decoded to planes by two independent decoders, dav1d and libaom, through the pinned FFmpeg, in the native pixel format
 //   of the stream (they must agree byte for byte, as for the AV1 vectors); the planes are converted by
@@ -274,7 +274,7 @@ internal static partial class AvifCorpus
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // The reference of an input: structure by ReferenceAvif, planes by two decoders, colors by ReferenceYuvConverter
+    // The reference of an input: structure by ReferenceHeif, planes by two decoders, colors by ReferenceYuvConverter
     // -----------------------------------------------------------------------------------------------------------------
 
     /// <summary>One decoded image of an AV1 payload: the planes both decoders agree on, and what its headers signal.</summary>
@@ -308,16 +308,16 @@ internal static partial class AvifCorpus
 
         public required int Orientation { get; init; }
 
-        public required ReferenceAvif.ColorDescription? Cicp { get; init; }
+        public required ReferenceHeif.ColorDescription? Cicp { get; init; }
 
         /// <summary>The <c>clli</c> box of the primary item or of the sample entry, or <see langword="null"/>.</summary>
-        public ReferenceAvif.ContentLightLevel? ContentLightLevel { get; init; }
+        public ReferenceHeif.ContentLightLevel? ContentLightLevel { get; init; }
 
         /// <summary>The <c>mdcv</c> box of the primary item or of the sample entry, or <see langword="null"/>.</summary>
-        public ReferenceAvif.MasteringDisplay? MasteringDisplay { get; init; }
+        public ReferenceHeif.MasteringDisplay? MasteringDisplay { get; init; }
 
         /// <summary>The <c>pasp</c> box of the primary item or of the sample entry, or <see langword="null"/>.</summary>
-        public ReferenceAvif.PixelAspectRatio? PixelAspectRatio { get; init; }
+        public ReferenceHeif.PixelAspectRatio? PixelAspectRatio { get; init; }
 
         public required byte[]? Icc { get; init; }
 
@@ -331,7 +331,7 @@ internal static partial class AvifCorpus
 
         public required bool IsSequence { get; init; }
 
-        public required ReferenceAvif.Track? ColorTrack { get; init; }
+        public required ReferenceHeif.Track? ColorTrack { get; init; }
 
         public required SortedSet<string> Features { get; init; }
 
@@ -438,7 +438,7 @@ internal static partial class AvifCorpus
     /// is decoded by both decoders like any stream: they output the frame of the highest layer that the temporal unit
     /// still holds. A valid fixture selects an operating point and a layer that the bitstream has.
     /// </summary>
-    private static (DecodedPayload Payload, PayloadLayers Layers) DecodeCodedItem(AvifFileTools tools, FullPath scratch, ReferenceAvif file, ReferenceAvif.Item item, string role)
+    private static (DecodedPayload Payload, PayloadLayers Layers) DecodeCodedItem(AvifFileTools tools, FullPath scratch, ReferenceHeif file, ReferenceHeif.Item item, string role)
     {
         var stream = ToTemporalUnit(file.ReadItemData(item));
         var layers = ReadPayloadLayers(tools, scratch, role, stream);
@@ -465,7 +465,7 @@ internal static partial class AvifCorpus
 
     /// <summary>Decodes an image item: a coded item, or a grid whose tiles are placed in row-major order and cropped to
     /// the size of the grid (ISO/IEC 23008-12, section 6.6.2.3). The planes are tiled before the color conversion.</summary>
-    private static (PlaneImage Image, List<DecodedPayload> Payloads, string? Grid, List<PayloadLayers> Layers) DecodeItem(AvifFileTools tools, FullPath scratch, ReferenceAvif file, ReferenceAvif.Item item, string role)
+    private static (PlaneImage Image, List<DecodedPayload> Payloads, string? Grid, List<PayloadLayers> Layers) DecodeItem(AvifFileTools tools, FullPath scratch, ReferenceHeif file, ReferenceHeif.Item item, string role)
     {
         if (item.Type == "av01")
         {
@@ -565,7 +565,7 @@ internal static partial class AvifCorpus
     /// <summary>Derives the reference of an input from its bytes.</summary>
     private static AvifReference Describe(AvifFileTools tools, FullPath scratch, byte[] data)
     {
-        var file = ReferenceAvif.Parse(data);
+        var file = ReferenceHeif.Parse(data);
         var features = new SortedSet<string>(StringComparer.Ordinal) { "avif.majorBrand=" + file.MajorBrand };
         Py.Assert(file.HasBrand("avif") || file.HasBrand("avis"), "brands");
         DescribeLayout(file, data, features);
@@ -574,7 +574,7 @@ internal static partial class AvifCorpus
         return file.IsSequence ? DescribeSequence(tools, scratch, file, features) : DescribeStill(tools, scratch, file, features);
     }
 
-    private static void DescribeLayout(ReferenceAvif file, byte[] data, SortedSet<string> features)
+    private static void DescribeLayout(ReferenceHeif file, byte[] data, SortedSet<string> features)
     {
         var boxes = file.TopLevelBoxes;
         var index = boxes.Select((box, i) => (box, i)).First(pair => pair.box.Type == (file.IsSequence ? "moov" : "meta")).i;
@@ -602,11 +602,11 @@ internal static partial class AvifCorpus
         long last;
         if (file.IsSequence)
         {
-            var tracks = new[] { file.ColorTrack, file.AlphaTrack }.OfType<ReferenceAvif.Track>();
+            var tracks = new[] { file.ColorTrack, file.AlphaTrack }.OfType<ReferenceHeif.Track>();
             last = tracks.SelectMany(track => track.Samples).Max(sample => sample.Offset + sample.Size);
             last = Math.Max(last, boxes[index].Offset + boxes[index].Size);
             var (exif, xmp) = file.FindSequenceMetadata();
-            foreach (var item in new[] { exif, xmp }.OfType<ReferenceAvif.Item>().Where(item => item.ConstructionMethod == 0))
+            foreach (var item in new[] { exif, xmp }.OfType<ReferenceHeif.Item>().Where(item => item.ConstructionMethod == 0))
             {
                 last = Math.Max(last, item.Extents.Max(extent => extent.Offset + extent.Length));
             }
@@ -626,10 +626,10 @@ internal static partial class AvifCorpus
 
     /// <summary>The items whose data a decoder of the primary item reads: the coded items of the image and of its alpha
     /// plane, the grid descriptors, and the Exif and XMP items.</summary>
-    private static List<ReferenceAvif.Item> PresentedItems(ReferenceAvif file)
+    private static List<ReferenceHeif.Item> PresentedItems(ReferenceHeif file)
     {
-        var result = new List<ReferenceAvif.Item>();
-        void AddImage(ReferenceAvif.Item? item)
+        var result = new List<ReferenceHeif.Item>();
+        void AddImage(ReferenceHeif.Item? item)
         {
             if (item is null)
                 return;
@@ -644,7 +644,7 @@ internal static partial class AvifCorpus
         var primary = file.PrimaryItem!;
         if (IsBuiltImage(file, primary))
         {
-            void AddTree(ReferenceAvif.Item item)
+            void AddTree(ReferenceHeif.Item item)
             {
                 if (item.Type is "iden" or "iovl" || (item.Type == "grid" && file.GetGridTiles(item).Any(tile => tile.Type != "av01")))
                 {
@@ -657,7 +657,7 @@ internal static partial class AvifCorpus
                 else
                 {
                     AddImage(item);
-                    AddImage(file.FindAuxiliary(item.Id, ReferenceAvif.AlphaAuxiliaryType));
+                    AddImage(file.FindAuxiliary(item.Id, ReferenceHeif.AlphaAuxiliaryType));
                 }
             }
 
@@ -672,7 +672,7 @@ internal static partial class AvifCorpus
         return result;
     }
 
-    private static AvifReference DescribeStill(AvifFileTools tools, FullPath scratch, ReferenceAvif file, SortedSet<string> features)
+    private static AvifReference DescribeStill(AvifFileTools tools, FullPath scratch, ReferenceHeif file, SortedSet<string> features)
     {
         var primary = file.PrimaryItem ?? throw new ToolException("the file has no primary item.");
         if (IsBuiltImage(file, primary))
@@ -682,7 +682,7 @@ internal static partial class AvifCorpus
         // the coded image is the last item of the chain, and its samples go through the transformations of every item
         var chain = file.GetIdentityChain(primary);
         var coded = chain[^1];
-        var transforms = ReferenceAvif.GetTransforms(chain);
+        var transforms = ReferenceHeif.GetTransforms(chain);
         if (chain.Count > 1)
             features.Add(Inv($"avif.iden={chain.Count - 1}"));
 
@@ -693,7 +693,7 @@ internal static partial class AvifCorpus
         for (var i = chain.Count - 2; i >= 0; i--)
         {
             // The size of a derived image is the size of its input, as the input is presented
-            var input = ReferenceAvif.Item.Present(ReferenceAvif.GetTransforms([.. chain.Skip(i + 1)]), color.Width, color.Height) ?? throw new ToolException("the clean aperture is not a whole number of samples.");
+            var input = ReferenceHeif.Item.Present(ReferenceHeif.GetTransforms([.. chain.Skip(i + 1)]), color.Width, color.Height) ?? throw new ToolException("the clean aperture is not a whole number of samples.");
             Py.Assert(chain[i].Size == (input.Width, input.Height), "the ispe of an identity derivation is the size of its input");
         }
 
@@ -705,9 +705,9 @@ internal static partial class AvifCorpus
 
             // The alpha plane is presented as the color image; the alpha plane of a coded image may also declare no
             // transformation, in which case those of the coded image apply to it
-            var alphaTransforms = ReferenceAvif.GetTransforms(alphaChain);
+            var alphaTransforms = ReferenceHeif.GetTransforms(alphaChain);
             Py.Assert((alphaTransforms.Count == 0 && chain.Count == 1)
-                || (ReferenceAvif.Item.Present(alphaTransforms, alpha.Width, alpha.Height)?.Rectangle == ReferenceAvif.Item.Present(transforms, color.Width, color.Height)?.Rectangle && ReferenceAvif.ComposeOrientation(alphaTransforms) == ReferenceAvif.ComposeOrientation(transforms)),
+                || (ReferenceHeif.Item.Present(alphaTransforms, alpha.Width, alpha.Height)?.Rectangle == ReferenceHeif.Item.Present(transforms, color.Width, color.Height)?.Rectangle && ReferenceHeif.ComposeOrientation(alphaTransforms) == ReferenceHeif.ComposeOrientation(transforms)),
                 "the alpha plane is presented as the color image");
             payloads.AddRange(alphaPayloads);
             features.Add("avif.alpha");
@@ -720,7 +720,7 @@ internal static partial class AvifCorpus
         var (matrix, fullRange, cicp) = ResolveColor(nclx, color);
         // The transformations apply in the order of their association: the samples that they present are a rectangle of
         // the coded image, which stays as it is coded (the rotation and the mirroring are the orientation of the image)
-        var crop = ReferenceAvif.Item.Present(transforms, color.Width, color.Height)?.Rectangle ?? throw new ToolException("the clean aperture is not a whole number of samples.");
+        var crop = ReferenceHeif.Item.Present(transforms, color.Width, color.Height)?.Rectangle ?? throw new ToolException("the clean aperture is not a whole number of samples.");
         if (transforms.Any(transform => transform.Type == "clap"))
             features.Add("avif.clap");
 
@@ -783,7 +783,7 @@ internal static partial class AvifCorpus
             PixelFormat = PixelFormatOf(color, alpha),
             ColorModel = ColorModelOf(color, alpha is not null, matrix),
             BitsPerComponent = color.Color.BitDepth,
-            Orientation = ReferenceAvif.ComposeOrientation(transforms),
+            Orientation = ReferenceHeif.ComposeOrientation(transforms),
             Cicp = cicp,
             Icc = icc,
             Exif = exifItem is null ? null : file.ReadExifPayload(exifItem),
@@ -799,7 +799,7 @@ internal static partial class AvifCorpus
     }
 
     /// <summary>The boxes that describe how the samples are presented: labels, which change no pixel.</summary>
-    private static void AddPresentationFeatures(SortedSet<string> features, ReferenceAvif.ContentLightLevel? lightLevel, ReferenceAvif.MasteringDisplay? display, ReferenceAvif.PixelAspectRatio? pixelAspectRatio)
+    private static void AddPresentationFeatures(SortedSet<string> features, ReferenceHeif.ContentLightLevel? lightLevel, ReferenceHeif.MasteringDisplay? display, ReferenceHeif.PixelAspectRatio? pixelAspectRatio)
     {
         if (lightLevel is not null)
             features.Add("avif.clli");
@@ -817,7 +817,7 @@ internal static partial class AvifCorpus
     /// items), whether their sizes differ, the properties that select an operating point or a layer, and the pixels of the
     /// lower layers, which are decoded without being returned.
     /// </summary>
-    private static void AddLayerFeatures(SortedSet<string> features, List<PayloadLayers> colorLayers, List<DecodedPayload> payloads, List<ReferenceAvif.Item> codedItems)
+    private static void AddLayerFeatures(SortedSet<string> features, List<PayloadLayers> colorLayers, List<DecodedPayload> payloads, List<ReferenceHeif.Item> codedItems)
     {
         var count = colorLayers.Max(layers => layers.Count);
         if (count > 1)
@@ -840,7 +840,7 @@ internal static partial class AvifCorpus
             features.Add(Inv($"avif.layers.hiddenPixels={lowerLayerPixels}"));
     }
 
-    private static AvifReference DescribeSequence(AvifFileTools tools, FullPath scratch, ReferenceAvif file, SortedSet<string> features)
+    private static AvifReference DescribeSequence(AvifFileTools tools, FullPath scratch, ReferenceHeif file, SortedSet<string> features)
     {
         var track = file.ColorTrack ?? throw new ToolException("the file has no track of AV1 images.");
         features.Add("avif.sequence");
@@ -868,7 +868,7 @@ internal static partial class AvifCorpus
             // The images of a fragmented sequence are those of its moov box, then those of its movie fragments
             features.Add(Inv($"avif.seq.fragments={file.TopLevelBoxes.Count(box => box.Type == "moof")}"));
             Py.Assert(track.FragmentDecodeTimes.All(time => time.DecodeTime == time.MediaTime), "the fragments follow each other");
-            Py.Assert(track.CompositionOffsets.All(offset => offset == 0), "the samples are shown in the order they are decoded");
+            Py.Assert(track.FragmentCompositionOffsets.All(offset => offset == 0), "the samples are shown in the order they are decoded");
         }
 
         features.Add("avif.seq.sampleSizes=" + track.SampleSizeBox);
@@ -904,11 +904,11 @@ internal static partial class AvifCorpus
         }
 
         // The Exif and XMP items of the sequence: those of the meta box of the track, or else of the meta box of the file
-        // when it precedes the moov box (ReferenceAvif.FindSequenceMetadata)
+        // when it precedes the moov box (ReferenceHeif.FindSequenceMetadata)
         var (exifItem, xmpItem) = file.FindSequenceMetadata();
         var exif = exifItem is null ? null : file.ReadExifPayload(exifItem);
         var xmp = xmpItem is null ? null : file.ReadItemData(xmpItem);
-        var metadataItems = new[] { exifItem, xmpItem }.OfType<ReferenceAvif.Item>().ToList();
+        var metadataItems = new[] { exifItem, xmpItem }.OfType<ReferenceHeif.Item>().ToList();
         var metadata = new List<string>();
         if (exifItem is not null)
             metadata.Add("exif");
@@ -989,17 +989,17 @@ internal static partial class AvifCorpus
 
     /// <summary>The colr box of type nclx describes the colors; otherwise the bitstream does (unspecified matrix
     /// coefficients are BT.601 in the conversion; the description stays what the file says, or none).</summary>
-    private static (int Matrix, bool FullRange, ReferenceAvif.ColorDescription? Cicp) ResolveColor(ReferenceAvif.ColorDescription? nclx, PlaneImage color)
+    private static (int Matrix, bool FullRange, ReferenceHeif.ColorDescription? Cicp) ResolveColor(ReferenceHeif.ColorDescription? nclx, PlaneImage color)
     {
         if (nclx is not null)
             return (nclx.MatrixCoefficients, nclx.FullRange, nclx);
 
         return color.ColorDescription is var (primaries, transfer, matrix)
-            ? (matrix, color.FullRange, new ReferenceAvif.ColorDescription(primaries, transfer, matrix, color.FullRange))
+            ? (matrix, color.FullRange, new ReferenceHeif.ColorDescription(primaries, transfer, matrix, color.FullRange))
             : (2, color.FullRange, null);
     }
 
-    private static void CheckConfiguration(ReferenceAvif.Item coded, PlaneImage image)
+    private static void CheckConfiguration(ReferenceHeif.Item coded, PlaneImage image)
     {
         var configuration = coded.Configuration ?? throw new ToolException("a coded item has no av1C property.");
         Py.Assert(configuration.BitDepth == image.Color.BitDepth && configuration.IsMonochrome == image.Color.Monochrome
@@ -1273,7 +1273,7 @@ internal static partial class AvifCorpus
                 ["method"] = "decoded",
                 ["description"] = ReferenceDescription(reference),
                 ["decoder"] = context.Tools.DecodersLabel,
-                ["backend"] = "ReferenceAvif and ReferenceYuvConverter (test harness)",
+                ["backend"] = "ReferenceHeif and ReferenceYuvConverter (test harness)",
                 ["command"] = "av1Vectors.decoders[].command",
                 ["crossChecks"] = checks,
             },
@@ -1525,7 +1525,7 @@ internal static partial class AvifCorpus
     // Verification (the "verify" subcommand): the committed references re-derived with the pinned tools
     // -----------------------------------------------------------------------------------------------------------------
 
-    /// <summary>Re-derives the reference of every valid AVIF fixture from its committed input (ReferenceAvif, both decoders,
+    /// <summary>Re-derives the reference of every valid AVIF fixture from its committed input (ReferenceHeif, both decoders,
     /// ReferenceYuvConverter) and compares it with the committed buffers, which must be identical.</summary>
     public static (int Verified, List<string> Failures) VerifyContainer()
     {

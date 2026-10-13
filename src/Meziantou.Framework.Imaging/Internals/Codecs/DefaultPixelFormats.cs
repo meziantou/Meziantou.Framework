@@ -22,6 +22,13 @@ internal static class DefaultPixelFormats
         return isMonochrome ? PixelFormat.Gray8 : PixelFormat.Rgb24;
     }
 
+    /// <summary>Selects the default pixel format of an HEIC image: the one of an AVIF image with the same planes.</summary>
+    /// <param name="isMonochrome">Whether the color image has a single plane.</param>
+    /// <param name="hasAlpha">Whether the image has an alpha plane.</param>
+    /// <param name="bitDepth">The largest bit depth of the color and alpha planes (8, 10 or 12).</param>
+    /// <returns>The pixel format.</returns>
+    public static PixelFormat ForHeic(bool isMonochrome, bool hasAlpha, int bitDepth) => ForAvif(isMonochrome, hasAlpha, bitDepth);
+
     /// <summary>Selects the default pixel format of a PNG or APNG image.</summary>
     /// <param name="colorType">The IHDR color type (0, 2, 3, 4 or 6).</param>
     /// <param name="bitDepth">The IHDR bit depth.</param>

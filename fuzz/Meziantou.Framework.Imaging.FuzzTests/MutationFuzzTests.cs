@@ -16,7 +16,7 @@ public sealed class MutationFuzzTests
 {
     private const int MaxReportedFailures = 4;
 
-    public static TheoryData<string> Groups => [.. FuzzSeeds.Groups];
+    public static TheoryData<string> Groups => [.. FuzzSeeds.Groups.Where(group => FuzzSettings.Groups?.Contains(group, StringComparer.Ordinal) ?? true)];
 
     [Theory]
     [MemberData(nameof(Groups))]
@@ -29,6 +29,7 @@ public sealed class MutationFuzzTests
         var outcomes = new Dictionary<string, int>(StringComparer.Ordinal);
         var stopwatch = Stopwatch.StartNew();
         var slowest = TimeSpan.Zero;
+        var slowestName = "";
         var iterations = FuzzSettings.Iterations;
         var duration = FuzzSettings.Duration;
         var executed = 0;
@@ -46,7 +47,7 @@ public sealed class MutationFuzzTests
             int variant;
             if (original is null)
             {
-                input = FuzzMutator.Mutate(random, seeds[iteration % seeds.Count].Data, spliceSources);
+                input = FuzzMutator.Mutate(random, seeds[iteration % seeds.Count], seeds, spliceSources);
                 variant = random.Next(256);
                 iteration++;
             }
@@ -59,7 +60,12 @@ public sealed class MutationFuzzTests
             var started = stopwatch.Elapsed;
             var failure = RunWithWatchdog(input, variant, out var outcome);
             var elapsed = stopwatch.Elapsed - started;
-            slowest = elapsed > slowest ? elapsed : slowest;
+            if (elapsed > slowest)
+            {
+                slowest = elapsed;
+                slowestName = name;
+            }
+
             executed++;
             outcomes[outcome] = outcomes.GetValueOrDefault(outcome) + 1;
             if (failure is null || failures.ContainsKey(failure.Signature))
@@ -71,7 +77,7 @@ public sealed class MutationFuzzTests
         }
 
         TestContext.Current.TestOutputHelper?.WriteLine(FormattableString.Invariant(
-            $"{group}: {executed} inputs ({seeds.Count} seeds, base seed {FuzzSettings.Seed}) in {stopwatch.Elapsed.TotalSeconds:F1} s, slowest {slowest.TotalMilliseconds:F0} ms; eager load outcomes: {string.Join(", ", outcomes.OrderByDescending(pair => pair.Value).Select(pair => $"{pair.Key}={pair.Value}"))}"));
+            $"{group}: {executed} inputs ({seeds.Count} seeds, base seed {FuzzSettings.Seed}) in {stopwatch.Elapsed.TotalSeconds:F1} s, slowest {slowest.TotalMilliseconds:F0} ms ({slowestName}); eager load outcomes: {string.Join(", ", outcomes.OrderByDescending(pair => pair.Value).Select(pair => $"{pair.Key}={pair.Value}"))}"));
         if (failures.Count > 0)
             Assert.Fail($"{failures.Count} distinct fuzz failure(s) in group '{group}':{Environment.NewLine}{string.Join(Environment.NewLine + Environment.NewLine, failures.Values)}");
 

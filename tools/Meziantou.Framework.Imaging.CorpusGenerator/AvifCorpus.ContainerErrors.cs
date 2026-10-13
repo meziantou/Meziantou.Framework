@@ -1,12 +1,12 @@
 using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
-using Meziantou.Framework.Imaging.TestHarness.Avif;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 
 namespace Meziantou.Framework.Imaging.CorpusGenerator;
 
 // The malformed, unsupported and over-limit AVIF fixtures: files assembled from the description of a valid fixture with
-// one defect each (AvifFileBuilder), or byte edits of such a file. They carry no expected pixels. Each defect is stated
+// one defect each (HeifFileBuilder), or byte edits of such a file. They carry no expected pixels. Each defect is stated
 // from the specifications; the stage at which the library must report it (header identification, full scan, decoding) is
 // recorded by the tests (Tests/Conformance/ErrorFixtureStages.cs).
 internal static partial class AvifCorpus
@@ -35,12 +35,12 @@ internal static partial class AvifCorpus
 
     /// <summary>The description of a valid file. The meta box of an image sequence, which a reader of the sequence does
     /// not need, is left out so that the error fixtures stay small.</summary>
-    private static AvifFileBuilder ErrorBuilder(ContainerContext context, string source)
+    private static HeifFileBuilder ErrorBuilder(ContainerContext context, string source)
     {
-        var builder = AvifFileBuilder.From(context.Inputs[source]);
+        var builder = HeifFileBuilder.From(context.Inputs[source]);
         if (builder.Tracks.Count > 0)
         {
-            builder.Layout.Remove(AvifFileBuilder.MetaBox);
+            builder.Layout.Remove(HeifFileBuilder.MetaBox);
             builder.Items.Clear();
             builder.Properties.Clear();
             builder.References.Clear();
@@ -50,14 +50,14 @@ internal static partial class AvifCorpus
         return builder;
     }
 
-    private static void Invalid(ContainerContext context, string name, string source, Action<AvifFileBuilder> change, string notes, string exception = "InvalidImageContentException")
+    private static void Invalid(ContainerContext context, string name, string source, Action<HeifFileBuilder> change, string notes, string exception = "InvalidImageContentException")
     {
         var builder = ErrorBuilder(context, source);
         change(builder);
         AddAvifError(context, "invalid/avif/" + name, "invalid", builder.Build(), exception, notes);
     }
 
-    private static void Unsupported(ContainerContext context, string name, string source, Action<AvifFileBuilder> change, string feature, string notes)
+    private static void Unsupported(ContainerContext context, string name, string source, Action<HeifFileBuilder> change, string feature, string notes)
     {
         var builder = ErrorBuilder(context, source);
         change(builder);
@@ -65,7 +65,7 @@ internal static partial class AvifCorpus
     }
 
     /// <summary>The offset and the size of the first top-level box of a type.</summary>
-    private static ReferenceAvif.Box TopLevelBox(byte[] data, string type) => ReferenceAvif.Parse(data).TopLevelBoxes.First(box => box.Type == type);
+    private static ReferenceHeif.Box TopLevelBox(byte[] data, string type) => ReferenceHeif.Parse(data).TopLevelBoxes.First(box => box.Type == type);
 
     /// <summary>The offset of the first occurrence of a four-character code: the type field of a box.</summary>
     private static int FindType(byte[] data, string type)
@@ -97,15 +97,15 @@ internal static partial class AvifCorpus
             "The ipco box declares 100 bytes more than its iprp container holds.");
 
         // File type
-        Invalid(context, "missing-ftyp", ErrorSource, builder => builder.Layout.Remove(AvifFileBuilder.FileTypeBox),
+        Invalid(context, "missing-ftyp", ErrorSource, builder => builder.Layout.Remove(HeifFileBuilder.FileTypeBox),
             "The file starts with its meta box: without a file type box it is not recognized as an AVIF file.", "UnknownImageFormatException");
         Invalid(context, "ftyp-without-avif-brand", ErrorSource, builder =>
         {
             builder.MajorBrand = "mif1";
             builder.CompatibleBrands.Clear();
             builder.CompatibleBrands.Add("mif1");
-            builder.CompatibleBrands.Add("heic");
-        }, "A HEIF file whose brands (mif1, heic) include neither avif nor avis: an ISO base media file that is not an AVIF image.", "UnknownImageFormatException");
+            builder.CompatibleBrands.Add("miaf");
+        }, "A HEIF file whose brands (mif1, miaf) include no brand of a codec that the library reads (avif, avis, or the HEVC brands): an ISO base media file that is neither an AVIF nor an HEIC image.", "UnknownImageFormatException");
 
         // Items and properties
         Invalid(context, "missing-pitm", ErrorSource, builder => builder.PrimaryItemId = null, "The meta box has no pitm box: no primary item.");
@@ -156,48 +156,48 @@ internal static partial class AvifCorpus
             var next = builder.Items.Max(item => item.Id) + 1;
             AddDerivedItem(builder, next, "iden", [], 64, 64, [tiles[0]]);
             AddDerivedItem(builder, next + 1, "iden", [], 64, 64, [tiles[1]], ApertureOf(64, 64, 0, 0, 60, 64));
-            AddDerivedItem(builder, next + 2, "grid", AvifFileBuilder.GridDescriptor(1, 2, 120, 64), 120, 64, [next, next + 1]);
+            AddDerivedItem(builder, next + 2, "grid", HeifFileBuilder.GridDescriptor(1, 2, 120, 64), 120, 64, [next, next + 1]);
             Present(builder, next + 2);
         }, "The two tiles of the grid are identity derivations of 64x64 and, once cropped, of 60x64: the tiles of a grid have the same size.");
-        Invalid(context, "two-meta-boxes", ErrorSource, builder => builder.Layout.Insert(2, AvifFileBuilder.MetaBox), "The file has two meta boxes at its top level (ISO/IEC 14496-12 allows at most one).");
+        Invalid(context, "two-meta-boxes", ErrorSource, builder => builder.Layout.Insert(2, HeifFileBuilder.MetaBox), "The file has two meta boxes at its top level (ISO/IEC 14496-12 allows at most one).");
         Invalid(context, "item-outside-file", ErrorSource, builder => builder.GetItem(1).ExtentOverride = [(4096, builder.GetItem(1).Data.Length)],
             "The extent of the primary item starts at offset 4096, after the end of the file.");
         Invalid(context, "item-outside-idat", ErrorSource, builder =>
         {
             var item = builder.GetItem(1);
-            item.Storage = AvifFileBuilder.ItemStorage.ItemData;
+            item.Storage = HeifFileBuilder.ItemStorage.ItemData;
             item.ExtentOverride = [(0, item.Data.Length + 50)];
             item.ConstructionMethodOverride = 1;
         }, "The extent of the primary item is 50 bytes longer than the idat box that stores it.");
-        Invalid(context, "ispe-mismatch", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "ispe", AvifFileBuilder.ImageSize(9, 8)),
+        Invalid(context, "ispe-mismatch", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "ispe", HeifFileBuilder.ImageSize(9, 8)),
             "The ispe property declares 9x8 and the AV1 frame is 8x8.");
-        Invalid(context, "av1c-mismatch", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "av1C", AvifFileBuilder.Av1Configuration(1, 0, 10, monochrome: false, 0, 0)),
+        Invalid(context, "av1c-mismatch", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "av1C", HeifFileBuilder.Av1Configuration(1, 0, 10, monochrome: false, 0, 0)),
             "The av1C property declares 10-bit samples and the sequence header of the bitstream 8-bit samples.");
 
         // Operating points and layers (AV1 Image File Format, section 2.3.2.1; ISO/IEC 23008-12, section 6.5.11): a file
         // that selects an operating point or a layer its bitstream does not have, a layer AV1 does not have, a layer
         // whose frame is not the size the item declares, and a derived item that selects one
         const string Layers = "layered-3-quality-rgb";
-        Invalid(context, "a1op-missing-operating-point", ErrorSource, builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.OperatingPointSelector(1)),
+        Invalid(context, "a1op-missing-operating-point", ErrorSource, builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.OperatingPointSelector(1)),
             "An a1op property selects operating point 1 of a bitstream whose sequence header has one operating point, of index 0.");
-        Invalid(context, "a1op-beyond-operating-points", Layers, builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.OperatingPointSelector(3)),
+        Invalid(context, "a1op-beyond-operating-points", Layers, builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.OperatingPointSelector(3)),
             "An a1op property selects operating point 3 of the layered bitstream of avif/layered-3-quality-rgb, whose sequence header has three operating points (0 to 2).");
-        Invalid(context, "lsel-missing-layer", ErrorSource, builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(1)),
+        Invalid(context, "lsel-missing-layer", ErrorSource, builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(1)),
             "An lsel property selects layer 1 of a bitstream that has one frame, of spatial layer 0.");
-        Invalid(context, "lsel-beyond-layers", Layers, builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(3)),
+        Invalid(context, "lsel-beyond-layers", Layers, builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(3)),
             "An lsel property selects layer 3 of the bitstream of avif/layered-3-quality-rgb, which has three spatial layers (0 to 2).");
-        Invalid(context, "lsel-out-of-range", Layers, builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(4)),
+        Invalid(context, "lsel-out-of-range", Layers, builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(4)),
             "An lsel property selects layer 4: AV1 has four spatial layers (0 to 3), and 0xFFFF is the only other value, which selects none.");
         Invalid(context, "lsel-outside-operating-point", Layers, builder =>
         {
-            AddEssential(builder, builder.GetItem(1), AvifFileBuilder.OperatingPointSelector(2));
-            AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(1));
+            AddEssential(builder, builder.GetItem(1), HeifFileBuilder.OperatingPointSelector(2));
+            AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(1));
         }, "An a1op property selects operating point 2 of avif/layered-3-quality-rgb, which holds the first layer only, and an lsel property layer 1: the operating point does not have the layer, although the bitstream does.");
-        Invalid(context, "lsel-layer-size-mismatch", "layered-progressive-444-10bit", builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(0)),
+        Invalid(context, "lsel-layer-size-mismatch", "layered-progressive-444-10bit", builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(0)),
             "An lsel property selects layer 0 of avif/layered-progressive-444-10bit, a 4x4 frame, and the ispe property declares 8x8, the size of the last layer: the selected frame is the image and must have the declared size.");
-        Invalid(context, "lsel-on-grid", "layered-grid-2x1", builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(0)),
+        Invalid(context, "lsel-on-grid", "layered-grid-2x1", builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(0)),
             "An lsel property selects layer 0 on the grid item of avif/layered-grid-2x1: a derived image has no layer; each tile selects its own.");
-        Invalid(context, "a1op-on-grid", "layered-grid-2x1", builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.OperatingPointSelector(1)),
+        Invalid(context, "a1op-on-grid", "layered-grid-2x1", builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.OperatingPointSelector(1)),
             "An a1op property selects operating point 1 on the grid item of avif/layered-grid-2x1: a derived image has no bitstream; each tile selects its own operating point.");
 
         // Grids, assembled from one 8x8 coded item used for every cell
@@ -208,7 +208,7 @@ internal static partial class AvifCorpus
                 var tile = builder.GetItem(1);
                 tile.Id = 2;
                 tile.IsHidden = true;
-                var grid = builder.AddItem(1, "grid", AvifFileBuilder.GridDescriptor(2, 2, width, height), builder.AddProperty(AvifFileBuilder.ImageSize(ispeWidth, ispeHeight)));
+                var grid = builder.AddItem(1, "grid", HeifFileBuilder.GridDescriptor(2, 2, width, height), builder.AddProperty(HeifFileBuilder.ImageSize(ispeWidth, ispeHeight)));
                 foreach (var (index, _) in tile.Associations.Where(association => PropertyType(builder.Properties[association.PropertyIndex - 1]) is "colr" or "pixi"))
                     grid.Associations.Add((index, false));
 
@@ -224,7 +224,7 @@ internal static partial class AvifCorpus
                     foreach (var association in tile.Associations)
                         copy.Associations.Add(association);
                     if (secondTileSize && i == 1)
-                        ReplaceProperty(builder, copy, "ispe", AvifFileBuilder.ImageSize(8, 7));
+                        ReplaceProperty(builder, copy, "ispe", HeifFileBuilder.ImageSize(8, 7));
                 }
 
                 builder.References.Add(("dimg", 1, [.. ids]));
@@ -260,17 +260,17 @@ internal static partial class AvifCorpus
         }, "The edit starts at the media time 60, after the last image (the media lasts 6 units): it shows no image.");
         Invalid(context, "sequence-fragment-without-mvex", SequenceSource, builder =>
         {
-            builder.ExtraBoxes["moof"] = AvifFileBuilder.Box("moof", AvifFileBuilder.FullBox("mfhd", 0, 0, AvifFileBuilder.U32(1)));
-            Py.Assert(builder.Layout.IndexOf(AvifFileBuilder.MovieBox) < builder.Layout.IndexOf(AvifFileBuilder.MediaDataBox), "the samples follow the moov box");
-            builder.Layout.Insert(builder.Layout.IndexOf(AvifFileBuilder.MovieBox) + 1, "moof");
+            builder.ExtraBoxes["moof"] = HeifFileBuilder.Box("moof", HeifFileBuilder.FullBox("mfhd", 0, 0, HeifFileBuilder.U32(1)));
+            Py.Assert(builder.Layout.IndexOf(HeifFileBuilder.MovieBox) < builder.Layout.IndexOf(HeifFileBuilder.MediaDataBox), "the samples follow the moov box");
+            builder.Layout.Insert(builder.Layout.IndexOf(HeifFileBuilder.MovieBox) + 1, "moof");
         }, "A movie fragment box (moof) follows a moov box that has no mvex box, before the samples: the movie does not announce fragments.");
         Invalid(context, "sequence-fragmented-alpha-missing", "sequence-alpha-repeat-2", builder =>
         {
             // The second color image is in a fragment; its alpha plane is nowhere
             var color = builder.Tracks.Single(track => track.HandlerType == "pict");
             var alpha = builder.Tracks.Single(track => track.HandlerType == "auxv");
-            var fragment = new AvifFileBuilder.Fragment();
-            var part = new AvifFileBuilder.TrackFragment(color.Id);
+            var fragment = new HeifFileBuilder.Fragment();
+            var part = new HeifFileBuilder.TrackFragment(color.Id);
             part.Samples.Add((color.Samples[1].Data, color.Samples[1].Duration));
             fragment.Tracks.Add(part);
             builder.Fragments.Add(fragment);
@@ -284,16 +284,16 @@ internal static partial class AvifCorpus
             "The file ends 5 bytes before the end of the last sample of the image sequence.");
 
         // The metadata of an image sequence: the meta box of its track, or else the meta box of the file
-        static AvifFileBuilder.Track ColorTrack(AvifFileBuilder builder) => builder.Tracks.Single(track => track.HandlerType == "pict");
+        static HeifFileBuilder.Track ColorTrack(HeifFileBuilder builder) => builder.Tracks.Single(track => track.HandlerType == "pict");
         var packet = Bytes.Utf8("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"/>");
         Invalid(context, "sequence-track-meta-malformed", SequenceSource, builder =>
-            ColorTrack(builder).MetaBoxOverride = AvifFileBuilder.Box("meta", AvifFileBuilder.U32(0), AvifFileBuilder.U32(100), AvifFileBuilder.Ascii("iinf"), new byte[6]),
+            ColorTrack(builder).MetaBoxOverride = HeifFileBuilder.Box("meta", HeifFileBuilder.U32(0), HeifFileBuilder.U32(100), HeifFileBuilder.Ascii("iinf"), new byte[6]),
             "The meta box of the track holds an iinf box that declares 100 bytes: more than the meta box that contains it.");
         Invalid(context, "sequence-track-metadata-outside-file", SequenceSource, builder =>
-            ColorTrack(builder).MetaItems.Add(new AvifFileBuilder.Item(1, "mime", packet) { ContentType = "application/rdf+xml", ExtentOverride = [(65536, packet.Length)] }),
+            ColorTrack(builder).MetaItems.Add(new HeifFileBuilder.Item(1, "mime", packet) { ContentType = "application/rdf+xml", ExtentOverride = [(65536, packet.Length)] }),
             "The XMP item of the meta box of the track is located at offset 65536, after the end of the file.");
-        var outside = AvifFileBuilder.From(context.Inputs[SequenceSource]);
-        var outsideItem = outside.AddItem(100, "Exif", AvifFileBuilder.ExifItemData(CommonCorpus.ExifTiff(littleEndian: true, orientation: 1)));
+        var outside = HeifFileBuilder.From(context.Inputs[SequenceSource]);
+        var outsideItem = outside.AddItem(100, "Exif", HeifFileBuilder.ExifItemData(CommonCorpus.ExifTiff(littleEndian: true, orientation: 1)));
         outsideItem.ExtentOverride = [(65536, outsideItem.Data.Length)];
         AddAvifError(context, "invalid/avif/sequence-file-metadata-outside-file", "invalid", outside.Build(), "InvalidImageContentException",
             "The Exif item of the meta box of the file, which precedes the moov box of the image sequence, is located at offset 65536, after the end of the file.");
@@ -305,7 +305,7 @@ internal static partial class AvifCorpus
         // Derived images that are not supported
         Unsupported(context, "iovl-fill-other-color-space", ErrorSource, builder =>
         {
-            ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(9, 16, 9, fullRange: true));
+            ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(9, 16, 9, fullRange: true));
             AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0xFFFF, 0, 0, 0xFFFF), 12, 10, (2, 1)), 12, 10, [1]);
             Present(builder, 10);
         }, "derived-image", "The image of the overlay has the BT.2020 primaries and the PQ transfer characteristics, and the canvas is filled with an opaque red, which is an sRGB color: it would have to be converted.");
@@ -320,7 +320,7 @@ internal static partial class AvifCorpus
         {
             var grid = builder.PrimaryItemId!.Value;
             var tiles = builder.References.Single(reference => reference.Type == "dimg" && reference.FromItemId == grid).ToItemIds;
-            ReplaceProperty(builder, builder.GetItem(tiles[1]), "colr", AvifFileBuilder.ColorNclx(12, 13, 0, fullRange: true));
+            ReplaceProperty(builder, builder.GetItem(tiles[1]), "colr", HeifFileBuilder.ColorNclx(12, 13, 0, fullRange: true));
             var next = builder.Items.Max(item => item.Id) + 1;
             AddDerivedItem(builder, next, "iovl", OverlayDescriptor((0, 0, 0, 0), 100, 80, (0, 0), (30, 10)), 100, 80, [tiles[0], tiles[1]]);
             Present(builder, next);
@@ -334,8 +334,8 @@ internal static partial class AvifCorpus
             var profile = CommonCorpus.IccProfile("RGB ");
             var other = (byte[])profile.Clone();
             other[35] ^= 1;
-            builder.GetItem(tiles[0]).Associations.Add((builder.AddProperty(AvifFileBuilder.ColorProfile(profile)), false));
-            builder.GetItem(tiles[1]).Associations.Add((builder.AddProperty(AvifFileBuilder.ColorProfile(other)), false));
+            builder.GetItem(tiles[0]).Associations.Add((builder.AddProperty(HeifFileBuilder.ColorProfile(profile)), false));
+            builder.GetItem(tiles[1]).Associations.Add((builder.AddProperty(HeifFileBuilder.ColorProfile(other)), false));
             var next = builder.Items.Max(item => item.Id) + 1;
             AddDerivedItem(builder, next, "iovl", OverlayDescriptor((0, 0, 0, 0), 100, 80, (0, 0), (30, 10)), 100, 80, [tiles[0], tiles[1]]);
             Present(builder, next);
@@ -344,7 +344,7 @@ internal static partial class AvifCorpus
         {
             RemoveProperty(builder, builder.GetItem(1), "colr");
             var overlay = AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0), 8, 8, (0, 0)), 8, 8, [1]);
-            overlay.Associations.Add((builder.AddProperty(AvifFileBuilder.ColorNclx(12, 13, 0, fullRange: true)), false));
+            overlay.Associations.Add((builder.AddProperty(HeifFileBuilder.ColorNclx(12, 13, 0, fullRange: true)), false));
             Present(builder, 10);
         }, "derived-image", "The overlay declares the Display P3 primaries, and its input image, which has no colr box, has the BT.709 ones of its AV1 sequence header: it would have to be converted.");
         Unsupported(context, "iovl-depth", ErrorSource, builder =>
@@ -356,15 +356,15 @@ internal static partial class AvifCorpus
             Present(builder, 19);
         }, "derivation-depth", "The primary item is derived from the overlay through nine nested identity derivations: ten derivations between the image and its coded image, more than the eight that are followed.");
 
-        Unsupported(context, "clap-fractional", ErrorSource, builder => builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.CleanAperture(5, 2, 4, 1, 0, 1, 0, 1)), true)),
+        Unsupported(context, "clap-fractional", ErrorSource, builder => builder.GetItem(1).Associations.Add((builder.AddProperty(HeifFileBuilder.CleanAperture(5, 2, 4, 1, 0, 1, 0, 1)), true)),
             "clap", "The clean aperture is 5/2 samples wide: not a whole number of samples.");
-        Unsupported(context, "essential-unknown-property", ErrorSource, builder => builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.Box("zzzz", [1, 2, 3])), true)),
+        Unsupported(context, "essential-unknown-property", ErrorSource, builder => builder.GetItem(1).Associations.Add((builder.AddProperty(HeifFileBuilder.Box("zzzz", [1, 2, 3])), true)),
             "essential-property", "An unknown property is marked essential: a reader that does not know it must not present the item.");
-        Unsupported(context, "matrix-reserved", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(1, 13, 3, fullRange: true)),
+        Unsupported(context, "matrix-reserved", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(1, 13, 3, fullRange: true)),
             "matrix", "The colr box declares the matrix coefficients 3, which are reserved.");
-        Unsupported(context, "matrix-ictcp-sdr-transfer", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(9, 13, 14, fullRange: true)),
+        Unsupported(context, "matrix-ictcp-sdr-transfer", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(9, 13, 14, fullRange: true)),
             "matrix", "The colr box declares the ICtCp matrix coefficients (14) with the sRGB transfer characteristics: ICtCp is defined for PQ and for HLG only.");
-        Unsupported(context, "matrix-chromaticity-unspecified-primaries", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(2, 13, 13, fullRange: true)),
+        Unsupported(context, "matrix-chromaticity-unspecified-primaries", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(2, 13, 13, fullRange: true)),
             "matrix", "The colr box declares the chromaticity-derived constant luminance matrix coefficients (13) and unspecified color primaries: there are no chromaticities to derive them from.");
         Unsupported(context, "iden-depth", ErrorSource, builder =>
         {
@@ -373,25 +373,25 @@ internal static partial class AvifCorpus
         }, "derivation-depth", "The primary item is derived from the coded image through nine nested identity derivations, more than the eight that are followed.");
         Unsupported(context, "iden-alpha-untransformed", "lossless-rgba8", builder => WrapInIdentity(builder, 1, 10, 12, 9, describe: true, ApertureOf(12, 9, 1, 2, 8, 6)),
             "alpha-transform", "The primary item is an identity derivation that keeps a clean aperture of 8x6 at (1, 2) of the coded image, and its alpha plane is a coded image of 12x9 without transformation. Readers do not agree on the samples of the plane that the image shows (Apple ImageIO scales the plane to 8x6): an alpha plane must be presented as the image it belongs to.");
-        Unsupported(context, "alpha-different-size", "lossless-rgba8", builder => ReplaceProperty(builder, builder.GetItem(2), "ispe", AvifFileBuilder.ImageSize(6, 9)),
+        Unsupported(context, "alpha-different-size", "lossless-rgba8", builder => ReplaceProperty(builder, builder.GetItem(2), "ispe", HeifFileBuilder.ImageSize(6, 9)),
             "alpha-size", "The alpha auxiliary image declares 6x9 and the color image 12x9.");
 
         // Image sequences
         const string SequenceSource = "sequence-lossless-infinite";
         Unsupported(context, "sequence-fragment-before-moov", SequenceSource, builder =>
         {
-            builder.ExtraBoxes["moof"] = AvifFileBuilder.Box("moof", AvifFileBuilder.FullBox("mfhd", 0, 0, AvifFileBuilder.U32(1)));
-            builder.Layout.Insert(builder.Layout.IndexOf(AvifFileBuilder.MovieBox), "moof");
+            builder.ExtraBoxes["moof"] = HeifFileBuilder.Box("moof", HeifFileBuilder.FullBox("mfhd", 0, 0, HeifFileBuilder.U32(1)));
+            builder.Layout.Insert(builder.Layout.IndexOf(HeifFileBuilder.MovieBox), "moof");
         }, "fragmented", "A movie fragment box (moof) precedes the moov box: the tracks it adds images to are not known yet.");
 
         // Fragments that do not follow each other, or whose images are not shown in the order they are decoded
-        void RejectedFragments(string name, Action<AvifFileBuilder> configure, string notes) =>
+        void RejectedFragments(string name, Action<HeifFileBuilder> configure, string notes) =>
             Unsupported(context, name, SequenceSource, builder =>
             {
                 foreach (var track in builder.Tracks)
                 {
-                    var fragment = new AvifFileBuilder.Fragment();
-                    var part = new AvifFileBuilder.TrackFragment(track.Id);
+                    var fragment = new HeifFileBuilder.Fragment();
+                    var part = new HeifFileBuilder.TrackFragment(track.Id);
                     foreach (var sample in track.Samples.Skip(1))
                         part.Samples.Add((sample.Data, sample.Duration));
 
@@ -447,12 +447,12 @@ internal static partial class AvifCorpus
         {
             var boxes = builder.Tracks.Single(track => track.HandlerType == "pict").SampleEntryBoxes;
             var index = Enumerable.Range(0, boxes.Count).Single(i => PropertyType(boxes[i]) == "colr");
-            boxes[index] = AvifFileBuilder.ColorNclx(9, 2, 10, fullRange: true);
+            boxes[index] = HeifFileBuilder.ColorNclx(9, 2, 10, fullRange: true);
         }, "matrix", "The colr box of the sample entry of the track declares the BT.2020 constant luminance matrix coefficients (10) and unspecified transfer characteristics: the luminance has no function to go through.");
         Unsupported(context, "grid-tile-transform-differs", "grid-2x1-transformed", builder =>
         {
-            var tile = builder.GetItem(ReferenceAvif.Parse(context.Inputs["grid-2x1-transformed"]).GetGridTiles(ReferenceAvif.Parse(context.Inputs["grid-2x1-transformed"]).PrimaryItem!)[1].Id);
-            ReplaceProperty(builder, tile, "irot", AvifFileBuilder.Rotation(2));
+            var tile = builder.GetItem(ReferenceHeif.Parse(context.Inputs["grid-2x1-transformed"]).GetGridTiles(ReferenceHeif.Parse(context.Inputs["grid-2x1-transformed"]).PrimaryItem!)[1].Id);
+            ReplaceProperty(builder, tile, "irot", HeifFileBuilder.Rotation(2));
         }, "grid-tile-transform", "The second tile of the grid declares a half turn and the grid a quarter turn: the transformations of a tile are those of its grid, or none.");
 
         // A sequence whose images change size: the reference scaling vector of the AV1 corpus, one temporal unit per sample
@@ -476,7 +476,7 @@ internal static partial class AvifCorpus
         Limit("live-allocation-over-limit", "lossless-rgb8", "MaxLiveAllocationBytes", 65536, "LiveAllocationBytes",
             "Reuses avif/lossless-rgb8 with 64 KiB of live allocations: enough to read the file and to parse the container, not to decode an AV1 frame.");
 
-        var metadata = ReferenceAvif.Parse(context.Inputs["metadata-exif-xmp-icc"]);
+        var metadata = ReferenceHeif.Parse(context.Inputs["metadata-exif-xmp-icc"]);
         var icc = metadata.PrimaryItem!.IccProfile!.Value.Length;
         Limit("icc-over-metadata-limit", "metadata-exif-xmp-icc", "MaxMetadataBytes", icc - 1, "MetadataBytes", Inv($"Reuses avif/metadata-exif-xmp-icc with MaxMetadataBytes one byte below its ICC profile ({icc} bytes)."));
         Limit("exif-over-metadata-limit", "metadata-exif-xmp-icc", "MaxMetadataBytes", icc + 1, "MetadataBytes", Inv($"Reuses avif/metadata-exif-xmp-icc with MaxMetadataBytes = {icc + 1}: enough for the ICC profile of the meta box, not for the Exif item that follows."));
@@ -485,7 +485,7 @@ internal static partial class AvifCorpus
         Limit("sequence-frames-over-limit", "sequence-lossless-infinite", "MaxFrames", 2, "Frames", "Reuses avif/sequence-lossless-infinite (3 images) with MaxFrames = 2.");
         Limit("sequence-total-pixels-over-limit", "sequence-lossless-infinite", "MaxTotalPixels", 191, "TotalPixels", "Reuses avif/sequence-lossless-infinite (3 images of 8x8, 192 pixels) with MaxTotalPixels = 191: displayed frames are charged when they are produced, so only decoding reaches the limit.");
 
-        var sequenceXmp = ReferenceAvif.Parse(context.Inputs["sequence-xmp"]);
+        var sequenceXmp = ReferenceHeif.Parse(context.Inputs["sequence-xmp"]);
         var sequencePacket = sequenceXmp.ReadItemData(sequenceXmp.FindSequenceMetadata().Xmp!).Length;
         Limit("sequence-xmp-over-metadata-limit", "sequence-xmp", "MaxMetadataBytes", sequencePacket - 1, "MetadataBytes", Inv($"Reuses avif/sequence-xmp with MaxMetadataBytes one byte below the XMP packet of the meta box of its track ({sequencePacket} bytes)."));
 
@@ -560,16 +560,16 @@ internal static partial class AvifCorpus
 
         units.Add(stream[start..]);
         Py.Assert(units.Count == sizes.Count, "one output frame per temporal unit");
-        var builder = new AvifFileBuilder { MajorBrand = "avis", MovieTimescale = 10 };
+        var builder = new HeifFileBuilder { MajorBrand = "avis", MovieTimescale = 10 };
         builder.CompatibleBrands.Clear();
         foreach (var brand in new[] { "avis", "msf1", "iso8" })
             builder.CompatibleBrands.Add(brand);
         builder.Layout.Clear();
-        foreach (var box in new[] { AvifFileBuilder.FileTypeBox, AvifFileBuilder.MovieBox, AvifFileBuilder.MediaDataBox })
+        foreach (var box in new[] { HeifFileBuilder.FileTypeBox, HeifFileBuilder.MovieBox, HeifFileBuilder.MediaDataBox })
             builder.Layout.Add(box);
 
-        var track = new AvifFileBuilder.Track(1, "pict", sizes[0].Width, sizes[0].Height) { Timescale = 10, Duration = (ulong)units.Count };
-        track.SampleEntryBoxes.Add(AvifFileBuilder.Av1Configuration((int)trace.Sequence.Get("seq_profile"), (int)trace.Sequence.Get("seq_level_idx[0]"), color.BitDepth, color.Monochrome, color.SubsamplingX, color.SubsamplingY, (int)trace.Sequence.Get("chroma_sample_position")));
+        var track = new HeifFileBuilder.Track(1, "pict", sizes[0].Width, sizes[0].Height) { Timescale = 10, Duration = (ulong)units.Count };
+        track.SampleEntryBoxes.Add(HeifFileBuilder.Av1Configuration((int)trace.Sequence.Get("seq_profile"), (int)trace.Sequence.Get("seq_level_idx[0]"), color.BitDepth, color.Monochrome, color.SubsamplingX, color.SubsamplingY, (int)trace.Sequence.Get("chroma_sample_position")));
         foreach (var unit in units)
             track.Samples.Add((unit, 1));
 

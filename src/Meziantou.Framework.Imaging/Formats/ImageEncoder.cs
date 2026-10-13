@@ -84,6 +84,10 @@ public abstract class ImageEncoder
         if (extension.Equals(".avif", StringComparison.OrdinalIgnoreCase) || extension.Equals(".avifs", StringComparison.OrdinalIgnoreCase))
             return new AvifEncoder();
 
+        if (extension.Equals(".heic", StringComparison.OrdinalIgnoreCase) || extension.Equals(".heif", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".heics", StringComparison.OrdinalIgnoreCase) || extension.Equals(".heifs", StringComparison.OrdinalIgnoreCase))
+            return new HeicEncoder();
+
         throw new ArgumentException($"Cannot select an encoder for the file extension '{extension}'. Specify an encoder explicitly.", nameof(path));
     }
 }

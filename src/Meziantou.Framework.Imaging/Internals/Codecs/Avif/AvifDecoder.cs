@@ -11,14 +11,16 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// decoder of a coded item is released before the next one is decoded; an image sequence keeps one decoder for the color
 /// images and one for the alpha planes, whose state does not depend on the number of images.
 /// </remarks>
-internal sealed partial class AvifDecoder : AvifDecodeObserver
+internal sealed partial class AvifDecoder : HeifDecodeObserver
 {
     private readonly ImageDecodeRequest _request;
     private readonly ImageCodecContext _context;
-    private AvifStructureParser? _structure;
+    private HeifStructureParser? _structure;
     private DecodedFrameSink? _sink;
     private Av1Decoder? _colorDecoder;
     private Av1Decoder? _alphaDecoder;
+    private WebPPayloadBuffer? _colorSample;
+    private WebPPayloadBuffer? _alphaSample;
     private bool _isMetadataUpdated;
     private int _metadataVersion;
 
@@ -30,14 +32,14 @@ internal sealed partial class AvifDecoder : AvifDecodeObserver
         _context = context;
     }
 
-    public override void OnHeaderComplete(AvifStructureParser structure)
+    public override void OnHeaderComplete(HeifStructureParser structure)
     {
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
         _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Avif, structure.CanvasSize, structure.PixelFormat, structure.PixelFormat, structure.Metadata.IccProfile);
     }
 
-    public override void OnImageData(AvifStructureParser structure)
+    public override void OnImageData(HeifStructureParser structure)
     {
         ArgumentNullException.ThrowIfNull(structure);
         var plan = structure.Plan;
@@ -52,25 +54,37 @@ internal sealed partial class AvifDecoder : AvifDecodeObserver
         }
 
         using var color = DecodeImage(structure, plan.Color);
-        structure.SetBitstreamColorDescription(color.Sequence);
+        structure.SetBitstreamColorDescription(color.Format);
         using var alpha = plan.Alpha is null ? null : DecodeImage(structure, plan.Alpha);
-        WriteFrame(structure, color, alpha, plan.Color.Size, plan.Crop);
+        HeifFrameWriter.WriteFrame(_context, sink, structure, color, alpha, plan.Color.Size, plan.Crop);
         sink.UpdateMetadata(structure.Metadata);
         sink.EndImage();
     }
 
-    public override bool OnSequenceFrame(AvifStructureParser structure, WebPPayloadBuffer color, WebPPayloadBuffer? alpha, FrameDuration duration, bool isShown)
+    // A temporal unit is one image: AV1 does not reorder the images that it outputs
+    public override void OnSequenceSample(HeifStructureParser structure, WebPPayloadBuffer color, WebPPayloadBuffer? alpha)
+    {
+        ArgumentNullException.ThrowIfNull(color);
+        _colorSample = color;
+        _alphaSample = alpha;
+    }
+
+    public override bool TryWriteSequenceFrame(HeifStructureParser structure, FrameDuration duration, out bool proceed)
     {
         ArgumentNullException.ThrowIfNull(structure);
-        ArgumentNullException.ThrowIfNull(color);
+        proceed = true;
+        if (_colorSample is not { } color)
+            return false;
+
+        var alpha = _alphaSample;
+        _colorSample = null;
+        _alphaSample = null;
         var movie = structure.Movie ?? throw new InvalidOperationException("The AVIF file is not an image sequence.");
         var sink = _sink!;
-        if (isShown)
-            sink.BeginFrame(duration);
-
+        sink.BeginFrame(duration);
         _colorDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
         using var colorImage = DecodeSample(_colorDecoder, color, movie.Color);
-        structure.SetBitstreamColorDescription(colorImage.Sequence);
+        structure.SetBitstreamColorDescription(colorImage.Format);
         AvifPlanarImage? alphaImage = null;
         try
         {
@@ -80,16 +94,7 @@ internal sealed partial class AvifDecoder : AvifDecodeObserver
                 alphaImage = DecodeSample(_alphaDecoder, alpha, movie.Alpha!);
             }
 
-            if (!isShown)
-            {
-                // An image that the edit list leaves out: it is decoded for the images that refer to it, and counts
-                // toward the pixel limit like a frame of the bitstream that is not shown
-                var pixels = (long)movie.Color.Size.Width * movie.Color.Size.Height;
-                _context.Tracker?.ChargeHiddenPixels(alpha is null ? pixels : 2 * pixels);
-                return true;
-            }
-
-            WriteFrame(structure, colorImage, alphaImage, movie.Color.Size, movie.Color.Crop);
+            HeifFrameWriter.WriteFrame(_context, sink, structure, colorImage, alphaImage, movie.Color.Size, movie.Color.Crop);
         }
         finally
         {
@@ -105,46 +110,36 @@ internal sealed partial class AvifDecoder : AvifDecodeObserver
             _metadataVersion = structure.MetadataVersion;
         }
 
-        return sink.EndImage();
+        proceed = sink.EndImage();
+        return true;
     }
 
-    // Converts the planes of an image to pixels, and writes the rows of the clean aperture to the sink
-    private void WriteFrame(AvifStructureParser structure, AvifPlanarImage color, AvifPlanarImage? alpha, Size codedSize, Rectangle crop)
+    public override bool TrySkipSequenceFrame(HeifStructureParser structure, out bool proceed)
     {
-        var sink = _sink!;
+        ArgumentNullException.ThrowIfNull(structure);
+        proceed = true;
+        if (_colorSample is not { } color)
+            return false;
 
-        // A 'colr' box of type 'nclx' describes the colors of the image; otherwise the bitstream does
-        var nclx = structure.ContainerColorDescription;
-        var matrix = nclx?.MatrixCoefficients ?? color.Sequence.MatrixCoefficients;
-        var fullRange = nclx?.FullRange ?? color.Sequence.FullRange;
-        var primaries = nclx?.ColorPrimaries ?? color.Sequence.ColorPrimaries;
-        var transfer = nclx?.TransferCharacteristics ?? color.Sequence.TransferCharacteristics;
-        var converter = new AvifYuvConverter(color.Sequence, matrix, fullRange, alpha?.Sequence, structure.PixelFormat, alpha is not null && structure.IsPremultiplied, primaries, transfer);
-        var width = codedSize.Width;
-        var height = codedSize.Height;
-        using var rows = Av1PooledArray<ushort>.Rent(_context.Scope, 2L * width, clear: false);
-        using var pixels = _context.Scope.Rent(checked(width * converter.BytesPerPixel), AllocationKind.DecoderState, clear: false);
-        var u = rows.Span[..width];
-        var v = rows.Span.Slice(width, width);
-        var pixelRow = pixels.RawBuffer.AsSpan(0, width * converter.BytesPerPixel);
-        var hasChroma = color.PlaneCount > 1;
-        using var target = sink.LeaseCurrentFrame();
-        for (var y = 0; y < crop.Height; y++)
+        var alpha = _alphaSample;
+        _colorSample = null;
+        _alphaSample = null;
+        var movie = structure.Movie ?? throw new InvalidOperationException("The AVIF file is not an image sequence.");
+
+        // An image that the edit list leaves out: it is decoded for the images that refer to it, and counts toward the
+        // pixel limit like a frame of the bitstream that is not shown
+        _colorDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
+        using var colorImage = DecodeSample(_colorDecoder, color, movie.Color);
+        structure.SetBitstreamColorDescription(colorImage.Format);
+        if (alpha is not null)
         {
-            if ((y & 31) is 0)
-                _context.CancellationToken.ThrowIfCancellationRequested();
-
-            var sourceY = crop.Y + y;
-            if (hasChroma)
-            {
-                converter.UpsampleChromaRow(color, 1, sourceY, width, height, u);
-                converter.UpsampleChromaRow(color, 2, sourceY, width, height, v);
-            }
-
-            var alphaRow = alpha is null ? default : alpha.GetPlane(0).GetRow(sourceY)[..width];
-            converter.ConvertRow(color.GetPlane(0).GetRow(sourceY)[..width], u, v, alphaRow, pixelRow);
-            sink.WriteRow(target, y, pixelRow.Slice(crop.X * converter.BytesPerPixel, crop.Width * converter.BytesPerPixel));
+            _alphaDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
+            using var alphaImage = DecodeSample(_alphaDecoder, alpha, movie.Alpha!);
         }
+
+        var pixels = (long)movie.Color.Size.Width * movie.Color.Size.Height;
+        _context.Tracker?.ChargeHiddenPixels(alpha is null ? pixels : 2 * pixels);
+        return true;
     }
 
     public override Image GetResult()
@@ -169,7 +164,7 @@ internal sealed partial class AvifDecoder : AvifDecodeObserver
     }
 
     // Decodes the coded items of an image into planes of the size of the image
-    private AvifPlanarImage DecodeImage(AvifStructureParser structure, AvifCodedImage image)
+    private AvifPlanarImage DecodeImage(HeifStructureParser structure, HeifCodedImage image)
     {
         AvifPlanarImage? result = null;
         try
@@ -182,12 +177,12 @@ internal sealed partial class AvifDecoder : AvifDecodeObserver
                 try
                 {
                     var plane = frame.GetPlane(0);
-                    AvifStructureParser.EnsureMatchesConfiguration(image, frame.Sequence);
+                    HeifStructureParser.EnsureMatchesConfiguration(image, AvifBinding.ToBitstreamFormat(frame.Sequence));
                     if (plane.Width != image.TileSize.Width || plane.Height != image.TileSize.Height)
-                        throw AvifFormat.Invalid("the size of an AV1 image does not match its 'ispe' property.");
+                        throw AvifBinding.Instance.Invalid("the size of an AV1 image does not match its 'ispe' property.");
 
                     if (result is not null && !result.Sequence.IsSameSequence(frame.Sequence))
-                        throw AvifFormat.Invalid("the tiles of a grid do not have the same sequence header.");
+                        throw AvifBinding.Instance.Invalid("the tiles of a grid do not have the same sequence header.");
 
                     var filmGrain = frame.Header.FilmGrain;
                     if (!image.IsGrid && filmGrain is null)
@@ -216,22 +211,22 @@ internal sealed partial class AvifDecoder : AvifDecodeObserver
     }
 
     // Decodes the temporal unit of an image of a sequence: the decoder keeps the frames that the next images refer to
-    private AvifPlanarImage DecodeSample(Av1Decoder decoder, WebPPayloadBuffer sample, AvifTrack track)
+    private AvifPlanarImage DecodeSample(Av1Decoder decoder, WebPPayloadBuffer sample, HeifTrack track)
     {
         decoder.SetInput(sample.Data, 0, sample.Length);
-        var frame = decoder.DecodeNextOutputFrame(_context.CancellationToken) ?? throw AvifFormat.Invalid("a sample of the image sequence has no image.");
+        var frame = decoder.DecodeNextOutputFrame(_context.CancellationToken) ?? throw AvifBinding.Instance.Invalid("a sample of the image sequence has no image.");
         try
         {
             if (decoder.DecodeNextOutputFrame(_context.CancellationToken) is { } extra)
             {
                 extra.Release();
-                throw AvifFormat.Invalid("a sample of the image sequence has several images.");
+                throw AvifBinding.Instance.Invalid("a sample of the image sequence has several images.");
             }
 
-            AvifStructureParser.EnsureMatchesConfiguration(track, frame.Sequence);
+            HeifStructureParser.EnsureMatchesConfiguration(AvifBinding.Instance, track, AvifBinding.ToBitstreamFormat(frame.Sequence));
             var plane = frame.GetPlane(0);
             if (plane.Width != track.Size.Width || plane.Height != track.Size.Height)
-                throw AvifFormat.Unsupported("An image of the AVIF sequence does not have the size of the sequence.", "image size changes inside a sequence");
+                throw AvifBinding.Instance.Unsupported("An image of the AVIF sequence does not have the size of the sequence.", "image size changes inside a sequence");
 
             var filmGrain = frame.Header.FilmGrain;
             if (filmGrain is null)
@@ -267,11 +262,11 @@ internal sealed partial class AvifDecoder : AvifDecodeObserver
             decoder.MaxSpatialLayer = selected;
 
         decoder.SetInput(data, 0, length);
-        var frame = decoder.DecodeNextOutputFrame(_context.CancellationToken) ?? throw AvifFormat.Invalid("an AV1 image has no frame.");
+        var frame = decoder.DecodeNextOutputFrame(_context.CancellationToken) ?? throw AvifBinding.Instance.Invalid("an AV1 image has no frame.");
         if (layer is not null && decoder.OutputSpatialId != layer)
         {
             frame.Release();
-            throw AvifFormat.Invalid("the bitstream of an AV1 image does not have the layer that the image selects.");
+            throw AvifBinding.Instance.Invalid("the bitstream of an AV1 image does not have the layer that the image selects.");
         }
 
         return frame;

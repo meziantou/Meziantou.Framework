@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Imaging.TestHarness.Fixtures;
 
 /// <summary>
 /// A small, independent container walker that reads the raw timing, loop and metadata fields of PNG/APNG, GIF, JPEG, WebP,
-/// QOI, BMP, TGA, Netpbm and AVIF fixture inputs. It never uses the library under test, so tests can check that (1) the manifest agrees with the encoded
+/// QOI, BMP, TGA, Netpbm, AVIF and HEIC fixture inputs. It never uses the library under test, so tests can check that (1) the manifest agrees with the encoded
 /// bytes and (2) the library's conversions of these raw fields produce the expected exact values. It only parses
 /// container structure (chunks, blocks, marker segments, RIFF chunks); it never decodes pixels.
 /// </summary>
@@ -30,7 +30,8 @@ public static class EncodedFieldInspector
         "bmp" => InspectBmp(data),
         "tga" => InspectTga(data),
         "pnm" => InspectPnm(data),
-        "avif" => InspectAvif(data),
+        "avif" => InspectHeif(data, "AVIF", "AV1"),
+        "heic" => InspectHeif(data, "HEIC", "HEVC"),
         "jxl" => InspectJpegXl(data),
         _ => throw new ArgumentException($"Unknown fixture format '{format}'.", nameof(format)),
     };
@@ -95,22 +96,24 @@ public static class EncodedFieldInspector
     }
 
     /// <summary>
-    /// AVIF: the fields come from <see cref="Avif.ReferenceAvif"/>. A file with the brand of the image sequences presents
-    /// its track (sample deltas over the time scale of the media, edit list, <c>colr</c> boxes of the sample entry, and the
-    /// <c>Exif</c> and XMP items of <see cref="Avif.ReferenceAvif.FindSequenceMetadata"/>);
-    /// any other file its primary item (<c>colr</c> properties, <c>Exif</c> and XMP items, <c>irot</c> and <c>imir</c>).
+    /// AVIF and HEIC, which share the HEIF container: the fields come from <see cref="Heif.ReferenceHeif"/>. A file with
+    /// the brand of the image sequences presents its track (the durations of its images over the time scale of the media:
+    /// the sample deltas, or the distances between the composition times when composition offsets reorder the samples;
+    /// the edit list; the <c>colr</c> boxes of the sample entry; and the <c>Exif</c> and XMP items of
+    /// <see cref="Heif.ReferenceHeif.FindSequenceMetadata"/>); any other file its primary item (<c>colr</c> properties,
+    /// <c>Exif</c> and XMP items, <c>irot</c> and <c>imir</c>).
     /// </summary>
-    private static EncodedFields InspectAvif(ReadOnlySpan<byte> data)
+    private static EncodedFields InspectHeif(ReadOnlySpan<byte> data, string formatName, string codecName)
     {
-        var file = Avif.ReferenceAvif.Parse(data);
+        var file = Heif.ReferenceHeif.Parse(data);
         var result = new EncodedFields();
-        Avif.ReferenceAvif.ColorDescription? nclx;
-        Avif.ReferenceAvif.ContentLightLevel? lightLevel;
-        Avif.ReferenceAvif.MasteringDisplay? display;
-        Avif.ReferenceAvif.PixelAspectRatio? pixelAspectRatio;
+        Heif.ReferenceHeif.ColorDescription? nclx;
+        Heif.ReferenceHeif.ContentLightLevel? lightLevel;
+        Heif.ReferenceHeif.MasteringDisplay? display;
+        Heif.ReferenceHeif.PixelAspectRatio? pixelAspectRatio;
         if (file.IsSequence)
         {
-            var track = file.ColorTrack ?? throw new InvalidDataException("The AVIF image sequence has no track of AV1 images.");
+            var track = file.ColorTrack ?? throw new InvalidDataException($"The {formatName} image sequence has no track of {codecName} images.");
             nclx = track.Nclx;
             lightLevel = track.ContentLightLevel;
             display = track.MasteringDisplay;
@@ -126,13 +129,25 @@ public static class EncodedFieldInspector
 
             // The images that the edit list shows: the duration of the sample is the encoded field of an image that is
             // shown for all of it, and an image that is shown for a part of it has no field of its own
-            var presentation = track.GetPresentation(file.MovieTimescale);
-            if (presentation.Count > 1)
+            // The samples of a codec that reorders its images have composition offsets: an image lasts until the
+            // presentation time of the next one
+            var presentation = track.CompositionOffsets is null ? track.GetPresentation(file.MovieTimescale) : null;
+            if ((presentation?.Count ?? track.Samples.Count) > 1)
             {
-                foreach (var image in presentation)
+                if (presentation is null)
                 {
-                    var sample = track.Samples[image.SampleIndex];
-                    result.FrameDelays.Add(image.Numerator * track.Timescale == sample.Duration * image.Denominator ? new EncodedDelayExpectation { SampleDelta = sample.Duration, Timescale = track.Timescale } : null);
+                    foreach (var (_, duration) in track.PresentationOrder)
+                    {
+                        result.FrameDelays.Add(new EncodedDelayExpectation { SampleDelta = duration, Timescale = track.Timescale });
+                    }
+                }
+                else
+                {
+                    foreach (var image in presentation)
+                    {
+                        var sample = track.Samples[image.SampleIndex];
+                        result.FrameDelays.Add(image.Numerator * track.Timescale == sample.Duration * image.Denominator ? new EncodedDelayExpectation { SampleDelta = sample.Duration, Timescale = track.Timescale } : null);
+                    }
                 }
 
                 if (track.EditList is { Entries.Count: > 0 } edits)
@@ -148,7 +163,7 @@ public static class EncodedFieldInspector
         }
         else
         {
-            var primary = file.PrimaryItem ?? throw new InvalidDataException("The AVIF file has no primary item.");
+            var primary = file.PrimaryItem ?? throw new InvalidDataException($"The {formatName} file has no primary item.");
 
             // An identity derivation is described by its own properties, or else by those of its input, and the samples
             // of the coded image go through the transformations of every item of the chain
@@ -160,14 +175,14 @@ public static class EncodedFieldInspector
                 // its own colr box, or else of the first image of its tree that has one; its pixels are red, green and
                 // blue ones in full range
                 var description = file.GetImageTree(primary).Select(item => item.Nclx).FirstOrDefault(value => value is not null);
-                nclx = description is null ? null : new Avif.ReferenceAvif.ColorDescription(description.ColorPrimaries, description.TransferCharacteristics, 0, FullRange: true);
+                nclx = description is null ? null : new Heif.ReferenceHeif.ColorDescription(description.ColorPrimaries, description.TransferCharacteristics, 0, FullRange: true);
             }
 
             lightLevel = chain.Select(item => item.ContentLightLevel).FirstOrDefault(value => value is not null);
             display = chain.Select(item => item.MasteringDisplay).FirstOrDefault(value => value is not null);
             pixelAspectRatio = chain.Select(item => item.PixelAspectRatio).FirstOrDefault(value => value is not null);
             result.Icc = (file.IsBuiltImage(primary) ? file.GetImageTree(primary) : chain).Select(item => item.IccProfile).FirstOrDefault(value => value is not null);
-            result.TransformOrientation = file.IsBuiltImage(primary) ? primary.Orientation : Avif.ReferenceAvif.ComposeOrientation(Avif.ReferenceAvif.GetTransforms(chain));
+            result.TransformOrientation = file.IsBuiltImage(primary) ? primary.Orientation : Heif.ReferenceHeif.ComposeOrientation(Heif.ReferenceHeif.GetTransforms(chain));
             foreach (var item in file.FindDescriptions(primary.Id))
             {
                 if (item.Type == "Exif")

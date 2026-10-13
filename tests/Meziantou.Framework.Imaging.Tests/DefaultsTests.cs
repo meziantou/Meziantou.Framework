@@ -94,6 +94,19 @@ public sealed class DefaultsTests
         Assert.Equal(0, avif.KeyFrameInterval);
         Assert.Equal(FrameDurationRounding.RequireExact, avif.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, avif.MetadataHandling);
+
+        var heic = new HeicEncoder();
+        Assert.Equal(ImageFormat.Heic, heic.Format);
+        Assert.Equal(HeicCompression.Lossless, heic.Compression);
+        Assert.Equal(75, heic.Quality);
+        Assert.Equal(5, heic.Effort);
+        Assert.Equal(HeicChromaSubsampling.Auto, heic.ChromaSubsampling);
+        Assert.Null(heic.BitDepth);
+        Assert.False(heic.AllowBitDepthReduction);
+        Assert.False(heic.ClearTransparentColors);
+        Assert.Equal(0, heic.KeyFrameInterval);
+        Assert.Equal(FrameDurationRounding.RequireExact, heic.DurationRounding);
+        Assert.Equal(MetadataHandling.Strict, heic.MetadataHandling);
     }
 
     [Fact]
@@ -116,6 +129,15 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { CleanAperture = new Rectangle(-1, 0, 4, 4) });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { GridTileSize = new Size(63, 64) });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { GridTileSize = new Size(64, 65537) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { Compression = (HeicCompression)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { Quality = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { Quality = 101 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { Effort = 10 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { ChromaSubsampling = (HeicChromaSubsampling)4 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { BitDepth = 9 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { BitDepth = 16 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { DurationRounding = (FrameDurationRounding)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { KeyFrameInterval = -1 });
         Assert.Equal(new Rgba64(65535, 0, 0), new JpegEncoder { BackgroundColor = new Rgba32(255, 0, 0) }.BackgroundColor);
     }
 
@@ -146,7 +168,11 @@ public sealed class DefaultsTests
         Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("a.jxl"));
         Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("dir/a.JXL"));
         Assert.Equal(JpegXlCompression.Lossless, Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("a.jxl")).Compression);
-        Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a.heic"));
+        Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a.xyz"));
+        Assert.Equal(HeicCompression.Lossless, Assert.IsType<HeicEncoder>(ImageEncoder.FromPath("a.heic")).Compression);
+        Assert.IsType<HeicEncoder>(ImageEncoder.FromPath("a.heif"));
+        Assert.IsType<HeicEncoder>(ImageEncoder.FromPath("dir/a.HEICS"));
+        Assert.IsType<HeicEncoder>(ImageEncoder.FromPath("a.heifs"));
 
         Assert.Equal(AvifCompression.Lossless, Assert.IsType<AvifEncoder>(ImageEncoder.FromPath("a.avif")).Compression);
         Assert.IsType<AvifEncoder>(ImageEncoder.FromPath("dir/a.AVIFS"));

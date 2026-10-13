@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Numerics;
 using Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
-using Meziantou.Framework.Imaging.TestHarness.Avif;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 
 namespace Meziantou.Framework.Imaging.CorpusGenerator;
 
@@ -12,13 +12,13 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 internal static partial class AvifCorpus
 {
     /// <summary>Returns whether the item is built from other images: its tree has an overlay, or a grid whose tiles are not all coded items.</summary>
-    private static bool IsBuiltImage(ReferenceAvif file, ReferenceAvif.Item item)
+    private static bool IsBuiltImage(ReferenceHeif file, ReferenceHeif.Item item)
     {
         var leaf = file.GetIdentityChain(item)[^1];
         return leaf.Type == "iovl" || (leaf.Type == "grid" && file.GetGridTiles(leaf).Any(tile => tile.Type != "av01"));
     }
 
-    private static IReadOnlyList<ReferenceAvif.Item> GetInputs(ReferenceAvif file, ReferenceAvif.Item item)
+    private static IReadOnlyList<ReferenceHeif.Item> GetInputs(ReferenceHeif file, ReferenceHeif.Item item)
     {
         var references = file.ItemReferences.Where(reference => reference.Type == "dimg" && reference.FromItemId == item.Id).ToList();
         Py.Assert(references.Count == 1, "a derived image has one list of input images");
@@ -26,7 +26,7 @@ internal static partial class AvifCorpus
     }
 
     /// <summary>The coded images of the tree of an item, in the order they are rendered (an item that is used twice is listed twice).</summary>
-    private static List<ReferenceAvif.Item> CodedImages(ReferenceAvif file, ReferenceAvif.Item item)
+    private static List<ReferenceHeif.Item> CodedImages(ReferenceHeif file, ReferenceHeif.Item item)
     {
         if (!IsBuiltImage(file, item) && item.Type != "iden")
             return [item];
@@ -34,23 +34,23 @@ internal static partial class AvifCorpus
         return [.. GetInputs(file, item).SelectMany(input => CodedImages(file, input))];
     }
 
-    private static AvifReference DescribeBuiltStill(AvifFileTools tools, FullPath scratch, ReferenceAvif file, SortedSet<string> features)
+    private static AvifReference DescribeBuiltStill(AvifFileTools tools, FullPath scratch, ReferenceHeif file, SortedSet<string> features)
     {
         var primary = file.PrimaryItem!;
         var coded = CodedImages(file, primary);
-        var depths = coded.SelectMany(item => new[] { item, file.FindAuxiliary(item.Id, ReferenceAvif.AlphaAuxiliaryType) }).Where(item => item is not null)
+        var depths = coded.SelectMany(item => new[] { item, file.FindAuxiliary(item.Id, ReferenceHeif.AlphaAuxiliaryType) }).Where(item => item is not null)
             .Select(item => (item!.Type == "grid" ? file.GetGridTiles(item)[0] : item).Configuration!.BitDepth).ToList();
         var deep = depths.Max() > 8;
         var payloads = new List<DecodedPayload>();
         var isMatrixed = false;
-        ReferenceAvif.ColorDescription? bitstreamDescription = null;
+        ReferenceHeif.ColorDescription? bitstreamDescription = null;
         long inputPixels = 0;
         var counter = 0;
         var image = Render(primary, isRoot: true, depth: 0);
 
         // The transformations of the primary item: the clean aperture selects a part of the image that is built, and the
         // rotation and the mirroring are its orientation
-        var crop = ReferenceAvif.Item.Present(primary.Transforms, image.Width, image.Height)?.Rectangle ?? throw new ToolException("the clean aperture is not a whole number of samples.");
+        var crop = ReferenceHeif.Item.Present(primary.Transforms, image.Width, image.Height)?.Rectangle ?? throw new ToolException("the clean aperture is not a whole number of samples.");
         var pixels = new List<Px>();
         for (var y = crop.Y; y < crop.Y + crop.Height; y++)
         {
@@ -90,7 +90,7 @@ internal static partial class AvifCorpus
             ColorModel = "Rgba",
             BitsPerComponent = depths.Max(),
             Orientation = primary.Orientation,
-            Cicp = nclx is null ? null : new ReferenceAvif.ColorDescription(nclx.ColorPrimaries, nclx.TransferCharacteristics, 0, FullRange: true),
+            Cicp = nclx is null ? null : new ReferenceHeif.ColorDescription(nclx.ColorPrimaries, nclx.TransferCharacteristics, 0, FullRange: true),
             Icc = icc?.ToArray(),
             Exif = exifItem is null ? null : file.ReadExifPayload(exifItem),
             Xmp = xmpItem is null ? null : file.ReadItemData(xmpItem),
@@ -104,7 +104,7 @@ internal static partial class AvifCorpus
         };
 
         // What the item reconstructs, then its own transformations (those of the primary item are applied by the caller)
-        Img Render(ReferenceAvif.Item item, bool isRoot, int depth)
+        Img Render(ReferenceHeif.Item item, bool isRoot, int depth)
         {
             Py.Assert(depth <= 8, "the derivations are nested at most eight deep");
             Img result;
@@ -132,13 +132,13 @@ internal static partial class AvifCorpus
             return isRoot ? result : Transform(result, item.Transforms);
         }
 
-        Img Coded(ReferenceAvif.Item item)
+        Img Coded(ReferenceHeif.Item item)
         {
             var label = Inv($"input-{counter++}");
             var (color, colorPayloads, _, _) = DecodeItem(tools, scratch, file, item, label + "-color");
             payloads.AddRange(colorPayloads);
             PlaneImage? alpha = null;
-            if (file.FindAuxiliary(item.Id, ReferenceAvif.AlphaAuxiliaryType) is { } alphaItem)
+            if (file.FindAuxiliary(item.Id, ReferenceHeif.AlphaAuxiliaryType) is { } alphaItem)
             {
                 (alpha, var alphaPayloads, _, _) = DecodeItem(tools, scratch, file, alphaItem, label + "-alpha");
                 payloads.AddRange(alphaPayloads);
@@ -172,7 +172,7 @@ internal static partial class AvifCorpus
         }
 
         // ISO/IEC 23008-12, section 6.6.2.3.2: the tiles side by side, row by row; the last row and column may exceed the image
-        Img Tiles(ReferenceAvif.Item item, int depth)
+        Img Tiles(ReferenceHeif.Item item, int depth)
         {
             var (rows, columns, width, height) = file.ReadGridDescriptor(item);
             var inputs = GetInputs(file, item);
@@ -195,7 +195,7 @@ internal static partial class AvifCorpus
         // The input images are composited in their order with the source-over operator on straight alpha, in exact
         // fractions: the alpha is as + ad (1 - as), each color (cs as + cd ad (1 - as)) over that alpha, rounded to the
         // nearest sample, halves upward
-        Img Overlay(ReferenceAvif.Item item, int depth)
+        Img Overlay(ReferenceHeif.Item item, int depth)
         {
             var data = file.ReadItemData(item);
             Py.Assert(data[0] == 0, "overlay version");
@@ -263,7 +263,7 @@ internal static partial class AvifCorpus
         }
 
         // The transformative properties of an item, applied to pixels in the order of their association
-        Img Transform(Img source, IReadOnlyList<ReferenceAvif.Property> transforms)
+        Img Transform(Img source, IReadOnlyList<ReferenceHeif.Property> transforms)
         {
             var transformed = source;
             foreach (var property in transforms)
@@ -272,7 +272,7 @@ internal static partial class AvifCorpus
                 var current = transformed;
                 if (property.Type == "clap")
                 {
-                    var aperture = ReferenceAvif.CleanAperture.Parse(property.Payload.Span).GetRectangle(w, h) ?? throw new ToolException("the clean aperture is not a whole number of samples.");
+                    var aperture = ReferenceHeif.CleanAperture.Parse(property.Payload.Span).GetRectangle(w, h) ?? throw new ToolException("the clean aperture is not a whole number of samples.");
                     transformed = new Img(aperture.Width, aperture.Height, "rgba", current.Depth, CommonGrid(aperture.Width, aperture.Height, (x, y) => current.Pixels[((aperture.Y + y) * w) + aperture.X + x]));
                 }
                 else if (property.Type == "irot")

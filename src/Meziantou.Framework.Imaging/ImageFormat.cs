@@ -65,4 +65,10 @@ public enum ImageFormat
     /// lossless (Modular) coding. Encoding is lossless.
     /// </summary>
     JpegXl = 14,
+
+    /// <summary>
+    /// High Efficiency Image File Format images coded with HEVC (H.265): still images and image sequences in an ISO base
+    /// media (HEIF) container.
+    /// </summary>
+    Heic = 15,
 }

@@ -2,7 +2,7 @@ using System.Globalization;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
-using Meziantou.Framework.Imaging.TestHarness.Avif;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Imaging.Tests.Conformance;
 
 /// <summary>
 /// AVIF encoding (lossless and lossy) of every raw reference of the golden corpus, verified without external tools. The
-/// structure of the output is read by the independent harness reader <see cref="ReferenceAvif"/>. The harness has no AV1
+/// structure of the output is read by the independent harness reader <see cref="ReferenceHeif"/>. The harness has no AV1
 /// decoder: the samples are decoded by the library, whose AV1 decoder the conformance vectors pin to the reference decoders
 /// byte for byte, so a lossless output must give back every sample of the reference, and a lossy output an exact alpha
 /// plane and a bounded error. avifdec, FFmpeg (dav1d and libaom) and Apple ImageIO decode the same kinds of output in
@@ -46,7 +46,7 @@ public sealed class AvifEncoderConformanceTests
             {
                 var context = $"{id} {name} as {pixelFormat} (effort {effort})";
                 var data = Encode(image, new AvifEncoder { Effort = effort, BitDepth = deep ? 12 : null });
-                var reader = ReferenceAvif.Parse(data);
+                var reader = ReferenceHeif.Parse(data);
                 Assert.Equal("avif", reader.MajorBrand);
                 Assert.False(reader.IsSequence, context);
                 var item = reader.PrimaryItem;
@@ -92,7 +92,7 @@ public sealed class AvifEncoderConformanceTests
             {
                 var context = $"{id} {name} as {pixelFormat} (quality {quality}, {subsampling})";
                 var data = Encode(image, new AvifEncoder { Compression = AvifCompression.Lossy, Quality = quality, ChromaSubsampling = subsampling, Effort = quality is 90 ? 5 : 0 });
-                var reader = ReferenceAvif.Parse(data);
+                var reader = ReferenceHeif.Parse(data);
                 var item = reader.PrimaryItem;
                 Assert.NotNull(item);
                 Assert.Equal(HasTransparency(expected), reader.AlphaItem is not null);
@@ -163,7 +163,7 @@ public sealed class AvifEncoderConformanceTests
 
         image.Animation = new AnimationMetadata { TotalPlays = totalPlays };
         var data = Encode(image, new AvifEncoder { Effort = 0 });
-        var reader = ReferenceAvif.Parse(data);
+        var reader = ReferenceHeif.Parse(data);
         Assert.True(reader.IsSequence);
         Assert.Equal("avis", reader.MajorBrand);
         var track = reader.ColorTrack;

@@ -2,6 +2,7 @@ using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Avif;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
 
@@ -9,7 +10,7 @@ namespace Meziantou.Framework.Imaging.Tests.Conformance;
 
 /// <summary>
 /// Container rules that are cheaper to express in code than as committed files: the AV1 payloads of corpus fixtures are
-/// placed in other containers by <see cref="AvifFileBuilder"/> (no tool, no new file) and decoded by the library.
+/// placed in other containers by <see cref="HeifFileBuilder"/> (no tool, no new file) and decoded by the library.
 /// <list type="bullet">
 /// <item><description>
 /// A container around the same payloads must give the frames, the durations and the metadata of the fixture: the
@@ -73,8 +74,8 @@ public sealed class AvifContainerConformanceTests
     [MemberData(nameof(MatrixCases))]
     public void ColorBoxConvertsWithItsMatrixAndItsRange(string id, int matrix, bool fullRange)
     {
-        var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get(id).ReadInput());
-        ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(1, 13, matrix, fullRange));
+        var builder = HeifFileBuilder.From(GoldenCorpus.Default.Get(id).ReadInput());
+        ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(1, 13, matrix, fullRange));
         var data = builder.Build();
 
         using var image = Image.Load(data);
@@ -123,8 +124,8 @@ public sealed class AvifContainerConformanceTests
     [MemberData(nameof(DerivedMatrixCases))]
     public void ColorBoxConvertsWithTheSmpte2085AndTheChromaticityDerivedMatrices(string id, int primaries, int matrix, bool fullRange)
     {
-        var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get(id).ReadInput());
-        ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(primaries, 13, matrix, fullRange));
+        var builder = HeifFileBuilder.From(GoldenCorpus.Default.Get(id).ReadInput());
+        ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(primaries, 13, matrix, fullRange));
         var data = builder.Build();
 
         using var image = Image.Load(data);
@@ -155,8 +156,8 @@ public sealed class AvifContainerConformanceTests
     [InlineData(3, 13)]
     public void TheChromaticityDerivedMatricesNeedPrimariesThatHaveChromaticities(int primaries, int matrix)
     {
-        var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get(MatrixSources[0]).ReadInput());
-        ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(primaries, 13, matrix, fullRange: true));
+        var builder = HeifFileBuilder.From(GoldenCorpus.Default.Get(MatrixSources[0]).ReadInput());
+        ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(primaries, 13, matrix, fullRange: true));
         var data = builder.Build();
         var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
         Assert.Equal(ImageFormat.Avif, exception.Format);
@@ -200,8 +201,8 @@ public sealed class AvifContainerConformanceTests
     [MemberData(nameof(TransferMatrixCases))]
     public void ColorBoxConvertsWithTheMatricesThatGoThroughTheTransferFunction(string id, int primaries, int transfer, int matrix, bool fullRange)
     {
-        var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get(id).ReadInput());
-        ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(primaries, transfer, matrix, fullRange));
+        var builder = HeifFileBuilder.From(GoldenCorpus.Default.Get(id).ReadInput());
+        ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(primaries, transfer, matrix, fullRange));
         var data = builder.Build();
 
         using var image = Image.Load(data);
@@ -231,8 +232,8 @@ public sealed class AvifContainerConformanceTests
     [InlineData(14, 17)]
     public void TheMatricesThatGoThroughTheTransferFunctionNeedIt(int matrix, int transfer)
     {
-        var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get(MatrixSources[0]).ReadInput());
-        ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(9, transfer, matrix, fullRange: true));
+        var builder = HeifFileBuilder.From(GoldenCorpus.Default.Get(MatrixSources[0]).ReadInput());
+        ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(9, transfer, matrix, fullRange: true));
         var data = builder.Build();
         var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
         Assert.Equal(ImageFormat.Avif, exception.Format);
@@ -249,9 +250,9 @@ public sealed class AvifContainerConformanceTests
         {
             var fixture = GoldenCorpus.Default.Get(id);
             var full = fixture.GetFrame(0, RawPixelLayout.Rgba8);
-            var builder = AvifFileBuilder.From(fixture.ReadInput());
+            var builder = HeifFileBuilder.From(fixture.ReadInput());
             var cicp = fixture.Expected.Cicp!;
-            ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(cicp.ColorPrimaries, cicp.TransferCharacteristics, cicp.MatrixCoefficients, fullRange: false));
+            ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(cicp.ColorPrimaries, cicp.TransferCharacteristics, cicp.MatrixCoefficients, fullRange: false));
             using var image = Image.Load<Rgba32>(builder.Build());
             Assert.Equal(new CicpColorDescription((byte)cicp.ColorPrimaries, (byte)cicp.TransferCharacteristics, (byte)cicp.MatrixCoefficients, fullRange: false), image.Metadata.Cicp);
             for (var y = 0; y < full.Height; y++)
@@ -276,11 +277,11 @@ public sealed class AvifContainerConformanceTests
         // avif/lossless-rgb8 without its colr box: the sequence header says sRGB primaries and transfer with the identity
         // matrix, so the planes are still G, B and R
         var fixture = GoldenCorpus.Default.Get("avif/lossless-rgb8");
-        var builder = AvifFileBuilder.From(fixture.ReadInput());
+        var builder = HeifFileBuilder.From(fixture.ReadInput());
         var item = builder.GetItem(1);
         item.Associations.RemoveAt(FindAssociation(builder, item, "colr"));
         var data = builder.Build();
-        Assert.Null(ReferenceAvif.Parse(data).PrimaryItem!.Nclx);
+        Assert.Null(ReferenceHeif.Parse(data).PrimaryItem!.Nclx);
 
         using var image = Image.Load(data);
         Assert.Equal(new CicpColorDescription(1, 13, 0, fullRange: true), image.Metadata.Cicp);
@@ -296,11 +297,11 @@ public sealed class AvifContainerConformanceTests
 
         // When the bitstream comes before the 'meta' box, it went by before the walk knew it needed it: the color model is
         // unknown, never guessed
-        var mediaFirst = AvifFileBuilder.From(data);
+        var mediaFirst = HeifFileBuilder.From(data);
         mediaFirst.Layout.Clear();
-        mediaFirst.Layout.Add(AvifFileBuilder.FileTypeBox);
-        mediaFirst.Layout.Add(AvifFileBuilder.MediaDataBox);
-        mediaFirst.Layout.Add(AvifFileBuilder.MetaBox);
+        mediaFirst.Layout.Add(HeifFileBuilder.FileTypeBox);
+        mediaFirst.Layout.Add(HeifFileBuilder.MediaDataBox);
+        mediaFirst.Layout.Add(HeifFileBuilder.MetaBox);
         var early = Image.Identify(mediaFirst.Build());
         Assert.Equal(ImageColorModel.Unknown, early.ColorModel);
         Assert.Null(early.Metadata.Cicp);
@@ -312,12 +313,12 @@ public sealed class AvifContainerConformanceTests
         // avif/irot-1-imir-1 associates irot then imir (orientation 7); the other order is orientation 5; the pixels are the same
         var fixture = GoldenCorpus.Default.Get("avif/irot-1-imir-1");
         Assert.Equal(7, fixture.Expected.Orientation);
-        var builder = AvifFileBuilder.From(fixture.ReadInput());
+        var builder = HeifFileBuilder.From(fixture.ReadInput());
         var item = builder.GetItem(1);
         var (rotation, mirror) = (FindAssociation(builder, item, "irot"), FindAssociation(builder, item, "imir"));
         (item.Associations[rotation], item.Associations[mirror]) = (item.Associations[mirror], item.Associations[rotation]);
         var data = builder.Build();
-        Assert.Equal(5, ReferenceAvif.Parse(data).PrimaryItem!.Orientation);
+        Assert.Equal(5, ReferenceHeif.Parse(data).PrimaryItem!.Orientation);
 
         using var image = Image.Load(data);
         Assert.Equal(ExifOrientation.LeftTop, image.Metadata.Orientation);
@@ -334,7 +335,7 @@ public sealed class AvifContainerConformanceTests
     public void SampleTablesLocateTheSamplesWhateverTheirForm(string chunkOffsets, string sampleSizes, int samplesPerChunk, int headerVersion)
     {
         var fixture = GoldenCorpus.Default.Get("avif/sequence-lossless-infinite");
-        var builder = AvifFileBuilder.From(fixture.ReadInput());
+        var builder = HeifFileBuilder.From(fixture.ReadInput());
         foreach (var track in builder.Tracks)
         {
             track.ChunkOffsetBox = chunkOffsets;
@@ -344,7 +345,7 @@ public sealed class AvifContainerConformanceTests
         }
 
         var data = builder.Build();
-        var reference = ReferenceAvif.Parse(data).ColorTrack!;
+        var reference = ReferenceHeif.Parse(data).ColorTrack!;
         Assert.Equal((chunkOffsets, sampleSizes, 3), (reference.ChunkOffsetBox, reference.SampleSizeBox, reference.Samples.Count));
 
         // Same frames, durations and plays as the fixture, eagerly and frame by frame
@@ -371,18 +372,18 @@ public sealed class AvifContainerConformanceTests
         byte[] tiff = [0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x12, 0x01, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         var xmp = "<?xpacket begin=\"\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?><x:xmpmeta xmlns:x=\"adobe:ns:meta/\"></x:xmpmeta><?xpacket end=\"w\"?>"u8.ToArray();
         var fixture = GoldenCorpus.Default.Get("avif/sequence-lossless-infinite");
-        var builder = AvifFileBuilder.From(fixture.ReadInput());
-        var exifItem = builder.AddItem(100, "Exif", AvifFileBuilder.ExifItemData(tiff));
+        var builder = HeifFileBuilder.From(fixture.ReadInput());
+        var exifItem = builder.AddItem(100, "Exif", HeifFileBuilder.ExifItemData(tiff));
         var xmpItem = builder.AddItem(101, "mime", xmp);
         xmpItem.ContentType = "application/rdf+xml";
         if (inItemData)
         {
-            exifItem.Storage = AvifFileBuilder.ItemStorage.ItemData;
-            xmpItem.Storage = AvifFileBuilder.ItemStorage.ItemData;
+            exifItem.Storage = HeifFileBuilder.ItemStorage.ItemData;
+            xmpItem.Storage = HeifFileBuilder.ItemStorage.ItemData;
         }
 
         var data = builder.Build();
-        var file = ReferenceAvif.Parse(data);
+        var file = ReferenceHeif.Parse(data);
         Assert.NotNull(file.ColorTrack);
         Assert.True(file.HasBrand("avis"));
 
@@ -429,7 +430,7 @@ public sealed class AvifContainerConformanceTests
         // The alpha samples of the fixture are shorter than 256 bytes: an 8-bit stz2 table; the color samples need 16 bits.
         // One sample per chunk interleaves the samples of the two tracks in the mdat box
         var fixture = GoldenCorpus.Default.Get("avif/sequence-alpha-repeat-2");
-        var builder = AvifFileBuilder.From(fixture.ReadInput());
+        var builder = HeifFileBuilder.From(fixture.ReadInput());
         Assert.HasCount(2, builder.Tracks);
         var alpha = builder.Tracks.Single(track => track.HandlerType == "auxv");
         Assert.All(alpha.Samples, sample => Assert.HasCountLessThan(256, sample.Data));
@@ -449,8 +450,8 @@ public sealed class AvifContainerConformanceTests
     {
         // The alpha track first, and a track of another codec before the image sequence: the pict track of AV1 images is presented
         var fixture = GoldenCorpus.Default.Get("avif/sequence-alpha-repeat-2");
-        var builder = AvifFileBuilder.From(fixture.ReadInput());
-        var other = new AvifFileBuilder.Track(9, "pict", 4, 4) { SampleEntryType = "hvc1", Timescale = 1000, Duration = 5 };
+        var builder = HeifFileBuilder.From(fixture.ReadInput());
+        var other = new HeifFileBuilder.Track(9, "pict", 4, 4) { SampleEntryType = "hvc1", Timescale = 1000, Duration = 5 };
         other.Samples.Add(([1, 2, 3], 5));
         var tracks = builder.Tracks.ToList();
         builder.Tracks.Clear();
@@ -468,13 +469,13 @@ public sealed class AvifContainerConformanceTests
         // avifenc stores the first image of a sequence as the primary item of the meta box; without the avis brand the
         // file is a still image
         var fixture = GoldenCorpus.Default.Get("avif/sequence-lossless-infinite");
-        var builder = AvifFileBuilder.From(fixture.ReadInput());
+        var builder = HeifFileBuilder.From(fixture.ReadInput());
         builder.MajorBrand = "avif";
         builder.CompatibleBrands.Clear();
         builder.CompatibleBrands.Add("avif");
         builder.CompatibleBrands.Add("mif1");
         var data = builder.Build();
-        Assert.False(ReferenceAvif.Parse(data).IsSequence);
+        Assert.False(ReferenceHeif.Parse(data).IsSequence);
 
         using var image = Image.Load(data);
         Assert.Single(image.Frames);
@@ -487,15 +488,15 @@ public sealed class AvifContainerConformanceTests
     public void GridDescriptorWith32BitFieldsAndSharedTiles()
     {
         var fixture = GoldenCorpus.Default.Get("avif/grid-2x2-lossless");
-        var builder = AvifFileBuilder.From(fixture.ReadInput());
-        builder.GetItem(1).Data = AvifFileBuilder.GridDescriptor(2, 2, 128, 128, largeFields: true);
+        var builder = HeifFileBuilder.From(fixture.ReadInput());
+        builder.GetItem(1).Data = HeifFileBuilder.GridDescriptor(2, 2, 128, 128, largeFields: true);
         using (var image = Image.Load(builder.Build()))
         {
             AssertSameFrame(fixture, 0, image);
         }
 
         // The four cells refer to the first tile: the top-left quarter of the fixture, four times
-        var first = ReferenceAvif.Parse(fixture.ReadInput()).GetGridTiles(ReferenceAvif.Parse(fixture.ReadInput()).PrimaryItem!)[0].Id;
+        var first = ReferenceHeif.Parse(fixture.ReadInput()).GetGridTiles(ReferenceHeif.Parse(fixture.ReadInput()).PrimaryItem!)[0].Id;
         var index = builder.References.Select((reference, i) => (reference, i)).Single(pair => pair.reference.Type == "dimg").i;
         builder.References[index] = ("dimg", 1, [first, first, first, first]);
         using var repeated = Image.Load<Rgb24>(builder.Build());
@@ -515,12 +516,12 @@ public sealed class AvifContainerConformanceTests
     {
         // ISO/IEC 23008-12, annex A.2.1: the item starts with the offset of the TIFF header from the end of that field
         var fixture = GoldenCorpus.Default.Get("avif/metadata-exif-xmp-icc");
-        var builder = AvifFileBuilder.From(fixture.ReadInput());
+        var builder = HeifFileBuilder.From(fixture.ReadInput());
         var exif = builder.Items.Single(item => item.Type == "Exif");
         var tiff = exif.Data[4..];
-        exif.Data = AvifFileBuilder.Concat(AvifFileBuilder.U32(6), "Exif\0\0"u8.ToArray(), tiff);
+        exif.Data = HeifFileBuilder.Concat(HeifFileBuilder.U32(6), "Exif\0\0"u8.ToArray(), tiff);
         var data = builder.Build();
-        var file = ReferenceAvif.Parse(data);
+        var file = ReferenceHeif.Parse(data);
         Assert.Equal(tiff, file.ReadExifPayload(file.FindDescriptions(1).Single(item => item.Type == "Exif")));
 
         using var image = Image.Load(data);
@@ -531,10 +532,10 @@ public sealed class AvifContainerConformanceTests
     public void FileTypeBoxWithA64BitSizeIsAnAvifFile()
     {
         // ISO/IEC 14496-12, section 4.2: any box may store its size in the 64-bit field, the file type box included
-        var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get("avif/lossless-rgb8").ReadInput());
-        builder.LargeSizeBoxes.Add(AvifFileBuilder.FileTypeBox);
+        var builder = HeifFileBuilder.From(GoldenCorpus.Default.Get("avif/lossless-rgb8").ReadInput());
+        builder.LargeSizeBoxes.Add(HeifFileBuilder.FileTypeBox);
         var data = builder.Build();
-        var file = ReferenceAvif.Parse(data);
+        var file = ReferenceHeif.Parse(data);
         Assert.True(file.TopLevelBoxes[0] is { Type: "ftyp", HasLargeSize: true } && file.HasBrand("avif"));
         Assert.Equal(ImageFormat.Avif, Image.DetectFormat(data));
         using var image = Image.Load(data);
@@ -547,7 +548,7 @@ public sealed class AvifContainerConformanceTests
 
     private const string ThreeLayers = "avif/layered-3-quality-rgb";
 
-    private static void AddEssential(AvifFileBuilder builder, AvifFileBuilder.Item item, byte[] box) => item.Associations.Add((builder.AddProperty(box), true));
+    private static void AddEssential(HeifFileBuilder builder, HeifFileBuilder.Item item, byte[] box) => item.Associations.Add((builder.AddProperty(box), true));
 
     [Theory]
     [InlineData(4)]
@@ -562,10 +563,10 @@ public sealed class AvifContainerConformanceTests
         // model: a header identification reports it
         foreach (var source in new[] { ThreeLayers, "avif/lossless-rgb8" })
         {
-            var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get(source).ReadInput());
-            AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector((ushort)layer));
+            var builder = HeifFileBuilder.From(GoldenCorpus.Default.Get(source).ReadInput());
+            AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector((ushort)layer));
             var data = builder.Build();
-            Assert.Equal(layer, ReferenceAvif.Parse(data).PrimaryItem!.LayerSelector);
+            Assert.Equal(layer, ReferenceHeif.Parse(data).PrimaryItem!.LayerSelector);
             Assert.Throws<InvalidImageContentException>(() => Image.Identify(data));
             Assert.Throws<InvalidImageContentException>(() => Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }));
             Assert.Throws<InvalidImageContentException>(() => Image.Load(data).Dispose());
@@ -582,20 +583,20 @@ public sealed class AvifContainerConformanceTests
         // The frame of the selected layer is the image whether or not the property is marked essential, and whatever the
         // a1lx property says about the sizes of the layers: without it, and with sizes that are not those of the layers
         var source = GoldenCorpus.Default.Get(ThreeLayers).ReadInput();
-        Assert.NotNull(ReferenceAvif.Parse(source).PrimaryItem!.LayerSizes);
+        Assert.NotNull(ReferenceHeif.Parse(source).PrimaryItem!.LayerSizes);
         foreach (var layerSizes in new byte[]?[] { null, [0, 0, 1, 0, 1, 0, 0], [1, 0, 0, 0xFF, 0xFF, 0, 0, 0xFF, 0xFF, 0, 0, 0, 0], [] })
         {
-            var builder = AvifFileBuilder.From(source);
+            var builder = HeifFileBuilder.From(source);
             var item = builder.GetItem(1);
-            item.Associations.Add((builder.AddProperty(AvifFileBuilder.LayerSelector((ushort)layer)), false));
+            item.Associations.Add((builder.AddProperty(HeifFileBuilder.LayerSelector((ushort)layer)), false));
             var index = FindAssociation(builder, item, "a1lx");
             if (layerSizes is null)
                 item.Associations.RemoveAt(index);
             else if (layerSizes.Length > 0)
-                item.Associations[index] = (builder.AddProperty(AvifFileBuilder.Box("a1lx", layerSizes)), false);
+                item.Associations[index] = (builder.AddProperty(HeifFileBuilder.Box("a1lx", layerSizes)), false);
 
             var data = builder.Build();
-            var file = ReferenceAvif.Parse(data);
+            var file = ReferenceHeif.Parse(data);
             Assert.Equal(layer, file.PrimaryItem!.LayerSelector);
             Assert.Equal(layerSizes is null, file.PrimaryItem.LayerSizes is null);
             using var image = Image.Load(data);
@@ -620,14 +621,14 @@ public sealed class AvifContainerConformanceTests
         // whatever the order of the two properties
         foreach (var layerFirst in new[] { false, true })
         {
-            var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get(ThreeLayers).ReadInput());
+            var builder = HeifFileBuilder.From(GoldenCorpus.Default.Get(ThreeLayers).ReadInput());
             var item = builder.GetItem(1);
             if (layer is { } selected && layerFirst)
-                AddEssential(builder, item, AvifFileBuilder.LayerSelector((ushort)selected));
+                AddEssential(builder, item, HeifFileBuilder.LayerSelector((ushort)selected));
 
-            AddEssential(builder, item, AvifFileBuilder.OperatingPointSelector((byte)operatingPoint));
+            AddEssential(builder, item, HeifFileBuilder.OperatingPointSelector((byte)operatingPoint));
             if (layer is { } value && !layerFirst)
-                AddEssential(builder, item, AvifFileBuilder.LayerSelector((ushort)value));
+                AddEssential(builder, item, HeifFileBuilder.LayerSelector((ushort)value));
 
             var data = builder.Build();
             var info = Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
@@ -646,11 +647,11 @@ public sealed class AvifContainerConformanceTests
     {
         // The bitstream has the layer (or, for layer 3, does not), and the selected operating point does not: there is
         // no frame to present. The file is well formed up to the frames: a header identification succeeds
-        var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get(ThreeLayers).ReadInput());
-        AddEssential(builder, builder.GetItem(1), AvifFileBuilder.OperatingPointSelector((byte)operatingPoint));
-        AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector((ushort)layer));
+        var builder = HeifFileBuilder.From(GoldenCorpus.Default.Get(ThreeLayers).ReadInput());
+        AddEssential(builder, builder.GetItem(1), HeifFileBuilder.OperatingPointSelector((byte)operatingPoint));
+        AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector((ushort)layer));
         var data = builder.Build();
-        var file = ReferenceAvif.Parse(data);
+        var file = ReferenceHeif.Parse(data);
         var idc = ReferenceObuStream.ReadOperatingPoints(file.ReadItemData(file.PrimaryItem!))[operatingPoint];
         Assert.Equal(0, (idc >> (8 + layer)) & 1);
         Assert.Equal((8, 8), (Image.Identify(data).Width, Image.Identify(data).Height));
@@ -666,10 +667,10 @@ public sealed class AvifContainerConformanceTests
     {
         // The sequence header of the bitstream has three operating points. The index is known to be wrong once the sequence
         // header is read: by a full scan and by a load, not by a header identification of a file that has a colr box
-        var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get(ThreeLayers).ReadInput());
-        AddEssential(builder, builder.GetItem(1), AvifFileBuilder.OperatingPointSelector((byte)operatingPoint));
+        var builder = HeifFileBuilder.From(GoldenCorpus.Default.Get(ThreeLayers).ReadInput());
+        AddEssential(builder, builder.GetItem(1), HeifFileBuilder.OperatingPointSelector((byte)operatingPoint));
         var data = builder.Build();
-        var file = ReferenceAvif.Parse(data);
+        var file = ReferenceHeif.Parse(data);
         Assert.HasCount(3, ReferenceObuStream.ReadOperatingPoints(file.ReadItemData(file.PrimaryItem!)));
         Assert.NotNull(file.PrimaryItem!.Nclx);
         Assert.Equal((8, 8), (Image.Identify(data).Width, Image.Identify(data).Height));
@@ -684,19 +685,19 @@ public sealed class AvifContainerConformanceTests
         // operating point change nothing; any other value is invalid (the fixtures invalid/avif/lsel-on-grid and
         // a1op-on-grid, and every other layer and operating point here)
         var fixture = GoldenCorpus.Default.Get("avif/layered-grid-2x1");
-        var builder = AvifFileBuilder.From(fixture.ReadInput());
-        AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(0xFFFF));
-        AddEssential(builder, builder.GetItem(1), AvifFileBuilder.OperatingPointSelector(0));
+        var builder = HeifFileBuilder.From(fixture.ReadInput());
+        AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(0xFFFF));
+        AddEssential(builder, builder.GetItem(1), HeifFileBuilder.OperatingPointSelector(0));
         var data = builder.Build();
-        Assert.Equal(("grid", 0xFFFF, 0), (ReferenceAvif.Parse(data).PrimaryItem!.Type, ReferenceAvif.Parse(data).PrimaryItem!.LayerSelector, ReferenceAvif.Parse(data).PrimaryItem!.OperatingPoint));
+        Assert.Equal(("grid", 0xFFFF, 0), (ReferenceHeif.Parse(data).PrimaryItem!.Type, ReferenceHeif.Parse(data).PrimaryItem!.LayerSelector, ReferenceHeif.Parse(data).PrimaryItem!.OperatingPoint));
         using (var image = Image.Load(data))
         {
             AssertSameFrame(fixture, 0, image);
         }
 
-        foreach (var box in new[] { AvifFileBuilder.LayerSelector(1), AvifFileBuilder.LayerSelector(3), AvifFileBuilder.OperatingPointSelector(1), AvifFileBuilder.OperatingPointSelector(255) })
+        foreach (var box in new[] { HeifFileBuilder.LayerSelector(1), HeifFileBuilder.LayerSelector(3), HeifFileBuilder.OperatingPointSelector(1), HeifFileBuilder.OperatingPointSelector(255) })
         {
-            var invalid = AvifFileBuilder.From(fixture.ReadInput());
+            var invalid = HeifFileBuilder.From(fixture.ReadInput());
             AddEssential(invalid, invalid.GetItem(1), box);
             Assert.Throws<InvalidImageContentException>(() => Image.Identify(invalid.Build()));
             Assert.Throws<InvalidImageContentException>(() => Image.Load(invalid.Build()).Dispose());
@@ -715,11 +716,11 @@ public sealed class AvifContainerConformanceTests
         // gives the frame of the highest layer of its own operating point: the committed references of the fixtures that
         // select the same operating point of the same payload
         var source = GoldenCorpus.Default.Get(ThreeLayers);
-        var builder = AvifFileBuilder.From(source.ReadInput());
+        var builder = HeifFileBuilder.From(source.ReadInput());
         var first = builder.GetItem(1);
         first.Id = 2;
         first.IsHidden = true;
-        var grid = builder.AddItem(1, "grid", AvifFileBuilder.GridDescriptor(1, 2, 16, 8), builder.AddProperty(AvifFileBuilder.ImageSize(16, 8)));
+        var grid = builder.AddItem(1, "grid", HeifFileBuilder.GridDescriptor(1, 2, 16, 8), builder.AddProperty(HeifFileBuilder.ImageSize(16, 8)));
         grid.Associations.Add(first.Associations[FindAssociation(builder, first, "colr")]);
         var second = builder.AddItem(3, "av01", first.Data);
         second.IsHidden = true;
@@ -728,11 +729,11 @@ public sealed class AvifContainerConformanceTests
             second.Associations.Add(association);
         }
 
-        AddEssential(builder, first, AvifFileBuilder.OperatingPointSelector((byte)firstOperatingPoint));
-        AddEssential(builder, second, AvifFileBuilder.OperatingPointSelector((byte)secondOperatingPoint));
+        AddEssential(builder, first, HeifFileBuilder.OperatingPointSelector((byte)firstOperatingPoint));
+        AddEssential(builder, second, HeifFileBuilder.OperatingPointSelector((byte)secondOperatingPoint));
         builder.References.Add(("dimg", 1, [2, 3]));
         var data = builder.Build();
-        var file = ReferenceAvif.Parse(data);
+        var file = ReferenceHeif.Parse(data);
         var tiles = file.GetGridTiles(file.PrimaryItem!);
         Assert.Equal([firstOperatingPoint, secondOperatingPoint], tiles.Select(tile => tile.OperatingPoint!.Value).ToArray());
         Assert.Equal(Convert.ToHexString(file.ReadItemData(tiles[0])), Convert.ToHexString(file.ReadItemData(tiles[1])));
@@ -760,19 +761,19 @@ public sealed class AvifContainerConformanceTests
         // layer of both gives the fixture; an alpha plane whose selected frame is smaller than what its ispe property
         // declares is invalid, like a color image
         var fixture = GoldenCorpus.Default.Get("avif/layered-progressive-alpha");
-        var source = ReferenceAvif.Parse(fixture.ReadInput());
+        var source = ReferenceHeif.Parse(fixture.ReadInput());
         var (colorId, alphaId) = (source.PrimaryItem!.Id, source.AlphaItem!.Id);
         Assert.Equal([0, 1], ReferenceObuStream.GetSpatialLayers(source.ReadItemData(source.AlphaItem)).ToArray());
-        var builder = AvifFileBuilder.From(fixture.ReadInput());
-        AddEssential(builder, builder.GetItem(colorId), AvifFileBuilder.LayerSelector(1));
-        AddEssential(builder, builder.GetItem(alphaId), AvifFileBuilder.LayerSelector(1));
+        var builder = HeifFileBuilder.From(fixture.ReadInput());
+        AddEssential(builder, builder.GetItem(colorId), HeifFileBuilder.LayerSelector(1));
+        AddEssential(builder, builder.GetItem(alphaId), HeifFileBuilder.LayerSelector(1));
         using (var image = Image.Load(builder.Build()))
         {
             AssertSameFrame(fixture, 0, image);
         }
 
-        var smallerAlpha = AvifFileBuilder.From(fixture.ReadInput());
-        AddEssential(smallerAlpha, smallerAlpha.GetItem(alphaId), AvifFileBuilder.LayerSelector(0));
+        var smallerAlpha = HeifFileBuilder.From(fixture.ReadInput());
+        AddEssential(smallerAlpha, smallerAlpha.GetItem(alphaId), HeifFileBuilder.LayerSelector(0));
         Assert.Throws<InvalidImageContentException>(() => Image.Load(smallerAlpha.Build()).Dispose());
     }
 
@@ -785,7 +786,7 @@ public sealed class AvifContainerConformanceTests
         // samples of the fixture in one sample are two temporal units, with or without the temporal delimiter between them
         // (a frame of layer 0 after a frame of layer 1 starts another temporal unit)
         var fixture = GoldenCorpus.Default.Get("avif/sequence-layered");
-        var builder = AvifFileBuilder.From(fixture.ReadInput());
+        var builder = HeifFileBuilder.From(fixture.ReadInput());
         var track = builder.Tracks.Single();
         Assert.HasCount(2, track.Samples);
         var second = track.Samples[1].Data;
@@ -808,7 +809,7 @@ public sealed class AvifContainerConformanceTests
         // The samples of an AV1 track need no temporal delimiter (AV1 Codec ISO Media File Format Binding, section 2.4):
         // without it, each sample still gives one image
         var fixture = GoldenCorpus.Default.Get("avif/sequence-layered");
-        var builder = AvifFileBuilder.From(fixture.ReadInput());
+        var builder = HeifFileBuilder.From(fixture.ReadInput());
         var track = builder.Tracks.Single();
         for (var i = 0; i < track.Samples.Count; i++)
         {
@@ -834,7 +835,7 @@ public sealed class AvifContainerConformanceTests
     /// </summary>
     private static int[] ConvertPrimaryItem(byte[] data, int matrix, bool fullRange, int outputMaximum, int primaries = 2, int transfer = 2)
     {
-        var file = ReferenceAvif.Parse(data);
+        var file = ReferenceHeif.Parse(data);
         var payload = file.ReadItemData(file.PrimaryItem!);
         var scope = AllocationScope.Create(ImageConfiguration.Default, "avif planes");
         using var decoder = new Av1Decoder(scope);
@@ -867,7 +868,7 @@ public sealed class AvifContainerConformanceTests
 
     private static string PropertyType(byte[] box) => Encoding.Latin1.GetString(box.AsSpan(4, 4));
 
-    private static int FindAssociation(AvifFileBuilder builder, AvifFileBuilder.Item item, string type)
+    private static int FindAssociation(HeifFileBuilder builder, HeifFileBuilder.Item item, string type)
     {
         for (var i = 0; i < item.Associations.Count; i++)
         {
@@ -878,7 +879,7 @@ public sealed class AvifContainerConformanceTests
         throw new InvalidOperationException($"The item has no '{type}' property.");
     }
 
-    private static void ReplaceProperty(AvifFileBuilder builder, AvifFileBuilder.Item item, string type, byte[] box)
+    private static void ReplaceProperty(HeifFileBuilder builder, HeifFileBuilder.Item item, string type, byte[] box)
     {
         var index = FindAssociation(builder, item, type);
         item.Associations[index] = (builder.AddProperty(box), item.Associations[index].IsEssential);

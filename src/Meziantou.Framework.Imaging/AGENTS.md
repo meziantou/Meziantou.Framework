@@ -1,9 +1,10 @@
 # Meziantou.Framework.Imaging
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
-own AV1 decoder and encoder) and JPEG XL (lossless and lossy, progressive) decoding and encoding, lossless JPEG
-recompression (`JpegXlTranscoder`), animation-aware processing, vector drawing, font files (TrueType, OpenType, WOFF,
-WOFF2), ICC color conversion, and bounded-memory streaming readers and writers.
+own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder) and JPEG XL (lossless and lossy,
+progressive) decoding and encoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
+vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
+readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
 the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and
@@ -107,10 +108,32 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   the format reference of `readme.md`. A format that is also written adds an encoder codec in `ImageEncoderRegistry`, a
   public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (none
   today) makes `ImageEncoder.FromPath` reject its extensions with a message that says so.
-- **AVIF and AV1** (`Internals/Codecs/Avif`). The container walker resolves the image (`AvifImagePlan`, from the `meta`
-  box) or the image sequence (`AvifMovieBox`, from the `moov` box) before any data is read, then captures the items or
-  samples as their bytes go by. The AV1 decoder (`Av1/`) follows the AV1 Bitstream & Decoding Process Specification
-  section by section and keeps its names: a comment names the section a method implements. Its constant tables
+- **HEIF container** (`Internals/Codecs/Heif`), shared by AVIF and HEIC: there is one implementation of the container
+  rules. The walker (`HeifStructureParser`) resolves the image (`HeifImagePlan`, from the `meta` box) or the image
+  sequence (`HeifMovieBox`, from the `moov` box) before any data is read, then captures the items or samples as their
+  bytes go by.
+  - Everything that depends on the codec goes through the `HeifCodecBinding` of the format (`AvifBinding`,
+    `HeicBinding`): the brands, the types of the coded items and of the sample entries, the configuration record, the
+    header of the bitstream, the pixel decoder, and the errors (`binding.Invalid`, `binding.Unsupported`), which carry
+    the `ImageFormat` and the name of the format. Never test for a codec in the shared code, and never write "AVIF" or
+    "AV1" in one of its messages: use `binding.Name` and `binding.CodecName`.
+  - A container feature is implemented once, and a format reads it when its binding declares it
+    (`HeifCodecBinding.ContainerFeatures`): premultiplied alpha, derived images, edit lists that select parts of the
+    media, fragments and the matrix coefficients 10 to 14 are read by AVIF and still rejected by HEIC, whose corpus
+    holds their rejections. Turn a flag on for a format together with its fixtures (the rejection moves to a valid
+    fixture with independent pixels) and its readme rows; the image that is built from other images also needs the
+    decoder of the format to render it (`AvifDecoder.Derived.cs`).
+  - The format of a file is only known after its file type box. The codec that detected the file gives the first
+    candidate; the brands give the formats the file declares, and a file that declares both has the format of the
+    codec of its primary item, or of its color track. A generic major brand (`mif1`, `msf1`, `miaf`) is claimed by
+    `AvifCodec`; `ImageCodec.GetDetectedFormat` refines what `Image.DetectFormat` reports when the prefix holds the
+    whole file type box. The pixel decoder is created by `HeifDecoder` once the format is resolved.
+  - A sequence gives its samples to the decoder in decoding order (`OnSequenceSample`) and asks for its images in
+    presentation order (`TryWriteSequenceFrame`): a codec that reorders its images needs later samples first.
+  - The rules of a format that the other one does not have are tested in its own project (`AvifDecoderTests`,
+    `HeicDecoderTests`), on files assembled by `HeifFileBuilder`; the shared rules are tested once, with AVIF files.
+- **AVIF and AV1** (`Internals/Codecs/Avif`). The AV1 decoder (`Av1/`) follows the AV1 Bitstream & Decoding Process
+  Specification section by section and keeps its names: a comment names the section a method implements. Its constant tables
   (`Av1/Tables/*.g.cs`) are generated from the published specification by
   `tools/Meziantou.Framework.Imaging.Av1TableExtractor` (the specification text is not committed; the tool pins its commit
   and the hash of each file): never edit them by hand. Every plane the decoder produces must stay bit-exact with the
@@ -119,18 +142,18 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   Scalability only changes which frames are output, never how they are decoded: the units outside the operating point
   are dropped, and a temporal unit with several spatial layers outputs the frame of its highest layer (what a player
   shows, and what `lsel`-less layered AVIF images present). `OutputAllLayers` is for conformance tests only.
-  An `iden` item is resolved by `AvifImagePlan` into the transformations of the coded image it presents (no pixel
+  An `iden` item is resolved by `HeifImagePlan` into the transformations of the coded image it presents (no pixel
   moves; the alpha plane of a derived image must be presented as its colors). An image that is built from other
-  images (an `iovl` item, a grid of derived images) is an `AvifImageNode` tree, rendered by `AvifDecoder.Derived.cs`
+  images (an `iovl` item, a grid of derived images) is an `HeifImageNode` tree, rendered by `AvifDecoder.Derived.cs`
   to straight RGBA surfaces: only that path moves or composites pixels, the direct path (a coded image or a grid of
   coded images, through identity derivations) must stay as it is. Nothing converts colors there: every color
   description of the tree is the same one or the file is rejected, and the structure parser validates the
   descriptors and the fill colors before the first pixel is decoded. The edit list of a track that selects
-  parts of the media is an `AvifEditTimeline` (exact intersections in units of the two time scales; the images that
+  parts of the media is an `HeifEditTimeline` (exact intersections in units of the two time scales; the images that
   are left out are decoded and charged as hidden pixels, and every sample is located then). A fragmented sequence
-  (`mvex`) is read by `AvifMovieFragment`: each `moof` box appends samples to `AvifTrack`, whose tables only hold the
+  (`mvex`) is read by `HeifMovieFragment`: each `moof` box appends samples to `HeifTrack`, whose tables only hold the
   samples that are still to be read, and the walk ends with the input (`ParseStatus.NeedMoreDataOrEnd` at a box
-  boundary). The independent readers are `ReferenceAvif.GetIdentityChain`, `Track.GetPresentation` and its own `moof`
+  boundary). The independent readers are `ReferenceHeif.GetIdentityChain`, `Track.GetPresentation` and its own `moof`
   reader; Apple ImageIO judges identity derivations and the opaque results of built images, and FFmpeg the fragments
   it can demux. The reference of a built image is the generator's own renderer (`AvifCorpus.ContainerDerived.cs`,
   exact rational source-over on the planes of the reference decoders).
@@ -173,7 +196,54 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     `FindMvStack` builds, like a decoder: the stack reads which blocks of the frame are written, so the search marks
     the blocks of a region as not written (`RefFrameNotWritten`) whenever it restores the region. The motion search
     only proposes a motion vector: the block is then encoded like any candidate.
-  - The container writer (`AvifFileWriter`) shares no code with `AvifFileBuilder`, the builder of the test harness.
+  - The container writer (`HeifFileWriter`) shares no code with `HeifFileBuilder`, the builder of the test harness.
+- **HEIC and HEVC** (`Internals/Codecs/Heic`). `HeicBinding` is the HEIC side of the HEIF container: the `hvcC`
+  configuration record (`HeicConfigurationRecord`) holds the parameter sets, which `HeicDecoder` gives to the HEVC
+  decoder before the data of an item or of a sample (NAL units preceded by their length).
+  - The HEVC decoder (`Hevc/`) follows Rec. ITU-T H.265 clause by clause and keeps its names: a comment names the clause
+    a method implements. The specification is a PDF, so its constant tables (`Hevc/Tables`) are transcribed by hand,
+    each with its edition and table number, and what the specification defines by a procedure (scans, derived arrays)
+    is computed. Every plane must stay bit-exact with the reference decoders, in every chroma format at 8, 10 and 12
+    bits: there is no tolerance in HEVC decoding. `HevcDecoder.Tools` reports the coding tools a bitstream used; it is a
+    diagnostic for the tests and never changes the decoding.
+  - No concealment: a missing reference picture, an incomplete picture, a slice that does not start where the previous
+    one ended or a value outside its range is `InvalidImageContentException`; the screen content, multilayer and
+    extended-precision extensions, bit depths above 12 and separate color planes are
+    `UnsupportedImageFeatureException`. Only the base layer is decoded.
+  - The decoder is given access units in decoding order and outputs pictures in output order (clause C.5.2): the
+    container feeds the samples of a track until the decoder outputs the next image, and the composition offsets of the
+    track give the durations of the images in that order. The caller releases each picture it is given.
+  - What a file does not say is what H.265 infers: without `colr` box and without video signal description in the
+    bitstream, the samples of a color image use the limited range (clause E.3.1), as libheif and Apple ImageIO read
+    them, and not the full range that MIAF gives to an image without color information; an alpha plane is in full range
+    unless its bitstream states the limited range (`HeifBitstreamFormat.IsRangeSignaled`). The chroma samples of a
+    4:2:0 picture are at the left of their luma samples (`chroma_sample_loc_type` 0) unless the bitstream says
+    otherwise, and those of a 4:2:2 picture at the position of the luma samples of even columns.
+  - The pictures of a stream can be larger than the image, since the conformance window of a picture with subsampled
+    chroma counts in chroma samples: the `clap` property of an item, or the `clap` box of the sample entry of a track,
+    then selects the image. The writer codes pictures of even sizes and writes that box for an image of an odd size.
+- **HEVC encoder** (`Internals/Codecs/Heic/Hevc/Encoding`, and the `Write` and `Encode` parts of `HevcSliceCoder`). It
+  follows the rules of the AV1 encoder: written from the specification only, it shares the state and the processes of
+  the decoder (prediction, reconstruction, deblocking, sample adaptive offset), its parameter sets and slice headers are
+  written (`HevcHeaderWriter`) then parsed back by the parsers of the decoder, and every decision is made with integers.
+  - A candidate is encoded for real. The winner of a coding unit is written once, in syntax order, through
+    `HevcBinSink` in cost mode, which records it, gives its exact rate and leaves the picture state as a decoder has
+    it; the records are then replayed to the arithmetic encoder, for each coding tree unit, or for the whole picture
+    after deblocking when the sample adaptive offset is on (its syntax precedes the coding tree unit it applies to).
+    `HevcEncoderRoundTripTests` (the decoder of the library must output the reconstruction of the encoder) and
+    `HevcEncoderInteropTests` (FFmpeg, libde265 and HM must output the same planes) are the tests to run after any
+    change. FFmpeg 9.0.2 is exempt for 12-bit streams whose slice QP is 50 or 51, which it decodes to other
+    pictures with no error while libde265 and HM agree (HM also verifies the picture hash): the case fails the day
+    FFmpeg agrees.
+  - The streams only use tools of version 1 of the specification, whatever their profile: lossless output is the plain
+    `cu_transquant_bypass_flag`, because the reference decoders do not all read the lossless tools of the range
+    extensions the same way. A stream declares the narrowest profile that holds it (`HevcProfile`), which selects the
+    brand of the file (`HeicBinding.WriteFileTypeBrands`, from the color images only).
+  - A sequence is IDR pictures and P pictures that refer to the previous picture, in output order: the encoder writes no
+    composition offsets. The parameter sets are in the configuration record (`hvc1`), never in the samples.
+  - `HeifRgbConverter` computes subsampled chroma where the codec puts it: at the luma samples of even columns for HEVC
+    (`HeifCodecBinding.HasCositedChromaColumns`), between two columns for AV1. The video usability information always
+    states the range, the color description and the chroma sample location.
 - **JPEG XL** (`Internals/Codecs/JpegXl`). The structure parser reads the container and gives the codestream to
   `JpegXlCodestreamWalker` in whatever slices arrive; the image header and each frame header are parsed speculatively
   and retried with more bytes, a frame is decoded once its sections are complete. The constant tables
@@ -685,7 +755,7 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 | `src/Meziantou.Framework.Imaging` | The library and the package README (`readme.md`) |
 | `tests/Meziantou.Framework.Imaging.Tests` | Tests that are not about one codec: image model, pixels, memory, metadata, readers and writers with test codecs, format detection, defaults, API surface, the corpus and harness self-tests, the documentation examples |
 | `tests/Meziantou.Framework.Imaging.Processing.Tests` | Processing, resampling, convolution, automatic cropping, drawing and color conversion, with their golden and reference suites |
-| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
+| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
 | `tests/Meziantou.Framework.Imaging.Tests.Shared` | Sources compiled into every project above (no project file): `Helpers/`, the generic suites over the corpus (`Suites/`) and `Imaging.Tests.Shared.props` |
 | `tests/Meziantou.Framework.Imaging.InteropTests` | Files produced by the encoders are decoded by pinned external tools |
 | `tests/Meziantou.Framework.Imaging.TestHarness` | Shared, test-framework-agnostic support: corpus manifest, raw-buffer comparison, independent reference readers, tool helpers |
@@ -765,8 +835,39 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   tool directly (`--alllayers 1`, its default, against `Av1Decoder.OutputAllLayers`: the reference digests of the Argon
   suite hold every shown frame of every layer, where a player and this test only take the highest layer of a temporal
   unit).
-- Interop tests download ffmpeg, libwebp, libavif, libjxl (`cjxl`, `djxl`, `jxlinfo`, `jxl_from_tree`) and jxl-oxide from
-  the release pinned by the `Meziantou.Prebuilt` package (same version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
+- **HEVC vectors.** `tests/Meziantou.Framework.Imaging.Fixtures/hevc` holds raw HEVC byte streams (Annex B) with, in
+  the `hevcVectors` section of the manifest, the SHA-256 of every plane of every output picture, cropped to the
+  conformance window and in output order. A digest is recorded only when at least two of three independent decoders
+  (the `hevc` decoder of FFmpeg, libde265 `dec265`, HM `TAppDecoder`) agree byte for byte; the entry names them and
+  records, for the third one, that it is left out and why (`decoders.excluded`). A recipe declares the disagreement it
+  expects: any other one fails the generation. Every picture also carries a decoded picture hash SEI message (MD5, CRC
+  or checksum), which the manifest repeats per frame: a test checks a decoded picture with nothing but the stream.
+  Decoders that agree with each other and not with the hashes are not a reference (x265 does not always write the hash
+  of what it codes). The feature tags come from `trace_headers`, never from the encoder options, and their vocabulary is
+  closed (`FixtureManifestValidator.AllowedHevcFeatureKeys`). `HevcDecoderConformanceTests` compares the planes and the
+  hashes of the library with them, the vectors tagged `hevc.unsupported` must be rejected, and `HevcToolCoverageTests`
+  checks that the vectors reach every coding tool except the ones no encoder of the pinned release writes (long-term
+  reference pictures, a modified reference picture list): those are reached by streams whose headers the unit tests
+  rewrite (`HevcTestStreamRewriter`), which the reference decoders confirmed.
+- **The reference decoders tolerate what the specification forbids.** A vector on which three decoders agree is not
+  proof that the stream is valid: kvazaar wrote scaling lists with coefficients equal to 0, which clause 7.4.5 forbids
+  and every reference decoder accepts, and x265 writes slices that are not complete, which FFmpeg and libde265 conceal
+  the same way. The library rejects both (`InvalidImageContentException`); when the library and the references
+  disagree on a stream, read the stream against the specification before changing the decoder.
+- **Known behaviours of the HEVC oracles**, beyond the ones the fixtures README lists: libde265 1.1.3 applies SAO across
+  slices that disable in-loop filtering across their boundaries, and `dec265 -c` only compares the hash of the last
+  picture of a stream (use HM, or FFmpeg `-err_detect crccheck` for an MD5); FFmpeg differs with implicit RDPCM in
+  transquant-bypass blocks and with `high_precision_offsets_enabled_flag`; HM aborts on tiles narrower than 256 samples
+  and on 16x16 coding tree blocks at some levels; `ffprobe` needs `-flags unaligned` to report a left crop exactly;
+  `trace_headers` prints nothing for end of sequence and end of bitstream units.
+- **Third-party HEVC conformance streams** (the JCT-VC suite of ITU-T H.265.1) have no license that allows committing
+  them. They are run as a campaign after a change to the HEVC decoder: point
+  `MEZIANTOU_FRAMEWORK_IMAGING_HEVC_DIFF_STREAMS` at their directory and run `HevcDifferentialInteropTests`, which
+  compares the library with the reference decoders on every stream and on seeded random streams of the three encoders
+  (`MEZIANTOU_FRAMEWORK_IMAGING_HEVC_DIFF_SEED`, `MEZIANTOU_FRAMEWORK_IMAGING_HEVC_DIFF_CASES`).
+- Interop tests download ffmpeg (with x265 and kvazaar), libwebp, libavif, libjxl (`cjxl`, `djxl`, `jxlinfo`,
+  `jxl_from_tree`), jxl-oxide, libde265 (`dec265`), libheif (`heif-enc`, `heif-dec`, `heif-info`) and HM (`TAppEncoder`,
+  `TAppDecoder`) from the release pinned by the `Meziantou.Prebuilt` package (same version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
   capability fails the test; it is never skipped. The Apple ImageIO cases need `swift` and only run on macOS.
 - Interop tests start every tool through `ProcessRunner` (test harness), never through `System.Diagnostics.Process`
   directly: on macOS, `Process` forks before .NET 11, which makes the thousands of tool runs of a test process wait on
@@ -801,8 +902,15 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   when fixtures or feature tags change.
 - **Fuzzing.** The default budget is small and deterministic. Longer campaigns are opt-in through
   `MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_ITERATIONS`, `_FUZZ_DURATION_SECONDS`, `_FUZZ_SEED`, `_FUZZ_CASE_TIMEOUT_SECONDS`
-  and, for the font fuzzer, `_FUZZ_SEED_FILTER` (a text the identifier of the seeds contains, such as `variable`).
-  A failure is minimized and committed to `FuzzRegressions/` with an entry in `regressions.json`.
+  and, for the font fuzzer, `_FUZZ_SEED_FILTER` (a text the identifier of the seeds contains, such as `variable`);
+  `_FUZZ_GROUPS` (a comma-separated list, such as `hevc-intra,heic-sequence`) limits a campaign to some groups of
+  seeds. A failure is minimized and committed to `FuzzRegressions/` with an entry in `regressions.json`; a file of the
+  HEIF family is committed as it was found, since removing bytes breaks the offsets of its container.
+  - The AV1 and HEVC vectors are fuzzed inside a container that the harness builder writes (`FuzzAvifContainer`,
+    `FuzzHeicContainer`): the mutations of `FuzzHevcMutator` keep the lengths of the NAL units and their headers, so
+    that they reach the parameter sets, the slice headers and the slice data and not only the container.
+  - The oracle requires that an identification and a load agree: a file is described by the parameter sets that its
+    pictures use. `Image.DetectFormat` is the exception inside the HEIF family, since it only sees the brands.
 - Failed golden comparisons write expected/actual/difference previews to `MEZIANTOU_FRAMEWORK_IMAGING_TEST_ARTIFACTS`
   (default: `TestArtifacts` next to the test assembly). Interop outputs go to
   `MEZIANTOU_FRAMEWORK_IMAGING_INTEROP_ARTIFACTS`.

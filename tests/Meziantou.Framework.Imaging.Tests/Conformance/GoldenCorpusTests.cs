@@ -178,10 +178,11 @@ public sealed class GoldenCorpusTests
             // nothing, and a tolerance needs a measured disagreement (the SMPTE ST 2085 matrix of AVIF, which libavif does
             // not convert, is compared to the bit with the exact conversion of the harness)
             var decodedIdentically = fixture.Entry.Reference?.CrossChecks?.Where(check => check.ExcludedFromTolerance != true && check.MaxAbsoluteError is not null).All(check => check.MaxAbsoluteError == 0) == true;
-            // AVIF: only the samples a matrix applies to are converted with rounded coefficients (identity-matrix,
-            // monochrome and alpha samples are exact, whether or not the AV1 coding is lossless). An image that is built
-            // from other images names the matrices of its coded images
-            var isMatrixedAvif = fixture.Entry.Format == "avif" && (fixture.Entry.Features ?? []).Any(feature => (feature.StartsWith("avif.matrix=", StringComparison.Ordinal) && feature != "avif.matrix=0") || feature.StartsWith("avif.derived.matrix=", StringComparison.Ordinal));
+            // AVIF and HEIC: only the samples a matrix applies to are converted with rounded coefficients (identity-matrix,
+            // monochrome and alpha samples are exact, whether or not the AV1 or HEVC coding is lossless). An image that is
+            // built from other images names the matrices of its coded images
+            var matrix = fixture.Entry.Format + ".matrix=";
+            var isMatrixedAvif = fixture.Entry.Format is "avif" or "heic" && (fixture.Entry.Features ?? []).Any(feature => (feature.StartsWith(matrix, StringComparison.Ordinal) && feature != matrix + "0") || feature.StartsWith("avif.derived.matrix=", StringComparison.Ordinal));
             // JPEG XL: an image stored in XYB, and a VarDCT frame, are decoded in floating point
             var isLossyJpegXl = fixture.Entry.Format == "jxl" && (fixture.Entry.HasFeature("jxl.colorTransform=xyb") || fixture.Entry.HasFeature("jxl.encoding=vardct"));
             Assert.Equal((fixture.Entry.Format == "jpeg" || fixture.Entry.HasFeature("webp.bitstream=vp8") || isMatrixedAvif || isLossyJpegXl) && !decodedIdentically, !policy.IsExact);
@@ -215,8 +216,8 @@ public sealed class GoldenCorpusTests
             VerticalDpi = fields.Resolution is { } resolution2 ? ResolutionExpectation.ToDpi(resolution2.Unit, resolution2.Y) : null,
             TransferFunction = fields.TransferFunction ?? "srgb",
 
-            // Without a colr box of type nclx the AV1 bitstream describes the colors; the inspector does not read coded data
-            Cicp = fields.ContainerCicp?.ToString() ?? (fixture.Entry.Format == "avif" ? fixture.Expected.Cicp?.ToString() : null),
+            // Without a colr box of type nclx the AV1 or HEVC bitstream describes the colors; the inspector does not read coded data
+            Cicp = fields.ContainerCicp?.ToString() ?? (fixture.Entry.Format is "avif" or "heic" ? fixture.Expected.Cicp?.ToString() : null),
             ContentLightLevel = fields.ContentLightLevel?.ToString(),
             MasteringDisplay = fields.MasteringDisplay?.ToString(),
             PixelAspectRatio = fields.PixelAspectRatio?.ToString(),

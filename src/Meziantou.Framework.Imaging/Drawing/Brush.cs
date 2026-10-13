@@ -18,6 +18,20 @@ public abstract class Brush
     {
     }
 
+    /// <summary>Gets how the paint is combined with the pixels it is drawn on. Defaults to <see cref="Drawing.CompositeMode.SourceOver"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Drawing.CompositeMode"/>.</exception>
+    public CompositeMode CompositeMode
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The composite mode is not valid.");
+
+            field = value;
+        }
+    }
+
     /// <summary>Creates a brush painting a single color.</summary>
     /// <param name="color">The color, with straight alpha.</param>
     /// <returns>A new <see cref="SolidBrush"/>.</returns>

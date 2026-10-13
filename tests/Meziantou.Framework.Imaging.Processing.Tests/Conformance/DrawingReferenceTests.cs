@@ -57,6 +57,79 @@ public sealed class DrawingReferenceTests
         Assert.Empty(failures.Take(3));
     }
 
+    [Theory]
+    [MemberData(nameof(AllFormats))]
+    public void RandomPolygonsWithEveryOperatorMatchTheExactReference(PixelFormat format)
+    {
+        const int Cases = 330;
+        var failures = new List<string>();
+        for (var index = 0; index < Cases; index++)
+        {
+            var random = new Random(Seed + 7000 + index);
+            var width = random.Next(1, 8);
+            var height = random.Next(1, 8);
+            var polygons = CreatePolygons(random, width, height);
+            var evenOdd = random.Next(2) == 0;
+            var color = CreateColor(random);
+            var mode = (CompositeMode)(index % 11);
+
+            using var image = DrawingTestSupport.CreateRandom(format, width, height, new Random(Seed - 7000 - index).Next);
+            var frame = image.Frames[0];
+            var before = DrawingTestSupport.ReadSamples(frame);
+            var path = DrawingTestSupport.ToPath(polygons);
+            var brush = new SolidBrush(color) { CompositeMode = mode };
+            frame.Draw(canvas => canvas.Fill(brush, path, evenOdd ? FillRule.EvenOdd : FillRule.NonZero), Ct);
+
+            var areas = ReferenceCoverage.Compute(ReferenceCoverage.FromPolygons(polygons), width, height, evenOdd);
+            var mismatch = DrawingTestSupport.Compare(frame, before, areas, DrawingTestSupport.ToPaint(color, format), ToReference(mode));
+            if (mismatch is not null)
+            {
+                failures.Add($"case {index} ({mode}, {width}x{height}, {(evenOdd ? "even-odd" : "non-zero")}, color {color}, polygons {Describe(polygons)}):{Environment.NewLine}{mismatch}");
+            }
+        }
+
+        Assert.Empty(failures.Take(3));
+    }
+
+    [Fact]
+    public void TheReferenceOfTheOperatorsIsTheReferenceOfSourceOver()
+    {
+        // Two references written from two definitions: the operator with its factors, and source-over on its own
+        var random = new Random(Seed + 8000);
+        foreach (var format in PixelFormats.All)
+        {
+            var layout = ReferencePixelLayout.FromPixelFormat(format);
+            for (var index = 0; index < 400; index++)
+            {
+                var destination = Enumerable.Range(0, layout.ChannelCount).Select(_ => random.Next(4) == 0 ? (random.Next(2) * layout.MaxValue) : random.Next(layout.MaxValue + 1)).ToArray();
+                var paint = DrawingTestSupport.ToPaint(CreateColor(random), format);
+                var coverage = random.Next(3) switch
+                {
+                    0 => ReferenceCoverage.FullCoverage,
+                    1 => random.Next(4),
+                    _ => random.Next(ReferenceCoverage.FullCoverage + 1),
+                };
+                Assert.Equal(ReferenceCompositor.Blend(destination, paint, coverage, layout), ReferenceCompositor.Blend(destination, paint, coverage, layout, ReferenceCompositeMode.SourceOver));
+            }
+        }
+    }
+
+    private static ReferenceCompositeMode ToReference(CompositeMode mode) => mode switch
+    {
+        CompositeMode.SourceOver => ReferenceCompositeMode.SourceOver,
+        CompositeMode.Source => ReferenceCompositeMode.Source,
+        CompositeMode.DestinationOver => ReferenceCompositeMode.DestinationOver,
+        CompositeMode.SourceIn => ReferenceCompositeMode.SourceIn,
+        CompositeMode.DestinationIn => ReferenceCompositeMode.DestinationIn,
+        CompositeMode.SourceOut => ReferenceCompositeMode.SourceOut,
+        CompositeMode.DestinationOut => ReferenceCompositeMode.DestinationOut,
+        CompositeMode.SourceAtop => ReferenceCompositeMode.SourceAtop,
+        CompositeMode.DestinationAtop => ReferenceCompositeMode.DestinationAtop,
+        CompositeMode.Xor => ReferenceCompositeMode.Xor,
+        CompositeMode.Clear => ReferenceCompositeMode.Clear,
+        _ => throw new ArgumentOutOfRangeException(nameof(mode)),
+    };
+
     // -----------------------------------------------------------------------------------------------------------------
     // The reference itself
     // -----------------------------------------------------------------------------------------------------------------

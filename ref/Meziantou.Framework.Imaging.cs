@@ -1080,10 +1080,26 @@ namespace Meziantou.Framework.Imaging.Drawing
 {
     public abstract class Brush
     {
+        public Meziantou.Framework.Imaging.Drawing.CompositeMode CompositeMode { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.Drawing.Brush FromRgba64(Meziantou.Framework.Imaging.Rgba64 color) => throw null;
         public static Meziantou.Framework.Imaging.Drawing.Brush FromRgba32(Meziantou.Framework.Imaging.Rgba32 color) => throw null;
         public static implicit operator Meziantou.Framework.Imaging.Drawing.Brush(Meziantou.Framework.Imaging.Rgba64 color) => throw null;
         public static implicit operator Meziantou.Framework.Imaging.Drawing.Brush(Meziantou.Framework.Imaging.Rgba32 color) => throw null;
+    }
+
+    public enum CompositeMode
+    {
+        SourceOver = 0,
+        Source = 1,
+        DestinationOver = 2,
+        SourceIn = 3,
+        DestinationIn = 4,
+        SourceOut = 5,
+        DestinationOut = 6,
+        SourceAtop = 7,
+        DestinationAtop = 8,
+        Xor = 9,
+        Clear = 10,
     }
 
     public delegate void DrawingAction(Meziantou.Framework.Imaging.Drawing.DrawingCanvas canvas);
@@ -1094,6 +1110,7 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public int Width { get => throw null; }
         public int Height { get => throw null; }
+        public void Clear(Meziantou.Framework.Imaging.Rgba64 color) { }
         public void Fill(Meziantou.Framework.Imaging.Drawing.Brush brush) { }
         public void Fill(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) { }
         public void Stroke(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Drawing.VectorPath path) { }

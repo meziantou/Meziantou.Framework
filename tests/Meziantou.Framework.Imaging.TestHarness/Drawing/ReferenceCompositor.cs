@@ -51,6 +51,93 @@ public static class ReferenceCompositor
         return result;
     }
 
+    /// <summary>Combines a paint with a pixel with an operator of Porter and Duff, from its definition.</summary>
+    /// <remarks>
+    /// With all alphas as fractions of one and the factors <c>Fa</c> and <c>Fb</c> of the operator, the operator gives a
+    /// result of alpha <c>Fa as + Fb ad</c> whose color multiplied by its alpha is <c>Fa as sc + Fb ad dc</c>. The pixel
+    /// is that result for the part of it the shape covers, and what it was for the rest. Alpha and colors are rounded
+    /// to nearest, ties upward. A pixel whose alpha rounds to zero becomes transparent black, or stays as it is when
+    /// it was fully transparent. A layout without alpha is opaque before and after: it gets the color multiplied by
+    /// the alpha the result would have.
+    /// </remarks>
+    /// <param name="destination">The samples of the pixel, in storage order.</param>
+    /// <param name="paint">The paint.</param>
+    /// <param name="coverage">The coverage, from 0 to <see cref="ReferenceCoverage.FullCoverage"/>.</param>
+    /// <param name="layout">The layout of the pixel.</param>
+    /// <param name="mode">The operator.</param>
+    /// <returns>The samples of the result.</returns>
+    public static int[] Blend(IReadOnlyList<int> destination, ReferencePaint paint, int coverage, ReferencePixelLayout layout, ReferenceCompositeMode mode)
+    {
+        ArgumentNullException.ThrowIfNull(destination);
+        ArgumentNullException.ThrowIfNull(paint);
+        ArgumentNullException.ThrowIfNull(layout);
+        var result = destination.ToArray();
+        var max = layout.MaxValue;
+        var covered = new Fraction(coverage, ReferenceCoverage.FullCoverage);
+        if (covered == 0)
+            return result;
+
+        Fraction one = 1;
+        Fraction zero = 0;
+        var sourceAlpha = new Fraction(paint.Alpha, max);
+        var destinationAlpha = layout.HasAlpha ? new Fraction(destination[layout.ColorChannels], max) : one;
+        var (sourceFactor, destinationFactor) = mode switch
+        {
+            ReferenceCompositeMode.SourceOver => (one, one - sourceAlpha),
+            ReferenceCompositeMode.Source => (one, zero),
+            ReferenceCompositeMode.DestinationOver => (one - destinationAlpha, one),
+            ReferenceCompositeMode.SourceIn => (destinationAlpha, zero),
+            ReferenceCompositeMode.DestinationIn => (zero, sourceAlpha),
+            ReferenceCompositeMode.SourceOut => (one - destinationAlpha, zero),
+            ReferenceCompositeMode.DestinationOut => (zero, one - sourceAlpha),
+            ReferenceCompositeMode.SourceAtop => (destinationAlpha, one - sourceAlpha),
+            ReferenceCompositeMode.DestinationAtop => (one - destinationAlpha, sourceAlpha),
+            ReferenceCompositeMode.Xor => (one - destinationAlpha, one - sourceAlpha),
+            ReferenceCompositeMode.Clear => (zero, zero),
+            _ => throw new ArgumentOutOfRangeException(nameof(mode)),
+        };
+
+        // What the pixel keeps of what it was, and what the operator gives where the shape is
+        var kept = (one - covered) * destinationAlpha;
+        var fromSource = covered * sourceFactor * sourceAlpha;
+        var fromDestination = covered * destinationFactor * destinationAlpha;
+        var outputAlpha = kept + fromSource + fromDestination;
+        var premultiplied = new Fraction[layout.ColorChannels];
+        for (var c = 0; c < layout.ColorChannels; c++)
+        {
+            premultiplied[c] = ((kept + fromDestination) * destination[c]) + (fromSource * paint.Color[c]);
+        }
+
+        if (!layout.HasAlpha)
+        {
+            for (var c = 0; c < layout.ColorChannels; c++)
+            {
+                result[c] = RoundHalfUp(premultiplied[c]);
+            }
+
+            return result;
+        }
+
+        var roundedAlpha = RoundHalfUp(outputAlpha * max);
+        if (roundedAlpha == 0)
+        {
+            if (destination[layout.ColorChannels] != 0)
+            {
+                Array.Clear(result);
+            }
+
+            return result;
+        }
+
+        for (var c = 0; c < layout.ColorChannels; c++)
+        {
+            result[c] = RoundHalfUp(premultiplied[c] / outputAlpha);
+        }
+
+        result[layout.ColorChannels] = roundedAlpha;
+        return result;
+    }
+
     /// <summary>Checks that a pixel is the compositing of one of the accepted paints for one of the accepted coverages.</summary>
     /// <param name="destination">The samples of the pixel before, in storage order.</param>
     /// <param name="actual">The samples of the pixel after.</param>

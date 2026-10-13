@@ -96,6 +96,16 @@ internal sealed partial class DrawingSession : IDisposable
         Render(brush, FillRule.NonZero);
     }
 
+    public void Clear(Rgba64 color)
+    {
+        AddFrame(BeginCall());
+        var converted = _frames[0].ConvertDrawingColor(color);
+        if (_rasterizer!.Begin(_edges!, FillRule.NonZero, _cancellationToken))
+        {
+            Paint(converted, gradient: null, CompositeMode.Source);
+        }
+    }
+
     public void Fill(Brush brush, VectorPath path, FillRule fillRule)
     {
         ArgumentNullException.ThrowIfNull(brush);
@@ -511,9 +521,15 @@ internal sealed partial class DrawingSession : IDisposable
     /// <summary>Rasterizes the edges of the call and composites every row onto every frame.</summary>
     private void Render(Brush brush, FillRule fillRule)
     {
-        if (!Prepare(brush, fillRule, out var color, out var gradient))
-            return;
+        if (Prepare(brush, fillRule, out var color, out var gradient))
+        {
+            Paint(color, gradient, brush.CompositeMode);
+        }
+    }
 
+    /// <summary>Composites every row of the sweep that was prepared onto every frame.</summary>
+    private void Paint(DrawingColor color, GradientEvaluator? gradient, CompositeMode mode)
+    {
         if (!_thumbnailRemoved)
         {
             // The pixels are about to change: the EXIF thumbnail no longer shows them
@@ -527,7 +543,7 @@ internal sealed partial class DrawingSession : IDisposable
             var y = rasterizer.Y;
             var x = rasterizer.X;
             var coverage = rasterizer.Coverage;
-            var source = gradient is null ? new DrawingSource(color) : new DrawingSource(gradient.Evaluate(y, x, coverage.Length));
+            var source = gradient is null ? new DrawingSource(color, mode) : new DrawingSource(gradient.Evaluate(y, x, coverage.Length), mode);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], y, x, coverage, source);
@@ -545,17 +561,19 @@ internal sealed partial class DrawingSession : IDisposable
         if (edges.Count == 0)
             return false;
 
+        // A paint without opacity changes nothing with most operators; with the others, it erases
+        var isInert = DrawingKernels.IsTransparentPaintInert(brush.CompositeMode);
         if (brush is SolidBrush solid)
         {
             color = _frames[0].ConvertDrawingColor(solid.Color);
-            if (color.Alpha == 0)
+            if (color.Alpha == 0 && isInert)
                 return false;
         }
         else
         {
             gradient = _gradient ??= new GradientEvaluator(_image.Owner.Scope);
             gradient.Prepare((GradientBrush)brush, _frames[0], Width);
-            if (gradient.IsTransparent)
+            if (gradient.IsTransparent && isInert)
                 return false;
         }
 

@@ -243,6 +243,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     the largest number of edges on one row.
   - Compositing is exact integer source-over (`ulong`), the generalization of `AnimationCompositor.BlendOver8/16` to a
     fractional source alpha. Colors are converted to the pixel format first (`PixelConverter` rules).
+  - The other operators of `CompositeMode` (a property of the brush, so that the canvas has no state) have one kernel
+    for all of them, from the two factors of the operator; source-over keeps its own, unchanged. A paint without
+    opacity is skipped only with the operators it changes nothing with (`IsTransparentPaintInert`): with the others it
+    erases. `ReferenceCompositor` has the same operators from their definition, in rational numbers.
   - Gradients interpolate premultiplied values of the converted stops, evaluated per pixel at its center.
 - Only `+ - * /` and `Math.Sqrt` in the geometry (no trigonometry, no fused multiply-add), and every order that
   influences a sum is total (events and crossings are sorted with a tie-break): results must not depend on the

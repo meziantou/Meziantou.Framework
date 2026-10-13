@@ -24,7 +24,9 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// <para>
 /// <b>Compositing.</b> The paint is composited over the existing pixels (source-over) on the stored sample values, with
 /// straight alpha and exact integer arithmetic, rounded to nearest with ties upward. Pixel formats without alpha stay
-/// opaque. See <see cref="Brush"/> for the conversion of colors to the pixel format of the frame.
+/// opaque. See <see cref="Brush"/> for the conversion of colors to the pixel format of the frame, and
+/// <see cref="Brush.CompositeMode"/> for the other ways a paint is combined with the pixels (replacing, erasing,
+/// painting behind, masking).
 /// </para>
 /// <para>
 /// <b>Failures.</b> Drawing is a pixel-only edit: when a call fails or is canceled, the calls that completed stay, and
@@ -46,6 +48,17 @@ public readonly ref struct DrawingCanvas
 
     /// <summary>Gets the height of the canvas, in pixels (0 for a default instance).</summary>
     public int Height => _session?.Height ?? 0;
+
+    /// <summary>Replaces every pixel of the canvas by a color, alpha included: a transparent color erases the canvas.</summary>
+    /// <remarks>
+    /// This is filling the canvas with <see cref="CompositeMode.Source"/>; <see cref="Fill(Brush)"/> paints over the
+    /// pixels instead. On a pixel format without alpha, the pixels get the color multiplied by its alpha.
+    /// </remarks>
+    /// <param name="color">The color, with straight alpha. An <see cref="Rgba32"/> converts implicitly.</param>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Clear(Rgba64 color) => GetSession().Clear(color);
 
     /// <summary>Paints the whole canvas.</summary>
     /// <param name="brush">The paint. A color converts implicitly.</param>

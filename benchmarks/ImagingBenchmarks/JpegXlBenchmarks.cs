@@ -13,8 +13,9 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 /// <c>jxl-quality</c> command, not here.
 /// </summary>
 /// <remarks>
-/// The decoded files are written by the encoder of the library, which only uses the 8x8 transform for lossy output: the
-/// decoding workloads say nothing about files of other encoders, which use larger transforms, patches and splines.
+/// The decoded files are written by the encoder of the library, which uses the 8x8 and 16x16 transforms at its default
+/// effort: the decoding workloads say nothing about files of other encoders, which use other transforms, patches and
+/// splines.
 /// </remarks>
 [Config(typeof(WorkloadConfig))]
 public class JpegXlBenchmarks : IDisposable

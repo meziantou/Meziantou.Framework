@@ -80,6 +80,10 @@ internal sealed class JpegXlPattern
         // Wider than an LF group (2048 samples): several LF groups
         "photo-wide-rgb16" => CreatePhoto(2100, 140, 3, 65535),
 
+        // Slow ramps, bands that vary in one direction only, long diagonal waves, noise and a bar with hard edges: each suits
+        // another transform of the lossy mode, from 8x8 to 64x64 samples
+        "waves-rgb8" => Create(320, 320, 3, 255, GetWave),
+
         // The same small shapes at many places, as the letters of a text: what the encoder stores once, as patches
         "text-rgb8" => CreateText(480, 320),
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown pattern."),
@@ -243,6 +247,43 @@ internal sealed class JpegXlPattern
         }
 
         return new JpegXlPattern(width, height, 3, 255, samples);
+    }
+
+    private static int GetWave(int x, int y, int c)
+    {
+        var value = 40 + (c * 30) + ((x * (3 - c)) / 4) + ((y * (c + 1)) / 5);
+        if (y < 96 && x >= 160)
+        {
+            value += Triangle(x, 32) * 2;
+        }
+
+        if (y is >= 96 and < 192 && x < 160)
+        {
+            value += Triangle(y, 24) * 2;
+        }
+
+        if (y >= 192 && x >= 192)
+        {
+            value += (int)((((ulong)((x * 7) + (y * 13) + (c * 5)) * 2654435761UL) >> 27) & 31);
+        }
+
+        if (y is >= 200 and < 216 && x is >= 32 and < 120)
+        {
+            value = 230 - (c * 40);
+        }
+
+        if (y < 192 && ((x / 64) + (y / 96)) % 2 == 0)
+        {
+            value += Triangle(x + y, 64) / 2;
+        }
+
+        return Math.Clamp(value, 0, 255);
+
+        static int Triangle(int value, int period)
+        {
+            value %= 2 * period;
+            return value < period ? value : (2 * period) - value;
+        }
     }
 
     private static int Hash(int x, int y, int c)

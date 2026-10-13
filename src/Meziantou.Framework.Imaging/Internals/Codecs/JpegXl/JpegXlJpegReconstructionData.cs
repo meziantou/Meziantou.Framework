@@ -217,8 +217,10 @@ internal sealed class JpegXlJpegReconstructionData
             model.RestartInterval = (int)reader.ReadBits(16);
         }
 
-        // The blocks before which a run of blocks is written, then the blocks that end with runs of zeros: each as its
-        // distance to the block that follows the previous one
+        // For each scan, the blocks before which a run of blocks is written, then the blocks that end with runs of zeros:
+        // each as its distance to the block that follows the previous one. The two lists of a scan follow each other
+        // (established on files of several scans that have both: djxl does not rebuild a file that gives the first
+        // list of every scan, then the second one)
         foreach (var scan in model.Scans)
         {
             var count = (int)reader.ReadU32(0, 0, 1, 2, 4, 4, 20, 16);
@@ -231,12 +233,9 @@ internal sealed class JpegXlJpegReconstructionData
 
                 scan.ResetPoints.Add((int)block);
             }
-        }
 
-        foreach (var scan in model.Scans)
-        {
-            var count = (int)reader.ReadU32(0, 0, 1, 2, 4, 4, 20, 16);
-            long block = -1;
+            count = (int)reader.ReadU32(0, 0, 1, 2, 4, 4, 20, 16);
+            block = -1;
             for (var i = 0; i < count; i++)
             {
                 var runs = (int)reader.ReadU32(1, 0, 2, 2, 5, 4, 20, 8);
@@ -464,15 +463,12 @@ internal sealed class JpegXlJpegReconstructionData
                 writer.WriteU32((uint)(block - previous - 1), 0, 0, 1, 3, 9, 5, 41, 28);
                 previous = block;
             }
-        }
 
-        foreach (var scan in model.Scans)
-        {
             if (scan.ExtraZeroRuns.Count > 20 + ushort.MaxValue)
                 throw TooMuch("that number of blocks that end with runs of zeros");
 
             writer.WriteU32((uint)scan.ExtraZeroRuns.Count, 0, 0, 1, 2, 4, 4, 20, 16);
-            var previous = -1;
+            previous = -1;
             foreach (var (block, count) in scan.ExtraZeroRuns)
             {
                 if (count > 20 + 255)

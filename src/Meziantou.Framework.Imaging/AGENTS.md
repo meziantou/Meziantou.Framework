@@ -230,6 +230,59 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   which made a constant channel larger than the colors, and the description of an ANS distribution is longer than a
   small group. The effort only selects what is searched; `jxl-quality` shows the sizes per effort. A change of the
   encoder is checked by the interop tests (djxl and jxl-oxide must read the file like the decoder of the library does).
+- **Lossy JPEG XL quality tools** (`JpegXlVarDctEncoder`). Each one is kept or left out on measurements, not on what
+  other encoders do: file size at equal PSNR, SSIM, MS-SSIM, XPSNR and VMAF (FFmpeg and the `vmaf` tool on djxl output)
+  over photographs of several sizes, with cjxl at its efforts 3 and 7 as the yardstick. Measure again before changing a
+  constant, on real photographs: the synthetic patterns of the tests are noise and say nothing.
+  - *Transform selection* (`ChooseSquare`, `GetTransformCost`): squares of 16, 32 and 64 samples and their halves
+    against their quarters, on the luma, by `bits + weight * squared error`. The squared error of the samples is exact
+    (every DCT of the format has basis functions of the same energy); the bits are a model fitted on frames coded with
+    one transform, to a few percent. What names a transform in the block list is part of the cost (about four bits):
+    without it the selection loses on small images. The transforms above 16x16 add about 0.1 % on photographs (more on
+    smooth graphics) and can double the encoding time, hence their effort.
+  - *The transforms of one block other than its DCT are not written* (the DCTs of 4x4, 4x8 and 8x4 samples, the 2x2
+    transform, the identity, AFV). They were tried, after the quantization field: their forward transform is the
+    inverse of the 64x64 matrix measured on the decoder, the error of the samples comes from the same matrix, and djxl
+    reads the files. With the cost of the other transforms they are chosen where they make the file larger, since the
+    cost only measures the luma and its bit estimate was fitted on DCTs; a number of bits added to their cost (8 to
+    128) removes the loss without giving a gain. File size at equal quality, effort 5, on five photographs (PSNR-Y,
+    SSIM, XPSNR, MS-SSIM, VMAF), with 48 bits added: 4x4 +2.4 %, +11.5 %, +5.6 %, +22 %, +25 %; identity +4.7 %, +8.9 %,
+    +6.1 %, +15 %, +8.6 %; 2x2 +0.1 %, +5.3 %, +2.0 %, +11 %, +8.2 %; AFV +2.1 %, +6.4 %, +3.7 %, +11 %, +6.5 %. The two
+    halves of a block (4x8 and 8x4), with 64 bits added, are the only ones near a gain: -0.4 %, +0.3 %, +0.1 %, +1.1 %,
+    +0.4 % on the photographs, and -1.7 %, -2.0 %, -1.5 %, -1.0 %, -0.3 % on two screenshots of text and three graphics
+    (the 2x2 transform is 7 % smaller on text for PSNR and SSIM, and larger for MS-SSIM and VMAF). Not kept: they do
+    not reduce the size of photographs, and what is added to their cost keeps them out of the blocks they suit best (one
+    edge in the middle of a block is cheap for the 8x8 DCT too). A cost that measures the three channels is what to
+    try before trying them again.
+  - *The block list* is a Modular channel whose first row holds the transforms and whose second row holds the
+    quantization factors: the tree gives each row its own context and predictor (`firstRowChannel`), which made the
+    list 15 % smaller on a photograph.
+  - *Gaborish* (`JpegXlInverseGaborish`, `UsesGaborish`): the encoder sharpens with `3 I - 3 S + S^2`, three terms of the
+    inverse of the smoothing `S` of the decoder, computed from its weights. It is smaller at equal PSNR, SSIM and XPSNR
+    (5 to 8 %) and larger at equal MS-SSIM (3 %) and VMAF (10 %): it stays because it removes block edges, with the
+    distance scaled so that a quality keeps its file size. Above quality 90 the pair loses fine texture that the
+    quantization would keep (a PSNR ceiling near 46 dB on a textured image), so it is off. A 5x5 least-squares inverse
+    does not keep a constant (2.6 % of gain at the frequency 0): do not use one.
+  - *Adaptive quantization* (`JpegXlAdaptiveQuantization`, `ComputeQuantField`): a quantization factor per block,
+    which moves bits from texture to flat areas and to the neighborhood of edges. Unlike the other tools it is not
+    kept on the measurements: none of the five metrics rewards that redistribution. Measured on the ten images,
+    effort 5, file size at equal quality against one factor for the frame: PSNR-Y +4.7 %, SSIM 0.0 %, XPSNR +4.7 %,
+    MS-SSIM +0.1 %, VMAF +3.9 %; against cjxl at its default effort the encoder stays smaller (-5.3 %, -4.6 %, -4.8 %,
+    -5.5 %, -0.5 %). Three simpler fields (a factor that follows the activity of the block: 8x8 blocks, 16x16 cells and
+    64x64 tiles; relative to the mean of the frame; with a floor that protects edges) were 2 to 25 % larger on the five
+    metrics and visibly softer on textures: do not go back to one. The field is written from the effort 3: its pass
+    costs 0.43 billion instructions for 1024x768 samples, 27 % of an encoding at the effort 5 and 41 % of one at the
+    effort 0; below, every block has the factor of the frame. How the encoder uses it:
+    - the field is computed before the transforms are chosen (a first pass over the frame, which converts it to XYB a
+      second time rather than keeping its planes), so the scale of the frame comes from the field of the 8x8 blocks, not
+      from the factors of the transforms;
+    - a candidate transform is costed with the factor it would have, and its error is counted in the steps the field
+      gives its blocks, so that two choices for the same blocks are compared on the same error;
+    - `FieldScale` gives a quality the mean file size it had with one factor (0.91 at quality 20 to 1.10 at quality 92
+      on the ten images); the LF image keeps its own quantization, and the scale of the frame leaves it a factor of 10
+      at least;
+    - the field is computed from the image once: the encoder does not decode the frame to measure it and refine
+      the field.
 - **Progressive reading.** `ImageReader.ReadFrameRefinementInto` is the only way to see a frame before it is complete.
   The walker stops at the lengths the decoder asks for (the end of the sections of a stage); an intermediate rendering
   decodes the sections again from the buffered payload (`JpegXlFrameDecoder.DecodePartial`), never changes the state of
@@ -243,7 +296,21 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   both the rewritten JPEG file and the file its own output rebuilds before it returns. The layout of the `jbrd` box and
   the integer chroma from luma rule were established against files written by cjxl, since the standard is not
   available: a change there needs the interop tests (djxl and jxl-oxide rebuild the files of the library, the library
-  rebuilds the files of cjxl). The JPEG entropy coding shares `JpegBitWriter` and `JpegHuffmanEncoder` with the JPEG
+  rebuilds the files of cjxl). The library reading back what it writes proves nothing about the layout: the two lists
+  of a scan (reset points, extra zero runs) were once written list by list instead of scan by scan, which only djxl
+  refused, and only for a file of several scans that has them; cjxl and the JPEG encoders of the corpus never write
+  such a file, `JpegTestImage` does (`FilesWithRedundantSymbolsGoThroughBothChains`). The reconstruction data may
+  follow the codestream, which no encoder writes (cjxl puts them between two `jxlp` boxes, after the image header);
+  jxl-oxide rebuilds such a file and djxl does not. `JpegXlJpegReconstructor` keeps a frame that could be the one of
+  a JPEG file as it is coded (`IsJpegFrame`) until the end of the container, and `JpegXlReconstructionProbe` reads
+  such a container to its end; any other frame without data before it ends the parsing at once, and a bare
+  codestream at its header. What `JpegBitstreamReader` accepts was widened the same way, on files made for it
+  (`JpegTestVariants`), each kept only once djxl rebuilt the file of the library and the library the file of cjxl:
+  bytes after the last block of a scan are data between markers; a component takes the quantization table its slot
+  holds when its own first scan starts, so tables may be defined, or defined again, between scans; a table that no
+  component uses is described as a copy of the table before it in the file, whatever its slot (the only form cjxl
+  writes and djxl rebuilds), and any other unused table is refused. cjxl refuses a slot that is used again for other
+  values between two scans, which the library writes and djxl rebuilds. The JPEG entropy coding shares `JpegBitWriter` and `JpegHuffmanEncoder` with the JPEG
   encoder: there is still one JPEG implementation of each direction of pixels, and one of coefficients.
 - **JPEG 2000** (`Internals/Codecs/Jpeg2000`). Written from Rec. ITU-T T.800 (Part 1) and T.814 (Part 15, the
   high-throughput block coder, `Jpeg2000/Ht`); OpenJPEG, OpenJPH and FFmpeg are test oracles only. The structure parser

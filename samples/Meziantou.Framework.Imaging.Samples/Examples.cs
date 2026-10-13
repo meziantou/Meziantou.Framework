@@ -119,6 +119,71 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>Composing a picture from another image: a clip, a rounded rectangle, a dashed line and an arc.</summary>
+    // begin-snippet: draw-card
+    public static void ComposeCard(string photoPath, string outputPath)
+    {
+        using var photo = Image.Load(photoPath);
+        using var card = new Image<Rgba32>(320, 120);
+
+        var shade = new LinearGradientBrush(new PointD(0, 0), new PointD(0, 120), [new GradientStop(0, Rgba32.ParseHex("#2B5876")), new GradientStop(1, Rgba32.ParseHex("#4E4376"))]);
+        var portrait = new VectorPathBuilder().AddCircle(new PointD(60, 60), 40).Build();
+        var ring = new Pen(Colors.White, 3);
+        var rule = new Pen(new Rgba32(255, 255, 255, 160), 2) { DashPattern = [6, 4] };
+        var gauge = new Pen(Colors.Gold, 6) { LineCap = LineCap.Round };
+
+        card.Frames[0].Draw(canvas =>
+        {
+            // The pixels outside the rounded corners stay transparent
+            canvas.FillRoundedRectangle(shade, new Rectangle(0, 0, 320, 120), 16);
+
+            // The photo is stretched to the square around the circle, and only changes the inside of the circle
+            canvas.Clip(portrait, clipped => clipped.DrawImage(photo.Frames[0], new Rectangle(20, 20, 80, 80)));
+            canvas.Stroke(ring, portrait);
+
+            // Dashes of 6 pixels and gaps of 4, then three quarters of a circle from its top, clockwise
+            canvas.StrokeLine(rule, new PointD(120, 60), new PointD(300, 60));
+            canvas.StrokeArc(gauge, new PointD(270, 30), 14, -90, 270);
+        });
+
+        card.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>Measuring a path to place shapes along it, and turning a shape to the direction of the path.</summary>
+    // begin-snippet: draw-route
+    public static void DrawRoute(string outputPath)
+    {
+        using var image = new Image<Rgba32>(200, 120, Colors.White);
+        var route = new VectorPathBuilder().MoveTo(20, 100).CubicBezierTo(60, 10, 120, 110, 176, 34).Build();
+
+        // An arrow head that points to the right, with its tip at the origin
+        var arrowHead = new VectorPathBuilder().AddPolygon([new PointD(0, 0), new PointD(-14, -6), new PointD(-14, 6)]).Build();
+
+        // The end of the route and its direction there. The transformation turns the x axis to that direction, then
+        // moves the origin to the end of the route.
+        var length = route.GetLength();
+        _ = route.TryGetPointAtDistance(length, out var tip, out var direction);
+        var head = arrowHead.Transform(new AffineTransform(direction.X, direction.Y, -direction.Y, direction.X, tip.X, tip.Y));
+
+        var line = new Pen(Colors.SteelBlue, 3) { DashPattern = [8, 5], LineCap = LineCap.Round };
+        image.Draw(canvas =>
+        {
+            canvas.Stroke(line, route);
+            canvas.Fill(Colors.SteelBlue, head);
+
+            // A milestone at each quarter of the way
+            for (var i = 1; i <= 3; i++)
+            {
+                _ = route.TryGetPointAtDistance(length * i / 4, out var milestone, out _);
+                canvas.FillCircle(Colors.Crimson, milestone, 4);
+            }
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
     /// <summary>Typed row access with a static callback (no closure allocation).</summary>
     // begin-snippet: typed-rows
     public static void InvertColors(string path)

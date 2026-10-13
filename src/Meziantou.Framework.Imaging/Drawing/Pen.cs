@@ -11,6 +11,11 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// </remarks>
 public sealed class Pen
 {
+    /// <summary>The shortest pattern of dashes and gaps: 1/1024 of a pixel.</summary>
+    internal const double MinDashPatternLength = 1.0 / 1024;
+
+    private readonly double[] _dashPattern = [];
+
     /// <summary>Initializes a new instance of the <see cref="Pen"/> class.</summary>
     /// <param name="brush">The paint of the stroke. A color converts implicitly.</param>
     /// <param name="width">The width of the stroke, in pixels. Must be positive.</param>
@@ -80,4 +85,82 @@ public sealed class Pen
             field = value;
         }
     } = 4;
+
+    /// <summary>
+    /// Gets the lengths, in pixels, of the dashes and of the gaps of the stroke, alternately and starting with a dash.
+    /// Empty (the default) for a continuous stroke.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The pattern is repeated along each contour of the path, which starts <see cref="DashOffset"/> into it; lengths are
+    /// measured along the path as it is drawn. A pattern of an odd number of lengths is used twice, so that <c>[3]</c>
+    /// is dashes of 3 and gaps of 3. Each dash is stroked as an open contour: it gets <see cref="LineCap"/> at both ends
+    /// and <see cref="LineJoin"/> at the vertices of the path it goes through. A dash of length zero is drawn by its
+    /// caps alone: a dot with <see cref="Drawing.LineCap.Round"/>, a square with <see cref="Drawing.LineCap.Square"/>.
+    /// </para>
+    /// <para>
+    /// When a closed contour ends in the middle of a dash, that dash continues with the first dash of the contour, as one
+    /// dash. The time to draw a dashed stroke grows with the number of dashes on the canvas.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentException">A length is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A length is negative or exceeds 16777216, or the dashes and the gaps of a pattern that is not empty add up to less than 1/1024.</exception>
+    public ReadOnlySpan<double> DashPattern
+    {
+        get => _dashPattern;
+        init
+        {
+            double total = 0;
+            foreach (var length in value)
+            {
+                DrawingGuard.Length(length, nameof(value));
+                total += length;
+            }
+
+            if (value.IsEmpty)
+            {
+                _dashPattern = [];
+                Dashes = [];
+                DashLength = 0;
+                return;
+            }
+
+            // A pattern of an odd number of lengths is used twice
+            var isOdd = (value.Length & 1) != 0;
+            if (isOdd)
+            {
+                total *= 2;
+            }
+
+            if (total < MinDashPatternLength)
+                throw new ArgumentOutOfRangeException(nameof(value), total, "The dashes and the gaps of a dash pattern must add up to 1/1024 at least.");
+
+            _dashPattern = value.ToArray();
+            Dashes = isOdd ? [.. value, .. value] : _dashPattern;
+            DashLength = total;
+        }
+    }
+
+    /// <summary>Gets the distance into <see cref="DashPattern"/> at which each contour starts. Defaults to 0; a negative distance starts before the pattern.</summary>
+    /// <exception cref="ArgumentException">The value is not a finite number.</exception>
+    public double DashOffset
+    {
+        get;
+        init
+        {
+            if (!double.IsFinite(value))
+                throw new ArgumentException("The dash offset must be a finite number.", nameof(value));
+
+            field = value;
+        }
+    }
+
+    /// <summary>Gets the pattern as a whole number of dashes and gaps; empty for a continuous stroke.</summary>
+    internal double[] Dashes { get; private init; } = [];
+
+    /// <summary>Gets the sum of the lengths of <see cref="Dashes"/>.</summary>
+    internal double DashLength { get; private init; }
+
+    /// <summary>Gets a value indicating whether the stroke is cut into dashes.</summary>
+    internal bool IsDashed => Dashes.Length != 0;
 }

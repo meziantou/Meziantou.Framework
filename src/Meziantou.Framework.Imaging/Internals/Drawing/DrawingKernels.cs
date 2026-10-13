@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -29,6 +30,16 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Consequences: a full coverage with an opaque paint writes the paint exactly; a full coverage is exactly the
 /// compositing of the animation decoders. Every intermediate value fits in 64 bits: the largest one,
 /// <c>M^3 Q + M^2 Q / 2</c> for 16-bit samples, is just below 2^64.
+/// </para>
+/// <para>
+/// <b>Other operators.</b> An operator of <see cref="CompositeMode"/> has two factors, whose numerators over <c>M</c> are
+/// <c>fa</c> (0, <c>M</c>, <c>da</c> or <c>M - da</c>) and <c>fb</c> (0, <c>M</c>, <c>sa</c> or <c>M - sa</c>). The pixel is,
+/// for the part <c>q / Q</c> the shape covers, the result of the operator, and for the rest what it was. With
+/// <c>S = q fa sa</c> and <c>D = (Q - q) da M + q fb da</c>, the exact output alpha times <c>M^2 Q</c> is <c>A = S + D</c>:
+/// <c>a' = round(A / (M Q))</c> and <c>c' = round((sc S + dc D) / A)</c>. When <c>a'</c> is 0, the pixel becomes
+/// transparent black, or is not written if it was fully transparent. A pixel format without alpha (<c>da = M</c>) gets
+/// the color of the result over black, <c>round((sc S + dc D) / (M^2 Q))</c>. For source-over, these are the formulas
+/// above; <c>S + D</c> never exceeds <c>M^2 Q</c>, so nothing overflows either.
 /// </para>
 /// </remarks>
 internal static class DrawingKernels
@@ -78,6 +89,36 @@ internal static class DrawingKernels
         throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
     }
 
+    /// <summary>Converts paint colors to the pixel format of a frame: four samples per color, laid out as <see cref="DrawingColor"/>.</summary>
+    public static void ConvertColors<TPixel>(ReadOnlySpan<Rgba64> colors, Span<ushort> destination)
+        where TPixel : unmanaged
+    {
+        for (var i = 0; i < colors.Length; i++)
+        {
+            var color = ConvertColor<TPixel>(colors[i]);
+            var entry = destination.Slice(i * 4, 4);
+            entry[0] = color.C0;
+            entry[1] = color.C1;
+            entry[2] = color.C2;
+            entry[3] = color.Alpha;
+        }
+    }
+
+    /// <summary>Reads pixels of a row as 16-bit colors, with the rules of pixel conversion.</summary>
+    /// <param name="storage">The storage of the frame, leased by the caller.</param>
+    /// <param name="y">The row.</param>
+    /// <param name="x">The first column.</param>
+    /// <param name="destination">The colors; as many pixels are read as it holds.</param>
+    public static void ReadColors<TPixel>(PixelStorage storage, int y, int x, Span<Rgba64> destination)
+        where TPixel : unmanaged
+    {
+        if (Unsafe.SizeOf<TPixel>() != storage.BytesPerPixel)
+            throw new InvalidOperationException($"The pixel type '{typeof(TPixel).Name}' does not match the storage pixel size.");
+
+        var row = unsafe(MemoryMarshal.Cast<byte, TPixel>(storage.GetRowSpanCore(y))).Slice(x, destination.Length);
+        PixelConverter.ConvertRow<TPixel, Rgba64>(row, destination);
+    }
+
     /// <summary>Composites a paint over a run of pixels of a row.</summary>
     /// <param name="storage">The storage of the frame, leased by the caller.</param>
     /// <param name="y">The row.</param>
@@ -117,10 +158,23 @@ internal static class DrawingKernels
         }
     }
 
+    /// <summary>
+    /// Gets a value indicating whether a paint without opacity changes nothing with an operator: its factor of the
+    /// destination is then 1. With the other operators, a transparent paint erases.
+    /// </summary>
+    public static bool IsTransparentPaintInert(CompositeMode mode)
+        => mode is CompositeMode.SourceOver or CompositeMode.DestinationOver or CompositeMode.DestinationOut or CompositeMode.SourceAtop or CompositeMode.Xor;
+
     /// <summary>Composites a paint over interleaved samples: 1 (gray), 3 (color) or 4 (color then alpha) per pixel.</summary>
     internal static void Composite<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
         where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
     {
+        if (source.Mode != CompositeMode.SourceOver)
+        {
+            CompositeWithOperator(samples, channels, coverage, source);
+            return;
+        }
+
         var max = ulong.CreateTruncating(TSample.MaxValue);
         var scale = max * CoverageRasterizer.FullCoverage;
         var half = scale / 2;
@@ -188,6 +242,93 @@ internal static class DrawingKernels
             for (var c = 0; c < 3; c++)
             {
                 pixel[c] = TSample.CreateTruncating(((paint[c] * sourceWeight) + (ulong.CreateTruncating(pixel[c]) * weight) + rounding) / total);
+            }
+
+            pixel[3] = TSample.CreateTruncating(alpha);
+        }
+    }
+
+    /// <summary>Combines a paint with interleaved samples with an operator other than source-over.</summary>
+    private static void CompositeWithOperator<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        const ulong Full = CoverageRasterizer.FullCoverage;
+        var max = ulong.CreateTruncating(TSample.MaxValue);
+        var alphaScale = max * Full;
+        var colorScale = max * max * Full;
+        var colorChannels = channels == 4 ? 3 : channels;
+        var mode = source.Mode;
+        var isInert = IsTransparentPaintInert(mode);
+        var colors = source.Colors;
+        var color = source.Color;
+        Span<ulong> paint = [color.C0, color.C1, color.C2];
+        ulong paintAlpha = color.Alpha;
+        for (var i = 0; i < coverage.Length; i++)
+        {
+            ulong q = coverage[i];
+            if (q == 0)
+                continue;
+
+            if (!colors.IsEmpty)
+            {
+                var entry = colors.Slice(i * 4, 4);
+                paint[0] = entry[0];
+                paint[1] = entry[1];
+                paint[2] = entry[2];
+                paintAlpha = entry[3];
+            }
+
+            if (paintAlpha == 0 && isInert)
+                continue;
+
+            var pixel = samples.Slice(i * channels, channels);
+            var destinationAlpha = channels == 4 ? ulong.CreateTruncating(pixel[3]) : max;
+            var (sourceFactor, destinationFactor) = mode switch
+            {
+                CompositeMode.Source => (max, 0UL),
+                CompositeMode.DestinationOver => (max - destinationAlpha, max),
+                CompositeMode.SourceIn => (destinationAlpha, 0UL),
+                CompositeMode.DestinationIn => (0UL, paintAlpha),
+                CompositeMode.SourceOut => (max - destinationAlpha, 0UL),
+                CompositeMode.DestinationOut => (0UL, max - paintAlpha),
+                CompositeMode.SourceAtop => (destinationAlpha, max - paintAlpha),
+                CompositeMode.DestinationAtop => (max - destinationAlpha, paintAlpha),
+                CompositeMode.Xor => (max - destinationAlpha, max - paintAlpha),
+                CompositeMode.Clear => (0UL, 0UL),
+                _ => (max, max - paintAlpha),
+            };
+
+            // The weights of the color of the paint and of the color of the pixel in the result, times M^2 Q
+            var sourceWeight = q * sourceFactor * paintAlpha;
+            var destinationWeight = ((Full - q) * destinationAlpha * max) + (q * destinationFactor * destinationAlpha);
+            if (channels != 4)
+            {
+                // No alpha to store: the color of the result over black
+                for (var c = 0; c < colorChannels; c++)
+                {
+                    pixel[c] = TSample.CreateTruncating(((paint[c] * sourceWeight) + (ulong.CreateTruncating(pixel[c]) * destinationWeight) + (colorScale / 2)) / colorScale);
+                }
+
+                continue;
+            }
+
+            var total = sourceWeight + destinationWeight;
+            var alpha = (total + (alphaScale / 2)) / alphaScale;
+            if (alpha == 0)
+            {
+                if (destinationAlpha != 0)
+                {
+                    pixel.Clear();
+                }
+
+                continue;
+            }
+
+            // Half of an odd total rounds down, which is still "to nearest": no quotient is half way then
+            var rounding = total / 2;
+            for (var c = 0; c < 3; c++)
+            {
+                pixel[c] = TSample.CreateTruncating(((paint[c] * sourceWeight) + (ulong.CreateTruncating(pixel[c]) * destinationWeight) + rounding) / total);
             }
 
             pixel[3] = TSample.CreateTruncating(alpha);

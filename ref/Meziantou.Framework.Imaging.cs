@@ -4,6 +4,38 @@
 
 namespace Meziantou.Framework.Imaging
 {
+    public readonly struct AffineTransform : System.IEquatable<Meziantou.Framework.Imaging.AffineTransform>
+    {
+        public static Meziantou.Framework.Imaging.AffineTransform Identity { get => throw null; }
+        public double M11 { get => throw null; }
+        public double M12 { get => throw null; }
+        public double M21 { get => throw null; }
+        public double M22 { get => throw null; }
+        public double OffsetX { get => throw null; }
+        public double OffsetY { get => throw null; }
+        public bool IsIdentity { get => throw null; }
+        public double Determinant { get => throw null; }
+        public AffineTransform(double m11, double m12, double m21, double m22, double offsetX, double offsetY) { }
+        public static Meziantou.Framework.Imaging.AffineTransform CreateTranslation(double dx, double dy) => throw null;
+        public static Meziantou.Framework.Imaging.AffineTransform CreateScale(double scaleX, double scaleY) => throw null;
+        public static Meziantou.Framework.Imaging.AffineTransform CreateScale(double scaleX, double scaleY, Meziantou.Framework.Imaging.PointD center) => throw null;
+        public static Meziantou.Framework.Imaging.AffineTransform CreateRotation(double degrees) => throw null;
+        public static Meziantou.Framework.Imaging.AffineTransform CreateRotation(double degrees, Meziantou.Framework.Imaging.PointD center) => throw null;
+        public static Meziantou.Framework.Imaging.AffineTransform CreateSkew(double degreesX, double degreesY) => throw null;
+        public Meziantou.Framework.Imaging.AffineTransform Then(Meziantou.Framework.Imaging.AffineTransform next) => throw null;
+        public static Meziantou.Framework.Imaging.AffineTransform Multiply(Meziantou.Framework.Imaging.AffineTransform first, Meziantou.Framework.Imaging.AffineTransform second) => throw null;
+        public bool TryInvert(out Meziantou.Framework.Imaging.AffineTransform inverse) => throw null;
+        public Meziantou.Framework.Imaging.PointD Transform(Meziantou.Framework.Imaging.PointD point) => throw null;
+        public Meziantou.Framework.Imaging.PointD TransformVector(Meziantou.Framework.Imaging.PointD vector) => throw null;
+        public bool Equals(Meziantou.Framework.Imaging.AffineTransform other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.AffineTransform left, Meziantou.Framework.Imaging.AffineTransform right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.AffineTransform left, Meziantou.Framework.Imaging.AffineTransform right) => throw null;
+        public static Meziantou.Framework.Imaging.AffineTransform operator *(Meziantou.Framework.Imaging.AffineTransform left, Meziantou.Framework.Imaging.AffineTransform right) => throw null;
+    }
+
     public abstract class AutoCropAnalysis
     {
         public bool Success { get => throw null; }
@@ -57,6 +89,152 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.Metadata.IccProfile DestinationProfile { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Metadata.IccProfile? AssumedSourceProfile { get => throw null; init { } }
         public Meziantou.Framework.Imaging.IccColorTransformOptions Transform { get => throw null; init { } }
+    }
+
+    public static class Colors
+    {
+        public static Meziantou.Framework.Imaging.Rgba32 Transparent { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 AliceBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 AntiqueWhite { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Aqua { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Aquamarine { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Azure { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Beige { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Bisque { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Black { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 BlanchedAlmond { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Blue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 BlueViolet { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Brown { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 BurlyWood { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 CadetBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Chartreuse { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Chocolate { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Coral { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 CornflowerBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Cornsilk { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Crimson { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Cyan { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkCyan { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkGoldenrod { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkGray { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkGreen { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkKhaki { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkMagenta { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkOliveGreen { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkOrange { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkOrchid { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkRed { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkSalmon { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkSeaGreen { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkSlateBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkSlateGray { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkTurquoise { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DarkViolet { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DeepPink { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DeepSkyBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DimGray { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 DodgerBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Firebrick { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 FloralWhite { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 ForestGreen { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Fuchsia { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Gainsboro { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 GhostWhite { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Gold { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Goldenrod { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Gray { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Green { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 GreenYellow { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Honeydew { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 HotPink { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 IndianRed { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Indigo { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Ivory { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Khaki { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Lavender { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LavenderBlush { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LawnGreen { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LemonChiffon { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LightBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LightCoral { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LightCyan { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LightGoldenrodYellow { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LightGray { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LightGreen { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LightPink { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LightSalmon { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LightSeaGreen { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LightSkyBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LightSlateGray { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LightSteelBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LightYellow { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Lime { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 LimeGreen { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Linen { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Magenta { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Maroon { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 MediumAquamarine { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 MediumBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 MediumOrchid { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 MediumPurple { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 MediumSeaGreen { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 MediumSlateBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 MediumSpringGreen { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 MediumTurquoise { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 MediumVioletRed { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 MidnightBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 MintCream { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 MistyRose { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Moccasin { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 NavajoWhite { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Navy { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 OldLace { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Olive { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 OliveDrab { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Orange { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 OrangeRed { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Orchid { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 PaleGoldenrod { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 PaleGreen { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 PaleTurquoise { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 PaleVioletRed { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 PapayaWhip { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 PeachPuff { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Peru { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Pink { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Plum { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 PowderBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Purple { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 RebeccaPurple { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Red { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 RosyBrown { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 RoyalBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 SaddleBrown { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Salmon { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 SandyBrown { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 SeaGreen { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 SeaShell { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Sienna { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Silver { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 SkyBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 SlateBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 SlateGray { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Snow { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 SpringGreen { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 SteelBlue { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Tan { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Teal { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Thistle { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Tomato { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Turquoise { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Violet { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Wheat { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 White { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 WhiteSmoke { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 Yellow { get => throw null; }
+        public static Meziantou.Framework.Imaging.Rgba32 YellowGreen { get => throw null; }
     }
 
     public enum ConvolutionEdgeMode
@@ -677,6 +855,13 @@ namespace Meziantou.Framework.Imaging
         public PointD(double x, double y) { }
         public void Deconstruct(out double x, out double y) => throw null;
         public static Meziantou.Framework.Imaging.PointD FromPoint(Meziantou.Framework.Imaging.Point point) => throw null;
+        public Meziantou.Framework.Imaging.PointD Offset(double dx, double dy) => throw null;
+        public double DistanceTo(Meziantou.Framework.Imaging.PointD other) => throw null;
+        public static Meziantou.Framework.Imaging.PointD Add(Meziantou.Framework.Imaging.PointD left, Meziantou.Framework.Imaging.PointD right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD Subtract(Meziantou.Framework.Imaging.PointD left, Meziantou.Framework.Imaging.PointD right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD Negate(Meziantou.Framework.Imaging.PointD value) => throw null;
+        public static Meziantou.Framework.Imaging.PointD Multiply(Meziantou.Framework.Imaging.PointD left, double right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD Divide(Meziantou.Framework.Imaging.PointD left, double right) => throw null;
         public bool Equals(Meziantou.Framework.Imaging.PointD other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
@@ -684,6 +869,12 @@ namespace Meziantou.Framework.Imaging
         public static implicit operator Meziantou.Framework.Imaging.PointD(Meziantou.Framework.Imaging.Point point) => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.PointD left, Meziantou.Framework.Imaging.PointD right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.PointD left, Meziantou.Framework.Imaging.PointD right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD operator +(Meziantou.Framework.Imaging.PointD left, Meziantou.Framework.Imaging.PointD right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD operator -(Meziantou.Framework.Imaging.PointD left, Meziantou.Framework.Imaging.PointD right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD operator -(Meziantou.Framework.Imaging.PointD value) => throw null;
+        public static Meziantou.Framework.Imaging.PointD operator *(Meziantou.Framework.Imaging.PointD left, double right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD operator *(double left, Meziantou.Framework.Imaging.PointD right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD operator /(Meziantou.Framework.Imaging.PointD left, double right) => throw null;
     }
 
     public readonly struct Rectangle : System.IEquatable<Meziantou.Framework.Imaging.Rectangle>
@@ -727,9 +918,19 @@ namespace Meziantou.Framework.Imaging
         public double Right { get => throw null; }
         public double Bottom { get => throw null; }
         public bool IsEmpty { get => throw null; }
+        public Meziantou.Framework.Imaging.PointD Location { get => throw null; }
+        public Meziantou.Framework.Imaging.PointD Center { get => throw null; }
         public RectangleD(double x, double y, double width, double height) { }
         public static Meziantou.Framework.Imaging.RectangleD FromLTRB(double left, double top, double right, double bottom) => throw null;
         public static Meziantou.Framework.Imaging.RectangleD FromRectangle(Meziantou.Framework.Imaging.Rectangle rectangle) => throw null;
+        public static Meziantou.Framework.Imaging.RectangleD Intersect(Meziantou.Framework.Imaging.RectangleD a, Meziantou.Framework.Imaging.RectangleD b) => throw null;
+        public static Meziantou.Framework.Imaging.RectangleD Union(Meziantou.Framework.Imaging.RectangleD a, Meziantou.Framework.Imaging.RectangleD b) => throw null;
+        public bool Contains(Meziantou.Framework.Imaging.PointD point) => throw null;
+        public bool Contains(Meziantou.Framework.Imaging.RectangleD rectangle) => throw null;
+        public bool IntersectsWith(Meziantou.Framework.Imaging.RectangleD rectangle) => throw null;
+        public Meziantou.Framework.Imaging.RectangleD Offset(double dx, double dy) => throw null;
+        public Meziantou.Framework.Imaging.RectangleD Inflate(double dx, double dy) => throw null;
+        public Meziantou.Framework.Imaging.RectangleD Inflate(double distance) => throw null;
         public bool Equals(Meziantou.Framework.Imaging.RectangleD other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
@@ -806,6 +1007,9 @@ namespace Meziantou.Framework.Imaging
         public byte B;
         public byte A;
         public Rgba32(byte r, byte g, byte b, byte a = 255) { }
+        public static Meziantou.Framework.Imaging.Rgba32 ParseHex(System.ReadOnlySpan<char> value) => throw null;
+        public static bool TryParseHex(System.ReadOnlySpan<char> value, out Meziantou.Framework.Imaging.Rgba32 result) => throw null;
+        public readonly string ToHexString() => throw null;
         public readonly Meziantou.Framework.Imaging.Rgba64 ToRgba64() => throw null;
         public readonly bool Equals(Meziantou.Framework.Imaging.Rgba32 other) => throw null;
         public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
@@ -876,10 +1080,26 @@ namespace Meziantou.Framework.Imaging.Drawing
 {
     public abstract class Brush
     {
+        public Meziantou.Framework.Imaging.Drawing.CompositeMode CompositeMode { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.Drawing.Brush FromRgba64(Meziantou.Framework.Imaging.Rgba64 color) => throw null;
         public static Meziantou.Framework.Imaging.Drawing.Brush FromRgba32(Meziantou.Framework.Imaging.Rgba32 color) => throw null;
         public static implicit operator Meziantou.Framework.Imaging.Drawing.Brush(Meziantou.Framework.Imaging.Rgba64 color) => throw null;
         public static implicit operator Meziantou.Framework.Imaging.Drawing.Brush(Meziantou.Framework.Imaging.Rgba32 color) => throw null;
+    }
+
+    public enum CompositeMode
+    {
+        SourceOver = 0,
+        Source = 1,
+        DestinationOver = 2,
+        SourceIn = 3,
+        DestinationIn = 4,
+        SourceOut = 5,
+        DestinationOut = 6,
+        SourceAtop = 7,
+        DestinationAtop = 8,
+        Xor = 9,
+        Clear = 10,
     }
 
     public delegate void DrawingAction(Meziantou.Framework.Imaging.Drawing.DrawingCanvas canvas);
@@ -890,11 +1110,22 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public int Width { get => throw null; }
         public int Height { get => throw null; }
+        public void Clear(Meziantou.Framework.Imaging.Rgba64 color) { }
         public void Fill(Meziantou.Framework.Imaging.Drawing.Brush brush) { }
         public void Fill(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) { }
         public void Stroke(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Drawing.VectorPath path) { }
+        public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.PointD position, double opacity = 1d) { }
+        public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.RectangleD destination, double opacity = 1d) { }
+        public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.Rectangle sourceRegion, Meziantou.Framework.Imaging.RectangleD destination, double opacity = 1d) { }
         public void FillRectangle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.RectangleD rectangle) { }
         public void StrokeRectangle(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.RectangleD rectangle) { }
+        public void FillRoundedRectangle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.RectangleD rectangle, double radius) { }
+        public void StrokeRoundedRectangle(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.RectangleD rectangle, double radius) { }
+        public void FillPolygon(Meziantou.Framework.Imaging.Drawing.Brush brush, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) { }
+        public void StrokePolygon(Meziantou.Framework.Imaging.Drawing.Pen pen, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points) { }
+        public void StrokePolyline(Meziantou.Framework.Imaging.Drawing.Pen pen, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points) { }
+        public void FillPie(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.PointD center, double radius, double startAngle, double sweepAngle) { }
+        public void StrokeArc(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.PointD center, double radius, double startAngle, double sweepAngle) { }
         public void FillEllipse(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY) { }
         public void StrokeEllipse(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY) { }
         public void FillCircle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.PointD center, double radius) { }
@@ -907,6 +1138,10 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void StrokeText(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.PointD origin) { }
         public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.TextPathOptions? options = null) { }
         public void StrokeText(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.TextPathOptions? options = null) { }
+        public void Clip(Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) { }
+        public void Clip<TState>(Meziantou.Framework.Imaging.Drawing.VectorPath path, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) where TState : allows ref struct { }
+        public void Clip(Meziantou.Framework.Imaging.RectangleD rectangle, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
+        public void Clip<TState>(Meziantou.Framework.Imaging.RectangleD rectangle, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
     }
 
     public enum FillRule
@@ -919,6 +1154,7 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public System.ReadOnlyMemory<Meziantou.Framework.Imaging.Drawing.GradientStop> Stops { get => throw null; }
         public Meziantou.Framework.Imaging.Drawing.GradientSpreadMode SpreadMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.AffineTransform Transform { get => throw null; init { } }
     }
 
     public enum GradientSpreadMode
@@ -939,6 +1175,31 @@ namespace Meziantou.Framework.Imaging.Drawing
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Drawing.GradientStop left, Meziantou.Framework.Imaging.Drawing.GradientStop right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Drawing.GradientStop left, Meziantou.Framework.Imaging.Drawing.GradientStop right) => throw null;
+    }
+
+    public sealed class ImageBrush : Meziantou.Framework.Imaging.Drawing.Brush
+    {
+        public Meziantou.Framework.Imaging.ImageFrame Source { get => throw null; }
+        public Meziantou.Framework.Imaging.Rectangle? SourceRegion { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.AffineTransform Transform { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.ImageWrapMode WrapMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.ImageSampling Sampling { get => throw null; init { } }
+        public double Opacity { get => throw null; init { } }
+        public ImageBrush(Meziantou.Framework.Imaging.ImageFrame source) { }
+    }
+
+    public enum ImageSampling
+    {
+        Bilinear = 0,
+        Nearest = 1,
+    }
+
+    public enum ImageWrapMode
+    {
+        Transparent = 0,
+        Pad = 1,
+        Repeat = 2,
+        Reflect = 3,
     }
 
     public enum LineCap
@@ -969,12 +1230,15 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Drawing.LineJoin LineJoin { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.LineCap LineCap { get => throw null; init { } }
         public double MiterLimit { get => throw null; init { } }
+        public System.ReadOnlySpan<double> DashPattern { get => throw null; init { } }
+        public double DashOffset { get => throw null; init { } }
         public Pen(Meziantou.Framework.Imaging.Drawing.Brush brush, double width) { }
     }
 
     public sealed class RadialGradientBrush : Meziantou.Framework.Imaging.Drawing.GradientBrush
     {
         public Meziantou.Framework.Imaging.PointD Center { get => throw null; }
+        public Meziantou.Framework.Imaging.PointD FocalPoint { get => throw null; init { } }
         public double Radius { get => throw null; }
         public RadialGradientBrush(Meziantou.Framework.Imaging.PointD center, double radius, System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.GradientStop> stops) { }
     }
@@ -983,6 +1247,15 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public Meziantou.Framework.Imaging.Rgba64 Color { get => throw null; }
         public SolidBrush(Meziantou.Framework.Imaging.Rgba64 color) { }
+    }
+
+    public sealed class SweepGradientBrush : Meziantou.Framework.Imaging.Drawing.GradientBrush
+    {
+        public Meziantou.Framework.Imaging.PointD Center { get => throw null; }
+        public double StartAngle { get => throw null; }
+        public double EndAngle { get => throw null; }
+        public SweepGradientBrush(Meziantou.Framework.Imaging.PointD center, System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.GradientStop> stops) { }
+        public SweepGradientBrush(Meziantou.Framework.Imaging.PointD center, double startAngle, double endAngle, System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.GradientStop> stops) { }
     }
 
     public enum TextPathAlignment
@@ -1018,6 +1291,12 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public bool IsEmpty { get => throw null; }
         public Meziantou.Framework.Imaging.RectangleD Bounds { get => throw null; }
+        public Meziantou.Framework.Imaging.Drawing.VectorPath Transform(Meziantou.Framework.Imaging.AffineTransform transform) => throw null;
+        public bool Contains(Meziantou.Framework.Imaging.PointD point, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) => throw null;
+        public double GetLength() => throw null;
+        public bool TryGetPointAtDistance(double distance, out Meziantou.Framework.Imaging.PointD point, out Meziantou.Framework.Imaging.PointD tangent) => throw null;
+        public Meziantou.Framework.Imaging.RectangleD GetTightBounds() => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPath Widen(Meziantou.Framework.Imaging.Drawing.Pen pen) => throw null;
     }
 
     public sealed class VectorPathBuilder
@@ -1030,9 +1309,17 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder QuadraticBezierTo(Meziantou.Framework.Imaging.PointD control, Meziantou.Framework.Imaging.PointD point) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder CubicBezierTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder CubicBezierTo(Meziantou.Framework.Imaging.PointD control1, Meziantou.Framework.Imaging.PointD control2, Meziantou.Framework.Imaging.PointD point) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder ArcTo(double radiusX, double radiusY, double rotation, bool largeArc, bool clockwise, double x, double y) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder ArcTo(double radiusX, double radiusY, double rotation, bool largeArc, bool clockwise, Meziantou.Framework.Imaging.PointD point) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder ArcTo(Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY, double startAngle, double sweepAngle) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddArc(Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY, double startAngle, double sweepAngle) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddPie(Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY, double startAngle, double sweepAngle) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder Close() => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddRectangle(Meziantou.Framework.Imaging.RectangleD rectangle) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddRoundedRectangle(Meziantou.Framework.Imaging.RectangleD rectangle, double radius) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddRoundedRectangle(Meziantou.Framework.Imaging.RectangleD rectangle, double radiusX, double radiusY) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddEllipse(Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddEllipse(Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY, double rotation) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddCircle(Meziantou.Framework.Imaging.PointD center, double radius) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddPolygon(System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Build() => throw null;

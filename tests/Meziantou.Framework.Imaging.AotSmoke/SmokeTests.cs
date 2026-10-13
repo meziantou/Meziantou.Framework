@@ -729,6 +729,29 @@ internal static class SmokeTests
 
         // The centers are at 1/8, 3/8, 5/8 and 7/8 of 65535 (ties upward); the last pixel is half covered
         Check(gray.Frames[0][0, 0] == new Gray16(8192) && gray.Frames[0][1, 0] == new Gray16(24576) && gray.Frames[0][2, 0] == new Gray16(40959) && gray.Frames[0][3, 0] == new Gray16(28672), "gradient samples");
+
+        // Arcs, a transformed path, dashes, a sweep gradient, a clip, an image, an operator that erases
+        using var sprite = new Image<Rgba64>(2, 2, new Rgba64(65535, 0, 0));
+        using var extra = new Image<Rgba32>(16, 16, Colors.White);
+        var ring = new VectorPathBuilder().AddArc(new PointD(8, 8), 6, 6, -90, 270).Build().Transform(AffineTransform.CreateRotation(90, new PointD(8, 8)));
+        extra.Draw((ring, frame: sprite.Frames[0]), static (canvas, state) =>
+        {
+            canvas.FillRoundedRectangle(new SweepGradientBrush(new PointD(8, 8), [new GradientStop(0, Colors.Gold), new GradientStop(1, Colors.Navy)]), new Rectangle(0, 0, 16, 16), 4);
+            canvas.Stroke(new Pen(Colors.Black, 1.5) { DashPattern = [2, 1] }, state.ring);
+            canvas.Clip(new Rectangle(4, 4, 8, 8), state.frame, static (inner, frame) => inner.DrawImage(frame, new Rectangle(0, 0, 16, 16)));
+            canvas.FillPie(new SolidBrush(Colors.Black) { CompositeMode = CompositeMode.DestinationOut }, new PointD(8, 8), 2, 0, 360);
+            canvas.Fill(new ImageBrush(state.frame) { Transform = AffineTransform.CreateTranslation(14, 14) });
+        });
+        Check(extra.Frames[0][0, 0] == Colors.White && extra.Frames[0][13, 13] != Colors.White, "rounded rectangle");
+        Check(extra.Frames[0][5, 5] == new Rgba32(255, 0, 0), "image in a clip");
+        Check(extra.Frames[0][8, 8] == Colors.Transparent, "erasing");
+        Check(extra.Frames[0][14, 14] == new Rgba32(255, 0, 0) && extra.Frames[0][13, 13] != new Rgba32(255, 0, 0), "image brush");
+
+        // Three quarters of a circle of radius 6; turned by a quarter turn, the quarter that is missing is the top right one
+        Check(ring.GetLength() is > 27.5 and < 28.3, "path length");
+        Check(ring.Widen(new Pen(Colors.Black, 2)).Contains(new PointD(8, 14)) && !ring.Widen(new Pen(Colors.Black, 2)).Contains(new PointD(12.2, 3.8)), "stroke as a path");
+        Check(ring.GetTightBounds() == RectangleD.FromLTRB(2, 2, 14, 14), "tight bounds");
+        Check(Rgba32.ParseHex("#FF000080") == new Rgba32(255, 0, 0, 128) && Colors.Gold.ToHexString() == "#FFD700", "colors");
     }
 
     public static void Text()

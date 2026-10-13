@@ -121,6 +121,32 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawIconFillsTheIconAndStrokesAPartOfItsOutline()
+    {
+        var output = GetPath("icon.png");
+        var data = Examples.DrawIcon(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(96, 96), image.Size);
+        var frame = image.Frames[0];
+        Assert.Equal(Colors.MistyRose, frame[48, 48]);
+        Assert.Equal(Colors.White, frame[48, 10]);
+        Assert.Equal(Colors.White, frame[4, 90]);
+
+        // The path that is written is the icon, four times larger
+        Assert.StartsWith("M48 85.4 L42.2 80.12 C", data, StringComparison.Ordinal);
+        Assert.EndsWith(" Z", data, StringComparison.Ordinal);
+        var icon = Drawing.VectorPath.ParseSvgPathData(data);
+        var length = icon.GetLength();
+
+        // The outline is stroked over its first three quarters only
+        Assert.True(icon.TryGetPointAtDistance(length * 0.4, out var stroked, out _));
+        Assert.Equal(Colors.Crimson, frame[(int)stroked.X, (int)stroked.Y]);
+        Assert.True(icon.TryGetPointAtDistance(length * 0.9, out var bare, out _));
+        Assert.NotEqual(Colors.Crimson, frame[(int)bare.X, (int)bare.Y]);
+    }
+
+    [Fact]
     public void DrawRoutePlacesItsMarksAlongThePath()
     {
         var output = GetPath("route.png");

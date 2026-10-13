@@ -745,6 +745,38 @@ from its end (what the dashes of a pen, a text on the path and the points at a d
 progressively, or the arc of a gauge. A part of a path is made of the chords the path is drawn with: transform a path
 before cutting it, not after.
 
+**SVG path data**. `VectorPath.ParseSvgPathData` reads the `d` attribute of an SVG `path` element, the format icons
+come in: every command (`M L H V C S Q T A Z`, absolute and relative) with the grammar of SVG, in the coordinates of
+the canvas (Y grows downward, as in SVG). The whole text must be valid: an error is a `FormatException` that gives its
+position (or `false` from `TryParseSvgPathData`), where a browser draws what comes before it. `ToSvgPathData` writes a
+path the same way, with absolute coordinates and numbers that read back as the same values: lines and curves are read
+back exactly, an arc to a few units of the last place.
+
+<!-- snippet: draw-icon -->
+```csharp
+public static string DrawIcon(string outputPath)
+{
+    // The path data of an icon of 24 by 24 pixels, as the "d" attribute of an SVG file has it
+    var heart = VectorPath.ParseSvgPathData("M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z");
+
+    // A path is scaled before it is drawn or cut: its curves stay curves
+    var icon = heart.Transform(AffineTransform.CreateScale(4, 4));
+    var outline = new Pen(Colors.Crimson, 3) { LineCap = LineCap.Round, LineJoin = LineJoin.Round };
+
+    using var image = new Image<Rgba32>(96, 96, Colors.White);
+    image.Draw(canvas =>
+    {
+        canvas.Fill(Colors.MistyRose, icon);
+
+        // The first three quarters of the outline
+        canvas.Stroke(outline, icon.Trim(0, icon.GetLength() * 0.75));
+    });
+
+    image.Save(outputPath);
+    return icon.ToSvgPathData();
+}
+```
+
 <!-- snippet: draw-route -->
 ```csharp
 public static void DrawRoute(string outputPath)

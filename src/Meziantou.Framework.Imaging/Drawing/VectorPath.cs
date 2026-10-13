@@ -269,6 +269,74 @@ public sealed class VectorPath
         return result;
     }
 
+    /// <summary>Creates a path from the path data of SVG: the <c>d</c> attribute of a <c>path</c> element.</summary>
+    /// <remarks>
+    /// <para>
+    /// Every command of SVG is read (<c>M L H V C S Q T A Z</c> and their relative forms), with the grammar of SVG:
+    /// numbers separated by white space, by a comma or by nothing where there is no doubt, and the arguments of a
+    /// command repeated without its letter. The coordinates are those of the canvas: Y grows downward, as in SVG.
+    /// </para>
+    /// <para>
+    /// The whole text must be valid: nothing is drawn of path data that has an error, where a browser draws what comes
+    /// before it. Every coordinate must be within the limit of a path (16777216 in magnitude).
+    /// </para>
+    /// </remarks>
+    /// <param name="svgPathData">The path data. An empty text is an empty path.</param>
+    /// <returns>The path.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="svgPathData"/> is <see langword="null"/>.</exception>
+    /// <exception cref="FormatException">The text is not valid path data, or a coordinate is beyond the limit of a path.</exception>
+    public static VectorPath ParseSvgPathData(string svgPathData)
+    {
+        ArgumentNullException.ThrowIfNull(svgPathData);
+        return ParseSvgPathData(svgPathData.AsSpan());
+    }
+
+    /// <summary>Creates a path from the path data of SVG: the <c>d</c> attribute of a <c>path</c> element.</summary>
+    /// <param name="svgPathData">The path data. An empty text is an empty path.</param>
+    /// <returns>The path.</returns>
+    /// <remarks>See <see cref="ParseSvgPathData(string)"/>.</remarks>
+    /// <exception cref="FormatException">The text is not valid path data, or a coordinate is beyond the limit of a path.</exception>
+    public static VectorPath ParseSvgPathData(ReadOnlySpan<char> svgPathData)
+    {
+        if (!SvgPathData.TryParse(svgPathData, out var path, out var position, out var error))
+            throw new FormatException(string.Create(CultureInfo.InvariantCulture, $"The path data is not valid at index {position}: {error}"));
+
+        return path;
+    }
+
+    /// <summary>Creates a path from the path data of SVG, without throwing when the text is not valid.</summary>
+    /// <param name="svgPathData">The path data. An empty text is an empty path.</param>
+    /// <param name="path">The path, or <see langword="null"/> when the text is not valid.</param>
+    /// <returns><see langword="false"/> when the text is <see langword="null"/>, is not valid path data, or has a coordinate beyond the limit of a path.</returns>
+    /// <remarks>See <see cref="ParseSvgPathData(string)"/>.</remarks>
+    public static bool TryParseSvgPathData([NotNullWhen(true)] string? svgPathData, [NotNullWhen(true)] out VectorPath? path)
+    {
+        if (svgPathData is null)
+        {
+            path = null;
+            return false;
+        }
+
+        return SvgPathData.TryParse(svgPathData.AsSpan(), out path, out _, out _);
+    }
+
+    /// <summary>Creates a path from the path data of SVG, without throwing when the text is not valid.</summary>
+    /// <param name="svgPathData">The path data. An empty text is an empty path.</param>
+    /// <param name="path">The path, or <see langword="null"/> when the text is not valid.</param>
+    /// <returns><see langword="false"/> when the text is not valid path data, or has a coordinate beyond the limit of a path.</returns>
+    /// <remarks>See <see cref="ParseSvgPathData(string)"/>.</remarks>
+    public static bool TryParseSvgPathData(ReadOnlySpan<char> svgPathData, [NotNullWhen(true)] out VectorPath? path)
+        => SvgPathData.TryParse(svgPathData, out path, out _, out _);
+
+    /// <summary>Writes the path as the path data of SVG: the <c>d</c> attribute of a <c>path</c> element.</summary>
+    /// <remarks>
+    /// The text has the segments of <see cref="EnumerateSegments"/>, with absolute coordinates, and numbers written so
+    /// that reading them gives the same values, whatever the culture. Lines and Bézier curves are read back exactly;
+    /// an arc is read back as the same arc to a few units of the last place.
+    /// </remarks>
+    /// <returns>The path data; an empty text for an empty path.</returns>
+    public string ToSvgPathData() => SvgPathData.Format(this);
+
     /// <summary>Enumerates the elements of the path, in the order they were added to it.</summary>
     /// <remarks>
     /// <para>

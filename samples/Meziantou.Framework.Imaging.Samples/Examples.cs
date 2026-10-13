@@ -184,6 +184,31 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>The path data of an SVG icon, scaled to the image, and a part of its outline.</summary>
+    // begin-snippet: draw-icon
+    public static string DrawIcon(string outputPath)
+    {
+        // The path data of an icon of 24 by 24 pixels, as the "d" attribute of an SVG file has it
+        var heart = VectorPath.ParseSvgPathData("M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z");
+
+        // A path is scaled before it is drawn or cut: its curves stay curves
+        var icon = heart.Transform(AffineTransform.CreateScale(4, 4));
+        var outline = new Pen(Colors.Crimson, 3) { LineCap = LineCap.Round, LineJoin = LineJoin.Round };
+
+        using var image = new Image<Rgba32>(96, 96, Colors.White);
+        image.Draw(canvas =>
+        {
+            canvas.Fill(Colors.MistyRose, icon);
+
+            // The first three quarters of the outline
+            canvas.Stroke(outline, icon.Trim(0, icon.GetLength() * 0.75));
+        });
+
+        image.Save(outputPath);
+        return icon.ToSvgPathData();
+    }
+    // end-snippet
+
     /// <summary>Typed row access with a static callback (no closure allocation).</summary>
     // begin-snippet: typed-rows
     public static void InvertColors(string path)

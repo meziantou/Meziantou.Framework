@@ -1286,6 +1286,120 @@ public sealed class DrawingPathTests
         static string[] Describe(VectorPath path) => [.. path.EnumerateSegments().Select(segment => segment.ToString())];
     }
 
+    [Theory]
+    [InlineData("M1 2L3 4Q5 6 7 8C9 10 11 12 13 14Z", "M1 2 L3 4 Q5 6 7 8 C9 10 11 12 13 14 Z")]
+    [InlineData("m1 2l2 2h3v-1z", "M1 2 L3 4 L6 4 L6 3 Z")]
+    [InlineData("M1 2H5V7h-1v-2", "M1 2 L5 2 L5 7 L4 7 L4 5")]
+    [InlineData("M0 0 10 0 10 10", "M0 0 L10 0 L10 10")]
+    [InlineData("m1 1 2 2 3 3", "M1 1 L3 3 L6 6")]
+    [InlineData("M.5.5-1-1", "M0.5 0.5 L-1 -1")]
+    [InlineData("M1e1,2E-1L+1,+2.", "M10 0.2 L1 2")]
+    [InlineData(" \tM 1,2 \r\n L 3 , 4 \f", "M1 2 L3 4")]
+    [InlineData("M0 0C1 2 3 4 5 6S9 10 11 12", "M0 0 C1 2 3 4 5 6 C7 8 9 10 11 12")]
+    [InlineData("M0 0c1 2 3 4 5 6s4 4 6 6", "M0 0 C1 2 3 4 5 6 C7 8 9 10 11 12")]
+    [InlineData("M1 1S1 2 3 4", "M1 1 C1 1 1 2 3 4")]
+    [InlineData("M0 0Q1 2 3 4S5 6 7 8", "M0 0 Q1 2 3 4 C3 4 5 6 7 8")]
+    [InlineData("M0 0Q1 2 3 4T7 8T9 9", "M0 0 Q1 2 3 4 Q5 6 7 8 Q9 10 9 9")]
+    [InlineData("M0 0q1 2 3 4t4 4", "M0 0 Q1 2 3 4 Q5 6 7 8")]
+    [InlineData("M0 0L5 5T7 8", "M0 0 L5 5 Q5 5 7 8")]
+    [InlineData("M0 0C1 2 3 4 5 6T7 8", "M0 0 C1 2 3 4 5 6 Q5 6 7 8")]
+    [InlineData("M10 0A10 10 0 0 1 0 10", "M10 0 A10 10 0 0 1 0 10")]
+    [InlineData("M10 0a10 10 0 01-10 10", "M10 0 A10 10 0 0 1 0 10")]
+    [InlineData("M10 0a-10-10 0 0,1,-10,10", "M10 0 A10 10 0 0 1 0 10")]
+    [InlineData("M10 0A0 5 0 0 1 0 10", "M10 0 L0 10")]
+    [InlineData("M1 1L5 1L5 5ZL9 9", "M1 1 L5 1 L5 5 Z M1 1 L9 9")]
+    [InlineData("M1 1L5 1zm2 2l1 0", "M1 1 L5 1 Z M3 3 L4 3")]
+    [InlineData("M1 1 M2 2", "M1 1 M2 2")]
+    [InlineData("", "")]
+    [InlineData(" \n ", "")]
+    public void PathDataOfSvgIsReadAsItsCommands(string data, string expected)
+    {
+        var path = VectorPath.ParseSvgPathData(data);
+        Assert.Equal(expected, path.ToSvgPathData());
+        Assert.Equal(expected, VectorPath.ParseSvgPathData(data.AsSpan()).ToSvgPathData());
+        Assert.True(VectorPath.TryParseSvgPathData(data, out var parsed));
+        Assert.Equal(expected, parsed.ToSvgPathData());
+        Assert.True(VectorPath.TryParseSvgPathData(data.AsSpan(), out parsed));
+        Assert.Equal(expected, parsed.ToSvgPathData());
+
+        // What is written is read back as the same path
+        Assert.Equal(path.EnumerateSegments().ToArray(), VectorPath.ParseSvgPathData(expected).EnumerateSegments().ToArray());
+    }
+
+    [Theory]
+    [InlineData("L1 2", 0)]
+    [InlineData("1 2", 0)]
+    [InlineData("M1", 2)]
+    [InlineData("M1 2 3", 6)]
+    [InlineData("M1 2 X", 5)]
+    [InlineData("M1 2 L", 6)]
+    [InlineData("M1 2,", 5)]
+    [InlineData("M1 2 L 3 4,", 11)]
+    [InlineData("M,1 2", 1)]
+    [InlineData("M1,,2", 3)]
+    [InlineData("M1 2 Z 3", 7)]
+    [InlineData("M1 2 Z,", 6)]
+    [InlineData("M1e999 0", 1)]
+    [InlineData("M1 2e", 4)]
+    [InlineData("M- 2", 1)]
+    [InlineData("M. 2", 1)]
+    [InlineData("M0 0A1 1 0 2 0 5 5", 11)]
+    [InlineData("M0 0A1 1 0 0 5 5", 13)]
+    [InlineData("M0 0L16777217 0", 5)]
+    [InlineData("M16777216 0l1 0", 12)]
+    [InlineData("M0 0A16777216 16777216 0 1 1 1 0", 5)]
+    [InlineData("M0 0A1e9 1 0 0 1 1 0", 5)]
+    [InlineData("M0 0 B1 2", 5)]
+    public void PathDataThatIsNotValidIsRejectedWithThePlaceOfTheError(string data, int position)
+    {
+        var exception = Assert.Throws<FormatException>(() => VectorPath.ParseSvgPathData(data));
+        Assert.Contains(string.Create(CultureInfo.InvariantCulture, $"at index {position}:"), exception.Message);
+        Assert.Throws<FormatException>(() => VectorPath.ParseSvgPathData(data.AsSpan()));
+        Assert.False(VectorPath.TryParseSvgPathData(data, out var path));
+        Assert.Null(path);
+        Assert.False(VectorPath.TryParseSvgPathData(data.AsSpan(), out path));
+        Assert.Null(path);
+    }
+
+    [Fact]
+    public void APathIsWrittenAsPathDataThatReadsBackAsThePath()
+    {
+        Assert.Throws<ArgumentNullException>(() => VectorPath.ParseSvgPathData(null!));
+        Assert.False(VectorPath.TryParseSvgPathData(null, out _));
+        Assert.Equal(string.Empty, new VectorPathBuilder().Build().ToSvgPathData());
+
+        // Numbers are written with the digits that give them back, and without the separator of a culture
+        var precise = new VectorPathBuilder().MoveTo(0.1 + 0.2, 1e-7).LineTo(-123456.75, 1.0 / 3).Build();
+        Assert.Equal("M0.30000000000000004 1E-07 L-123456.75 0.3333333333333333", precise.ToSvgPathData());
+        Assert.Equal(precise.EnumerateSegments().ToArray(), VectorPath.ParseSvgPathData(precise.ToSvgPathData()).EnumerateSegments().ToArray());
+
+        // An ellipse is two arcs, and an arc reads back as the same arc
+        Assert.Equal("M8 5 A3 2 0 0 1 2 5 A3 2 0 0 1 8 5 Z", new VectorPathBuilder().AddEllipse(new PointD(5, 5), 3, 2).Build().ToSvgPathData());
+        var pen = new Pen(White, 1.5) { LineJoin = LineJoin.Round };
+        VectorPath[] paths =
+        [
+            new VectorPathBuilder().AddRoundedRectangle(new RectangleD(0.5, 1, 7, 5.5), new CornerRadii(1, 2.5, 0.5, 2)).Build(),
+            new VectorPathBuilder().AddEllipse(new PointD(4, 4), 3.5, 2).AddEllipse(new PointD(4, 4), 3, 1.5, 35).Build(),
+            new VectorPathBuilder().MoveTo(1, 4).ArcTo(4, 2.5, 20, largeArc: true, clockwise: false, 6.5, 5).Build(),
+            new VectorPathBuilder().AddPie(new PointD(4, 4), 3.5, 3, 20, 290).Build().Transform(AffineTransform.CreateSkew(15, -10).Then(AffineTransform.CreateScale(-1, 1, new PointD(4, 4)))),
+        ];
+        foreach (var path in paths)
+        {
+            var read = VectorPath.ParseSvgPathData(path.ToSvgPathData());
+            AssertClosePixels(canvas => canvas.Fill(White, path), canvas => canvas.Fill(White, read));
+            AssertClosePixels(canvas => canvas.Stroke(pen, path), canvas => canvas.Stroke(pen, read));
+        }
+
+        // The path data of an icon, as it is found in an SVG file
+        var heart = VectorPath.ParseSvgPathData("M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z");
+        AssertRectangle(RectangleD.FromLTRB(2, 3, 22, 21.35), heart.GetTightBounds(), 1e-9);
+        Assert.True(heart.Contains(new PointD(12, 12)));
+        Assert.True(heart.Contains(new PointD(5, 6)));
+        Assert.False(heart.Contains(new PointD(12, 3.5)));
+        Assert.False(heart.Contains(new PointD(4, 19)));
+        Assert.Equal(PathSegmentKind.Close, heart.EnumerateSegments().Last().Kind);
+    }
+
     private static void AssertRectangle(RectangleD expected, RectangleD actual, double tolerance)
     {
         Assert.Equal(expected.Left, actual.Left, tolerance);

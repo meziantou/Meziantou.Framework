@@ -267,6 +267,9 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   internal form (an `ArcPiece` becomes the arc of SVG, through `ArcGeometry.GetAxes`; an ellipse becomes two arcs).
   `Reverse` (`PathReverser`) works on the elements, exactly; `Trim` (`TrimSink`) works on the chords, like the other
   queries, and its result is a polyline.
+- `SvgPathData` reads and writes the path data of SVG. Reading goes through the builder (an arc is `ArcTo`), writing
+  through `EnumerateSegments`; numbers are parsed and formatted by the runtime with the invariant culture (correctly
+  rounded on every platform). The reader rejects the whole text on an error, with its position.
 - A stroke is a union of convex pieces with one orientation (`Stroker`): overlaps are harmless because the coverage is
   the area of the union. The 1/16 pixel flattening tolerance is public; the positions of the chord vertices are not.
 - Dashes are cut before the stroker (`Dasher`), which strokes each dash as an open contour. The first dash of a contour

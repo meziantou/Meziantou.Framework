@@ -1357,6 +1357,11 @@ namespace Meziantou.Framework.Imaging.Drawing
         public bool TryGetPointAtDistance(double distance, out Meziantou.Framework.Imaging.PointD point, out Meziantou.Framework.Imaging.PointD tangent) => throw null;
         public Meziantou.Framework.Imaging.RectangleD GetTightBounds() => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Widen(Meziantou.Framework.Imaging.Drawing.Pen pen) => throw null;
+        public static Meziantou.Framework.Imaging.Drawing.VectorPath ParseSvgPathData(string svgPathData) => throw null;
+        public static Meziantou.Framework.Imaging.Drawing.VectorPath ParseSvgPathData(System.ReadOnlySpan<char> svgPathData) => throw null;
+        public static bool TryParseSvgPathData([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? svgPathData, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Imaging.Drawing.VectorPath? path) => throw null;
+        public static bool TryParseSvgPathData(System.ReadOnlySpan<char> svgPathData, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Imaging.Drawing.VectorPath? path) => throw null;
+        public string ToSvgPathData() => throw null;
         public Meziantou.Framework.Imaging.Drawing.PathSegmentEnumerator EnumerateSegments() => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Reverse() => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Trim(double start, double end) => throw null;

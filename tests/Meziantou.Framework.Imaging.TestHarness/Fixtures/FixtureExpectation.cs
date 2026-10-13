@@ -54,6 +54,27 @@ public sealed class FixtureExpectation
     [JsonPropertyName("cicp")]
     public CicpExpectation? Cicp { get; init; }
 
+    /// <summary>
+    /// Gets the expected content light level of an AVIF input (<c>ImageMetadata.ContentLightLevel</c>), or
+    /// <see langword="null"/> when the input declares none (and for every other format).
+    /// </summary>
+    [JsonPropertyName("contentLightLevel")]
+    public ContentLightLevelExpectation? ContentLightLevel { get; init; }
+
+    /// <summary>
+    /// Gets the expected mastering display color volume of an AVIF input (<c>ImageMetadata.MasteringDisplay</c>), or
+    /// <see langword="null"/> when the input declares none (and for every other format).
+    /// </summary>
+    [JsonPropertyName("masteringDisplay")]
+    public MasteringDisplayExpectation? MasteringDisplay { get; init; }
+
+    /// <summary>
+    /// Gets the expected pixel aspect ratio of an AVIF input (<c>ImageMetadata.PixelAspectRatio</c>), or
+    /// <see langword="null"/> when the input declares none (and for every other format).
+    /// </summary>
+    [JsonPropertyName("pixelAspectRatio")]
+    public PixelAspectRatioExpectation? PixelAspectRatio { get; init; }
+
     /// <summary>Gets the expected physical resolution, or <see langword="null"/> when the input has none (or only an aspect ratio).</summary>
     [JsonPropertyName("resolution")]
     public required ResolutionExpectation? Resolution { get; init; }

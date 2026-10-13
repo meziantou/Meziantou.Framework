@@ -35,7 +35,8 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - **Never lose information silently.** Losing alpha, precision, animation, a poster, metadata or a color profile needs an
   explicit setting; otherwise throw `UnsupportedImageFeatureException`. Color profiles are preserved and labeled, never
   applied implicitly: only `ConvertColorProfile`, `IccColorTransform` and a load with `CmykConversionOptions` convert
-  colors, and the pixels and their profile always change together.
+  colors, and the pixels and their profile always change together. A CICP color description is a label too: only
+  `ConvertColorProfile` converts from it, and high dynamic range samples only with explicit `ToneMapping` options.
 - **An image holds full displayed frames**, not encoded deltas; decoders composite, encoders write what they are given.
   Timing is exact (`FrameDuration` is a rational number); a duration or play count the output format cannot represent is
   an error unless a rounding policy is set.
@@ -116,6 +117,12 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     header of the bitstream, the pixel decoder, and the errors (`binding.Invalid`, `binding.Unsupported`), which carry
     the `ImageFormat` and the name of the format. Never test for a codec in the shared code, and never write "AVIF" or
     "AV1" in one of its messages: use `binding.Name` and `binding.CodecName`.
+  - A container feature is implemented once, and a format reads it when its binding declares it
+    (`HeifCodecBinding.ContainerFeatures`): premultiplied alpha, derived images, edit lists that select parts of the
+    media, fragments and the matrix coefficients 10 to 14 are read by AVIF and still rejected by HEIC, whose corpus
+    holds their rejections. Turn a flag on for a format together with its fixtures (the rejection moves to a valid
+    fixture with independent pixels) and its readme rows; the image that is built from other images also needs the
+    decoder of the format to render it (`AvifDecoder.Derived.cs`).
   - The format of a file is only known after its file type box. The codec that detected the file gives the first
     candidate; the brands give the formats the file declares, and a file that declares both has the format of the
     codec of its primary item, or of its color track. A generic major brand (`mif1`, `msf1`, `miaf`) is claimed by
@@ -135,6 +142,21 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   Scalability only changes which frames are output, never how they are decoded: the units outside the operating point
   are dropped, and a temporal unit with several spatial layers outputs the frame of its highest layer (what a player
   shows, and what `lsel`-less layered AVIF images present). `OutputAllLayers` is for conformance tests only.
+  An `iden` item is resolved by `HeifImagePlan` into the transformations of the coded image it presents (no pixel
+  moves; the alpha plane of a derived image must be presented as its colors). An image that is built from other
+  images (an `iovl` item, a grid of derived images) is an `HeifImageNode` tree, rendered by `AvifDecoder.Derived.cs`
+  to straight RGBA surfaces: only that path moves or composites pixels, the direct path (a coded image or a grid of
+  coded images, through identity derivations) must stay as it is. Nothing converts colors there: every color
+  description of the tree is the same one or the file is rejected, and the structure parser validates the
+  descriptors and the fill colors before the first pixel is decoded. The edit list of a track that selects
+  parts of the media is an `HeifEditTimeline` (exact intersections in units of the two time scales; the images that
+  are left out are decoded and charged as hidden pixels, and every sample is located then). A fragmented sequence
+  (`mvex`) is read by `HeifMovieFragment`: each `moof` box appends samples to `HeifTrack`, whose tables only hold the
+  samples that are still to be read, and the walk ends with the input (`ParseStatus.NeedMoreDataOrEnd` at a box
+  boundary). The independent readers are `ReferenceHeif.GetIdentityChain`, `Track.GetPresentation` and its own `moof`
+  reader; Apple ImageIO judges identity derivations and the opaque results of built images, and FFmpeg the fragments
+  it can demux. The reference of a built image is the generator's own renderer (`AvifCorpus.ContainerDerived.cs`,
+  exact rational source-over on the planes of the reference decoders).
 - **AV1 encoder** (`Internals/Codecs/Avif/Av1/Encoding`, and the `Write` and `Encode` parts of `Av1TileCoder`). The
   specification only describes decoding: the encoder is written from it, never from another encoder.
   - The encoder shares the state and the processes of the decoder (`Av1FrameCodingState`, the prediction, the
@@ -153,6 +175,22 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   - The palettes of the block being coded live where the decoder has them (the scratch of the tile), and those of the
     blocks above and to the left are contexts: a candidate with a palette changes them, so they are in the context
     snapshots of a frame that has palettes, and the palettes of a block are in its record.
+  - A lossless key frame of screen content allows intra block copy (`Av1TileCoder.BlockCopy.cs`): the blocks of 8x8
+    source samples that a block may copy are in a hash table of the workspace, filled superblock by superblock with
+    the delay that `IsMvValid` requires, and a candidate is always validated by `IsMvValid`, which is the function
+    of the decoder. A copy is an inter block of an intra frame: it is searched, recorded and replayed by the code of
+    the inter blocks. Lossy frames do not copy blocks, because a frame that does has no in-loop filter.
+  - A frame with loop restoration (lossy, efforts 0 to 2) writes its tiles last: the units of the loop restoration
+    are coded with the superblocks and chosen after the whole frame is filtered. The syntax elements go to the tape of
+    the workspace (`SymbolSink.Tape`, which adapts the distributions like the range encoder) and `ReplayTape` writes
+    them with the units. Whatever the block syntax does when it produces the stream (`SymbolSink.Range`), it must do
+    for the tape too: `Av1EncoderRoundTripTests.SyntaxElementsWrittenAfterTheFrameAreTheSameBytes` compares both. The
+    filters are proposed by least squares (`Av1RestorationSearch`) and judged with the filter of the decoder, on the
+    stripes that `Av1PostFilter.TryGetRestorationStripe` builds for both.
+  - A tool is enabled at the efforts where the `avif-quality` report (`benchmarks/ImagingBenchmarks`) shows that it
+    makes its inputs smaller at equal quality, and stays out otherwise: the Limitations row of the readme lists the
+    tools that were measured and left out, with their figures. Measure before and after with the report (it takes a
+    filter on the names of its inputs), and add an input when the tool needs content that the report does not have.
   - A frame of a sequence that is not a key frame is an inter frame whose only reference is the previous frame
     (`LAST_FRAME`; every slot is refreshed by every frame). An inter block is written from the motion vector stack that
     `FindMvStack` builds, like a decoder: the stack reads which blocks of the frame are written, so the search marks
@@ -346,6 +384,16 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - A conversion is a list of `IccStage` evaluated in `double`, one color at a time (`ColorConversionKernels.ConvertScalar`
   is the numerical reference). Both profiles meet in CIEXYZ relative to D50. A faster kernel must be bit-identical and
   proven so in `VectorizedKernelTests`.
+- The source of `ConvertColorProfile` may be the CICP color description of an image without profile
+  (`CicpColorSpace`, `IccPipeline.Create(CicpColorSpace, ...)`): a `CicpDecodeStage` (the functions of
+  `CicpTransfer`, Rec. ITU-T H.273 table 3), the matrix of the primaries (`CicpPrimaries`, table 2) adapted to D50 with
+  the linear Bradford transform, then the destination half of the ICC pipeline. Descriptions equivalent to sRGB keep
+  the built-in profiles, bit for bit. PQ and HLG samples go through `HdrToneMapStage` first (BT.2100 display light,
+  then a curve of `HdrToneMappingOperator` on the largest component), and are rejected without `ToneMapping` options.
+  The decimal references are `ReferenceCicpColorSpace`, `ReferenceCicpTransfer` and `ReferenceHdrToneMap`; the curves
+  also have literals computed outside the library, and FFmpeg's `tonemap` filter agrees with three of them
+  (`ToneMappingCurvesAreThoseOfFFmpeg`). `ResizeWorkingSpace.LinearSrgb` and `ConvolutionWorkingSpace.LinearSrgb` use
+  the transfer function of the description (`Image.GetLinearLightTransfer`), whatever its primaries.
 - The interpolation of color lookup tables (simplex along the main diagonal for gray, RGB and CIEXYZ inputs,
   multilinear for CIELAB and CMYK inputs), the generalized inverse of tone curves and the black point estimates are
   part of the documented numerical contract: change them only with `readme.md` and the tests.

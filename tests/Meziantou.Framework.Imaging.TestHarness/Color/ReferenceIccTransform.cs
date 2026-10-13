@@ -19,7 +19,9 @@ public sealed class ReferenceIccTransform
     /// <summary>The largest accepted difference of a floating-point sample: one unit in the last place of a single at 1, rounded up.</summary>
     public const decimal SingleTolerance = 0.00000012m;
 
-    private readonly ReferenceIccProfile _source;
+    private readonly ReferenceIccProfile? _source;
+    private readonly (int Primaries, int Transfer, bool IsGray) _cicpSource;
+    private readonly ReferenceHdrToneMap? _toneMap;
     private readonly ReferenceIccProfile _destination;
     private readonly bool _identical;
     private readonly int _intent;
@@ -55,8 +57,29 @@ public sealed class ReferenceIccTransform
         }
     }
 
+    // A CICP color space as the source: a display, whose white is the white of the connection space once adapted and
+    // whose black is no light
+    private ReferenceIccTransform((int Primaries, int Transfer, bool IsGray) source, ReferenceIccProfile destination, int intent, bool blackPointCompensation, ReferenceHdrToneMap? toneMap)
+    {
+        _cicpSource = source;
+        _toneMap = toneMap;
+        _destination = destination;
+        _intent = intent;
+        if (intent == 3)
+        {
+            var destinationWhite = destination.GetMediaWhitePoint();
+            _scale = [ReferenceIccMath.D50[0] / destinationWhite[0], ReferenceIccMath.D50[1] / destinationWhite[1], ReferenceIccMath.D50[2] / destinationWhite[2]];
+        }
+        else if (blackPointCompensation && ReferenceIccBlackPoint.GetDestinationLightness(destination, intent) is { } destinationLightness)
+        {
+            var scale = 1 - ReferenceIccBlackPoint.DecodeLightness(destinationLightness);
+            _scale = [scale, scale, scale];
+            _offset = [(1 - scale) * ReferenceIccMath.D50[0], (1 - scale) * ReferenceIccMath.D50[1], (1 - scale) * ReferenceIccMath.D50[2]];
+        }
+    }
+
     /// <summary>Gets the number of source device channels.</summary>
-    public int SourceChannelCount => _source.ChannelCount;
+    public int SourceChannelCount => _source?.ChannelCount ?? (_cicpSource.IsGray ? 1 : 3);
 
     /// <summary>Gets the number of destination device channels.</summary>
     public int DestinationChannelCount => _destination.ChannelCount;
@@ -74,6 +97,22 @@ public sealed class ReferenceIccTransform
         return new(new ReferenceIccProfile(source), new ReferenceIccProfile(destination), source.SequenceEqual(destination), intent, blackPointCompensation);
     }
 
+    /// <summary>Creates the reference conversion from a CICP color space (Rec. ITU-T H.273) to a profile.</summary>
+    /// <param name="primaries">The color primaries code point; not used for gray samples.</param>
+    /// <param name="transfer">The transfer characteristics code point.</param>
+    /// <param name="isGray">Whether the source samples are gray.</param>
+    /// <param name="destination">The bytes of the destination profile.</param>
+    /// <param name="intent">The rendering intent, as in the profile header.</param>
+    /// <param name="blackPointCompensation">Whether black point compensation is applied (never with the ICC-absolute colorimetric intent).</param>
+    /// <param name="toneMap">The conversion of the light of PQ and HLG samples to a standard dynamic range, or <see langword="null"/>.</param>
+    /// <returns>The reference.</returns>
+    public static ReferenceIccTransform CreateFromCicp(int primaries, int transfer, bool isGray, ReadOnlySpan<byte> destination, int intent = 1, bool blackPointCompensation = false, ReferenceHdrToneMap? toneMap = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(intent);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(intent, 3);
+        return new((primaries, transfer, isGray), new ReferenceIccProfile(destination), intent, blackPointCompensation, toneMap);
+    }
+
     /// <summary>Converts one color.</summary>
     /// <param name="device">The normalized source device values.</param>
     /// <returns>The exact normalized destination device values, in [0, 1].</returns>
@@ -88,7 +127,7 @@ public sealed class ReferenceIccTransform
             values[i] = ReferenceIccMath.Clip(values[i]);
         }
 
-        var xyz = _source.ToConnectionSpace(values, _intent);
+        var xyz = _source is not null ? _source.ToConnectionSpace(values, _intent) : ReferenceCicpColorSpace.ToConnectionSpace(_cicpSource.Primaries, _cicpSource.Transfer, values, _toneMap);
         for (var i = 0; i < 3; i++)
         {
             xyz[i] = (xyz[i] * _scale[i]) + _offset[i];

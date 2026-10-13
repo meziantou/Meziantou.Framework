@@ -204,7 +204,7 @@ internal sealed partial class DrawingSession
                 colors = colors.Slice(skipped * 4, coverage.Length * 4);
             }
 
-            var source = new DrawingSource(colors, mode, blend, _isLinear);
+            var source = new DrawingSource(colors, mode, blend, _transfer);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], surface.Top + row, x, coverage, source);

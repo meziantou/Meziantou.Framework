@@ -58,7 +58,7 @@ public static class ReferenceConvolver
                             var sample = (decimal)source.GetSample(sx.Value, sy.Value, c);
                             sums[c] += c == layout.AlphaChannel
                                 ? weight * sample
-                                : weight * alpha * (options.Linear ? ReferenceResampler.DecodeSrgb(sample / max) : sample);
+                                : weight * alpha * (options.Linear ? ReferenceResampler.Decode(options.Transfer, sample / max) : sample);
                         }
                     }
                 }
@@ -80,7 +80,7 @@ public static class ReferenceConvolver
                             color = alpha > 0 ? color / alpha : 0;
                         }
 
-                        value = options.Linear ? max * ReferenceResampler.EncodeSrgb(Clamp(color, 1)) : Clamp(color, max);
+                        value = options.Linear ? max * ReferenceResampler.Encode(options.Transfer, Clamp(color, 1)) : Clamp(color, max);
                     }
 
                     values[(((y * width) + x) * channels) + c] = value;

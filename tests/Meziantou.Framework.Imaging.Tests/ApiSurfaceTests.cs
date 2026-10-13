@@ -82,6 +82,9 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(IccProfile))]
     [InlineData(typeof(IccColorTransform))]
     [InlineData(typeof(CicpColorDescription))]
+    [InlineData(typeof(ContentLightLevel))]
+    [InlineData(typeof(MasteringDisplayColorVolume))]
+    [InlineData(typeof(PixelAspectRatio))]
     [InlineData(typeof(VectorPathBuilder))]
     [InlineData(typeof(Font))]
     [InlineData(typeof(FontCollection))]
@@ -133,6 +136,28 @@ public sealed class ApiSurfaceTests
         Assert.Equal(NullabilityState.Nullable, new NullabilityInfoContext().Create(property).ReadState);
     }
 
+    [Theory]
+    [InlineData(typeof(ContentLightLevel), nameof(ImageMetadata.ContentLightLevel))]
+    [InlineData(typeof(MasteringDisplayColorVolume), nameof(ImageMetadata.MasteringDisplay))]
+    [InlineData(typeof(PixelAspectRatio), nameof(ImageMetadata.PixelAspectRatio))]
+    public void HighDynamicRangeAndPixelShapeLabelsHaveTheirPublicShape(Type type, string propertyName)
+    {
+        // Immutable values with value equality...
+        Assert.Equal("Meziantou.Framework.Imaging.Metadata", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && type.IsClass);
+        Assert.True(typeof(IEquatable<>).MakeGenericType(type).IsAssignableFrom(type));
+        Assert.Single(type.GetConstructors());
+        Assert.All(type.GetProperties(BindingFlags.Instance | BindingFlags.Public), property => Assert.Null(property.GetSetMethod(nonPublic: false)));
+        Assert.Empty(type.GetFields(BindingFlags.Instance | BindingFlags.Public));
+
+        // ...attached to the mutable metadata container by a nullable read-write property
+        var property = GetDeclaredProperty(typeof(ImageMetadata), propertyName);
+        Assert.Equal(type, property.PropertyType);
+        Assert.NotNull(property.GetGetMethod());
+        Assert.NotNull(property.GetSetMethod());
+        Assert.Equal(NullabilityState.Nullable, new NullabilityInfoContext().Create(property).ReadState);
+    }
+
     [Fact]
     public void HeicAdditionsHaveTheirPublicShape()
     {
@@ -153,7 +178,10 @@ public sealed class ApiSurfaceTests
                 nameof(HeicEncoder.DurationRounding), nameof(HeicEncoder.Effort), nameof(HeicEncoder.Format), nameof(HeicEncoder.KeyFrameInterval), nameof(HeicEncoder.Quality),
             ],
             settings);
-        Assert.Equal(typeof(AvifEncoder).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal), settings);
+
+        // The settings of the AVIF encoder, without the container features that only AVIF writes so far
+        string[] avifOnly = [nameof(AvifEncoder.CleanAperture), nameof(AvifEncoder.GridTileSize), nameof(AvifEncoder.PremultiplyAlpha)];
+        Assert.Equal(typeof(AvifEncoder).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Except(avifOnly).Order(StringComparer.Ordinal), settings);
         Assert.Equal(typeof(HeicCompression), GetDeclaredProperty(type, nameof(HeicEncoder.Compression)).PropertyType);
         Assert.Equal(typeof(HeicChromaSubsampling), GetDeclaredProperty(type, nameof(HeicEncoder.ChromaSubsampling)).PropertyType);
         Assert.Equal(Enum.GetNames<AvifCompression>(), Enum.GetNames<HeicCompression>());

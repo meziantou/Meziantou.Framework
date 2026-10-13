@@ -636,6 +636,53 @@ public static partial class FixtureManifestValidator
             }
         }
 
+        if (expected.ContentLightLevel is { } lightLevel)
+        {
+            if (entry.Format is not "avif")
+            {
+                errors.Add($"{name}: only AVIF inputs declare a content light level.");
+            }
+
+            if (lightLevel.MaxContentLightLevel is < 0 or > ushort.MaxValue || lightLevel.MaxPictureAverageLightLevel is < 0 or > ushort.MaxValue)
+            {
+                errors.Add($"{name}: the light levels are 16-bit values.");
+            }
+        }
+
+        if (expected.MasteringDisplay is { } display)
+        {
+            if (entry.Format is not "avif")
+            {
+                errors.Add($"{name}: only AVIF inputs declare a mastering display color volume.");
+            }
+
+            foreach (var chromaticity in new[] { display.Red, display.Green, display.Blue, display.WhitePoint })
+            {
+                if (chromaticity.Count != 2 || chromaticity.Any(value => value is < 0 or > ushort.MaxValue))
+                {
+                    errors.Add($"{name}: a chromaticity of the mastering display is two 16-bit values.");
+                }
+            }
+
+            if (display.MaxLuminance is < 0 or > uint.MaxValue || display.MinLuminance is < 0 or > uint.MaxValue)
+            {
+                errors.Add($"{name}: the luminances of the mastering display are 32-bit values.");
+            }
+        }
+
+        if (expected.PixelAspectRatio is { } pixelAspectRatio)
+        {
+            if (entry.Format is not "avif")
+            {
+                errors.Add($"{name}: only AVIF inputs declare a pixel aspect ratio.");
+            }
+
+            if (pixelAspectRatio.HorizontalSpacing is < 1 or > uint.MaxValue || pixelAspectRatio.VerticalSpacing is < 1 or > uint.MaxValue)
+            {
+                errors.Add($"{name}: the terms of the pixel aspect ratio are positive 32-bit values.");
+            }
+        }
+
         if (expected.Orientation is < 1 or > 8)
         {
             errors.Add($"{name}: orientation must be an EXIF orientation value (1-8).");
@@ -720,6 +767,11 @@ public static partial class FixtureManifestValidator
     {
         if (frame.EncodedDelay is not { } delay)
         {
+            // An image that the edit list of an AVIF track shows for a part of its duration has no delay field of its
+            // own: its duration is derived from the edits, and the fixture says so
+            if (entry.Format is "avif" && entry.HasFeature("avif.seq.partialDurations"))
+                return;
+
             if (expected.Animation is not null && (entry.Format is "png" or "webp" or "avif" or "heic" or "jxl" || duration != RationalDuration.Zero))
             {
                 errors.Add($"{frameName}: frames of animated inputs must record the encoded delay field (encodedDelay).");

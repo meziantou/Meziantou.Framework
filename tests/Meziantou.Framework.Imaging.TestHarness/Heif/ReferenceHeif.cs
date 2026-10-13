@@ -27,6 +27,7 @@ public sealed class ReferenceHeif
     private readonly List<Box> _topLevelBoxes = [];
     private readonly List<string> _compatibleBrands = [];
     private readonly List<Track> _tracks = [];
+    private readonly Dictionary<uint, (uint Duration, uint Size)> _fragmentDefaults = [];
     private MetaContent _meta = new();
 
     private ReferenceHeif(byte[] data)
@@ -70,6 +71,9 @@ public sealed class ReferenceHeif
     /// <summary>Gets a value indicating whether the file has a movie fragment box (<c>moof</c>).</summary>
     public bool IsFragmented => _topLevelBoxes.Any(box => box.Type == "moof");
 
+    /// <summary>Gets a value indicating whether the <c>moov</c> box has an <c>mvex</c> box, which announces movie fragments.</summary>
+    public bool HasMovieExtends { get; private set; }
+
     /// <summary>
     /// Gets a value indicating whether the file declares a brand of the image sequences: <c>avis</c> for AV1, <c>hevc</c>
     /// or <c>hevx</c> for HEVC.
@@ -81,6 +85,22 @@ public sealed class ReferenceHeif
 
     /// <summary>Gets the alpha auxiliary image of the primary item, or <see langword="null"/>.</summary>
     public Item? AlphaItem => PrimaryItemId is { } id ? FindAuxiliary(id, AlphaAuxiliaryType) ?? FindAuxiliary(id, HevcAlphaAuxiliaryType) : null;
+
+    /// <summary>
+    /// Gets a value indicating whether the colors of the image that the file presents are multiplied by the alpha of their
+    /// pixel: a <c>prem</c> reference from the primary item to its alpha plane (ISO/IEC 23008-12, section 6.6.2.2), or
+    /// from the color track of an image sequence to its alpha track.
+    /// </summary>
+    public bool IsPremultiplied
+    {
+        get
+        {
+            if (IsSequence)
+                return ColorTrack is { } color && AlphaTrack is { } alphaTrack && color.References.Any(reference => reference.Type == "prem" && reference.TrackIds.Contains(alphaTrack.Id));
+
+            return PrimaryItemId is { } id && AlphaItem is { } alpha && ItemReferences.Any(reference => reference.Type == "prem" && reference.FromItemId == id && reference.ToItemIds.Contains(alpha.Id));
+        }
+    }
 
     /// <summary>Gets the first <c>pict</c> track that has AV1 samples: the image sequence of the file, or <see langword="null"/>.</summary>
     public Track? ColorTrack => _tracks.FirstOrDefault(track => track.HandlerType == "pict" && IsCodedSampleEntry(track.SampleEntryType) && track.Samples.Count > 0);
@@ -261,6 +281,92 @@ public sealed class ReferenceHeif
     }
 
     /// <summary>
+    /// Follows the identity derivations of an item (ISO/IEC 23008-12, section 6.6.2.1): an <c>iden</c> item is its one
+    /// input image (<c>dimg</c> reference), with the transformative properties of the item applied after those of the input.
+    /// </summary>
+    /// <param name="item">The item that is presented.</param>
+    /// <returns>The items from <paramref name="item"/> to the first one that is not an identity derivation, which is the last element.</returns>
+    /// <exception cref="InvalidDataException">An identity derivation does not have one input image, or the derivations form a loop.</exception>
+    public IReadOnlyList<Item> GetIdentityChain(Item item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        var chain = new List<Item> { item };
+        while (chain[^1].Type == "iden")
+        {
+            var current = chain[^1];
+            var references = _meta.References.Where(reference => reference.Type == "dimg" && reference.FromItemId == current.Id).ToList();
+            if (references.Count != 1 || references[0].ToItemIds.Count != 1)
+                throw new InvalidDataException("An identity derivation does not have one input image.");
+
+            var input = FindItem(references[0].ToItemIds[0]) ?? throw new InvalidDataException("The input image of a derived image does not exist.");
+            if (chain.Contains(input))
+                throw new InvalidDataException("A derived image is derived from itself.");
+
+            chain.Add(input);
+        }
+
+        return chain;
+    }
+
+    /// <summary>
+    /// Returns whether an item is built from other images: its tree of derivations (ISO/IEC 23008-12, section 6.6) has an
+    /// overlay (<c>iovl</c>), or a grid whose tiles are not all coded items. Such an image has red, green, blue and
+    /// alpha samples, whatever its coded images are.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <returns><see langword="false"/> for a coded image and for the identity derivations of one.</returns>
+    public bool IsBuiltImage(Item item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        var leaf = GetIdentityChain(item)[^1];
+        return leaf.Type == "iovl" || (leaf.Type == "grid" && GetGridTiles(leaf).Any(tile => tile.Type is "iden" or "grid" or "iovl"));
+    }
+
+    /// <summary>
+    /// Gets the items of the tree of derivations of an item: the item, then the tree of each of its input images, in the
+    /// order of its <c>dimg</c> reference. A coded image has no input: the tiles of a grid of coded images are not listed.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <returns>The items; one that several derivations use is listed for each of them.</returns>
+    public IReadOnlyList<Item> GetImageTree(Item item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        if (item.Type != "iden" && !IsBuiltImage(item))
+            return [item];
+
+        var inputs = _meta.References.Where(reference => reference.Type == "dimg" && reference.FromItemId == item.Id).SelectMany(reference => reference.ToItemIds);
+        return [item, .. inputs.SelectMany(id => GetImageTree(FindItem(id) ?? throw new InvalidDataException("The input image of a derived image does not exist.")))];
+    }
+
+    /// <summary>
+    /// Gets the coded images that an item is built from, in the order of the <c>dimg</c> references of its derivations:
+    /// an image that several derivations use is listed for each of them.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <returns>The coded images: <c>av01</c> items, and grids whose tiles are all <c>av01</c> items.</returns>
+    public IReadOnlyList<Item> GetCodedImages(Item item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        if (item.Type != "iden" && !IsBuiltImage(item))
+            return [item];
+
+        var inputs = _meta.References.Where(reference => reference.Type == "dimg" && reference.FromItemId == item.Id).SelectMany(reference => reference.ToItemIds);
+        return [.. inputs.SelectMany(id => GetCodedImages(FindItem(id) ?? throw new InvalidDataException("The input image of a derived image does not exist.")))];
+    }
+
+    /// <summary>
+    /// Gets the transformative properties that the samples of the coded image of a chain of identity derivations go
+    /// through, in the order they apply: those of the coded image, then those of each derivation up to the presented item.
+    /// </summary>
+    /// <param name="chain">The items, from the presented one to the coded one (<see cref="GetIdentityChain"/>).</param>
+    /// <returns>The <c>clap</c>, <c>irot</c> and <c>imir</c> properties.</returns>
+    public static IReadOnlyList<Property> GetTransforms(IReadOnlyList<Item> chain)
+    {
+        ArgumentNullException.ThrowIfNull(chain);
+        return [.. chain.Reverse().SelectMany(item => item.Transforms)];
+    }
+
+    /// <summary>
     /// Computes the EXIF orientation that is equivalent to transformations applied in order (ISO/IEC 23008-12, sections
     /// 6.5.10 and 6.5.12): <c>irot</c> rotates anti-clockwise by a multiple of 90 degrees, <c>imir</c> exchanges the top and
     /// the bottom (axis 0) or the left and the right (axis 1).
@@ -301,20 +407,27 @@ public sealed class ReferenceHeif
             matrix = ((step.A * matrix.A) + (step.B * matrix.C), (step.A * matrix.B) + (step.B * matrix.D), (step.C * matrix.A) + (step.D * matrix.C), (step.C * matrix.B) + (step.D * matrix.D));
         }
 
-        // The EXIF orientations as the transformation that displays the stored samples (TIFF 6.0, tag 274)
-        return matrix switch
-        {
-            (1, 0, 0, 1) => 1,
-            (-1, 0, 0, 1) => 2,
-            (-1, 0, 0, -1) => 3,
-            (1, 0, 0, -1) => 4,
-            (0, 1, 1, 0) => 5,
-            (0, -1, 1, 0) => 6,
-            (0, -1, -1, 0) => 7,
-            (0, 1, -1, 0) => 8,
-            _ => throw new InvalidOperationException("The composition of quarter turns and mirrors is one of eight orientations."),
-        };
+        return GetOrientation(matrix) ?? throw new InvalidOperationException("The composition of quarter turns and mirrors is one of eight orientations.");
     }
+
+    /// <summary>
+    /// Returns the EXIF orientation of the transformation that displays the stored samples (TIFF 6.0, tag 274), given as
+    /// the matrix (a b; c d) of x' = a x + b y, y' = c x + d y that maps the offset of a stored sample from the center of
+    /// the image, y pointing down, to its displayed offset; <see langword="null"/> when the matrix is not one of the eight
+    /// compositions of quarter turns and mirrors.
+    /// </summary>
+    private static int? GetOrientation((int A, int B, int C, int D) matrix) => matrix switch
+    {
+        (1, 0, 0, 1) => 1,
+        (-1, 0, 0, 1) => 2,
+        (-1, 0, 0, -1) => 3,
+        (1, 0, 0, -1) => 4,
+        (0, 1, 1, 0) => 5,
+        (0, -1, 1, 0) => 6,
+        (0, -1, -1, 0) => 7,
+        (0, 1, -1, 0) => 8,
+        _ => null,
+    };
 
     private void ReadTopLevel()
     {
@@ -335,6 +448,9 @@ public sealed class ReferenceHeif
                     break;
                 case "moov" when MovieTimescale == 0 && _tracks.Count == 0:
                     ReadMovie(payload);
+                    break;
+                case "moof":
+                    ReadMovieFragment(payload, box.Offset);
                     break;
                 default:
                     break;
@@ -583,6 +699,96 @@ public sealed class ReferenceHeif
             {
                 _tracks.Add(ReadTrack(content));
             }
+            else if (box.Type == "mvex")
+            {
+                HasMovieExtends = true;
+                foreach (var (extends, defaults) in Children(content))
+                {
+                    if (extends.Type != "trex")
+                        continue;
+
+                    // Track identifier, default sample description index, duration, size and flags
+                    var reader = new Cursor(defaults);
+                    reader.FullBoxVersion();
+                    var trackId = reader.U32();
+                    reader.Skip(4);
+                    _fragmentDefaults[trackId] = (reader.U32(), reader.U32());
+                }
+            }
+        }
+    }
+
+    // ISO/IEC 14496-12, section 8.8 "Movie Fragments": the samples of a fragment are appended to their tracks. The data of
+    // a run starts at the base of its track fragment plus the offset of the run: the base is an offset in the file
+    // (base-data-offset-present), the start of the moof box (default-base-is-moof, or the first track fragment without
+    // either flag), or the end of the data of the previous track fragment. A run without offset follows the previous run
+    private void ReadMovieFragment(ReadOnlyMemory<byte> payload, long movieFragmentOffset)
+    {
+        long previousEnd = movieFragmentOffset;
+        var isFirst = true;
+        foreach (var (box, content) in Children(payload))
+        {
+            if (box.Type != "traf")
+                continue;
+
+            Track? track = null;
+            long baseOffset = isFirst ? movieFragmentOffset : previousEnd;
+            long next = baseOffset;
+            (uint Duration, uint Size) defaults = default;
+            foreach (var (child, body) in Children(content))
+            {
+                var reader = new Cursor(body);
+                if (child.Type == "tfhd")
+                {
+                    var flags = reader.U32() & 0xFFFFFF;
+                    var trackId = reader.U32();
+                    track = _tracks.FirstOrDefault(candidate => candidate.Id == trackId);
+                    defaults = _fragmentDefaults.GetValueOrDefault(trackId);
+                    if ((flags & 0x000001) != 0)
+                        baseOffset = checked((long)reader.U64());
+                    else if ((flags & 0x020000) != 0)
+                        baseOffset = movieFragmentOffset;
+
+                    if ((flags & 0x000002) != 0)
+                        reader.Skip(4);
+                    if ((flags & 0x000008) != 0)
+                        defaults.Duration = reader.U32();
+                    if ((flags & 0x000010) != 0)
+                        defaults.Size = reader.U32();
+
+                    next = baseOffset;
+                }
+                else if (child.Type == "tfdt" && track is not null)
+                {
+                    var version = reader.FullBoxVersion();
+                    track.AddFragmentDecodeTime(version == 1 ? reader.U64() : reader.U32(), (ulong)track.Samples.Sum(sample => (long)sample.Duration));
+                }
+                else if (child.Type == "trun" && track is not null)
+                {
+                    var flags = reader.U32() & 0xFFFFFF;
+                    var count = reader.U32();
+                    if ((flags & 0x000001) != 0)
+                        next = baseOffset + unchecked((int)reader.U32());
+                    if ((flags & 0x000004) != 0)
+                        reader.Skip(4);
+
+                    for (uint i = 0; i < count; i++)
+                    {
+                        var duration = (flags & 0x000100) != 0 ? reader.U32() : defaults.Duration;
+                        var size = (flags & 0x000200) != 0 ? reader.U32() : defaults.Size;
+                        if ((flags & 0x000400) != 0)
+                            reader.Skip(4);
+                        if ((flags & 0x000800) != 0)
+                            track.AddCompositionOffset(unchecked((int)reader.U32()));
+
+                        track.AddSample(new Sample(next, checked((int)size), duration));
+                        next += size;
+                    }
+                }
+            }
+
+            previousEnd = next;
+            isFirst = false;
         }
     }
 
@@ -614,12 +820,21 @@ public sealed class ReferenceHeif
                     // Two reserved words, layer, alternate_group, volume, a reserved field and the matrix; then the size of
                     // the presentation, as 16.16 fixed-point numbers. A header that ends before them is left to the tests
                     // of the decoder, which is the one that must reject it
-                    const int FieldsBeforeTheSize = 8 + 2 + 2 + 2 + 2 + 36;
-                    if (content.Length - reader.Position >= FieldsBeforeTheSize + 8)
+                    const int FieldsBeforeTheMatrix = 8 + 2 + 2 + 2 + 2;
+                    if (content.Length - reader.Position >= FieldsBeforeTheMatrix + 36 + 8)
                     {
-                        reader.Skip(FieldsBeforeTheSize);
-                        track.PresentationWidth = reader.U32() / 65536.0;
-                        track.PresentationHeight = reader.U32() / 65536.0;
+                        reader.Skip(FieldsBeforeTheMatrix);
+                        var matrix = new int[9];
+                        for (var i = 0; i < matrix.Length; i++)
+                        {
+                            matrix[i] = unchecked((int)reader.U32());
+                        }
+
+                        track.Matrix = matrix;
+                        track.HeaderWidth = reader.U32();
+                        track.HeaderHeight = reader.U32();
+                        track.PresentationWidth = track.HeaderWidth / 65536.0;
+                        track.PresentationHeight = track.HeaderHeight / 65536.0;
                     }
 
                     break;
@@ -902,6 +1117,7 @@ public sealed class ReferenceHeif
         track.Height = BinaryPrimitives.ReadUInt16BigEndian(content.Span[26..]);
         foreach (var (box, child) in Children(content[78..]))
         {
+            track.AddSampleEntryBox(new SampleEntryBox(box.Type, child));
             switch (box.Type)
             {
                 case "av1C":
@@ -920,9 +1136,6 @@ public sealed class ReferenceHeif
                     break;
                 case "auxi":
                     track.AuxiliaryType = new Cursor(child[4..]).CString();
-                    break;
-                case "clap":
-                    track.CleanAperture ??= CleanAperture.Parse(child.Span);
                     break;
                 default:
                     break;
@@ -944,6 +1157,74 @@ public sealed class ReferenceHeif
     /// <param name="Type">The four-character code.</param>
     /// <param name="Payload">The payload of the property box (with the version and flags of a full box).</param>
     public sealed record Property(int Index, string Type, ReadOnlyMemory<byte> Payload);
+
+    /// <summary>The content light level of a <c>clli</c> box (ISO/IEC 14496-12, section 12.1.6), in candelas per square meter.</summary>
+    /// <param name="MaxContentLightLevel">The light level of the brightest pixel, or 0 when unknown.</param>
+    /// <param name="MaxPictureAverageLightLevel">The largest average light level of a picture, or 0 when unknown.</param>
+    public sealed record ContentLightLevel(int MaxContentLightLevel, int MaxPictureAverageLightLevel)
+    {
+        /// <summary>Parses the payload of the box: two 16-bit fields.</summary>
+        /// <param name="payload">The payload.</param>
+        /// <returns>The light levels.</returns>
+        /// <exception cref="InvalidDataException">The box is truncated.</exception>
+        public static ContentLightLevel Parse(ReadOnlySpan<byte> payload)
+        {
+            if (payload.Length < 4)
+                throw new InvalidDataException("The 'clli' box is truncated.");
+
+            return new ContentLightLevel(BinaryPrimitives.ReadUInt16BigEndian(payload), BinaryPrimitives.ReadUInt16BigEndian(payload[2..]));
+        }
+    }
+
+    /// <summary>
+    /// The mastering display color volume of a <c>mdcv</c> box (ISO/IEC 14496-12, section 12.1.7): chromaticities in units
+    /// of 0.00002, luminances in units of 0.0001 candela per square meter. The box stores the three primaries with the
+    /// semantics of the SEI message of Rec. ITU-T H.265 (section D.3.28): green, then blue, then red.
+    /// </summary>
+    /// <param name="Red">The x and y of the red primary.</param>
+    /// <param name="Green">The x and y of the green primary.</param>
+    /// <param name="Blue">The x and y of the blue primary.</param>
+    /// <param name="WhitePoint">The x and y of the white point.</param>
+    /// <param name="MaxLuminance">The nominal maximum luminance of the display.</param>
+    /// <param name="MinLuminance">The nominal minimum luminance of the display.</param>
+    public sealed record MasteringDisplay((int X, int Y) Red, (int X, int Y) Green, (int X, int Y) Blue, (int X, int Y) WhitePoint, long MaxLuminance, long MinLuminance)
+    {
+        /// <summary>Parses the payload of the box: eight 16-bit fields, then two 32-bit fields.</summary>
+        /// <param name="payload">The payload.</param>
+        /// <returns>The color volume.</returns>
+        /// <exception cref="InvalidDataException">The box is truncated.</exception>
+        public static MasteringDisplay Parse(ReadOnlySpan<byte> payload)
+        {
+            if (payload.Length < 24)
+                throw new InvalidDataException("The 'mdcv' box is truncated.");
+
+            (int X, int Y) Pair(ReadOnlySpan<byte> data, int index) => (BinaryPrimitives.ReadUInt16BigEndian(data[(index * 4)..]), BinaryPrimitives.ReadUInt16BigEndian(data[((index * 4) + 2)..]));
+            return new MasteringDisplay(Pair(payload, 2), Pair(payload, 0), Pair(payload, 1), Pair(payload, 3), BinaryPrimitives.ReadUInt32BigEndian(payload[16..]), BinaryPrimitives.ReadUInt32BigEndian(payload[20..]));
+        }
+    }
+
+    /// <summary>The pixel aspect ratio of a <c>pasp</c> box (ISO/IEC 14496-12, section 12.1.4): the relative width and height of a pixel.</summary>
+    /// <param name="HorizontalSpacing">The relative width of a pixel.</param>
+    /// <param name="VerticalSpacing">The relative height of a pixel.</param>
+    public sealed record PixelAspectRatio(long HorizontalSpacing, long VerticalSpacing)
+    {
+        /// <summary>Parses the payload of the box: two 32-bit fields.</summary>
+        /// <param name="payload">The payload.</param>
+        /// <returns>The ratio.</returns>
+        /// <exception cref="InvalidDataException">The box is truncated.</exception>
+        public static PixelAspectRatio Parse(ReadOnlySpan<byte> payload)
+        {
+            if (payload.Length < 8)
+                throw new InvalidDataException("The 'pasp' box is truncated.");
+
+            return new PixelAspectRatio(BinaryPrimitives.ReadUInt32BigEndian(payload), BinaryPrimitives.ReadUInt32BigEndian(payload[4..]));
+        }
+    }
+
+    /// <summary>A box of a visual sample entry (<c>stsd</c>).</summary>
+    /// <param name="Type">The four-character code.</param>
+    /// <param name="Payload">The payload of the box (with the version and flags of a full box).</param>
+    public sealed record SampleEntryBox(string Type, ReadOnlyMemory<byte> Payload);
 
     /// <summary>The association of a property with an item (<c>ipma</c>).</summary>
     /// <param name="Property">The property.</param>
@@ -977,7 +1258,29 @@ public sealed class ReferenceHeif
     /// <summary>An edit list (<c>elst</c>).</summary>
     /// <param name="IsRepeating">Whether the flag that repeats the edits is set (flags and 1).</param>
     /// <param name="Entries">The edits.</param>
-    public sealed record EditList(bool IsRepeating, IReadOnlyList<Edit> Entries);
+    public sealed record EditList(bool IsRepeating, IReadOnlyList<Edit> Entries)
+    {
+        /// <summary>
+        /// Gets the duration of one play of the edits, in units of the time scale of the movie: the sum of their durations,
+        /// or <see langword="null"/> when one of them has none (every bit of its field is set).
+        /// </summary>
+        public ulong? TotalSegmentDuration
+        {
+            get
+            {
+                ulong total = 0;
+                foreach (var entry in Entries)
+                {
+                    if (entry.SegmentDuration is not { } duration)
+                        return null;
+
+                    total = checked(total + duration);
+                }
+
+                return Entries.Count == 0 ? null : total;
+            }
+        }
+    }
 
     /// <summary>The fields of an AV1 codec configuration record (AV1 Codec ISO Media File Format Binding, section 2.3).</summary>
     /// <param name="SequenceProfile">The <c>seq_profile</c> field.</param>
@@ -1197,14 +1500,14 @@ public sealed class ReferenceHeif
     /// <param name="VerticalOffsetDenominator">The denominator of the vertical offset.</param>
     public sealed record CleanAperture(uint WidthNumerator, uint WidthDenominator, uint HeightNumerator, uint HeightDenominator, int HorizontalOffsetNumerator, uint HorizontalOffsetDenominator, int VerticalOffsetNumerator, uint VerticalOffsetDenominator)
     {
-        /// <summary>Parses the payload of a <c>clap</c> box.</summary>
-        /// <param name="payload">The payload of the box.</param>
-        /// <returns>The clean aperture.</returns>
-        /// <exception cref="InvalidDataException">The payload is truncated.</exception>
+        /// <summary>Parses the payload of a <c>clap</c> box: four fractions of 32-bit terms.</summary>
+        /// <param name="payload">The payload.</param>
+        /// <returns>The aperture.</returns>
+        /// <exception cref="InvalidDataException">The box is truncated.</exception>
         public static CleanAperture Parse(ReadOnlySpan<byte> payload)
         {
             if (payload.Length < 32)
-                throw new InvalidDataException("The clean aperture is truncated.");
+                throw new InvalidDataException("The 'clap' box is truncated.");
 
             return new CleanAperture(
                 BinaryPrimitives.ReadUInt32BigEndian(payload), BinaryPrimitives.ReadUInt32BigEndian(payload[4..]),
@@ -1308,6 +1611,15 @@ public sealed class ReferenceHeif
         /// <summary>Gets the ICC profile of the first <c>colr</c> property of type <c>prof</c> or <c>rICC</c>, or <see langword="null"/>.</summary>
         public ReadOnlyMemory<byte>? IccProfile => FindColor("prof") ?? FindColor("rICC");
 
+        /// <summary>Gets the first <c>clli</c> property, or <see langword="null"/>.</summary>
+        public ContentLightLevel? ContentLightLevel => Find("clli") is { } property ? ReferenceHeif.ContentLightLevel.Parse(property.Payload.Span) : null;
+
+        /// <summary>Gets the first <c>mdcv</c> property, or <see langword="null"/>.</summary>
+        public MasteringDisplay? MasteringDisplay => Find("mdcv") is { } property ? ReferenceHeif.MasteringDisplay.Parse(property.Payload.Span) : null;
+
+        /// <summary>Gets the first <c>pasp</c> property, or <see langword="null"/>.</summary>
+        public PixelAspectRatio? PixelAspectRatio => Find("pasp") is { } property ? ReferenceHeif.PixelAspectRatio.Parse(property.Payload.Span) : null;
+
         /// <summary>Gets the auxiliary type (<c>auxC</c>), or <see langword="null"/>.</summary>
         public string? AuxiliaryType => Find("auxC") is { } property ? new Cursor(property.Payload[4..]).CString() : null;
 
@@ -1355,15 +1667,115 @@ public sealed class ReferenceHeif
         public int Orientation => ComposeOrientation(Transforms);
 
         /// <summary>Gets the clean aperture (<c>clap</c>), or <see langword="null"/>.</summary>
-        public CleanAperture? CleanAperture
+        public CleanAperture? CleanAperture => Find("clap") is { } property ? ReferenceHeif.CleanAperture.Parse(property.Payload.Span) : null;
+
+        /// <summary>
+        /// Gets a value indicating whether the transformative properties are associated in the order MIAF requires
+        /// (ISO/IEC 23000-22, section 7.3.6.7): the clean aperture, the rotation, then the mirroring. The properties of a file
+        /// that does otherwise still apply in the order of their association (ISO/IEC 23008-12, section 6.5.1).
+        /// </summary>
+        public bool HasMiafTransformOrder
         {
             get
             {
-                if (Find("clap") is not { } property)
-                    return null;
-
-                return CleanAperture.Parse(property.Payload.Span);
+                var order = Transforms.Select(property => Array.IndexOf(["clap", "irot", "imir"], property.Type)).ToList();
+                return order.SequenceEqual(order.Order());
             }
+        }
+
+        /// <summary>
+        /// Computes the samples of the coded image that the transformative properties present, applied in the order of
+        /// their association: a grid that holds the position of every coded sample is cropped, turned and mirrored as each
+        /// property says, and what is left of it is a rectangle of the coded image.
+        /// </summary>
+        /// <param name="imageWidth">The width of the coded image.</param>
+        /// <param name="imageHeight">The height of the coded image.</param>
+        /// <returns>The rectangle of the coded image, or <see langword="null"/> when a clean aperture does not select whole samples.</returns>
+        /// <exception cref="InvalidDataException">A clean aperture is not inside the image it applies to.</exception>
+        public (int X, int Y, int Width, int Height)? GetPresentedRectangle(int imageWidth, int imageHeight) => Present(Transforms, imageWidth, imageHeight)?.Rectangle;
+
+        /// <summary>
+        /// Computes the samples of a coded image that transformative properties present, applied in order: a grid that
+        /// holds the position of every coded sample is cropped, turned and mirrored as each property says.
+        /// </summary>
+        /// <param name="transforms">The <c>clap</c>, <c>irot</c> and <c>imir</c> properties, in the order they apply.</param>
+        /// <param name="imageWidth">The width of the coded image.</param>
+        /// <param name="imageHeight">The height of the coded image.</param>
+        /// <returns>
+        /// The rectangle of the coded image and the size of the image that is presented (the rectangle, turned), or
+        /// <see langword="null"/> when a clean aperture does not select whole samples.
+        /// </returns>
+        /// <exception cref="InvalidDataException">A clean aperture is not inside the image it applies to.</exception>
+        public static ((int X, int Y, int Width, int Height) Rectangle, int Width, int Height)? Present(IEnumerable<Property> transforms, int imageWidth, int imageHeight)
+        {
+            ArgumentNullException.ThrowIfNull(transforms);
+            if (imageWidth < 1 || imageHeight < 1 || (long)imageWidth * imageHeight > 1 << 24)
+                throw new ArgumentOutOfRangeException(nameof(imageWidth), imageWidth, "The image is empty or too large for the grid of its samples.");
+
+            var (width, height) = (imageWidth, imageHeight);
+            var grid = new (int X, int Y)[width * height];
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    grid[(y * width) + x] = (x, y);
+                }
+            }
+
+            foreach (var property in transforms)
+            {
+                var (sourceWidth, sourceHeight, source) = (width, height, grid);
+                Func<int, int, (int X, int Y)> at;
+                if (property.Type == "clap")
+                {
+                    if (ReferenceHeif.CleanAperture.Parse(property.Payload.Span).GetRectangle(width, height) is not { } aperture)
+                        return null;
+
+                    if (aperture.X < 0 || aperture.Y < 0 || aperture.Width < 1 || aperture.Height < 1 || aperture.X + aperture.Width > width || aperture.Y + aperture.Height > height)
+                        throw new InvalidDataException("The clean aperture is not inside the image.");
+
+                    (width, height) = (aperture.Width, aperture.Height);
+                    at = (x, y) => source[((y + aperture.Y) * sourceWidth) + x + aperture.X];
+                }
+                else if (property.Type == "irot" && (property.Payload.Span[0] & 1) != 0)
+                {
+                    // A quarter turn anti-clockwise brings the right column to the top row; three of them bring the left
+                    // column to the top row
+                    (width, height) = (sourceHeight, sourceWidth);
+                    at = (property.Payload.Span[0] & 3) == 1
+                        ? (x, y) => source[(x * sourceWidth) + sourceWidth - 1 - y]
+                        : (x, y) => source[((sourceHeight - 1 - x) * sourceWidth) + y];
+                }
+                else if (property.Type == "irot")
+                {
+                    at = (property.Payload.Span[0] & 3) == 0
+                        ? (x, y) => source[(y * sourceWidth) + x]
+                        : (x, y) => source[((sourceHeight - 1 - y) * sourceWidth) + sourceWidth - 1 - x];
+                }
+                else
+                {
+                    // imir: 0 exchanges the top and the bottom, 1 the left and the right
+                    at = (property.Payload.Span[0] & 1) == 0
+                        ? (x, y) => source[((sourceHeight - 1 - y) * sourceWidth) + x]
+                        : (x, y) => source[(y * sourceWidth) + sourceWidth - 1 - x];
+                }
+
+                grid = new (int X, int Y)[width * height];
+                for (var y = 0; y < height; y++)
+                {
+                    for (var x = 0; x < width; x++)
+                    {
+                        grid[(y * width) + x] = at(x, y);
+                    }
+                }
+            }
+
+            var (left, top) = (grid.Min(position => position.X), grid.Min(position => position.Y));
+            var (right, bottom) = (grid.Max(position => position.X), grid.Max(position => position.Y));
+            if ((long)(right - left + 1) * (bottom - top + 1) != grid.Length || grid.Distinct().Count() != grid.Length)
+                throw new InvalidDataException("The presented samples are not a rectangle of the coded image.");
+
+            return ((left, top, right - left + 1, bottom - top + 1), width, height);
         }
 
         /// <summary>Gets the first associated property of a type.</summary>
@@ -1393,6 +1805,19 @@ public sealed class ReferenceHeif
     {
         private readonly List<TrackReference> _references = [];
         private readonly List<Sample> _samples = [];
+        private readonly List<(ulong DecodeTime, ulong MediaTime)> _fragmentDecodeTimes = [];
+        private readonly List<int> _compositionOffsets = [];
+
+        /// <summary>
+        /// Gets, for each track fragment that has a <c>tfdt</c> box, the decode time it declares for its first sample and the
+        /// sum of the durations of the samples before it: the two are equal when the fragments follow each other.
+        /// </summary>
+        public IReadOnlyList<(ulong DecodeTime, ulong MediaTime)> FragmentDecodeTimes => _fragmentDecodeTimes;
+
+        /// <summary>Gets the composition time offsets that the runs of the fragments declare for their samples.</summary>
+        public IReadOnlyList<int> FragmentCompositionOffsets => _compositionOffsets;
+
+        private readonly List<SampleEntryBox> _sampleEntryBoxes = [];
         private IReadOnlyList<Item> _metaItems = [];
 
         internal Track()
@@ -1447,8 +1872,51 @@ public sealed class ReferenceHeif
         /// <summary>Gets the auxiliary type of the sample entry (<c>auxi</c>), or <see langword="null"/>.</summary>
         public string? AuxiliaryType { get; internal set; }
 
-        /// <summary>Gets the clean aperture of the sample entry (<c>clap</c>), or <see langword="null"/>.</summary>
-        public CleanAperture? CleanAperture { get; internal set; }
+        /// <summary>Gets the boxes of the visual sample entry, in file order: the configuration, the color information and whatever else describes the samples.</summary>
+        public IReadOnlyList<SampleEntryBox> SampleEntryBoxes => _sampleEntryBoxes;
+
+        /// <summary>
+        /// Gets the matrix of the track header (ISO/IEC 14496-12, section 8.3.2), as it is stored: { a, b, u, c, d, v, x, y, w }
+        /// maps the point (p, q) of an image to the point (a p + c q + x, b p + d q + y) of the presentation; a, b, c, d, x
+        /// and y are 16.16 fixed-point numbers, u, v and w 2.30 ones.
+        /// </summary>
+        public IReadOnlyList<int> Matrix { get; internal set; } = [0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000];
+
+        /// <summary>Gets the width of the track header, a 16.16 fixed-point number.</summary>
+        public uint HeaderWidth { get; internal set; }
+
+        /// <summary>Gets the height of the track header, a 16.16 fixed-point number.</summary>
+        public uint HeaderHeight { get; internal set; }
+
+        /// <summary>
+        /// Gets the EXIF orientation that is equivalent to the matrix of the track header when the matrix turns the images
+        /// by quarter turns or mirrors them (a, b, c and d are 0, 1 or -1; u and v are 0; w is 1; whatever the translation),
+        /// and 1 for any other matrix, which places the track in a presentation without describing the images.
+        /// </summary>
+        public int Orientation
+        {
+            get
+            {
+                const int One = 0x00010000;
+                if (Matrix[2] != 0 || Matrix[5] != 0 || Matrix[8] != 0x40000000 || new[] { Matrix[0], Matrix[1], Matrix[3], Matrix[4] }.Any(value => value != 0 && value != One && value != -One))
+                    return 1;
+
+                // The displayed offset of a sample is (a p + c q, b p + d q)
+                return GetOrientation((Matrix[0] / One, Matrix[3] / One, Matrix[1] / One, Matrix[4] / One)) ?? 1;
+            }
+        }
+
+        /// <summary>Gets the first clean aperture of the sample entry (<c>clap</c>), or <see langword="null"/>.</summary>
+        public CleanAperture? CleanAperture => FindSampleEntryBox("clap") is { } box ? ReferenceHeif.CleanAperture.Parse(box.Payload.Span) : null;
+
+        /// <summary>Gets the first <c>clli</c> box of the sample entry, or <see langword="null"/>.</summary>
+        public ContentLightLevel? ContentLightLevel => FindSampleEntryBox("clli") is { } box ? ReferenceHeif.ContentLightLevel.Parse(box.Payload.Span) : null;
+
+        /// <summary>Gets the first <c>mdcv</c> box of the sample entry, or <see langword="null"/>.</summary>
+        public MasteringDisplay? MasteringDisplay => FindSampleEntryBox("mdcv") is { } box ? ReferenceHeif.MasteringDisplay.Parse(box.Payload.Span) : null;
+
+        /// <summary>Gets the first <c>pasp</c> box of the sample entry, or <see langword="null"/>.</summary>
+        public PixelAspectRatio? PixelAspectRatio => FindSampleEntryBox("pasp") is { } box ? ReferenceHeif.PixelAspectRatio.Parse(box.Payload.Span) : null;
 
         /// <summary>Gets the edit list, or <see langword="null"/>.</summary>
         public EditList? EditList { get; internal set; }
@@ -1528,13 +1996,114 @@ public sealed class ReferenceHeif
                 if (!edits.IsRepeating)
                     return 1;
 
-                if (Duration is not { } duration || edits.Entries.Count == 0 || edits.Entries[0].SegmentDuration is not { } segment || segment == 0)
+                if (Duration is not { } duration || edits.TotalSegmentDuration is not { } segment || segment == 0)
                     return null;
 
                 var plays = (new BigInteger(duration) + segment - 1) / segment;
                 return plays > int.MaxValue ? null : (int)BigInteger.Max(plays, 1);
             }
         }
+
+        /// <summary>
+        /// Computes the images that the track shows and the time each one is shown for, through its edit list (ISO/IEC
+        /// 14496-12, section 8.6.6): each edit plays the media from its media time, for its duration (which is in units
+        /// of the time scale of the movie; an edit without duration plays the media to its end), and an image is shown
+        /// for the time that the edits cover of its interval. An image without duration is shown when its time is in an
+        /// edit, ends included. A track without edit list shows every image for its duration, and so does the usual edit
+        /// list of an image sequence, whose rounded duration is not held against it: one edit that starts with the
+        /// media and reaches its last image (or ends where that image starts when the image has no duration).
+        /// </summary>
+        /// <param name="movieTimescale">The time scale of the movie.</param>
+        /// <returns>The index of each image that is shown, in order, with its duration in seconds as a fraction.</returns>
+        /// <exception cref="InvalidDataException">An edit is empty, is not played at the normal rate, or the edits are not in the order of the media.</exception>
+        public IReadOnlyList<(int SampleIndex, BigInteger Numerator, BigInteger Denominator)> GetPresentation(uint movieTimescale)
+        {
+            var result = new List<(int SampleIndex, BigInteger Numerator, BigInteger Denominator)>();
+            var starts = new List<BigInteger>();
+            BigInteger time = 0;
+            foreach (var sample in _samples)
+            {
+                starts.Add(time);
+                time += sample.Duration;
+            }
+
+            var mediaEnd = time;
+            var entries = EditList?.Entries ?? [];
+            if (entries.Any(entry => entry.MediaTime < 0 || entry.MediaRateInteger != 1 || entry.MediaRateFraction != 0))
+                throw new InvalidDataException("An edit is empty or is not played at the normal rate.");
+
+            var playsWholeMedia = entries.Count == 0;
+            if (entries.Count == 1 && entries[0].MediaTime == 0)
+            {
+                var lastStart = _samples.Count == 0 ? 0 : starts[^1];
+                var lastDuration = _samples.Count == 0 ? 0 : _samples[^1].Duration;
+                if (entries[0].SegmentDuration is not { } segment || segment == 0 || movieTimescale == 0)
+                {
+                    playsWholeMedia = true;
+                }
+                else
+                {
+                    // Compared in units of 1 / (movie time scale x media time scale) second
+                    var editEnd = new BigInteger(segment) * Timescale;
+                    var lastImage = lastStart * movieTimescale;
+                    playsWholeMedia = editEnd > lastImage || (editEnd == lastImage && lastDuration == 0);
+                }
+            }
+
+            if (playsWholeMedia)
+            {
+                for (var i = 0; i < _samples.Count; i++)
+                {
+                    result.Add((i, _samples[i].Duration, Timescale));
+                }
+
+                return result;
+            }
+
+            // The intervals of the edits, in seconds times (movie time scale x media time scale)
+            var edits = new List<(BigInteger Start, BigInteger End)>();
+            foreach (var entry in entries)
+            {
+                var start = new BigInteger(entry.MediaTime) * movieTimescale;
+                var end = entry.SegmentDuration is { } duration && duration != 0 ? start + (new BigInteger(duration) * Timescale) : BigInteger.Max(start, mediaEnd * movieTimescale);
+                if (edits.Count > 0 && start < edits[^1].End)
+                    throw new InvalidDataException("The edits are not in the order of the media.");
+
+                edits.Add((start, end));
+            }
+
+            var unit = new BigInteger(movieTimescale) * Timescale;
+            for (var i = 0; i < _samples.Count; i++)
+            {
+                var (start, end) = (starts[i] * movieTimescale, (starts[i] + _samples[i].Duration) * movieTimescale);
+                BigInteger covered = 0;
+                var isShown = false;
+                foreach (var edit in edits)
+                {
+                    if (start == end)
+                    {
+                        isShown |= edit.Start <= start && start <= edit.End;
+                    }
+                    else if (BigInteger.Max(edit.Start, start) < BigInteger.Min(edit.End, end))
+                    {
+                        covered += BigInteger.Min(edit.End, end) - BigInteger.Max(edit.Start, start);
+                        isShown = true;
+                    }
+                }
+
+                if (isShown)
+                    result.Add((i, covered, unit));
+            }
+
+            return result;
+        }
+
+        /// <summary>Returns the first box of the visual sample entry of a type.</summary>
+        /// <param name="type">The four-character code.</param>
+        /// <returns>The box, or <see langword="null"/>.</returns>
+        public SampleEntryBox? FindSampleEntryBox(string type) => _sampleEntryBoxes.FirstOrDefault(box => box.Type == type);
+
+        internal void AddSampleEntryBox(SampleEntryBox box) => _sampleEntryBoxes.Add(box);
 
         internal void AddReference(TrackReference reference) => _references.Add(reference);
 
@@ -1545,6 +2114,10 @@ public sealed class ReferenceHeif
         }
 
         internal void AddSample(Sample sample) => _samples.Add(sample);
+
+        internal void AddFragmentDecodeTime(ulong decodeTime, ulong mediaTime) => _fragmentDecodeTimes.Add((decodeTime, mediaTime));
+
+        internal void AddCompositionOffset(int offset) => _compositionOffsets.Add(offset);
     }
 
     /// <summary>The content of a <c>meta</c> box, of the file or of a track.</summary>

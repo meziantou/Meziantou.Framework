@@ -234,6 +234,21 @@ internal ref partial struct Av1TileCoder
             case SymbolSink.Range:
                 _encoder!.WriteNonSymmetric(value, valueCount);
                 break;
+            case SymbolSink.Tape:
+                // The literals that the non-symmetric encoding is made of
+                var bits = BitOperations.Log2((uint)valueCount) + 1;
+                var threshold = (1 << bits) - valueCount;
+                if (value < threshold)
+                {
+                    WriteLiteral(value, bits - 1);
+                }
+                else
+                {
+                    WriteLiteral((value + threshold) >> 1, bits - 1);
+                    WriteLiteral((value + threshold) & 1, 1);
+                }
+
+                break;
         }
     }
 

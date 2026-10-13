@@ -20,6 +20,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <param name="KeyFrameInterval">The number of images from a key frame to the next one in an image sequence; 0 when the first image is the only one.</param>
 /// <param name="DurationRounding">How the durations of the images of a sequence are stored.</param>
 /// <param name="MetadataHandling">What happens to the metadata that the format cannot store.</param>
+/// <param name="CleanAperture">The part of the image that readers show, or <see langword="null"/> for the whole image.</param>
+/// <param name="PremultiplyAlpha">Whether the colors are stored multiplied by the alpha of their pixel.</param>
+/// <param name="GridTileSize">The size of the tiles of the grid of a still image, or <see langword="null"/> for an image that is one coded item.</param>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct HeifEncoderSettings(
     string EncoderName,
@@ -34,4 +37,7 @@ internal readonly record struct HeifEncoderSettings(
     bool ClearTransparentColors,
     int KeyFrameInterval,
     FrameDurationRounding DurationRounding,
-    MetadataHandling MetadataHandling);
+    MetadataHandling MetadataHandling,
+    Rectangle? CleanAperture = null,
+    bool PremultiplyAlpha = false,
+    Size? GridTileSize = null);

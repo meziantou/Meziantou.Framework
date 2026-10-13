@@ -181,6 +181,104 @@ public sealed class MetadataTests
     }
 
     [Fact]
+    public void ContentLightLevelIsAnImmutableValue()
+    {
+        var level = new ContentLightLevel(maxContentLightLevel: 1000, maxPictureAverageLightLevel: 400);
+        Assert.Equal(1000, level.MaxContentLightLevel);
+        Assert.Equal(400, level.MaxPictureAverageLightLevel);
+        Assert.Equal("MaxCLL 1000 cd/m2, MaxPALL 400 cd/m2", level.ToString());
+
+        // 0 means unknown, and the largest values are stored as they are
+        Assert.Equal(0, new ContentLightLevel(0, 0).MaxContentLightLevel);
+        Assert.Equal(ushort.MaxValue, new ContentLightLevel(ushort.MaxValue, ushort.MaxValue).MaxPictureAverageLightLevel);
+
+        var same = new ContentLightLevel(1000, 400);
+        Assert.Equal(level, same);
+        Assert.True(level.Equals((object)same));
+        Assert.Equal(level.GetHashCode(), same.GetHashCode());
+        Assert.NotEqual(level, new ContentLightLevel(1001, 400));
+        Assert.NotEqual(level, new ContentLightLevel(1000, 401));
+        Assert.False(level.Equals(null));
+    }
+
+    [Fact]
+    public void MasteringDisplayColorVolumeKeepsTheStoredIntegers()
+    {
+        // The BT.2020 primaries and D65, a display of 0.005 to 1000 cd/m2 (SMPTE ST 2086 units)
+        var display = new MasteringDisplayColorVolume(redX: 35400, redY: 14600, greenX: 8500, greenY: 39850, blueX: 6550, blueY: 2300, whitePointX: 15635, whitePointY: 16450, maxLuminance: 10_000_000, minLuminance: 50);
+        Assert.Equal((35400, 14600), (display.RedX, display.RedY));
+        Assert.Equal((8500, 39850), (display.GreenX, display.GreenY));
+        Assert.Equal((6550, 2300), (display.BlueX, display.BlueY));
+        Assert.Equal((15635, 16450), (display.WhitePointX, display.WhitePointY));
+        Assert.Equal(10_000_000u, display.MaxLuminance);
+        Assert.Equal(50u, display.MinLuminance);
+        Assert.Equal(1000, display.MaxLuminanceCandelasPerSquareMeter, 9);
+        Assert.Equal(0.005, display.MinLuminanceCandelasPerSquareMeter, 9);
+
+        var same = new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50);
+        Assert.Equal(display, same);
+        Assert.Equal(display.GetHashCode(), same.GetHashCode());
+        Assert.NotEqual(display, new MasteringDisplayColorVolume(35401, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50));
+        Assert.NotEqual(display, new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16451, 10_000_000, 50));
+        Assert.NotEqual(display, new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_001, 50));
+        Assert.NotEqual(display, new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 51));
+        Assert.False(display.Equals(null));
+
+        // Values that no display has are kept: the description round-trips unchanged
+        var extreme = new MasteringDisplayColorVolume(ushort.MaxValue, 0, 0, ushort.MaxValue, 0, 0, 0, 0, uint.MaxValue, uint.MaxValue);
+        Assert.Equal(uint.MaxValue, extreme.MaxLuminance);
+        Assert.Equal(ushort.MaxValue, extreme.GreenY);
+    }
+
+    [Fact]
+    public void PixelAspectRatioIsAnImmutableValueWithPositiveTerms()
+    {
+        var ratio = new PixelAspectRatio(horizontalSpacing: 4, verticalSpacing: 2);
+        Assert.Equal(4u, ratio.HorizontalSpacing);
+        Assert.Equal(2u, ratio.VerticalSpacing);
+        Assert.Equal(2d, ratio.Ratio);
+        Assert.False(ratio.IsSquare);
+        Assert.Equal("4:2", ratio.ToString());
+
+        // The terms are not reduced: 4:2 and 2:1 are two descriptions of the same shape
+        Assert.NotEqual(ratio, new PixelAspectRatio(2, 1));
+        Assert.Equal(ratio, new PixelAspectRatio(4, 2));
+        Assert.Equal(ratio.GetHashCode(), new PixelAspectRatio(4, 2).GetHashCode());
+        Assert.True(new PixelAspectRatio(7, 7).IsSquare);
+        Assert.Equal(uint.MaxValue, new PixelAspectRatio(uint.MaxValue, 1).HorizontalSpacing);
+
+        Assert.Throws<ArgumentOutOfRangeException>("horizontalSpacing", () => new PixelAspectRatio(0, 1));
+        Assert.Throws<ArgumentOutOfRangeException>("verticalSpacing", () => new PixelAspectRatio(1, 0));
+    }
+
+    [Fact]
+    public void ImageMetadataCloneKeepsTheHighDynamicRangeAndPixelShapeLabels()
+    {
+        var empty = new ImageMetadata();
+        Assert.Null(empty.ContentLightLevel);
+        Assert.Null(empty.MasteringDisplay);
+        Assert.Null(empty.PixelAspectRatio);
+
+        var metadata = new ImageMetadata
+        {
+            ContentLightLevel = new ContentLightLevel(1000, 400),
+            MasteringDisplay = new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50),
+            PixelAspectRatio = new PixelAspectRatio(2, 1),
+        };
+        var clone = metadata.Clone();
+        Assert.Same(metadata.ContentLightLevel, clone.ContentLightLevel); // immutable values are shared
+        Assert.Same(metadata.MasteringDisplay, clone.MasteringDisplay);
+        Assert.Same(metadata.PixelAspectRatio, clone.PixelAspectRatio);
+
+        clone.ContentLightLevel = null;
+        clone.MasteringDisplay = null;
+        clone.PixelAspectRatio = null;
+        Assert.NotNull(metadata.ContentLightLevel);
+        Assert.NotNull(metadata.MasteringDisplay);
+        Assert.NotNull(metadata.PixelAspectRatio);
+    }
+
+    [Fact]
     public void ImageMetadataCloneKeepsTheCicpDescription()
     {
         Assert.Null(new ImageMetadata().Cicp);

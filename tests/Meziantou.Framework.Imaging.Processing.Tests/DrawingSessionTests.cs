@@ -2228,7 +2228,7 @@ public sealed class DrawingSessionTests
     }
 
     [Fact]
-    public void LinearLightNeedsPixelsThatAreKnownToBeSrgb()
+    public void LinearLightIsTheLightOfTheTransferFunctionOfTheImage()
     {
         using var image = new Image<Rgb24>(1, 1, new Rgb24(0, 0, 0));
         image.Metadata.IccProfile = ResizeTests.IccProfiles.Rgb(ResizeTests.IccProfiles.DisplayP3Colorants, ResizeTests.IccProfiles.SrgbParametricCurve());
@@ -2252,6 +2252,22 @@ public sealed class DrawingSessionTests
         linear.Metadata.TransferFunction = ColorTransferFunction.Linear;
         linear.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static inner => inner.FillRectangle(White, new RectangleD(0, 0, 0.5, 1))), Ct);
         Assert.Equal(new Rgb24(128, 128, 128), linear.Frames[0][0, 0]);
+
+        // Without ICC profile, the transfer characteristics of a CICP description give the function, as for a resize:
+        // a gamma of 2.2 encodes half of the light of white as 0.5^(1 / 2.2) = 0.7297 -> 186.08, linear
+        // characteristics are light already, and reserved ones have no function
+        foreach (var (transfer, expected) in new[] { ((byte)4, 186), ((byte)13, 188), ((byte)2, 188), ((byte)8, 128) })
+        {
+            using var described = new Image<Rgb24>(1, 1, new Rgb24(0, 0, 0));
+            described.Metadata.Cicp = new CicpColorDescription(9, transfer, 0, fullRange: true);
+            described.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static inner => inner.FillRectangle(White, new RectangleD(0, 0, 0.5, 1))), Ct);
+            Assert.Equal(new Rgb24((byte)expected, (byte)expected, (byte)expected), described.Frames[0][0, 0]);
+        }
+
+        using var reserved = new Image<Rgb24>(1, 1, new Rgb24(0, 0, 0));
+        reserved.Metadata.Cicp = new CicpColorDescription(1, 3, 0, fullRange: true);
+        reserved.Draw(static canvas => AssertThrows<UnsupportedImageFeatureException>(canvas, static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static _ => Assert.Fail("The callback ran."))), Ct);
+        Assert.Equal(new Rgb24(0, 0, 0), reserved.Frames[0][0, 0]);
 
         // A layer and a shadow are combined in linear light with what is under them. A layer at half its opacity:
         // white over black is 188, as a paint at half its opacity is

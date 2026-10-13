@@ -962,7 +962,7 @@ internal sealed partial class DrawingSession : IDisposable
                 coverage = ApplyOpacity(coverage, opacity);
             }
 
-            var source = evaluator is null ? new DrawingSource(color, mode, blend, _isLinear) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend, _isLinear);
+            var source = evaluator is null ? new DrawingSource(color, mode, blend, _transfer) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend, _transfer);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], y, x, coverage, source);

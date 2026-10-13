@@ -1306,15 +1306,16 @@ public readonly ref struct DrawingCanvas
     /// <remarks>
     /// <para>
     /// With <see cref="CompositingSpace.LinearSrgb"/>, the samples of a paint and of the pixels it is drawn on are
-    /// taken as sRGB values, converted to linear light, combined (coverage, opacity, blend mode and operator, with the
-    /// formulas of the stored values), and the result is converted back. The edge between two colors, a translucent
+    /// converted to linear light with the transfer function of the image (sRGB, unless the image declares another
+    /// one: see <see cref="CompositingSpace.LinearSrgb"/>), combined (coverage, opacity, blend mode and operator, with
+    /// the formulas of the stored values), and the result is converted back. The edge between two colors, a translucent
     /// paint and the blur of a shadow then mix light as light mixes: red over green goes through a yellow instead of
     /// a dark olive, and white text on black keeps its weight. The alpha is not a color and is combined as it is.
     /// </para>
     /// <para>
     /// The colors of the brushes are still sample values in the color space of the image; a gradient mixes its stops
     /// as its <see cref="GradientBrush.ColorSpace"/> says, and an image is interpolated on its stored values. Layers
-    /// are images of sRGB samples too: a drawing made on a layer is combined in linear light on the layer, and the
+    /// hold samples of the image too: a drawing made on a layer is combined in linear light on the layer, and the
     /// layer on the canvas. The arithmetic is in double precision, and uses the power function of the platform: a
     /// sample within about 1e-12 of a rounding boundary can differ by one from a platform to another. A pixel that a
     /// shape does not touch is still left untouched, and an opaque paint that covers a pixel entirely still writes its
@@ -1325,7 +1326,7 @@ public readonly ref struct DrawingCanvas
     /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="space"/> is not a defined <see cref="CompositingSpace"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="CompositingSpace.LinearSrgb"/> is requested for an image whose ICC profile or color description is not recognized as sRGB. The callback is not run.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="CompositingSpace.LinearSrgb"/> is requested for an image whose ICC profile is not recognized as sRGB, or whose transfer characteristics are reserved. The callback is not run.</exception>
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void Compositing(CompositingSpace space, DrawingAction action)
@@ -1351,7 +1352,7 @@ public readonly ref struct DrawingCanvas
     /// <remarks>See <see cref="Compositing(CompositingSpace, DrawingAction)"/>.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="space"/> is not a defined <see cref="CompositingSpace"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="CompositingSpace.LinearSrgb"/> is requested for an image whose ICC profile or color description is not recognized as sRGB. The callback is not run.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="CompositingSpace.LinearSrgb"/> is requested for an image whose ICC profile is not recognized as sRGB, or whose transfer characteristics are reserved. The callback is not run.</exception>
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void Compositing<TState>(CompositingSpace space, TState state, DrawingAction<TState> action)

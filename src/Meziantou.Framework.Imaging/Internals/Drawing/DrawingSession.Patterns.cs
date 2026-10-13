@@ -29,7 +29,7 @@ internal sealed partial class DrawingSession
     private Image? _patternImage;
     private PatternBrush? _patternBrush;
     private bool _patternIsAliased;
-    private bool _patternIsLinear;
+    private byte _patternTransfer;
 
     /// <summary>Draws the tile of a pattern, unless it is the one that was drawn last, and gets the transformation that places its image on the canvas.</summary>
     /// <returns>The frame that holds the tile, or <see langword="null"/> when the pattern paints nothing.</returns>
@@ -52,7 +52,7 @@ internal sealed partial class DrawingSession
         var height = (int)Math.Min(Math.Max(Math.Ceiling(tileHeight - (1.0 / 1024)), 1), DrawingGuard.MaxCoordinate);
         var isWide = _frames[0].PixelFormat is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24);
         var image = _patternImage;
-        if (image is null || image.Width != width || image.Height != height || !ReferenceEquals(_patternBrush, brush) || _patternIsAliased != _isAliased || _patternIsLinear != _isLinear)
+        if (image is null || image.Width != width || image.Height != height || !ReferenceEquals(_patternBrush, brush) || _patternIsAliased != _isAliased || _patternTransfer != _transfer)
         {
             if (_patternDepth >= MaxPatternDepth)
                 throw new InvalidOperationException("A pattern brush is drawn inside too many pattern brushes: a pattern must not paint itself.");
@@ -81,7 +81,7 @@ internal sealed partial class DrawingSession
             DrawTile(brush, image, width / tile.Width, height / tile.Height);
             _patternBrush = brush;
             _patternIsAliased = _isAliased;
-            _patternIsLinear = _isLinear;
+            _patternTransfer = _transfer;
         }
 
         placement = new AffineTransform(tile.Width / width, 0, 0, tile.Height / height, tile.X, tile.Y).Then(transform);
@@ -97,8 +97,8 @@ internal sealed partial class DrawingSession
 
         // The tile is drawn as the shapes it paints are
         session._compositingSpace = _compositingSpace;
-        session._decodesSamples = _decodesSamples;
-        session._isLinear = _isLinear;
+        session._imageTransfer = _imageTransfer;
+        session._transfer = _transfer;
         if (_isAliased)
         {
             session.SetAntialiasing(enabled: false);

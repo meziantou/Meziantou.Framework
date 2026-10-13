@@ -9,22 +9,22 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 internal readonly ref struct DrawingSource
 {
-    public DrawingSource(DrawingColor color, CompositeMode mode = CompositeMode.SourceOver, BlendMode blend = BlendMode.Normal, bool isLinear = false)
+    public DrawingSource(DrawingColor color, CompositeMode mode = CompositeMode.SourceOver, BlendMode blend = BlendMode.Normal, byte transfer = 0)
     {
         Color = color;
         Colors = default;
         Mode = mode;
         Blend = blend;
-        IsLinear = isLinear;
+        Transfer = transfer;
     }
 
-    public DrawingSource(ReadOnlySpan<ushort> colors, CompositeMode mode = CompositeMode.SourceOver, BlendMode blend = BlendMode.Normal, bool isLinear = false)
+    public DrawingSource(ReadOnlySpan<ushort> colors, CompositeMode mode = CompositeMode.SourceOver, BlendMode blend = BlendMode.Normal, byte transfer = 0)
     {
         Color = default;
         Colors = colors;
         Mode = mode;
         Blend = blend;
-        IsLinear = isLinear;
+        Transfer = transfer;
     }
 
     /// <summary>Gets the color of every pixel when <see cref="Colors"/> is empty.</summary>
@@ -39,6 +39,9 @@ internal readonly ref struct DrawingSource
     /// <summary>Gets the blend mode that mixes the color of the paint with the color of the pixels, before the operator.</summary>
     public BlendMode Blend { get; }
 
-    /// <summary>Gets a value indicating whether the samples are sRGB values that are combined in linear light, instead of as they are stored.</summary>
-    public bool IsLinear { get; }
+    /// <summary>
+    /// Gets the transfer characteristics (<see cref="CicpTransfer"/>) whose function decodes the samples to the linear
+    /// light they are combined in, or 0 when they are combined as they are stored.
+    /// </summary>
+    public byte Transfer { get; }
 }

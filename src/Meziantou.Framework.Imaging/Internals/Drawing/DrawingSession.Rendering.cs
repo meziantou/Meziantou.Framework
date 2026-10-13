@@ -14,8 +14,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// own colors.
 /// </para>
 /// <para>
-/// In linear light, every paint is combined with the pixels by <see cref="DrawingKernels"/> on decoded sRGB values:
-/// the shapes, the images, the layers when they are drawn on what is under them, and the shadows.
+/// In linear light, every paint is combined with the pixels by <see cref="DrawingKernels"/> on the values the
+/// transfer function of the image decodes its samples to (<see cref="Image.GetLinearLightTransfer"/>: sRGB unless the
+/// image declares another function): the shapes, the images, the layers when they are drawn on what is under them,
+/// and the shadows. The layers and the tiles of the patterns hold samples of the image: they have its function.
 /// </para>
 /// </remarks>
 internal sealed partial class DrawingSession
@@ -23,12 +25,14 @@ internal sealed partial class DrawingSession
     private const uint HalfCoverage = CoverageRasterizer.FullCoverage / 2;
 
     private bool _isAliased;
-    private bool _isLinear;
+    // The transfer characteristics whose function decodes the samples to the light they are combined in, or 0 when
+    // they are combined as they are stored
+    private byte _transfer;
     private CompositingSpace _compositingSpace;
 
-    // Whether linear light needs the samples to be decoded (they are sRGB values), once it is known: samples that
-    // already are linear light are combined as they are
-    private bool? _decodesSamples;
+    // The transfer characteristics of the image for linear light, once they are known: 0 for samples that already are
+    // linear light, which are combined as they are
+    private byte? _imageTransfer;
 
     /// <summary>Turns antialiasing on or off for the draw calls that follow.</summary>
     /// <returns>Whether antialiasing was on.</returns>
@@ -50,7 +54,7 @@ internal sealed partial class DrawingSession
     /// <summary>Sets the space in which the paints of the draw calls that follow are combined with the pixels.</summary>
     /// <returns>The space that was set.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The space is not defined.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">Linear light is requested for an image whose color profile is not recognized as sRGB.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">Linear light is requested for an image whose ICC profile is not recognized as sRGB, or whose transfer characteristics have no function.</exception>
     public CompositingSpace SetCompositingSpace(CompositingSpace space)
     {
         if (space is not (CompositingSpace.Encoded or CompositingSpace.LinearSrgb))
@@ -59,12 +63,12 @@ internal sealed partial class DrawingSession
         _cancellationToken.ThrowIfCancellationRequested();
         if (space == CompositingSpace.LinearSrgb)
         {
-            _decodesSamples ??= _image.UseLinearLight("compositing", "composite");
+            _imageTransfer ??= _image.GetLinearLightTransfer("compositing", "composite");
         }
 
         var previous = _compositingSpace;
         _compositingSpace = space;
-        _isLinear = space == CompositingSpace.LinearSrgb && _decodesSamples == true;
+        _transfer = space == CompositingSpace.LinearSrgb ? _imageTransfer.GetValueOrDefault() : (byte)0;
         return previous;
     }
 
@@ -75,7 +79,7 @@ internal sealed partial class DrawingSession
     public void RestoreCompositingSpace(CompositingSpace space)
     {
         _compositingSpace = space;
-        _isLinear = space == CompositingSpace.LinearSrgb && _decodesSamples == true;
+        _transfer = space == CompositingSpace.LinearSrgb ? _imageTransfer.GetValueOrDefault() : (byte)0;
     }
 
     /// <summary>Makes the coverages of a run all or nothing, into the row of the session.</summary>

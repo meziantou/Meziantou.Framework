@@ -57,6 +57,12 @@ public sealed partial class AvifDecInfo
     /// <summary>Gets the crop rectangle libavif derives from a valid <c>clap</c> property, or <see langword="null"/>.</summary>
     public (int X, int Y, int Width, int Height)? CleanApertureCrop { get; private init; }
 
+    /// <summary>Gets the terms of the <c>pasp</c> property (the width and the height of a pixel), or <see langword="null"/> when absent.</summary>
+    public (int HorizontalSpacing, int VerticalSpacing)? PixelAspectRatio { get; private init; }
+
+    /// <summary>Gets the content light level of the <c>clli</c> property (MaxCLL and MaxPALL, in candelas per square meter), or <see langword="null"/> when absent.</summary>
+    public (int MaxContentLightLevel, int MaxPictureAverageLightLevel)? ContentLightLevel { get; private init; }
+
     /// <summary>Gets a value indicating whether a repetition count is printed, which libavif does for image sequences only.</summary>
     public bool HasRepetitionCount { get; private init; }
 
@@ -106,6 +112,8 @@ public sealed partial class AvifDecInfo
             frames.Add(new AvifDecFrame(Int(match, "index"), long.Parse(match.Groups["pts"].Value, CultureInfo.InvariantCulture), long.Parse(match.Groups["duration"].Value, CultureInfo.InvariantCulture), Int(match, "width"), Int(match, "height")));
         }
 
+        var pixelAspectRatio = PixelAspectRatioRegex().Match(text);
+        var contentLightLevel = ContentLightLevelRegex().Match(text);
         var hasRepetitionCount = fields.TryGetValue("Repeat Count", out var repetition);
         return new AvifDecInfo
         {
@@ -129,6 +137,8 @@ public sealed partial class AvifDecInfo
             Rotation = OptionalInt(RotationRegex().Match(text)),
             Mirror = OptionalInt(MirrorRegex().Match(text)),
             CleanApertureCrop = crop.Success ? (Int(crop, "x"), Int(crop, "y"), Int(crop, "width"), Int(crop, "height")) : null,
+            PixelAspectRatio = pixelAspectRatio.Success ? (Int(pixelAspectRatio, "horizontal"), Int(pixelAspectRatio, "vertical")) : null,
+            ContentLightLevel = contentLightLevel.Success ? (Int(contentLightLevel, "content"), Int(contentLightLevel, "picture")) : null,
             HasRepetitionCount = hasRepetitionCount,
             RepetitionCount = hasRepetitionCount && repetition is not ("Infinite" or "Unknown") ? int.Parse(repetition!, CultureInfo.InvariantCulture) : null,
             IsRepetitionCountUnknown = hasRepetitionCount && repetition is "Unknown",
@@ -180,6 +190,12 @@ public sealed partial class AvifDecInfo
 
     [GeneratedRegex(@"^\s+\* imir \(Mirror\)\s*: (?<value>\d+)", RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex MirrorRegex();
+
+    [GeneratedRegex(@"^\s+\* pasp \(Aspect Ratio\)\s*: (?<horizontal>\d+)/(?<vertical>\d+)", RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex PixelAspectRatioRegex();
+
+    [GeneratedRegex(@"^ \* CLLI\s*: (?<content>\d+), (?<picture>\d+)\s*$", RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex ContentLightLevelRegex();
 
     [GeneratedRegex(@"^\s+\* Valid, derived crop rect: X: (?<x>\d+), Y: (?<y>\d+), W: (?<width>\d+), H: (?<height>\d+)", RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex CropRegex();

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO.Compression;
+using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
@@ -55,13 +56,22 @@ internal static partial class AvifCorpus
         ["avif/grid-2x1-10bit-444"] = (0, 0.0),
         ["avif/grid-2x1-alpha-420"] = (0, 0.0),
         ["avif/grid-3x1-420"] = (0, 0.0),
+        ["avif/hdr-mastering-display"] = (1, 0.0), // one unit of a 16-bit sample: 1/257 on the 8-bit scale
+        ["avif/iden-color-from-input"] = (0, 0.0),
+        ["avif/iovl-layers-without-colr"] = (0, 0.0),
+        ["avif/iovl-lossy-matrixed"] = (0, 0.0),
         ["avif/layered-2-quality-420"] = (0, 0.0),
         ["avif/layered-3-scaled-422-10bit"] = (1, 0.0), // one unit of a 16-bit sample: 1/257 on the 8-bit scale
         ["avif/layered-lsel-0-420"] = (0, 0.0),
         ["avif/layered-progressive-420"] = (0, 0.0),
         ["avif/layered-progressive-alpha"] = (0, 0.0),
+        ["avif/lossless-444-bt2020-constant-luminance-10bit"] = (0, 0.0),
+        ["avif/lossless-444-chromaticity-constant-luminance-p3"] = (0, 0.0),
+        ["avif/lossless-444-ictcp-hlg-12bit"] = (0, 0.0),
+        ["avif/lossless-444-ictcp-pq-12bit"] = (0, 0.0),
         ["avif/lossy-420-alpha"] = (0, 0.0),
         ["avif/lossy-420-alpha-12bit"] = (1, 0.0001), // one unit on a few samples
+        ["avif/lossy-420-bt2020-constant-luminance"] = (0, 0.0),
         ["avif/lossy-420-bt2020-limited"] = (0, 0.0),
         ["avif/lossy-420-bt2020-limited-10bit"] = (1, 0.0), // one unit of a 16-bit sample: 1/257 on the 8-bit scale
         ["avif/lossy-420-bt470bg-full"] = (0, 0.0),
@@ -77,7 +87,11 @@ internal static partial class AvifCorpus
         ["avif/lossy-420-bt709-odd-12bit"] = (0, 0.0),
         ["avif/lossy-420-chroma-colocated"] = (0, 0.0),
         ["avif/lossy-420-chroma-vertical"] = (0, 0.0),
+        ["avif/lossy-420-chromaticity-p3-limited-10bit"] = (0, 0.0),
         ["avif/lossy-420-fcc-limited-10bit"] = (0, 0.0),
+        ["avif/lossy-420-ictcp-pq"] = (0, 0.0),
+        ["avif/lossy-420-pasp-clli"] = (0, 0.0),
+        ["avif/lossy-420-smpte2085"] = (0, 0.0),
         ["avif/lossy-420-smpte240m-full-odd"] = (0, 0.0),
         ["avif/lossy-420-unspecified"] = (0, 0.0),
         ["avif/lossy-420-ycgco-full-12bit"] = (0, 0.0),
@@ -94,24 +108,34 @@ internal static partial class AvifCorpus
         ["avif/lossy-422-ycgco-full-10bit"] = (0, 0.0),
         ["avif/lossy-444-bt2020-full"] = (0, 0.0),
         ["avif/lossy-444-bt601-full"] = (0, 0.0),
+        ["avif/lossy-444-chromaticity-bt2020"] = (0, 0.0),
         ["avif/lossy-444-unspecified-limited"] = (0, 0.0),
         ["avif/nclx-overrides-bitstream"] = (0, 0.0),
         ["avif/no-colr-bitstream-bt709"] = (0, 0.0),
         ["avif/no-colr-bt709-mdat-first"] = (0, 0.0),
         ["avif/no-colr-unspecified"] = (0, 0.0),
-        ["avif/sequence-8-frames-444-slow"] = (0, 0.0),
-        ["avif/sequence-8-frames-alpha-lossy"] = (1, 0.0002), // one unit on a few samples
+        ["avif/premultiplied-alpha-lossy-420"] = (0, 0.0),
         ["avif/sequence-10bit-once"] = (0, 0.0),
         ["avif/sequence-12-frames-420"] = (1, 0.0002), // one unit on a few samples
         ["avif/sequence-8-frames-420-10bit"] = (1, 0.0),
         ["avif/sequence-8-frames-422-key-frames"] = (0, 0.0),
+        ["avif/sequence-8-frames-444-slow"] = (0, 0.0),
+        ["avif/sequence-8-frames-alpha-lossy"] = (1, 0.0002), // one unit on a few samples
         ["avif/sequence-alpha-10bit"] = (1, 0.0),
+        ["avif/sequence-alpha-edit-offset"] = (0, 0.0),
         ["avif/sequence-alpha-repeat-2"] = (0, 0.0),
         ["avif/sequence-co64-stz2"] = (0, 0.0),
         ["avif/sequence-ffmpeg"] = (0, 0.0),
         ["avif/sequence-ffmpeg-svt"] = (1, 0.0002), // one unit on a few samples
+        ["avif/sequence-fragmented-alpha"] = (0, 0.0),
+        ["avif/sequence-fragmented-alpha-in-next-fragment"] = (0, 0.0),
+        ["avif/sequence-fragmented-defaults"] = (0, 0.0),
+        ["avif/sequence-hdr-boxes"] = (0, 0.0),
+        ["avif/sequence-ictcp-hlg"] = (0, 0.0),
+        ["avif/sequence-matrix-mirror-clap"] = (0, 0.0),
         ["avif/sequence-mdat-first"] = (0, 0.0),
         ["avif/sequence-no-edit-list"] = (0, 0.0),
+        ["avif/sequence-premultiplied"] = (0, 0.0),
     };
 
     private static bool IsAvifFixture(Obj fixture) => (string?)fixture["format"] == "avif";
@@ -132,6 +156,7 @@ internal static partial class AvifCorpus
             var context = new ContainerContext(corpus);
             BuildStills(context);
             BuildLayouts(context);
+            BuildDerivedImages(context);
             BuildSequences(context);
             BuildLayered(context);
             BuildInvalid(context);
@@ -267,7 +292,8 @@ internal static partial class AvifCorpus
     /// <param name="OperatingPoints">The <c>operating_point_idc</c> of each operating point of the sequence header.</param>
     private sealed record PayloadLayers(int Count, bool IsScaled, List<int> OperatingPoints);
 
-    private sealed record Timing(uint SampleDelta, uint Timescale);
+    /// <summary>The time an image is shown for, in seconds, and the duration of its sample when it is shown for all of it.</summary>
+    private sealed record Timing(long Numerator, long Denominator, uint? SampleDelta, uint Timescale);
 
     /// <summary>Everything the manifest records about a valid input, derived from its bytes.</summary>
     private sealed class AvifReference
@@ -283,6 +309,15 @@ internal static partial class AvifCorpus
         public required int Orientation { get; init; }
 
         public required ReferenceHeif.ColorDescription? Cicp { get; init; }
+
+        /// <summary>The <c>clli</c> box of the primary item or of the sample entry, or <see langword="null"/>.</summary>
+        public ReferenceHeif.ContentLightLevel? ContentLightLevel { get; init; }
+
+        /// <summary>The <c>mdcv</c> box of the primary item or of the sample entry, or <see langword="null"/>.</summary>
+        public ReferenceHeif.MasteringDisplay? MasteringDisplay { get; init; }
+
+        /// <summary>The <c>pasp</c> box of the primary item or of the sample entry, or <see langword="null"/>.</summary>
+        public ReferenceHeif.PixelAspectRatio? PixelAspectRatio { get; init; }
 
         public required byte[]? Icc { get; init; }
 
@@ -304,6 +339,9 @@ internal static partial class AvifCorpus
 
         /// <summary>The pixels of the lower spatial layers that are decoded and not returned, for every coded item or sample.</summary>
         public required long LowerLayerPixels { get; init; }
+
+        /// <summary>Whether the transformations are associated in the order of MIAF (clap, irot, imir), which libavif assumes.</summary>
+        public bool HasMiafTransformOrder { get; init; } = true;
 
         /// <summary>Whether a tool that applies the transformations of the file shows other pixels than the stored ones.</summary>
         public bool IsTransformed => Orientation != 1;
@@ -472,7 +510,7 @@ internal static partial class AvifCorpus
     }
 
     /// <summary>Converts the planes of a color image and of its alpha plane to a frame, then keeps a rectangle of it.</summary>
-    private static Img ToFrame(PlaneImage color, PlaneImage? alpha, int matrix, bool fullRange, (int X, int Y, int Width, int Height) crop)
+    private static Img ToFrame(PlaneImage color, PlaneImage? alpha, int matrix, bool fullRange, (int X, int Y, int Width, int Height) crop, bool isPremultiplied = false, int primaries = 2, int transfer = 2)
     {
         var deep = color.Color.BitDepth > 8 || alpha?.Color.BitDepth > 8;
         var maximum = deep ? 65535 : 255;
@@ -489,7 +527,7 @@ internal static partial class AvifCorpus
         else
         {
             rgb = ReferenceYuvConverter.ConvertToRgb(color.Planes[0], color.Planes[1], color.Planes[2], width, height, color.Color.BitDepth, color.Color.SubsamplingX, color.Color.SubsamplingY,
-                color.ChromaSamplePosition, matrix, fullRange, maximum);
+                color.ChromaSamplePosition, matrix, fullRange, maximum, primaries, transfer);
         }
 
         if (alpha is not null)
@@ -503,6 +541,15 @@ internal static partial class AvifCorpus
             {
                 var i = (y * width) + x;
                 var a = alpha is null ? maximum : ReferenceYuvConverter.ScaleSample(alpha.Planes[0][i], alpha.Color.BitDepth, alpha.FullRange, maximum);
+                if (isPremultiplied && alpha is not null)
+                {
+                    // The colors are divided by the alpha once they are converted
+                    for (var channel = 0; channel < 3; channel++)
+                    {
+                        rgb[(3 * i) + channel] = ReferenceYuvConverter.Unpremultiply(rgb[(3 * i) + channel], a, maximum);
+                    }
+                }
+
                 pixels.Add(model switch
                 {
                     "gray" => new Px(rgb[3 * i]),
@@ -592,9 +639,35 @@ internal static partial class AvifCorpus
                 result.AddRange(file.GetGridTiles(item));
         }
 
+        // An identity derivation has no data: what is read is the coded image it presents. An image that is built reads
+        // its coded images, their alpha planes, and the descriptors of its grids and of its overlays
         var primary = file.PrimaryItem!;
-        AddImage(primary);
-        AddImage(file.AlphaItem);
+        if (IsBuiltImage(file, primary))
+        {
+            void AddTree(ReferenceHeif.Item item)
+            {
+                if (item.Type is "iden" or "iovl" || (item.Type == "grid" && file.GetGridTiles(item).Any(tile => tile.Type != "av01")))
+                {
+                    if (item.Type != "iden")
+                        result.Add(item);
+
+                    foreach (var input in GetInputs(file, item))
+                        AddTree(input);
+                }
+                else
+                {
+                    AddImage(item);
+                    AddImage(file.FindAuxiliary(item.Id, ReferenceHeif.AlphaAuxiliaryType));
+                }
+            }
+
+            AddTree(primary);
+            result.AddRange(file.FindDescriptions(primary.Id).Where(item => item.Type == "Exif" || item.ContentType == "application/rdf+xml"));
+            return result;
+        }
+
+        AddImage(file.GetIdentityChain(primary)[^1]);
+        AddImage(file.AlphaItem is { } alphaItem ? file.GetIdentityChain(alphaItem)[^1] : null);
         result.AddRange(file.FindDescriptions(primary.Id).Where(item => item.Type == "Exif" || item.ContentType == "application/rdf+xml"));
         return result;
     }
@@ -602,39 +675,65 @@ internal static partial class AvifCorpus
     private static AvifReference DescribeStill(AvifFileTools tools, FullPath scratch, ReferenceHeif file, SortedSet<string> features)
     {
         var primary = file.PrimaryItem ?? throw new ToolException("the file has no primary item.");
-        var (color, payloads, grid, layers) = DecodeItem(tools, scratch, file, primary, "color");
-        var size = primary.Size ?? throw new ToolException("the primary item has no ispe property.");
+        if (IsBuiltImage(file, primary))
+            return DescribeBuiltStill(tools, scratch, file, features);
+
+        // An identity derivation (iden) presents its input image with its own transformations after those of the input:
+        // the coded image is the last item of the chain, and its samples go through the transformations of every item
+        var chain = file.GetIdentityChain(primary);
+        var coded = chain[^1];
+        var transforms = ReferenceHeif.GetTransforms(chain);
+        if (chain.Count > 1)
+            features.Add(Inv($"avif.iden={chain.Count - 1}"));
+
+        var (color, payloads, grid, layers) = DecodeItem(tools, scratch, file, coded, "color");
+        var size = coded.Size ?? throw new ToolException("the coded image has no ispe property.");
         Py.Assert(size == (color.Width, color.Height), "ispe does not match the bitstream");
-        CheckConfiguration(grid is null ? primary : file.GetGridTiles(primary)[0], color);
+        CheckConfiguration(grid is null ? coded : file.GetGridTiles(coded)[0], color);
+        for (var i = chain.Count - 2; i >= 0; i--)
+        {
+            // The size of a derived image is the size of its input, as the input is presented
+            var input = ReferenceHeif.Item.Present(ReferenceHeif.GetTransforms([.. chain.Skip(i + 1)]), color.Width, color.Height) ?? throw new ToolException("the clean aperture is not a whole number of samples.");
+            Py.Assert(chain[i].Size == (input.Width, input.Height), "the ispe of an identity derivation is the size of its input");
+        }
 
         PlaneImage? alpha = null;
         if (file.AlphaItem is { } alphaItem)
         {
-            (alpha, var alphaPayloads, _, _) = DecodeItem(tools, scratch, file, alphaItem, "alpha");
+            var alphaChain = file.GetIdentityChain(alphaItem);
+            (alpha, var alphaPayloads, _, _) = DecodeItem(tools, scratch, file, alphaChain[^1], "alpha");
+
+            // The alpha plane is presented as the color image; the alpha plane of a coded image may also declare no
+            // transformation, in which case those of the coded image apply to it
+            var alphaTransforms = ReferenceHeif.GetTransforms(alphaChain);
+            Py.Assert((alphaTransforms.Count == 0 && chain.Count == 1)
+                || (ReferenceHeif.Item.Present(alphaTransforms, alpha.Width, alpha.Height)?.Rectangle == ReferenceHeif.Item.Present(transforms, color.Width, color.Height)?.Rectangle && ReferenceHeif.ComposeOrientation(alphaTransforms) == ReferenceHeif.ComposeOrientation(transforms)),
+                "the alpha plane is presented as the color image");
             payloads.AddRange(alphaPayloads);
-            Py.Assert(!file.ItemReferences.Any(reference => reference.Type == "prem"), "premultiplied alpha is not a valid fixture");
             features.Add("avif.alpha");
+            if (file.IsPremultiplied)
+                features.Add("avif.premultiplied");
         }
 
-        var nclx = primary.Nclx;
+        // The properties that describe the image are those of the primary item, then those of the image it is derived from
+        var nclx = chain.Select(item => item.Nclx).FirstOrDefault(value => value is not null);
         var (matrix, fullRange, cicp) = ResolveColor(nclx, color);
-        var crop = (0, 0, color.Width, color.Height);
-        if (primary.CleanAperture is { } aperture)
-        {
-            crop = aperture.GetRectangle(color.Width, color.Height) ?? throw new ToolException("the clean aperture is not a whole number of samples.");
-            Py.Assert(primary.Transforms[0].Type == "clap", "clap must come first");
+        // The transformations apply in the order of their association: the samples that they present are a rectangle of
+        // the coded image, which stays as it is coded (the rotation and the mirroring are the orientation of the image)
+        var crop = ReferenceHeif.Item.Present(transforms, color.Width, color.Height)?.Rectangle ?? throw new ToolException("the clean aperture is not a whole number of samples.");
+        if (transforms.Any(transform => transform.Type == "clap"))
             features.Add("avif.clap");
-        }
 
-        foreach (var transform in primary.Transforms.Where(t => t.Type is "irot" or "imir"))
+        foreach (var transform in transforms.Where(t => t.Type is "irot" or "imir"))
         {
             features.Add(Inv($"avif.{transform.Type}={transform.Payload.Span[0] & 3}"));
         }
 
-        // MIAF orders the transformations clap, irot, imir; a valid fixture follows it (the other order is covered by the
-        // unit tests: HEIF applies the properties in association order, libavif in the MIAF order)
-        var order = primary.Transforms.Select(t => t.Type).ToList();
-        Py.Assert(order.SequenceEqual(order.OrderBy(type => Array.IndexOf(["clap", "irot", "imir"], type))), "transformations must be in the MIAF order");
+        // MIAF orders the transformations clap, irot, imir. HEIF applies the properties in the order of their association,
+        // which is what a file that does otherwise gets (libavif applies them in the MIAF order whatever the file says)
+        var hasMiafTransformOrder = chain.All(item => item.HasMiafTransformOrder);
+        if (!hasMiafTransformOrder)
+            features.Add("avif.transformOrder=association");
 
         if (grid is not null)
         {
@@ -642,10 +741,10 @@ internal static partial class AvifCorpus
 
             // libavif repeats the transformations of a grid on its tiles; they apply once, to the assembled image, and a
             // tile that declares other ones is not a valid fixture
-            var tiles = file.GetGridTiles(primary);
+            var tiles = file.GetGridTiles(coded);
             if (tiles.Any(tile => tile.Transforms.Count > 0))
             {
-                Py.Assert(tiles.All(tile => tile.Transforms.Select(t => (t.Type, Convert.ToHexString(t.Payload.Span))).SequenceEqual(primary.Transforms.Select(t => (t.Type, Convert.ToHexString(t.Payload.Span))))), "the tiles of a grid repeat its transformations or have none");
+                Py.Assert(tiles.All(tile => tile.Transforms.Select(t => (t.Type, Convert.ToHexString(t.Payload.Span))).SequenceEqual(coded.Transforms.Select(t => (t.Type, Convert.ToHexString(t.Payload.Span))))), "the tiles of a grid repeat its transformations or have none");
                 features.Add("avif.gridTileTransforms");
             }
         }
@@ -660,7 +759,10 @@ internal static partial class AvifCorpus
         var descriptions = file.FindDescriptions(primary.Id);
         var exifItem = descriptions.FirstOrDefault(item => item.Type == "Exif");
         var xmpItem = descriptions.FirstOrDefault(item => item.ContentType == "application/rdf+xml");
-        var icc = primary.IccProfile?.ToArray();
+        var icc = chain.Select(item => item.IccProfile).FirstOrDefault(value => value is not null)?.ToArray();
+        var lightLevel = chain.Select(item => item.ContentLightLevel).FirstOrDefault(value => value is not null);
+        var masteringDisplay = chain.Select(item => item.MasteringDisplay).FirstOrDefault(value => value is not null);
+        var pixelAspectRatio = chain.Select(item => item.PixelAspectRatio).FirstOrDefault(value => value is not null);
         AddColorFeatures(features, color, alpha, payloads, matrix, fullRange, nclx is not null, icc is not null);
         var metadata = new List<string>();
         if (exifItem is not null)
@@ -670,13 +772,18 @@ internal static partial class AvifCorpus
         if (metadata.Count > 0)
             features.Add("avif.metadata=" + string.Join(',', metadata));
 
+        AddPresentationFeatures(features, lightLevel, masteringDisplay, pixelAspectRatio);
         return new AvifReference
         {
-            Frames = [ToFrame(color, alpha, matrix, fullRange, crop)],
+            ContentLightLevel = lightLevel,
+            MasteringDisplay = masteringDisplay,
+            PixelAspectRatio = pixelAspectRatio,
+            HasMiafTransformOrder = hasMiafTransformOrder,
+            Frames = [ToFrame(color, alpha, matrix, fullRange, crop, file.IsPremultiplied, cicp?.ColorPrimaries ?? 2, cicp?.TransferCharacteristics ?? 2)],
             PixelFormat = PixelFormatOf(color, alpha),
             ColorModel = ColorModelOf(color, alpha is not null, matrix),
             BitsPerComponent = color.Color.BitDepth,
-            Orientation = primary.Orientation,
+            Orientation = ReferenceHeif.ComposeOrientation(transforms),
             Cicp = cicp,
             Icc = icc,
             Exif = exifItem is null ? null : file.ReadExifPayload(exifItem),
@@ -689,6 +796,20 @@ internal static partial class AvifCorpus
             HiddenFrames = payloads.Sum(payload => payload.HiddenFrames),
             LowerLayerPixels = payloads.Sum(payload => payload.LowerLayerPixels),
         };
+    }
+
+    /// <summary>The boxes that describe how the samples are presented: labels, which change no pixel.</summary>
+    private static void AddPresentationFeatures(SortedSet<string> features, ReferenceHeif.ContentLightLevel? lightLevel, ReferenceHeif.MasteringDisplay? display, ReferenceHeif.PixelAspectRatio? pixelAspectRatio)
+    {
+        if (lightLevel is not null)
+            features.Add("avif.clli");
+        if (display is not null)
+            features.Add("avif.mdcv");
+        if (pixelAspectRatio is not null)
+        {
+            Py.Assert(pixelAspectRatio.HorizontalSpacing > 0 && pixelAspectRatio.VerticalSpacing > 0, "the terms of the pixel aspect ratio are positive");
+            features.Add("avif.pasp");
+        }
     }
 
     /// <summary>
@@ -732,8 +853,9 @@ internal static partial class AvifCorpus
         {
             alphaPayload = DecodePayload(tools, scratch, "alpha", [.. alphaTrack.Samples.SelectMany(sample => ToTemporalUnit(file.ReadSample(sample)))]);
             Py.Assert(alphaPayload.Frames.Count == payload.Frames.Count, "one alpha plane per image");
-            Py.Assert(!track.References.Any(reference => reference.Type == "prem"), "premultiplied alpha is not a valid fixture");
             features.Add("avif.alpha");
+            if (file.IsPremultiplied)
+                features.Add("avif.premultiplied");
         }
 
         var first = payload.Frames[0];
@@ -741,6 +863,14 @@ internal static partial class AvifCorpus
         var icc = track.IccProfile?.ToArray();
         AddColorFeatures(features, first, alphaPayload?.Frames[0], alphaPayload is null ? [payload] : [payload, alphaPayload], matrix, fullRange, track.Nclx is not null, icc is not null);
         features.Add("avif.seq.editList=" + (track.EditList is not { } edits ? "none" : !edits.IsRepeating ? "once" : track.Duration is null ? "repeat-indefinite" : "repeat"));
+        if (file.HasMovieExtends)
+        {
+            // The images of a fragmented sequence are those of its moov box, then those of its movie fragments
+            features.Add(Inv($"avif.seq.fragments={file.TopLevelBoxes.Count(box => box.Type == "moof")}"));
+            Py.Assert(track.FragmentDecodeTimes.All(time => time.DecodeTime == time.MediaTime), "the fragments follow each other");
+            Py.Assert(track.FragmentCompositionOffsets.All(offset => offset == 0), "the samples are shown in the order they are decoded");
+        }
+
         features.Add("avif.seq.sampleSizes=" + track.SampleSizeBox);
         features.Add("avif.seq.chunkOffsets=" + track.ChunkOffsetBox);
         if (payload.HasInterFrames)
@@ -752,7 +882,21 @@ internal static partial class AvifCorpus
         // Frames that are decoded without being shown (the alternate reference frames libaom codes with a lookahead; a
         // later sample then only shows one of them again): they count toward MaxTotalPixels, so their number is recorded,
         // for the color and the alpha tracks together
-        var hiddenFrames = payload.HiddenFrames + (alphaPayload?.HiddenFrames ?? 0);
+
+        // The images that the edit list of the track shows, and for how long. The images that it leaves out are decoded
+        // like the frames of the bitstream that are not shown: the images that follow may refer to them
+        var presentation = track.GetPresentation(file.MovieTimescale);
+        Py.Assert(presentation.Count > 0, "the edit list shows an image");
+        var shown = presentation.Select(image => image.SampleIndex).ToList();
+        var leftOut = (track.Samples.Count - shown.Count) * (alphaPayload is null ? 1 : 2);
+        if (track.EditList is { Entries.Count: > 1 } severalEdits)
+            features.Add(Inv($"avif.seq.edits={severalEdits.Entries.Count}"));
+        if (presentation.Count != track.Samples.Count)
+            features.Add(Inv($"avif.seq.imagesLeftOut={track.Samples.Count - presentation.Count}"));
+        if (presentation.Any(image => image.Numerator * track.Timescale != track.Samples[image.SampleIndex].Duration * image.Denominator))
+            features.Add("avif.seq.partialDurations");
+
+        var hiddenFrames = payload.HiddenFrames + (alphaPayload?.HiddenFrames ?? 0) + leftOut;
         if (hiddenFrames > 0)
         {
             Py.Assert(payload.CodedSizes.Concat(alphaPayload?.CodedSizes ?? []).All(size => size == (track.Width, track.Height)), "the hidden frames have the size of the images");
@@ -793,24 +937,52 @@ internal static partial class AvifCorpus
         if (track.Samples.Skip(1).Any(sample => sample.Offset < track.Samples[0].Offset))
             features.Add("avif.seq.samplesOutOfOrder");
 
-        var frames = payload.Frames.Select((frame, i) => ToFrame(frame, alphaPayload?.Frames[i], matrix, fullRange, (0, 0, frame.Width, frame.Height))).ToList();
+        // The clean aperture of the sample entry is the part of the samples that is shown, and the matrix of the track header
+        // the orientation of the images, which stay as they are coded. The alpha track has the same ones or none
+        var crop = (0, 0, track.Width, track.Height);
+        if (track.CleanAperture is { } aperture)
+        {
+            crop = aperture.GetRectangle(track.Width, track.Height) ?? throw new ToolException("the clean aperture is not a whole number of samples.");
+            features.Add("avif.seq.clap");
+        }
+
+        if (track.Orientation != 1)
+            features.Add(Inv($"avif.seq.matrix={track.Orientation}"));
+
+        if (file.AlphaTrack is { } transformedAlpha)
+        {
+            Py.Assert(transformedAlpha.CleanAperture is null || transformedAlpha.CleanAperture.GetRectangle(track.Width, track.Height) == crop, "the alpha track has the clean aperture of the color track or none");
+            Py.Assert(transformedAlpha.Orientation == 1 || transformedAlpha.Orientation == track.Orientation, "the alpha track has the matrix of the color track or none");
+        }
+
+        var frames = shown.Select(i => ToFrame(payload.Frames[i], alphaPayload?.Frames[i], matrix, fullRange, crop, file.IsPremultiplied, cicp?.ColorPrimaries ?? 2, cicp?.TransferCharacteristics ?? 2)).ToList();
+        AddPresentationFeatures(features, track.ContentLightLevel, track.MasteringDisplay, track.PixelAspectRatio);
         return new AvifReference
         {
+            ContentLightLevel = track.ContentLightLevel,
+            MasteringDisplay = track.MasteringDisplay,
+            PixelAspectRatio = track.PixelAspectRatio,
             Frames = frames,
             PixelFormat = PixelFormatOf(first, alphaPayload?.Frames[0]),
             ColorModel = ColorModelOf(first, alphaPayload is not null, matrix),
             BitsPerComponent = first.Color.BitDepth,
-            Orientation = 1,
+            Orientation = track.Orientation,
             Cicp = cicp,
             Icc = icc,
             Exif = exif,
             Xmp = xmp,
             IsMatrixed = !first.Color.Monochrome && matrix != 0,
-            Timings = [.. track.Samples.Select(sample => new Timing(sample.Duration, track.Timescale))],
+            Timings = [.. presentation.Select(image =>
+            {
+                var sample = track.Samples[image.SampleIndex];
+                var isWhole = image.Numerator * track.Timescale == sample.Duration * image.Denominator;
+                var divisor = BigInteger.Max(BigInteger.GreatestCommonDivisor(image.Numerator, image.Denominator), 1);
+                return new Timing((long)(image.Numerator / divisor), (long)(image.Denominator / divisor), isWhole ? sample.Duration : null, track.Timescale);
+            })],
             IsSequence = true,
             ColorTrack = track,
             Features = features,
-            HiddenFrames = payload.HiddenFrames + (alphaPayload?.HiddenFrames ?? 0),
+            HiddenFrames = hiddenFrames,
             LowerLayerPixels = payload.LowerLayerPixels + (alphaPayload?.LowerLayerPixels ?? 0),
         };
     }
@@ -993,9 +1165,11 @@ internal static partial class AvifCorpus
             if (reference.IsSequence)
             {
                 var timing = reference.Timings[i];
-                frame["duration"] = CommonCorpus.Normalize(timing.SampleDelta, timing.Timescale);
-                if (reference.Frames.Count > 1)
-                    frame["encodedDelay"] = new Obj { ["sampleDelta"] = (long)timing.SampleDelta, ["timescale"] = (long)timing.Timescale };
+                frame["duration"] = CommonCorpus.Normalize(timing.Numerator, timing.Denominator);
+
+                // The duration of the sample is the encoded field of an image that is shown for all of it
+                if (reference.Frames.Count > 1 && timing.SampleDelta is { } sampleDelta)
+                    frame["encodedDelay"] = new Obj { ["sampleDelta"] = (long)sampleDelta, ["timescale"] = (long)timing.Timescale };
             }
             else
             {
@@ -1016,7 +1190,7 @@ internal static partial class AvifCorpus
                 ["editList"] = track.EditList is not { } edits ? null : new Obj
                 {
                     ["repeating"] = edits.IsRepeating,
-                    ["segmentDuration"] = edits.Entries[0].SegmentDuration is { } segment ? (long)segment : null,
+                    ["segmentDuration"] = edits.TotalSegmentDuration is { } segment ? (long)segment : null,
                     ["trackDuration"] = track.Duration is { } duration ? (long)duration : null,
                 },
             };
@@ -1039,19 +1213,52 @@ internal static partial class AvifCorpus
                 ["matrixCoefficients"] = cicp.MatrixCoefficients,
                 ["fullRange"] = cicp.FullRange,
             },
-            ["animation"] = animation,
-            ["resolution"] = null,
-            ["profiles"] = new Obj
-            {
-                ["icc"] = reference.Icc is null ? null : CommonCorpus.ProfileRecord(reference.Icc),
-                ["exif"] = reference.Exif is null ? null : CommonCorpus.ProfileRecord(reference.Exif),
-                ["xmp"] = reference.Xmp is null ? null : CommonCorpus.ProfileRecord(reference.Xmp),
-            },
-            ["text"] = new List<object?>(),
-            ["frameCount"] = reference.Frames.Count,
-            ["frames"] = frames,
-            ["poster"] = null,
         };
+
+        // The labels that few files have are only written for the files that have them
+        if (reference.ContentLightLevel is { } lightLevel)
+        {
+            expected["contentLightLevel"] = new Obj
+            {
+                ["maxContentLightLevel"] = lightLevel.MaxContentLightLevel,
+                ["maxPictureAverageLightLevel"] = lightLevel.MaxPictureAverageLightLevel,
+            };
+        }
+
+        if (reference.MasteringDisplay is { } display)
+        {
+            expected["masteringDisplay"] = new Obj
+            {
+                ["red"] = new List<object?> { display.Red.X, display.Red.Y },
+                ["green"] = new List<object?> { display.Green.X, display.Green.Y },
+                ["blue"] = new List<object?> { display.Blue.X, display.Blue.Y },
+                ["whitePoint"] = new List<object?> { display.WhitePoint.X, display.WhitePoint.Y },
+                ["maxLuminance"] = display.MaxLuminance,
+                ["minLuminance"] = display.MinLuminance,
+            };
+        }
+
+        if (reference.PixelAspectRatio is { } pixelAspectRatio)
+        {
+            expected["pixelAspectRatio"] = new Obj
+            {
+                ["horizontalSpacing"] = pixelAspectRatio.HorizontalSpacing,
+                ["verticalSpacing"] = pixelAspectRatio.VerticalSpacing,
+            };
+        }
+
+        expected["animation"] = animation;
+        expected["resolution"] = null;
+        expected["profiles"] = new Obj
+        {
+            ["icc"] = reference.Icc is null ? null : CommonCorpus.ProfileRecord(reference.Icc),
+            ["exif"] = reference.Exif is null ? null : CommonCorpus.ProfileRecord(reference.Exif),
+            ["xmp"] = reference.Xmp is null ? null : CommonCorpus.ProfileRecord(reference.Xmp),
+        };
+        expected["text"] = new List<object?>();
+        expected["frameCount"] = reference.Frames.Count;
+        expected["frames"] = frames;
+        expected["poster"] = null;
 
         var fixture = new Obj
         {
@@ -1196,16 +1403,26 @@ internal static partial class AvifCorpus
             ["decoder"] = tools.AvifdecLabel,
             ["command"] = CommonCorpus.Display(command, tools, [(path.Value, "{input}"), (output.Value, "{output}.png")]),
         };
+        if (!reference.HasMiafTransformOrder)
+        {
+            check["result"] = "differs";
+            check["notes"] = "avifdec applies the transformations in the order of MIAF (the clean aperture, the rotation, then the mirroring), whatever the order of their association: it presents other samples of this file, which is not compared.";
+            return check;
+        }
+
         var result = Proc.Exec(command);
         if (result.ExitCode != 0)
         {
             var message = Encoding.UTF8.GetString(result.Stderr).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).LastOrDefault() ?? "error";
             check["result"] = "differs";
-            check["notes"] = "avifdec rejects the file: " + message.Replace(path.Value, "{input}", StringComparison.Ordinal);
+            // (the images of a sequence are written to files named after the output, with their index)
+            check["notes"] = "avifdec rejects the file: " + message.Replace(path.Value, "{input}", StringComparison.Ordinal).Replace(output.Value, "{output}.png", StringComparison.Ordinal).Replace(output.Value[..^".png".Length], "{output}", StringComparison.Ordinal);
             return check;
         }
 
-        var oriented = reference.Frames.Select(frame => Orient(frame, reference.Orientation)).ToList();
+        // avifdec applies the irot and imir properties of an item; it does not read the matrix of a track header
+        var appliedOrientation = reference.IsSequence ? 1 : reference.Orientation;
+        var oriented = reference.Frames.Select(frame => Orient(frame, appliedOrientation)).ToList();
         var (pixelFormat, bytesPerPixel, sample, layout) = deep ? ("rgba64le", 8, 2, "rgba16le") : ("rgba", 4, 1, "rgba8");
         var files = reference.IsSequence
             ? Enumerable.Range(0, reference.Frames.Count).Select(i => scratch / Inv($"avifdec-{i:D10}.png")).ToList()
@@ -1221,7 +1438,11 @@ internal static partial class AvifCorpus
         var expected = oriented.Select(frame => RgbaRaw(frame, layout)).ToList();
         Record(check, expected, decoded, sample, reference.IsMatrixed ? "Independent conversion (its own chroma upsampling and rounding)." : "Its own sample scaling.");
         if (reference.IsTransformed)
-            check["notes"] = (check.TryGetValue("notes", out var text) ? text + " " : "") + Inv($"Compared with the reference displayed with orientation {reference.Orientation} (avifdec applies irot and imir).");
+        {
+            check["notes"] = (check.TryGetValue("notes", out var text) ? text + " " : "") + (reference.IsSequence
+                ? Inv($"Compared with the images as they are stored: avifdec does not read the matrix of the track header (orientation {reference.Orientation}).")
+                : Inv($"Compared with the reference displayed with orientation {reference.Orientation} (avifdec applies irot and imir)."));
+        }
         return check;
     }
 

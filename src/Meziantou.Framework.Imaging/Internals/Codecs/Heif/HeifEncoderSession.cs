@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -40,6 +41,17 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
     private readonly byte[]? _exif;
     private readonly byte[]? _xmp;
     private readonly ExifOrientation _orientation;
+    private readonly Rectangle? _cleanAperture;
+    private readonly bool _premultiplyAlpha;
+
+    // The tiles of a grid: their size, and their numbers of columns and of rows (0 for an image that is one item)
+    private readonly int _tileWidth;
+    private readonly int _tileHeight;
+    private readonly int _gridColumns;
+    private readonly int _gridRows;
+    private readonly PixelAspectRatio? _pixelAspectRatio;
+    private readonly ContentLightLevel? _contentLightLevel;
+    private readonly MasteringDisplayColorVolume? _masteringDisplay;
     private readonly bool _isSequence;
     private readonly int _frameCount;
     private readonly int _movieReservation;
@@ -56,6 +68,10 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
     private bool _completing;
     private HeifPictureEncoder? _color;
     private HeifPictureEncoder? _alpha;
+    private PooledPayloadWriter? _colorTiles;
+    private PooledPayloadWriter? _alphaTiles;
+    private Av1PooledArray<int>? _tileLengths;
+    private int _tileIndex;
     private PooledBuffer? _rows;
     private PooledPayloadWriter? _prefix;
     private ImageFrame? _frame;
@@ -112,30 +128,45 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         }
 
         _colorDescription = new CicpColorDescription((byte)primaries, (byte)transfer, (byte)matrix, fullRange);
-        _converter = new HeifRgbConverter(_layout, bitDepth, subsamplingX, subsamplingY, matrix, fullRange, settings.ClearTransparentColors, binding.HasCositedChromaColumns);
+        _premultiplyAlpha = settings.PremultiplyAlpha && PixelFormats.HasAlpha(_sourceFormat);
+        _converter = new HeifRgbConverter(_layout, bitDepth, subsamplingX, subsamplingY, matrix, fullRange, settings.ClearTransparentColors, binding.HasCositedChromaColumns, _premultiplyAlpha);
         _icc = metadata.IccProfile?.Data.ToArray();
         _exif = metadata.Exif;
         _xmp = metadata.XmpProfile?.Data.ToArray();
-        _orientation = metadata.Orientation;
-        if (_isSequence && _orientation is not ExifOrientation.TopLeft)
+        if (binding.Supports(HeifContainerFeatures.DisplayMetadata))
         {
-            // The transformations are properties of an item: a track has none
+            _pixelAspectRatio = metadata.PixelAspectRatio;
+            _contentLightLevel = metadata.ContentLightLevel;
+            _masteringDisplay = metadata.MasteringDisplay;
+        }
+
+        _orientation = metadata.Orientation;
+        if (_isSequence && _orientation is not ExifOrientation.TopLeft && !binding.Supports(HeifContainerFeatures.SequenceOrientation))
+        {
+            // The transformations are properties of an item: the format does not write the matrix of a track
             if (settings.MetadataHandling is MetadataHandling.Strict)
                 throw binding.Unsupported($"The {binding.Format} format cannot store the orientation of an image sequence. Apply it with AutoOrient, remove it, or set the encoder's MetadataHandling to DiscardUnsupported or Strip.", "Metadata: orientation of an image sequence");
 
             _orientation = ExifOrientation.TopLeft;
         }
 
+        _cleanAperture = ResolveCleanAperture(subsamplingX, subsamplingY, nameof(settings));
+        (_tileWidth, _tileHeight, _gridColumns, _gridRows) = ResolveGrid(subsamplingX, subsamplingY);
+
+        // The encoders code the image, or one tile of its grid at a time
+        var codedWidth = IsGrid ? _tileWidth : _width;
+        var codedHeight = IsGrid ? _tileHeight : _height;
+
         // Every buffer whose size is known is rented before any output, so that a limit failure leaves no output
         try
         {
             var scope = options.Scope;
-            var colorSettings = new HeifPictureSettings(_width, _height, bitDepth, monochrome, subsamplingX, subsamplingY, primaries, transfer, matrix, fullRange, StillPicture: !_isSequence, lossless, settings.Quality, settings.Effort, settings.KeyFrameInterval);
+            var colorSettings = new HeifPictureSettings(codedWidth, codedHeight, bitDepth, monochrome, subsamplingX, subsamplingY, primaries, transfer, matrix, fullRange, StillPicture: !_isSequence, lossless, settings.Quality, settings.Effort, settings.KeyFrameInterval);
             _color = binding.CreatePictureEncoder(scope, colorSettings);
 
             // The pictures of the stream may be larger than the image, which is then their clean aperture: the alpha plane
             // has the size of the pictures, since the same clean aperture describes both
-            _codedSize = _color.Description.OutputSize ?? options.CanvasSize;
+            _codedSize = _color.Description.OutputSize ?? new Size(codedWidth, codedHeight);
 
             if (PixelFormats.HasAlpha(_sourceFormat))
             {
@@ -145,13 +176,22 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
                 _alpha = binding.CreatePictureEncoder(scope, alphaSettings);
             }
 
-            // Two rows of pixels in the layout of the converter: a chroma sample covers two rows when it is subsampled
-            var rowBytes = 2L * _width * PixelFormats.GetBytesPerPixel(_layout);
+            // Two rows of pixels in the layout of the converter: a chroma sample covers two rows when it is subsampled.
+            // A grid also has two rows of a tile, for the tiles that extend past the image
+            var rowBytes = 2L * (_width + (IsGrid ? _tileWidth : 0)) * PixelFormats.GetBytesPerPixel(_layout);
             if (rowBytes > CheckedSizes.MaxBufferLength)
                 throw CheckedSizes.CreateOverflowException(scope.Limits);
 
             _rows = scope.Rent((int)rowBytes, AllocationKind.Temporary, clear: false);
             _prefix = new PooledPayloadWriter(scope);
+            if (IsGrid)
+            {
+                // The coded tiles, and the number of bytes of each of them: the color tiles, then the alpha tiles
+                _colorTiles = new PooledPayloadWriter(scope);
+                _alphaTiles = _alpha is null ? null : new PooledPayloadWriter(scope);
+                _tileLengths = Av1PooledArray<int>.Rent(scope, 2L * _gridColumns * _gridRows, clear: true, AllocationKind.Temporary);
+            }
+
             if (_isSequence)
             {
                 // The size of the color image and of the alpha plane, the duration and the kind of each image; then
@@ -172,9 +212,12 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         }
     }
 
+    private bool IsGrid => _gridColumns is not 0;
+
     private enum Step
     {
         None,
+        Analyze,
         Convert,
         EncodeColor,
         EncodeAlpha,
@@ -226,7 +269,10 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         _frame = frame;
         _row = 0;
         _isTransparent = false;
-        _step = Step.Convert;
+        _tileIndex = 0;
+
+        // The tiles of a grid are coded one after the other: whether the image has an alpha plane is known first
+        _step = IsGrid && _alpha is not null ? Step.Analyze : Step.Convert;
     }
 
     public override void BeginComplete(int frameCount)
@@ -247,8 +293,15 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         ArgumentNullException.ThrowIfNull(output);
         switch (_step)
         {
+            case Step.Analyze:
+                AnalyzeRows();
+                return false;
             case Step.Convert:
-                ConvertRows();
+                if (IsGrid)
+                    ConvertTileRows();
+                else
+                    ConvertRows();
+
                 return false;
             case Step.EncodeColor:
                 if (_color!.Encode(CancellationToken))
@@ -261,14 +314,14 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
                     }
                     else
                     {
-                        Assemble();
+                        CompleteImage();
                     }
                 }
 
                 return false;
             case Step.EncodeAlpha:
                 if (_alpha!.Encode(CancellationToken))
-                    Assemble();
+                    CompleteImage();
 
                 return false;
             case Step.Emit:
@@ -296,6 +349,12 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
             _rows = null;
             _prefix?.Dispose();
             _prefix = null;
+            _colorTiles?.Dispose();
+            _colorTiles = null;
+            _alphaTiles?.Dispose();
+            _alphaTiles = null;
+            _tileLengths?.Dispose();
+            _tileLengths = null;
             _movie?.Dispose();
             _movie = null;
             _sizes?.Dispose();
@@ -328,6 +387,246 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         }
 
         return maxBitDepth;
+    }
+
+    // The clean aperture selects whole samples of every plane (ISO/IEC 23000-22, section 7.3.6.7): inside the image,
+    // and on a chroma sample when the chroma planes are subsampled
+    private Rectangle? ResolveCleanAperture(int subsamplingX, int subsamplingY, string parameterName)
+    {
+        var (width, height) = (_width, _height);
+        if (_settings.CleanAperture is not { } aperture)
+            return null;
+
+        if (aperture.Right > width || aperture.Bottom > height)
+            throw new ArgumentException($"The clean aperture ({aperture}) is not inside the image ({width}x{height}).", parameterName);
+
+        if ((subsamplingX is not 0 && (aperture.X & 1) is not 0) || (subsamplingY is not 0 && (aperture.Y & 1) is not 0))
+            throw _binding.Unsupported($"The clean aperture ({aperture}) of an {_binding.Name} image with subsampled chroma starts on a chroma sample: its left coordinate must be even{(subsamplingY is not 0 ? ", and its top coordinate too" : "")}. Move the aperture, or select AvifChromaSubsampling.Ratio444.", "Clean aperture between chroma samples");
+
+        // The whole image is no aperture
+        return aperture.X is 0 && aperture.Y is 0 && aperture.Width == width && aperture.Height == height ? null : aperture;
+    }
+
+    // The grid of a still image (ISO/IEC 23000-22, section 7.3.11.4.2): tiles of one size, of at least 64 samples per
+    // side, that cover the image; with subsampled chroma, the tiles and the image have an even number of columns, and
+    // of rows for 4:2:0, so that every tile starts on a chroma sample. An image that one tile holds is one item
+    private (int TileWidth, int TileHeight, int Columns, int Rows) ResolveGrid(int subsamplingX, int subsamplingY)
+    {
+        var (width, height) = (_width, _height);
+        if (_isSequence || _settings.GridTileSize is not { } tile || (tile.Width >= width && tile.Height >= height))
+            return default;
+
+        if ((subsamplingX is not 0 && ((tile.Width | width) & 1) is not 0) || (subsamplingY is not 0 && ((tile.Height | height) & 1) is not 0))
+            throw _binding.Unsupported($"A grid of an {_binding.Name} image with subsampled chroma needs an even width of the tiles ({tile.Width}) and of the image ({width}){(subsamplingY is not 0 ? $", and an even height ({tile.Height} and {height})" : "")}. Change the size of the tiles, select AvifChromaSubsampling.Ratio444, or remove {_settings.EncoderName}.GridTileSize.", $"{_binding.Name} grid between chroma samples");
+
+        var columns = ((width - 1) / tile.Width) + 1;
+        var rows = ((height - 1) / tile.Height) + 1;
+        if (columns > 256 || rows > 256)
+            throw _binding.Unsupported($"A grid of an {_binding.Name} image has at most 256 columns and 256 rows: tiles of {tile.Width}x{tile.Height} need {columns}x{rows} of them for an image of {width}x{height}. Select larger tiles.", $"{_binding.Name} grid size");
+
+        return (tile.Width, tile.Height, columns, rows);
+    }
+
+    // Looks for a pixel that is not opaque, a band of rows at a time: an opaque image has no alpha grid
+    private void AnalyzeRows()
+    {
+        var frame = _frame ?? throw new InvalidOperationException("No frame was begun.");
+        CancellationToken.ThrowIfCancellationRequested();
+        var rowLength = _width * PixelFormats.GetBytesPerPixel(_layout);
+        var scratch = _rows!.RawBuffer.AsSpan(0, rowLength);
+        var end = Math.Min(_height, _row + RowsPerCall);
+        using (var lease = frame.GetStorage().AcquireLease())
+        {
+            for (; _row < end && !_isTransparent; _row++)
+            {
+                var row = Normalize(lease.GetRowBytes(_row), scratch);
+                if (_layout is PixelFormat.Rgba32)
+                {
+                    for (var x = 3; x < row.Length; x += 4)
+                    {
+                        if (row[x] is not byte.MaxValue)
+                        {
+                            _isTransparent = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(row));
+                    for (var x = 3; x < samples.Length; x += 4)
+                    {
+                        if (samples[x] is not ushort.MaxValue)
+                        {
+                            _isTransparent = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (_row < _height && !_isTransparent)
+            return;
+
+        _row = 0;
+        _step = Step.Convert;
+    }
+
+    // Converts a band of rows of the current tile to the planes of the encoders. The tiles of the right column and of
+    // the bottom row may extend past the image: its last column and its last row are repeated there, which is what
+    // costs the least to code and what the grid then crops
+    private void ConvertTileRows()
+    {
+        var frame = _frame ?? throw new InvalidOperationException("No frame was begun.");
+        CancellationToken.ThrowIfCancellationRequested();
+        var color = _color!;
+        var luma = color.GetSourcePlane(0);
+        var monochrome = color.Description.PlaneCount is 1;
+        var u = monochrome ? null : color.GetSourcePlane(1);
+        var v = monochrome ? null : color.GetSourcePlane(2);
+        var alpha = _isTransparent ? _alpha?.GetSourcePlane(0) : null;
+        var bytesPerPixel = PixelFormats.GetBytesPerPixel(_layout);
+        var rowLength = _width * bytesPerPixel;
+        var tileLength = _tileWidth * bytesPerPixel;
+        var buffer = _rows!.RawBuffer.AsSpan();
+        var scratch = buffer[..(2 * rowLength)];
+        var tileScratch = buffer.Slice(2 * rowLength, 2 * tileLength);
+        var left = _tileIndex % _gridColumns * _tileWidth;
+        var top = _tileIndex / _gridColumns * _tileHeight;
+        var step = _converter.RowsPerCall;
+        var subY = step - 1;
+        var end = Math.Min(_tileHeight, _row + RowsPerCall);
+        using (var lease = frame.GetStorage().AcquireLease())
+        {
+            for (; _row < end; _row += step)
+            {
+                // The height of a tile is even when the chroma planes have half the rows
+                var hasSecondRow = step is 2;
+                var row0 = GetTileRow(lease.GetRowBytes(Math.Min(top + _row, _height - 1)), left, scratch[..rowLength], tileScratch[..tileLength]);
+                var row1 = hasSecondRow ? GetTileRow(lease.GetRowBytes(Math.Min(top + _row + 1, _height - 1)), left, scratch[rowLength..], tileScratch[tileLength..]) : row0;
+                _converter.ConvertRows(
+                    row0,
+                    row1,
+                    luma.GetRow(_row),
+                    hasSecondRow ? luma.GetRow(_row + 1) : default,
+                    u is null ? default : u.GetRow(_row >> subY),
+                    v is null ? default : v.GetRow(_row >> subY),
+                    alpha is null ? default : alpha.GetRow(_row),
+                    alpha is null || !hasSecondRow ? default : alpha.GetRow(_row + 1),
+                    hasSecondRow);
+            }
+        }
+
+        if (_row < _tileHeight)
+            return;
+
+        color.BeginFrame();
+        _step = Step.EncodeColor;
+    }
+
+    // The pixels of a row of the frame that a tile covers, in the layout of the converter
+    private ReadOnlySpan<byte> GetTileRow(ReadOnlySpan<byte> row, int left, Span<byte> scratch, Span<byte> tileScratch)
+    {
+        var bytesPerPixel = PixelFormats.GetBytesPerPixel(_layout);
+        var pixels = Normalize(row, scratch)[(left * bytesPerPixel)..];
+        if (pixels.Length >= tileScratch.Length)
+            return pixels[..tileScratch.Length];
+
+        // The last pixel of the row is repeated to the right edge of the tile
+        pixels.CopyTo(tileScratch);
+        var last = pixels[^bytesPerPixel..];
+        for (var offset = pixels.Length; offset < tileScratch.Length; offset += bytesPerPixel)
+        {
+            last.CopyTo(tileScratch[offset..]);
+        }
+
+        return tileScratch;
+    }
+
+    // The image is coded, or one more tile of its grid, which is kept until every tile is coded
+    private void CompleteImage()
+    {
+        if (!IsGrid)
+        {
+            Assemble();
+            return;
+        }
+
+        var count = _gridColumns * _gridRows;
+        var lengths = _tileLengths!.Span;
+        var colorPayload = _color!.Payload.Span;
+        _colorTiles!.Write(colorPayload);
+        lengths[_tileIndex] = colorPayload.Length;
+        _color.Reset();
+        if (_isTransparent)
+        {
+            var alphaPayload = _alpha!.Payload.Span;
+            _alphaTiles!.Write(alphaPayload);
+            lengths[count + _tileIndex] = alphaPayload.Length;
+            _alpha.Reset();
+        }
+
+        _tileIndex++;
+        if (_tileIndex < count)
+        {
+            _row = 0;
+            _step = Step.Convert;
+            return;
+        }
+
+        _frame = null;
+        AssembleGrid();
+    }
+
+    // Writes the boxes that describe the grids and their tiles, now that the size of every tile is known
+    private void AssembleGrid()
+    {
+        var count = _gridColumns * _gridRows;
+        var lengths = _tileLengths!.Span;
+        var prefix = _prefix!;
+        prefix.Reset();
+        HeifFileWriter.WritePrefix(
+            prefix,
+            _binding,
+            new HeifFileWriter.StillImage
+            {
+                Width = _width,
+                Height = _height,
+                Color = _color!.Description,
+                ColorLength = 0,
+                Alpha = _isTransparent ? _alpha!.Description : null,
+                ColorDescription = _colorDescription,
+                IccProfile = _icc,
+                Exif = _exif,
+                Xmp = _xmp,
+                Orientation = _orientation,
+                PixelAspectRatio = _pixelAspectRatio,
+                ContentLightLevel = _contentLightLevel,
+                MasteringDisplay = _masteringDisplay,
+                CleanAperture = _cleanAperture,
+                IsPremultiplied = _premultiplyAlpha,
+                Grid = new HeifFileWriter.GridLayout
+                {
+                    TileWidth = _tileWidth,
+                    TileHeight = _tileHeight,
+                    Columns = _gridColumns,
+                    Rows = _gridRows,
+                },
+            },
+            colorTileLengths: lengths[..count],
+            alphaTileLengths: _isTransparent ? lengths.Slice(count, count) : default);
+
+        _pieces.Clear();
+        _pieces.Add(prefix.WrittenMemory);
+        if (_isTransparent)
+            _pieces.Add(_alphaTiles!.WrittenMemory);
+
+        _pieces.Add(_colorTiles!.WrittenMemory);
+        _frameIndex++;
+        _pieceIndex = 0;
+        _pieceOffset = 0;
+        _step = Step.Emit;
     }
 
     // Converts a band of rows of the frame to the planes of the encoders
@@ -433,6 +732,11 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
                     Exif = _exif,
                     Xmp = _xmp,
                     Orientation = _orientation,
+                    PixelAspectRatio = _pixelAspectRatio,
+                    ContentLightLevel = _contentLightLevel,
+                    MasteringDisplay = _masteringDisplay,
+                    CleanAperture = _cleanAperture,
+                    IsPremultiplied = _premultiplyAlpha,
                 },
                 _isSequence ? _movieReservation : -1);
 
@@ -506,6 +810,12 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
                 IccProfile = _icc,
                 Timescale = (uint)timescale,
                 TotalPlays = worstCase ? null : Options.Animation?.TotalPlays,
+                PixelAspectRatio = _pixelAspectRatio,
+                ContentLightLevel = _contentLightLevel,
+                MasteringDisplay = _masteringDisplay,
+                IsPremultiplied = _premultiplyAlpha,
+                Orientation = _orientation,
+                CleanAperture = _cleanAperture,
             },
             colorSizes,
             alphaSizes,

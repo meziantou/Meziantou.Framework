@@ -83,8 +83,15 @@ the track duration is indefinite or when the count does not fit 31 bits.
 AVIF inputs also record `cicp` (`{colorPrimaries, transferCharacteristics, matrixCoefficients, fullRange}`: the `colr`
 box of type `nclx`, or else the color description of the AV1 sequence header, or `null`), `bitsPerComponent` 10 and 12,
 and an `orientation` that comes from the `irot` and `imir` properties of the primary item (never from the EXIF payload,
-which may say otherwise). The canvas of an AVIF image is its clean aperture. An AVIF image sequence has no
-transformation (its orientation is 1); its `profiles.exif` and `profiles.xmp` are the items of the `meta` box of its
+which may say otherwise). The inputs that have the box also record `contentLightLevel` (`{maxContentLightLevel,
+maxPictureAverageLightLevel}`: the `clli` box), `masteringDisplay` (`{red, green, blue, whitePoint, maxLuminance,
+minLuminance}`: the `mdcv` box, whose primaries are stored in the order green, blue, red; chromaticities `[x, y]` and
+luminances as the integers of the box) and `pixelAspectRatio` (`{horizontalSpacing, verticalSpacing}`: the `pasp`
+box), read from the primary item or from the sample entry of the track; the keys are absent for the other inputs.
+The canvas of an AVIF image is its clean aperture. The `orientation` of an AVIF image
+sequence comes from the matrix of the track header of its color track (`ReferenceHeif.Track.Orientation`: 1 unless the
+matrix turns the images by quarter turns or mirrors them), and its canvas is the clean aperture of its sample entry;
+its `profiles.exif` and `profiles.xmp` are the items of the `meta` box of its
 track, or else of the `meta` box of the file when that box precedes the `moov` box (`ReferenceHeif.FindSequenceMetadata`),
 and `null` otherwise, whatever the `meta` box of the file holds. The frames of a sequence that are decoded without being
 shown are not frames of the fixture: their number is the `avif.seq.hiddenFrames=N` feature, which the limit tests add to
@@ -560,12 +567,46 @@ the AV1 Image File Format), the AV1 payloads of the items and of the samples are
 **two** decoders, dav1d and libaom, through the pinned FFmpeg (the same command and the same rule as the
 [AV1 conformance vectors](#av1-conformance-vectors): same bytes or no reference), and the planes are converted by
 `ReferenceYuvConverter` with the matrix coefficients and the range of the `colr` box, or else of the bitstream
-(unspecified: BT.601). The generator tiles the planes of a grid before the conversion (as libavif does: the chroma
+(unspecified: BT.601). The constant luminance matrix coefficients (10 and 13) and ICtCp (14) go through the transfer
+characteristics of the file, which `TestHarness/Color/ReferenceCicpTransfer` evaluates in `decimal` arithmetic with the
+series of `DecimalMath`. **No tool judges these conversions**: libavif and FFmpeg have none (avifenc only labels the
+planes of a y4m source and avifdec refuses to convert them). What stands for a second opinion is a calculation with
+the `decimal` module of Python at 50 digits, whose results are literals of
+`AvifDecoderTests.ReferenceConverterMatchesAnIndependentCalculationOfTheMatricesThatGoThroughTheTransferFunction`, and
+the round trip of four fixtures: their planes are a pattern converted with the forward equations of ITU-T H.273 and of
+Rec. ITU-R BT.2100, coded without loss, and the reference must give the pattern back within the rounding of the planes
+(measured: 78/65535 at 10 bits and 1/255 at 8 bits for constant luminance, 31/65535 and 22/65535 at 12 bits for ICtCp,
+on a pattern that keeps away from black, where the transfer functions multiply the rounding of the planes). The extents
+of the chroma of constant luminance are the ones the equations of H.273 give (for BT.2020: 1.9403, 1.5820, 1.7182 and
+0.9938), not the four-digit constants that Rec. ITU-R BT.2020 prints (1.9404, 1.5816, 1.7184 and 0.9936). The images
+that the edit list of a sequence shows and their durations are computed by `ReferenceAvif.Track.GetPresentation`, with
+exact fractions, one image and one edit at a time (the library counts them run by run and reads them with a cursor);
+the durations of the fixtures were also derived by hand in their notes. No pinned tool presents them: libavif only
+reads the repetition of an edit list, and FFmpeg presents the primary item of these files. An image that is built
+from other images (an overlay, a grid of derived images) is rendered by the generator
+(`AvifCorpus.ContainerDerived.cs`): each coded image is decoded by the two reference decoders and converted as an
+image that is presented alone, the transformations of the items are applied to pixels, and the overlays are
+composited with exact fractions (source-over on straight alpha, rounded to the nearest sample, halves upward).
+libavif rejects these files. Apple ImageIO builds them with its own reader and returns an opaque image
+(`BuiltImagesDecodeAsAppleImageIO`): the pixels that the reference has opaque are identical where one tile or one
+layer covers them (the grid of derived images, the overlay of a grid and of an identity derivation, the overlay with
+a transparent fill), and within two units where translucent layers are composited, which ImageIO does not round as
+an exact source-over operation. **No tool judges** the transparent and translucent results, the 10-bit overlay
+(ImageIO returns another layout) and the lossy layers (measured: up to 17 units, from its own chroma upsampling), nor
+the rules on the color descriptions of the input images, which are the reading of ISO/IEC 23008-12 that the library
+documents. The samples of a
+fragmented sequence are located by the `moof` reader of `ReferenceAvif` (written from ISO/IEC 14496-12 section 8.8,
+with the three base rules of the data offsets), and their payloads are those of a sequence that every tool reads:
+libavif does not read fragments, and FFmpeg demuxes three of the six fixtures to the frames of their source
+(`FragmentedSequencesAreDemuxedByFFmpegAsTheirSource`), not the ones with explicit base offsets or with samples in
+both the `moov` box and fragments. The generator tiles the planes of a grid before the conversion (as libavif does: the chroma
 upsampling interpolates across tile boundaries), scales the alpha plane, and applies the clean aperture. Lossless
 content is also compared with its source pattern. Cross-checks, recorded with their measured differences and never used as
 references: libavif `avifdec` for every input (its own parser, dav1d and conversion; it applies `clap`, `irot` and
 `imir`, so its output is compared with the reference displayed with the expected orientation, which confirms the
-orientation; it rejects `stz2`, in which case its measurement on the same payloads in `stsz` tables is recorded, and grid
+orientation; it applies them in the order of MIAF whatever the order of their association, so it is not compared for the
+two files that order them otherwise, whose expected rectangle is derived by hand in the recipe and found again by
+`ReferenceAvif.GetPresentedRectangle`, which crops, turns and mirrors a grid of sample positions; it rejects `stz2`, in which case its measurement on the same payloads in `stsz` tables is recorded, and grid
 tiles smaller than 64 samples; it returns 8-bit monochrome samples in limited range as stored, without the range, where
 the reference scales them as ITU-T H.273 says and as `avifdec` itself does at 12 bits), and
 FFmpeg (mov demuxer, swscale) for the still images whose samples no matrix applies to. The expected durations, plays,
@@ -684,8 +725,8 @@ header (65,536 bytes) rejects.
 | WebP errors | invalid: RIFF/chunk sizes past the data, `VP8X` canvas mismatch, extended file without image, VP8L bad signature/version/corrupt prefix code/truncation, VP8 bad start code/first partition overflow/truncated partition, `ALPH` bad compression method, `ANIM` missing, frame outside the canvas, truncated animation; unsupported: a VP8 interframe; limits: width, frame pixels, metadata bytes, animation frames and total pixels |
 | Metadata | `png/metadata-rgb8-profiles`: RGB ICC profile (`iCCP`), `pHYs` 3780x2835 per meter, big-endian EXIF (orientation 8, Software, Exif IFD pixel dimensions, IFD1 thumbnail placeholder), XMP `iTXt`, `tEXt`/`zTXt`/international `iTXt`, a `tEXt` after `IDAT`; `png/metadata-gray8-icc`: gray ICC profile, aspect-ratio-only `pHYs`, little-endian EXIF orientation 3. The ICC profiles are small hand-built ICC v4.3 test profiles (CC0, never applied) |
 | APNG errors | Header defects: `acTL` with zero frames or `num_plays` 2^31, partial default-image `fcTL`, `dispose_op` 3, `fdAT` before `IDAT`; structure defects: sequence gap, region outside the canvas, fewer/more frames than declared, `fcTL` without data, `blend_op` 2, `fdAT` shorter than its sequence number; frame datastream defects (`fdAT` zlib truncated, one extra scanline); limits: `MaxFrames` counting the poster, `MaxTotalPixels` counting full-canvas displayed frames (decode-only) |
-| AVIF | lossless identity-matrix RGB at 8, 10 and 12 bits, monochrome (lossless and lossy at 8, 10 and 12 bits, full and limited range), alpha at 8, 10 and 12 bits (lossless, lossy, under limited-range colors, under lossless colors; hidden colors kept), gray + alpha; lossy 4:4:4 / 4:2:2 / 4:2:0 with the BT.709, FCC, BT.470BG, BT.601, SMPTE 240M, YCgCo and BT.2020 matrices and unspecified coefficients, in full and limited range, at 8, 10 (HDR 9/16/9) and 12 bits; sizes 1x1, 5x1, 1x5, odd 4:2:0 and 4:2:2 images at every depth, 33x17, 64x64, 67x65; vertical and co-located chroma samples (y4m inputs); a lossless 2x2 grid, lossy 4:2:0 2x1 (with alpha) and 3x1 grids, a 1x3 grid with an alpha grid, a 10-bit 2x1 grid, a 3x2 grid of 16x16 tiles, a grid cropped below its tiles, a grid whose tiles repeat its `clap`, `irot` and `imir` as avifenc writes them; `irot` 0-3, `imir` 0-1 and both; a clean aperture followed by a rotation, and one on 4:2:0 content; Exif (whose orientation tag contradicts `irot`), XMP and ICC, an ICC profile without `nclx`; colr variants of one payload (`nclx` overriding the bitstream, no `colr` box with identity, BT.709 and undescribed bitstreams, after and before the media data); film grain (4:2:0, odd, monochrome 10-bit, 4:2:2 10-bit limited, 4:4:4 12-bit with chroma scaled from luma, under an alpha plane); assembled layouts (`layout-*`); sequences: lossless with three durations and infinite repetition, alpha with two repetitions, 10-bit played once at 1001/30000 s, 8 to 12 images with inter frames and frames that are not shown (4:2:0, 4:4:4 at speed 2, 4:2:2 with key frames every three images, monochrome, 10-bit, lossless 12-bit, a lossy alpha track, 10-bit alpha), XMP in the `meta` box of the track and an ICC profile (avifenc), Exif and XMP in the `meta` box of the file or of the track with their data in `mdat`, in `idat` and after the samples, a track `meta` box that wins over the file one, a file `meta` box after `moov` (not read), chunks written in reverse order, two from the FFmpeg muxer (libaom, SVT-AV1), no edit list, `mdat` first, `co64` + `stz2` + one sample per chunk; layered images: `--progressive` (4:2:0, identity-matrix 10-bit, with a layered alpha item), `--layered` with 2, 3 and 4 quality layers (4:2:0 limited range, identity, monochrome 12-bit), three layers of growing sizes (4:2:2 10-bit), a second layer that is another picture, coded losslessly; `lsel` 0xFFFF, 0, 1, 2 and 3, `a1op` 0, 1 and 2, both together, a selected frame smaller than the last layer (`ispe` of its size) by `lsel` and by `a1op`, `lsel` on 4:2:0 content; a grid of two layered tiles, grids whose tiles select their own layer and their own operating point; a sequence of two layered samples |
-| AVIF errors | invalid: truncated `meta` box and item data, a box smaller than its header, a child box larger than its parent, no file type box and no AVIF brand (unknown format), no `pitm`, primary item, `ispe` or `av1C`, two `meta` boxes, item data outside the file and outside `idat`, `ispe` and `av1C` contradicting the bitstream, an `a1op` operating point the sequence header does not have (one and three operating points), an `lsel` layer the bitstream does not have (one and three layers) or that its operating point does not have, layer 4, a selected frame of another size than `ispe`, `lsel` and `a1op` on a grid item, grids (tile count, descriptor size, tile sizes), a sequence without AV1 track, without chunk offsets, truncated, with a malformed `meta` box in its track, with a metadata item of its track or of the file located after the end of the file; unsupported: premultiplied alpha, `iden`/`iovl` derived images, fractional `clap`, `clap` after `irot`, an essential unknown property, ICtCp matrix coefficients, an alpha plane of another size, `moof`, an edit that skips the start of the track or that ends before the last image starts, ICtCp matrix coefficients in the sample entry of a sequence, a grid tile that declares another rotation than its grid, a sequence whose images change size; limits: width, height, frame pixels, encoded bytes, live allocations, metadata bytes (ICC, then Exif; the XMP packet of a sequence), sequence frames, displayed pixels, frames that are decoded without being shown, and the lower layers of a layered image |
+| AVIF | lossless identity-matrix RGB at 8, 10 and 12 bits, monochrome (lossless and lossy at 8, 10 and 12 bits, full and limited range), alpha at 8, 10 and 12 bits (lossless, lossy, under limited-range colors, under lossless colors; hidden colors kept), gray + alpha; premultiplied alpha (avifenc `-p`: lossless at 8 and 10 bits, lossy 4:2:0 under a lossy alpha plane, and a `prem` track reference assembled on a sequence whose colors are clipped); lossy 4:4:4 / 4:2:2 / 4:2:0 with the BT.709, FCC, BT.470BG, BT.601, SMPTE 240M, YCgCo and BT.2020 matrices and unspecified coefficients, in full and limited range, at 8, 10 (HDR 9/16/9) and 12 bits; the chromaticity-derived matrix with the BT.2020 primaries (4:4:4) and with the Display P3 primaries (4:2:0, limited range, 10-bit), and the SMPTE ST 2085 matrix on the planes of a y4m source; the matrices that go through the transfer characteristics, on patterns converted with the forward equations and coded without loss (BT.2020 constant luminance at 10 bits, chromaticity-derived constant luminance with the Display P3 primaries, ICtCp with PQ and with HLG at 12 bits) and on arbitrary 4:2:0 planes whose colors leave the gamut (BT.2020 constant luminance, ICtCp with PQ), and ICtCp with HLG in limited range in the sample entry of a sequence; identity derivations (`iden`, assembled on committed payloads): without transformation, a clean aperture and a mirror on the derivation of a turned image, two nested derivations with an alpha plane derived the same way, a derivation whose alpha plane is a derivation with the same clean aperture, an untransformed derivation whose alpha plane is a coded image, a clean aperture across the tiles of a grid, and a derivation without `colr` box whose input is matrixed; images built from other images (`iovl` and `grid` items assembled the same way): an overlay of four copies of an image with alpha on an opaque canvas, two of them across its edges, an overlay with a transparent fill, a clean aperture and a rotation, an overlay of a grid and of a turned and cropped identity derivation of one of its tiles on a half transparent canvas, a grid whose tiles are mirrored and turned identity derivations and exceed the image, an identity derivation of a mirrored 10-bit overlay, an overlay of lossy matrixed images, an overlay that takes its ICC profile from its input image, one that no `colr` box describes (the bitstream of its input image does), and an overlay of a PQ image on an opaque black canvas; sizes 1x1, 5x1, 1x5, odd 4:2:0 and 4:2:2 images at every depth, 33x17, 64x64, 67x65; vertical and co-located chroma samples (y4m inputs); a lossless 2x2 grid, lossy 4:2:0 2x1 (with alpha) and 3x1 grids, a 1x3 grid with an alpha grid, a 10-bit 2x1 grid, a 3x2 grid of 16x16 tiles, a grid cropped below its tiles, a grid whose tiles repeat its `clap`, `irot` and `imir` as avifenc writes them; `irot` 0-3, `imir` 0-1 and both; a clean aperture followed by a rotation, and one on 4:2:0 content; a clean aperture associated after a rotation, and one between a mirroring and a rotation (not the order of MIAF: the properties apply in the order of their association); Exif (whose orientation tag contradicts `irot`), XMP and ICC, an ICC profile without `nclx`; colr variants of one payload (`nclx` overriding the bitstream, no `colr` box with identity, BT.709 and undescribed bitstreams, after and before the media data); a pixel aspect ratio and a content light level (avifenc `--pasp`, `--clli`), a mastering display color volume with its light levels (`mdcv` and `clli` properties assembled on an HDR image), and the three boxes in the sample entry of a sequence; film grain (4:2:0, odd, monochrome 10-bit, 4:2:2 10-bit limited, 4:4:4 12-bit with chroma scaled from luma, under an alpha plane); assembled layouts (`layout-*`); sequences: lossless with three durations and infinite repetition, alpha with two repetitions, 10-bit played once at 1001/30000 s, 8 to 12 images with inter frames and frames that are not shown (4:2:0, 4:4:4 at speed 2, 4:2:2 with key frames every three images, monochrome, 10-bit, lossless 12-bit, a lossy alpha track, 10-bit alpha), XMP in the `meta` box of the track and an ICC profile (avifenc), Exif and XMP in the `meta` box of the file or of the track with their data in `mdat`, in `idat` and after the samples, a track `meta` box that wins over the file one, a file `meta` box after `moov` (not read), chunks written in reverse order, two from the FFmpeg muxer (libaom, SVT-AV1), a matrix that turns the images a quarter turn, a matrix that mirrors them with a clean aperture in the sample entries of both tracks, no edit list, edit lists that select parts of the media (an edit that starts inside the first image, an edit that ends before the second image, two edits around an image that the next one refers to, edits in another time scale than the media that show images for a part of their duration, three edits whose durations are thirds of a second on a media in tenths, the same edit on a color track and on its alpha track), fragmented sequences assembled on the same payloads (three fragments with offsets relative to the `moof` box; explicit base offsets, two runs per track fragment and no `tfdt`; images in the `moov` box followed by fragments; an alpha track whose data follow the color data without base flag; default durations in `tfhd` and in `trex`; alpha planes described by a later fragment than their images), `mdat` first, `co64` + `stz2` + one sample per chunk; layered images: `--progressive` (4:2:0, identity-matrix 10-bit, with a layered alpha item), `--layered` with 2, 3 and 4 quality layers (4:2:0 limited range, identity, monochrome 12-bit), three layers of growing sizes (4:2:2 10-bit), a second layer that is another picture, coded losslessly; `lsel` 0xFFFF, 0, 1, 2 and 3, `a1op` 0, 1 and 2, both together, a selected frame smaller than the last layer (`ispe` of its size) by `lsel` and by `a1op`, `lsel` on 4:2:0 content; a grid of two layered tiles, grids whose tiles select their own layer and their own operating point; a sequence of two layered samples |
+| AVIF errors | invalid: truncated `meta` box and item data, a box smaller than its header, a child box larger than its parent, no file type box and no AVIF brand (unknown format), no `pitm`, primary item, `ispe` or `av1C`, two `meta` boxes, item data outside the file and outside `idat`, `ispe` and `av1C` contradicting the bitstream, an `a1op` operating point the sequence header does not have (one and three operating points), an `lsel` layer the bitstream does not have (one and three layers) or that its operating point does not have, layer 4, a selected frame of another size than `ispe`, `lsel` and `a1op` on a grid item, grids (tile count, descriptor size, tile sizes), a sequence without AV1 track, with an edit whose media time is negative or that shows no image, with a `moof` box that the `moov` box does not announce, with a fragment that lacks the alpha plane of an image, without chunk offsets, truncated, with a malformed `meta` box in its track, with a metadata item of its track or of the file located after the end of the file; an identity derivation with two input images, with an input that does not exist, derived from itself, or of another size than its input; an overlay whose descriptor declares another size than its `ispe` property or lacks an offset, a derived image that is its own input, a grid of derived tiles of two sizes; unsupported: an overlay whose visible fill color would have to be converted to the color space of the image, an alpha plane for an overlay itself, an overlay of images of two color spaces, of two ICC profiles, or whose input image has another color space in its bitstream than the overlay declares, nine nested identity derivations (of a coded image and of an overlay), an untransformed alpha plane for an identity derivation that has a clean aperture, fractional `clap`, an essential unknown property, reserved matrix coefficients, ICtCp matrix coefficients with other transfer characteristics than PQ and HLG, chromaticity-derived constant luminance matrix coefficients with unspecified primaries, an alpha plane of another size, a `moof` box before the `moov` box, fragments that do not follow each other, with composition time offsets or whose samples precede them, a fragmented sequence whose edit list selects a part of its media, edit lists with an empty edit, with a media rate of 2 or of 0, with edits that are not in the order of the media or that overlap, an alpha track whose edit is not the one of its color track, constant luminance matrix coefficients with unspecified transfer characteristics in the sample entry of a sequence, a grid tile that declares another rotation than its grid, a sequence whose images change size; limits: width, height, frame pixels, encoded bytes, live allocations, metadata bytes (ICC, then Exif; the XMP packet of a sequence), sequence frames, displayed pixels, frames that are decoded without being shown, and the lower layers of a layered image |
 | HEIC | lossless identity-matrix RGB at 8, 10 and 12 bits, monochrome (lossless and lossy, at 8, 10 and 12 bits, full and limited range), alpha at 8, 10 and 12 bits (monochrome and 4:2:0 alpha pictures, both auxiliary types, a limited-range alpha plane, hidden colors kept), gray + alpha; lossy 4:4:4, 4:2:2 and 4:2:0 with the BT.709, BT.470BG, BT.601, YCgCo and BT.2020 matrices and unspecified coefficients, in full and limited range, at 8, 10 (HDR 9/16/9) and 12 bits; 4:2:0 at the default chroma sample location and at each signalled one (0, 1, 2); sizes 1x1, odd sizes, 33x17, 64x64, 67x65; pictures of 64x64 under a clean aperture (`heif-enc`) and pictures with a conformance window (x265), a window that removes more than the padding, and both together; files without `colr` box whose bitstream has a color description, a range only or no video signal description, a `colr` box that overrides the bitstream, an ICC profile with and without `nclx`; lossless 2x2 and 3x2 grids (the second cropped below its tiles), a grid cropped by its descriptor, 10-bit and 4:2:0 grids, a grid with an alpha grid, the layout of a phone (grid, rotation, ICC profile, Exif item, hidden thumbnail and depth map) at 8 and 10 bits; `irot` 1-3, `imir` 0-1 and both, a clean aperture followed by a rotation and one at an odd position of 4:2:0 content; Exif (whose orientation tag contradicts `irot`) and XMP; configuration records with NAL unit lengths of 1 and 2 bytes, two parameter sets of each type, incomplete arrays, and parameter sets in the coded data only; assembled layouts (`layout-*`, generic and AVIF brands); sequences: lossless intra pictures played three times, lossless P pictures repeated forever, B pictures whose composition offsets reorder the samples (`heif-enc` and x265, with an edit list that starts at the first presentation time, without edit list, under an `hev1` sample entry with the parameter sets in the first sample, with two-byte NAL unit lengths), an alpha track, 10-bit, monochrome, 4:2:0 and 4:2:2 images, pictures with a conformance window, a clean aperture in the sample entry (an odd size, and an offset on a color and an alpha track), `mdat` first, `co64` + `stz2` + one sample per chunk, chunks written in reverse order, generic and AVIF brands, Exif and XMP in the `meta` box of the file after the samples and in the `idat` box of the `meta` box of the track |
 | HEIC errors | invalid: truncated `meta` box and item data, a child box larger than its parent, no file type box (unknown format), no `pitm`, `ispe` or `hvcC`, item data outside the file, `ispe` contradicting the picture, an `hvcC` record that is truncated, reserves its length size or contradicts its sequence parameter set (bit depth, chroma format), an item with no picture, with two pictures, whose picture is not an intra random access point, whose NAL unit lengths exceed or do not fill its data, whose slice data are truncated or are random bytes, grids (tile count, a tile that does not exist, descriptor size, tile sizes), a sequence without HEVC track, without chunk offsets, truncated, with two samples at one composition time, with a missing reference picture, with a record that contradicts its bitstream, with a malformed `meta` box in its track; unsupported: an `hvc1` item under the brands of AVIF and an `av01` item under the brands of HEIC, `lhv1` items and layer selectors, an `hvcC` record of another version, premultiplied alpha, `iden`/`iovl` derived images, a grid whose tiles have a `clap` property (as `heif-enc` writes small tiles), fractional `clap`, an essential unknown property, ICtCp matrix coefficients, an alpha plane of another size, 16-bit samples, luma and chroma planes of different depths, extended precision processing, `chroma_sample_loc_type` 3, `moof`, an edit that starts after the first image, a sequence whose pictures do not have the size of its sample entry (assembled, and as `heif-enc` writes small images); limits: width, height, frame pixels (of the image, and of the picture under a clean aperture), encoded bytes, live allocations, metadata bytes (ICC, then Exif; the items of a sequence), sequence frames and displayed pixels |
 | JPEG XL | lossless (Modular): gray, gray + alpha, RGB and RGBA at 8 and 16 bits, 12-bit samples scaled to 16 bits, efforts 1 and 9, an image of few colors (palette), a responsive image (squeeze), four groups of 128x128 samples, a bare codestream and a container; metadata: Exif and XMP boxes, plain and compressed (`brob`), ICC profiles (RGB and gray) in the codestream, the linear transfer function, enumerated color encodings with code points (Display P3, BT.2100 PQ, gray BT.709), orientation 6 in the image header; containers assembled around one codestream: three `jxlp` parts, a 64-bit box size, a box that extends to the end of the file, unknown boxes, metadata after the codestream; lossy (references decoded by djxl): VarDCT RGB, RGBA, gray and 16-bit, effort 3, large transforms on a smooth image, progressive passes with a permuted table of contents, an LF frame, noise, patches, a frame upsampled by 2, a lossy Modular frame, without and with strong restoration filters, JPEG files recompressed without loss (4:2:0, 4:2:2, 4:4:4, gray), a spline; animations: full frames at 10 ticks per second, 30000/1001 ticks per second, a layer without duration and a cropped frame, a multiplied frame, an alpha animation played three times |
@@ -723,7 +764,7 @@ follows it, so keep both headings unique in this file.
 
 | Format | Valid | Invalid | Unsupported | Limit |
 | --- | --- | --- | --- | --- |
-| avif | 139 | 33 | 14 | 12 |
+| avif | 189 | 45 | 28 | 12 |
 | bmp | 24 | 21 | 4 | 2 |
 | gif | 24 | 15 | 1 | 2 |
 | heic | 117 | 31 | 21 | 11 |
@@ -989,79 +1030,96 @@ follows it, so keep both headings unique in this file.
 | Netpbm bytes after the first image (not read) | `pnm.trailingData` | 3 | 0 | 0 | 0 |
 | Netpbm odd width | `pnm.width=odd` | 15 | 0 | 0 | 2 |
 | Netpbm unsupported PAM tuple type (rejected) | `pnm.unsupported=tuple-type` | 0 | 0 | 1 | 0 |
-| AVIF 8-bit samples | `avif.bitDepth=8` | 103 | 0 | 0 | 0 |
-| AVIF 10-bit samples | `avif.bitDepth=10` | 22 | 0 | 0 | 0 |
-| AVIF 12-bit samples | `avif.bitDepth=12` | 14 | 0 | 0 | 0 |
-| AVIF 4:2:0, 10-bit | `avif.subsampling=4:2:0` + `avif.bitDepth=10` | 5 | 0 | 0 | 0 |
+| AVIF 8-bit samples | `avif.bitDepth=8` | 135 | 0 | 0 | 0 |
+| AVIF 10-bit samples | `avif.bitDepth=10` | 30 | 0 | 0 | 0 |
+| AVIF 12-bit samples | `avif.bitDepth=12` | 16 | 0 | 0 | 0 |
+| AVIF 4:2:0, 10-bit | `avif.subsampling=4:2:0` + `avif.bitDepth=10` | 10 | 0 | 0 | 0 |
 | AVIF 4:2:0, 12-bit | `avif.subsampling=4:2:0` + `avif.bitDepth=12` | 4 | 0 | 0 | 0 |
-| AVIF 4:4:4 | `avif.subsampling=4:4:4` | 71 | 0 | 0 | 0 |
+| AVIF 4:4:4 | `avif.subsampling=4:4:4` | 102 | 0 | 0 | 0 |
 | AVIF 4:2:2 | `avif.subsampling=4:2:2` | 17 | 0 | 0 | 0 |
-| AVIF 4:2:0 | `avif.subsampling=4:2:0` | 37 | 0 | 0 | 0 |
+| AVIF 4:2:0 | `avif.subsampling=4:2:0` | 47 | 0 | 0 | 0 |
 | AVIF monochrome | `avif.subsampling=4:0:0` | 14 | 0 | 0 | 0 |
 | AVIF monochrome, 10-bit | `avif.subsampling=4:0:0` + `avif.bitDepth=10` | 4 | 0 | 0 | 0 |
 | AVIF monochrome, 12-bit | `avif.subsampling=4:0:0` + `avif.bitDepth=12` | 4 | 0 | 0 | 0 |
 | AVIF monochrome, limited range | `avif.subsampling=4:0:0` + `avif.range=limited` | 2 | 0 | 0 | 0 |
-| AVIF identity matrix (RGB planes) | `avif.matrix=0` | 59 | 0 | 0 | 0 |
+| AVIF identity matrix (RGB planes) | `avif.matrix=0` | 79 | 0 | 0 | 0 |
 | AVIF BT.709 matrix | `avif.matrix=1` | 15 | 0 | 0 | 0 |
 | AVIF unspecified matrix (BT.601) | `avif.matrix=2` | 5 | 0 | 0 | 0 |
 | AVIF FCC matrix | `avif.matrix=4` | 2 | 0 | 0 | 0 |
 | AVIF BT.470BG matrix | `avif.matrix=5` | 2 | 0 | 0 | 0 |
-| AVIF BT.601 matrix | `avif.matrix=6` | 30 | 0 | 0 | 0 |
+| AVIF BT.601 matrix | `avif.matrix=6` | 38 | 0 | 0 | 0 |
 | AVIF SMPTE 240M matrix | `avif.matrix=7` | 2 | 0 | 0 | 0 |
 | AVIF YCgCo matrix | `avif.matrix=8` | 3 | 0 | 0 | 0 |
-| AVIF BT.2020 non-constant luminance matrix | `avif.matrix=9` | 7 | 0 | 0 | 0 |
-| AVIF BT.2020 matrix, limited range | `avif.matrix=9` + `avif.range=limited` | 3 | 0 | 0 | 0 |
+| AVIF BT.2020 non-constant luminance matrix | `avif.matrix=9` | 10 | 0 | 0 | 0 |
+| AVIF SMPTE ST 2085 matrix | `avif.matrix=11` | 1 | 0 | 0 | 0 |
+| AVIF chromaticity-derived non-constant luminance matrix | `avif.matrix=12` | 2 | 0 | 0 | 0 |
+| AVIF chromaticity-derived matrix, limited range, 10-bit | `avif.matrix=12` + `avif.range=limited` + `avif.bitDepth=10` | 1 | 0 | 0 | 0 |
+| AVIF BT.2020 constant luminance matrix | `avif.matrix=10` | 2 | 0 | 0 | 0 |
+| AVIF chromaticity-derived constant luminance matrix | `avif.matrix=13` | 1 | 0 | 0 | 0 |
+| AVIF ICtCp (PQ and HLG) | `avif.matrix=14` | 4 | 0 | 0 | 0 |
+| AVIF ICtCp, limited range, in an image sequence | `avif.matrix=14` + `avif.range=limited` + `avif.sequence` | 1 | 0 | 0 | 0 |
+| AVIF BT.2020 matrix, limited range | `avif.matrix=9` + `avif.range=limited` | 6 | 0 | 0 | 0 |
 | AVIF BT.2020 matrix, full range | `avif.matrix=9` + `avif.range=full` | 4 | 0 | 0 | 0 |
-| AVIF full range | `avif.range=full` | 115 | 0 | 0 | 0 |
-| AVIF limited range | `avif.range=limited` | 24 | 0 | 0 | 0 |
-| AVIF color description (`colr` `nclx`) | `avif.colr=nclx` | 131 | 0 | 0 | 0 |
+| AVIF full range | `avif.range=full` | 151 | 0 | 0 | 0 |
+| AVIF limited range | `avif.range=limited` | 29 | 0 | 0 | 0 |
+| AVIF color description (`colr` `nclx`) | `avif.colr=nclx` | 172 | 0 | 0 | 0 |
 | AVIF ICC profile (`colr` `prof`) | `avif.colr=icc` | 3 | 0 | 0 | 0 |
-| AVIF color description of the bitstream (no `colr`) | `avif.colr=none` | 7 | 0 | 0 | 0 |
+| AVIF color description of the bitstream (no `colr`) | `avif.colr=none` | 8 | 0 | 0 | 0 |
 | AVIF no `colr` box and media data first (a header identification cannot tell the color model) | `avif.colr=none` + `avif.layout=media-first` | 2 | 0 | 0 | 0 |
-| AVIF chroma samples on the luma columns | `avif.chromaSamplePosition=vertical` | 1 | 0 | 0 | 0 |
-| AVIF co-located chroma samples | `avif.chromaSamplePosition=colocated` | 1 | 0 | 0 | 0 |
-| AVIF lossless AV1 coding | `avif.lossless` | 45 | 0 | 0 | 0 |
+| AVIF chroma samples on the luma columns | `avif.chromaSamplePosition=vertical` | 3 | 0 | 0 | 0 |
+| AVIF co-located chroma samples | `avif.chromaSamplePosition=colocated` | 2 | 0 | 0 | 0 |
+| AVIF lossless AV1 coding | `avif.lossless` | 69 | 0 | 0 | 0 |
 | AVIF film grain | `avif.filmGrain` | 6 | 0 | 0 | 0 |
 | AVIF film grain, 4:2:2 | `avif.filmGrain` + `avif.subsampling=4:2:2` | 1 | 0 | 0 | 0 |
 | AVIF film grain, 4:4:4 | `avif.filmGrain` + `avif.subsampling=4:4:4` | 1 | 0 | 0 | 0 |
 | AVIF film grain, 12-bit | `avif.filmGrain` + `avif.bitDepth=12` | 1 | 0 | 0 | 0 |
 | AVIF film grain under an alpha plane | `avif.filmGrain` + `avif.alpha` | 1 | 0 | 0 | 0 |
-| AVIF alpha (auxiliary image or track) | `avif.alpha` | 19 | 0 | 0 | 0 |
-| AVIF alpha, 10-bit | `avif.alpha` + `avif.bitDepth=10` | 4 | 0 | 0 | 0 |
+| AVIF alpha (auxiliary image or track) | `avif.alpha` | 39 | 0 | 0 | 0 |
+| AVIF alpha, 10-bit | `avif.alpha` + `avif.bitDepth=10` | 6 | 0 | 0 | 0 |
 | AVIF alpha, 12-bit | `avif.alpha` + `avif.bitDepth=12` | 2 | 0 | 0 | 0 |
 | AVIF alpha under limited-range colors | `avif.alpha` + `avif.range=limited` | 1 | 0 | 0 | 0 |
-| AVIF grids | `avif.grid` | 11 | 0 | 0 | 0 |
+| AVIF premultiplied alpha (`prem` reference) | `avif.premultiplied` | 4 | 0 | 0 | 0 |
+| AVIF premultiplied alpha, 10-bit | `avif.premultiplied` + `avif.bitDepth=10` | 1 | 0 | 0 | 0 |
+| AVIF premultiplied alpha, matrixed colors | `avif.premultiplied` + `avif.matrix=6` | 2 | 0 | 0 | 0 |
+| AVIF sequence with premultiplied alpha (`prem` track reference) | `avif.sequence` + `avif.premultiplied` | 1 | 0 | 0 | 0 |
+| AVIF grids | `avif.grid` | 12 | 0 | 0 | 0 |
 | AVIF grid of 3 columns | `avif.grid=3x1` | 1 | 0 | 0 | 0 |
 | AVIF grid of 3 rows | `avif.grid=1x3` | 1 | 0 | 0 | 0 |
 | AVIF grid of 3 columns and 2 rows | `avif.grid=3x2` | 1 | 0 | 0 | 0 |
 | AVIF grid with an alpha grid | `avif.grid` + `avif.alpha` | 2 | 0 | 0 | 0 |
 | AVIF grid of 10-bit tiles | `avif.grid` + `avif.bitDepth=10` | 1 | 0 | 0 | 0 |
 | AVIF grid whose tiles repeat its transformations (as avifenc writes them) | `avif.gridTileTransforms` | 1 | 0 | 0 | 0 |
-| AVIF rotation (`irot`) | `avif.irot` | 9 | 0 | 0 | 0 |
-| AVIF mirror (`imir`) | `avif.imir` | 4 | 0 | 0 | 0 |
-| AVIF rotation and mirror | `avif.irot` + `avif.imir` | 2 | 0 | 0 | 0 |
-| AVIF clean aperture (`clap`) | `avif.clap` | 3 | 0 | 0 | 0 |
+| AVIF rotation (`irot`) | `avif.irot` | 16 | 0 | 0 | 0 |
+| AVIF mirror (`imir`) | `avif.imir` | 7 | 0 | 0 | 0 |
+| AVIF rotation and mirror | `avif.irot` + `avif.imir` | 4 | 0 | 0 | 0 |
+| AVIF clean aperture (`clap`) | `avif.clap` | 11 | 0 | 0 | 0 |
+| AVIF content light level (`clli`) | `avif.clli` | 3 | 0 | 0 | 0 |
+| AVIF mastering display color volume (`mdcv`) | `avif.mdcv` | 2 | 0 | 0 | 0 |
+| AVIF pixel aspect ratio (`pasp`) | `avif.pasp` | 2 | 0 | 0 | 0 |
+| AVIF sequence with a content light level, a mastering display and a pixel aspect ratio in its sample entry | `avif.sequence` + `avif.clli` + `avif.mdcv` + `avif.pasp` | 1 | 0 | 0 | 0 |
+| AVIF transformations that are not in the order of MIAF (applied in the order of their association) | `avif.transformOrder=association` | 2 | 0 | 0 | 0 |
+| AVIF clean aperture after a rotation or a mirroring | `avif.clap` + `avif.transformOrder=association` | 2 | 0 | 0 | 0 |
 | AVIF Exif item | `avif.metadata=exif` | 8 | 0 | 0 | 0 |
 | AVIF XMP item | `avif.metadata=xmp` | 10 | 0 | 0 | 0 |
-| AVIF major brand `avif` | `avif.majorBrand=avif` | 110 | 0 | 0 | 0 |
-| AVIF major brand `avis` | `avif.majorBrand=avis` | 28 | 0 | 0 | 0 |
+| AVIF major brand `avif` | `avif.majorBrand=avif` | 142 | 0 | 0 | 0 |
+| AVIF major brand `avis` | `avif.majorBrand=avis` | 46 | 0 | 0 | 0 |
 | AVIF major brand `mif1`, `avif` compatible | `avif.majorBrand=mif1` | 1 | 0 | 0 | 0 |
 | AVIF media data before their index | `avif.layout=media-first` | 4 | 0 | 0 | 0 |
 | AVIF item data in `idat` | `avif.idat` | 3 | 0 | 0 | 0 |
 | AVIF item in several extents | `avif.extents` | 9 | 0 | 0 | 0 |
 | AVIF `free` boxes | `avif.boxes=free` | 1 | 0 | 0 | 0 |
-| AVIF unknown boxes (skipped) | `avif.boxes=unknown` | 1 | 0 | 0 | 0 |
+| AVIF unknown boxes (skipped) | `avif.boxes=unknown` | 7 | 0 | 0 | 0 |
 | AVIF 64-bit box sizes | `avif.boxes=large-size` | 1 | 0 | 0 | 0 |
 | AVIF box that extends to the end of the file | `avif.boxes=to-end` | 1 | 0 | 0 | 0 |
 | AVIF bytes after the last item (not read) | `avif.trailingData` | 1 | 0 | 0 | 0 |
-| AVIF image sequences | `avif.sequence` | 28 | 0 | 0 | 0 |
-| AVIF sequence with inter frames | `avif.seq.interFrames` | 28 | 0 | 0 | 0 |
-| AVIF sequence with frames that are decoded without being shown | `avif.seq.hiddenFrames` | 7 | 0 | 0 | 0 |
+| AVIF image sequences | `avif.sequence` | 46 | 0 | 0 | 0 |
+| AVIF sequence with inter frames | `avif.seq.interFrames` | 46 | 0 | 0 | 0 |
+| AVIF sequence with frames that are decoded without being shown | `avif.seq.hiddenFrames` | 15 | 0 | 0 | 0 |
 | AVIF sequence, monochrome | `avif.sequence` + `avif.subsampling=4:0:0` | 2 | 0 | 0 | 0 |
 | AVIF sequence, 4:2:2 | `avif.sequence` + `avif.subsampling=4:2:2` | 1 | 0 | 0 | 0 |
-| AVIF sequence, 10-bit | `avif.sequence` + `avif.bitDepth=10` | 3 | 0 | 0 | 0 |
+| AVIF sequence, 10-bit | `avif.sequence` + `avif.bitDepth=10` | 6 | 0 | 0 | 0 |
 | AVIF sequence, 12-bit | `avif.sequence` + `avif.bitDepth=12` | 1 | 0 | 0 | 0 |
-| AVIF sequence with an alpha track | `avif.sequence` + `avif.alpha` | 6 | 0 | 0 | 0 |
+| AVIF sequence with an alpha track | `avif.sequence` + `avif.alpha` | 11 | 0 | 0 | 0 |
 | AVIF sequence with an ICC profile | `avif.sequence` + `avif.colr=icc` | 1 | 0 | 0 | 0 |
 | AVIF sequence with Exif data | `avif.sequence` + `avif.metadata=exif` | 6 | 0 | 0 | 0 |
 | AVIF sequence with an XMP packet | `avif.sequence` + `avif.metadata=xmp` | 8 | 0 | 0 | 0 |
@@ -1071,13 +1129,18 @@ follows it, so keep both headings unique in this file.
 | AVIF sequence metadata whose data follow the samples | `avif.seq.metadataAfterSamples` | 2 | 0 | 0 | 0 |
 | AVIF sequence whose file-level Exif and XMP items are not its metadata | `avif.seq.fileMetadataNotRead` | 2 | 0 | 0 | 0 |
 | AVIF sequence whose first sample is not the first one in the file | `avif.seq.samplesOutOfOrder` | 1 | 0 | 0 | 0 |
+| AVIF sequence whose track header matrix is an orientation | `avif.seq.matrix` | 2 | 0 | 0 | 0 |
+| AVIF sequence turned a quarter turn clockwise by its matrix | `avif.seq.matrix=6` | 1 | 0 | 0 | 0 |
+| AVIF sequence mirrored by its matrix | `avif.seq.matrix=2` | 1 | 0 | 0 | 0 |
+| AVIF sequence with a clean aperture in its sample entries | `avif.seq.clap` | 1 | 0 | 0 | 0 |
+| AVIF sequence with a clean aperture and a matrix on its alpha track too | `avif.seq.clap` + `avif.seq.matrix` + `avif.alpha` | 1 | 0 | 0 | 0 |
 | AVIF sequence without edit list (infinite) | `avif.seq.editList=none` | 2 | 0 | 0 | 0 |
-| AVIF sequence played once | `avif.seq.editList=once` | 2 | 0 | 0 | 0 |
-| AVIF sequence repeated a number of times | `avif.seq.editList=repeat` | 6 | 0 | 0 | 0 |
-| AVIF sequence repeated forever (indefinite track duration) | `avif.seq.editList=repeat-indefinite` | 18 | 0 | 0 | 0 |
-| AVIF sample sizes in `stsz` | `avif.seq.sampleSizes=stsz` | 27 | 0 | 0 | 0 |
+| AVIF sequence played once | `avif.seq.editList=once` | 12 | 0 | 0 | 0 |
+| AVIF sequence repeated a number of times | `avif.seq.editList=repeat` | 11 | 0 | 0 | 0 |
+| AVIF sequence repeated forever (indefinite track duration) | `avif.seq.editList=repeat-indefinite` | 21 | 0 | 0 | 0 |
+| AVIF sample sizes in `stsz` | `avif.seq.sampleSizes=stsz` | 45 | 0 | 0 | 0 |
 | AVIF compact sample sizes (`stz2`) | `avif.seq.sampleSizes=stz2` | 1 | 0 | 0 | 0 |
-| AVIF chunk offsets in `stco` | `avif.seq.chunkOffsets=stco` | 27 | 0 | 0 | 0 |
+| AVIF chunk offsets in `stco` | `avif.seq.chunkOffsets=stco` | 45 | 0 | 0 | 0 |
 | AVIF 64-bit chunk offsets (`co64`) | `avif.seq.chunkOffsets=co64` | 1 | 0 | 0 | 0 |
 | AVIF layered images (a frame per spatial layer) | `avif.layers` | 24 | 0 | 0 | 0 |
 | AVIF layered image, 2 layers | `avif.layers=2` | 10 | 0 | 0 | 0 |
@@ -1107,15 +1170,41 @@ follows it, so keep both headings unique in this file.
 | AVIF `a1op` operating point 2 | `avif.a1op=2` | 2 | 0 | 0 | 0 |
 | AVIF `a1op` and `lsel` together | `avif.a1op` + `avif.lsel` | 1 | 0 | 0 | 0 |
 | AVIF grid whose tiles select their own layer or operating point | `avif.grid` + `avif.layers=3` | 2 | 0 | 0 | 0 |
-| AVIF premultiplied alpha (rejected) | `avif.unsupported=premultiplied-alpha` | 0 | 0 | 1 | 0 |
-| AVIF derived images other than grids (rejected) | `avif.unsupported=derived-image` | 0 | 0 | 2 | 0 |
+| AVIF identity derivation (`iden`) | `avif.iden=1` | 6 | 0 | 0 | 0 |
+| AVIF nested identity derivations | `avif.iden=2` | 1 | 0 | 0 | 0 |
+| AVIF identity derivation with transformations on it and on its input | `avif.iden` + `avif.clap` + `avif.irot=1` | 1 | 0 | 0 | 0 |
+| AVIF identity derivation with an alpha plane | `avif.iden` + `avif.alpha` | 3 | 0 | 0 | 0 |
+| AVIF identity derivation of a grid | `avif.iden` + `avif.grid=2x2` | 1 | 0 | 0 | 0 |
+| AVIF identity derivation of matrixed colors | `avif.iden` + `avif.matrix=6` | 1 | 0 | 0 | 0 |
+| AVIF overlay (`iovl`) | `avif.iovl` | 8 | 0 | 0 | 0 |
+| AVIF overlay, 10-bit, under an identity derivation | `avif.iovl` + `avif.bitDepth=10` + `avif.derived.iden` | 1 | 0 | 0 | 0 |
+| AVIF overlay with a clean aperture and a rotation | `avif.iovl` + `avif.clap` + `avif.irot=1` | 1 | 0 | 0 | 0 |
+| AVIF grid of derived images | `avif.derived.grid` | 1 | 0 | 0 | 0 |
+| AVIF identity derivation inside an image that is built | `avif.derived.iden` | 3 | 0 | 0 | 0 |
+| AVIF image built from coded images that a matrix converts | `avif.derived.matrix=6` | 1 | 0 | 0 | 0 |
+| AVIF image built from other images, ICC profile of its input images | `avif.derived.colr=icc` | 1 | 0 | 0 | 0 |
+| AVIF image built from other images, color description of the bitstream | `avif.iovl` + `avif.colr=none` | 1 | 0 | 0 | 0 |
+| AVIF image built from other images (pixels of its coded images) | `avif.derived.inputPixels` | 9 | 0 | 0 | 0 |
+| AVIF derived images that are not supported (rejected) | `avif.unsupported=derived-image` | 0 | 0 | 5 | 0 |
+| AVIF more than eight nested derivations (rejected) | `avif.unsupported=derivation-depth` | 0 | 0 | 2 | 0 |
+| AVIF alpha plane that is not transformed as the color image (rejected) | `avif.unsupported=alpha-transform` | 0 | 0 | 1 | 0 |
 | AVIF grid tile that declares other transformations than its grid (rejected) | `avif.unsupported=grid-tile-transform` | 0 | 0 | 1 | 0 |
-| AVIF clean aperture that is fractional or follows a rotation (rejected) | `avif.unsupported=clap` | 0 | 0 | 2 | 0 |
+| AVIF clean aperture that does not select whole samples (rejected) | `avif.unsupported=clap` | 0 | 0 | 1 | 0 |
 | AVIF essential unknown property (rejected) | `avif.unsupported=essential-property` | 0 | 0 | 1 | 0 |
-| AVIF other matrix coefficients (rejected) | `avif.unsupported=matrix` | 0 | 0 | 2 | 0 |
+| AVIF matrix coefficients that are reserved, or that lack the transfer characteristics or the primaries they are defined with (rejected) | `avif.unsupported=matrix` | 0 | 0 | 4 | 0 |
 | AVIF alpha plane of another size (rejected) | `avif.unsupported=alpha-size` | 0 | 0 | 1 | 0 |
-| AVIF fragmented files (rejected) | `avif.unsupported=fragmented` | 0 | 0 | 1 | 0 |
-| AVIF edit list that does not play the whole track (rejected) | `avif.unsupported=edit-list` | 0 | 0 | 2 | 0 |
+| AVIF fragmented sequence | `avif.seq.fragments` | 6 | 0 | 0 | 0 |
+| AVIF fragmented sequence, three fragments | `avif.seq.fragments=3` | 1 | 0 | 0 | 0 |
+| AVIF fragmented sequence with alpha | `avif.seq.fragments` + `avif.alpha` | 2 | 0 | 0 | 0 |
+| AVIF fragmented sequence, 10-bit | `avif.seq.fragments` + `avif.bitDepth=10` | 1 | 0 | 0 | 0 |
+| AVIF movie fragments that are not supported (rejected) | `avif.unsupported=fragmented` | 0 | 0 | 5 | 0 |
+| AVIF edit list with several edits | `avif.seq.edits` | 3 | 0 | 0 | 0 |
+| AVIF edit list that leaves images out | `avif.seq.imagesLeftOut` | 3 | 0 | 0 | 0 |
+| AVIF edit list that shows images for a part of their duration | `avif.seq.partialDurations` | 4 | 0 | 0 | 0 |
+| AVIF edit list that leaves out an image the next ones refer to | `avif.seq.imagesLeftOut` + `avif.seq.interFrames` + `avif.seq.edits=2` | 2 | 0 | 0 | 0 |
+| AVIF edit list of a sequence with alpha | `avif.seq.partialDurations` + `avif.alpha` | 1 | 0 | 0 | 0 |
+| AVIF edit list that does not play the media forward at its rate (rejected) | `avif.unsupported=edit-list` | 0 | 0 | 5 | 0 |
+| AVIF alpha track with another edit list than the color track (rejected) | `avif.unsupported=alpha-edit-list` | 0 | 0 | 1 | 0 |
 | AVIF sequence whose images change size (rejected) | `avif.unsupported=size-change` | 0 | 0 | 1 | 0 |
 | HEIC 8-bit samples | `heic.bitDepth=8` | 96 | 0 | 0 | 0 |
 | HEIC 10-bit samples | `heic.bitDepth=10` | 15 | 0 | 0 | 0 |

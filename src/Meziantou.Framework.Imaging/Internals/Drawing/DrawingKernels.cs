@@ -50,8 +50,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// gray level three times.
 /// </para>
 /// <para>
-/// <b>Linear light.</b> When the paint is combined in linear light (<see cref="DrawingSource.IsLinear"/>), the samples
-/// are sRGB values: every color sample of the paint and of the pixel is decoded (<see cref="SrgbTransfer"/>), the
+/// <b>Linear light.</b> When the paint is combined in linear light (<see cref="DrawingSource.Transfer"/>), every
+/// color sample of the paint and of the pixel is decoded by the function of those transfer characteristics
+/// (<see cref="CicpTransfer"/>; sRGB for an image that declares no function), the
 /// blend mode and the operator are applied to the decoded colors with the formulas above, in double precision, and
 /// the color of the result is encoded and rounded to a sample as <c>floor(M v + 1/2 + 2^-20)</c>. The alpha is not a
 /// color: with <c>k = q / Q</c> and the factors as fractions of one, <c>S = k fa sa</c>,
@@ -193,7 +194,7 @@ internal static class DrawingKernels
     internal static void Composite<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst = false)
         where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
     {
-        if (source.IsLinear)
+        if (source.Transfer != 0)
         {
             CompositeLinear(samples, channels, coverage, source, isBlueFirst);
             return;
@@ -445,14 +446,15 @@ internal static class DrawingKernels
         }
     }
 
-    /// <summary>Combines a paint with interleaved sRGB samples in linear light: any blend mode, any operator.</summary>
+    /// <summary>Combines a paint with interleaved samples in the linear light their transfer function decodes them to: any blend mode, any operator.</summary>
     private static void CompositeLinear<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst)
         where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
     {
         const double Full = CoverageRasterizer.FullCoverage;
         var maxSample = int.CreateTruncating(TSample.MaxValue);
         var max = (double)maxSample;
-        var decode = maxSample == byte.MaxValue ? SrgbTransfer.Decode8 : SrgbTransfer.Decode16;
+        var transfer = source.Transfer;
+        var decode = maxSample == byte.MaxValue ? CicpTransfer.GetDecode8(transfer) : CicpTransfer.GetDecode16(transfer);
         var colorChannels = channels == 4 ? 3 : channels;
         var mode = source.Mode;
         var blend = source.Blend;
@@ -550,13 +552,13 @@ internal static class DrawingKernels
                 // No alpha to store: the color of the result over black
                 if (colorChannels == 1)
                 {
-                    pixel[0] = ToSample((s[0] * sourceWeight) + (d[0] * destinationWeight), max);
+                    pixel[0] = ToSample((s[0] * sourceWeight) + (d[0] * destinationWeight), max, transfer);
                 }
                 else
                 {
-                    pixel[red] = ToSample((s[0] * sourceWeight) + (d[0] * destinationWeight), max);
-                    pixel[1] = ToSample((s[1] * sourceWeight) + (d[1] * destinationWeight), max);
-                    pixel[blue] = ToSample((s[2] * sourceWeight) + (d[2] * destinationWeight), max);
+                    pixel[red] = ToSample((s[0] * sourceWeight) + (d[0] * destinationWeight), max, transfer);
+                    pixel[1] = ToSample((s[1] * sourceWeight) + (d[1] * destinationWeight), max, transfer);
+                    pixel[blue] = ToSample((s[2] * sourceWeight) + (d[2] * destinationWeight), max, transfer);
                 }
 
                 continue;
@@ -574,16 +576,16 @@ internal static class DrawingKernels
                 continue;
             }
 
-            pixel[red] = ToSample(((s[0] * sourceWeight) + (d[0] * destinationWeight)) / total, max);
-            pixel[1] = ToSample(((s[1] * sourceWeight) + (d[1] * destinationWeight)) / total, max);
-            pixel[blue] = ToSample(((s[2] * sourceWeight) + (d[2] * destinationWeight)) / total, max);
+            pixel[red] = ToSample(((s[0] * sourceWeight) + (d[0] * destinationWeight)) / total, max, transfer);
+            pixel[1] = ToSample(((s[1] * sourceWeight) + (d[1] * destinationWeight)) / total, max, transfer);
+            pixel[blue] = ToSample(((s[2] * sourceWeight) + (d[2] * destinationWeight)) / total, max, transfer);
             pixel[3] = TSample.CreateTruncating(alpha >= max ? max : alpha);
         }
 
-        // Written so that a value that is not a number is zero
-        static TSample ToSample(double linear, double max)
+        // The encoding is clipped to the samples, and a value that is not a number is zero
+        static TSample ToSample(double linear, double max, byte transfer)
         {
-            var encoded = linear > 0 ? SrgbTransfer.Encode(linear < 1 ? linear : 1) : 0;
+            var encoded = CicpTransfer.Encode(transfer, linear);
             var rounded = Math.Floor((encoded * max) + 0.5 + (1.0 / 1048576));
             return TSample.CreateTruncating(rounded >= max ? max : rounded > 0 ? rounded : 0);
         }

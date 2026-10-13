@@ -3,6 +3,7 @@ using System.Text;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
 using Meziantou.Framework.Imaging.TestHarness.Heif;
+using Meziantou.Framework.Imaging.TestHarness.Color;
 
 namespace Meziantou.Framework.Imaging.CorpusGenerator;
 
@@ -100,6 +101,103 @@ internal static partial class AvifCorpus
             return alpha ? color.Append(cx == cy ? 0 : 255 - (40 * ((cx + cy) % 4))) : color;
         });
         return new Img(w, h, alpha ? "rgba" : "rgb", 8, pixels);
+    }
+
+    /// <summary>
+    /// A YUV4MPEG2 frame of full-range 4:4:4 samples that are the R'G'B' pattern, converted with the equations of ITU-T
+    /// H.273 for the constant luminance (10 and 13) and ICtCp (14) matrix coefficients: the forward conversion, in
+    /// <see cref="decimal"/> arithmetic, of which the decoders compute the inverse. avifenc keeps the planes.
+    /// </summary>
+    private static byte[] Y4mThroughTransfer(Img pattern, int bits, int primaries, int transfer, int matrix)
+    {
+        var (w, h) = (pattern.Width, pattern.Height);
+        var patternMaximum = (decimal)((1 << pattern.Depth) - 1);
+        var maximum = (1 << bits) - 1;
+        var planes = new int[3][];
+        for (var plane = 0; plane < 3; plane++)
+            planes[plane] = new int[w * h];
+
+        for (var i = 0; i < w * h; i++)
+        {
+            var pixel = pattern.Pixels[i];
+            var (r, g, b) = (pixel[0] / patternMaximum, pixel[1] / patternMaximum, pixel[2] / patternMaximum);
+            var (linearR, linearG, linearB) = (ReferenceCicpTransfer.Decode(transfer, r), ReferenceCicpTransfer.Decode(transfer, g), ReferenceCicpTransfer.Decode(transfer, b));
+            decimal ey;
+            decimal epb;
+            decimal epr;
+            if (matrix == 14)
+            {
+                // Rec. ITU-R BT.2100, table 7: L, M and S from the linear colors, then I, CT and CP from L', M' and S'
+                var l = ReferenceCicpTransfer.Encode(transfer, ((1688 * linearR) + (2146 * linearG) + (262 * linearB)) / 4096);
+                var m = ReferenceCicpTransfer.Encode(transfer, ((683 * linearR) + (2951 * linearG) + (462 * linearB)) / 4096);
+                var s = ReferenceCicpTransfer.Encode(transfer, ((99 * linearR) + (309 * linearG) + (3688 * linearB)) / 4096);
+                ey = (l + m) / 2;
+                (epb, epr) = transfer == 18
+                    ? (((3625 * l) - (7465 * m) + (3840 * s)) / 4096, ((9500 * l) - (9212 * m) - (288 * s)) / 4096)
+                    : (((6610 * l) - (13613 * m) + (7003 * s)) / 4096, ((17933 * l) - (17390 * m) - (543 * s)) / 4096);
+            }
+            else
+            {
+                // ITU-T H.273, equations of the constant luminance: the luminance is encoded, not the colors
+                var (kr, kb) = matrix == 10 ? (0.2627m, 0.0593m) : LuminanceWeights(primaries);
+                ey = ReferenceCicpTransfer.Encode(transfer, (kr * linearR) + ((1 - kr - kb) * linearG) + (kb * linearB));
+                epb = b - ey <= 0 ? (b - ey) / (2 * ReferenceCicpTransfer.Encode(transfer, 1 - kb)) : (b - ey) / (2 * (1 - ReferenceCicpTransfer.Encode(transfer, kb)));
+                epr = r - ey <= 0 ? (r - ey) / (2 * ReferenceCicpTransfer.Encode(transfer, 1 - kr)) : (r - ey) / (2 * (1 - ReferenceCicpTransfer.Encode(transfer, kr)));
+            }
+
+            planes[0][i] = Quantize(ey * maximum);
+            planes[1][i] = Quantize((epb * maximum) + (1 << (bits - 1)));
+            planes[2][i] = Quantize((epr * maximum) + (1 << (bits - 1)));
+        }
+
+        var builder = new ByteBuilder().Ascii(Inv($"YUV4MPEG2 W{w} H{h} F1:1 Ip A1:1 C444{(bits == 8 ? "" : Inv($"p{bits}"))} XCOLORRANGE=FULL\nFRAME\n"));
+        foreach (var plane in planes)
+        {
+            foreach (var sample in plane)
+            {
+                if (bits == 8)
+                    builder.U8(sample);
+                else
+                    builder.U16LE(sample);
+            }
+        }
+
+        return builder.ToArray();
+
+        int Quantize(decimal value) => (int)Math.Clamp(Math.Floor(value + 0.5m), 0, maximum);
+
+        static (decimal Kr, decimal Kb) LuminanceWeights(int primaries)
+        {
+            var (kr, kb, denominator) = ReferenceYuvConverter.GetLuminanceWeights(primaries) ?? throw new ToolException("the primaries have no chromaticities.");
+            return ((decimal)kr / (decimal)denominator, (decimal)kb / (decimal)denominator);
+        }
+    }
+
+    /// <summary>The pattern with its samples moved to a part of the range.</summary>
+    private static Img Confine(Img pattern, int low, int high) =>
+        new(pattern.Width, pattern.Height, "rgb", pattern.Depth, pattern.Pixels.Select(pixel => new Px(low + (pixel[0] * (high - low) / 255), low + (pixel[1] * (high - low) / 255), low + (pixel[2] * (high - low) / 255))));
+
+    /// <summary>
+    /// A still image whose planes are a pattern converted through the transfer characteristics, coded without loss: the
+    /// conversion of the planes gives the pattern back, up to the quantization of the planes.
+    /// </summary>
+    private static void StillThroughTransfer(ContainerContext context, string name, Img pattern, int bits, int primaries, int transfer, int matrix, int tolerance, string[] requires, string notes)
+    {
+        var depth = bits == 8 ? "" : Inv($" -d {bits}");
+        var reference = Still(context, name, Y4mThroughTransfer(pattern, bits, primaries, transfer, matrix), Inv($"-q 100{depth} --cicp {primaries}/{transfer}/{matrix}"), requires, sourceName: "source.y4m", notes: notes);
+        var decoded = reference.Frames[0];
+        var scale = decoded.Depth == pattern.Depth ? 1 : 257;
+        var worst = 0;
+        for (var i = 0; i < pattern.Pixels.Count; i++)
+        {
+            for (var channel = 0; channel < 3; channel++)
+                worst = Math.Max(worst, Math.Abs(decoded.Pixels[i][channel] - (pattern.Pixels[i][channel] * scale)));
+        }
+
+        // The planes are rounded to their depth, and the conversion amplifies that where the transfer function is steep:
+        // the bound of each fixture is about twice the difference that was measured (78, 1, 31 and 22)
+        if (worst > tolerance)
+            throw new FatalException(Inv($"avif/{name}: the planes do not convert back to their source pattern (a sample is {worst} away, more than {tolerance})."));
     }
 
     /// <summary>A YUV4MPEG2 frame of full-range 4:2:0 samples: avifenc keeps the planes and the chroma sample position.</summary>
@@ -204,6 +302,56 @@ internal static partial class AvifCorpus
         Still(context, "lossy-420-chroma-vertical", Y4m(8, 8, "420mpeg2"), "-q 70 --cicp 1/13/6", ["avif.chromaSamplePosition=vertical"], sourceName: "source.y4m");
         Still(context, "lossy-420-chroma-colocated", Y4m(8, 8, "420paldv"), "-q 70 --cicp 1/13/6", ["avif.chromaSamplePosition=colocated"], sourceName: "source.y4m");
         Still(context, "lossy-420-alpha", Png(WithAlpha(smooth)), "-q 70 --qalpha 70 -y 420 --cicp 1/13/6", ["avif.alpha", "avif.matrix=6", "avif.subsampling=4:2:0"]);
+
+        // The matrices whose coefficients are not a line of table 4: the chromaticity-derived coefficients (12), which are
+        // the luminance of the primaries that the file declares (libavif converts with them), and the SMPTE ST 2085
+        // coefficients (11), which libavif has no conversion for (avifenc labels the planes of a y4m source)
+        Still(context, "lossy-444-chromaticity-bt2020", Png(CommonCorpus.PatternSmoothColor(8, 6)), "-q 70 -y 444 --cicp 9/14/12", ["avif.matrix=12", "avif.subsampling=4:4:4"],
+            notes: "Chromaticity-derived matrix coefficients with the BT.2020 primaries: KR and KB are the luminance of the red and of the blue primary.");
+        Still(context, "lossy-420-chromaticity-p3-limited-10bit", Png(DeepColor(8, 6, 10)), "-q 70 -d 10 -y 420 --cicp 12/13/12 -r limited", ["avif.matrix=12", "avif.range=limited", "avif.bitDepth=10", "avif.subsampling=4:2:0"],
+            notes: "Chromaticity-derived matrix coefficients with the Display P3 primaries, in limited range.");
+        Still(context, "lossy-420-smpte2085", Y4m(8, 6, "420mpeg2"), "-q 70 --cicp 9/16/11", ["avif.matrix=11", "avif.subsampling=4:2:0"], sourceName: "source.y4m",
+            notes: "SMPTE ST 2085 matrix coefficients (Y'D'zD'x): the planes of a y4m source that avifenc labels without converting them.");
+
+        // The matrix coefficients that go through the transfer characteristics: constant luminance (10: BT.2020; 13: of the
+        // primaries) and ICtCp (14: PQ and HLG). No tool converts them: avifenc labels the planes of a y4m source, which are
+        // either a pattern converted with the forward equations and coded without loss, or arbitrary planes coded with loss
+        var transferPattern = CommonCorpus.PatternSmoothColor(8, 6);
+        StillThroughTransfer(context, "lossless-444-bt2020-constant-luminance-10bit", transferPattern, 10, 9, 14, 10, 128, ["avif.matrix=10", "avif.lossless", "avif.bitDepth=10"],
+            "BT.2020 constant luminance matrix coefficients: the luma is the transfer characteristics function of the luminance. The planes are a pattern converted with the forward equations of ITU-T H.273.");
+        StillThroughTransfer(context, "lossless-444-chromaticity-constant-luminance-p3", CommonCorpus.PatternDetailColor(8, 6, 3), 8, 12, 13, 13, 2, ["avif.matrix=13", "avif.lossless"],
+            "Chromaticity-derived constant luminance matrix coefficients with the Display P3 primaries and the sRGB transfer characteristics. The planes are a pattern converted with the forward equations of ITU-T H.273.");
+        // (ICtCp: a channel that is much darker than the other ones gets the rounding of the planes multiplied by the
+        // slope of the transfer function of the bright ones, so the pattern keeps away from black and has 12-bit planes)
+        StillThroughTransfer(context, "lossless-444-ictcp-pq-12bit", Confine(transferPattern, 128, 224), 12, 9, 16, 14, 64, ["avif.matrix=14", "avif.lossless", "avif.bitDepth=12"],
+            "ICtCp with the PQ transfer characteristics (Rec. ITU-R BT.2100). The planes are a pattern converted with the forward equations.");
+        StillThroughTransfer(context, "lossless-444-ictcp-hlg-12bit", Confine(CommonCorpus.PatternSmoothColor(6, 8), 128, 224), 12, 9, 18, 14, 64, ["avif.matrix=14", "avif.lossless", "avif.bitDepth=12"],
+            "ICtCp with the HLG transfer characteristics (Rec. ITU-R BT.2100), whose coefficients are not the ones of PQ. The planes are a pattern converted with the forward equations.");
+        Still(context, "lossy-420-bt2020-constant-luminance", Y4m(8, 6, "420mpeg2"), "-q 70 --cicp 9/14/10", ["avif.matrix=10", "avif.subsampling=4:2:0"], sourceName: "source.y4m",
+            notes: "BT.2020 constant luminance matrix coefficients on arbitrary 4:2:0 planes, which include colors outside of the gamut: they are clipped.");
+        Still(context, "lossy-420-ictcp-pq", Y4m(8, 6, "420paldv"), "-q 70 --cicp 9/16/14", ["avif.matrix=14", "avif.subsampling=4:2:0"], sourceName: "source.y4m",
+            notes: "ICtCp with the PQ transfer characteristics on arbitrary 4:2:0 planes, which include colors outside of the gamut: they are clipped.");
+
+        // Premultiplied alpha, as avifenc writes it (-p: a prem reference from the color image to its alpha plane): the
+        // colors are divided by the alpha once they are converted. Lossless content is exact; the lossy image is matrixed
+        var premultiplied = WithAlpha(CommonCorpus.PatternDetailColor(8, 6, 3));
+        Still(context, "premultiplied-alpha", Png(premultiplied), "-l -p", ["avif.premultiplied", "avif.alpha", "avif.lossless"],
+            notes: "Written by avifenc -p: a prem item reference declares that the colors are multiplied by the alpha of their pixel. The colors of the fully transparent pixels are black.");
+        Still(context, "premultiplied-alpha-10bit", Png(WithDeepAlpha(DeepColor(8, 6, 10), 10)), "-l -d 10 -p", ["avif.premultiplied", "avif.alpha", "avif.bitDepth=10"],
+            notes: "Premultiplied 10-bit colors: the division by the alpha is the one of the 16-bit samples.");
+        Still(context, "premultiplied-alpha-lossy-420", Png(WithAlpha(CommonCorpus.PatternSmoothColor(6, 8))), "-q 70 --qalpha 70 -y 420 --cicp 1/13/6 -p", ["avif.premultiplied", "avif.alpha", "avif.matrix=6", "avif.subsampling=4:2:0"],
+            notes: "Premultiplied colors that are matrixed and subsampled, under a lossy alpha plane: a color that the coding left above its alpha is clipped.");
+
+        // The boxes that describe how the samples are presented and change no pixel: the shape of the pixels and the
+        // light levels as avifenc writes them, then a mastering display, which no option of avifenc writes
+        Still(context, "lossy-420-pasp-clli", Png(CommonCorpus.PatternSmoothColor(8, 6)), "-q 70 -y 420 --cicp 1/13/6 --pasp 4,3 --clli 1000,400", ["avif.pasp", "avif.clli"],
+            notes: "A pixel aspect ratio of 4:3 and a content light level (MaxCLL 1000, MaxPALL 400 cd/m2): labels, which change no pixel.");
+        Assembled(context, "hdr-mastering-display", "lossy-420-bt2020-limited-10bit", builder =>
+        {
+            var item = builder.GetItem(builder.PrimaryItemId!.Value);
+            item.Associations.Add((builder.AddProperty(HeifFileBuilder.Box("clli", HeifFileBuilder.U16(4000), HeifFileBuilder.U16(1000))), false));
+            item.Associations.Add((builder.AddProperty(MasteringDisplayBox()), false));
+        }, ["avif.mdcv", "avif.clli", "avif.bitDepth=10"], "The mastering display color volume of an HDR image (BT.2020 primaries, D65, 0.005 to 4000 cd/m2) and its light levels: the mdcv box stores the primaries in the order green, blue, red.", "BuildStills");
 
         // (Matrixed content is subsampled wherever avifdec converts 4:4:4 samples exactly: a tolerance needs a measured
         // disagreement of an independent decoder, and the 4:4:4 conversions are checked matrix by matrix, within one unit,
@@ -314,6 +462,27 @@ internal static partial class AvifCorpus
             new Img(5, 4, "rgb", 8, CommonCorpus.Grid(5, 4, (x, y) => oriented.Pixels[((y + 1) * 8) + x + 2])));
         Still(context, "clap-420", Png(smooth), "-q 70 -y 420 --cicp 1/13/6 --crop 2,2,4,4", ["avif.clap", "avif.subsampling=4:2:0"]);
 
+        // Transformations that are not in the order of MIAF: they apply in the order of their association, so the aperture
+        // is a part of the image as the transformations before it present it. The pixels stay as they are coded, and the
+        // expected rectangles are derived by hand.
+        // A quarter turn anti-clockwise shows the 8x6 image as 6 columns and 8 rows, the column c of the result being
+        // the row c of the image and the row r of the result its column 7 - r. The centered 4x4 aperture is the columns
+        // 1 to 4 and the rows 2 to 5 of the result: the rows 1 to 4 and the columns 5 down to 2 of the image
+        var afterRotation = Assembled(context, "clap-after-irot", "irot-1", builder => builder.GetItem(1).Associations.Add((builder.AddProperty(HeifFileBuilder.CleanAperture(4, 1, 4, 1, 0, 1, 0, 1)), true)),
+            ["avif.clap", "avif.irot=1", "avif.transformOrder=association"], "The clap property is associated after the irot property: the aperture, 4x4 in the center of the rotated image (6x8), selects the samples (2, 1) to (5, 4) of the coded image.", "BuildStills");
+        AssertDecodesTo("clap-after-irot", afterRotation, new Img(4, 4, "rgb", 8, CommonCorpus.Grid(4, 4, (x, y) => oriented.Pixels[((y + 1) * 8) + x + 2])));
+
+        // The column c of the mirrored image is the column 7 - c of the image. The aperture, 5x4 at (2, 1) of the mirrored
+        // image (its center is half a sample right of the center), is the columns 5 down to 1 and the rows 1 to 4 of
+        // the image; the rotation that follows only changes the orientation
+        var afterMirror = Assembled(context, "clap-between-imir-irot", "imir-1", builder =>
+        {
+            var item = builder.GetItem(1);
+            item.Associations.Add((builder.AddProperty(HeifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1)), true));
+            item.Associations.Add((builder.AddProperty(HeifFileBuilder.Rotation(3)), true));
+        }, ["avif.clap", "avif.imir=1", "avif.irot=3", "avif.transformOrder=association"], "The properties are associated in the order imir, clap, irot: the aperture, 5x4 at (2, 1) of the mirrored image, selects the samples (1, 1) to (5, 4) of the coded image.", "BuildStills");
+        AssertDecodesTo("clap-between-imir-irot", afterMirror, new Img(5, 4, "rgb", 8, CommonCorpus.Grid(5, 4, (x, y) => oriented.Pixels[((y + 1) * 8) + x + 1])));
+
         // Metadata: the Exif orientation (6) is not the orientation of the image, which its irot property gives (avifenc
         // derives irot and imir from the Exif orientation unless they are given)
         var exif = CommonCorpus.ExifTiff(littleEndian: true, orientation: 6, software: "corpus generator");
@@ -358,6 +527,12 @@ internal static partial class AvifCorpus
         item.Associations[index] = (builder.AddProperty(box), item.Associations[index].IsEssential);
     }
 
+    // ISO/IEC 14496-12, section 12.1.7: the BT.2020 primaries in the order green, blue, red and the D65 white point, in
+    // units of 0.00002; 4000 and 0.005 cd/m2 in units of 0.0001
+    private static byte[] MasteringDisplayBox() => HeifFileBuilder.Box("mdcv",
+        HeifFileBuilder.U16(8500), HeifFileBuilder.U16(39850), HeifFileBuilder.U16(6550), HeifFileBuilder.U16(2300), HeifFileBuilder.U16(35400), HeifFileBuilder.U16(14600),
+        HeifFileBuilder.U16(15635), HeifFileBuilder.U16(16450), HeifFileBuilder.U32(40_000_000), HeifFileBuilder.U32(50));
+
     private static void RemoveProperty(HeifFileBuilder builder, HeifFileBuilder.Item item, string type)
     {
         var index = FindAssociation(builder, item, type);
@@ -372,6 +547,188 @@ internal static partial class AvifCorpus
         var builder = HeifFileBuilder.From(context.Inputs[source]);
         change(builder);
         return AddValidAvif(context, name, builder.Build(), "hand-authored", function, AssemblyTools(context), null, new Obj { ["payloadsOf"] = "avif/" + source }, notes, requires, source, sourceLayer);
+    }
+
+    /// <summary>
+    /// Makes an item the input of a new identity derivation (ISO/IEC 23008-12, section 6.6.2.1), which takes its
+    /// identifier: what referred to the item (the primary item, an alpha plane, the metadata) now refers to the derivation.
+    /// The input is hidden, as an image that is not meant to be displayed is (ISO/IEC 23008-12, section 6.4.2).
+    /// </summary>
+    /// <param name="builder">The file.</param>
+    /// <param name="id">The identifier of the item, which becomes the one of the derivation.</param>
+    /// <param name="inputId">The new identifier of the item.</param>
+    /// <param name="width">The width of the derivation: the one of its input, as the input is presented.</param>
+    /// <param name="height">The height of the derivation.</param>
+    /// <param name="describe">Whether the derivation gets the colr, pixi and auxC properties of its input.</param>
+    /// <param name="transforms">The transformative properties of the derivation, in order.</param>
+    private static HeifFileBuilder.Item WrapInIdentity(HeifFileBuilder builder, uint id, uint inputId, uint width, uint height, bool describe, params byte[][] transforms)
+    {
+        var input = builder.GetItem(id);
+        input.Id = inputId;
+        input.IsHidden = true;
+        for (var i = 0; i < builder.References.Count; i++)
+        {
+            // The inputs of the item are still its own
+            if (builder.References[i] is { Type: "dimg" } reference && reference.FromItemId == id)
+                builder.References[i] = (reference.Type, inputId, reference.ToItemIds);
+        }
+
+        var derived = builder.AddItem(id, "iden", []);
+        derived.Storage = HeifFileBuilder.ItemStorage.None;
+        derived.Associations.Add((builder.AddProperty(HeifFileBuilder.ImageSize(width, height)), false));
+        if (describe)
+        {
+            foreach (var association in input.Associations.Where(association => PropertyType(builder.Properties[association.PropertyIndex - 1]) is "colr" or "pixi" or "auxC"))
+                derived.Associations.Add(association);
+        }
+
+        foreach (var transform in transforms)
+            derived.Associations.Add((builder.AddProperty(transform), true));
+
+        builder.References.Add(("dimg", id, [inputId]));
+        return derived;
+    }
+
+    /// <summary>The clean aperture that shows a rectangle of whole samples of an image.</summary>
+    private static byte[] ApertureOf(int imageWidth, int imageHeight, int x, int y, int width, int height) =>
+        HeifFileBuilder.CleanAperture((uint)width, 1, (uint)height, 1, (2 * x) + width - imageWidth, 2, (2 * y) + height - imageHeight, 2);
+
+    /// <summary>
+    /// Adds a derived image item (ISO/IEC 23008-12, section 6.6): its size, its transformative properties, and its input
+    /// images. The data of a grid or of an overlay are its descriptor, stored in the <c>idat</c> box.
+    /// </summary>
+    private static HeifFileBuilder.Item AddDerivedItem(HeifFileBuilder builder, uint id, string type, byte[] data, uint width, uint height, uint[] inputs, params byte[][] transforms)
+    {
+        var item = builder.AddItem(id, type, data);
+        item.Storage = data.Length == 0 ? HeifFileBuilder.ItemStorage.None : HeifFileBuilder.ItemStorage.ItemData;
+        item.Associations.Add((builder.AddProperty(HeifFileBuilder.ImageSize(width, height)), false));
+        foreach (var transform in transforms)
+            item.Associations.Add((builder.AddProperty(transform), true));
+
+        builder.References.Add(("dimg", id, inputs));
+        return item;
+    }
+
+    /// <summary>
+    /// The descriptor of an overlay (section 6.6.2.2.2): version, flags, the fill color (red, green, blue and alpha, 16
+    /// bits each), the size of the canvas and the offset of each input image, in 16-bit fields.
+    /// </summary>
+    private static byte[] OverlayDescriptor((ushort R, ushort G, ushort B, ushort A) fill, ushort width, ushort height, params (int X, int Y)[] offsets) =>
+        HeifFileBuilder.Concat(
+            [0, 0], HeifFileBuilder.U16(fill.R), HeifFileBuilder.U16(fill.G), HeifFileBuilder.U16(fill.B), HeifFileBuilder.U16(fill.A), HeifFileBuilder.U16(width), HeifFileBuilder.U16(height),
+            HeifFileBuilder.Concat([.. offsets.Select(offset => HeifFileBuilder.Concat(HeifFileBuilder.U16(unchecked((ushort)(short)offset.X)), HeifFileBuilder.U16(unchecked((ushort)(short)offset.Y))))]));
+
+    /// <summary>Makes a derived item the primary item, and hides the images it is built from.</summary>
+    private static void Present(HeifFileBuilder builder, uint id)
+    {
+        builder.PrimaryItemId = id;
+        foreach (var item in builder.Items.Where(item => item.Id != id))
+            item.IsHidden = true;
+    }
+
+    private static void BuildDerivedImages(ContainerContext context)
+    {
+        const string Function = nameof(BuildDerivedImages);
+
+        // Overlays (iovl): the input images are composited on a canvas, in their order, each at its offset. The image has
+        // red, green, blue and alpha samples, whatever its input images are
+        Assembled(context, "iovl-alpha-layers", "lossless-rgba8", builder =>
+        {
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0xFFFF, 0x8000, 0x2000, 0xFFFF), 20, 14, (2, 1), (6, 4), (-4, 8), (15, -3)), 20, 14, [1, 1, 1, 1]);
+            Present(builder, 10);
+        }, ["avif.iovl", "avif.alpha"], "An overlay of 20x14 filled with an opaque orange, and the same 12x9 image with an alpha plane four times: at (2, 1), over itself at (6, 4), and across the left and the top edges of the canvas at (-4, 8) and (15, -3).", Function);
+        Assembled(context, "iovl-transparent-fill", "lossless-rgba8", builder =>
+        {
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0x1234, 0x5678, 0x9ABC, 0), 18, 13, (3, 2)), 18, 13, [1], ApertureOf(18, 13, 2, 1, 14, 10), HeifFileBuilder.Rotation(1));
+            Present(builder, 10);
+        }, ["avif.iovl", "avif.clap", "avif.irot=1"], "An overlay whose fill color is fully transparent: the canvas is transparent black where no image is. The overlay is the primary item: its clean aperture keeps 14x10 at (2, 1) and its rotation is the orientation of the image.", Function);
+        Assembled(context, "iovl-grid-and-iden-layers", "grid-2x2-lossless", builder =>
+        {
+            var grid = builder.PrimaryItemId!.Value;
+            var tile = builder.References.Single(reference => reference.Type == "dimg" && reference.FromItemId == grid).ToItemIds[0];
+            var next = builder.Items.Max(item => item.Id) + 1;
+            AddDerivedItem(builder, next, "iden", [], 64, 64, [tile], HeifFileBuilder.Rotation(1), ApertureOf(64, 64, 8, 8, 40, 30));
+            AddDerivedItem(builder, next + 1, "iovl", OverlayDescriptor((0, 0xFFFF, 0, 0x8000), 150, 140, (10, 5), (90, 100)), 150, 140, [grid, next]);
+            Present(builder, next + 1);
+        }, ["avif.iovl", "avif.derived.iden"], "An overlay of 150x140 filled with a half transparent green: a grid of four tiles at (10, 5), then an identity derivation of the first tile, turned a quarter turn and cropped to 40x30, at (90, 100).", Function);
+        Assembled(context, "grid-of-derived-images", "grid-2x2-lossless", builder =>
+        {
+            var grid = builder.PrimaryItemId!.Value;
+            var tiles = builder.References.Single(reference => reference.Type == "dimg" && reference.FromItemId == grid).ToItemIds;
+            var next = builder.Items.Max(item => item.Id) + 1;
+            AddDerivedItem(builder, next, "iden", [], 64, 64, [tiles[0]], HeifFileBuilder.Mirror(1));
+            AddDerivedItem(builder, next + 1, "iden", [], 64, 64, [tiles[3]], HeifFileBuilder.Rotation(2));
+            AddDerivedItem(builder, next + 2, "grid", HeifFileBuilder.GridDescriptor(1, 2, 120, 60), 120, 60, [next, next + 1], ApertureOf(120, 60, 10, 4, 100, 52), HeifFileBuilder.Mirror(0));
+            Present(builder, next + 2);
+        }, ["avif.derived.grid", "avif.derived.iden", "avif.clap", "avif.imir=0"], "A grid of 120x60 whose two tiles are identity derivations of 64x64 images, one mirrored and one turned: the tiles exceed the image. The grid is the primary item, with a clean aperture and a mirror that is its orientation.", Function);
+        Assembled(context, "iden-of-iovl-10bit", "lossless-rgba10", builder =>
+        {
+            var source = ReferenceHeif.Parse(context.Inputs["lossless-rgba10"]).PrimaryItem!.Size!.Value;
+            var (width, height) = ((ushort)(source.Width + 5), (ushort)(source.Height + 3));
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF), width, height, (0, 0), (5, 3)), width, height, [1, 1], HeifFileBuilder.Mirror(1));
+            AddDerivedItem(builder, 11, "iden", [], width, height, [10], HeifFileBuilder.Rotation(2));
+            Present(builder, 11);
+        }, ["avif.iovl", "avif.derived.iden", "avif.bitDepth=10", "avif.irot=2"], "An identity derivation of an overlay of two 10-bit images with alpha on a white canvas. The overlay is mirrored, which moves its pixels; the rotation of the identity derivation, which is the primary item, is the orientation of the image.", Function);
+        Assembled(context, "iovl-lossy-matrixed", "lossy-420-alpha", builder =>
+        {
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0xFFFF, 0xFFFF), 12, 10, (1, 1), (3, 2)), 12, 10, [1, 1]);
+            Present(builder, 10);
+        }, ["avif.iovl"], "An overlay of a lossy 4:2:0 image with a lossy alpha plane, twice, on an opaque blue canvas: each image is converted with its matrix coefficients, then composited.", Function);
+
+        // The color description of an image that is built: the one of its own colr boxes, or else the one of its input
+        // images (their colr boxes, or else their bitstream). Black is the same color in every color space
+        Assembled(context, "iovl-icc-from-layers", "lossless-rgb8", builder =>
+        {
+            builder.GetItem(1).Associations.Add((builder.AddProperty(HeifFileBuilder.ColorProfile(CommonCorpus.IccProfile("RGB "))), false));
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0xFFFF), 16, 12, (0, 0), (4, 3)), 16, 12, [1, 1]);
+            Present(builder, 10);
+        }, ["avif.iovl"], "An overlay without colr box, on an opaque black canvas, of an image that has an ICC profile: the profile is the one of the image.", Function);
+        Assembled(context, "iovl-layers-without-colr", "lossy-422-bt709-limited", builder =>
+        {
+            var source = ReferenceHeif.Parse(context.Inputs["lossy-422-bt709-limited"]).PrimaryItem!.Size!.Value;
+            var (width, height) = ((ushort)(source.Width + 2), (ushort)(source.Height + 2));
+            RemoveProperty(builder, builder.GetItem(1), "colr");
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0), width, height, (0, 0), (2, 2)), width, height, [1, 1]);
+            Present(builder, 10);
+        }, ["avif.iovl"], "No colr box at all: the input image of the overlay is converted with the color description of its AV1 sequence header (BT.709, limited range), whose color primaries and transfer characteristics are those of the image.", Function);
+        Assembled(context, "iovl-black-fill-pq", "lossless-rgb8", builder =>
+        {
+            ReplaceProperty(builder, builder.GetItem(1), "colr", HeifFileBuilder.ColorNclx(9, 16, 0, fullRange: true));
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0xFFFF), 14, 11, (1, 1)), 14, 11, [1]);
+            Present(builder, 10);
+        }, ["avif.iovl"], "An overlay of an image with the BT.2020 primaries and the PQ transfer characteristics on an opaque black canvas: black needs no conversion.", Function);
+
+        // Identity derivations: an iden item is its input image, transformed again. The pixels are those of the coded
+        // image: the transformations of the whole chain select a part of them and give the orientation
+        Assembled(context, "iden", "lossless-rgb8", builder => WrapInIdentity(builder, 1, 2, 12, 9, describe: true),
+            [], "The primary item is an identity derivation of the coded image, without transformation.", Function);
+        Assembled(context, "iden-clap-after-irot", "lossless-rgb8", builder =>
+        {
+            builder.GetItem(1).Associations.Add((builder.AddProperty(HeifFileBuilder.Rotation(1)), true));
+            WrapInIdentity(builder, 1, 2, 9, 12, describe: true, ApertureOf(9, 12, 2, 3, 5, 6), HeifFileBuilder.Mirror(1));
+        }, ["avif.clap", "avif.irot=1", "avif.imir=1"], "The coded image is turned a quarter turn (12x9 to 9x12); the identity derivation, which is the primary item, keeps a clean aperture of 5x6 at (2, 3) of the turned image, then mirrors it.", Function);
+        Assembled(context, "iden-nested-alpha", "lossless-rgba8", builder =>
+        {
+            var aperture = ApertureOf(12, 9, 1, 2, 8, 6);
+            WrapInIdentity(builder, 1, 10, 12, 9, describe: true, aperture);
+            WrapInIdentity(builder, 1, 11, 8, 6, describe: true, HeifFileBuilder.Rotation(3));
+            WrapInIdentity(builder, 2, 12, 12, 9, describe: true, aperture, HeifFileBuilder.Rotation(3));
+        }, ["avif.alpha", "avif.clap", "avif.irot=3"], "Two nested identity derivations: the inner one keeps a clean aperture of 8x6 at (1, 2) of the coded image and the outer one, which is the primary item, turns it. The alpha plane of the primary item is an identity derivation of the coded alpha plane, with the same clean aperture and rotation.", Function);
+        Assembled(context, "iden-alpha-derived", "lossless-rgba8", builder =>
+        {
+            var aperture = ApertureOf(12, 9, 1, 2, 8, 6);
+            WrapInIdentity(builder, 1, 10, 12, 9, describe: true, aperture);
+            WrapInIdentity(builder, 2, 12, 12, 9, describe: true, aperture);
+        }, ["avif.alpha", "avif.clap"], "The primary item and its alpha plane are identity derivations of the coded color image and of the coded alpha plane, with the same clean aperture of 8x6 at (1, 2).", Function);
+        Assembled(context, "iden-alpha-coded", "lossless-rgba8", builder => WrapInIdentity(builder, 1, 10, 12, 9, describe: true),
+            ["avif.alpha"], "The primary item is an identity derivation without transformation, and its alpha plane is a coded image.", Function);
+        Assembled(context, "iden-grid-clap", "grid-2x2-lossless", builder =>
+        {
+            var id = builder.PrimaryItemId!.Value;
+            WrapInIdentity(builder, id, builder.Items.Max(item => item.Id) + 1, 128, 128, describe: true, ApertureOf(128, 128, 20, 30, 90, 70));
+        }, ["avif.grid=2x2", "avif.clap"], "The primary item is an identity derivation of a grid, with a clean aperture of 90x70 at (20, 30) that spans the four tiles.", Function);
+        Assembled(context, "iden-color-from-input", "lossy-444-bt601-full", builder => WrapInIdentity(builder, 1, 2, 8, 8, describe: false, HeifFileBuilder.Rotation(2)),
+            ["avif.matrix=6", "avif.irot=2"], "The identity derivation has no colr property: the color description is the one of its input image (BT.601, full range).", Function);
     }
 
     private static void BuildLayouts(ContainerContext context)
@@ -529,10 +886,153 @@ internal static partial class AvifCorpus
         var frames = Enumerable.Range(0, 3).Select(i => Moving(8, 8, i)).ToList();
         Sequence(context, "sequence-lossless-infinite", frames, "-l --timescale 10", [2, 3, 1], ["avif.seq.editList=repeat-indefinite", "avif.lossless"],
             "Durations of 2, 3 and 1 tenths of a second; avifenc repeats forever by default (a repeating edit list and an indefinite track duration).");
+        Sequence(context, "sequence-lossless-6-images", [.. Enumerable.Range(0, 6).Select(i => Moving(8, 8, 11 + (3 * i)))], "-l --timescale 10 --repetition-count 0", [2, 3, 1, 4, 2, 3], ["avif.seq.editList=once", "avif.lossless"],
+            "Six images of 2, 3, 1, 4, 2 and 3 tenths of a second, played once: the source of the edit lists that select parts of a track.");
         Sequence(context, "sequence-alpha-repeat-2", [WithAlpha(Moving(8, 8, 0)), WithAlpha(Moving(8, 8, 2))], "-q 70 --qalpha 70 -y 444 --cicp 1/13/6 --timescale 1000 --repetition-count 2", [40, 1000],
             ["avif.seq.editList=repeat", "avif.alpha"], "Two repetitions: three plays.");
         Sequence(context, "sequence-10bit-once", [DeepColor(8, 8, 10), Shift(DeepColor(8, 8, 10))], "-q 70 -d 10 -y 420 --cicp 9/16/9 -r limited --timescale 30000 --repetition-count 0", [1001, 1001],
             ["avif.seq.editList=once", "avif.bitDepth=10"], "No repetition: an edit list that does not repeat, played once. The duration of a frame is 1001/30000 s.");
+
+        // The matrix of the track header is the orientation of the images, and the clean aperture of the sample entry the
+        // part of them that is shown: the samples stay as they are coded. A quarter turn clockwise maps the point (p, q)
+        // to (h - q, p), and a mirror of the columns to (w - p, q), in 16.16 fixed point
+        Assembled(context, "sequence-matrix-quarter-turn", "sequence-lossless-infinite", builder =>
+        {
+            var track = builder.Tracks[0];
+            track.Matrix = [0, 0x00010000, 0, -0x00010000, 0, 0, track.Height << 16, 0, 0x40000000];
+        }, ["avif.sequence", "avif.seq.matrix=6"], "The matrix of the track header turns the images a quarter turn clockwise: the orientation is 6, and the images are returned as they are stored.", "BuildSequences");
+        Assembled(context, "sequence-matrix-mirror-clap", "sequence-alpha-repeat-2", builder =>
+        {
+            var aperture = HeifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1);
+            foreach (var track in builder.Tracks)
+            {
+                track.Matrix = [-0x00010000, 0, 0, 0, 0x00010000, 0, track.Width << 16, 0, 0x40000000];
+                track.SampleEntryBoxes.Add(aperture);
+            }
+        }, ["avif.sequence", "avif.seq.matrix=2", "avif.seq.clap", "avif.alpha"], "Both tracks have a clean aperture of 5x4 at (2, 2) in their sample entry and a matrix that mirrors the columns: the images are the aperture of the samples, and the orientation is 2.", "BuildSequences");
+
+        // A prem track reference: the colors of the color track are multiplied by the alpha of the alpha track. The samples
+        // are those of a sequence whose colors are not, so that most colors are above their alpha and are clipped
+        Assembled(context, "sequence-premultiplied", "sequence-alpha-repeat-2", builder =>
+        {
+            var color = builder.Tracks.Single(track => track.HandlerType == "pict");
+            var alpha = builder.Tracks.Single(track => track.HandlerType == "auxv");
+            color.References.Add(("prem", [alpha.Id]));
+        }, ["avif.sequence", "avif.premultiplied", "avif.alpha"], "The color track has a prem reference to its alpha track: the colors of every image are divided by its alpha (the samples are not multiplied by it, so most colors are clipped).", "BuildSequences");
+
+        // Edit lists that select parts of the media (ISO/IEC 14496-12, section 8.6.6): an image is shown for the time that
+        // the edits cover of it, and an image that no edit covers is not shown. The images that are left out before the
+        // last one that is shown are decoded: the images that follow refer to them (the sequences have inter frames)
+        const string Edited = "sequence-lossless-6-images";
+        void Edits(string name, string source, uint movieTimescale, (ulong Duration, long MediaTime)[] edits, string[] requires, string notes) =>
+            Assembled(context, name, source, builder =>
+            {
+                builder.MovieTimescale = movieTimescale;
+                foreach (var track in builder.Tracks)
+                {
+                    var list = track.EditList!;
+                    list.Entries.Clear();
+                    foreach (var (duration, mediaTime) in edits)
+                        list.Entries.Add((duration, mediaTime, 1, 0));
+                }
+            }, ["avif.sequence", .. requires], notes, "BuildSequences");
+
+        Edits("sequence-edit-offset", "sequence-lossless-infinite", 10, [(6, 1)], ["avif.seq.partialDurations"],
+            "The edit starts at the media time 1, inside the first image (2, 3 and 1 tenths of a second): that image is shown for one tenth, and the other ones for their duration.");
+        Edits("sequence-edit-ends-before-last-image", "sequence-lossless-infinite", 10, [(2, 0)], ["avif.seq.imagesLeftOut=2"],
+            "The edit lasts 2 units, the duration of the first image of three: the two other images are not shown, and the sequence is one image.");
+        Edits("sequence-edits-skip-image", Edited, 10, [(5, 0), (6, 6)], ["avif.seq.edits=2", "avif.seq.imagesLeftOut=2", "avif.seq.interFrames"],
+            "Two edits: the media times 0 to 5 (the first two images) and 6 to 12 (the fourth and the fifth). The third image is not shown but the fourth one refers to it; the sixth one follows the last edit and is not shown either.");
+        Edits("sequence-edits-partial", Edited, 20, [(6, 1), (18, 6)], ["avif.seq.edits=2", "avif.seq.imagesLeftOut=1", "avif.seq.partialDurations"],
+            "The time scale of the movie is twice the one of the media. Two edits: the media times 1 to 4 (the end of the first image and two thirds of the second) and 6 to 15 (the last three images, whole).");
+        Edits("sequence-edits-fraction", Edited, 3, [(1, 0), (1, 5), (ulong.MaxValue, 10)], ["avif.seq.edits=3", "avif.seq.partialDurations"],
+            "The time scale of the movie is 3 and the one of the media 10: an edit of one unit lasts ten thirds of a media unit, so the second and the fourth images are shown for 2/15 s and 7/30 s; the last edit has no duration and plays the media from the time 10 to its end.");
+        Edits("sequence-alpha-edit-offset", "sequence-alpha-repeat-2", 1000, [(1030, 10)], ["avif.alpha", "avif.seq.partialDurations"],
+            "The color track and the alpha track have the same edit, which starts 10 ms inside the first image (40 ms and 1 s): the image and its alpha plane are shown for 30 ms.");
+
+        // Fragmented sequences (ISO/IEC 14496-12, section 8.8): the moov box announces fragments (mvex), and each moof box
+        // describes more images, whose samples follow it. The samples of the source are distributed in fragments
+        void Fragmented(string name, string source, int kept, int[] split, Action<HeifFileBuilder>? configure, string[] requires, string notes) =>
+            Assembled(context, name, source, builder =>
+            {
+                var first = kept;
+                foreach (var count in split)
+                {
+                    var fragment = new HeifFileBuilder.Fragment();
+                    foreach (var track in builder.Tracks)
+                    {
+                        var part = new HeifFileBuilder.TrackFragment(track.Id);
+                        for (var i = first; i < first + count; i++)
+                            part.Samples.Add((track.Samples[i].Data, track.Samples[i].Duration));
+
+                        fragment.Tracks.Add(part);
+                    }
+
+                    builder.Fragments.Add(fragment);
+                    first += count;
+                }
+
+                foreach (var track in builder.Tracks)
+                {
+                    Py.Assert(first == track.Samples.Count, "every sample is in the moov box or in a fragment");
+                    while (track.Samples.Count > kept)
+                        track.Samples.RemoveAt(track.Samples.Count - 1);
+                }
+
+                configure?.Invoke(builder);
+            }, ["avif.sequence", .. requires], notes, "BuildSequences");
+
+        Fragmented("sequence-fragmented", Edited, 0, [2, 3, 1], null, ["avif.seq.fragments=3", "avif.lossless"],
+            "Six images in three fragments of 2, 3 and 1 images; the data offsets of the runs are relative to their moof box (default-base-is-moof).");
+        Fragmented("sequence-fragmented-explicit-base", Edited, 0, [3, 3], builder =>
+        {
+            foreach (var track in builder.Fragments.SelectMany(fragment => fragment.Tracks))
+            {
+                track.Base = HeifFileBuilder.FragmentBase.Explicit;
+                track.RunCount = 2;
+                track.OmitDecodeTime = true;
+            }
+        }, ["avif.seq.fragments=2"], "Two fragments of three images, each in two runs; the track fragments give the offset of their data in the file (base-data-offset-present) and have no tfdt box.");
+        Fragmented("sequence-fragmented-after-movie-samples", Edited, 2, [1, 3], null, ["avif.seq.fragments=2"],
+            "The first two images are described by the sample table of the moov box, and the four other ones by two fragments.");
+        Fragmented("sequence-fragmented-alpha", "sequence-alpha-repeat-2", 0, [1, 1], builder =>
+        {
+            foreach (var track in builder.Fragments.SelectMany(fragment => fragment.Tracks))
+                track.Base = HeifFileBuilder.FragmentBase.Implicit;
+        }, ["avif.seq.fragments=2", "avif.alpha"], "A fragment for each image and its alpha plane. The track fragments have neither base flag: the data of the color track are at the offset of its run from the moof box, and the data of the alpha track follow them.");
+        Fragmented("sequence-fragmented-defaults", "sequence-10bit-once", 0, [1, 1], builder =>
+        {
+            builder.Fragments[0].Tracks[0].UseDefaultDuration = true;
+            builder.Fragments[1].Tracks[0].UseMovieDefaultDuration = true;
+        }, ["avif.seq.fragments=2", "avif.bitDepth=10"], "The duration of the image of the first fragment is the default of its track fragment (tfhd), and the duration of the image of the second one the default of the movie (trex).");
+        Fragmented("sequence-fragmented-alpha-in-next-fragment", "sequence-alpha-repeat-2", 0, [2], builder =>
+        {
+            // The color images in a fragment, their alpha planes in the next one
+            var both = builder.Fragments[0];
+            var alpha = both.Tracks.Single(track => track.TrackId == builder.Tracks.Single(candidate => candidate.HandlerType == "auxv").Id);
+            both.Tracks.Remove(alpha);
+            var next = new HeifFileBuilder.Fragment();
+            next.Tracks.Add(alpha);
+            builder.Fragments.Add(next);
+        }, ["avif.seq.fragments=2", "avif.alpha"], "The two color images are described by the first fragment and their alpha planes by the second one: the images wait for their alpha planes.");
+
+        // The colr box of the sample entry declares ICtCp with the HLG transfer characteristics: every image of the track
+        // is converted through the transfer function
+        Assembled(context, "sequence-ictcp-hlg", "sequence-10bit-once", builder =>
+        {
+            var boxes = builder.Tracks.Single(track => track.HandlerType == "pict").SampleEntryBoxes;
+            var index = Enumerable.Range(0, boxes.Count).Single(i => PropertyType(boxes[i]) == "colr");
+            boxes[index] = HeifFileBuilder.ColorNclx(9, 18, 14, fullRange: false);
+        }, ["avif.sequence", "avif.matrix=14", "avif.range=limited", "avif.bitDepth=10"], "The colr box of the sample entry declares the ICtCp matrix coefficients with the HLG transfer characteristics, in limited range: the planes of a sequence of other colors, most of which are outside of the gamut and are clipped.", "BuildSequences");
+
+        // The boxes of the visual sample entry that describe how the samples are presented
+        Assembled(context, "sequence-hdr-boxes", "sequence-10bit-once", builder =>
+        {
+            var track = builder.Tracks[0];
+            track.SampleEntryBoxes.Add(HeifFileBuilder.Box("pasp", HeifFileBuilder.U32(16), HeifFileBuilder.U32(15)));
+            track.SampleEntryBoxes.Add(HeifFileBuilder.Box("clli", HeifFileBuilder.U16(4000), HeifFileBuilder.U16(1000)));
+            track.SampleEntryBoxes.Add(MasteringDisplayBox());
+        }, ["avif.sequence", "avif.pasp", "avif.clli", "avif.mdcv"], "The pixel aspect ratio (16:15), the content light level and the mastering display color volume of an image sequence are boxes of the sample entry of its track.", "BuildSequences");
 
         // The FFmpeg avif muxer: another writer of the moov box
         var scratch = context.NewScratch("enc-sequence-ffmpeg");

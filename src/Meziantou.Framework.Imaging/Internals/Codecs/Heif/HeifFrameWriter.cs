@@ -18,7 +18,9 @@ internal static class HeifFrameWriter
         var format = color.Format;
         var matrix = nclx?.MatrixCoefficients ?? format.MatrixCoefficients;
         var fullRange = nclx?.FullRange ?? format.FullRange;
-        var converter = new HeifYuvConverter(structure.Binding, format, matrix, fullRange, alpha?.Format, structure.PixelFormat);
+        var primaries = nclx?.ColorPrimaries ?? format.ColorPrimaries;
+        var transfer = nclx?.TransferCharacteristics ?? format.TransferCharacteristics;
+        var converter = new HeifYuvConverter(structure.Binding, format, matrix, fullRange, alpha?.Format, structure.PixelFormat, alpha is not null && structure.IsPremultiplied, primaries, transfer);
         var width = codedSize.Width;
         var height = codedSize.Height;
         using var rows = Av1PooledArray<ushort>.Rent(context.Scope, 2L * width, clear: false);

@@ -57,6 +57,20 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
     private CicpColorDescription? _nclx;
     private int? _bitstreamMatrix;
     private int _nextFrame;
+
+    // A movie fragment of a fragmented image sequence: the payload of its 'moof' box and the offset of the box, the
+    // encoded bytes of the samples that were scheduled, and whether the input ended on a box boundary (a fragmented
+    // sequence ends with the file, since nothing tells how many fragments it has)
+    private WebPPayloadBuffer? _fragmentData;
+    private long _fragmentOffset;
+    private long _scheduledBytes;
+    private bool _isAtEndOfInput;
+
+    // The images that were shown so far, and how the next image of the track is shown (read once: the timeline is sequential)
+    private long _shownFrames;
+    private bool _hasFrameTiming;
+    private bool _isFrameShown;
+    private FrameDuration _frameDuration;
     private int _nextSample;
     private int _maxSequenceFrames;
     private bool _isSequenceEnded;
@@ -84,6 +98,7 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
         BoxHeader,
         Meta,
         Movie,
+        Fragment,
         Media,
         Done,
     }
@@ -105,11 +120,14 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
         ? _binding.GetDefaultPixelFormat(movie.Color.IsMonochrome, movie.Alpha is not null, Math.Max(movie.Color.BitDepth, movie.Alpha?.BitDepth ?? 0))
         : Plan.PixelFormat;
 
+    /// <summary>Gets a value indicating whether the color samples of the images are multiplied by the alpha of their pixel.</summary>
+    public bool IsPremultiplied => _movie?.IsPremultiplied ?? Plan.IsPremultiplied;
+
     /// <summary>Gets the color description that the container gives to the images, or <see langword="null"/>.</summary>
     public CicpColorDescription? ContainerColorDescription => _nclx;
 
     /// <summary>Gets the animation settings of an image sequence of several images, or <see langword="null"/>.</summary>
-    public AnimationMetadata? Animation => _movie is { FrameCount: > 1 } movie ? new AnimationMetadata { TotalPlays = movie.TotalPlays } : null;
+    public AnimationMetadata? Animation => _movie is { } movie && (movie.FrameCount > 1 || (movie.IsFragmented && !_isAtEndOfInput)) ? new AnimationMetadata { TotalPlays = movie.TotalPlays } : null;
 
     /// <summary>Gets the metadata collected so far.</summary>
     public ImageMetadata Metadata => _metadata.Metadata;
@@ -136,6 +154,7 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
                         return ParseStatus.Complete;
                     }
 
+                    _isAtEndOfInput = isEndOfInput && remaining.IsEmpty;
                     if (IsResolved && TryFinish())
                         return ParseStatus.Complete;
 
@@ -148,7 +167,11 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
 
                     var status = ReadBoxHeader(remaining, ref consumed);
                     if (!status.IsComplete)
-                        return status;
+                    {
+                        // A fragmented sequence ends with the file, after any of its fragments: the end of the input is
+                        // an answer to the request for the next box
+                        return _movie is { IsFragmented: true } && !isEndOfInput && remaining.IsEmpty ? ParseStatus.NeedMoreDataOrEnd(status.RequiredBytes) : status;
+                    }
 
                     break;
                 }
@@ -194,6 +217,24 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
 
                     var piece = remaining[..(int)Math.Min(remaining.Length, _boxRemaining)];
                     _movieData!.Append(piece);
+                    Advance(ref consumed, piece.Length);
+                    break;
+                }
+
+                case State.Fragment:
+                {
+                    if (_boxRemaining is 0)
+                    {
+                        ProcessFragment();
+                        _state = State.BoxHeader;
+                        break;
+                    }
+
+                    if (remaining.IsEmpty)
+                        return ParseStatus.NeedMoreData(1);
+
+                    var piece = remaining[..(int)Math.Min(remaining.Length, _boxRemaining)];
+                    _fragmentData!.Append(piece);
                     Advance(ref consumed, piece.Length);
                     break;
                 }
@@ -263,6 +304,8 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
             _movieData = null;
             _movie?.Dispose();
             _movie = null;
+            _fragmentData?.Dispose();
+            _fragmentData = null;
             ReleaseRetained();
             foreach (var capture in _captures)
             {
@@ -337,11 +380,31 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
         if (type is HeifFormat.Ftyp)
             throw _binding.Invalid("the file has two file type boxes.");
 
+        var boxOffset = _position;
         _boxRemaining = headerLength;
         Advance(ref consumed, headerLength);
         _boxRemaining = payloadLength;
-        if (type is HeifFormat.Moof)
-            throw _binding.Unsupported($"The {_binding.Name} file is fragmented.", "fragmented image sequences");
+
+        // A movie fragment describes more images of an image sequence whose movie announces fragments. A file that
+        // presents its primary item has no use for it
+        if (type is HeifFormat.Moof && _isSequence)
+        {
+            var binding = _binding;
+            if (_movie is null)
+                throw binding.Unsupported($"The {binding.Name} image sequence has a movie fragment before its 'moov' box.", "fragmented image sequence without movie");
+
+            if (!_movie.IsFragmented)
+                throw binding.Invalid("the file has a movie fragment that its 'moov' box does not announce.");
+
+            if (payloadLength is long.MaxValue)
+                throw binding.Unsupported($"The {binding.Name} 'moof' box has no size.", "moof box without size");
+
+            _fragmentData?.Dispose();
+            _fragmentData = new WebPPayloadBuffer(_context.Scope, payloadLength);
+            _fragmentOffset = boxOffset;
+            _state = State.Fragment;
+            return ParseStatus.Complete;
+        }
 
         if (type is HeifFormat.Moov && _isSequence)
         {
@@ -454,22 +517,28 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
 
         var metadata = _metadata.Metadata;
         _nclx = plan.Nclx;
-        if (plan.Nclx is { } nclx)
-            HeifYuvConverter.EnsureSupported(_binding, nclx.MatrixCoefficients, plan.Color.IsMonochrome, plan.Color.SubsamplingX, plan.Color.SubsamplingY);
+        // (the coded images of an image that is built were checked with their own color description)
+        if (plan.Nclx is { } nclx && plan.Root is null)
+            HeifYuvConverter.EnsureSupported(_binding, nclx.MatrixCoefficients, plan.Color.IsMonochrome, plan.Color.SubsamplingX, plan.Color.SubsamplingY, nclx.ColorPrimaries, nclx.TransferCharacteristics);
 
         metadata.Orientation = plan.Orientation;
         metadata.Cicp = plan.Nclx;
+        metadata.PixelAspectRatio = plan.PixelAspectRatio;
+        metadata.ContentLightLevel = plan.ContentLightLevel;
+        metadata.MasteringDisplay = plan.MasteringDisplay;
         if (plan.IccProfile.Length > 0)
         {
             _metadata.Charge(plan.IccProfile.Length);
-            _metadata.TryAdoptIccProfile(payload.Slice(plan.IccProfile.Offset, plan.IccProfile.Length).ToArray(), plan.Color.IsMonochrome);
+            _metadata.TryAdoptIccProfile(payload.Slice(plan.IccProfile.Offset, plan.IccProfile.Length).ToArray(), plan.Root is null && plan.Color.IsMonochrome);
         }
 
         if (_walk is StructureWalk.Header)
         {
             // Without 'colr' box, the color description is the one of the bitstream: the walk goes on to its first bytes
+            // (those of the first coded image of an image that is built from other images)
             var first = plan.Color.Tiles[0];
-            var needsBitstream = plan.Nclx is null && !plan.Color.IsMonochrome;
+            // (those of the first coded image of an image that is built from other images)
+            var needsBitstream = plan.Nclx is null && (plan.Root is not null || !plan.Color.IsMonochrome);
             if (needsBitstream && _binding.TryLocateBitstreamHeader(ColorConfiguration, default, out _) is true)
             {
                 // The configuration record has the header of the bitstream
@@ -510,9 +579,24 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
     private void Schedule(HeifMetaBox meta, HeifImagePlan plan, ReadOnlySpan<byte> metaPayload)
     {
         var items = new List<HeifItem>();
-        AddImage(plan.Color);
-        if (plan.Alpha is not null)
-            AddImage(plan.Alpha);
+        if (plan.Root is { } root)
+        {
+            // An image that is built: every coded image with its alpha plane, and the descriptors of the grids and of the
+            // overlays
+            root.ForEachCoded(node =>
+            {
+                AddImage(node.Image);
+                if (node.Alpha is not null)
+                    AddImage(node.Alpha);
+            });
+            root.ForEachDescriptor(node => AddItem(node.Image.Item, isMetadata: false));
+        }
+        else
+        {
+            AddImage(plan.Color);
+            if (plan.Alpha is not null)
+                AddImage(plan.Alpha);
+        }
 
         if (plan.Exif is not null)
             AddItem(plan.Exif, isMetadata: true);
@@ -668,11 +752,62 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
 
         var plan = _plan!;
         AdoptItemMetadata(plan.Exif, plan.Xmp);
-        if (plan.Color.IsGrid)
-            plan.Color.ReadGridDescriptor(GetItemData(plan.Color.Item));
+        if (plan.Root is { } root)
+        {
+            var binding = _binding;
+            root.ForEachCoded(node =>
+            {
+                if (node.Image.IsGrid)
+                    node.Image.ReadGridDescriptor(GetItemData(node.Image.Item));
 
-        if (plan.Alpha is { IsGrid: true } alpha)
-            alpha.ReadGridDescriptor(GetItemData(alpha.Item));
+                if (node.Alpha is { IsGrid: true } nodeAlpha)
+                    nodeAlpha.ReadGridDescriptor(GetItemData(nodeAlpha.Item));
+            });
+
+            // A coded image without color description in the boxes has the one of its bitstream, which converts its
+            // samples and which must be the one of the image, like a description of the boxes. When no box describes
+            // the image, it is described by the bitstream of its first coded image, which a header walk reads
+            var declared = plan.Nclx;
+            var isFirst = true;
+            root.ForEachCoded(node =>
+            {
+                var describesImage = isFirst && declared is null;
+                isFirst = false;
+                if (node.Nclx is not null)
+                    return;
+
+                var sequence = binding.ReadBitstreamFormat(_context.Scope, GetConfigurationRecord(node.Image, 0), GetItemData(node.Image.Tiles[0]), node.Image.OperatingPoints[0]);
+                HeifYuvConverter.EnsureSupported(binding, sequence.MatrixCoefficients, sequence.IsMonochrome, sequence.SubsamplingX, sequence.SubsamplingY, sequence.ColorPrimaries, sequence.TransferCharacteristics);
+                if (!sequence.ColorDescriptionPresent)
+                    return;
+
+                if (describesImage)
+                    declared = new CicpColorDescription((byte)sequence.ColorPrimaries, (byte)sequence.TransferCharacteristics, 0, fullRange: true);
+
+                if (declared is null || sequence.ColorPrimaries != declared.ColorPrimaries || sequence.TransferCharacteristics != declared.TransferCharacteristics)
+                    throw binding.Unsupported($"The images that the {binding.Name} image is built from do not have the same color primaries and transfer characteristics.", "derived image of several color spaces");
+            });
+            _metadata.Metadata.Cicp ??= declared;
+
+            // The descriptors of the grids and of the overlays. The fill color of an overlay is an sRGB color: where it
+            // shows, the image must be an sRGB one, since nothing converts colors. Black is the same color in every
+            // color space, and a transparent canvas has no color
+            var isSrgb = _metadata.Metadata.IccProfile is { } profile ? SrgbProfileRecognition.IsSrgb(profile, PixelFormat.Rgba32) : declared is null || MetadataWritePlan.IsSrgbEquivalent(declared);
+            root.ForEachDescriptor(node =>
+            {
+                node.ReadDescriptor(GetItemData(node.Image.Item));
+                if (node.Kind is HeifImageNodeKind.Overlay && node.Fill[3] is not 0 && (node.Fill[0] | node.Fill[1] | node.Fill[2]) is not 0 && !isSrgb)
+                    throw binding.Unsupported($"The canvas of the {binding.Name} overlay is filled with an sRGB color and the image is not an sRGB one.", "overlay fill color in another color space");
+            });
+        }
+        else
+        {
+            if (plan.Color.IsGrid)
+                plan.Color.ReadGridDescriptor(GetItemData(plan.Color.Item));
+
+            if (plan.Alpha is { IsGrid: true } alpha)
+                alpha.ReadGridDescriptor(GetItemData(alpha.Item));
+        }
 
         if (_walk is StructureWalk.Decode)
         {
@@ -681,9 +816,21 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
         else
         {
             _context.Tracker.ChargeScannedFrame();
-            InspectCodedItems(plan.Color);
-            if (plan.Alpha is not null)
-                InspectCodedItems(plan.Alpha);
+            if (plan.Root is { } tree)
+            {
+                tree.ForEachCoded(node =>
+                {
+                    InspectCodedItems(node.Image);
+                    if (node.Alpha is not null)
+                        InspectCodedItems(node.Alpha);
+                });
+            }
+            else
+            {
+                InspectCodedItems(plan.Color);
+                if (plan.Alpha is not null)
+                    InspectCodedItems(plan.Alpha);
+            }
         }
 
         _result = CreateInfo(ImageIdentifyMode.FullScan);
@@ -735,7 +882,7 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
             // The operating point that the item selects must exist, as a load requires
             var format = _binding.ReadBitstreamFormat(_context.Scope, GetConfigurationRecord(image, i), GetItemData(image.Tiles[i]), image.OperatingPoints[i]);
             EnsureMatchesConfiguration(image, format);
-            if (ReferenceEquals(image, _plan!.Color))
+            if (ReferenceEquals(image, _plan!.Color) && _plan.Root is null)
                 SetBitstreamColorDescription(format);
         }
     }
@@ -763,10 +910,15 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
             return;
 
         // Without 'colr' box, the matrix coefficients of the bitstream convert the samples
-        HeifYuvConverter.EnsureSupported(_binding, format.MatrixCoefficients, format.IsMonochrome, format.SubsamplingX, format.SubsamplingY);
+        HeifYuvConverter.EnsureSupported(_binding, format.MatrixCoefficients, format.IsMonochrome, format.SubsamplingX, format.SubsamplingY, format.ColorPrimaries, format.TransferCharacteristics);
         _bitstreamMatrix = format.MatrixCoefficients;
-        if (format.ColorDescriptionPresent)
-            _metadata.Metadata.Cicp ??= new CicpColorDescription((byte)format.ColorPrimaries, (byte)format.TransferCharacteristics, (byte)format.MatrixCoefficients, format.FullRange);
+        if (!format.ColorDescriptionPresent)
+            return;
+
+        // The pixels of an image that is built from other images are red, green and blue samples in full range
+        _metadata.Metadata.Cicp ??= _plan is { Root: not null }
+            ? new CicpColorDescription((byte)format.ColorPrimaries, (byte)format.TransferCharacteristics, 0, fullRange: true)
+            : new CicpColorDescription((byte)format.ColorPrimaries, (byte)format.TransferCharacteristics, (byte)format.MatrixCoefficients, format.FullRange);
     }
 
     /// <summary>Gets the configuration record of a coded item of an image: the payload of its box, in the <c>meta</c> box.</summary>
@@ -861,26 +1013,33 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
         bool isMonochrome;
         bool hasAlpha;
         int bitDepth;
-        var frameCount = 1;
+        int? frameCount = 1;
         if (_movie is { } movie)
         {
             isMonochrome = movie.Color.IsMonochrome;
             hasAlpha = movie.Alpha is not null;
             bitDepth = movie.Color.BitDepth;
-            frameCount = (int)Math.Min(movie.FrameCount, int.MaxValue);
+
+            // The images of a fragmented sequence are counted when the file was read to its end
+            frameCount = movie.IsFragmented && (mode is ImageIdentifyMode.Header || !_isAtEndOfInput) ? null : (int)Math.Min(movie.FrameCount, int.MaxValue);
         }
         else
         {
             var plan = _plan!;
-            isMonochrome = plan.Color.IsMonochrome;
+            isMonochrome = plan.Root is null && plan.Color.IsMonochrome;
             hasAlpha = plan.HasAlpha;
-            bitDepth = plan.Color.BitDepth;
+            bitDepth = plan.Root is null ? plan.Color.BitDepth : plan.RootBitDepth;
         }
 
         // The matrix coefficients come from the 'colr' box, or else from the bitstream, which a header walk does not read
         var matrix = _nclx?.MatrixCoefficients ?? _bitstreamMatrix;
         ImageColorModel colorModel;
-        if (isMonochrome)
+        if (_plan is { Root: not null })
+        {
+            // An image that is built from other images is made of red, green and blue pixels with alpha
+            colorModel = ImageColorModel.Rgba;
+        }
+        else if (isMonochrome)
         {
             colorModel = hasAlpha ? ImageColorModel.GrayscaleAlpha : ImageColorModel.Grayscale;
         }
@@ -904,7 +1063,7 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
             colorModel,
             bitDepth,
             frameCount,
-            isAnimated: frameCount > 1,
+            isAnimated: frameCount is { } count ? count > 1 : Animation is not null,
             hasPosterFrame: false,
             mayHaveTransparency: hasAlpha,
             Animation,
@@ -923,15 +1082,28 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
         var maxSamples = _walk is StructureWalk.Header ? 1 : (int)Math.Min((long)_maxSequenceFrames + reordered, int.MaxValue);
 
         var movie = HeifMovieBox.Parse(_binding, _alternateBinding, payload, _context.Scope, maxSamples);
+        if (movie.Timeline is not null && maxSamples > 1 && movie.Color.LocatedSampleCount < movie.SampleCount)
+        {
+            // An edit list that selects parts of the media may show images that are not the first ones of the track,
+            // after images that it leaves out: every sample is located (their tables are charged to the scope), and the
+            // frame limit applies to the images that are shown
+            movie.Dispose();
+            movie = HeifMovieBox.Parse(_binding, _alternateBinding, payload, _context.Scope, int.MaxValue);
+        }
+
         _movie = movie;
         SetBinding(movie.Binding);
         var color = movie.Color;
         _context.Limits.EnsureCanvasWithinLimits(color.Size.Width, color.Size.Height);
         _nclx = color.Nclx;
         if (color.Nclx is { } nclx)
-            HeifYuvConverter.EnsureSupported(_binding, nclx.MatrixCoefficients, color.IsMonochrome, color.SubsamplingX, color.SubsamplingY);
+            HeifYuvConverter.EnsureSupported(_binding, nclx.MatrixCoefficients, color.IsMonochrome, color.SubsamplingX, color.SubsamplingY, nclx.ColorPrimaries, nclx.TransferCharacteristics);
 
         _metadata.Metadata.Cicp = color.Nclx;
+        _metadata.Metadata.Orientation = color.Orientation;
+        _metadata.Metadata.PixelAspectRatio = color.PixelAspectRatio;
+        _metadata.Metadata.ContentLightLevel = color.ContentLightLevel;
+        _metadata.Metadata.MasteringDisplay = color.MasteringDisplay;
         if (color.IccProfile.Length > 0)
         {
             _metadata.Charge(color.IccProfile.Length);
@@ -973,12 +1145,11 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
         }
 
         // The samples whose data the walk captures
-        long total = 0;
         for (var i = 0; i < color.LocatedSampleCount; i++)
         {
-            total = AddSample(color, i, total);
-            if (movie.Alpha is { } alpha)
-                total = AddSample(alpha, i, total);
+            ScheduleSample(color, i);
+            if (movie.Alpha is { } alpha && i < alpha.LocatedSampleCount)
+                ScheduleSample(alpha, i);
         }
 
         foreach (var (offset, data) in _retained)
@@ -998,16 +1169,77 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
             _returnNow = _context.TryConsumeYield();
         }
 
-        long AddSample(HeifTrack track, int index, long total)
-        {
-            var size = track.GetSampleSize(index);
-            total += size;
-            if (total > _context.Limits.MaxEncodedBytes)
-                throw new ImageResourceLimitException(ImageResourceLimitKind.EncodedBytes, _context.Limits.MaxEncodedBytes, total);
+    }
 
-            var storesData = _walk is StructureWalk.Decode || index is 0;
-            _captures.Add(new Capture(_context.Scope, item: null, track.GetSampleOffset(index), size, isItemData: false, storesData) { Track = track, SampleIndex = index });
-            return total;
+    // Schedules the capture of a sample of an image sequence
+    private void ScheduleSample(HeifTrack track, int index)
+    {
+        var size = track.GetSampleSize(index);
+        _scheduledBytes += size;
+        if (_scheduledBytes > _context.Limits.MaxEncodedBytes)
+            throw new ImageResourceLimitException(ImageResourceLimitKind.EncodedBytes, _context.Limits.MaxEncodedBytes, _scheduledBytes);
+
+        var storesData = _walk is StructureWalk.Decode || index is 0;
+        _captures.Add(new Capture(_context.Scope, item: null, track.GetSampleOffset(index), size, isItemData: false, storesData) { Track = track, SampleIndex = index });
+    }
+
+    // ISO/IEC 14496-12, section 8.8 "Movie Fragments": the samples of the fragment follow the samples that are known. Their
+    // data follow the 'moof' box, where the walk captures them as they go by
+    private void ProcessFragment()
+    {
+        var movie = _movie!;
+        var color = movie.Color;
+        var alpha = movie.Alpha;
+        var (colorCount, alphaCount) = (color.LocatedSampleCount, alpha?.LocatedSampleCount ?? 0);
+        var samplesBefore = color.SampleCount;
+
+        // A full scan keeps the first sample of each track, which it verifies at the end, and forgets the other ones
+        // once they went by; a decoding walk released the samples of the images it produced
+        var firstNeeded = _walk is StructureWalk.Decode ? _nextFrame : color.LocatedSampleCount;
+        if (_walk is not StructureWalk.Decode)
+        {
+            for (var i = _captures.Count - 1; i >= 0; i--)
+            {
+                if (_captures[i] is { Track: not null, SampleIndex: > 0, IsComplete: true } capture)
+                {
+                    _captures.RemoveAt(i);
+                    capture.Dispose();
+                }
+            }
+        }
+
+        var maxSamples = (int)Math.Min(_context.Limits.MaxFrames + 1L, int.MaxValue);
+        HeifMovieFragment.Parse(_fragmentData!.Span, _fragmentOffset, movie, _context.Scope, firstNeeded, maxSamples);
+        _fragmentData.Dispose();
+        _fragmentData = null;
+        if (_walk is StructureWalk.FullScan)
+        {
+            for (var i = samplesBefore; i < color.SampleCount; i++)
+            {
+                _context.Tracker.ChargeScannedFrame();
+            }
+        }
+
+        // The data of a fragment follow its description: what is behind the position of the walk is gone
+        for (var i = colorCount; i < color.LocatedSampleCount; i++)
+        {
+            EnsureAhead(color, i);
+            ScheduleSample(color, i);
+        }
+
+        if (alpha is not null)
+        {
+            for (var i = alphaCount; i < alpha.LocatedSampleCount; i++)
+            {
+                EnsureAhead(alpha, i);
+                ScheduleSample(alpha, i);
+            }
+        }
+
+        void EnsureAhead(HeifTrack track, int index)
+        {
+            if (track.GetSampleOffset(index) < _position)
+                throw _binding.Unsupported($"The samples of a fragment of the {_binding.Name} image sequence precede the fragment.", "fragmented image sequence whose data precede their fragment");
         }
     }
 
@@ -1076,11 +1308,20 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
         var movie = _movie!;
         if (_walk is not StructureWalk.Decode)
         {
-            // A full scan ends when every sample went by; it verifies the first sample of each track
+            // A full scan ends when every sample went by; it verifies the first sample of each track. The samples of a
+            // fragmented sequence go by until the end of the file
             foreach (var capture in _captures)
             {
                 if (!capture.IsComplete)
                     return false;
+            }
+
+            if (movie.IsFragmented)
+            {
+                if (!_isAtEndOfInput)
+                    return false;
+
+                EnsureFragmentsAreWhole(movie);
             }
 
             TryAdoptSequenceMetadata();
@@ -1098,26 +1339,55 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
 
         while (true)
         {
-            if (_nextFrame >= movie.FrameCount)
+            // The images of the track are read in their order. The ones that the edit list leaves out are decoded too:
+            // the images that follow may refer to them, and a file is read to the last of its samples, so that one that is
+            // cut short never reads as a whole one
+            if (_nextFrame >= movie.SampleCount)
             {
+                // The images of a fragmented sequence come with its fragments, until the end of the file
+                if (movie.IsFragmented)
+                {
+                    if (!_isAtEndOfInput)
+                        return false;
+
+                    EnsureFragmentsAreWhole(movie);
+                }
+
                 _result = CreateInfo(ImageIdentifyMode.FullScan);
                 _state = State.Done;
                 return true;
             }
 
+            // The alpha plane of an image of a fragmented sequence may be described by a later fragment
+            if (movie.Alpha is { } pendingAlpha && _nextFrame >= pendingAlpha.SampleCount)
+            {
+                if (_isAtEndOfInput)
+                    throw _binding.Invalid("the alpha track does not have the number of images of the color track.");
+
+                return false;
+            }
+
+            if (!_hasFrameTiming)
+            {
+                _isFrameShown = movie.TryGetNextDuration(_nextFrame, out _frameDuration);
+                _hasFrameTiming = true;
+            }
+
             // The metadata items are adopted as soon as their data went by, and the last image waits for them: the images
             // that follow their data have them, at the latest the last one
-            if (!TryAdoptSequenceMetadata() && _nextFrame == movie.FrameCount - 1)
+            if (!TryAdoptSequenceMetadata() && _isFrameShown && _shownFrames == movie.FrameCount - 1)
                 return false;
 
-            // The samples beyond the frame limit of the operation are not located: the limit was reported before
-            if (_nextFrame >= Math.Min(movie.Color.LocatedSampleCount, _maxSequenceFrames))
+            // The samples beyond the frame limit of the operation are not located: the limit was reported before. Every
+            // sample of a sequence whose edit list selects parts of its media is located
+            var locatedFrames = movie.Timeline is null ? Math.Min(movie.Color.LocatedSampleCount, _maxSequenceFrames) : movie.Color.LocatedSampleCount;
+            if (_nextFrame >= locatedFrames)
                 throw new ImageResourceLimitException(ImageResourceLimitKind.Frames, _context.Limits.MaxFrames, _nextFrame + 1L);
 
-            // The samples are in decoding order: the decoder is given samples until it has the next image to present
-            var duration = new FrameDuration(movie.Color.GetPresentationDuration(_nextFrame), movie.Color.Timescale);
+            // The samples are in decoding order: the decoder is given samples until it has the next image to present,
+            // which is written, or decoded only when the edit list leaves it out
             bool proceed;
-            while (!_observer!.TryWriteSequenceFrame(this, duration, out proceed))
+            while (!(_isFrameShown ? _observer!.TryWriteSequenceFrame(this, _frameDuration, out proceed) : _observer!.TrySkipSequenceFrame(this, out proceed)))
             {
                 if (_nextSample >= movie.Color.LocatedSampleCount)
                 {
@@ -1150,6 +1420,10 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
 
             _fedSamples.Clear();
             _nextFrame++;
+            _hasFrameTiming = false;
+            if (_isFrameShown)
+                _shownFrames++;
+
             if (!proceed)
             {
                 _result = CreateInfo(ImageIdentifyMode.FullScan);
@@ -1159,6 +1433,16 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
 
             if (_context.TryConsumeYield())
                 return true;
+        }
+
+        static void EnsureFragmentsAreWhole(HeifMovieBox movie)
+        {
+            var binding = movie.Binding;
+            if (movie.SampleCount is 0)
+                throw binding.Invalid("the image sequence has no image.");
+
+            if (movie.Alpha is { } alpha && alpha.SampleCount != movie.SampleCount)
+                throw binding.Invalid("the alpha track does not have the number of images of the color track.");
         }
 
         Capture FindSample(HeifTrack track, int index)

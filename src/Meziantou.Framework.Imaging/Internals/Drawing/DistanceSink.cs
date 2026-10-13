@@ -64,11 +64,13 @@ internal sealed class DistanceSink : PathSink
         {
             if (!IsFound)
             {
-                // The chord that contains a distance is the last one that starts at or before it
+                // The chord that contains a distance is the last one that starts at or before it. Its end is the sum
+                // the length of the path will be: the distance that is the length of the path is beyond every chord,
+                // and gives the last point itself.
                 var along = _target - Length;
                 DirectionX = dx / length;
                 DirectionY = dy / length;
-                if (along < length)
+                if (_target < Length + length)
                 {
                     along = along > 0 ? along : 0;
                     PointX = _x + (along * DirectionX);

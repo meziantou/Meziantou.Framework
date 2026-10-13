@@ -849,6 +849,19 @@ public sealed class DrawingPathTests
         Assert.Equal(-1, tangent.X, 0.01);
         Assert.Equal(1, Math.Sqrt((tangent.X * tangent.X) + (tangent.Y * tangent.Y)), 1e-12);
 
+        // The length of a path is the distance of its last point, exactly, whatever its chords add up to
+        foreach (var curve in new[]
+        {
+            new VectorPathBuilder().MoveTo(20, 100).CubicBezierTo(60, 10, 120, 110, 176, 34).Build(),
+            new VectorPathBuilder().MoveTo(0.1, 0.7).QuadraticBezierTo(33.3, -7.7, 12.9, 41.3).LineTo(1.1, 2.3).Build(),
+            new VectorPathBuilder().AddArc(new PointD(3.3, 4.7), 51.3, 17.9, 13, 211).Build(),
+        })
+        {
+            var points = Flatten(curve);
+            Assert.True(curve.TryGetPointAtDistance(curve.GetLength(), out var end, out _));
+            Assert.Equal(new PointD(points[^1].X, points[^1].Y), end);
+        }
+
         // A path without length has no point
         Assert.False(new VectorPathBuilder().Build().TryGetPointAtDistance(0, out point, out tangent));
         Assert.Equal((default(PointD), default(PointD)), (point, tangent));

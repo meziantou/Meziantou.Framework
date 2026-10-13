@@ -88,6 +88,8 @@ public sealed class PerformanceContractTests
             TextLayout.Create("ABCA", FontTestSupport.Load(FontSamples.BitmapBoxes()), 11.5),
             new TextPathOptions { Side = TextPathSide.Right, Alignment = TextPathAlignment.Center, StartOffset = -7.5, BaselineOffset = 2.25, Overflow = TextPathOverflow.Clip },
             new Pen(new SolidBrush(new Rgba32(0, 0, 0, 200)), 2.5) { DashPattern = [5, 2.5, 0, 2.5], DashOffset = 1.25, LineCap = LineCap.Round },
+            new SweepGradientBrush(new PointD(30, 22), 15, 300, [new GradientStop(0, new Rgba32(255, 255, 0, 40)), new GradientStop(1, new Rgba32(0, 255, 255))]) { SpreadMode = GradientSpreadMode.Reflect, Transform = AffineTransform.CreateSkew(20, 0) },
+            new RadialGradientBrush(new PointD(30, 20), 25, [new GradientStop(0, new Rgba32(255, 255, 255)), new GradientStop(1, new Rgba32(0, 0, 0, 0))]) { FocalPoint = new PointD(22, 14) },
             new StrongBox<long>(long.MaxValue));
 
         // Tiered compilation running concurrently can attribute a few bytes to this thread, and the many methods behind a
@@ -116,6 +118,8 @@ public sealed class PerformanceContractTests
         static void Paint(DrawingCanvas canvas, DrawingState state)
         {
             canvas.Fill(state.Gradient);
+            canvas.FillRectangle(state.Sweep, new RectangleD(2, 2, 50, 40));
+            canvas.FillEllipse(state.Focal, new PointD(30, 20), 25, 15);
             canvas.Fill(state.Solid, state.Path, FillRule.EvenOdd);
             canvas.Stroke(state.Pen, state.Path);
             canvas.FillRectangle(state.Solid, new RectangleD(3.5, 2.25, 40, 30));
@@ -357,5 +361,5 @@ public sealed class PerformanceContractTests
         return stream.ToArray();
     }
 
-    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, TextLayout RichText, TextLayout VariableText, TextLayout BlendedText, TextLayout ColorText, TextLayout BitmapText, TextLayout ScaledBitmapText, TextPathOptions PathOptions, Pen DashedPen, StrongBox<long> Allocated);
+    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, TextLayout RichText, TextLayout VariableText, TextLayout BlendedText, TextLayout ColorText, TextLayout BitmapText, TextLayout ScaledBitmapText, TextPathOptions PathOptions, Pen DashedPen, SweepGradientBrush Sweep, RadialGradientBrush Focal, StrongBox<long> Allocated);
 }

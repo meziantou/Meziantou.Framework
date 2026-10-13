@@ -1,6 +1,9 @@
 namespace Meziantou.Framework.Imaging.Drawing;
 
-/// <summary>A brush painting a transition between colors: a <see cref="LinearGradientBrush"/> or a <see cref="RadialGradientBrush"/>.</summary>
+/// <summary>
+/// A brush painting a transition between colors: a <see cref="LinearGradientBrush"/>, a <see cref="RadialGradientBrush"/>
+/// or a <see cref="SweepGradientBrush"/>.
+/// </summary>
 /// <remarks>
 /// <para>
 /// The color of a pixel is the color of the gradient at the center of that pixel. Each position of the canvas has a
@@ -49,6 +52,18 @@ public abstract class GradientBrush : Brush
             field = value;
         }
     }
+
+    /// <summary>
+    /// Gets the transformation that places the gradient on the canvas: the points and the lengths of the gradient are
+    /// given before it is applied. Defaults to the identity.
+    /// </summary>
+    /// <remarks>
+    /// The color of a pixel is the color the gradient has, before the transformation, at the position the center of the
+    /// pixel comes from. A scaling that is not the same on both axes turns the circles of a radial gradient into
+    /// ellipses. With a transformation that flattens the plane to a line or a point, the whole canvas has the color of
+    /// the last stop.
+    /// </remarks>
+    public AffineTransform Transform { get; init; }
 
     /// <summary>Gets the stops without copying them.</summary>
     internal ReadOnlySpan<GradientStop> StopSpan => _stops;

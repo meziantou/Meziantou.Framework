@@ -13,6 +13,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <c>u &lt;= 1 ? u : 2 - u</c> (reflect).
 /// </para>
 /// <para>
+/// A radial gradient with a focal point <c>f</c> has, with <c>e = center - f</c>, <c>d = p - f</c> and
+/// <c>a = radius^2 - |e|^2</c>, the parameter <c>(sqrt((d . e)^2 + a |d|^2) - (d . e)) / a</c>: the positive <c>t</c> for
+/// which <c>p</c> is on the circle of center <c>f + t e</c> and radius <c>t radius</c>. A sweep gradient has the
+/// parameter <c>(angle(p - center) - start) mod 360 / (end - start)</c>, the angle being the one of
+/// <see cref="DeterministicAngle.Atan2"/>. When the brush has a transformation, <c>p</c> is the center of the pixel
+/// brought back through the inverse of that transformation; a transformation without inverse makes a degenerate gradient.
+/// </para>
+/// <para>
 /// With <c>i</c> the last stop whose offset is not greater than the parameter: before the first stop the color is the
 /// first stop, at or after the last stop it is the last stop, otherwise stops <c>i</c> and <c>i + 1</c> are interpolated
 /// at <c>u = (t - o[i]) / (o[i + 1] - o[i])</c> on premultiplied values:
@@ -34,8 +42,10 @@ internal sealed class GradientEvaluator : IDisposable
     private int _stopCapacity;
     private PooledBuffer? _colors;
     private int _stopCount;
-    private bool _radial;
+    private GradientKind _kind;
     private bool _degenerate;
+    private bool _hasTransform;
+    private Affine2D _inverse;
     private GradientSpreadMode _spreadMode;
     private double _originX;
     private double _originY;
@@ -97,25 +107,54 @@ internal sealed class GradientEvaluator : IDisposable
         }
 
         IsTransparent = transparent;
-        if (brush is LinearGradientBrush linear)
+        switch (brush)
         {
-            _radial = false;
-            _originX = linear.Start.X;
-            _originY = linear.Start.Y;
-            _axisX = linear.End.X - linear.Start.X;
-            _axisY = linear.End.Y - linear.Start.Y;
-            _divisor = (_axisX * _axisX) + (_axisY * _axisY);
-        }
-        else
-        {
-            var radial = (RadialGradientBrush)brush;
-            _radial = true;
-            _originX = radial.Center.X;
-            _originY = radial.Center.Y;
-            _divisor = radial.Radius;
+            case LinearGradientBrush linear:
+                _kind = GradientKind.Linear;
+                _originX = linear.Start.X;
+                _originY = linear.Start.Y;
+                _axisX = linear.End.X - linear.Start.X;
+                _axisY = linear.End.Y - linear.Start.Y;
+                _divisor = (_axisX * _axisX) + (_axisY * _axisY);
+                break;
+
+            case RadialGradientBrush radial when radial.FocalPoint != radial.Center:
+                _kind = GradientKind.Focal;
+                _originX = radial.FocalPoint.X;
+                _originY = radial.FocalPoint.Y;
+                _axisX = radial.Center.X - radial.FocalPoint.X;
+                _axisY = radial.Center.Y - radial.FocalPoint.Y;
+                _divisor = (radial.Radius * radial.Radius) - ((_axisX * _axisX) + (_axisY * _axisY));
+                break;
+
+            case RadialGradientBrush radial:
+                _kind = GradientKind.Radial;
+                _originX = radial.Center.X;
+                _originY = radial.Center.Y;
+                _divisor = radial.Radius;
+                break;
+
+            default:
+                // Angles in half turns, the unit of the deterministic functions
+                var sweep = (SweepGradientBrush)brush;
+                _kind = GradientKind.Sweep;
+                _originX = sweep.Center.X;
+                _originY = sweep.Center.Y;
+                _axisX = sweep.StartAngle / 180;
+                _divisor = (sweep.EndAngle - sweep.StartAngle) / 180;
+                break;
         }
 
         _degenerate = !(_divisor > 0);
+        _hasTransform = !brush.Transform.IsIdentity;
+        if (_hasTransform)
+        {
+            var transform = brush.Transform;
+            if (!new Affine2D(transform.M11, transform.M12, transform.M21, transform.M22, transform.OffsetX, transform.OffsetY).TryInvert(out _inverse))
+            {
+                _degenerate = true;
+            }
+        }
     }
 
     /// <summary>Computes the colors of a run of pixels: four samples per pixel, laid out as <see cref="DrawingColor"/>.</summary>
@@ -134,11 +173,46 @@ internal sealed class GradientEvaluator : IDisposable
             return colors;
         }
 
-        var py = y + 0.5 - _originY;
+        var centerY = y + 0.5;
+        var rowY = centerY - _originY;
         for (var i = 0; i < count; i++)
         {
-            var px = x + i + 0.5 - _originX;
-            var t = _radial ? Math.Sqrt((px * px) + (py * py)) / _divisor : ((px * _axisX) + (py * _axisY)) / _divisor;
+            double px;
+            var py = rowY;
+            if (_hasTransform)
+            {
+                var centerX = x + i + 0.5;
+                px = _inverse.TransformX(centerX, centerY) - _originX;
+                py = _inverse.TransformY(centerX, centerY) - _originY;
+            }
+            else
+            {
+                px = x + i + 0.5 - _originX;
+            }
+
+            double t;
+            switch (_kind)
+            {
+                case GradientKind.Linear:
+                    t = ((px * _axisX) + (py * _axisY)) / _divisor;
+                    break;
+
+                case GradientKind.Radial:
+                    t = Math.Sqrt((px * px) + (py * py)) / _divisor;
+                    break;
+
+                case GradientKind.Focal:
+                    var along = (px * _axisX) + (py * _axisY);
+                    t = (Math.Sqrt((along * along) + (_divisor * ((px * px) + (py * py)))) - along) / _divisor;
+                    break;
+
+                default:
+                    var angle = DeterministicAngle.Atan2(py, px) - _axisX;
+                    angle -= 2 * Math.Floor(angle / 2);
+                    t = angle / _divisor;
+                    break;
+            }
+
             switch (_spreadMode)
             {
                 case GradientSpreadMode.Repeat:
@@ -222,5 +296,13 @@ internal sealed class GradientEvaluator : IDisposable
     {
         var rounded = Math.Floor(value + RoundingOffset);
         return rounded <= 0 ? (ushort)0 : rounded >= _max ? (ushort)_max : (ushort)rounded;
+    }
+
+    private enum GradientKind : byte
+    {
+        Linear,
+        Radial,
+        Focal,
+        Sweep,
     }
 }

@@ -1130,6 +1130,7 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public System.ReadOnlyMemory<Meziantou.Framework.Imaging.Drawing.GradientStop> Stops { get => throw null; }
         public Meziantou.Framework.Imaging.Drawing.GradientSpreadMode SpreadMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.AffineTransform Transform { get => throw null; init { } }
     }
 
     public enum GradientSpreadMode
@@ -1188,6 +1189,7 @@ namespace Meziantou.Framework.Imaging.Drawing
     public sealed class RadialGradientBrush : Meziantou.Framework.Imaging.Drawing.GradientBrush
     {
         public Meziantou.Framework.Imaging.PointD Center { get => throw null; }
+        public Meziantou.Framework.Imaging.PointD FocalPoint { get => throw null; init { } }
         public double Radius { get => throw null; }
         public RadialGradientBrush(Meziantou.Framework.Imaging.PointD center, double radius, System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.GradientStop> stops) { }
     }
@@ -1196,6 +1198,15 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public Meziantou.Framework.Imaging.Rgba64 Color { get => throw null; }
         public SolidBrush(Meziantou.Framework.Imaging.Rgba64 color) { }
+    }
+
+    public sealed class SweepGradientBrush : Meziantou.Framework.Imaging.Drawing.GradientBrush
+    {
+        public Meziantou.Framework.Imaging.PointD Center { get => throw null; }
+        public double StartAngle { get => throw null; }
+        public double EndAngle { get => throw null; }
+        public SweepGradientBrush(Meziantou.Framework.Imaging.PointD center, System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.GradientStop> stops) { }
+        public SweepGradientBrush(Meziantou.Framework.Imaging.PointD center, double startAngle, double endAngle, System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.GradientStop> stops) { }
     }
 
     public enum TextPathAlignment

@@ -91,7 +91,7 @@ public sealed class Jpeg2000PacketTests
         ReadOnlySpan<byte> data = [0b0110_0101, 0b0100_0000];
         var reader = new Jpeg2000PacketBitReader(data, position: 0);
         var nodes = new int[(int)(2 * Jpeg2000TagTree.GetNodeCount(2, 2))];
-        Assert.Equal(10, nodes.Length);
+        Assert.HasCount(10, nodes);
         Jpeg2000TagTree.Reset(nodes);
 
         // A threshold that is not above the value reads what tells so, and nothing more
@@ -204,7 +204,7 @@ public sealed class Jpeg2000PacketTests
         // B-15: the sub-bands. The LL sub-band of the level 2, then HL, LH and HH of the level 2 and of the level 1: a
         // high-pass direction is offset by half of the step of its level before the division
         var bands = geometry.Bands;
-        Assert.Equal(7, bands.Length);
+        Assert.HasCount(7, bands);
         Assert.Equal((1L, 1L, 4L, 4L), Bounds(bands[0]));
         Assert.Equal((1L, 1L, 4L, 4L), Bounds(bands[1]));
         Assert.Equal((1L, 0L, 4L, 3L), Bounds(bands[2]));

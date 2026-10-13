@@ -38,8 +38,8 @@ public sealed class Jpeg2000HighThroughputTests
     [Fact]
     public void TheCodeTablesHaveTheRowsOfTheSpecification()
     {
-        Assert.Equal(4 * Jpeg2000HtVlcTables.InitialRowCount, Jpeg2000HtVlcTables.InitialRows.Length);
-        Assert.Equal(4 * Jpeg2000HtVlcTables.NonInitialRowCount, Jpeg2000HtVlcTables.NonInitialRows.Length);
+        Assert.HasCount(4 * Jpeg2000HtVlcTables.InitialRowCount, Jpeg2000HtVlcTables.InitialRows);
+        Assert.HasCount(4 * Jpeg2000HtVlcTables.NonInitialRowCount, Jpeg2000HtVlcTables.NonInitialRows);
 
         // Annex C: the context, the significance pattern, the unsigned residual offset, the two exponent max bound
         // patterns, the codeword and its length. The first and the last rows of each table, and rows inside them

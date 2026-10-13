@@ -29,6 +29,13 @@ internal sealed class JpegTestEncodeOptions
     /// <summary>Gets the longest end-of-band run of progressive AC scans (at most 32,767).</summary>
     public int MaxEndOfBandRun { get; init; } = 0x7FFF;
 
+    /// <summary>
+    /// Gets the number of runs of sixteen zeros (ZRL) written before the end of a block, or of a band of a first
+    /// progressive AC scan, that ends with more zeros than these runs hold: what an encoder does not need to write, and a
+    /// decoder reads. Defaults to 0.
+    /// </summary>
+    public int ZeroRunsBeforeEndOfBlock { get; init; }
+
     /// <summary>Gets a value indicating whether the DHT segments are written again before every scan.</summary>
     public bool TablesBeforeEachScan { get; init; }
 

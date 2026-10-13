@@ -484,6 +484,8 @@ public sealed class ReferenceJpegXl
         long duration = 0;
         var isLast = true;
         var saveAsReference = 0;
+        var isGaborishEnabled = true;
+        var edgePreservingIterations = 2;
         if (!reader.Bool())
         {
             type = (int)reader.Bits(2);
@@ -580,7 +582,7 @@ public sealed class ReferenceJpegXl
             }
 
             SkipName(reader);
-            ReadRestorationFilter(reader, isModular);
+            (isGaborishEnabled, edgePreservingIterations) = ReadRestorationFilter(reader, isModular);
             SkipExtensions(reader);
         }
 
@@ -615,7 +617,11 @@ public sealed class ReferenceJpegXl
             reader.Skip(8 * byteCount);
         }
 
-        return new ReferenceJpegXlFrame(type, isModular, flags, isYCbCr, upsampling, passCount, x, y, (int)width, (int)height, blendMode, duration, isLast, saveAsReference, (int)sectionCount, byteCount);
+        return new ReferenceJpegXlFrame(type, isModular, flags, isYCbCr, upsampling, passCount, x, y, (int)width, (int)height, blendMode, duration, isLast, saveAsReference, (int)sectionCount, byteCount)
+        {
+            IsGaborishEnabled = isGaborishEnabled,
+            EdgePreservingIterations = edgePreservingIterations,
+        };
     }
 
     private int ReadBlending(BitReader reader, bool isPartial)
@@ -641,12 +647,15 @@ public sealed class ReferenceJpegXl
         return mode;
     }
 
-    private static void ReadRestorationFilter(BitReader reader, bool isModular)
+    /// <summary>Reads the restoration filters of a frame: whether the Gabor-like filter is applied, and the number of iterations of the edge-preserving filter.</summary>
+    private static (bool IsGaborishEnabled, int EdgePreservingIterations) ReadRestorationFilter(BitReader reader, bool isModular)
     {
+        // By default: the Gabor-like filter, and two iterations
         if (reader.Bool())
-            return;
+            return (true, 2);
 
-        if (reader.Bool() && reader.Bool())
+        var isGaborishEnabled = reader.Bool();
+        if (isGaborishEnabled && reader.Bool())
         {
             reader.Skip(6 * 16);
         }
@@ -676,6 +685,7 @@ public sealed class ReferenceJpegXl
         }
 
         SkipExtensions(reader);
+        return (isGaborishEnabled, (int)iterations);
     }
 
     private static int UnpackSigned(long value) => (int)((value >> 1) ^ -(value & 1));

@@ -529,7 +529,7 @@ internal sealed class JpegTestImage
                 }
                 else
                 {
-                    new ProgressiveScanWriter(this, output, scan, tables, options.MaxEndOfBandRun).Write(options.RestartInterval);
+                    new ProgressiveScanWriter(this, output, scan, tables, options.MaxEndOfBandRun, options.ZeroRunsBeforeEndOfBlock).Write(options.RestartInterval);
                 }
             }
         }
@@ -557,7 +557,7 @@ internal sealed class JpegTestImage
             }
             else
             {
-                EncodeScan(output, scan, tables, options.RestartInterval);
+                EncodeScan(output, scan, tables, options.RestartInterval, options.ZeroRunsBeforeEndOfBlock);
             }
         }
 
@@ -702,7 +702,7 @@ internal sealed class JpegTestImage
         return S(x / rh, y / rv);
     }
 
-    private void EncodeScan(List<byte> output, int[] scan, (HuffmanCode Dc, HuffmanCode Ac)[] tables, int restartInterval)
+    private void EncodeScan(List<byte> output, int[] scan, (HuffmanCode Dc, HuffmanCode Ac)[] tables, int restartInterval, int zeroRunsBeforeEndOfBlock)
     {
         var writer = new BitWriter(output);
         var predictions = new int[Components.Length];
@@ -735,7 +735,7 @@ internal sealed class JpegTestImage
                     for (var bx = 0; bx < h; bx++)
                     {
                         var block = component.Blocks[((((my * v) + by) * component.BlocksX) + (mx * h)) + bx];
-                        EncodeBlock(writer, block, ref predictions[index], dc, ac);
+                        EncodeBlock(writer, block, ref predictions[index], dc, ac, zeroRunsBeforeEndOfBlock);
                     }
                 }
             }
@@ -744,7 +744,7 @@ internal sealed class JpegTestImage
         writer.Flush();
     }
 
-    private static void EncodeBlock(BitWriter writer, int[] block, ref int prediction, HuffmanCode dc, HuffmanCode ac)
+    private static void EncodeBlock(BitWriter writer, int[] block, ref int prediction, HuffmanCode dc, HuffmanCode ac, int zeroRunsBeforeEndOfBlock)
     {
         var difference = block[0] - prediction;
         prediction = block[0];
@@ -775,6 +775,13 @@ internal sealed class JpegTestImage
 
         if (run > 0)
         {
+            // Runs of zeros that the end of block makes useless, when zeros are left for it
+            for (var i = 0; i < zeroRunsBeforeEndOfBlock && run > 16; i++)
+            {
+                ac.Write(writer, 0xF0);
+                run -= 16;
+            }
+
             ac.Write(writer, 0x00);
         }
 
@@ -917,18 +924,20 @@ internal sealed class JpegTestImage
         private readonly JpegTestProgressiveScan _scan;
         private readonly (HuffmanCode Dc, HuffmanCode Ac)[] _tables;
         private readonly int _maxEndOfBandRun;
+        private readonly int _zeroRunsBeforeEndOfBlock;
         private readonly List<int> _endOfBandBits = [];
         private readonly int[] _predictions;
         private readonly BitWriter _writer;
         private int _endOfBandRun;
 
-        public ProgressiveScanWriter(JpegTestImage image, List<byte> output, JpegTestProgressiveScan scan, (HuffmanCode Dc, HuffmanCode Ac)[] tables, int maxEndOfBandRun)
+        public ProgressiveScanWriter(JpegTestImage image, List<byte> output, JpegTestProgressiveScan scan, (HuffmanCode Dc, HuffmanCode Ac)[] tables, int maxEndOfBandRun, int zeroRunsBeforeEndOfBlock)
         {
             _image = image;
             _output = output;
             _scan = scan;
             _tables = tables;
             _maxEndOfBandRun = maxEndOfBandRun;
+            _zeroRunsBeforeEndOfBlock = zeroRunsBeforeEndOfBlock;
             _predictions = new int[image.Components.Length];
             _writer = new BitWriter(output);
         }
@@ -1035,6 +1044,15 @@ internal sealed class JpegTestImage
 
             if (run > 0)
             {
+                // Runs of zeros that the end of band makes useless, when zeros are left for it: they belong to this block,
+                // so the run of the blocks before it ends first
+                for (var i = 0; i < _zeroRunsBeforeEndOfBlock && run > 16; i++)
+                {
+                    FlushEndOfBandRun();
+                    Ac.Write(_writer, 0xF0);
+                    run -= 16;
+                }
+
                 _endOfBandRun++;
                 if (_endOfBandRun == _maxEndOfBandRun)
                 {

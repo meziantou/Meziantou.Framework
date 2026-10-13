@@ -9,7 +9,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Call order: <see cref="OnHeaderComplete"/> once, before the first frame (the image header, the color profile and the
 /// metadata boxes that precede the frames are known), then <see cref="OnFrame"/> once per coded frame with its complete
 /// sections, then <see cref="OnEnd"/> at the end of the input. Returning <see langword="false"/> from <see cref="OnFrame"/>
-/// stops the walk (frame-limit prefix selection). The sections are only valid during the call.
+/// stops the walk (frame-limit prefix selection). The sections are only valid during the call. An observer that does not
+/// decode every frame says, frame by frame, whether it wants its sections (<see cref="WantsFrame"/>) and whether the walk
+/// goes on without them (<see cref="OnFrameSkipped"/>), and may end the walk at the header (<see cref="EndsAtHeader"/>).
 /// </remarks>
 internal abstract class JpegXlDecodeObserver : IImageDecodeObserver
 {
@@ -41,6 +43,22 @@ internal abstract class JpegXlDecodeObserver : IImageDecodeObserver
 
     /// <summary>Gets a value indicating whether the frames are to be given to <see cref="OnFrame"/>: otherwise the parsing stops at the first frame.</summary>
     public virtual bool WantsFrames => true;
+
+    /// <summary>
+    /// Gets a value indicating whether the walk ends once <see cref="OnHeaderComplete"/> is called: nothing that follows
+    /// the header is of use to the observer.
+    /// </summary>
+    public virtual bool EndsAtHeader(JpegXlStructureParser structure) => false;
+
+    /// <summary>
+    /// Gets a value indicating whether the sections of a frame are to be buffered and given to <see cref="OnFrame"/>.
+    /// Asked once per frame, when its header is read. Defaults to <see cref="WantsFrames"/>.
+    /// </summary>
+    public virtual bool WantsFrame(JpegXlStructureParser structure, JpegXlFrameHeader frame) => WantsFrames;
+
+    /// <summary>Called at the end of a frame whose sections were not buffered.</summary>
+    /// <returns><see langword="true"/> to continue the walk; <see langword="false"/>, the default, to stop.</returns>
+    public virtual bool OnFrameSkipped(JpegXlStructureParser structure, JpegXlFrameHeader frame) => false;
 
     /// <summary>Gets a value indicating whether the JPEG reconstruction data of the container are to be given to <see cref="OnJpegReconstructionData"/>; they are skipped otherwise.</summary>
     public virtual bool WantsJpegReconstructionData => false;

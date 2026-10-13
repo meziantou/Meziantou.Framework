@@ -13,7 +13,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Unlike the decoder of the library, which tolerates what a viewer tolerates, this reader accepts nothing it cannot
 /// write back: every bit of the entropy-coded data is accounted for. What an encoder is free to choose is recorded where
 /// it differs from what the writer does by itself: the blocks before which a run of end-of-band symbols is written
-/// although it could grow, the runs of 16 zeros at the end of a block, and the bits that pad an interval.
+/// although it could grow, the runs of 16 zeros at the end of a block, and the bits that pad an interval. The bytes
+/// that follow the last block of a scan are data between markers, like the ones between two segments.
+/// </para>
+/// <para>
+/// A component takes the quantization table its slot holds when its first scan starts: tables may be defined, and
+/// defined again, between scans. The description of a file gives the values of a table through a component that uses
+/// it, so a table that no component uses is only accepted when it repeats the table defined before it, which is how
+/// the description says it (<see cref="ResolveQuantizationTables"/>).
 /// </para>
 /// <para>
 /// The entropy decoding follows ITU-T T.81: section F.2.2 for sequential scans, and section G.2 with the procedures of
@@ -32,10 +39,10 @@ internal sealed class JpegBitstreamReader : IDisposable
     private readonly HuffmanDecoder?[] _acTables = new HuffmanDecoder?[4];
     private readonly int[] _quantizationSlots = [-1, -1, -1, -1];
     private readonly int[] _componentSlots = new int[4];
+    private readonly bool[] _componentTableResolved = new bool[4];
     private readonly int[] _predictions = new int[4];
     private readonly List<byte> _paddingBits = [];
     private JpegCoefficientStore? _coefficients;
-    private bool _componentTablesResolved;
     private bool _hasRestartInterval;
 
     private JpegBitstreamReader(AllocationScope scope, CancellationToken cancellationToken)
@@ -105,6 +112,7 @@ internal sealed class JpegBitstreamReader : IDisposable
             model.MarkerOrder.Add(marker);
             if (marker == 0xD9)
             {
+                ResolveQuantizationTables();
                 model.TailData = file[position..].ToArray();
                 if (model.TailData.Length > 4260096)
                     throw Unsupported("more than 4,260,096 bytes follow the end of image.", "data after the end of image");
@@ -224,7 +232,7 @@ internal sealed class JpegBitstreamReader : IDisposable
             if (_componentSlots[c] > 3)
                 throw Invalid("a component uses a quantization table that does not exist.");
 
-            // The table of the component is the one its destination holds when the first scan starts
+            // The table of the component is the one its destination holds when its first scan starts
             model.Components.Add(new JpegBitstreamComponent(payload[6 + (3 * c)], QuantizationTable: 0) { HorizontalSampling = horizontal, VerticalSampling = vertical });
         }
 
@@ -256,9 +264,6 @@ internal sealed class JpegBitstreamReader : IDisposable
             var size = 1 + (precision == 0 ? 64 : 128);
             if (precision > 1 || slot > 3 || payload.Length < size)
                 throw Invalid("a quantization table is malformed.");
-
-            if (_componentTablesResolved)
-                throw Unsupported("a quantization table is defined after the first scan.", "quantization table defined after a scan");
 
             if (_model.QuantizationTables.Count == 4)
                 throw Unsupported("it defines more than four quantization tables.", "more than four quantization tables");
@@ -316,26 +321,6 @@ internal sealed class JpegBitstreamReader : IDisposable
         if (header.Length < 1 || header[0] is 0 or > 4 || header.Length != 4 + (2 * header[0]))
             throw Invalid("a scan header is malformed.");
 
-        if (!_componentTablesResolved)
-        {
-            _componentTablesResolved = true;
-            for (var c = 0; c < model.Components.Count; c++)
-            {
-                var index = _quantizationSlots[_componentSlots[c]];
-                if (index < 0)
-                    throw Invalid("a component uses a quantization table that is not defined.");
-
-                model.Components[c] = model.Components[c] with { QuantizationTable = index };
-            }
-
-            // A table that no component uses has no place in a JPEG XL frame
-            for (var i = 0; i < model.QuantizationTables.Count; i++)
-            {
-                if (!model.Components.Exists(component => component.QuantizationTable == i))
-                    throw Unsupported("it defines a quantization table that no component uses.", "unused quantization table");
-            }
-        }
-
         var count = header[0];
         var tail = 1 + (2 * count);
         var scan = new JpegBitstreamScan(header[tail], header[tail + 1], header[tail + 2] >> 4, header[tail + 2] & 15);
@@ -364,6 +349,7 @@ internal sealed class JpegBitstreamReader : IDisposable
                 throw Invalid("a scan header names a component that does not exist, or its components are not in the order of the frame.");
 
             scan.Components.Add(new JpegBitstreamScanComponent(index, dcTable, acTable));
+            ResolveQuantizationTable(index);
         }
 
         int unitsWide;
@@ -478,12 +464,61 @@ internal sealed class JpegBitstreamReader : IDisposable
         if (state.Remaining != 0)
             throw Invalid("a run of blocks extends past the end of its scan.");
 
+        // What follows the last block of the scan, up to the next marker, is data between markers like any other
         ReadPadding(ref bits);
         position = bits.Position;
-        if (position + 1 >= file.Length || file[position] != 0xFF || file[position + 1] is 0x00 or (>= 0xD0 and <= 0xD7))
-            throw Unsupported("data follow the last block of a scan.", "data after the blocks of a scan");
-
         model.Scans.Add(scan);
+    }
+
+    /// <summary>Gives a component the quantization table its destination holds, when its first scan starts.</summary>
+    private void ResolveQuantizationTable(int component)
+    {
+        if (_componentTableResolved[component])
+            return;
+
+        var index = _quantizationSlots[_componentSlots[component]];
+        if (index < 0)
+            throw Invalid("a component uses a quantization table that is not defined.");
+
+        _componentTableResolved[component] = true;
+        _model.Components[component] = _model.Components[component] with { QuantizationTable = index };
+    }
+
+    /// <summary>
+    /// Checks, at the end of the file, that the frame of a JPEG XL file can hold its quantization tables: the values of a
+    /// table are the ones of the channel of a component that uses it, and a table that no component uses can only be
+    /// described as a copy of the table that precedes it.
+    /// </summary>
+    private void ResolveQuantizationTables()
+    {
+        var model = _model;
+        var tables = model.QuantizationTables;
+        for (var c = 0; c < model.Components.Count; c++)
+        {
+            // A component without scan
+            ResolveQuantizationTable(c);
+
+            // A table that is defined again with the same values: the component uses the first of them, the others are its copies
+            var index = model.Components[c].QuantizationTable;
+            while (index > 0 && tables[index - 1].Slot == tables[index].Slot && IsCopy(tables[index], tables[index - 1]))
+            {
+                index--;
+            }
+
+            model.Components[c] = model.Components[c] with { QuantizationTable = index };
+        }
+
+        for (var i = 0; i < tables.Count; i++)
+        {
+            if (model.Components.Exists(component => component.QuantizationTable == i))
+                continue;
+
+            if (i == 0 || !IsCopy(tables[i], tables[i - 1]))
+                throw Unsupported("it defines a quantization table that no component uses, and that does not repeat the table defined before it.", "unused quantization table");
+        }
+
+        static bool IsCopy(JpegBitstreamQuantizationTable table, JpegBitstreamQuantizationTable other)
+            => table.Precision == other.Precision && table.Values.AsSpan().SequenceEqual(other.Values);
     }
 
     private static HuffmanDecoder GetTable(HuffmanDecoder?[] tables, int slot) => tables[slot] ?? throw Invalid("a scan uses a Huffman table that is not defined.");

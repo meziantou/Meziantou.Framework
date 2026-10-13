@@ -15,6 +15,24 @@ internal static partial class JxlCorpus
 
     private static readonly byte[] XmpPacket = Encoding.UTF8.GetBytes("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"/></x:xmpmeta>\n");
 
+    /// <summary>Splits a container into its boxes; a last box that extends to the end of the file is given its size.</summary>
+    private static List<(string Type, byte[] Bytes)> SplitBoxes(byte[] data)
+    {
+        var boxes = new List<(string Type, byte[] Bytes)>();
+        var position = 0;
+        while (position < data.Length)
+        {
+            var size = (long)BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(position));
+            Py.Assert(size != 1, "no box of the container has a 64-bit size");
+            var box = data.AsSpan(position, size == 0 ? data.Length - position : (int)size).ToArray();
+            BinaryPrimitives.WriteUInt32BigEndian(box, (uint)box.Length);
+            boxes.Add((Encoding.Latin1.GetString(box, 4, 4), box));
+            position += box.Length;
+        }
+
+        return boxes;
+    }
+
     private static byte[] Box(string type, ReadOnlySpan<byte> payload)
     {
         var box = new byte[8 + payload.Length];
@@ -259,7 +277,18 @@ internal static partial class JxlCorpus
         {
             var encoded = CjxlFile(c, CorpusDriver.CorpusDir / jpeg, "{" + jpeg + "}", ["--lossless_jpeg=1", .. options]);
             AddLossy(c, name, Function, encoded, 8, new Obj { ["source"] = jpeg },
-                notes: "A JPEG file recompressed by cjxl: the frame is YCbCr with the quantization tables of the JPEG file; the data that rebuilds the JPEG file (jbrd) is not read.");
+                notes: "A JPEG file recompressed by cjxl: the frame is YCbCr with the quantization tables of the JPEG file. The data that rebuild the JPEG file (jbrd) are read by JpegXlTranscoder, not by a load.");
+            if (name == "jpeg-420")
+            {
+                // The same file with the reconstruction data after the codestream: no encoder writes that, jxl-oxide
+                // rebuilds the JPEG file from it and djxl does not
+                var boxes = SplitBoxes(encoded.Data);
+                byte[] moved = [.. boxes.Where(box => box.Type != "jbrd").SelectMany(box => box.Bytes), .. boxes.Where(box => box.Type == "jbrd").SelectMany(box => box.Bytes)];
+                Py.Assert(moved.Length == encoded.Data.Length && !moved.AsSpan().SequenceEqual(encoded.Data), "jpeg-420 has reconstruction data before the end of its codestream");
+                AddLossy(c, "jpeg-420-reconstruction-after", Function, new Encoded(moved, encoded.Commands), 8,
+                    new Obj { ["source"] = jpeg, ["layout"] = "the boxes of jxl/jpeg-420, the jbrd box moved after the last jxlp box" },
+                    notes: "A JPEG file recompressed by cjxl, whose reconstruction data (jbrd) were moved after the codestream: JpegXlTranscoder rebuilds the JPEG file all the same.", origin: "hand-authored");
+            }
         }
 
         // Splines, which cjxl does not write

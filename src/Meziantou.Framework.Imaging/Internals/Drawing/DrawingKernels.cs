@@ -49,6 +49,18 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// are. The functions that take a color as a whole get red, green and blue, whatever the order of the samples, and a
 /// gray level three times.
 /// </para>
+/// <para>
+/// <b>Linear light.</b> When the paint is combined in linear light (<see cref="DrawingSource.Transfer"/>), every
+/// color sample of the paint and of the pixel is decoded by the function of those transfer characteristics
+/// (<see cref="CicpTransfer"/>; sRGB for an image that declares no function), the
+/// blend mode and the operator are applied to the decoded colors with the formulas above, in double precision, and
+/// the color of the result is encoded and rounded to a sample as <c>floor(M v + 1/2 + 2^-20)</c>. The alpha is not a
+/// color: with <c>k = q / Q</c> and the factors as fractions of one, <c>S = k fa sa</c>,
+/// <c>D = (1 - k) da + k fb da</c> and <c>A = S + D</c>, it is <c>floor(M A + 1/2)</c>, and each color is
+/// <c>encode((sc S + dc D) / A)</c> (<c>encode(sc S + dc D)</c> for a pixel format without alpha). The pixels that are
+/// not written are the same as on the stored values, and a full coverage with an opaque paint that replaces the pixel
+/// writes the paint exactly.
+/// </para>
 /// </remarks>
 internal static class DrawingKernels
 {
@@ -182,6 +194,12 @@ internal static class DrawingKernels
     internal static void Composite<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst = false)
         where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
     {
+        if (source.Transfer != 0)
+        {
+            CompositeLinear(samples, channels, coverage, source, isBlueFirst);
+            return;
+        }
+
         if (source.Blend != BlendMode.Normal)
         {
             CompositeBlended(samples, channels, coverage, source, isBlueFirst);
@@ -425,6 +443,151 @@ internal static class DrawingKernels
             }
 
             pixel[3] = TSample.CreateTruncating(alpha);
+        }
+    }
+
+    /// <summary>Combines a paint with interleaved samples in the linear light their transfer function decodes them to: any blend mode, any operator.</summary>
+    private static void CompositeLinear<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        const double Full = CoverageRasterizer.FullCoverage;
+        var maxSample = int.CreateTruncating(TSample.MaxValue);
+        var max = (double)maxSample;
+        var transfer = source.Transfer;
+        var decode = maxSample == byte.MaxValue ? CicpTransfer.GetDecode8(transfer) : CicpTransfer.GetDecode16(transfer);
+        var colorChannels = channels == 4 ? 3 : channels;
+        var mode = source.Mode;
+        var blend = source.Blend;
+        var isInert = IsTransparentPaintInert(mode);
+        var colors = source.Colors;
+        var color = source.Color;
+        Span<ushort> paint = [color.C0, color.C1, color.C2, color.Alpha];
+        Span<double> s = stackalloc double[3];
+        Span<double> d = stackalloc double[3];
+        Span<double> b = stackalloc double[3];
+
+        // Where red is among the color samples of a pixel, and where blue is
+        var red = isBlueFirst ? 2 : 0;
+        var blue = 2 - red;
+        for (var i = 0; i < coverage.Length; i++)
+        {
+            var q = coverage[i];
+            if (q == 0)
+                continue;
+
+            if (!colors.IsEmpty)
+            {
+                colors.Slice(i * 4, 4).CopyTo(paint);
+            }
+
+            int paintAlpha = paint[3];
+            if (paintAlpha == 0 && isInert)
+                continue;
+
+            var pixel = samples.Slice(i * channels, channels);
+            var destinationAlpha = channels == 4 ? int.CreateTruncating(pixel[3]) : maxSample;
+            if (q == CoverageRasterizer.FullCoverage && paintAlpha == maxSample && (mode == CompositeMode.Source || (mode == CompositeMode.SourceOver && (blend == BlendMode.Normal || destinationAlpha == 0))))
+            {
+                // The paint replaces the pixel: its samples, exactly
+                for (var c = 0; c < colorChannels; c++)
+                {
+                    pixel[c] = TSample.CreateTruncating(paint[c]);
+                }
+
+                if (channels == 4)
+                {
+                    pixel[3] = TSample.MaxValue;
+                }
+
+                continue;
+            }
+
+            if (colorChannels == 1)
+            {
+                s[0] = s[1] = s[2] = decode[paint[0]];
+                d[0] = d[1] = d[2] = decode[int.CreateTruncating(pixel[0])];
+            }
+            else
+            {
+                s[0] = decode[paint[red]];
+                s[1] = decode[paint[1]];
+                s[2] = decode[paint[blue]];
+                d[0] = decode[int.CreateTruncating(pixel[red])];
+                d[1] = decode[int.CreateTruncating(pixel[1])];
+                d[2] = decode[int.CreateTruncating(pixel[blue])];
+            }
+
+            var sourceAlpha = paintAlpha / max;
+            var backdrop = destinationAlpha / max;
+            if (blend != BlendMode.Normal && paintAlpha != 0 && destinationAlpha != 0)
+            {
+                BlendFunctions.Blend(blend, s, d, b);
+                for (var c = 0; c < 3; c++)
+                {
+                    s[c] = ((1 - backdrop) * s[c]) + (backdrop * b[c]);
+                }
+            }
+
+            var (sourceFactor, destinationFactor) = mode switch
+            {
+                CompositeMode.Source => (1d, 0d),
+                CompositeMode.DestinationOver => (1 - backdrop, 1d),
+                CompositeMode.SourceIn => (backdrop, 0d),
+                CompositeMode.DestinationIn => (0d, sourceAlpha),
+                CompositeMode.SourceOut => (1 - backdrop, 0d),
+                CompositeMode.DestinationOut => (0d, 1 - sourceAlpha),
+                CompositeMode.SourceAtop => (backdrop, 1 - sourceAlpha),
+                CompositeMode.DestinationAtop => (1 - backdrop, sourceAlpha),
+                CompositeMode.Xor => (1 - backdrop, 1 - sourceAlpha),
+                CompositeMode.Clear => (0d, 0d),
+                _ => (1d, 1 - sourceAlpha),
+            };
+
+            // The weights of the color of the paint and of the color of the pixel in the result
+            var covered = q / Full;
+            var sourceWeight = covered * sourceFactor * sourceAlpha;
+            var destinationWeight = ((1 - covered) * backdrop) + (covered * destinationFactor * backdrop);
+            if (channels != 4)
+            {
+                // No alpha to store: the color of the result over black
+                if (colorChannels == 1)
+                {
+                    pixel[0] = ToSample((s[0] * sourceWeight) + (d[0] * destinationWeight), max, transfer);
+                }
+                else
+                {
+                    pixel[red] = ToSample((s[0] * sourceWeight) + (d[0] * destinationWeight), max, transfer);
+                    pixel[1] = ToSample((s[1] * sourceWeight) + (d[1] * destinationWeight), max, transfer);
+                    pixel[blue] = ToSample((s[2] * sourceWeight) + (d[2] * destinationWeight), max, transfer);
+                }
+
+                continue;
+            }
+
+            var total = sourceWeight + destinationWeight;
+            var alpha = Math.Floor((total * max) + 0.5);
+            if (!(alpha > 0))
+            {
+                if (destinationAlpha != 0)
+                {
+                    pixel.Clear();
+                }
+
+                continue;
+            }
+
+            pixel[red] = ToSample(((s[0] * sourceWeight) + (d[0] * destinationWeight)) / total, max, transfer);
+            pixel[1] = ToSample(((s[1] * sourceWeight) + (d[1] * destinationWeight)) / total, max, transfer);
+            pixel[blue] = ToSample(((s[2] * sourceWeight) + (d[2] * destinationWeight)) / total, max, transfer);
+            pixel[3] = TSample.CreateTruncating(alpha >= max ? max : alpha);
+        }
+
+        // The encoding is clipped to the samples, and a value that is not a number is zero
+        static TSample ToSample(double linear, double max, byte transfer)
+        {
+            var encoded = CicpTransfer.Encode(transfer, linear);
+            var rounded = Math.Floor((encoded * max) + 0.5 + (1.0 / 1048576));
+            return TSample.CreateTruncating(rounded >= max ? max : rounded > 0 ? rounded : 0);
         }
     }
 }

@@ -1648,6 +1648,76 @@ public sealed class DrawingPathTests
         Assert.Equal(expected, DrawingTestSupport.ReadSamples(right.Frames[0]));
     }
 
+    [Fact]
+    public void ACurveThroughPointsIsACubicCurveBetweenEachPointAndTheNextOne()
+    {
+        // The control points of the curve from P1 to P2 are P1 + tension (P2 - P0) / 3 and P2 - tension (P3 - P1) / 3;
+        // the first point is its own previous point, and the last one its own next point.
+        //   from (0, 0) to (3, 3): (0, 0) + ((3, 3) - (0, 0)) / 6 = (0.5, 0.5), (3, 3) - ((6, 0) - (0, 0)) / 6 = (2, 3)
+        //   from (3, 3) to (6, 0): (3, 3) + ((6, 0) - (0, 0)) / 6 = (4, 3), (6, 0) - ((6, 0) - (3, 3)) / 6 = (5.5, 0.5)
+        PointD[] points = [new(0, 0), new(3, 3), new(6, 0)];
+        var curve = new VectorPathBuilder().AddCurve(points).Build();
+        Assert.Equal(
+            [
+                new PathSegment(PathSegmentKind.MoveTo, new PointD(0, 0)),
+                new PathSegment(PathSegmentKind.CubicBezierTo, new PointD(3, 3), new PointD(0.5, 0.5), new PointD(2, 3)),
+                new PathSegment(PathSegmentKind.CubicBezierTo, new PointD(6, 0), new PointD(4, 3), new PointD(5.5, 0.5)),
+            ],
+            GetSegments(curve));
+        Assert.Equal(RectangleD.FromLTRB(0, 0, 6, 3), curve.Bounds);
+
+        // A closed curve goes around: the point before the first one is the last one
+        //   from (6, 0) to (0, 0): (6, 0) + ((0, 0) - (3, 3)) / 6 = (5.5, -0.5), (0, 0) - ((3, 3) - (6, 0)) / 6 = (0.5, -0.5)
+        var closed = GetSegments(new VectorPathBuilder().AddClosedCurve(points).Build());
+        Assert.HasCount(5, closed);
+        Assert.Equal(new PathSegment(PathSegmentKind.CubicBezierTo, new PointD(3, 3), new PointD(-0.5, 0.5), new PointD(2, 3)), closed[1]);
+        Assert.Equal(new PathSegment(PathSegmentKind.CubicBezierTo, new PointD(0, 0), new PointD(5.5, -0.5), new PointD(0.5, -0.5)), closed[3]);
+        Assert.Equal(PathSegmentKind.Close, closed[4].Kind);
+
+        // The tension scales the distance of the control points; without tension, they are the points
+        var tight = GetSegments(new VectorPathBuilder().AddCurve(points, 0).Build());
+        Assert.Equal(new PathSegment(PathSegmentKind.CubicBezierTo, new PointD(3, 3), new PointD(0, 0), new PointD(3, 3)), tight[1]);
+        var loose = GetSegments(new VectorPathBuilder().AddCurve(points, 1).Build());
+        Assert.Equal(new PathSegment(PathSegmentKind.CubicBezierTo, new PointD(3, 3), new PointD(1, 1), new PointD(1, 3)), loose[1]);
+
+        // A curve continues the builder as a contour of its own, and a single point is a contour without length
+        var builder = new VectorPathBuilder().MoveTo(9, 9).LineTo(8, 8);
+        Assert.Same(builder, builder.AddCurve([new PointD(1, 1)]));
+        Assert.Equal([new PathSegment(PathSegmentKind.MoveTo, new PointD(9, 9)), new PathSegment(PathSegmentKind.LineTo, new PointD(8, 8)), new PathSegment(PathSegmentKind.MoveTo, new PointD(1, 1))], GetSegments(builder.Build()));
+        Assert.HasCount(2, GetSegments(new VectorPathBuilder().AddClosedCurve([new PointD(1, 1)]).Build()));
+
+        // A curve from the current point continues its contour: the same curve as through that point and the others
+        var continued = GetSegments(new VectorPathBuilder().MoveTo(0, 5).LineTo(0, 0).CurveTo(points.AsSpan(1)).LineTo(6, 5).Close().Build());
+        Assert.HasCount(6, continued);
+        Assert.Equal(GetSegments(curve)[1], continued[2]);
+        Assert.Equal(GetSegments(curve)[2], continued[3]);
+        Assert.Equal(new PathSegment(PathSegmentKind.LineTo, new PointD(6, 5)), continued[4]);
+        Assert.Throws<InvalidOperationException>(() => new VectorPathBuilder().CurveTo(points));
+        Assert.Throws<ArgumentException>(() => new VectorPathBuilder().MoveTo(0, 0).CurveTo([]));
+        Assert.Throws<ArgumentException>(() => new VectorPathBuilder().MoveTo(0, 0).CurveTo([new PointD(double.NaN, 0)]));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().MoveTo(0, 0).CurveTo(points, 2));
+
+        Assert.Throws<ArgumentException>(() => new VectorPathBuilder().AddCurve([]));
+        Assert.Throws<ArgumentException>(() => new VectorPathBuilder().AddClosedCurve([]));
+        Assert.Throws<ArgumentException>(() => new VectorPathBuilder().AddCurve([new PointD(0, double.PositiveInfinity)]));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().AddCurve([new PointD(0, 16777217)]));
+        Assert.Throws<ArgumentException>(() => new VectorPathBuilder().AddCurve(points, double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().AddCurve(points, -0.01));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().AddClosedCurve(points, 1.01));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().AddClosedCurve([new PointD(-16777216, 0), new PointD(16777216, 0), new PointD(16777216, 5)], 1));
+
+        static List<PathSegment> GetSegments(VectorPath path)
+        {
+            var segments = new List<PathSegment>();
+            foreach (var segment in path.EnumerateSegments())
+            {
+                segments.Add(segment);
+            }
+
+            return segments;
+        }
+    }
+
     /// <summary>Gets the pixels a drawing gives on a black image of 8 by 8 pixels.</summary>
     private static int[] Render(DrawingAction action)
     {

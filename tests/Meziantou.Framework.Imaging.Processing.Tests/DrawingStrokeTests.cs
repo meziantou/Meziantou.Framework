@@ -618,6 +618,256 @@ public sealed class DrawingStrokeTests
         }
     }
 
+    [Fact]
+    public void AnInsideOrAnOutsideStrokeIsOnOneSideOfItsPath()
+    {
+        // The square from 4 to 12, and a pen of width 2: inside, the stroke is the ring from 4 to 6; outside, the ring
+        // from 2 to 4, with the corners of its miter joins. Everything is on whole pixels: the pixels are all or nothing.
+        var square = new Rectangle(4, 4, 8, 8);
+        foreach (var (alignment, outer, inner) in new[] { (PenAlignment.Inside, 4, 6), (PenAlignment.Outside, 2, 4), (PenAlignment.Center, 3, 5) })
+        {
+            var pen = new Pen(White, 2) { Alignment = alignment };
+            Assert.Equal(alignment, pen.Alignment);
+            using var image = NewBlack(16, 16);
+            image.Frames[0].Draw(canvas => canvas.StrokeRectangle(pen, square), Ct);
+            using var path = NewBlack(16, 16);
+            path.Frames[0].Draw(canvas => canvas.Stroke(pen, new VectorPathBuilder().AddRectangle(square).Build()), Ct);
+            for (var y = 0; y < 16; y++)
+            {
+                for (var x = 0; x < 16; x++)
+                {
+                    var isInRing = Math.Min(x, y) >= outer && Math.Max(x, y) < 16 - outer && !(Math.Min(x, y) >= inner && Math.Max(x, y) < 16 - inner);
+                    Assert.Equal(isInRing ? 255 : 0, image.Frames[0][x, y].Value, $"{alignment}, pixel ({x}, {y})");
+                    Assert.Equal(image.Frames[0][x, y], path.Frames[0][x, y]);
+                }
+            }
+        }
+
+        // Around a disk of radius 5: an inside stroke changes nothing beyond the circle, an outside stroke nothing within
+        // it, and each covers entirely the pixels that are in its ring of width 2 (the diagonal of a pixel is 1.42 long)
+        var center = new PointD(8, 8);
+        foreach (var alignment in new[] { PenAlignment.Inside, PenAlignment.Outside })
+        {
+            using var image = NewBlack(16, 16);
+            image.Frames[0].Draw(canvas => canvas.StrokeCircle(new Pen(White, 2) { Alignment = alignment }, center, 5), Ct);
+            var (from, to) = alignment == PenAlignment.Inside ? (3d, 5d) : (5d, 7d);
+            for (var y = 0; y < 16; y++)
+            {
+                for (var x = 0; x < 16; x++)
+                {
+                    var distance = new PointD(x + 0.5, y + 0.5).DistanceTo(center);
+                    var value = image.Frames[0][x, y].Value;
+                    if (distance < from - 0.8 || distance > to + 0.8)
+                    {
+                        Assert.Equal(0, value, $"{alignment}, pixel ({x}, {y})");
+                    }
+                    else if (distance > from + 0.8 && distance < to - 0.8)
+                    {
+                        Assert.Equal(255, value, $"{alignment}, pixel ({x}, {y})");
+                    }
+                }
+            }
+        }
+
+        // The widened path of such a pen is the outline of the side that is kept
+        var box = new VectorPathBuilder().AddRectangle(new Rectangle(2, 2, 4, 4)).Build();
+        foreach (var alignment in new[] { PenAlignment.Inside, PenAlignment.Outside })
+        {
+            var pen = new Pen(White, 1) { Alignment = alignment };
+            var widened = box.Widen(pen);
+            AssertSamePixels(canvas => canvas.Stroke(pen, box), canvas => canvas.Fill(White, widened));
+            Assert.Equal(alignment == PenAlignment.Inside, widened.Contains(new PointD(2.5, 4)));
+            Assert.Equal(alignment == PenAlignment.Outside, widened.Contains(new PointD(1.5, 4)));
+        }
+
+        // A dashed pen, a round join and a text are stroked on one side the same way
+        var dashed = new Pen(White, 2) { Alignment = PenAlignment.Inside, DashPattern = [2, 2], LineJoin = LineJoin.Round };
+        using var dashes = NewBlack(16, 16);
+        dashes.Frames[0].Draw(canvas => canvas.StrokeRectangle(dashed, square), Ct);
+        Assert.Equal(255, dashes.Frames[0][4, 4].Value);
+        Assert.Equal(0, dashes.Frames[0][6, 4].Value);
+        Assert.Equal(0, dashes.Frames[0][3, 4].Value);
+        Assert.Equal(0, dashes.Frames[0][8, 8].Value);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Pen(White, 1) { Alignment = (PenAlignment)3 });
+    }
+
+    [Fact]
+    public void AMarkerIsDrawnAtTheEndOfAnOpenContour()
+    {
+        // A line of width 2 from (2, 8) to (22, 8) and the head of an arrow at its end: a triangle whose tip is the end
+        // of the line, 10 long and 8 wide (5 and 4 times the width). The line stops 4 before the tip.
+        //   The upper side of the triangle is y = 8 - 0.4 (22 - x): 4 at its base (x = 12), 7.6 at x = 21.
+        //   pixel (12, 4): between y = 4 and 4.4 above, and 5: 1 at its left, 0.6 at its right -> 0.8 -> 204
+        //   pixel (21, 7): between 7.6 and 8, and 8: 0.4 at its left, 0 at its right -> 0.2 -> 51
+        var pen = new Pen(White, 2) { EndMarker = LineMarker.Arrow };
+        Assert.Same(LineMarker.Arrow, pen.EndMarker);
+        Assert.Null(pen.StartMarker);
+        using var image = NewBlack(24, 16);
+        image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(2, 8), new PointD(22, 8)), Ct);
+        var frame = image.Frames[0];
+        Assert.Equal([0, 255, 255, 0], new[] { (int)frame[1, 7].Value, frame[2, 7].Value, frame[5, 8].Value, frame[5, 6].Value });
+        Assert.Equal([0, 204, 255, 255, 204, 0], new[] { 3, 4, 5, 10, 11, 12 }.Select(y => (int)frame[12, y].Value));
+        Assert.Equal(0, frame[11, 5].Value);
+        Assert.Equal(51, frame[21, 7].Value);
+        Assert.Equal(51, frame[21, 8].Value);
+        Assert.Equal(0, frame[22, 7].Value);
+        Assert.Equal(0, frame[22, 8].Value);
+
+        // The widened path has the marker: the tip is the end of the line, exactly
+        var line = new VectorPathBuilder().MoveTo(2, 8).LineTo(22, 8).Build();
+        Assert.Equal(RectangleD.FromLTRB(2, 4, 22, 12), line.Widen(pen).GetTightBounds());
+        using var filled = NewBlack(24, 16);
+        filled.Frames[0].Draw(canvas => canvas.Fill(White, line.Widen(pen)), Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(frame), DrawingTestSupport.ReadSamples(filled.Frames[0]));
+
+        // At the start, a marker points the other way: away from the line. The line starts 4 after the tip.
+        var both = new Pen(White, 2) { StartMarker = LineMarker.Arrow, EndMarker = LineMarker.Arrow };
+        Assert.Equal(RectangleD.FromLTRB(2, 4, 22, 12), line.Widen(both).GetTightBounds());
+        using var mirrored = NewBlack(24, 16);
+        mirrored.Frames[0].Draw(canvas => canvas.Stroke(both, line), Ct);
+        for (var y = 0; y < 16; y++)
+        {
+            for (var x = 0; x < 24; x++)
+            {
+                Assert.Equal(mirrored.Frames[0][x, y], mirrored.Frames[0][23 - x, y]);
+            }
+        }
+
+        Assert.Equal(51, mirrored.Frames[0][2, 7].Value);
+        Assert.Equal(0, mirrored.Frames[0][1, 7].Value);
+
+        // The other markers are centered on the end of the contour: 3 widths across, 4 for the diamond
+        Assert.Equal(RectangleD.FromLTRB(2, 5, 25, 11), line.Widen(new Pen(White, 2) { EndMarker = LineMarker.Square }).GetTightBounds());
+        Assert.Equal(RectangleD.FromLTRB(2, 4, 26, 12), line.Widen(new Pen(White, 2) { EndMarker = LineMarker.Diamond }).GetTightBounds());
+        var disk = line.Widen(new Pen(White, 2) { StartMarker = LineMarker.Circle }).GetTightBounds();
+        Assert.Equal(-1, disk.Left, 0.05);
+        Assert.Equal(5, disk.Top, 0.05);
+        Assert.Equal(22, disk.Right);
+    }
+
+    [Fact]
+    public void AMarkerFollowsTheDirectionOfItsContourAndIsPaintedWithItsStroke()
+    {
+        // A marker that the stroke goes through, with a translucent paint: what they both cover is painted once
+        var triangle = new VectorPathBuilder().AddPolygon([new PointD(0, 0), new PointD(-5, -2), new PointD(-5, 2)]).Build();
+        var forward = new LineMarker(triangle);
+        var backward = new LineMarker(triangle.Reverse());
+        Assert.Same(triangle, forward.Shape);
+        Assert.Equal(0, forward.Inset);
+        var half = new SolidBrush(new Rgba32(255, 255, 255, 128));
+        using var image = NewBlack(24, 16);
+        image.Frames[0].Draw(canvas => canvas.StrokeLine(new Pen(half, 2) { EndMarker = forward }, new PointD(2, 8), new PointD(22, 8)), Ct);
+        Assert.Equal(128, image.Frames[0][5, 7].Value);
+        Assert.Equal(128, image.Frames[0][13, 6].Value);
+        Assert.Equal(128, image.Frames[0][14, 7].Value);
+
+        // The contours of a marker are filled whichever way they turn
+        using var reversed = NewBlack(24, 16);
+        reversed.Frames[0].Draw(canvas => canvas.StrokeLine(new Pen(half, 2) { EndMarker = backward }, new PointD(2, 8), new PointD(22, 8)), Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(image.Frames[0]), DrawingTestSupport.ReadSamples(reversed.Frames[0]));
+
+        // The marker is turned to the direction of the last segment: downward here, the tip at the end of the path
+        var pen = new Pen(White, 1) { EndMarker = LineMarker.Arrow, StartMarker = LineMarker.Arrow };
+        var corner = new VectorPathBuilder().MoveTo(4, 10).LineTo(14, 10).LineTo(14, 20).Build();
+        var bounds = corner.Widen(pen).GetTightBounds();
+        Assert.Equal(RectangleD.FromLTRB(4, 8, 16, 20), bounds);
+
+        // A closed contour has no end, and no marker; neither has a contour without length
+        var closed = new VectorPathBuilder().MoveTo(4, 4).LineTo(12, 4).LineTo(12, 12).Close().Build();
+        Assert.Equal(closed.Widen(new Pen(White, 1)).ToSvgPathData(), closed.Widen(pen).ToSvgPathData());
+        var point = new VectorPathBuilder().MoveTo(4, 4).Build();
+        var round = new Pen(White, 2) { LineCap = LineCap.Round };
+        Assert.Equal(point.Widen(round).ToSvgPathData(), point.Widen(new Pen(White, 2) { LineCap = LineCap.Round, EndMarker = LineMarker.Arrow }).ToSvgPathData());
+
+        // A contour that is not longer than its insets is drawn by its markers alone
+        var stub = new VectorPathBuilder().MoveTo(10, 8).LineTo(12, 8).Build();
+        Assert.Equal(1, CountContours(stub.Widen(new Pen(White, 2) { EndMarker = LineMarker.Arrow })));
+        Assert.Equal(2, CountContours(stub.Widen(new Pen(White, 2) { EndMarker = LineMarker.Arrow, StartMarker = LineMarker.Arrow })));
+        Assert.Equal(1, CountContours(stub.Widen(new Pen(White, 2) { EndMarker = LineMarker.Arrow, LineCap = LineCap.Round })));
+        Assert.Equal(1, CountContours(stub.Widen(new Pen(White, 2) { EndMarker = LineMarker.Arrow, LineCap = LineCap.Square, DashPattern = [1, 1] })));
+        Assert.Equal(2, CountContours(new VectorPathBuilder().MoveTo(2, 8).LineTo(22, 8).Build().Widen(new Pen(White, 2) { EndMarker = LineMarker.Arrow })));
+
+        // With dashes, the markers are at the ends of the contour, and the dashes are those of what is left of it
+        var dashed = new VectorPathBuilder().MoveTo(2, 8).LineTo(22, 8).Build().Widen(new Pen(White, 2) { EndMarker = LineMarker.Arrow, DashPattern = [4, 4] });
+        Assert.Equal(RectangleD.FromLTRB(2, 4, 22, 12), dashed.GetTightBounds());
+        Assert.Equal(3, CountContours(dashed));
+
+        // A transformation of the canvas transforms the markers with the stroke
+        using var direct = NewBlack(24, 16);
+        direct.Frames[0].Draw(canvas => canvas.StrokeLine(new Pen(White, 2) { EndMarker = LineMarker.Arrow }, new PointD(2, 8), new PointD(22, 8)), Ct);
+        using var scaled = NewBlack(24, 16);
+        scaled.Frames[0].Draw(canvas => canvas.Transform(AffineTransform.CreateScale(2, 2), inner => inner.StrokeLine(new Pen(White, 1) { EndMarker = LineMarker.Arrow }, new PointD(1, 4), new PointD(11, 4))), Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(direct.Frames[0]), DrawingTestSupport.ReadSamples(scaled.Frames[0]));
+
+        Assert.Throws<ArgumentNullException>(() => new LineMarker(null!));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new LineMarker(triangle, -1));
+        Assert.Throws<ArgumentException>(() => new LineMarker(triangle, double.NaN));
+        Assert.Equal(2, LineMarker.Arrow.Inset);
+
+        static int CountContours(VectorPath path)
+        {
+            var count = 0;
+            foreach (var segment in path.EnumerateSegments())
+            {
+                if (segment.Kind == PathSegmentKind.MoveTo)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
+    [Fact]
+    public void ACurveThroughPointsIsStrokedAndFilledAsItsPath()
+    {
+        PointD[] points = [new(1, 6), new(3, 2), new(5, 5), new(7, 1)];
+        var pen = new Pen(White, 1) { LineCap = LineCap.Round };
+        AssertSamePixels(canvas => canvas.StrokeCurve(pen, points), canvas => canvas.Stroke(pen, new VectorPathBuilder().AddCurve(points).Build()));
+        AssertSamePixels(canvas => canvas.StrokeCurve(pen, points, 0.8), canvas => canvas.Stroke(pen, new VectorPathBuilder().AddCurve(points, 0.8).Build()));
+        AssertSamePixels(canvas => canvas.StrokeClosedCurve(pen, points), canvas => canvas.Stroke(pen, new VectorPathBuilder().AddClosedCurve(points).Build()));
+        AssertSamePixels(canvas => canvas.FillClosedCurve(White, points), canvas => canvas.Fill(White, new VectorPathBuilder().AddClosedCurve(points).Build()));
+        AssertSamePixels(canvas => canvas.FillClosedCurve(White, points, 1, FillRule.EvenOdd), canvas => canvas.Fill(White, new VectorPathBuilder().AddClosedCurve(points, 1).Build(), FillRule.EvenOdd));
+
+        // Without tension, the curve is the straight segments between its points
+        AssertSamePixels(canvas => canvas.StrokeCurve(pen, points, 0), canvas => canvas.StrokePolyline(pen, points));
+        AssertSamePixels(canvas => canvas.FillClosedCurve(White, points, 0), canvas => canvas.FillPolygon(White, points));
+
+        using var image = NewBlack(8, 8);
+        image.Frames[0].Draw(
+            canvas =>
+            {
+                AssertThrows<ArgumentNullException>(canvas, inner => inner.StrokeCurve(null!, points));
+                AssertThrows<ArgumentNullException>(canvas, inner => inner.FillClosedCurve(null!, points));
+                AssertThrows<ArgumentException>(canvas, inner => inner.StrokeCurve(pen, []));
+                AssertThrows<ArgumentException>(canvas, inner => inner.StrokeCurve(pen, points, double.NaN));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, inner => inner.StrokeCurve(pen, points, 1.5));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, inner => inner.StrokeClosedCurve(pen, points, -0.1));
+                AssertThrows<ArgumentException>(canvas, inner => inner.FillClosedCurve(White, [new PointD(double.NaN, 0)]));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, inner => inner.FillClosedCurve(White, points, 0.5, (FillRule)2));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, inner => inner.StrokeCurve(pen, [new PointD(-16777216, 0), new PointD(16777216, 0), new PointD(16777216, 5)], 1));
+            },
+            Ct);
+        Assert.All(DrawingTestSupport.ReadSamples(image.Frames[0]), sample => Assert.Equal(0, sample));
+    }
+
+    private static void AssertThrows<TException>(DrawingCanvas canvas, DrawingAction action)
+        where TException : Exception
+    {
+        try
+        {
+            action(canvas);
+        }
+        catch (TException exception) when (exception.GetType() == typeof(TException) || typeof(TException) == typeof(ArgumentException))
+        {
+            return;
+        }
+
+        Assert.Fail($"{typeof(TException).Name} was not thrown.");
+    }
+
     /// <summary>Strokes a horizontal line of width 1 through the middle of a row of 9 pixels and checks that row.</summary>
     private static void AssertDashedRow(double[] pattern, double offset, LineCap cap, int[] expected)
     {

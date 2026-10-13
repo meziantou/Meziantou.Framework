@@ -1144,6 +1144,12 @@ namespace Meziantou.Framework.Imaging.Drawing
         Clear = 10,
     }
 
+    public enum CompositingSpace
+    {
+        Encoded = 0,
+        LinearSrgb = 1,
+    }
+
     public readonly struct CornerRadii : System.IEquatable<Meziantou.Framework.Imaging.Drawing.CornerRadii>
     {
         public double TopLeft { get => throw null; }
@@ -1180,6 +1186,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.RectangleD destination, Meziantou.Framework.Imaging.Drawing.ImageSampling sampling, double opacity = 1d) { }
         public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.Rectangle sourceRegion, Meziantou.Framework.Imaging.RectangleD destination, Meziantou.Framework.Imaging.Drawing.ImageSampling sampling, double opacity = 1d) { }
         public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.AffineTransform transform, Meziantou.Framework.Imaging.Drawing.ImageSampling sampling, double opacity = 1d) { }
+        public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.PointD topLeft, Meziantou.Framework.Imaging.PointD topRight, Meziantou.Framework.Imaging.PointD bottomRight, Meziantou.Framework.Imaging.PointD bottomLeft, Meziantou.Framework.Imaging.Drawing.ImageSampling sampling = Meziantou.Framework.Imaging.Drawing.ImageSampling.Bilinear, double opacity = 1d) { }
         public void FillRectangle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.RectangleD rectangle) { }
         public void StrokeRectangle(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.RectangleD rectangle) { }
         public void FillRoundedRectangle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.RectangleD rectangle, double radius) { }
@@ -1189,6 +1196,9 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void FillPolygon(Meziantou.Framework.Imaging.Drawing.Brush brush, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) { }
         public void StrokePolygon(Meziantou.Framework.Imaging.Drawing.Pen pen, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points) { }
         public void StrokePolyline(Meziantou.Framework.Imaging.Drawing.Pen pen, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points) { }
+        public void StrokeCurve(Meziantou.Framework.Imaging.Drawing.Pen pen, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, double tension = 0.5d) { }
+        public void StrokeClosedCurve(Meziantou.Framework.Imaging.Drawing.Pen pen, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, double tension = 0.5d) { }
+        public void FillClosedCurve(Meziantou.Framework.Imaging.Drawing.Brush brush, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, double tension = 0.5d, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) { }
         public void FillPie(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.PointD center, double radius, double startAngle, double sweepAngle) { }
         public void StrokeArc(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.PointD center, double radius, double startAngle, double sweepAngle) { }
         public void FillEllipse(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY) { }
@@ -1213,6 +1223,17 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void Transform<TState>(Meziantou.Framework.Imaging.AffineTransform transform, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void Shadow(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void Shadow<TState>(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
+        public void Mask(Meziantou.Framework.Imaging.Drawing.DrawingAction mask, Meziantou.Framework.Imaging.Drawing.DrawingAction content, Meziantou.Framework.Imaging.Drawing.MaskMode mode = Meziantou.Framework.Imaging.Drawing.MaskMode.Alpha) { }
+        public void Mask<TState>(TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> mask, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> content, Meziantou.Framework.Imaging.Drawing.MaskMode mode = Meziantou.Framework.Imaging.Drawing.MaskMode.Alpha) where TState : allows ref struct { }
+        public void Blur(double blur, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
+        public void Blur<TState>(double blur, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
+        public void BlurBackdrop(double blur) { }
+        public void InnerShadow(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
+        public void InnerShadow<TState>(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
+        public void Antialiasing(bool enabled, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
+        public void Antialiasing<TState>(bool enabled, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
+        public void Compositing(Meziantou.Framework.Imaging.Drawing.CompositingSpace space, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
+        public void Compositing<TState>(Meziantou.Framework.Imaging.Drawing.CompositingSpace space, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
     }
 
     public enum FillRule
@@ -1296,11 +1317,28 @@ namespace Meziantou.Framework.Imaging.Drawing
         Bevel = 2,
     }
 
+    public sealed class LineMarker
+    {
+        public static Meziantou.Framework.Imaging.Drawing.LineMarker Arrow { get => throw null; }
+        public static Meziantou.Framework.Imaging.Drawing.LineMarker Circle { get => throw null; }
+        public static Meziantou.Framework.Imaging.Drawing.LineMarker Square { get => throw null; }
+        public static Meziantou.Framework.Imaging.Drawing.LineMarker Diamond { get => throw null; }
+        public Meziantou.Framework.Imaging.Drawing.VectorPath Shape { get => throw null; }
+        public double Inset { get => throw null; }
+        public LineMarker(Meziantou.Framework.Imaging.Drawing.VectorPath shape, double inset = 0d) { }
+    }
+
     public sealed class LinearGradientBrush : Meziantou.Framework.Imaging.Drawing.GradientBrush
     {
         public Meziantou.Framework.Imaging.PointD Start { get => throw null; }
         public Meziantou.Framework.Imaging.PointD End { get => throw null; }
         public LinearGradientBrush(Meziantou.Framework.Imaging.PointD start, Meziantou.Framework.Imaging.PointD end, System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.GradientStop> stops) { }
+    }
+
+    public enum MaskMode
+    {
+        Alpha = 0,
+        Luminance = 1,
     }
 
     public enum PathCombineMode
@@ -1352,6 +1390,14 @@ namespace Meziantou.Framework.Imaging.Drawing
         Close = 5,
     }
 
+    public sealed class PatternBrush : Meziantou.Framework.Imaging.Drawing.Brush
+    {
+        public Meziantou.Framework.Imaging.RectangleD Tile { get => throw null; }
+        public Meziantou.Framework.Imaging.Drawing.DrawingAction Content { get => throw null; }
+        public Meziantou.Framework.Imaging.AffineTransform Transform { get => throw null; init { } }
+        public PatternBrush(Meziantou.Framework.Imaging.RectangleD tile, Meziantou.Framework.Imaging.Drawing.DrawingAction content) { }
+    }
+
     public sealed class Pen
     {
         public Meziantou.Framework.Imaging.Drawing.Brush Brush { get => throw null; }
@@ -1361,13 +1407,24 @@ namespace Meziantou.Framework.Imaging.Drawing
         public double MiterLimit { get => throw null; init { } }
         public System.ReadOnlySpan<double> DashPattern { get => throw null; init { } }
         public double DashOffset { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.PenAlignment Alignment { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.LineMarker? StartMarker { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.LineMarker? EndMarker { get => throw null; init { } }
         public Pen(Meziantou.Framework.Imaging.Drawing.Brush brush, double width) { }
+    }
+
+    public enum PenAlignment
+    {
+        Center = 0,
+        Inside = 1,
+        Outside = 2,
     }
 
     public sealed class RadialGradientBrush : Meziantou.Framework.Imaging.Drawing.GradientBrush
     {
         public Meziantou.Framework.Imaging.PointD Center { get => throw null; }
         public Meziantou.Framework.Imaging.PointD FocalPoint { get => throw null; init { } }
+        public double FocalRadius { get => throw null; init { } }
         public double Radius { get => throw null; }
         public RadialGradientBrush(Meziantou.Framework.Imaging.PointD center, double radius, System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.GradientStop> stops) { }
     }
@@ -1462,6 +1519,9 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddEllipse(Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY, double rotation) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddCircle(Meziantou.Framework.Imaging.PointD center, double radius) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddPolygon(System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddCurve(System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, double tension = 0.5d) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder CurveTo(System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, double tension = 0.5d) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddClosedCurve(System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, double tension = 0.5d) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Build() => throw null;
         public void Clear() { }
     }

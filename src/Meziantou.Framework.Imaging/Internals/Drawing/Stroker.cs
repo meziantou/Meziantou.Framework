@@ -104,11 +104,14 @@ internal sealed class Stroker : PathSink
     }
 
     /// <summary>Sets the pen of the next path.</summary>
-    public void Configure(Pen pen)
+    /// <param name="pen">The pen.</param>
+    /// <param name="widthFactor">What the width of the pen is multiplied by: 2 for a stroke of which a clip keeps one side.</param>
+    public void Configure(Pen pen, double widthFactor = 1)
     {
+        var width = pen.Width * widthFactor;
         CoversFrame = false;
-        _testFrame = _edges is not null && !_hasOutputTransform && pen.Width >= Math.Min(_edges.Width, _edges.Height);
-        _halfWidth = pen.Width / 2;
+        _testFrame = _edges is not null && !_hasOutputTransform && width >= Math.Min(_edges.Width, _edges.Height);
+        _halfWidth = width / 2;
         _join = pen.LineJoin;
         _cap = pen.LineCap;
         _miterLimitSquared = pen.MiterLimit * pen.MiterLimit;
@@ -223,6 +226,26 @@ internal sealed class Stroker : PathSink
         {
             AddDot(_startX, _startY);
         }
+    }
+
+    /// <summary>
+    /// Adds a closed polygon to the stroke, as a piece: the shape of a marker. Its points are given as the points of a
+    /// path are, with the orientation of the pieces (a positive shoelace sum); it does not have to be convex.
+    /// </summary>
+    /// <param name="points">The coordinates of the vertices: x then y for each one, three vertices at least.</param>
+    public void AddPolygon(ReadOnlySpan<double> points)
+    {
+        // The test of the frame is the one of a convex piece
+        var testFrame = _testFrame;
+        _testFrame = false;
+        BeginPiece(points[0], points[1]);
+        for (var i = 2; i < points.Length; i += 2)
+        {
+            PieceLineTo(points[i], points[i + 1]);
+        }
+
+        ClosePiece();
+        _testFrame = testFrame;
     }
 
     /// <summary>Adds the rectangle of a segment: with the normal <c>n</c> of length half the width, <c>A + n, A - n, B - n, B + n</c>.</summary>

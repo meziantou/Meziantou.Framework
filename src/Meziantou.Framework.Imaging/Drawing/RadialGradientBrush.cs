@@ -15,6 +15,14 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// <c>t</c> is centered <c>t</c> of the way from the focal point to the center, with a radius of <c>t</c> times
 /// <see cref="Radius"/>.
 /// </para>
+/// <para>
+/// With a <see cref="FocalRadius"/>, the gradient starts on a circle around the focal point instead of at that point:
+/// the gradient between two circles of SVG 2 (<c>fr</c>) and of the HTML canvas. The circle of a parameter <c>t</c> is
+/// still centered <c>t</c> of the way from the focal point to the center, and its radius goes from
+/// <see cref="FocalRadius"/> to <see cref="Radius"/>. Inside the circle of the focal point, the parameter is negative:
+/// the color is the one of the first stop with <see cref="GradientSpreadMode.Pad"/>, and the gradient goes on toward
+/// the point where its circles shrink to nothing with the other spread modes.
+/// </para>
 /// </remarks>
 public sealed class RadialGradientBrush : GradientBrush
 {
@@ -39,15 +47,34 @@ public sealed class RadialGradientBrush : GradientBrush
 
     /// <summary>Gets the position of offset 0: the point the gradient spreads from. Defaults to <see cref="Center"/>.</summary>
     /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">The point is not strictly inside the circle of <see cref="Center"/> and <see cref="Radius"/>, or the magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The point, or the circle of <see cref="FocalRadius"/> around it, is not strictly inside the circle of <see cref="Center"/> and <see cref="Radius"/>, or the magnitude of a coordinate exceeds 16777216.</exception>
     public PointD FocalPoint
     {
         get;
         init
         {
             DrawingGuard.Point(value, nameof(value));
-            if (value != Center && !(value.DistanceTo(Center) < Radius))
+            if ((value != Center || FocalRadius != 0) && !(value.DistanceTo(Center) + FocalRadius < Radius))
                 throw new ArgumentOutOfRangeException(nameof(value), value, "The focal point must be strictly inside the circle of the gradient.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the radius of the circle of offset 0, around <see cref="FocalPoint"/>: the gradient starts on that circle.
+    /// Defaults to 0: the gradient starts at the focal point.
+    /// </summary>
+    /// <exception cref="ArgumentException">The value is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative, or the circle is not strictly inside the circle of <see cref="Center"/> and <see cref="Radius"/>.</exception>
+    public double FocalRadius
+    {
+        get;
+        init
+        {
+            DrawingGuard.Length(value, nameof(value));
+            if (value != 0 && !(FocalPoint.DistanceTo(Center) + value < Radius))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The circle of the focal point must be strictly inside the circle of the gradient.");
 
             field = value;
         }

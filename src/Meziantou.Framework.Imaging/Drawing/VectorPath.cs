@@ -237,6 +237,12 @@ public sealed class VectorPath
     /// A dashed pen gives the contours of every dash: the size of the result grows with the length of the path divided by
     /// the length of the pattern, and nothing limits it.
     /// </para>
+    /// <para>
+    /// The markers of the pen are contours of the result, like the pieces of the stroke. With an
+    /// <see cref="Pen.Alignment"/> that is not <see cref="PenAlignment.Center"/>, the result is the outline of the side
+    /// of the stroke that is kept (what <see cref="Combine"/> gives of the stroke of a pen twice as wide and of this
+    /// path): closed contours of straight segments that do not overlap.
+    /// </para>
     /// </remarks>
     /// <param name="pen">The stroke.</param>
     /// <returns>The path of the stroke; an empty path when this path is empty.</returns>
@@ -247,18 +253,26 @@ public sealed class VectorPath
         ArgumentNullException.ThrowIfNull(pen);
         var builder = new VectorPathBuilder();
         var stroker = new Stroker(builder);
-        stroker.Configure(pen);
-        if (pen.IsDashed)
+
+        // A stroke on one side of the path is the stroke of a pen twice as wide, of which that side is kept
+        var isCentered = pen.Alignment == PenAlignment.Center;
+        stroker.Configure(pen, isCentered ? 1 : 2);
+        PathSink sink = stroker;
+        using var dasher = pen.IsDashed ? new Dasher(scope: null) : null;
+        if (dasher is not null)
         {
-            using var dasher = new Dasher(scope: null);
             dasher.Configure(pen, stroker);
-            PathFlattener.Flatten(this, dasher);
-        }
-        else
-        {
-            PathFlattener.Flatten(this, stroker);
+            sink = dasher;
         }
 
+        using var markers = pen.HasMarkers ? new MarkerSink(scope: null) : null;
+        if (markers is not null)
+        {
+            markers.Configure(pen, stroker, sink);
+            sink = markers;
+        }
+
+        PathFlattener.Flatten(this, sink);
         var result = builder.Build();
         foreach (var value in result._points)
         {
@@ -266,6 +280,9 @@ public sealed class VectorPath
             if (!(Math.Abs(value) <= DrawingGuard.MaxCoordinate))
                 throw new ArgumentOutOfRangeException(nameof(pen), "The stroke goes beyond the largest coordinate (16777216).");
         }
+
+        if (!isCentered)
+            return result.Combine(this, pen.Alignment == PenAlignment.Inside ? PathCombineMode.Intersect : PathCombineMode.Exclude);
 
         return result;
     }

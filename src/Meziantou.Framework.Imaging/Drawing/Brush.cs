@@ -1,10 +1,10 @@
 namespace Meziantou.Framework.Imaging.Drawing;
 
-/// <summary>The colors a shape is painted with: a <see cref="SolidBrush"/>, a <see cref="GradientBrush"/> or an <see cref="ImageBrush"/>.</summary>
+/// <summary>The colors a shape is painted with: a <see cref="SolidBrush"/>, a <see cref="GradientBrush"/>, an <see cref="ImageBrush"/> or a <see cref="PatternBrush"/>.</summary>
 /// <remarks>
 /// <para>
 /// Brushes are immutable and thread-safe: create them once and reuse them (an <see cref="ImageBrush"/> refers to an image
-/// that is not). The type cannot be derived outside the library.
+/// that is not, and a <see cref="PatternBrush"/> to a callback that draws). The type cannot be derived outside the library.
 /// </para>
 /// <para>
 /// Brush colors are sample values in the color space of the image they are drawn on: no color profile is applied. Before

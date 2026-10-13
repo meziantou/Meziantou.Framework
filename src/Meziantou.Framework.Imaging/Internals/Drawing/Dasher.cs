@@ -91,14 +91,14 @@ internal sealed class Dasher : PathSink, IDisposable
     private Span<double> First => _pooled is not null ? unsafe(MemoryMarshal.Cast<byte, double>(_pooled.Span)) : _managed;
 
     /// <summary>Sets the pen and the stroker of the next path, drawn on a canvas of a size.</summary>
-    public void Configure(Pen pen, Stroker stroker, double width, double height, CancellationToken cancellationToken)
+    public void Configure(Pen pen, Stroker stroker, double width, double height, CancellationToken cancellationToken, double widthFactor = 1)
     {
         Configure(pen, stroker, cancellationToken);
 
         // The body of a dash is within half the width of the pen of its segment; a cap goes that far beyond its end; a
         // miter goes as far as the miter limit allows from its vertex, and the corner of a square cap or of a square dot
         // the diagonal of half the width. One more pixel than needed never shows.
-        var half = pen.Width / 2;
+        var half = pen.Width * widthFactor / 2;
         _hasCanvas = true;
         _canvasWidth = width;
         _canvasHeight = height;

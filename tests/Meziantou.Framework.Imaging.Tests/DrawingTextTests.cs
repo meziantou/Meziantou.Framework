@@ -302,6 +302,29 @@ public sealed class DrawingTextTests
             },
             Ct);
         Assert.Equal(DrawingTestSupport.ReadSamples(strokedRectangles.Frames[0]), DrawingTestSupport.ReadSamples(stroked.Frames[0]));
+
+        // A pen on one side of its path outlines a text without covering it, and a pattern paints a text as any shape
+        var rectangles = new VectorPathBuilder().AddRectangle(new RectangleD(2, 1, 12, 12)).AddRectangle(new RectangleD(15, 5, 6, 8)).Build();
+        var pattern = new PatternBrush(new Rectangle(0, 0, 2, 2), tile => tile.FillRectangle(White, new Rectangle(0, 0, 1, 1)));
+        foreach (var alignment in new[] { PenAlignment.Outside, PenAlignment.Inside })
+        {
+            var aligned = new Pen(pattern, 2) { Alignment = alignment, LineJoin = LineJoin.Round };
+            using var outlined = new Image<Gray8>(24, 16, new Gray8(0));
+            outlined.Draw(canvas => canvas.StrokeText(aligned, layout, new PointD(0, 0)), Ct);
+            using var outlinedRectangles = new Image<Gray8>(24, 16, new Gray8(0));
+            outlinedRectangles.Draw(canvas => canvas.Stroke(aligned, rectangles), Ct);
+            Assert.Equal(DrawingTestSupport.ReadSamples(outlinedRectangles.Frames[0]), DrawingTestSupport.ReadSamples(outlined.Frames[0]));
+            Assert.Equal(alignment == PenAlignment.Inside ? 255 : 0, outlined.Frames[0][2, 2].Value);
+            Assert.Equal(alignment == PenAlignment.Outside ? 255 : 0, outlined.Frames[0][0, 4].Value);
+            Assert.Equal(0, outlined.Frames[0][8, 6].Value);
+        }
+
+        using var painted = new Image<Gray8>(24, 16, new Gray8(0));
+        painted.Draw(canvas => canvas.FillText(pattern, layout, new PointD(0, 0)), Ct);
+        using var paintedRectangles = new Image<Gray8>(24, 16, new Gray8(0));
+        paintedRectangles.Draw(canvas => canvas.Fill(pattern, rectangles), Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(paintedRectangles.Frames[0]), DrawingTestSupport.ReadSamples(painted.Frames[0]));
+        Assert.Equal([255, 0, 255, 0], Enumerable.Range(2, 4).Select(x => (int)painted.Frames[0][x, 2].Value));
     }
 
     [Fact]

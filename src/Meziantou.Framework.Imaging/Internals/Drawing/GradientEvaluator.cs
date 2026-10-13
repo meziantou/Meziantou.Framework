@@ -15,7 +15,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// A radial gradient with a focal point <c>f</c> has, with <c>e = center - f</c>, <c>d = p - f</c> and
 /// <c>a = radius^2 - |e|^2</c>, the parameter <c>(sqrt((d . e)^2 + a |d|^2) - (d . e)) / a</c>: the positive <c>t</c> for
-/// which <c>p</c> is on the circle of center <c>f + t e</c> and radius <c>t radius</c>. A sweep gradient has the
+/// which <c>p</c> is on the circle of center <c>f + t e</c> and radius <c>t radius</c>. With a focal radius <c>fr</c>,
+/// <c>g = radius - fr</c>, <c>a = g^2 - |e|^2</c> and <c>b = (d . e) + fr g</c>, the parameter is
+/// <c>(sqrt(b^2 + a (|d|^2 - fr^2)) - b) / a</c>: the <c>t</c> for which <c>p</c> is on the circle of center
+/// <c>f + t e</c> and radius <c>fr + t g</c>, that radius being positive. A sweep gradient has the
 /// parameter <c>(angle(p - center) - start) mod 360 / (end - start)</c>, the angle being the one of
 /// <see cref="DeterministicAngle.Atan2"/>. When the brush has a transformation, <c>p</c> is the center of the pixel
 /// brought back through the inverse of that transformation; a transformation without inverse makes a degenerate gradient.
@@ -69,6 +72,8 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     private double _axisX;
     private double _axisY;
     private double _divisor;
+    private double _focalRadius;
+    private double _focalGrowth;
     private double _max;
 
     public GradientEvaluator(AllocationScope scope)
@@ -150,6 +155,18 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                 _axisX = linear.End.X - linear.Start.X;
                 _axisY = linear.End.Y - linear.Start.Y;
                 _divisor = (_axisX * _axisX) + (_axisY * _axisY);
+                break;
+
+            case RadialGradientBrush radial when radial.FocalRadius != 0:
+                // The circles from the one of the focal point to the one of the gradient
+                _kind = GradientKind.TwoCircles;
+                _originX = radial.FocalPoint.X;
+                _originY = radial.FocalPoint.Y;
+                _axisX = radial.Center.X - radial.FocalPoint.X;
+                _axisY = radial.Center.Y - radial.FocalPoint.Y;
+                _focalRadius = radial.FocalRadius;
+                _focalGrowth = radial.Radius - radial.FocalRadius;
+                _divisor = (_focalGrowth * _focalGrowth) - ((_axisX * _axisX) + (_axisY * _axisY));
                 break;
 
             case RadialGradientBrush radial when radial.FocalPoint != radial.Center:
@@ -299,6 +316,14 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             case GradientKind.Focal:
                 var along = (px * _axisX) + (py * _axisY);
                 t = (Math.Sqrt((along * along) + (_divisor * ((px * px) + (py * py)))) - along) / _divisor;
+                break;
+
+            case GradientKind.TwoCircles:
+                // The circles are inside each other: every position is on one of them, and the root is real. A
+                // rounding that makes it slightly negative under the square root is the position where it is zero.
+                var half = ((px * _axisX) + (py * _axisY)) + (_focalRadius * _focalGrowth);
+                var discriminant = (half * half) + (_divisor * (((px * px) + (py * py)) - (_focalRadius * _focalRadius)));
+                t = (Math.Sqrt(discriminant > 0 ? discriminant : 0) - half) / _divisor;
                 break;
 
             default:
@@ -473,6 +498,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         Linear,
         Radial,
         Focal,
+        TwoCircles,
         Sweep,
     }
 }

@@ -28,9 +28,11 @@ color conversion, and bounded-memory streaming.
 - Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision preserved
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip,
   grayscale, Gaussian blur and convolution matrices (sharpen, edge detection) applied to all frames
-- Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves and
-  arcs, dashed strokes, solid colors, linear, radial and sweep gradients, images, clips, layers, shadows, blend modes,
-  compositing operators and transformations of the canvas, with exact pixel coverage
+- Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
+  arcs and curves through points, dashed strokes, strokes on one side of their path and arrow heads, solid colors,
+  linear, radial and sweep gradients, images (also in perspective), patterns, clips, masks, layers, shadows, blurs,
+  blend modes, compositing operators and transformations of the canvas, with exact pixel coverage; hard edges and
+  compositing in linear light on request
 - Paths that are read from and written to SVG path data, combined (union, intersection, difference), simplified,
   reversed, cut and measured
 - Text drawn from font files with the same rasterizer, measured by the layout that is drawn, with the positions of
@@ -712,11 +714,12 @@ public static void DrawLandscape(string outputPath)
 ```
 
 **Shapes**. A canvas fills (`Fill`, `FillRectangle`, `FillRoundedRectangle`, `FillEllipse`, `FillCircle`, `FillPie`,
-`FillPolygon`) and strokes (`Stroke`, `StrokeRectangle`, `StrokeRoundedRectangle`, `StrokeEllipse`, `StrokeCircle`,
-`StrokeArc`, `StrokeLine`, `StrokePolyline`, `StrokePolygon`, `StrokeBezier`). Anything else is a `VectorPath`, built
-once with a `VectorPathBuilder` (`MoveTo`, `LineTo`, `QuadraticBezierTo`, `CubicBezierTo`, `ArcTo`, `Close`,
-`AddRectangle`, `AddRoundedRectangle`, `AddEllipse`, `AddCircle`, `AddArc`, `AddPie`, `AddPolygon`) and drawn as many
-times as needed. A path holds any number of contours; an open
+`FillPolygon`, `FillClosedCurve`) and strokes (`Stroke`, `StrokeRectangle`, `StrokeRoundedRectangle`, `StrokeEllipse`,
+`StrokeCircle`, `StrokeArc`, `StrokeLine`, `StrokePolyline`, `StrokePolygon`, `StrokeBezier`, `StrokeCurve`,
+`StrokeClosedCurve`). Anything else is a `VectorPath`, built once with a `VectorPathBuilder` (`MoveTo`, `LineTo`,
+`QuadraticBezierTo`, `CubicBezierTo`, `ArcTo`, `CurveTo`, `Close`, `AddRectangle`, `AddRoundedRectangle`,
+`AddEllipse`, `AddCircle`, `AddArc`, `AddPie`, `AddPolygon`, `AddCurve`, `AddClosedCurve`) and drawn as many times as
+needed. A path holds any number of contours; an open
 contour is closed by a straight segment when it is filled, and gets the caps of the pen when it is stroked. `FillRule`
 decides what is inside when contours overlap: `NonZero` (default) fills everything the contours wind around, `EvenOdd`
 makes a hole wherever an even number of them overlap.
@@ -731,6 +734,53 @@ tab, a speech bubble; zero for a corner that is not rounded): when the radii of 
 more than that side, every radius is reduced by the same factor, as CSS does. Angles are in degrees from the positive x axis; a positive angle turns clockwise
 on the image, and a sweep beyond 360 degrees is the whole ellipse. An arc is an element of the path like a curve: it
 ends exactly on its end point, and it is transformed as an arc.
+
+**Curves through points**. `StrokeCurve` draws the smooth curve that goes through a list of points, the line of a
+chart; `StrokeClosedCurve` and `FillClosedCurve` go back from the last point to the first one, and `AddCurve`,
+`AddClosedCurve` and `CurveTo` (from the current point of a contour) add the same curves to a path. The curve is a
+cubic Bézier curve between each point and the next one, which has at each point the direction of the line between
+the points around it. Its `tension` says how far it keeps that direction: 0.5 (the default) is the Catmull-Rom
+spline, 0 gives the straight segments between the points, and 1 the roundest curve. From `P1` to `P2`, the control
+points are `P1 + tension (P2 - P0) / 3` and `P2 - tension (P3 - P1) / 3`; the first point of an open curve is its own
+previous point, and its last point its own next point. A curve can go beyond the points it goes through where they
+turn sharply.
+
+<!-- snippet: draw-chart -->
+```csharp
+public static void DrawChart(string outputPath)
+{
+    using var image = new Image<Rgba32>(240, 140, Colors.White);
+    PointD[] values = [new(30, 100), new(70, 60), new(110, 80), new(150, 30), new(190, 50)];
+
+    // Hatching: a tile of 6 by 6 with a stripe, drawn once, repeated, and turned by the transformation of the brush
+    var hatch = new PatternBrush(new Rectangle(0, 0, 6, 6), tile => tile.FillRectangle(Colors.LightSteelBlue, new Rectangle(0, 0, 3, 6)))
+    {
+        Transform = AffineTransform.CreateRotation(45),
+    };
+    var axis = new Pen(Colors.DimGray, 2) { EndMarker = LineMarker.Arrow };
+    var line = new Pen(Colors.Crimson, 3) { StartMarker = LineMarker.Circle, EndMarker = LineMarker.Circle };
+    var border = new Pen(Colors.SteelBlue, 2) { Alignment = PenAlignment.Inside };
+
+    // The area under the curve: the curve through the values, closed by the axis
+    var area = new VectorPathBuilder().MoveTo(values[0]).CurveTo(values.AsSpan(1)).LineTo(190, 120).LineTo(30, 120).Close().Build();
+
+    image.Draw(canvas =>
+    {
+        // The outline is inside the area: it does not go over the axis
+        canvas.Fill(hatch, area);
+        canvas.Stroke(border, area);
+
+        // The head of each arrow has its tip at the end of the line
+        canvas.StrokeLine(axis, new PointD(20, 120), new PointD(225, 120));
+        canvas.StrokeLine(axis, new PointD(20, 120), new PointD(20, 12));
+
+        // The curve goes smoothly through every value, with a disk at both ends
+        canvas.StrokeCurve(line, values);
+    });
+
+    image.Save(outputPath);
+}
+```
 
 **Transforms**. An `AffineTransform` is a combination of translations, scalings, rotations and skews
 (`CreateTranslation`, `CreateScale`, `CreateRotation`, `CreateSkew`, combined with `Then` or `*`; the first one is
@@ -882,7 +932,8 @@ canvas. A coordinate must be finite (`ArgumentException`) and no larger than 16,
 (`ArgumentOutOfRangeException`). `PointD` has the usual arithmetic (`+`, `-`, `*`, `/`, `DistanceTo`) and `RectangleD`
 the usual helpers (`Center`, `Contains`, `Intersect`, `Union`, `Offset`, `Inflate`).
 
-**Brushes**. A brush is a `SolidBrush`, a gradient or an `ImageBrush` (see Images below). A `SolidBrush` paints one
+**Brushes**. A brush is a `SolidBrush`, a gradient, an `ImageBrush` or a `PatternBrush` (see Images and Patterns
+below). A `SolidBrush` paints one
 color (an `Rgba32` or `Rgba64` converts implicitly to a brush). A `LinearGradientBrush` (between two points), a
 `RadialGradientBrush` (around a center, up to a radius) and a `SweepGradientBrush` (around a center, by the angle) paint
 the color of their `GradientStop`s at the center of each pixel; `SpreadMode` gives the colors beyond the stops: `Pad`
@@ -897,7 +948,10 @@ change evenly: (208, 168, 0), with no dull band between two saturated colors. Th
 a stop, the color is the color of the stop in every space.
 
 A radial gradient can spread from a `FocalPoint` that is not its center (a highlight on a sphere): the point must be
-strictly inside the circle. A sweep gradient goes around its center clockwise on the image, from `StartAngle` to
+strictly inside the circle. With a `FocalRadius`, it starts on a circle around that point instead of at the point:
+the gradient between two circles of SVG 2 (`fr`) and of the HTML canvas, the first circle strictly inside the second
+one. Inside the first circle, the color is the first stop (or the gradient goes on, with the other spread modes). A
+sweep gradient goes around its center clockwise on the image, from `StartAngle` to
 `EndAngle` (a full turn from the right of the center by default); its colors change abruptly at its start angle unless
 it ends on the color it starts with, and that edge is not antialiased. Every gradient has a `Transform` that places it
 on the canvas: the points of the gradient are given before it applies, so a scaling that is not the same on both axes
@@ -911,6 +965,45 @@ paints any shape or text with an image: `Transform` places the image on the canv
 it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), `Sampling` chooses how the image is read, and
 `Opacity` fades it. An image drawn on whole pixels without scaling keeps its pixels exactly; its pixels are converted
 to the pixel format of the canvas like any brush color, and no color profile is applied.
+
+**Perspective**. `DrawImage` with four points draws the image on a quadrilateral, as a plane seen in perspective: a
+screenshot on the screen of a photograph, a label on a wall. The four corners of the image go to the four points
+(top-left, top-right, bottom-right, bottom-left), straight lines stay straight, and what is further away is smaller.
+The points must be the corners of a convex quadrilateral, in order around it (the other way around mirrors the
+image); points that are all on a line draw nothing, and a parallelogram is an affine transformation, with the same
+pixels. With `ImageSampling.Smooth`, each pixel of the canvas reads what it covers of the image, which changes from
+the near side to the far side.
+
+<!-- snippet: draw-perspective -->
+```csharp
+public static void DrawOnScreen(string photoPath, string screenshotPath, string outputPath)
+{
+    using var photo = Image.Load(photoPath);
+    using var screenshot = Image.Load(screenshotPath);
+
+    // Where the four corners of the screenshot go on the photo, from its top-left corner, clockwise. The
+    // screenshot is larger than the screen: smooth sampling reads every pixel of it that a pixel of the photo covers.
+    photo.Draw(canvas => canvas.DrawImage(
+        screenshot.Frames[0],
+        new PointD(40, 30),
+        new PointD(180, 44),
+        new PointD(176, 132),
+        new PointD(36, 150),
+        ImageSampling.Smooth));
+
+    photo.Save(outputPath);
+}
+```
+
+**Patterns**. A `PatternBrush` paints a drawing that repeats: a callback draws a tile (a rectangle of the coordinates
+of the pattern), and the tile is laid side by side in both directions, placed on the canvas by the `Transform` of the
+brush. When a shape is painted, the tile is drawn once, on an image of the size it has on the canvas (under the
+transformation of the brush, then the one of the canvas), then repeated like the image of an `ImageBrush`: a pattern
+that is enlarged stays as sharp as its drawing, and a tile of a whole number of pixels placed on whole pixels keeps
+the pixels of its drawing exactly. What the callback draws outside the tile is not painted. The callback must draw
+the same thing every time (it runs again when the size of the tile changes, or after another pattern was painted),
+and can use any brush but, directly or not, its own pattern. A callback is also what replays a drawing: keep a
+`DrawingAction`, and call it inside `canvas.Transform` wherever the drawing is needed, at any size.
 
 An `ImageSampling` is `Bilinear` (the default: the four pixels around a position, interpolated), `Nearest` (the pixel
 that contains the position: an enlarged image keeps its pixels as squares) or `Smooth`. With the first two, an image
@@ -970,6 +1063,24 @@ an edge of the canvas is taken to continue there, so that its shadow does not fa
 with the pixels the clip can show and with the blur: draw the shadow of a small shape inside `Clip`, with room for the
 shadow.
 
+**Inner shadows**. `canvas.InnerShadow(color, offset, blur, callback)` draws what the callback draws with a shadow
+inside it: the shadow cast on the drawing by what is around it, for a shape that looks cut out or pressed in. It is
+computed as a shadow is, from what the layer lacks of opacity, and painted on the drawing only: the alpha of the
+drawing does not change. A translucent drawing lacks opacity everywhere and is shadowed all over.
+
+**Blurs**. `canvas.Blur(blur, callback)` draws what the callback draws out of focus: the drawings are made on a
+layer, which is blurred as a whole (colors and alpha together, a transparent pixel not darkening its neighbors) by a
+Gaussian blur of the given standard deviation, then drawn. `canvas.BlurBackdrop(blur)` blurs what is already drawn
+instead, where the clip lets a drawing through: inside `Clip`, it is the frosted glass behind a panel, with the
+antialiased edge of the clip. Both read what is around the pixels they change, and take a drawing that reaches an
+edge of the canvas to continue beyond it.
+
+**Masks**. `canvas.Mask(mask, content, mode)` keeps what one callback draws only where another one draws: the content
+is drawn on a layer, the mask on a layer of its own, and each pixel of the content is kept in proportion to the mask
+there. With `MaskMode.Alpha` (the default), the mask is the alpha of its drawings, whatever their colors: a shape, a
+text, a gradient to a transparent color. With `MaskMode.Luminance`, as in the masks of SVG, it is the luminance of
+their colors multiplied by their alpha: white keeps, black removes, and a gradient from white to black fades.
+
 <!-- snippet: draw-badge -->
 ```csharp
 public static void DrawBadge(string outputPath)
@@ -1002,6 +1113,45 @@ public static void DrawBadge(string outputPath)
 }
 ```
 
+<!-- snippet: draw-glass -->
+```csharp
+public static void DrawGlassPanel(string photoPath, string outputPath)
+{
+    using var image = Image.Load(photoPath);
+    var bounds = new RectangleD(16, 16, image.Width - 32, 72);
+    var panel = new VectorPathBuilder().AddRoundedRectangle(bounds, 14).Build();
+    var track = new RectangleD(bounds.X + 16, bounds.Bottom - 26, bounds.Width - 32, 12);
+    var fade = new LinearGradientBrush(new PointD(track.X, 0), new PointD(track.Right, 0), [new GradientStop(0, Colors.White), new GradientStop(1, Colors.Black)]);
+
+    image.Draw(canvas =>
+    {
+        // Frosted glass: what is behind the panel is blurred, then lightened, inside the panel only
+        canvas.Clip(panel, glass =>
+        {
+            glass.BlurBackdrop(6);
+            glass.Fill(new Rgba32(255, 255, 255, 70));
+        });
+
+        // A light on the panel, out of focus
+        canvas.Blur(5, glow => glow.FillCircle(Colors.Gold, new PointD(bounds.X + 30, bounds.Y + 24), 8));
+
+        // The track of a gauge, pressed into the panel: the shadow of its edge falls inside it, from the top
+        canvas.InnerShadow(new Rgba32(0, 0, 0, 150), new PointD(0, 2), 1.5, well =>
+        {
+            well.FillRoundedRectangle(Colors.WhiteSmoke, track, 6);
+
+            // Its level fades out to the right: it is kept by the luminance of a gradient from white to black
+            well.Mask(
+                mask => mask.Fill(fade),
+                level => level.FillRoundedRectangle(Colors.SeaGreen, track, 6),
+                MaskMode.Luminance);
+        });
+    });
+
+    image.Save(outputPath);
+}
+```
+
 **Operators**. A brush is painted over the pixels (`CompositeMode.SourceOver`) unless its `CompositeMode` says
 otherwise. The modes are the compositing operators of Porter and Duff: `Source` replaces the pixels, alpha included (a
 transparent color erases), `DestinationOut` erases them where the paint is opaque (an eraser, with any shape and any
@@ -1024,6 +1174,18 @@ nothing to mix it with. `canvas.Layer` takes a blend mode too, and mixes a whole
 beveled beyond `MiterLimit`; `Round`; `Bevel`) and a `LineCap` for the ends of open contours (`Butt` by default; `Round`;
 `Square`). The parts of a stroke that overlap are painted once, also with a translucent paint.
 
+`Pen.Alignment` puts the stroke on one side of its path: `Inside` what the path fills (an outline that does not make
+a shape larger, or go over what is next to it) or `Outside` it (an outline that does not cover the shape: the outline
+of a text). Such a stroke is the stroke of a pen twice as wide, of which a clip keeps one side.
+
+`Pen.StartMarker` and `Pen.EndMarker` draw a shape at the ends of the open contours: a `LineMarker`, which is
+`Arrow` (the head of an arrow, whose tip is exactly the end of the path), `Circle`, `Square`, `Diamond`, or any
+`VectorPath` given in units of the width of the pen, with the end of the contour at its origin and the direction of
+the contour along its x axis. A marker is scaled by the width of the pen, turned to the direction of the contour at
+that end, and painted with the stroke as one shape; its `Inset` shortens the stroke so that it does not show beyond a
+marker that narrows to a point. Closed contours have no marker; with dashes, the markers are at the ends of the
+contour.
+
 **Dashes**. `Pen.DashPattern` cuts a stroke into dashes: a list of lengths in pixels, alternately of a dash and of a
 gap, repeated along each contour (`[6, 3]` is dashes of 6 and gaps of 3; a pattern of an odd number of lengths is used
 twice, so `[4]` is dashes of 4 and gaps of 4). `DashOffset` is where a contour starts in the pattern. Each dash is
@@ -1031,6 +1193,40 @@ stroked as an open contour: it gets the caps of the pen at both ends and its joi
 a dash of length zero is drawn by its caps alone (`[0, 5]` with round caps is a dotted line). The last dash of a closed
 contour continues with the first one, as one dash, when the contour ends in the middle of a dash. Lengths are measured
 along the path as it is drawn, and are not rounded; a pattern must be at least 1/1024 of a pixel long.
+
+**Antialiasing and linear light**. `canvas.Antialiasing(false, callback)` draws with hard edges: a pixel is painted
+entirely when the shape covers at least half of it, and not at all otherwise. An opaque paint then writes its color
+and nothing else, which pixel art, masks of whole pixels and images that keep the colors of a palette need.
+`canvas.Compositing(CompositingSpace.LinearSrgb, callback)` combines the paints with the pixels in linear light
+instead of on the stored sample values: the samples are decoded with the transfer function of the image, combined
+and encoded again. The edge of a shape, a translucent paint and a shadow then mix light as light mixes: with sRGB
+samples, half of white over black is the gray 188 instead of 128, and a thin light line on a dark background keeps
+its weight. The function is the one of `ResizeWorkingSpace.LinearSrgb`: sRGB for an untagged image or a profile
+recognized as sRGB, the transfer characteristics of a CICP description otherwise; another profile is rejected.
+
+<!-- snippet: draw-rendering -->
+```csharp
+public static void DrawSprite(string outputPath)
+{
+    using var image = new Image<Rgba32>(32, 32, Colors.Black);
+    var thin = new Pen(Colors.White, 1);
+
+    image.Draw(canvas =>
+    {
+        // Without antialiasing, every pixel is the paint or what was there: the colors stay those of the palette
+        canvas.Antialiasing(enabled: false, sprite =>
+        {
+            sprite.FillCircle(Colors.Gold, new PointD(16, 18), 9);
+            sprite.FillRectangle(Colors.Crimson, new RectangleD(11.5, 14.5, 9, 3));
+        });
+
+        // In linear light, the edge of a thin light line on a dark background is not darker than the line
+        canvas.Compositing(CompositingSpace.LinearSrgb, light => light.StrokeLine(thin, new PointD(2, 2.3), new PointD(30, 5.7)));
+    });
+
+    image.Save(outputPath);
+}
+```
 
 <!-- snippet: draw-on-animation -->
 ```csharp
@@ -1105,13 +1301,46 @@ public static void MarkAnimation(string inputPath, string outputPath)
   the clip, rounded to the nearest 1/65536 (ties upward). It is the area of what the shape and the clip have in common
   wherever one of them covers the pixel entirely; on a pixel that both only cover in part, it is the product of the two
   areas.
+- **Perspective.** An image on a quadrilateral is placed by the projective transformation that maps the corners of
+  the image to the four points: the color of a pixel is the color the image has at the position its center comes
+  from, by the rules of any image. With smooth sampling, `sx` and `sy` are the lengths of the derivatives of that
+  position at the center of the pixel.
+- **Patterns.** With `w` and `h` the width and the height the tile has on the canvas, its image has
+  `max(1, ceil(w - 1/1024))` columns and as many rows computed from `h`, with colors and alpha (8-bit samples on an
+  8-bit color canvas, 16-bit samples otherwise). The callback draws on it through a transformation that maps the
+  tile to the image, and the shape is painted with that image, repeated, with bilinear interpolation.
+- **Masks.** A mask is a layer combined with the layer of its content by `DestinationIn`. A luminance mask first
+  replaces the alpha `a` of each of its pixels by `round(a Y / M)`, where `Y` is the Rec. 709 luma of the pixel on
+  its stored samples (the gray level of `Grayscale`) and `M` the largest sample value.
+- **Blurs.** With the pixels read as 16-bit colors, their alpha and each color multiplied by its alpha are blurred by
+  the weights of a Gaussian blur (see `GaussianBlur`), rows then columns, the pixels beyond those of the canvas being
+  the nearest ones; the result is the alpha `floor(A + 1/2 + 2^-20)` and the colors `floor(65535 P / A + 1/2 + 2^-20)`,
+  converted to the pixel format like brush colors. Intermediate values are kept in single precision. The blur of the
+  backdrop replaces a pixel in proportion to the coverage of the clip.
+- **Inner shadows.** The shadow is the one of **Shadows** computed from one minus the alpha of the layer; its color
+  is combined with the pixels of the layer by `SourceAtop`, with the coverage of the shadow.
+- **Aligned strokes and markers.** A stroke on one side of its path is the stroke of a pen twice as wide under a clip
+  made of what the path fills with the non-zero rule, or of what it does not fill: the rules of **Clips** apply. A
+  point `(x, y)` of a marker is drawn at `P + w (x d + y n)`, with `P` the end of the contour, `w` the width of the
+  pen, `d` the unit vector of the direction of the contour there and `n = (-d.y, d.x)`; the stroke goes from the
+  distance `w i0` to the distance `L - w i1` along a contour of length `L`, for the insets `i0` and `i1`.
+- **Hard edges.** Without antialiasing, a coverage of at least 32768/65536, after its usual rounding, becomes a full
+  coverage, and any other becomes none, before the clip and the opacity of a paint apply.
+- **Linear light.** Every color sample of the paint and of the pixel is decoded by the transfer function of the
+  image (sRGB when it declares none), the blend mode and the
+  operator are applied with the formulas of the stored values in double precision, and the result is encoded and
+  rounded as `floor(M v + 1/2 + 2^-20)`; the alpha is combined as it is. A pixel that would not be written on the
+  stored values is not written, and an opaque paint that replaces a pixel entirely writes its color exactly. The
+  power function of the platform is used: a sample within about 1e-12 of a rounding boundary can differ by one from a
+  platform to another.
 - **Metadata.** The first shape that changes a pixel removes the EXIF thumbnail, which no longer matches. Cursor
   hotspots and everything else are kept.
 
 **Cost**. Drawing is sequential. A shape rents working storage from the allocation scope of the image (proportional to
 the width and height of the canvas, and to the number of edges of the shape), and each `Draw` call allocates a few small
 objects; the shapes themselves allocate nothing once that storage has grown to the largest of them, so reuse brushes,
-pens and paths and use the overloads with a state and a static callback. The time to draw a shape grows with the number
+pens and paths and use the overloads with a state and a static callback. A pattern brush is the exception: drawing
+its tile allocates a few objects each time the tile is drawn. The time to draw a shape grows with the number
 of its edges and with the number of points where they cross each other, which the exact area depends on. One family of
 shapes has millions of crossings: a pen far wider than the bends of a long curve it follows. A dashed stroke has the
 edges of every dash the canvas shows: what cannot change a pixel of the canvas is not cut into dashes, whatever the
@@ -1344,7 +1573,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 | Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
 | Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
 | Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
-| Drawing | Always antialiased; under a transformation of the canvas, every dash of a dashed stroke is cut, also those the canvas does not show; composited on the encoded sample values (no linear-light option); sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
+| Drawing | Under a transformation of the canvas, every dash of a dashed stroke is cut, also those the canvas does not show; composited on the encoded sample values unless linear light is asked for; sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image or a pattern gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
 | Fonts made before OpenType Layout | The marks of a font without positioning table are placed from the shapes of the glyphs; the letters of an Arabic font without substitution table take the presentation forms the font has as characters, with the ligatures of lam and alef; the marks of a Thai font without substitution table take the forms the font has in the private use area |
 
 The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of
@@ -2757,7 +2986,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | PNG/APNG | Palette output is opt-in and exact only (`PngPixelLayout.Indexed`: no color reduction or dithering, and a sequential writer cannot declare colors beyond its first image), no grayscale output below 8 bits, no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
-| Drawing | No image or pattern brush, no transform on the canvas (a path is transformed with `VectorPath.Transform`), no blend mode (multiply, screen, ...) beyond the compositing operators; always antialiased; blended on the encoded sample values (no linear-light option); sequential; coordinates are limited to ±16,777,216 |
+| Drawing | Sequential; affine transformations of the canvas only (perspective is for an image drawn on a quadrilateral); no mesh gradient, and a radial gradient between two circles needs the first one strictly inside the second one; a marker has no hole, and a stroke on one side of its path costs a clip; blurs and shadows are computed on the encoded sample values, also when paints are combined in linear light, which decodes the samples with the transfer function the image declares (sRGB when it declares none); without antialiasing, a pixel is painted when at least half of it is covered (not when its center is), and the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 |
 | Processing | No floating-point or scene-referred pixel format (HDR samples are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping), no custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, or temporal motion vector prediction. Three tools were implemented, measured with the `avif-quality` report and left out because they did not make its sequences smaller: key frames at scene changes (the key frame of an image that follows a cut is 0.3 to 1.7% larger than the inter frame whose blocks are all intra, since it gives up the probabilities that the previous images adapted; `KeyFrameInterval` is how a sequence gets seek points), the split of the transform blocks of an inter block (0.01% in total: it keeps the largest transform of its size) and an interpolation filter per block (the same size at equal quality, for several times the encoding time). Intra block copy is for lossless images only (a frame that copies blocks has no in-loop filter), and its delay of five superblocks leaves small images out. The loop restoration is the Wiener filter, in units of 256x256 samples, at the efforts 0 to 2 only (it recovered nothing above them in the report), and never the self-guided filter. Not used: quantizer deltas, quantization matrices, CDEF strengths per block (one pair per frame), super-resolution and film grain. No layered (progressive) output, and no grid for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: more than eight nested derivations, an image built from images of several color descriptions, an overlay whose sRGB fill color shows on an image that is not an sRGB one, an alpha plane of an overlay or of a grid of derived images, a derived image with more than 1,024 input images, an alpha plane that is not presented as its derived color image, movie fragments that do not follow each other, have composition time offsets, precede their `moov` box or follow their samples, an edit list that selects a part of a fragmented sequence, edit lists that do not play the media forward at its rate (empty edits, a media rate other than 1, edits out of order or overlapping), an alpha track with another edit list than its color track, image sequences whose images change size, clean apertures that do not select whole samples, grid tiles that declare other transformations than their grid, large scale tile streams, reserved matrix coefficients, and matrix coefficients without the transfer characteristics or the primaries they are defined with (constant luminance without a transfer function, ICtCp with other transfer characteristics than PQ and HLG, chromaticity-derived coefficients without chromaticities). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, a `tkhd` matrix that is not a quarter turn or a mirror (the images are returned as stored), the content color volume (`cclv`) and the light levels and the mastering display of AV1 metadata units. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: tone mapping is an explicit `ConvertColorProfile` with `ToneMapping` options |

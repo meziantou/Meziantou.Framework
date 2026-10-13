@@ -35,6 +35,8 @@ internal sealed partial class DrawingSession : IDisposable
     private FillSink? _fillSink;
     private Stroker? _stroker;
     private Dasher? _dasher;
+    private MarkerSink? _markers;
+    private PathRecorder? _strokeRecorder;
     private GradientEvaluator? _gradient;
     private ImageEvaluator? _imagePaint;
     private GlyphPathSink? _glyphSink;
@@ -153,6 +155,138 @@ internal sealed partial class DrawingSession : IDisposable
         sink.Close(smooth: false);
         sink.End();
         PaintImage(source, new Rectangle(0, 0, width, height), transform, sampling, coverage, isEmpty: false, nameof(source));
+    }
+
+    public void DrawImage(ImageFrame source, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft, ImageSampling sampling, double opacity)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        DrawingGuard.Point(topLeft, nameof(topLeft));
+        DrawingGuard.Point(topRight, nameof(topRight));
+        DrawingGuard.Point(bottomRight, nameof(bottomRight));
+        DrawingGuard.Point(bottomLeft, nameof(bottomLeft));
+        ValidateSampling(sampling);
+        var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
+
+        // The turn at each corner: all the same way around a convex quadrilateral, none when the corners are on a line
+        var turn0 = Cross(topLeft, topRight, bottomRight);
+        var turn1 = Cross(topRight, bottomRight, bottomLeft);
+        var turn2 = Cross(bottomRight, bottomLeft, topLeft);
+        var turn3 = Cross(bottomLeft, topLeft, topRight);
+        var isFlat = turn0 == 0 && turn1 == 0 && turn2 == 0 && turn3 == 0;
+        if (!isFlat && !((turn0 > 0 && turn1 > 0 && turn2 > 0 && turn3 > 0) || (turn0 < 0 && turn1 < 0 && turn2 < 0 && turn3 < 0)))
+            throw new ArgumentException("The corners must be those of a convex quadrilateral, in order.", nameof(topLeft));
+
+        var width = source.Width;
+        var height = source.Height;
+        if (!isFlat && topLeft.X - topRight.X + bottomRight.X - bottomLeft.X == 0 && topLeft.Y - topRight.Y + bottomRight.Y - bottomLeft.Y == 0)
+        {
+            // A parallelogram: the image is not seen in perspective, and an affine transformation places it
+            DrawImage(source, new AffineTransform((topRight.X - topLeft.X) / width, (topRight.Y - topLeft.Y) / width, (bottomLeft.X - topLeft.X) / height, (bottomLeft.Y - topLeft.Y) / height, topLeft.X, topLeft.Y), sampling, opacity);
+            return;
+        }
+
+        var sink = BeginFill();
+        sink.MoveTo(topLeft.X, topLeft.Y);
+        sink.LineTo(topRight.X, topRight.Y, smooth: false);
+        sink.LineTo(bottomRight.X, bottomRight.Y, smooth: false);
+        sink.LineTo(bottomLeft.X, bottomLeft.Y, smooth: false);
+        sink.Close(smooth: false);
+        sink.End();
+
+        // The corners on the canvas, and the transformation that brings its pixels back to the image
+        Span<double> inverse = stackalloc double[9];
+        var hasInverse = !isFlat;
+        if (hasInverse)
+        {
+            if (_hasTransform)
+            {
+                topLeft = _transform.Transform(topLeft);
+                topRight = _transform.Transform(topRight);
+                bottomRight = _transform.Transform(bottomRight);
+                bottomLeft = _transform.Transform(bottomLeft);
+            }
+
+            hasInverse = TryGetInverseProjection(topLeft, topRight, bottomRight, bottomLeft, width, height, inverse);
+        }
+
+        var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
+        evaluator.PrepareProjective(source, hasInverse ? inverse : default, sampling, _frames[0], Width);
+        if (coverage == 0 || !hasInverse || _edges!.Count == 0)
+            return;
+
+        if (coverage != CoverageRasterizer.FullCoverage)
+        {
+            EnsureCoverageRow();
+        }
+
+        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _cancellationToken))
+        {
+            Paint(default, evaluator, CompositeMode.SourceOver, BlendMode.Normal, coverage);
+        }
+
+        static double Cross(PointD a, PointD b, PointD c) => ((b.X - a.X) * (c.Y - b.Y)) - ((b.Y - a.Y) * (c.X - b.X));
+    }
+
+    /// <summary>
+    /// Gets the projective transformation that brings the positions of a quadrilateral back to the image that is drawn
+    /// on it: nine numbers, row by row, whose third row is positive on the quadrilateral.
+    /// </summary>
+    /// <remarks>
+    /// The transformation from the unit square to the quadrilateral is the one of "Fundamentals of Texture Mapping and
+    /// Image Warping" (Heckbert, 1989); it is scaled to the size of the image, then inverted by its adjugate, which is
+    /// its inverse up to a factor that does not change a position.
+    /// </remarks>
+    /// <returns><see langword="false"/> when the quadrilateral is flattened to a line: nothing brings its positions back.</returns>
+    private static bool TryGetInverseProjection(PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft, int width, int height, Span<double> inverse)
+    {
+        var dx1 = topRight.X - bottomRight.X;
+        var dx2 = bottomLeft.X - bottomRight.X;
+        var dx3 = topLeft.X - topRight.X + bottomRight.X - bottomLeft.X;
+        var dy1 = topRight.Y - bottomRight.Y;
+        var dy2 = bottomLeft.Y - bottomRight.Y;
+        var dy3 = topLeft.Y - topRight.Y + bottomRight.Y - bottomLeft.Y;
+        var denominator = (dx1 * dy2) - (dx2 * dy1);
+        if (denominator == 0 || !double.IsFinite(denominator))
+            return false;
+
+        var g = ((dx3 * dy2) - (dx2 * dy3)) / denominator;
+        var h = ((dx1 * dy3) - (dx3 * dy1)) / denominator;
+
+        // From the pixels of the image to the canvas: (a u + b v + c, d u + e v + f) / (g u + h v + 1)
+        var a = (topRight.X - topLeft.X + (g * topRight.X)) / width;
+        var b = (bottomLeft.X - topLeft.X + (h * bottomLeft.X)) / height;
+        var c = topLeft.X;
+        var d = (topRight.Y - topLeft.Y + (g * topRight.Y)) / width;
+        var e = (bottomLeft.Y - topLeft.Y + (h * bottomLeft.Y)) / height;
+        var f = topLeft.Y;
+        g /= width;
+        h /= height;
+        inverse[0] = e - (f * h);
+        inverse[1] = (c * h) - b;
+        inverse[2] = (b * f) - (c * e);
+        inverse[3] = (f * g) - d;
+        inverse[4] = a - (c * g);
+        inverse[5] = (c * d) - (a * f);
+        inverse[6] = (d * h) - (e * g);
+        inverse[7] = (b * g) - (a * h);
+        inverse[8] = (a * e) - (b * d);
+
+        // The third row has one sign on the quadrilateral: positive, so that what is beyond the horizon is negative
+        var centerX = (topLeft.X + topRight.X + bottomRight.X + bottomLeft.X) / 4;
+        var centerY = (topLeft.Y + topRight.Y + bottomRight.Y + bottomLeft.Y) / 4;
+        var w = (inverse[6] * centerX) + (inverse[7] * centerY) + inverse[8];
+        if (!double.IsFinite(w) || w == 0)
+            return false;
+
+        if (w < 0)
+        {
+            foreach (ref var value in inverse)
+            {
+                value = -value;
+            }
+        }
+
+        return true;
     }
 
     private static void ValidateSampling(ImageSampling sampling)
@@ -315,6 +449,47 @@ internal sealed partial class DrawingSession : IDisposable
         var sink = BeginStroke(pen);
         AddPoints(sink, points, close);
         RenderStroke(pen);
+    }
+
+    public void FillClosedCurve(Brush brush, ReadOnlySpan<PointD> points, double tension, FillRule fillRule)
+    {
+        ArgumentNullException.ThrowIfNull(brush);
+        CardinalSpline.Validate(points, tension, isClosed: true, nameof(points), nameof(tension));
+        if (fillRule is not (FillRule.NonZero or FillRule.EvenOdd))
+            throw new ArgumentOutOfRangeException(nameof(fillRule), fillRule, "The fill rule is not valid.");
+
+        var sink = BeginFill();
+        AddCurve(sink, points, tension, isClosed: true);
+        Render(brush, fillRule);
+    }
+
+    public void StrokeCurve(Pen pen, ReadOnlySpan<PointD> points, double tension, bool close)
+    {
+        ArgumentNullException.ThrowIfNull(pen);
+        CardinalSpline.Validate(points, tension, close, nameof(points), nameof(tension));
+        var sink = BeginStroke(pen);
+        AddCurve(sink, points, tension, close);
+        RenderStroke(pen);
+    }
+
+    private static void AddCurve(PathSink sink, ReadOnlySpan<PointD> points, double tension, bool isClosed)
+    {
+        sink.MoveTo(points[0].X, points[0].Y);
+        var count = CardinalSpline.GetSegmentCount(points.Length, isClosed);
+        var start = points[0];
+        for (var i = 0; i < count; i++)
+        {
+            CardinalSpline.GetSegment(points, i, isClosed, tension, out var control1, out var control2, out var end);
+            PathFlattener.Cubic(sink, start.X, start.Y, control1.X, control1.Y, control2.X, control2.Y, end.X, end.Y);
+            start = end;
+        }
+
+        if (isClosed)
+        {
+            sink.Close(smooth: false);
+        }
+
+        sink.End();
     }
 
     public void FillPie(Brush brush, PointD center, double radius, double startAngle, double sweepAngle)
@@ -569,10 +744,15 @@ internal sealed partial class DrawingSession : IDisposable
         IsActive = false;
         DisposeLayers();
         DisposeClips();
+        DisposePatterns();
         _pathMeasure?.Dispose();
         _pathMeasure = null;
         _dasher?.Dispose();
         _dasher = null;
+        _markers?.Dispose();
+        _markers = null;
+        _strokeRecorder?.Dispose();
+        _strokeRecorder = null;
         _colorSurface?.Dispose();
         _colorSurface = null;
         _foregroundGradient?.Dispose();
@@ -628,32 +808,94 @@ internal sealed partial class DrawingSession : IDisposable
         return _fillSink ??= new FillSink(edges);
     }
 
+    /// <summary>Gets the sink the path of a stroke is sent to; <see cref="RenderStroke"/> then paints the stroke.</summary>
     private PathSink BeginStroke(Pen pen)
+    {
+        if (pen.Alignment == PenAlignment.Center)
+            return BeginStrokeCore(pen, widthFactor: 1);
+
+        // The path is both a clip and a stroke: it is kept, and nothing is built before it is complete
+        _cancellationToken.ThrowIfCancellationRequested();
+        var recorder = _strokeRecorder ??= new PathRecorder(_image.Owner.Scope);
+        recorder.Reset();
+        recorder.Scale = _transformScale;
+        return recorder;
+    }
+
+    private PathSink BeginStrokeCore(Pen pen, double widthFactor)
     {
         var edges = BeginCall();
         var stroker = _stroker ??= new Stroker(edges);
         stroker.SetOutput(_hasTransform, _transformMatrix, _transformScale);
-        stroker.Configure(pen);
-        if (!pen.IsDashed)
-            return stroker;
-
-        var dasher = _dasher ??= new Dasher(_image.Owner.Scope);
-        dasher.Scale = _transformScale;
-        if (_hasTransform)
+        stroker.Configure(pen, widthFactor);
+        PathSink sink = stroker;
+        if (pen.IsDashed)
         {
-            // The dashes are cut in the coordinates of the drawing, where the canvas is not a rectangle: all of them
-            dasher.Configure(pen, stroker, _cancellationToken);
-        }
-        else
-        {
-            dasher.Configure(pen, stroker, Width, Height, _cancellationToken);
+            var dasher = _dasher ??= new Dasher(_image.Owner.Scope);
+            dasher.Scale = _transformScale;
+            if (_hasTransform)
+            {
+                // The dashes are cut in the coordinates of the drawing, where the canvas is not a rectangle: all of them
+                dasher.Configure(pen, stroker, _cancellationToken);
+            }
+            else
+            {
+                dasher.Configure(pen, stroker, Width, Height, _cancellationToken, widthFactor);
+            }
+
+            sink = dasher;
         }
 
-        return dasher;
+        if (pen.HasMarkers)
+        {
+            var markers = _markers ??= new MarkerSink(_image.Owner.Scope);
+            markers.Scale = _transformScale;
+            markers.Configure(pen, stroker, sink);
+            sink = markers;
+        }
+
+        return sink;
     }
 
     /// <summary>Renders the pieces the stroker emitted, or the whole frame when one of them contains it.</summary>
     private void RenderStroke(Pen pen)
+    {
+        if (pen.Alignment == PenAlignment.Center)
+        {
+            RenderStrokeCore(pen);
+            return;
+        }
+
+        // The side of the path the stroke is on: a clip made of what the path fills, or of what it does not. Then
+        // the stroke of a pen twice as wide, of which the clip keeps one half.
+        var recorder = _strokeRecorder!;
+        recorder.Replay(BeginFill());
+        var isOutside = pen.Alignment == PenAlignment.Outside;
+        var bounds = recorder.Bounds;
+        if (isOutside)
+        {
+            // What a stroke reaches around its path: its joins and its caps, and its markers anywhere
+            var reach = pen.HasMarkers ? DrawingGuard.MaxCoordinate : pen.Width * Math.Max(pen.MiterLimit, 2);
+            bounds = RectangleD.FromLTRB(
+                Math.Max(bounds.Left - reach, -DrawingGuard.MaxCoordinate),
+                Math.Max(bounds.Top - reach, -DrawingGuard.MaxCoordinate),
+                Math.Min(bounds.Right + reach, DrawingGuard.MaxCoordinate),
+                Math.Min(bounds.Bottom + reach, DrawingGuard.MaxCoordinate));
+        }
+
+        PushClipFromEdges(FillRule.NonZero, bounds, isOutside);
+        try
+        {
+            recorder.Replay(BeginStrokeCore(pen, widthFactor: 2));
+            RenderStrokeCore(pen);
+        }
+        finally
+        {
+            PopClip();
+        }
+    }
+
+    private void RenderStrokeCore(Pen pen)
     {
         if (_stroker!.CoversFrame)
         {
@@ -709,6 +951,9 @@ internal sealed partial class DrawingSession : IDisposable
             var y = rasterizer.Y;
             var x = rasterizer.X;
             var coverage = rasterizer.Coverage;
+            if (_isAliased && !RemoveAntialiasing(ref coverage))
+                continue;
+
             if (_clipDepth != 0 && !ApplyClip(y, ref x, ref coverage, out _))
                 continue;
 
@@ -717,7 +962,7 @@ internal sealed partial class DrawingSession : IDisposable
                 coverage = ApplyOpacity(coverage, opacity);
             }
 
-            var source = evaluator is null ? new DrawingSource(color, mode, blend) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend);
+            var source = evaluator is null ? new DrawingSource(color, mode, blend, _transfer) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend, _transfer);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], y, x, coverage, source);
@@ -755,6 +1000,16 @@ internal sealed partial class DrawingSession : IDisposable
                 EnsureCoverageRow();
             }
 
+            evaluator = imagePaint;
+        }
+        else if (brush is PatternBrush pattern)
+        {
+            // The tile is drawn first: it is an image when the shape is painted
+            if (PreparePattern(pattern, out var placement) is not { } tile)
+                return false;
+
+            var imagePaint = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
+            imagePaint.Prepare(tile, region: null, placement, ImageWrapMode.Repeat, ImageSampling.Bilinear, _frames[0], Width, nameof(brush));
             evaluator = imagePaint;
         }
         else

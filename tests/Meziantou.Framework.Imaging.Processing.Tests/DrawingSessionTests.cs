@@ -1665,6 +1665,624 @@ public sealed class DrawingSessionTests
         Assert.Equal(2, DrawingTestSupport.ReadSamples(turned.Frames[0]).Where((_, index) => index % 4 == 3).Count(alpha => alpha != 0));
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+    // Masks
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void AMaskKeepsADrawingInProportionToItsAlphaOrToItsLuminance()
+    {
+        var red = new Rgba32(255, 0, 0);
+
+        // By its alpha, whatever its colors: a blue at half its opacity keeps half of the red
+        using var image = new Image<Rgba32>(4, 2);
+        image.Draw(canvas => canvas.Mask(mask => mask.FillRectangle(new Rgba32(0, 0, 255, 128), new Rectangle(1, 0, 2, 2)), content => content.Fill(red)), Ct);
+        Assert.Equal([default, new Rgba32(255, 0, 0, 128), new Rgba32(255, 0, 0, 128), default], Enumerable.Range(0, 4).Select(x => image.Frames[0][x, 1]));
+
+        // By its luminance: the luma of each color times its alpha. White keeps, black removes; the gray 128 and a
+        // white at half its opacity keep 128 of 255; red has the luma round(0.2126 * 255) = 54.
+        Rgba32[] colors = [new(255, 255, 255), new(0, 0, 0), new(128, 128, 128), new(255, 255, 255, 128), default, new(255, 0, 0)];
+        using var luminance = new Image<Rgba32>(6, 1);
+        luminance.Draw(
+            canvas => canvas.Mask(
+                mask =>
+                {
+                    for (var x = 0; x < colors.Length; x++)
+                    {
+                        mask.FillRectangle(colors[x], new Rectangle(x, 0, 1, 1));
+                    }
+                },
+                content => content.Fill(red),
+                MaskMode.Luminance),
+            Ct);
+        Assert.Equal([255, 0, 128, 128, 0, 54], Enumerable.Range(0, 6).Select(x => (int)luminance.Frames[0][x, 0].A));
+        Assert.Equal(new Rgba32(255, 0, 0, 54), luminance.Frames[0][5, 0]);
+        Assert.Equal(default, luminance.Frames[0][1, 0]);
+
+        // On a 16-bit canvas, the layers have 16-bit samples
+        using var wide = new Image<Rgba64>(2, 1);
+        wide.Draw(new Rgba64(65535, 0, 0), static (canvas, color) => canvas.Mask(
+            color,
+            static (mask, _) => mask.FillRectangle(new Rgba64(32768, 32768, 32768), new Rectangle(0, 0, 1, 1)),
+            static (content, color) => content.Fill(color),
+            MaskMode.Luminance), Ct);
+        Assert.Equal(new Rgba64(65535, 0, 0, 32768), wide.Frames[0][0, 0]);
+        Assert.Equal(default, wide.Frames[0][1, 0]);
+    }
+
+    [Fact]
+    public void AMaskIsALayerKeptByAnotherLayer()
+    {
+        // A mask by its alpha is what two layers do: the content, and the mask drawn on it with DestinationIn
+        var random = new Random(4321);
+        var path = new VectorPathBuilder().AddCircle(new PointD(5.25, 4.5), 3.3).Build();
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(10, 0), [new GradientStop(0, new Rgba32(255, 255, 255)), new GradientStop(1, new Rgba32(0, 0, 0, 0))]);
+        foreach (var format in PixelFormats.All)
+        {
+            using var expected = DrawingTestSupport.CreateRandom(format, 10, 8, random.Next);
+            using var actual = expected.Clone();
+            using var clipped = expected.Clone();
+            void Content(DrawingCanvas canvas) => canvas.FillEllipse(new Rgba32(40, 200, 90, 220), new PointD(5, 4), 4.6, 3.1);
+            void Shape(DrawingCanvas canvas)
+            {
+                canvas.Fill(gradient, path);
+                canvas.StrokeLine(new Pen(new Rgba32(1, 2, 3, 99), 1.5), new PointD(0, 7), new PointD(10, 1));
+            }
+
+            expected.Draw(
+                canvas => canvas.Layer(1, layer =>
+                {
+                    Content(layer);
+                    layer.Layer(1, Shape, CompositeMode.DestinationIn);
+                }),
+                Ct);
+            actual.Draw(canvas => canvas.Mask(Shape, Content), Ct);
+            Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(actual.Frames[0]));
+
+            // A clip applies to the result, and a mask inside a mask to its content
+            var before = DrawingTestSupport.ReadSamples(clipped.Frames[0]);
+            clipped.Draw(canvas => canvas.Clip(new Rectangle(3, 2, 4, 4), inner => inner.Mask(Shape, content => content.Mask(Shape, Content, MaskMode.Luminance))), Ct);
+            var after = DrawingTestSupport.ReadSamples(clipped.Frames[0]);
+            var channels = after.Length / 80;
+            for (var i = 0; i < after.Length; i++)
+            {
+                var (x, y) = (i / channels % 10, i / channels / 10);
+                if (x is < 3 or >= 7 || y is < 2 or >= 6)
+                {
+                    Assert.Equal(before[i], after[i]);
+                }
+            }
+
+            Assert.NotEqual(before, after);
+        }
+    }
+
+    [Fact]
+    public void AMaskValidatesItsArgumentsAndDrawsNothingWhenACallbackFails()
+    {
+        using var image = NewAnimation();
+        var before = CopyAll(image);
+        image.Draw(
+            canvas =>
+            {
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Mask(null!, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Mask(static _ => Assert.Fail("The callback ran."), null!));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Mask(1, null!, static (_, _) => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Mask(1, static (_, _) => Assert.Fail("The callback ran."), null!));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Mask(static _ => Assert.Fail("The callback ran."), static _ => Assert.Fail("The callback ran."), (MaskMode)2));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Mask(1, static (_, _) => Assert.Fail("The callback ran."), static (_, _) => Assert.Fail("The callback ran."), (MaskMode)(-1)));
+                AssertThrows<InvalidOperationException>(canvas, static canvas => canvas.Mask(static _ => throw new InvalidOperationException("mask"), static content => content.Fill(White)));
+                AssertThrows<InvalidOperationException>(canvas, static canvas => canvas.Mask(static mask => mask.Fill(White), static _ => throw new InvalidOperationException("content")));
+            },
+            Ct);
+        Assert.Equal(before, CopyAll(image));
+
+        // Nothing is left of the masks that failed: the next drawing is drawn on the frames
+        image.Draw(static canvas => canvas.Mask(static mask => mask.FillRectangle(White, new Rectangle(0, 0, 1, 1)), static content => content.Fill(new Rgba32(9, 8, 7))), Ct);
+        Assert.Equal(new Rgba32(9, 8, 7), image.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(9, 8, 7), image.Frames[1][0, 0]);
+        Assert.Equal(new Rgba32(9, 8, 7), image.PosterFrame![0, 0]);
+        Assert.Equal(before[0].AsSpan(4).ToArray(), DrawingTestSupport.ReadSamples(image.Frames[0]).AsSpan(4).ToArray());
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Blurs
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void ABlurredDrawingIsSpreadByTheWeightsOfABell()
+    {
+        // One opaque pixel blurred with a deviation of 1: its alpha is spread by the products of the weights 0.004433,
+        // 0.054006, 0.242036 and 0.399050 of its row and of its column. In its row, 255 times 0.399050 times each:
+        // 0.45, 5.5, 24.6, 40.6; on the diagonal, the squares: 0.005, 0.74, 14.9, 40.6. The color is not spread thinner:
+        // it is the blue of the pixel wherever something of it is.
+        var blue = new Rgba32(0, 0, 255);
+        using var image = new Image<Rgba32>(7, 7);
+        image.Draw(canvas => canvas.Blur(1, layer => layer.FillRectangle(blue, new Rectangle(3, 3, 1, 1))), Ct);
+        Assert.Equal([0, 5, 25, 41, 25, 5, 0], Enumerable.Range(0, 7).Select(x => (int)image.Frames[0][x, 3].A));
+        Assert.Equal([0, 5, 25, 41, 25, 5, 0], Enumerable.Range(0, 7).Select(y => (int)image.Frames[0][3, y].A));
+        Assert.Equal([0, 1, 15, 41, 15, 1, 0], Enumerable.Range(0, 7).Select(i => (int)image.Frames[0][i, i].A));
+        Assert.Equal(new Rgba32(0, 0, 255, 25), image.Frames[0][2, 3]);
+        Assert.Equal(default, image.Frames[0][0, 3]);
+
+        // Without deviation, the drawing is drawn as it is; with the state overload too
+        using var sharp = new Image<Rgba32>(7, 7);
+        sharp.Draw(blue, static (canvas, color) => canvas.Blur(0, color, static (layer, color) => layer.FillRectangle(color, new Rectangle(3, 3, 1, 1))), Ct);
+        Assert.Equal(blue, sharp.Frames[0][3, 3]);
+        Assert.Single(DrawingTestSupport.ReadSamples(sharp.Frames[0]).Chunk(4), pixel => pixel[3] != 0);
+
+        // A drawing that covers the canvas continues beyond its edges: nothing of it fades along them
+        var random = new Random(77);
+        foreach (var format in PixelFormats.All)
+        {
+            using var full = DrawingTestSupport.CreateRandom(format, 9, 5, random.Next);
+            using var expected = full.Clone();
+            var color = new Rgba64(40000, 12345, 999, 65535);
+            full.Draw(canvas => canvas.Blur(2.5, layer => layer.Fill(color)), Ct);
+            expected.Draw(canvas => canvas.Fill(color), Ct);
+            Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(full.Frames[0]));
+        }
+
+        // A clip applies to the result: what is drawn around it still spreads into it
+        using var clipped = new Image<Rgba32>(7, 7);
+        clipped.Draw(canvas => canvas.Clip(new Rectangle(0, 0, 3, 7), inner => inner.Blur(1, layer => layer.FillRectangle(blue, new Rectangle(3, 3, 1, 1)))), Ct);
+        Assert.Equal([0, 5, 25, 0, 0, 0, 0], Enumerable.Range(0, 7).Select(x => (int)clipped.Frames[0][x, 3].A));
+
+        // A transformation enlarges the blur with the drawing: twice the size, twice the deviation
+        using var direct = new Image<Rgba32>(20, 20);
+        direct.Draw(canvas => canvas.Blur(2, layer => layer.FillRectangle(blue, new Rectangle(8, 8, 4, 4))), Ct);
+        using var scaled = new Image<Rgba32>(20, 20);
+        scaled.Draw(canvas => canvas.Transform(AffineTransform.CreateScale(2, 2), inner => inner.Blur(1, layer => layer.FillRectangle(blue, new Rectangle(4, 4, 2, 2)))), Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(direct.Frames[0]), DrawingTestSupport.ReadSamples(scaled.Frames[0]));
+    }
+
+    [Fact]
+    public void TheBackdropIsBlurredWhereTheClipLetsADrawingThrough()
+    {
+        // On opaque pixels, the blur of the whole canvas is the Gaussian blur of the image, to one unit: both read the
+        // pixels beyond the edges as the pixels on the edges
+        var random = new Random(2468);
+        foreach (var format in new[] { PixelFormat.Rgb24, PixelFormat.Gray8, PixelFormat.Gray16 })
+        {
+            using var image = DrawingTestSupport.CreateRandom(format, 16, 12, random.Next);
+            using var reference = image.Clone();
+            using var clipped = image.Clone();
+            var before = DrawingTestSupport.ReadSamples(image.Frames[0]);
+            reference.GaussianBlur(1.5, cancellationToken: Ct);
+            image.Draw(canvas => canvas.BlurBackdrop(1.5), Ct);
+            var expected = DrawingTestSupport.ReadSamples(reference.Frames[0]);
+            var actual = DrawingTestSupport.ReadSamples(image.Frames[0]);
+            for (var i = 0; i < expected.Length; i++)
+            {
+                Assert.InRange(actual[i], expected[i] - 1, expected[i] + 1, message: $"{format}, sample {i}");
+            }
+
+            // Inside a clip, the pixels of the clip get the same blur, which reads the pixels around the clip, and the
+            // others are untouched
+            clipped.Draw(canvas => canvas.Clip(new Rectangle(4, 3, 7, 5), inner => inner.BlurBackdrop(1.5)), Ct);
+            var partial = DrawingTestSupport.ReadSamples(clipped.Frames[0]);
+            var channels = partial.Length / (16 * 12);
+            for (var i = 0; i < partial.Length; i++)
+            {
+                var (x, y) = (i / channels % 16, i / channels / 16);
+                Assert.Equal(x is >= 4 and < 11 && y is >= 3 and < 8 ? actual[i] : before[i], partial[i]);
+            }
+        }
+
+        // The edge of a clip is antialiased: a pixel that is half inside is half way to its blur
+        using var edge = new Image<Gray8>(8, 1);
+        for (var x = 0; x < 8; x++)
+        {
+            edge.Frames[0][x, 0] = new Gray8((byte)(x < 4 ? 0 : 200));
+        }
+
+        using var whole = edge.Clone();
+        whole.Draw(static canvas => canvas.BlurBackdrop(1), Ct);
+        edge.Draw(static canvas => canvas.Clip(new RectangleD(0, 0, 4.5, 1), static inner => inner.BlurBackdrop(1)), Ct);
+        Assert.Equal(whole.Frames[0][3, 0], edge.Frames[0][3, 0]);
+        Assert.InRange(edge.Frames[0][4, 0].Value, ((200 + whole.Frames[0][4, 0].Value) / 2) - 1, ((200 + whole.Frames[0][4, 0].Value) / 2) + 1);
+        Assert.Equal(new Gray8(200), edge.Frames[0][5, 0]);
+
+        // Transparent pixels do not darken their neighbors, and every frame is blurred
+        using var animation = new Image<Rgba32>(7, 7);
+        animation.AppendFrame();
+        animation.Frames[0][3, 3] = new Rgba32(255, 0, 0);
+        animation.Frames[1][3, 3] = new Rgba32(0, 255, 0);
+        animation.Draw(static canvas => canvas.BlurBackdrop(1), Ct);
+        Assert.Equal([0, 5, 25, 41, 25, 5, 0], Enumerable.Range(0, 7).Select(x => (int)animation.Frames[0][x, 3].A));
+        Assert.Equal(new Rgba32(255, 0, 0, 25), animation.Frames[0][2, 3]);
+        Assert.Equal(new Rgba32(0, 255, 0, 25), animation.Frames[1][3, 2]);
+
+        // In a layer, what is blurred is what the layer holds: blurring a layer as it ends is the same
+        using var layered = new Image<Rgba32>(9, 9, new Rgba32(10, 20, 30));
+        using var blurred = layered.Clone();
+        layered.Draw(
+            static canvas => canvas.Layer(1, static layer =>
+            {
+                layer.FillRectangle(new Rgba32(200, 100, 0), new Rectangle(3, 3, 3, 2));
+                layer.BlurBackdrop(1.25);
+            }),
+            Ct);
+        blurred.Draw(static canvas => canvas.Blur(1.25, static layer => layer.FillRectangle(new Rgba32(200, 100, 0), new Rectangle(3, 3, 3, 2))), Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(blurred.Frames[0]), DrawingTestSupport.ReadSamples(layered.Frames[0]));
+
+        // Uniform pixels stay what they are, and a blur without deviation changes nothing
+        using var uniform = new Image<Rgba64>(6, 6, new Rgba64(1234, 40000, 65535, 30000));
+        uniform.Draw(
+            static canvas =>
+            {
+                canvas.BlurBackdrop(3);
+                canvas.BlurBackdrop(0);
+            },
+            Ct);
+        Assert.All(Enumerable.Range(0, 36), i => Assert.Equal(new Rgba64(1234, 40000, 65535, 30000), uniform.Frames[0][i % 6, i / 6]));
+    }
+
+    [Fact]
+    public void ABlurValidatesItsArgumentsAndIsChargedToTheImage()
+    {
+        using var image = NewAnimation();
+        var before = CopyAll(image);
+        var live = image.Owner.Scope.LiveBytes;
+        image.Draw(
+            canvas =>
+            {
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Blur(1, null!));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Blur(1, 1, null!));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.Blur(double.NaN, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Blur(-1, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Blur(10001, 1, static (_, _) => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.BlurBackdrop(double.PositiveInfinity));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.BlurBackdrop(-0.5));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.BlurBackdrop(10001));
+                AssertThrows<InvalidOperationException>(canvas, static canvas => canvas.Blur(2, static layer =>
+                {
+                    layer.Fill(White);
+                    throw new InvalidOperationException("layer");
+                }));
+            },
+            Ct);
+        Assert.Equal(before, CopyAll(image));
+        Assert.Equal(live, image.Owner.Scope.LiveBytes);
+
+        // A blur that would exceed the limit changes no pixel: room for the pixels and for the scratch of the frame
+        // size, not for the rows a blur keeps
+        using var probe = new Image<Rgba32>(64, 64, new Rgba32(1, 2, 3), ImageConfiguration.Default);
+        long session = 0;
+        probe.Draw(_ => session = probe.Owner.Scope.LiveBytes, Ct);
+        using var limited = new Image<Rgba32>(64, 64, new Rgba32(1, 2, 3), new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = session + 4096 } });
+        limited.Frames[0][5, 5] = new Rgba32(255, 255, 255);
+        var pixels = DrawingTestSupport.ReadSamples(limited.Frames[0]);
+        Assert.Throws<ImageResourceLimitException>(() => limited.Draw(static canvas => canvas.BlurBackdrop(40), Ct));
+        Assert.Throws<ImageResourceLimitException>(() => limited.Draw(static canvas => canvas.Blur(40, static layer => layer.Fill(White)), Ct));
+        Assert.Equal(pixels, DrawingTestSupport.ReadSamples(limited.Frames[0]));
+        Assert.Equal(0, limited.Owner.ActiveLeaseCount);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Inner shadows
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void AnInnerShadowIsCastOnADrawingByWhatIsAroundIt()
+    {
+        var white = new Rgba32(255, 255, 255);
+        var black = new Rgba32(0, 0, 0);
+
+        // Without blur, the shadow is what is around the drawing, moved: two columns along the left side of the rectangle
+        using var image = new Image<Rgba32>(10, 6);
+        image.Draw(canvas => canvas.InnerShadow(black, new PointD(2, 0), 0, layer => layer.FillRectangle(white, new Rectangle(2, 1, 6, 4))), Ct);
+        for (var y = 0; y < 6; y++)
+        {
+            for (var x = 0; x < 10; x++)
+            {
+                var expected = x is < 2 or >= 8 || y is < 1 or >= 5 ? default : x < 4 ? black : white;
+                Assert.Equal(expected, image.Frames[0][x, y]);
+            }
+        }
+
+        // With a blur of deviation 1, a pixel is shadowed by the weights of the columns of its row that are not in the
+        // drawing: 0.3005 for the first column of a bar (255 * 0.6995 = 178), then 0.0584 (240) and 0.0044 (254). The
+        // bar continues beyond the top and the bottom of the canvas: no shadow comes from there.
+        using var bar = new Image<Rgba32>(14, 4);
+        bar.Draw(canvas => canvas.InnerShadow(black, default, 1, 0, static (layer, _) => layer.FillRectangle(new Rgba32(255, 255, 255), new Rectangle(3, 0, 8, 4))), Ct);
+        for (var y = 0; y < 4; y++)
+        {
+            Assert.Equal([0, 0, 0, 178, 240, 254, 255, 255, 254, 240, 178, 0, 0, 0], Enumerable.Range(0, 14).Select(x => (int)bar.Frames[0][x, y].R));
+            Assert.Equal([0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0], Enumerable.Range(0, 14).Select(x => (int)bar.Frames[0][x, y].A));
+        }
+
+        // The alpha of the drawing is kept, and the color of the shadow is the one that is given, at its opacity: 128
+        // of 255 where the shadow is whole. A translucent drawing is shadowed all over by what it lacks of opacity,
+        // 155 of 255 here: the red is mixed at (155 / 255) (128 / 255) = 0.305 -> 77.8, and the blue is left at 177.2
+        using var translucent = new Image<Rgba32>(10, 6);
+        translucent.Draw(canvas => canvas.InnerShadow(new Rgba32(255, 0, 0, 128), new PointD(2, 0), 0, layer => layer.FillRectangle(new Rgba32(0, 0, 255, 100), new Rectangle(2, 1, 6, 4))), Ct);
+        Assert.Equal(new Rgba32(128, 0, 127, 100), translucent.Frames[0][2, 2]);
+        Assert.Equal(new Rgba32(78, 0, 177, 100), translucent.Frames[0][5, 2]);
+        Assert.Equal(default, translucent.Frames[0][1, 2]);
+
+        // A drawing that covers the canvas has nothing around it
+        using var full = NewAnimation();
+        full.Draw(canvas => canvas.InnerShadow(black, new PointD(1, 1), 2, layer => layer.Fill(white)), Ct);
+        Assert.All(CopyAll(full), samples => Assert.All(samples, sample => Assert.Equal(255, sample)));
+
+        // A shadow that fails draws nothing, and its arguments are those of a shadow
+        using var failed = NewAnimation();
+        var before = CopyAll(failed);
+        failed.Draw(
+            canvas =>
+            {
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.InnerShadow(default, default, 1, null!));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.InnerShadow(default, default, 1, 1, null!));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.InnerShadow(default, new PointD(double.NaN, 0), 1, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.InnerShadow(default, default, -1, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.InnerShadow(default, default, 10001, 1, static (_, _) => Assert.Fail("The callback ran.")));
+                AssertThrows<InvalidOperationException>(canvas, static canvas => canvas.InnerShadow(new Rgba32(0, 0, 0), new PointD(1, 0), 1, static layer =>
+                {
+                    layer.Fill(White);
+                    throw new InvalidOperationException("layer");
+                }));
+            },
+            Ct);
+        Assert.Equal(before, CopyAll(failed));
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Antialiasing and the space of compositing
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void WithoutAntialiasingAPixelIsPaintedEntirelyOrNotAtAll()
+    {
+        // A rectangle from 0.4 to 10.4: it covers 0.6 of the first pixel, which is painted, and 0.4 of the pixel 10,
+        // which is not. From 0.5 to 10.5, it covers half of both: both are painted.
+        using var image = new Image<Gray8>(12, 4, new Gray8(0));
+        image.Draw(
+            canvas =>
+            {
+                canvas.Antialiasing(enabled: false, hard =>
+                {
+                    hard.FillRectangle(White, new RectangleD(0.4, 0, 10, 1));
+                    hard.FillRectangle(White, new RectangleD(0.5, 1, 10, 1));
+
+                    // Antialiasing can be turned on again inside
+                    hard.Antialiasing(enabled: true, 0.4, static (soft, left) => soft.FillRectangle(White, new RectangleD(left, 2, 10, 1)));
+                });
+
+                // And it is on again after the callback
+                canvas.FillRectangle(White, new RectangleD(0.4, 3, 10, 1));
+            },
+            Ct);
+        Assert.Equal([255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0], Enumerable.Range(0, 12).Select(x => (int)image.Frames[0][x, 0].Value));
+        Assert.Equal([255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0], Enumerable.Range(0, 12).Select(x => (int)image.Frames[0][x, 1].Value));
+        Assert.Equal([153, 255, 255, 255, 255, 255, 255, 255, 255, 255, 102, 0], Enumerable.Range(0, 12).Select(x => (int)image.Frames[0][x, 2].Value));
+        Assert.Equal([153, 255, 255, 255, 255, 255, 255, 255, 255, 255, 102, 0], Enumerable.Range(0, 12).Select(x => (int)image.Frames[0][x, 3].Value));
+
+        // Any shape, stroke or clip: every pixel is the paint or what it was
+        using var shapes = new Image<Rgb24>(40, 40, new Rgb24(10, 20, 30));
+        var paint = new Rgba32(200, 100, 50);
+        shapes.Draw(
+            canvas => canvas.Antialiasing(enabled: false, hard =>
+            {
+                hard.FillEllipse(paint, new PointD(24.3, 17.6), 11.4, 6.7);
+                hard.StrokeLine(new Pen(paint, 2.5) { LineCap = LineCap.Round }, new PointD(2.2, 36.1), new PointD(37.4, 33.3));
+                hard.Clip(new VectorPathBuilder().AddCircle(new PointD(6.4, 6.2), 4.7).Build(), clipped => clipped.Fill(paint));
+            }),
+            Ct);
+        var samples = DrawingTestSupport.ReadSamples(shapes.Frames[0]).Chunk(3).ToArray();
+        Assert.All(samples, pixel => Assert.True(pixel is [200, 100, 50] or [10, 20, 30], string.Join(' ', pixel)));
+        Assert.Contains(samples, pixel => pixel is [200, 100, 50]);
+
+        // A disk has the pixels of its area, to a part of those its edge goes through
+        using var disk = new Image<Gray8>(40, 40, new Gray8(0));
+        disk.Draw(static canvas => canvas.Antialiasing(enabled: false, static hard => hard.FillCircle(White, new PointD(20.3, 19.6), 12.4)), Ct);
+        var painted = DrawingTestSupport.ReadSamples(disk.Frames[0]);
+        Assert.All(painted, sample => Assert.True(sample is 0 or 255));
+        Assert.InRange(painted.Count(sample => sample == 255), (Math.PI * 12.4 * 12.4) - 12, (Math.PI * 12.4 * 12.4) + 12);
+
+        // What is not an edge is unchanged: the opacity of a paint, and a clip that started with antialiasing
+        using var opacity = new Image<Gray8>(3, 1, new Gray8(0));
+        opacity.Draw(
+            canvas => canvas.Clip(new RectangleD(0, 0, 1.6, 1), clipped => clipped.Antialiasing(enabled: false, hard =>
+            {
+                hard.Fill(new Rgba32(255, 255, 255, 128));
+
+                // Thinner than half a pixel: no pixel is covered by half
+                hard.StrokeLine(new Pen(White, 0.4), new PointD(0, 0.5), new PointD(3, 0.5));
+            })),
+            Ct);
+        Assert.Equal([128, 77, 0], Enumerable.Range(0, 3).Select(x => (int)opacity.Frames[0][x, 0].Value));
+
+        // A callback that fails leaves antialiasing as it was
+        using var restored = new Image<Gray8>(2, 1, new Gray8(0));
+        restored.Draw(
+            canvas =>
+            {
+                AssertThrows<InvalidOperationException>(canvas, static canvas => canvas.Antialiasing(enabled: false, static _ => throw new InvalidOperationException("callback")));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Antialiasing(enabled: false, null!));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Antialiasing(enabled: false, 1, null!));
+                canvas.FillRectangle(White, new RectangleD(0, 0, 1.2, 1));
+            },
+            Ct);
+        Assert.Equal(new Gray8(51), restored.Frames[0][1, 0]);
+    }
+
+    [Fact]
+    public void InLinearLightPaintsAreMixedAsLightIs()
+    {
+        // Half of a pixel in white over black. On the stored values: 127.5 -> 128. In linear light, half of the light
+        // of white: 1.055 * 0.5^(1 / 2.4) - 0.055 = 0.7354 -> 187.5 -> 188
+        using var image = new Image<Rgb24>(3, 1, new Rgb24(0, 0, 0));
+        image.Draw(
+            canvas =>
+            {
+                canvas.FillRectangle(White, new RectangleD(0, 0, 0.5, 1));
+                canvas.Compositing(CompositingSpace.LinearSrgb, linear =>
+                {
+                    linear.FillRectangle(White, new RectangleD(1, 0, 0.5, 1));
+
+                    // The stored values again, inside, and with the state overload
+                    linear.Compositing(CompositingSpace.Encoded, 2, static (encoded, left) => encoded.FillRectangle(White, new RectangleD(left, 0, 0.5, 1)));
+                });
+            },
+            Ct);
+        Assert.Equal([new Rgb24(128, 128, 128), new Rgb24(188, 188, 188), new Rgb24(128, 128, 128)], Enumerable.Range(0, 3).Select(x => image.Frames[0][x, 0]));
+
+        // A red at half its opacity over green: (128, 127, 0) on the stored values, and in linear light the light of
+        // each, 128 / 255 of the red and 127 / 255 of the green: (188, 187, 0)
+        using var colors = new Image<Rgba32>(2, 1, new Rgba32(0, 255, 0));
+        colors.Draw(
+            canvas =>
+            {
+                canvas.FillRectangle(new Rgba32(255, 0, 0, 128), new Rectangle(0, 0, 1, 1));
+                canvas.Compositing(CompositingSpace.LinearSrgb, linear => linear.FillRectangle(new Rgba32(255, 0, 0, 128), new Rectangle(1, 0, 1, 1)));
+            },
+            Ct);
+        Assert.Equal(new Rgba32(128, 127, 0), colors.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(188, 187, 0), colors.Frames[0][1, 0]);
+
+        // With 16-bit samples: 0.735357 * 65535 = 48191.6
+        using var wide = new Image<Gray16>(1, 1, new Gray16(0));
+        wide.Draw(canvas => canvas.Compositing(CompositingSpace.LinearSrgb, linear => linear.FillRectangle(White, new RectangleD(0, 0, 0.5, 1))), Ct);
+        Assert.InRange(wide.Frames[0][0, 0].Value, 48191, 48193);
+    }
+
+    [Theory]
+    [MemberData(nameof(DrawingTestSupport.AllFormats), MemberType = typeof(DrawingTestSupport))]
+    public void InLinearLightTheExactCasesStayExact(PixelFormat format)
+    {
+        var random = new Random(1357 + (int)format);
+        using var image = DrawingTestSupport.CreateRandom(format, 24, 16, random.Next);
+        var before = DrawingTestSupport.ReadSamples(image.Frames[0]);
+        var layout = Meziantou.Framework.Imaging.TestHarness.Drawing.ReferencePixelLayout.FromPixelFormat(format);
+
+        // A paint that leaves every pixel as it is writes the samples it read: decoding and encoding a sample gives it back
+        image.Draw(
+            canvas => canvas.Compositing(CompositingSpace.LinearSrgb, linear =>
+            {
+                linear.Fill(new SolidBrush(new Rgba32(1, 2, 3)) { CompositeMode = CompositeMode.DestinationIn });
+                linear.Fill(new SolidBrush(new Rgba32(200, 100, 50, 0)));
+                linear.Fill(new SolidBrush(new Rgba32(200, 100, 50, 0)) { BlendMode = BlendMode.Multiply });
+                linear.FillRectangle(new Rgba32(200, 100, 50), new RectangleD(30, 30, 5, 5));
+            }),
+            Ct);
+        Assert.Equal(before, DrawingTestSupport.ReadSamples(image.Frames[0]));
+
+        // An opaque paint that covers pixels entirely writes its color, exactly; the pixels around are untouched
+        using var expected = image.Clone();
+        var color = new Rgba64(51400, 25700, 12850, 65535);
+        expected.Draw(canvas => canvas.FillRectangle(color, new Rectangle(3, 2, 9, 7)), Ct);
+        image.Draw(canvas => canvas.Compositing(CompositingSpace.LinearSrgb, linear => linear.FillRectangle(color, new Rectangle(3, 2, 9, 7))), Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(image.Frames[0]));
+
+        // Any paint, operator and blend mode stays within the samples of the format, and transparent pixels stay
+        // transparent black or untouched
+        image.Draw(
+            canvas => canvas.Compositing(CompositingSpace.LinearSrgb, linear =>
+            {
+                foreach (var mode in Enum.GetValues<CompositeMode>())
+                {
+                    foreach (var blend in new[] { BlendMode.Normal, BlendMode.Multiply, BlendMode.SoftLight, BlendMode.Luminosity })
+                    {
+                        var brush = new SolidBrush(new Rgba64((ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536))) { CompositeMode = mode, BlendMode = blend };
+                        linear.FillEllipse(brush, new PointD(random.Next(24), random.Next(16)), 1 + (random.NextDouble() * 9), 1 + (random.NextDouble() * 7));
+                    }
+                }
+            }),
+            Ct);
+        var after = DrawingTestSupport.ReadSamples(image.Frames[0]);
+        Assert.All(after, sample => Assert.InRange(sample, 0, layout.MaxValue));
+        if (layout.HasAlpha)
+        {
+            for (var i = 0; i < after.Length; i += layout.ChannelCount)
+            {
+                if (after[i + layout.ColorChannels] == 0 && before[i + layout.ColorChannels] != 0)
+                {
+                    Assert.Equal(new int[layout.ChannelCount], after.AsSpan(i, layout.ChannelCount).ToArray());
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void EverySampleIsItselfThroughLinearLight()
+    {
+        // Every 16-bit gray level, and every 8-bit one, rewritten by a paint that keeps the pixel: none changes
+        using var wide = new Image<Gray16>(256, 256);
+        using var narrow = new Image<Gray8>(256, 1);
+        for (var i = 0; i < 65536; i++)
+        {
+            wide.Frames[0][i % 256, i / 256] = new Gray16((ushort)i);
+        }
+
+        for (var i = 0; i < 256; i++)
+        {
+            narrow.Frames[0][i, 0] = new Gray8((byte)i);
+        }
+
+        var keep = new SolidBrush(new Rgba32(9, 9, 9)) { CompositeMode = CompositeMode.DestinationIn };
+        wide.Draw(canvas => canvas.Compositing(CompositingSpace.LinearSrgb, linear => linear.Fill(keep)), Ct);
+        narrow.Draw(canvas => canvas.Compositing(CompositingSpace.LinearSrgb, linear => linear.Fill(keep)), Ct);
+        Assert.Equal(Enumerable.Range(0, 65536), DrawingTestSupport.ReadSamples(wide.Frames[0]));
+        Assert.Equal(Enumerable.Range(0, 256), DrawingTestSupport.ReadSamples(narrow.Frames[0]));
+    }
+
+    [Fact]
+    public void LinearLightIsTheLightOfTheTransferFunctionOfTheImage()
+    {
+        using var image = new Image<Rgb24>(1, 1, new Rgb24(0, 0, 0));
+        image.Metadata.IccProfile = ResizeTests.IccProfiles.Rgb(ResizeTests.IccProfiles.DisplayP3Colorants, ResizeTests.IccProfiles.SrgbParametricCurve());
+        image.Draw(
+            canvas =>
+            {
+                AssertThrows<UnsupportedImageFeatureException>(canvas, static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<UnsupportedImageFeatureException>(canvas, static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, 1, static (_, _) => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Compositing((CompositingSpace)2, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, null!));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Compositing(CompositingSpace.Encoded, 1, null!));
+
+                // The stored values never need the profile
+                canvas.Compositing(CompositingSpace.Encoded, static encoded => encoded.FillRectangle(White, new RectangleD(0, 0, 0.5, 1)));
+            },
+            Ct);
+        Assert.Equal(new Rgb24(128, 128, 128), image.Frames[0][0, 0]);
+
+        // Samples that are linear light already are combined as they are
+        using var linear = new Image<Rgb24>(1, 1, new Rgb24(0, 0, 0));
+        linear.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        linear.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static inner => inner.FillRectangle(White, new RectangleD(0, 0, 0.5, 1))), Ct);
+        Assert.Equal(new Rgb24(128, 128, 128), linear.Frames[0][0, 0]);
+
+        // Without ICC profile, the transfer characteristics of a CICP description give the function, as for a resize:
+        // a gamma of 2.2 encodes half of the light of white as 0.5^(1 / 2.2) = 0.7297 -> 186.08, linear
+        // characteristics are light already, and reserved ones have no function
+        foreach (var (transfer, expected) in new[] { ((byte)4, 186), ((byte)13, 188), ((byte)2, 188), ((byte)8, 128) })
+        {
+            using var described = new Image<Rgb24>(1, 1, new Rgb24(0, 0, 0));
+            described.Metadata.Cicp = new CicpColorDescription(9, transfer, 0, fullRange: true);
+            described.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static inner => inner.FillRectangle(White, new RectangleD(0, 0, 0.5, 1))), Ct);
+            Assert.Equal(new Rgb24((byte)expected, (byte)expected, (byte)expected), described.Frames[0][0, 0]);
+        }
+
+        using var reserved = new Image<Rgb24>(1, 1, new Rgb24(0, 0, 0));
+        reserved.Metadata.Cicp = new CicpColorDescription(1, 3, 0, fullRange: true);
+        reserved.Draw(static canvas => AssertThrows<UnsupportedImageFeatureException>(canvas, static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static _ => Assert.Fail("The callback ran."))), Ct);
+        Assert.Equal(new Rgb24(0, 0, 0), reserved.Frames[0][0, 0]);
+
+        // A layer and a shadow are combined in linear light with what is under them. A layer at half its opacity:
+        // white over black is 188, as a paint at half its opacity is
+        using var layered = new Image<Rgb24>(2, 1, new Rgb24(0, 0, 0));
+        layered.Draw(
+            static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static inner =>
+            {
+                inner.Layer(32768 / 65536.0, static layer => layer.FillRectangle(White, new Rectangle(0, 0, 1, 1)));
+                inner.Shadow(new Rgba32(255, 255, 255, 128), new PointD(1, 0), 0, static layer => layer.FillRectangle(new Rgba32(0, 0, 0), new Rectangle(0, 0, 1, 1)));
+            }),
+            Ct);
+        Assert.Equal(new Rgb24(0, 0, 0), layered.Frames[0][0, 0]);
+        Assert.Equal(new Rgb24(188, 188, 188), layered.Frames[0][1, 0]);
+    }
+
     private delegate void CanvasAction(DrawingCanvas canvas);
 
     private static void AssertThrows<TException>(DrawingCanvas canvas, CanvasAction action)

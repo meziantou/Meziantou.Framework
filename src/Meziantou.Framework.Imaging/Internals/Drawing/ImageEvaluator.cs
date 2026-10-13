@@ -39,6 +39,16 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// any brush color is.
 /// </para>
 /// <para>
+/// <b>Perspective.</b> An image drawn on a quadrilateral is placed by a projective transformation: the position
+/// <c>(u, v)</c> the center <c>(x, y)</c> of a pixel comes from is
+/// <c>((h0 x + h1 y + h2) / w, (h3 x + h4 y + h5) / w)</c> with <c>w = h6 x + h7 y + h8</c>, the nine numbers being
+/// those of the inverse of the transformation, with the sign that makes <c>w</c> positive on the quadrilateral. The
+/// color is then the one above for that position. With smooth sampling, what a pixel of the canvas covers of the
+/// image changes from a pixel to the next: <c>sx</c> and <c>sy</c> are the lengths of the derivatives of <c>u</c> and
+/// of <c>v</c> at the center of the pixel, <c>sqrt(((h0 - h6 u) / w)^2 + ((h1 - h7 u) / w)^2)</c> and
+/// <c>sqrt(((h3 - h6 v) / w)^2 + ((h4 - h7 v) / w)^2)</c>.
+/// </para>
+/// <para>
 /// <b>Method.</b> When the rows of the canvas stay rows of the image (no rotation, no skew), the two rows of the image
 /// around a row of the canvas are converted once and kept until another row needs their place: the image is read row
 /// by row. Otherwise each pixel is read on its own. A reduced image is read the same two ways, one row of the image at
@@ -80,6 +90,17 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private bool _isReduced;
     private double _spanX;
     private double _spanY;
+    private bool _isProjective;
+    private bool _isSmooth;
+    private double _h0;
+    private double _h1;
+    private double _h2;
+    private double _h3;
+    private double _h4;
+    private double _h5;
+    private double _h6;
+    private double _h7;
+    private double _h8;
     private PooledBuffer? _sums;
     private int _sumCapacity;
 
@@ -128,6 +149,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         _regionHeight = area.Height;
         _wrapMode = wrapMode;
         _isNearest = sampling == ImageSampling.Nearest;
+        _isProjective = false;
         _isEmpty = area.IsEmpty || !new Affine2D(transform.M11, transform.M12, transform.M21, transform.M22, transform.OffsetX, transform.OffsetY).TryInvert(out _inverse);
 
         // The row of the image a pixel reads does not depend on its column
@@ -174,6 +196,37 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         }
     }
 
+    /// <summary>Sets an image that is placed by a projective transformation, its pixels on the edges extended. The image is not read yet.</summary>
+    /// <param name="source">The frame whose pixels are painted, all of them.</param>
+    /// <param name="inverse">The nine numbers that bring a position of the canvas back to the image, row by row; empty when the image is flattened to a line: it paints nothing.</param>
+    /// <param name="sampling">How the image is read between the centers of its pixels.</param>
+    /// <param name="destination">A frame that is drawn on: the colors are converted to its pixel format.</param>
+    /// <param name="width">The width of the canvas.</param>
+    /// <exception cref="ObjectDisposedException">The frame no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The rows exceed the allocation limit.</exception>
+    public void PrepareProjective(ImageFrame source, ReadOnlySpan<double> inverse, ImageSampling sampling, ImageFrame destination, int width)
+    {
+        Prepare(source, region: null, AffineTransform.Identity, ImageWrapMode.Pad, ImageSampling.Bilinear, destination, width, nameof(source));
+        _isNearest = sampling == ImageSampling.Nearest;
+        _isSmooth = sampling == ImageSampling.Smooth;
+        _isProjective = true;
+        if (inverse.IsEmpty)
+        {
+            _isEmpty = true;
+            return;
+        }
+
+        _h0 = inverse[0];
+        _h1 = inverse[1];
+        _h2 = inverse[2];
+        _h3 = inverse[3];
+        _h4 = inverse[4];
+        _h5 = inverse[5];
+        _h6 = inverse[6];
+        _h7 = inverse[7];
+        _h8 = inverse[8];
+    }
+
     /// <summary>Takes the lease of the image: its pixels cannot change while a shape is painted with them.</summary>
     /// <exception cref="InvalidOperationException">The image is being drawn on, or its pixels are being accessed.</exception>
     /// <exception cref="ObjectDisposedException">The frame no longer belongs to a live image.</exception>
@@ -205,7 +258,11 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         }
 
         var samples = Samples[..count];
-        if (_isReduced)
+        if (_isProjective)
+        {
+            EvaluateProjected(y, x, samples);
+        }
+        else if (_isReduced)
         {
             if (_keepsRows)
             {
@@ -325,40 +382,81 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         for (var i = 0; i < samples.Length; i++)
         {
             var centerX = x + i + 0.5;
-            Split(_inverse.TransformX(centerX, centerY), out var column, out var fx);
-            Split(_inverse.TransformY(centerX, centerY), out var row, out var fy);
-            if (fx == 0 && fy == 0)
+            samples[i] = Interpolate(_inverse.TransformX(centerX, centerY), _inverse.TransformY(centerX, centerY));
+        }
+    }
+
+    /// <summary>Evaluates a run of an image placed by a projective transformation: each pixel has its own position, and its own share of the image.</summary>
+    private void EvaluateProjected(int y, int x, Span<Rgba64> samples)
+    {
+        var centerY = y + 0.5;
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var centerX = x + i + 0.5;
+            var w = ((_h6 * centerX) + (_h7 * centerY)) + _h8;
+
+            // Written so that a value that is not a number has no color: what is beyond the horizon of the image is not painted
+            if (!(w > 0))
             {
-                samples[i] = TryRead(column, row, out var pixel) ? pixel : default;
+                samples[i] = default;
                 continue;
             }
 
-            var accumulator = default(Accumulator);
-            if (TryRead(column, row, out var color))
+            var u = (((_h0 * centerX) + (_h1 * centerY)) + _h2) / w;
+            var v = (((_h3 * centerX) + (_h4 * centerY)) + _h5) / w;
+            if (_isSmooth)
             {
-                accumulator.Add(color, (1 - fx) * (1 - fy));
-            }
-
-            if (fx != 0 && TryRead(column + 1, row, out color))
-            {
-                accumulator.Add(color, fx * (1 - fy));
-            }
-
-            if (fy != 0)
-            {
-                if (TryRead(column, row + 1, out color))
+                // What the pixel covers of the image, around its center
+                var ux = (_h0 - (_h6 * u)) / w;
+                var uy = (_h1 - (_h7 * u)) / w;
+                var vx = (_h3 - (_h6 * v)) / w;
+                var vy = (_h4 - (_h7 * v)) / w;
+                var spanX = Math.Min(Math.Sqrt((ux * ux) + (uy * uy)), _regionWidth);
+                var spanY = Math.Min(Math.Sqrt((vx * vx) + (vy * vy)), _regionHeight);
+                if (spanX > 1 || spanY > 1)
                 {
-                    accumulator.Add(color, (1 - fx) * fy);
-                }
-
-                if (fx != 0 && TryRead(column + 1, row + 1, out color))
-                {
-                    accumulator.Add(color, fx * fy);
+                    samples[i] = Reduce(u, v, Math.Max(spanX, 1), Math.Max(spanY, 1));
+                    continue;
                 }
             }
 
-            samples[i] = accumulator.ToColor();
+            samples[i] = Interpolate(u, v);
         }
+    }
+
+    /// <summary>Gets the color of the image at a position: the pixel that contains it, or the four pixels around it, interpolated.</summary>
+    private Rgba64 Interpolate(double u, double v)
+    {
+        Split(u, out var column, out var fx);
+        Split(v, out var row, out var fy);
+        if (fx == 0 && fy == 0)
+            return TryRead(column, row, out var pixel) ? pixel : default;
+
+        var accumulator = default(Accumulator);
+        if (TryRead(column, row, out var color))
+        {
+            accumulator.Add(color, (1 - fx) * (1 - fy));
+        }
+
+        if (fx != 0 && TryRead(column + 1, row, out color))
+        {
+            accumulator.Add(color, fx * (1 - fy));
+        }
+
+        if (fy != 0)
+        {
+            if (TryRead(column, row + 1, out color))
+            {
+                accumulator.Add(color, (1 - fx) * fy);
+            }
+
+            if (fx != 0 && TryRead(column + 1, row + 1, out color))
+            {
+                accumulator.Add(color, fx * fy);
+            }
+        }
+
+        return accumulator.ToColor();
     }
 
     /// <summary>Evaluates a run of a reduced image whose pixels all read the same rows of the image: one row at a time, for the whole run.</summary>
@@ -426,41 +524,47 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         for (var i = 0; i < samples.Length; i++)
         {
             var centerX = x + i + 0.5;
-            var u = Limit(_inverse.TransformX(centerX, centerY));
-            var v = Limit(_inverse.TransformY(centerX, centerY));
-            GetSupport(u, _spanX, out var firstColumn, out var lastColumn);
-            GetSupport(v, _spanY, out var firstRow, out var lastRow);
-            double alpha = 0, red = 0, green = 0, blue = 0, totalX = 0, totalY = 0;
-            for (var row = firstRow; row <= lastRow; row++)
+            samples[i] = Reduce(_inverse.TransformX(centerX, centerY), _inverse.TransformY(centerX, centerY), _spanX, _spanY);
+        }
+    }
+
+    /// <summary>Gets the color of a reduced image at a position: every pixel within a span of it, weighted by its distance.</summary>
+    private Rgba64 Reduce(double u, double v, double spanX, double spanY)
+    {
+        u = Limit(u);
+        v = Limit(v);
+        GetSupport(u, spanX, out var firstColumn, out var lastColumn);
+        GetSupport(v, spanY, out var firstRow, out var lastRow);
+        double alpha = 0, red = 0, green = 0, blue = 0, totalX = 0, totalY = 0;
+        for (var row = firstRow; row <= lastRow; row++)
+        {
+            var weightY = GetWeight(row, v, spanY);
+            if (!(weightY > 0))
+                continue;
+
+            totalY += weightY;
+            var sum = default(RowSum);
+            for (var column = firstColumn; column <= lastColumn; column++)
             {
-                var weightY = GetWeight(row, v, _spanY);
-                if (!(weightY > 0))
+                var weightX = GetWeight(column, u, spanX);
+                if (!(weightX > 0))
                     continue;
 
-                totalY += weightY;
-                var sum = default(RowSum);
-                for (var column = firstColumn; column <= lastColumn; column++)
+                sum.Total += weightX;
+                if (TryRead(column, row, out var color))
                 {
-                    var weightX = GetWeight(column, u, _spanX);
-                    if (!(weightX > 0))
-                        continue;
-
-                    sum.Total += weightX;
-                    if (TryRead(column, row, out var color))
-                    {
-                        sum.Add(color, weightX);
-                    }
+                    sum.Add(color, weightX);
                 }
-
-                alpha += weightY * sum.Alpha;
-                red += weightY * sum.Red;
-                green += weightY * sum.Green;
-                blue += weightY * sum.Blue;
-                totalX = sum.Total;
             }
 
-            samples[i] = ToColor(alpha, red, green, blue, totalX * totalY);
+            alpha += weightY * sum.Alpha;
+            red += weightY * sum.Red;
+            green += weightY * sum.Green;
+            blue += weightY * sum.Blue;
+            totalX = sum.Total;
         }
+
+        return ToColor(alpha, red, green, blue, totalX * totalY);
     }
 
     /// <summary>Gets the rows or the columns of the image a pixel of the canvas reads when the image is reduced: those whose center is within the span of its position.</summary>

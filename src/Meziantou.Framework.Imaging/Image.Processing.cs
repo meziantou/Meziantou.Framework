@@ -508,7 +508,7 @@ public abstract partial class Image
     /// The ICC profile is not recognized as sRGB for the pixel format (no ICC transform is applied implicitly), or the
     /// transfer characteristics of the CICP description have no function.
     /// </exception>
-    private byte GetLinearLightTransfer(string operation, string verb)
+    internal byte GetLinearLightTransfer(string operation, string verb)
     {
         if (_metadata.TransferFunction == ColorTransferFunction.Linear)
             return 0;

@@ -181,8 +181,21 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     (every DCT of the format has basis functions of the same energy); the bits are a model fitted on frames coded with
     one transform, to a few percent. What names a transform in the block list is part of the cost (about four bits):
     without it the selection loses on small images. The transforms above 16x16 add about 0.1 % on photographs (more on
-    smooth graphics) and can double the encoding time, hence their effort. The 4x4, 4x8, identity and AFV transforms are
-    not written.
+    smooth graphics) and can double the encoding time, hence their effort.
+  - *The transforms of one block other than its DCT are not written* (the DCTs of 4x4, 4x8 and 8x4 samples, the 2x2
+    transform, the identity, AFV). They were tried, after the quantization field: their forward transform is the
+    inverse of the 64x64 matrix measured on the decoder, the error of the samples comes from the same matrix, and djxl
+    reads the files. With the cost of the other transforms they are chosen where they make the file larger, since the
+    cost only measures the luma and its bit estimate was fitted on DCTs; a number of bits added to their cost (8 to
+    128) removes the loss without giving a gain. File size at equal quality, effort 5, on five photographs (PSNR-Y,
+    SSIM, XPSNR, MS-SSIM, VMAF), with 48 bits added: 4x4 +2.4 %, +11.5 %, +5.6 %, +22 %, +25 %; identity +4.7 %, +8.9 %,
+    +6.1 %, +15 %, +8.6 %; 2x2 +0.1 %, +5.3 %, +2.0 %, +11 %, +8.2 %; AFV +2.1 %, +6.4 %, +3.7 %, +11 %, +6.5 %. The two
+    halves of a block (4x8 and 8x4), with 64 bits added, are the only ones near a gain: -0.4 %, +0.3 %, +0.1 %, +1.1 %,
+    +0.4 % on the photographs, and -1.7 %, -2.0 %, -1.5 %, -1.0 %, -0.3 % on two screenshots of text and three graphics
+    (the 2x2 transform is 7 % smaller on text for PSNR and SSIM, and larger for MS-SSIM and VMAF). Not kept: they do
+    not reduce the size of photographs, and what is added to their cost keeps them out of the blocks they suit best (one
+    edge in the middle of a block is cheap for the 8x8 DCT too). A cost that measures the three channels is what to
+    try before trying them again.
   - *The block list* is a Modular channel whose first row holds the transforms and whose second row holds the
     quantization factors: the tree gives each row its own context and predictor (`firstRowChannel`), which made the
     list 15 % smaller on a photograph.

@@ -32,6 +32,7 @@ public sealed class ApiSurfaceTests
         typeof(GifEncoder),
         typeof(JpegEncoder),
         typeof(AvifEncoder),
+        typeof(HeicEncoder),
         typeof(Pen),
         typeof(SolidBrush),
         typeof(LinearGradientBrush),
@@ -133,6 +134,32 @@ public sealed class ApiSurfaceTests
     }
 
     [Fact]
+    public void HeicAdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(15, (int)ImageFormat.Heic);
+        Assert.Equal(nameof(ImageFormat.Heic), Enum.GetName((ImageFormat)15));
+
+        // The encoder is an immutable settings object with the settings of the AVIF one: the two formats share a container
+        var type = typeof(HeicEncoder);
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
+        Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
+        var settings = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal).ToArray();
+        Assert.Equal(
+            [
+                nameof(HeicEncoder.AllowBitDepthReduction), nameof(HeicEncoder.BitDepth), nameof(HeicEncoder.ChromaSubsampling), nameof(HeicEncoder.ClearTransparentColors), nameof(HeicEncoder.Compression),
+                nameof(HeicEncoder.DurationRounding), nameof(HeicEncoder.Effort), nameof(HeicEncoder.Format), nameof(HeicEncoder.KeyFrameInterval), nameof(HeicEncoder.Quality),
+            ],
+            settings);
+        Assert.Equal(typeof(AvifEncoder).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal), settings);
+        Assert.Equal(typeof(HeicCompression), GetDeclaredProperty(type, nameof(HeicEncoder.Compression)).PropertyType);
+        Assert.Equal(typeof(HeicChromaSubsampling), GetDeclaredProperty(type, nameof(HeicEncoder.ChromaSubsampling)).PropertyType);
+        Assert.Equal(Enum.GetNames<AvifCompression>(), Enum.GetNames<HeicCompression>());
+        Assert.Equal(Enum.GetNames<AvifChromaSubsampling>(), Enum.GetNames<HeicChromaSubsampling>());
+    }
+
+    [Fact]
     public void JpegXlAdditionsHaveTheirPublicShape()
     {
         // A new format is appended: the values of the existing members never change
@@ -200,9 +227,9 @@ public sealed class ApiSurfaceTests
     public void Jpeg2000AdditionsHaveTheirPublicShape()
     {
         // A new format is appended: the values of the existing members never change
-        Assert.Equal(15, (int)ImageFormat.Jpeg2000);
-        Assert.Equal(nameof(ImageFormat.Jpeg2000), Enum.GetName((ImageFormat)15));
-        Assert.Equal(15, Enum.GetValues<ImageFormat>().Max(format => (int)format));
+        Assert.Equal(16, (int)ImageFormat.Jpeg2000);
+        Assert.Equal(nameof(ImageFormat.Jpeg2000), Enum.GetName((ImageFormat)16));
+        Assert.Equal(16, Enum.GetValues<ImageFormat>().Max(format => (int)format));
 
         var type = typeof(Jpeg2000Encoder);
         Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);

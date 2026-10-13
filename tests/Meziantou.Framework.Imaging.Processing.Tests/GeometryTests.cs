@@ -154,4 +154,208 @@ public sealed class GeometryTests
         Assert.Throws<ArgumentOutOfRangeException>(() => RectangleD.FromLTRB(0, 2, 1, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => RectangleD.FromLTRB(0, 0, double.NaN, 1));
     }
+
+    [Fact]
+    public void PointDArithmeticWorksOnBothCoordinates()
+    {
+        var a = new PointD(1.5, -2);
+        var b = new PointD(0.25, 4);
+        Assert.Equal(new PointD(1.75, 2), a + b);
+        Assert.Equal(new PointD(1.25, -6), a - b);
+        Assert.Equal(new PointD(-1.5, 2), -a);
+        Assert.Equal(new PointD(3, -4), a * 2);
+        Assert.Equal(new PointD(3, -4), 2 * a);
+        Assert.Equal(new PointD(0.75, -1), a / 2);
+        Assert.Equal(a + b, PointD.Add(a, b));
+        Assert.Equal(a - b, PointD.Subtract(a, b));
+        Assert.Equal(-a, PointD.Negate(a));
+        Assert.Equal(a * 2, PointD.Multiply(a, 2));
+        Assert.Equal(a / 2, PointD.Divide(a, 2));
+        Assert.Equal(new PointD(2.5, 1), a.Offset(1, 3));
+    }
+
+    [Fact]
+    public void PointDDistanceIsTheLengthOfTheSegment()
+    {
+        Assert.Equal(5, new PointD(1, 1).DistanceTo(new PointD(4, 5)));
+        Assert.Equal(5, new PointD(4, 5).DistanceTo(new PointD(1, 1)));
+        Assert.Equal(0, new PointD(2.5, -1).DistanceTo(new PointD(2.5, -1)));
+    }
+
+    [Fact]
+    public void RectangleDExposesItsLocationAndItsCenter()
+    {
+        var rectangle = new RectangleD(1, 2, 4, 3);
+        Assert.Equal(new PointD(1, 2), rectangle.Location);
+        Assert.Equal(new PointD(3, 3.5), rectangle.Center);
+    }
+
+    [Fact]
+    public void RectangleDContainsItsLeftAndTopSidesOnly()
+    {
+        var rectangle = new RectangleD(1, 2, 4, 3);
+        Assert.True(rectangle.Contains(new PointD(1, 2)));
+        Assert.True(rectangle.Contains(new PointD(4.999, 4.999)));
+        Assert.False(rectangle.Contains(new PointD(5, 3)));
+        Assert.False(rectangle.Contains(new PointD(3, 5)));
+        Assert.False(rectangle.Contains(new PointD(0.999, 3)));
+        Assert.False(rectangle.Contains(new PointD(double.NaN, 3)));
+
+        Assert.True(rectangle.Contains(rectangle));
+        Assert.True(rectangle.Contains(new RectangleD(2, 3, 3, 2)));
+        Assert.False(rectangle.Contains(new RectangleD(2, 3, 3.5, 2)));
+    }
+
+    [Fact]
+    public void RectangleDIntersectAndUnion()
+    {
+        var a = new RectangleD(0, 0, 4, 4);
+        var b = new RectangleD(2.5, 1, 4, 1.5);
+        Assert.Equal(new RectangleD(2.5, 1, 1.5, 1.5), RectangleD.Intersect(a, b));
+        Assert.Equal(new RectangleD(0, 0, 6.5, 4), RectangleD.Union(a, b));
+        Assert.True(a.IntersectsWith(b));
+
+        // Rectangles that only touch have no area in common
+        var touching = new RectangleD(4, 0, 2, 2);
+        Assert.Equal(RectangleD.Empty, RectangleD.Intersect(a, touching));
+        Assert.False(a.IntersectsWith(touching));
+
+        // A rectangle without area still counts for its position in a union
+        Assert.Equal(new RectangleD(0, 0, 10, 4), RectangleD.Union(a, new RectangleD(6, 2, 4, 0)));
+    }
+
+    [Fact]
+    public void RectangleDOffsetAndInflate()
+    {
+        var rectangle = new RectangleD(1, 2, 4, 3);
+        Assert.Equal(new RectangleD(1.5, 0, 4, 3), rectangle.Offset(0.5, -2));
+        Assert.Equal(new RectangleD(0, 1.5, 6, 4), rectangle.Inflate(1, 0.5));
+        Assert.Equal(new RectangleD(0.5, 1.5, 5, 4), rectangle.Inflate(0.5));
+        Assert.Equal(new RectangleD(2, 2.5, 2, 2), rectangle.Inflate(-1, -0.5));
+
+        // A side does not move past the center
+        Assert.Equal(new RectangleD(3, 3.5, 0, 0), rectangle.Inflate(-10));
+        Assert.Equal(new RectangleD(3, 1, 0, 5), rectangle.Inflate(-2.5, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => rectangle.Inflate(double.PositiveInfinity));
+        Assert.Throws<ArgumentOutOfRangeException>(() => rectangle.Inflate(double.NaN, 0));
+    }
+
+    [Fact]
+    public void TheDefaultAffineTransformIsTheIdentity()
+    {
+        var identity = default(AffineTransform);
+        Assert.True(identity.IsIdentity);
+        Assert.Equal(AffineTransform.Identity, identity);
+        Assert.Equal(new AffineTransform(1, 0, 0, 1, 0, 0), identity);
+        Assert.Equal((1d, 0d, 0d, 1d, 0d, 0d), (identity.M11, identity.M12, identity.M21, identity.M22, identity.OffsetX, identity.OffsetY));
+        Assert.Equal(1, identity.Determinant);
+        Assert.Equal(new PointD(3, -4), identity.Transform(new PointD(3, -4)));
+        Assert.Equal(identity.GetHashCode(), new AffineTransform(1, 0, 0, 1, 0, 0).GetHashCode());
+        Assert.False(new AffineTransform(1, 0, 0, 1, 0, 0.5).IsIdentity);
+        Assert.Equal("[1 0 0 1 0 0.5]", new AffineTransform(1, 0, 0, 1, 0, 0.5).ToString());
+    }
+
+    [Fact]
+    public void AffineTransformsMapPointsAsDocumented()
+    {
+        // (x M11 + y M21 + OffsetX, x M12 + y M22 + OffsetY)
+        var transform = new AffineTransform(2, 3, 5, 7, 11, 13);
+        Assert.Equal(new PointD(63, 86), transform.Transform(new PointD(1, 10)));
+        Assert.Equal(new PointD(52, 73), transform.TransformVector(new PointD(1, 10)));
+        Assert.Equal(-1, transform.Determinant);
+
+        Assert.Equal(new PointD(4, 6), AffineTransform.CreateTranslation(3, 4).Transform(new PointD(1, 2)));
+        Assert.Equal(new PointD(2, 6), AffineTransform.CreateScale(2, 3).Transform(new PointD(1, 2)));
+
+        // Around a center, the center does not move
+        var scale = AffineTransform.CreateScale(2, 3, new PointD(10, 20));
+        Assert.Equal(new PointD(10, 20), scale.Transform(new PointD(10, 20)));
+        Assert.Equal(new PointD(12, 23), scale.Transform(new PointD(11, 21)));
+
+        // A skew moves a point horizontally in proportion to its y, vertically in proportion to its x
+        var skew = AffineTransform.CreateSkew(45, 0);
+        Assert.Equal(12, skew.Transform(new PointD(2, 10)).X, 1e-14);
+        Assert.Equal(10, skew.Transform(new PointD(2, 10)).Y);
+        Assert.Equal(new PointD(2, 10), AffineTransform.CreateSkew(0, 0).Transform(new PointD(2, 10)));
+        Assert.Equal(12, AffineTransform.CreateSkew(0, 45).Transform(new PointD(2, 10)).Y, 1e-14);
+    }
+
+    [Fact]
+    public void RotationsByQuarterTurnsAreExactAndClockwise()
+    {
+        // Y grows downward: a quarter turn brings the x axis onto the y axis, which is clockwise on the image
+        Assert.Equal(new AffineTransform(0, 1, -1, 0, 0, 0), AffineTransform.CreateRotation(90));
+        Assert.Equal(new AffineTransform(-1, 0, 0, -1, 0, 0), AffineTransform.CreateRotation(180));
+        Assert.Equal(new AffineTransform(0, -1, 1, 0, 0, 0), AffineTransform.CreateRotation(270));
+        Assert.Equal(new AffineTransform(0, -1, 1, 0, 0, 0), AffineTransform.CreateRotation(-90));
+        Assert.Equal(AffineTransform.Identity, AffineTransform.CreateRotation(360));
+        Assert.Equal(AffineTransform.Identity, AffineTransform.CreateRotation(-720));
+        Assert.Equal(new PointD(0, 1), AffineTransform.CreateRotation(90).Transform(new PointD(1, 0)));
+        Assert.Equal(new PointD(3, 1), AffineTransform.CreateRotation(90, new PointD(2, 2)).Transform(new PointD(1, 1)));
+
+        var eighth = AffineTransform.CreateRotation(45);
+        Assert.Equal(Math.Sqrt(0.5), eighth.M11, 1e-15);
+        Assert.Equal(Math.Sqrt(0.5), eighth.M12, 1e-15);
+        Assert.Equal(-Math.Sqrt(0.5), eighth.M21, 1e-15);
+        Assert.Equal(Math.Sqrt(0.5), eighth.M22, 1e-15);
+        var third = AffineTransform.CreateRotation(30);
+        Assert.Equal(Math.Sqrt(0.75), third.M11, 1e-15);
+        Assert.Equal(0.5, third.M12, 1e-15);
+    }
+
+    [Fact]
+    public void ComposedAffineTransformsApplyTheFirstOneFirst()
+    {
+        var translate = AffineTransform.CreateTranslation(10, 0);
+        var scale = AffineTransform.CreateScale(2, 2);
+        Assert.Equal(new PointD(22, 4), translate.Then(scale).Transform(new PointD(1, 2)));
+        Assert.Equal(new PointD(12, 4), scale.Then(translate).Transform(new PointD(1, 2)));
+        Assert.Equal(translate.Then(scale), translate * scale);
+        Assert.Equal(translate.Then(scale), AffineTransform.Multiply(translate, scale));
+        Assert.Equal(translate, translate.Then(AffineTransform.Identity));
+        Assert.Equal(translate, AffineTransform.Identity.Then(translate));
+
+        // Every value below is exact in binary
+        var a = new AffineTransform(2, 3, 5, 7, 11, 13);
+        var b = new AffineTransform(0.5, -1, 4, 0.25, -3, 8);
+        var point = new PointD(1.5, -2.25);
+        Assert.Equal(new PointD(5.375, 5.6875), b.Transform(a.Transform(point)));
+        Assert.Equal(new PointD(5.375, 5.6875), a.Then(b).Transform(point));
+    }
+
+    [Fact]
+    public void AnAffineTransformThatFlattensThePlaneHasNoInverse()
+    {
+        var transform = new AffineTransform(2, 0, 0, 4, 6, -8);
+        Assert.True(transform.TryInvert(out var inverse));
+        Assert.Equal(new AffineTransform(0.5, 0, 0, 0.25, -3, 2), inverse);
+        Assert.True(transform.Then(inverse).IsIdentity);
+
+        Assert.True(AffineTransform.CreateRotation(90, new PointD(3, 4)).TryInvert(out var back));
+        Assert.Equal(AffineTransform.CreateRotation(-90, new PointD(3, 4)), back);
+
+        Assert.False(new AffineTransform(1, 2, 2, 4, 5, 6).TryInvert(out var none));
+        Assert.Equal(AffineTransform.Identity, none);
+        Assert.False(AffineTransform.CreateScale(0, 1).TryInvert(out _));
+        Assert.Equal(0, AffineTransform.CreateScale(0, 1).Determinant);
+    }
+
+    [Fact]
+    public void AffineTransformCoefficientsMustBeFinite()
+    {
+        foreach (var invalid in new[] { double.NaN, double.PositiveInfinity, double.NegativeInfinity })
+        {
+            Assert.Throws<ArgumentException>(() => new AffineTransform(invalid, 0, 0, 1, 0, 0));
+            Assert.Throws<ArgumentException>(() => new AffineTransform(1, 0, 0, 1, 0, invalid));
+            Assert.Throws<ArgumentException>(() => AffineTransform.CreateTranslation(invalid, 0));
+            Assert.Throws<ArgumentException>(() => AffineTransform.CreateScale(1, invalid));
+            Assert.Throws<ArgumentException>(() => AffineTransform.CreateRotation(invalid));
+            Assert.Throws<ArgumentException>(() => AffineTransform.CreateRotation(10, new PointD(invalid, 0)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => AffineTransform.CreateSkew(invalid, 0));
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => AffineTransform.CreateSkew(90, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => AffineTransform.CreateSkew(0, -90));
+        Assert.Throws<ArgumentException>(() => AffineTransform.CreateScale(1e200, 1).Then(AffineTransform.CreateScale(1e200, 1)));
+    }
 }

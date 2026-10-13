@@ -59,6 +59,7 @@ public static class FixtureOptions
             "tga" => ImageFormat.Tga,
             "pnm" => ImageFormat.Pnm,
             "avif" => ImageFormat.Avif,
+            "heic" => ImageFormat.Heic,
             "jxl" => ImageFormat.JpegXl,
             "jp2" => ImageFormat.Jpeg2000,
             _ => ImageFormat.Unknown,

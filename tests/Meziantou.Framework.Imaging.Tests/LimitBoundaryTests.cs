@@ -104,7 +104,7 @@ public sealed class LimitBoundaryTests
         Assert.Equal(new Size(3, 5), tall.Size);
     }
 
-    public static TheoryData<string> Encoders => ["png", "apng", "gif", "jpeg", "jpeg-progressive", "webp", "webp-lossy", "webp-animated", "qoi", "avif", "avif-lossy", "avif-animated", "jxl", "jxl-fast", "jxl-animated", "jxl-lossy", "jxl-lossy-progressive", "jxl-progressive", "jp2", "jp2-lossy", "j2k"];
+    public static TheoryData<string> Encoders => ["png", "apng", "gif", "jpeg", "jpeg-progressive", "webp", "webp-lossy", "webp-animated", "qoi", "avif", "avif-lossy", "avif-animated", "heic", "heic-lossy", "heic-animated", "jxl", "jxl-fast", "jxl-animated", "jxl-lossy", "jxl-lossy-progressive", "jxl-progressive", "jp2", "jp2-lossy", "j2k"];
 
     [Theory]
     [MemberData(nameof(Encoders))]
@@ -165,6 +165,8 @@ public sealed class LimitBoundaryTests
                 "qoi" => new QoiEncoder(),
                 "avif" or "avif-animated" => new AvifEncoder(),
                 "avif-lossy" => new AvifEncoder { Compression = AvifCompression.Lossy },
+                "heic" or "heic-animated" => new HeicEncoder(),
+                "heic-lossy" => new HeicEncoder { Compression = HeicCompression.Lossy },
                 "jxl" or "jxl-animated" => new JpegXlEncoder(),
                 "jxl-fast" => new JpegXlEncoder { Effort = 0 },
                 "jpeg-progressive" => new JpegEncoder { Process = JpegEncodingProcess.Progressive },
@@ -176,7 +178,7 @@ public sealed class LimitBoundaryTests
                 "j2k" => new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream },
                 _ => new JpegEncoder(),
             },
-            ExpectedFrameCount = encoder is "apng" or "webp-animated" or "avif-animated" or "jxl-animated" ? 2 : 1,
+            ExpectedFrameCount = encoder is "apng" or "webp-animated" or "avif-animated" or "heic-animated" or "jxl-animated" ? 2 : 1,
             Configuration = Configuration(new ImageResourceLimits { MaxLiveAllocationBytes = budget }),
         };
         using var output = new MemoryStream();

@@ -1,3 +1,6 @@
+using System.Buffers.Binary;
+using System.Text;
+
 namespace Meziantou.Framework.Imaging.Tests;
 
 public sealed class FormatDetectionTests
@@ -34,7 +37,16 @@ public sealed class FormatDetectionTests
     [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x4D, 0x41, 0x31, 0x42 }, ImageFormat.Avif)] // "MA1B" (AVIF baseline profile)
     [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x4D, 0x41, 0x31, 0x41 }, ImageFormat.Avif)] // "MA1A" (AVIF advanced profile)
     [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69 }, ImageFormat.Unknown)] // 11 bytes: the major brand is incomplete
-    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63 }, ImageFormat.Unknown)] // "heic" (HEVC-coded HEIF)
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63 }, ImageFormat.Heic)] // "heic" (HEVC-coded HEIF)
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x78 }, ImageFormat.Heic)] // "heix" (HEVC beyond the Main profile)
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x76, 0x63 }, ImageFormat.Heic)] // "hevc" (HEVC image sequence)
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x76, 0x78 }, ImageFormat.Heic)] // "hevx"
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x6D }, ImageFormat.Heic)] // "heim"
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x73 }, ImageFormat.Heic)] // "heis"
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x76, 0x6D }, ImageFormat.Heic)] // "hevm"
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x76, 0x73 }, ImageFormat.Heic)] // "hevs"
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x66 }, ImageFormat.Unknown)] // "heif" is not a brand
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69 }, ImageFormat.Unknown)] // 11 bytes: the major brand is incomplete
     [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x6D, 0x6F, 0x6F, 0x76, 0x61, 0x76, 0x69, 0x66 }, ImageFormat.Unknown)] // "moov" instead of "ftyp"
     [InlineData(new byte[] { 0xFF, 0x0A, 0x10, 0x50, 0x10, 0x50, 0x5C, 0x08 }, ImageFormat.JpegXl)] // a JPEG XL codestream
     [InlineData(new byte[] { 0xFF, 0x0B, 0x10, 0x50, 0x10, 0x50, 0x5C, 0x08 }, ImageFormat.Unknown)] // not the second byte of a codestream
@@ -50,6 +62,39 @@ public sealed class FormatDetectionTests
     [InlineData(new byte[] { 0xFF, 0x4E, 0xFF, 0x51, 0x00, 0x29, 0x00, 0x00 }, ImageFormat.Unknown)] // not the SOC marker
     public void DetectFormatUsesSignatures(byte[] prefix, ImageFormat expected)
         => Assert.Equal(expected, Image.DetectFormat(prefix));
+
+    /// <summary>
+    /// A generic HEIF major brand does not tell the codec of the images: the compatible brands do, when the prefix holds the
+    /// whole file type box. A box that the prefix cuts is reported as AVIF, and the file is read as what its brands declare.
+    /// </summary>
+    [Theory]
+    [InlineData("mif1", new[] { "mif1", "avif" }, ImageFormat.Avif)]
+    [InlineData("mif1", new[] { "mif1", "heic" }, ImageFormat.Heic)]
+    [InlineData("mif1", new[] { "heix", "miaf" }, ImageFormat.Heic)]
+    [InlineData("msf1", new[] { "msf1", "hevc" }, ImageFormat.Heic)]
+    [InlineData("msf1", new[] { "msf1", "avis" }, ImageFormat.Avif)]
+    [InlineData("miaf", new[] { "heic", "avif" }, ImageFormat.Avif)] // both: the codec of the images decides when the file is read
+    [InlineData("mif1", new[] { "mif1", "miaf" }, ImageFormat.Unknown)] // no brand of a codec that the library reads
+    [InlineData("mif1", new string[0], ImageFormat.Unknown)]
+    [InlineData("avif", new[] { "heic" }, ImageFormat.Avif)] // the major brand of a codec is enough
+    [InlineData("heic", new[] { "avif" }, ImageFormat.Heic)]
+    public void GenericHeifBrandsAreDetectedFromTheCompatibleBrands(string majorBrand, string[] compatibleBrands, ImageFormat expected)
+    {
+        var box = new byte[16 + (4 * compatibleBrands.Length)];
+        BinaryPrimitives.WriteUInt32BigEndian(box, (uint)box.Length);
+        Encoding.ASCII.GetBytes("ftyp" + majorBrand).CopyTo(box, 4);
+        for (var i = 0; i < compatibleBrands.Length; i++)
+        {
+            Encoding.ASCII.GetBytes(compatibleBrands[i]).CopyTo(box, 16 + (4 * i));
+        }
+
+        Assert.Equal(expected, Image.DetectFormat(box));
+
+        // What follows the box does not matter, and a box that is cut cannot tell
+        Assert.Equal(expected, Image.DetectFormat([.. box, .. new byte[8]]));
+        if (compatibleBrands.Length > 0 && majorBrand is "mif1" or "msf1" or "miaf")
+            Assert.Equal(ImageFormat.Avif, Image.DetectFormat(box.AsSpan(0, box.Length - 1)));
+    }
 
     /// <summary>
     /// TGA has no signature: the whole 18-byte header must be legal and self-consistent, and the codec is consulted last

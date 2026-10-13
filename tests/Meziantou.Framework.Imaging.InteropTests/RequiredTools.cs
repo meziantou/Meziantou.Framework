@@ -14,9 +14,18 @@ internal static class RequiredTools
 
     public static Task<LibAvifTool> LibAvifAsync() => LibAvifTool.LocateAsync(XunitCancellationToken);
 
+    /// <summary>Gets the libheif tools (<c>heif-enc</c> with x265, <c>heif-dec</c> with libde265, <c>heif-info</c>).</summary>
+    public static Task<LibHeifTool> LibHeifAsync() => LibHeifTool.LocateAsync(XunitCancellationToken);
+
     public static Task<LibJxlTool> LibJxlAsync() => LibJxlTool.LocateAsync(XunitCancellationToken);
 
     public static Task<JxlOxideTool> JxlOxideAsync() => JxlOxideTool.LocateAsync(XunitCancellationToken);
+
+    /// <summary>Gets the three HEVC reference decoders: the native decoder of FFmpeg, dec265 and TAppDecoder of HM.</summary>
+    public static Task<IReadOnlyList<HevcReferenceDecoder>> HevcReferenceDecodersAsync() => HevcReferenceDecoder.LocateAllAsync(XunitCancellationToken);
+
+    /// <summary>Gets an HEVC encoder: <see cref="HevcReferenceEncoder.X265"/>, <see cref="HevcReferenceEncoder.Kvazaar"/> or <see cref="HevcReferenceEncoder.Hm"/>.</summary>
+    public static Task<HevcReferenceEncoder> HevcReferenceEncoderAsync(string name) => HevcReferenceEncoder.LocateAsync(name, XunitCancellationToken);
 
     public static Task<OpenJpegTool> OpenJpegAsync() => OpenJpegTool.LocateAsync(XunitCancellationToken);
 

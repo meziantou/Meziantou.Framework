@@ -421,7 +421,7 @@ internal sealed class MetadataWritePlan
             ImageFormat.Bmp => Bmp,
             ImageFormat.Tiff => Tiff,
             ImageFormat.Ani => Ani,
-            ImageFormat.Avif => Avif,
+            ImageFormat.Avif or ImageFormat.Heic => Avif,
             ImageFormat.JpegXl => JpegXl,
             ImageFormat.Jpeg2000 => Jp2,
             _ => None,

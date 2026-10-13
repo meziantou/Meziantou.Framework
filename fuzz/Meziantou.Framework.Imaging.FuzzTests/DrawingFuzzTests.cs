@@ -12,7 +12,12 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// <para>
 /// A drawing has no documented failure for valid arguments, so any exception is a defect. The invariants do not depend
 /// on what is drawn: the working storage is released and no lease is left; a whole-image call paints every frame exactly
-/// like a call on that frame; the alpha of a pixel never decreases; a format without alpha has nothing else to keep.
+/// like a call on that frame; the alpha of a pixel never decreases, unless the case uses the operators that erase
+/// (a third of the cases); a format without alpha has nothing else to keep.
+/// </para>
+/// <para>
+/// Two failures are documented for valid arguments, and expected here: an arc or a transformed path that goes beyond
+/// the largest coordinate is rejected when it is built. The generator catches that exception there, and nowhere else.
 /// </para>
 /// <para>
 /// The time to draw a shape follows the number of points where its edges cross each other, which the area of their
@@ -106,11 +111,18 @@ public sealed class DrawingFuzzTests
 
         // The commands are generated once and replayed on every frame, whatever the frame
         var commandSeed = random.NextUInt64();
-        return CheckInvariants(format, (canvas, _) => Paint(canvas, new FuzzRandom(commandSeed)), out changed, random);
+
+        // A case out of three uses the operators that erase and replace pixels: the alpha of a pixel may then decrease
+        var erases = random.Chance(33);
+
+        // The image some drawings paint with: any pixel format, never the image that is drawn on
+        using var sprite = DrawingTestSupport.CreateRandom(PixelFormats.All[random.Next(PixelFormats.All.Count)], random.Next(1, 9), random.Next(1, 9), random.Next);
+        var context = new FuzzContext(sprite.Frames[0], erases);
+        return CheckInvariants(format, (canvas, _) => Paint(canvas.Canvas, new FuzzRandom(commandSeed), context, depth: 0), out changed, random, checkAlpha: !erases);
     }
 
     /// <summary>Draws on a whole image and frame by frame on a copy, and checks the invariants.</summary>
-    private static string? CheckInvariants(PixelFormat format, Action<DrawingCanvasProxy, int> paint, out bool changed, FuzzRandom? random = null)
+    private static string? CheckInvariants(PixelFormat format, Action<DrawingCanvasProxy, int> paint, out bool changed, FuzzRandom? random = null, bool checkAlpha = true)
     {
         changed = false;
         // Without a generator (the self-test of the oracle): three frames of 8x8 pixels
@@ -151,7 +163,7 @@ public sealed class DrawingFuzzTests
                 return $"frame {i} differs between a whole-image call and a call on the frame";
 
             changed |= !after.AsSpan().SequenceEqual(before[i]);
-            if (!hasAlpha)
+            if (!hasAlpha || !checkAlpha)
                 continue;
 
             for (var sample = channels - 1; sample < after.Length; sample += channels)
@@ -177,57 +189,171 @@ public sealed class DrawingFuzzTests
         return image;
     }
 
-    private static void Paint(DrawingCanvasProxy proxy, FuzzRandom random)
+    private static void Paint(DrawingCanvas canvas, FuzzRandom random, FuzzContext context, int depth)
     {
-        var canvas = proxy.Canvas;
         var count = random.Next(1, 7);
         for (var i = 0; i < count; i++)
         {
-            switch (random.Next(11))
+            switch (random.Next(22))
             {
                 case 0:
-                    canvas.Fill(CreateBrush(random, canvas));
+                    canvas.Fill(CreateBrush(random, canvas, context));
                     break;
                 case 1:
-                    canvas.Fill(CreateBrush(random, canvas), CreatePath(random, canvas), random.Chance(50) ? FillRule.EvenOdd : FillRule.NonZero);
+                    canvas.Fill(CreateBrush(random, canvas, context), CreatePath(random, canvas), random.Chance(50) ? FillRule.EvenOdd : FillRule.NonZero);
                     break;
                 case 2:
-                    canvas.Stroke(CreatePen(random, canvas, widest: false), CreatePath(random, canvas));
+                    canvas.Stroke(CreatePen(random, canvas, context, widest: false), CreatePath(random, canvas));
                     break;
                 case 3:
-                    canvas.FillRectangle(CreateBrush(random, canvas), CreateRectangle(random, canvas));
+                    canvas.FillRectangle(CreateBrush(random, canvas, context), CreateRectangle(random, canvas));
                     break;
                 case 4:
-                    canvas.StrokeRectangle(CreatePen(random, canvas, widest: true), CreateRectangle(random, canvas));
+                    canvas.StrokeRectangle(CreatePen(random, canvas, context, widest: true), CreateRectangle(random, canvas));
                     break;
                 case 5:
-                    canvas.FillEllipse(CreateBrush(random, canvas), CreatePoint(random, canvas), CreateLength(random), CreateLength(random));
+                    canvas.FillEllipse(CreateBrush(random, canvas, context), CreatePoint(random, canvas), CreateLength(random), CreateLength(random));
                     break;
                 case 6:
-                    canvas.StrokeEllipse(CreatePen(random, canvas, widest: false), CreatePoint(random, canvas), CreateLength(random), CreateLength(random));
+                    canvas.StrokeEllipse(CreatePen(random, canvas, context, widest: false), CreatePoint(random, canvas), CreateLength(random), CreateLength(random));
                     break;
                 case 7:
-                    canvas.FillCircle(CreateBrush(random, canvas), CreatePoint(random, canvas), CreateLength(random));
+                    canvas.FillCircle(CreateBrush(random, canvas, context), CreatePoint(random, canvas), CreateLength(random));
                     break;
                 case 8:
-                    canvas.StrokeCircle(CreatePen(random, canvas, widest: false), CreatePoint(random, canvas), CreateLength(random));
+                    canvas.StrokeCircle(CreatePen(random, canvas, context, widest: false), CreatePoint(random, canvas), CreateLength(random));
                     break;
                 case 9:
-                    canvas.StrokeLine(CreatePen(random, canvas, widest: true), CreatePoint(random, canvas), CreatePoint(random, canvas));
+                    canvas.StrokeLine(CreatePen(random, canvas, context, widest: true), CreatePoint(random, canvas), CreatePoint(random, canvas));
                     break;
-                default:
+                case 10:
                     if (random.Chance(50))
                     {
-                        canvas.StrokeBezier(CreatePen(random, canvas, widest: false), CreatePoint(random, canvas), CreatePoint(random, canvas), CreatePoint(random, canvas));
+                        canvas.StrokeBezier(CreatePen(random, canvas, context, widest: false), CreatePoint(random, canvas), CreatePoint(random, canvas), CreatePoint(random, canvas));
                     }
                     else
                     {
-                        canvas.StrokeBezier(CreatePen(random, canvas, widest: false), CreatePoint(random, canvas), CreatePoint(random, canvas), CreatePoint(random, canvas), CreatePoint(random, canvas));
+                        canvas.StrokeBezier(CreatePen(random, canvas, context, widest: false), CreatePoint(random, canvas), CreatePoint(random, canvas), CreatePoint(random, canvas), CreatePoint(random, canvas));
                     }
 
                     break;
+                case 11:
+                    canvas.FillRoundedRectangle(CreateBrush(random, canvas, context), CreateRectangle(random, canvas), CreateLength(random));
+                    break;
+                case 12:
+                    canvas.StrokeRoundedRectangle(CreatePen(random, canvas, context, widest: false), CreateRectangle(random, canvas), CreateLength(random));
+                    break;
+                case 13:
+                    canvas.FillPolygon(CreateBrush(random, canvas, context), CreatePoints(random, canvas), random.Chance(50) ? FillRule.EvenOdd : FillRule.NonZero);
+                    break;
+                case 14:
+                    if (random.Chance(50))
+                    {
+                        canvas.StrokePolygon(CreatePen(random, canvas, context, widest: true), CreatePoints(random, canvas));
+                    }
+                    else
+                    {
+                        canvas.StrokePolyline(CreatePen(random, canvas, context, widest: true), CreatePoints(random, canvas));
+                    }
+
+                    break;
+                case 15:
+                    canvas.FillPie(CreateBrush(random, canvas, context), CreatePoint(random, canvas), CreateLength(random), CreateAngle(random), CreateAngle(random));
+                    break;
+                case 16:
+                    canvas.StrokeArc(CreatePen(random, canvas, context, widest: false), CreatePoint(random, canvas), CreateLength(random), CreateAngle(random), CreateAngle(random));
+                    break;
+                case 17:
+                    // The drawings of a clip are other drawings; the clips are closed in every case, and three deep at most
+                    if (depth >= 3)
+                    {
+                        canvas.Fill(CreateBrush(random, canvas, context));
+                    }
+                    else if (random.Chance(50))
+                    {
+                        canvas.Clip(random.Chance(50) ? CreateRectangle(random, canvas) : CreateWholeRectangle(random, canvas), inner => Paint(inner, random, context, depth + 1));
+                    }
+                    else
+                    {
+                        canvas.Clip(CreatePath(random, canvas), inner => Paint(inner, random, context, depth + 1), random.Chance(50) ? FillRule.EvenOdd : FillRule.NonZero);
+                    }
+
+                    break;
+                case 18:
+                    switch (random.Next(3))
+                    {
+                        case 0:
+                            canvas.DrawImage(context.Sprite, random.Chance(50) ? CreatePoint(random, canvas) : new PointD(random.Next(-4, canvas.Width + 2), random.Next(-4, canvas.Height + 2)), CreateOpacity(random));
+                            break;
+                        case 1:
+                            canvas.DrawImage(context.Sprite, CreateRectangle(random, canvas), CreateOpacity(random));
+                            break;
+                        default:
+                            var x = random.Next(context.Sprite.Width);
+                            var y = random.Next(context.Sprite.Height);
+                            canvas.DrawImage(context.Sprite, new Rectangle(x, y, random.Next(0, context.Sprite.Width - x + 1), random.Next(0, context.Sprite.Height - y + 1)), CreateRectangle(random, canvas), CreateOpacity(random));
+                            break;
+                    }
+
+                    break;
+                case 19:
+                    if (context.Erases)
+                    {
+                        canvas.Clear(CreateColor(random));
+                    }
+                    else
+                    {
+                        canvas.Fill(CreateBrush(random, canvas, context));
+                    }
+
+                    break;
+                case 20:
+                    Measure(canvas, random, context);
+                    break;
+                default:
+                    canvas.Stroke(CreateDashedPen(random, canvas, context), CreatePath(random, canvas));
+                    break;
             }
         }
+    }
+
+    /// <summary>Asks a random path what a drawing asks about a shape, and draws its stroke as a path.</summary>
+    private static void Measure(DrawingCanvas canvas, FuzzRandom random, FuzzContext context)
+    {
+        var path = CreatePath(random, canvas);
+        _ = path.Contains(CreatePoint(random, canvas), random.Chance(50) ? FillRule.EvenOdd : FillRule.NonZero);
+        var length = path.GetLength();
+        if (!(length >= 0) || double.IsInfinity(length))
+            throw new InvalidOperationException($"The length of a path is {length}.");
+
+        if (path.TryGetPointAtDistance((NextDouble(random) * 1.5 * length) - (0.25 * length), out var point, out var tangent))
+        {
+            if (!double.IsFinite(point.X) || !double.IsFinite(point.Y) || Math.Abs((tangent.X * tangent.X) + (tangent.Y * tangent.Y) - 1) > 1e-9)
+                throw new InvalidOperationException($"The point at a distance is {point}, with the direction {tangent}.");
+        }
+
+        var bounds = path.Bounds;
+        var tight = path.GetTightBounds();
+        var slack = 1e-6 * (1 + Math.Abs(bounds.Left) + Math.Abs(bounds.Top) + Math.Abs(bounds.Right) + Math.Abs(bounds.Bottom));
+        if (!(tight.Left >= bounds.Left - slack && tight.Top >= bounds.Top - slack && tight.Right <= bounds.Right + slack && tight.Bottom <= bounds.Bottom + slack))
+            throw new InvalidOperationException($"The tight bounds {tight} are not inside the bounds {bounds}.");
+
+        // The stroke as a path, when it is not too large to keep: of a path around the canvas, without dashes
+        if (!(bounds.Width <= 500 && bounds.Height <= 500))
+            return;
+
+        var pen = new Pen(CreateBrush(random, canvas, context), 0.25 + (NextDouble(random) * 8)) { LineJoin = (LineJoin)random.Next(3), LineCap = (LineCap)random.Next(3) };
+        try
+        {
+            path = path.Widen(pen);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // The stroke goes beyond the largest coordinate
+            return;
+        }
+
+        canvas.Fill(pen.Brush, path);
     }
 
     private static double NextDouble(FuzzRandom random) => (random.NextUInt64() >> 11) / 9007199254740992d;
@@ -245,6 +371,63 @@ public sealed class DrawingFuzzTests
     };
 
     private static PointD CreatePoint(FuzzRandom random, DrawingCanvas canvas) => new(CreateCoordinate(random, canvas.Width), CreateCoordinate(random, canvas.Height));
+
+    private static PointD[] CreatePoints(FuzzRandom random, DrawingCanvas canvas)
+    {
+        var points = new PointD[random.Next(1, 7)];
+        for (var i = 0; i < points.Length; i++)
+        {
+            points[i] = i > 0 && random.Chance(15) ? points[i - 1] : CreatePoint(random, canvas);
+        }
+
+        return points;
+    }
+
+    /// <summary>An angle, in degrees: mostly a turn or two, sometimes a quarter turn exactly, sometimes many turns.</summary>
+    private static double CreateAngle(FuzzRandom random) => random.Next(8) switch
+    {
+        0 => 0,
+        1 => random.Next(-8, 9) * 90,
+        2 => (NextDouble(random) - 0.5) * 1e6,
+        _ => (NextDouble(random) - 0.5) * 900,
+    };
+
+    private static double CreateOpacity(FuzzRandom random) => random.Next(5) switch
+    {
+        0 => 1,
+        1 => 0,
+        _ => NextDouble(random),
+    };
+
+    /// <summary>A rectangle of whole pixels, around the canvas.</summary>
+    private static Rectangle CreateWholeRectangle(FuzzRandom random, DrawingCanvas canvas)
+    {
+        var x = random.Next(-3, canvas.Width + 3);
+        var y = random.Next(-3, canvas.Height + 3);
+        return new Rectangle(x, y, random.Next(0, canvas.Width + 4), random.Next(0, canvas.Height + 4));
+    }
+
+    /// <summary>A transformation: mostly gentle, sometimes one that mirrors, flattens or sends everything far away.</summary>
+    private static AffineTransform CreateTransform(FuzzRandom random, DrawingCanvas canvas)
+    {
+        var transform = AffineTransform.Identity;
+        for (var i = random.Next(1, 4); i > 0; i--)
+        {
+            transform = transform.Then(random.Next(8) switch
+            {
+                0 => AffineTransform.CreateRotation(CreateAngle(random), CreatePoint(random, canvas)),
+                1 => AffineTransform.CreateRotation(random.Next(-4, 5) * 90),
+                2 => AffineTransform.CreateScale((NextDouble(random) * 6) - 3, (NextDouble(random) * 6) - 3),
+                3 => AffineTransform.CreateScale(random.Next(-2, 3), random.Next(-2, 3)),
+                4 => AffineTransform.CreateSkew((NextDouble(random) * 170) - 85, (NextDouble(random) * 170) - 85),
+                5 => AffineTransform.CreateTranslation(random.Next(-8, 9), random.Next(-8, 9)),
+                6 => AffineTransform.CreateScale(NextDouble(random) * 1e-4, 1 + NextDouble(random)),
+                _ => AffineTransform.CreateTranslation((NextDouble(random) - 0.5) * 80, (NextDouble(random) - 0.5) * 80),
+            });
+        }
+
+        return transform;
+    }
 
     private static RectangleD CreateRectangle(FuzzRandom random, DrawingCanvas canvas)
     {
@@ -274,10 +457,32 @@ public sealed class DrawingFuzzTests
         return new Rgba64((ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536), alpha);
     }
 
-    private static Brush CreateBrush(FuzzRandom random, DrawingCanvas canvas)
+    private static Brush CreateBrush(FuzzRandom random, DrawingCanvas canvas, FuzzContext context)
     {
-        if (random.Chance(40))
-            return new SolidBrush(CreateColor(random));
+        // The operators that never lower the alpha of a pixel, unless the case erases
+        var mode = context.Erases ? (CompositeMode)random.Next(11) : random.Next(6) switch
+        {
+            0 => CompositeMode.DestinationOver,
+            1 => CompositeMode.SourceAtop,
+            _ => CompositeMode.SourceOver,
+        };
+        if (random.Chance(35))
+            return new SolidBrush(CreateColor(random)) { CompositeMode = mode };
+
+        if (random.Chance(20))
+        {
+            var x = random.Next(context.Sprite.Width);
+            var y = random.Next(context.Sprite.Height);
+            return new ImageBrush(context.Sprite)
+            {
+                CompositeMode = mode,
+                SourceRegion = random.Chance(30) ? new Rectangle(x, y, random.Next(0, context.Sprite.Width - x + 1), random.Next(0, context.Sprite.Height - y + 1)) : null,
+                Transform = random.Chance(60) ? CreateTransform(random, canvas) : AffineTransform.Identity,
+                WrapMode = (ImageWrapMode)random.Next(4),
+                Sampling = (ImageSampling)random.Next(2),
+                Opacity = CreateOpacity(random),
+            };
+        }
 
         var offsets = new double[random.Next(1, 7)];
         for (var i = 0; i < offsets.Length; i++)
@@ -288,12 +493,73 @@ public sealed class DrawingFuzzTests
         Array.Sort(offsets);
         var stops = offsets.Select(offset => new GradientStop(offset, CreateColor(random))).ToArray();
         var spreadMode = (GradientSpreadMode)random.Next(3);
-        return random.Chance(50)
-            ? new LinearGradientBrush(CreatePoint(random, canvas), random.Chance(10) ? default : CreatePoint(random, canvas), stops) { SpreadMode = spreadMode }
-            : new RadialGradientBrush(CreatePoint(random, canvas), CreateLength(random), stops) { SpreadMode = spreadMode };
+        var transform = random.Chance(25) ? CreateTransform(random, canvas) : AffineTransform.Identity;
+        switch (random.Next(4))
+        {
+            case 0:
+                return new LinearGradientBrush(CreatePoint(random, canvas), random.Chance(10) ? default : CreatePoint(random, canvas), stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform };
+
+            case 1:
+                return new RadialGradientBrush(CreatePoint(random, canvas), CreateLength(random), stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform };
+
+            case 2:
+                // A focal point strictly inside the circle, sometimes very close to it
+                var center = CreatePoint(random, canvas);
+                var radius = 0.5 + (NextDouble(random) * 40);
+                var distance = radius * (random.Chance(20) ? 0.999999 : NextDouble(random) * 0.95);
+                var (sin, cos) = Math.SinCos(NextDouble(random) * 2 * Math.PI);
+                var focalPoint = new PointD(center.X + (distance * cos), center.Y + (distance * sin));
+                if (!(focalPoint.DistanceTo(center) < radius) || Math.Abs(focalPoint.X) > MaxCoordinate || Math.Abs(focalPoint.Y) > MaxCoordinate)
+                {
+                    focalPoint = center;
+                }
+
+                return new RadialGradientBrush(center, radius, stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform, FocalPoint = focalPoint };
+
+            default:
+                var start = CreateAngle(random);
+                return new SweepGradientBrush(CreatePoint(random, canvas), start, start + (random.Chance(10) ? 0 : NextDouble(random) * 800), stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform };
+        }
     }
 
-    private static Pen CreatePen(FuzzRandom random, DrawingCanvas canvas, bool widest)
+    /// <summary>
+    /// A pen that cuts its stroke into dashes, of any width: what is outside the canvas is not cut, so the patterns can
+    /// be short on the longest paths. The dashes themselves stay a fraction of a pixel long at least, or the canvas would
+    /// show thousands of them.
+    /// </summary>
+    private static Pen CreateDashedPen(FuzzRandom random, DrawingCanvas canvas, FuzzContext context)
+    {
+        var pattern = new double[random.Next(1, 6)];
+        double total = 0;
+        for (var i = 0; i < pattern.Length; i++)
+        {
+            pattern[i] = random.Next(6) switch
+            {
+                0 => 0,
+                1 => random.Next(1, 9),
+                2 => NextDouble(random) * 5000,
+                _ => 0.25 + (NextDouble(random) * 12),
+            };
+            total += pattern[i];
+        }
+
+        if (total < 0.5)
+        {
+            pattern[0] = 1 + NextDouble(random);
+        }
+
+        var pen = CreatePen(random, canvas, context, widest: random.Chance(10));
+        return new Pen(pen.Brush, pen.Width)
+        {
+            LineJoin = pen.LineJoin,
+            LineCap = pen.LineCap,
+            MiterLimit = pen.MiterLimit,
+            DashPattern = pattern,
+            DashOffset = random.Chance(30) ? 0 : (NextDouble(random) - 0.5) * 200,
+        };
+    }
+
+    private static Pen CreatePen(FuzzRandom random, DrawingCanvas canvas, FuzzContext context, bool widest)
     {
         var width = random.Next(10) switch
         {
@@ -302,7 +568,7 @@ public sealed class DrawingFuzzTests
             2 => 1 + (NextDouble(random) * (widest ? 100000 : 100)),
             _ => 0.05 + (NextDouble(random) * 6),
         };
-        return new Pen(CreateBrush(random, canvas), width)
+        return new Pen(CreateBrush(random, canvas, context), width)
         {
             LineJoin = (LineJoin)random.Next(3),
             LineCap = (LineCap)random.Next(3),
@@ -317,52 +583,88 @@ public sealed class DrawingFuzzTests
         var started = false;
         for (var i = 0; i < elements; i++)
         {
-            var kind = started ? random.Next(11) : random.Next(5);
-            switch (kind)
+            var kind = started ? random.Next(18) : random.Next(9);
+            try
             {
-                case 0:
-                    builder.MoveTo(CreatePoint(random, canvas));
-                    started = true;
-                    break;
-                case 1:
-                    builder.AddRectangle(CreateRectangle(random, canvas));
-                    started = true;
-                    break;
-                case 2:
-                    builder.AddEllipse(CreatePoint(random, canvas), CreateLength(random), CreateLength(random));
-                    started = true;
-                    break;
-                case 3:
-                    builder.AddCircle(CreatePoint(random, canvas), CreateLength(random));
-                    started = true;
-                    break;
-                case 4:
-                    var points = new PointD[random.Next(1, 7)];
-                    for (var j = 0; j < points.Length; j++)
-                    {
-                        points[j] = j > 0 && random.Chance(15) ? points[j - 1] : CreatePoint(random, canvas);
-                    }
+                switch (kind)
+                {
+                    case 0:
+                        builder.MoveTo(CreatePoint(random, canvas));
+                        break;
+                    case 1:
+                        builder.AddRectangle(CreateRectangle(random, canvas));
+                        break;
+                    case 2:
+                        builder.AddEllipse(CreatePoint(random, canvas), CreateLength(random), CreateLength(random));
+                        break;
+                    case 3:
+                        builder.AddCircle(CreatePoint(random, canvas), CreateLength(random));
+                        break;
+                    case 4:
+                        builder.AddPolygon(CreatePoints(random, canvas));
+                        break;
+                    case 5:
+                        builder.AddRoundedRectangle(CreateRectangle(random, canvas), CreateLength(random), CreateLength(random));
+                        break;
+                    case 6:
+                        builder.AddArc(CreatePoint(random, canvas), CreateLength(random), CreateLength(random), CreateAngle(random), CreateAngle(random));
+                        break;
+                    case 7:
+                        builder.AddPie(CreatePoint(random, canvas), CreateLength(random), CreateLength(random), CreateAngle(random), CreateAngle(random));
+                        break;
+                    case 8:
+                        builder.AddEllipse(CreatePoint(random, canvas), CreateLength(random), CreateLength(random), CreateAngle(random));
+                        break;
+                    case 9 or 10 or 11:
+                        builder.LineTo(CreatePoint(random, canvas));
+                        break;
+                    case 12:
+                        builder.QuadraticBezierTo(CreatePoint(random, canvas), CreatePoint(random, canvas));
+                        break;
+                    case 13:
+                        builder.CubicBezierTo(CreatePoint(random, canvas), CreatePoint(random, canvas), CreatePoint(random, canvas));
+                        break;
+                    case 14 or 15:
+                        builder.ArcTo(CreateLength(random), CreateLength(random), CreateAngle(random), random.Chance(50), random.Chance(50), CreatePoint(random, canvas));
+                        break;
+                    case 16:
+                        builder.ArcTo(CreatePoint(random, canvas), CreateLength(random), CreateLength(random), CreateAngle(random), CreateAngle(random));
+                        break;
+                    default:
+                        builder.Close();
+                        break;
+                }
 
-                    builder.AddPolygon(points);
-                    started = true;
-                    break;
-                case 5 or 6 or 7:
-                    builder.LineTo(CreatePoint(random, canvas));
-                    break;
-                case 8:
-                    builder.QuadraticBezierTo(CreatePoint(random, canvas), CreatePoint(random, canvas));
-                    break;
-                case 9:
-                    builder.CubicBezierTo(CreatePoint(random, canvas), CreatePoint(random, canvas), CreatePoint(random, canvas));
-                    break;
-                default:
-                    builder.Close();
-                    break;
+                started = true;
+            }
+            catch (ArgumentOutOfRangeException) when (kind is 6 or 7 or 8 or 14 or 15 or 16)
+            {
+                // An arc, or an ellipse that is turned, which goes beyond the largest coordinate: it is not added
             }
         }
 
-        return builder.Build();
+        var path = builder.Build();
+        if (random.Chance(20))
+        {
+            try
+            {
+                path = path.Transform(CreateTransform(random, canvas));
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // The transformed path goes beyond the largest coordinate
+            }
+            catch (ArgumentException)
+            {
+                // The transformation itself has a coefficient that is not a finite number
+            }
+        }
+
+        return path;
     }
+
+    /// <summary>What the drawings of a case share: the image some of them paint with, and whether they may erase.</summary>
+    private sealed record FuzzContext(ImageFrame Sprite, bool Erases);
 
     /// <summary>Carries a canvas, which is a ref struct, to a delegate that also takes the index of the frame.</summary>
     private readonly ref struct DrawingCanvasProxy(DrawingCanvas canvas)

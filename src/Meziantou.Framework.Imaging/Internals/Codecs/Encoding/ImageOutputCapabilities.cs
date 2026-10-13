@@ -158,6 +158,7 @@ internal sealed class ImageOutputCapabilities
         // An image sequence stores the size of its images in 16-bit fields, and its index after the images: the box is
         // written last, in the room that the number of images gives it
         AvifEncoder => new ImageOutputCapabilities(ImageFormat.Avif, isAnimated: frameCount != 1, requiresFrameCount: true, maxFrameCount: null, supportsPosterFrame: false, maxDimension: frameCount != 1 ? ushort.MaxValue : AvifMaxDimension, requiresSeekableOutput: frameCount != 1),
+        HeicEncoder => new ImageOutputCapabilities(ImageFormat.Heic, isAnimated: frameCount != 1, requiresFrameCount: true, maxFrameCount: null, supportsPosterFrame: false, maxDimension: HeicMaxDimension, requiresSeekableOutput: frameCount != 1),
         AniEncoder => new ImageOutputCapabilities(ImageFormat.Ani, isAnimated: true, requiresFrameCount: false, maxFrameCount: null, supportsPosterFrame: false, maxDimension: AniEncoder.MaxDimension, requiresSeekableOutput: true),
         JpegXlEncoder => new ImageOutputCapabilities(ImageFormat.JpegXl, isAnimated: frameCount != 1 || hasAnimation, requiresFrameCount: false, maxFrameCount: null, supportsPosterFrame: false, maxDimension: JpegXlEncoderCodec.MaxDimension),
         Jpeg2000Encoder => new ImageOutputCapabilities(ImageFormat.Jpeg2000, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
@@ -166,6 +167,10 @@ internal sealed class ImageOutputCapabilities
 
     // The largest frame of AV1: frame_width_minus_1 and frame_height_minus_1 have 16 bits
     private const int AvifMaxDimension = 65536;
+
+    // The largest picture of the HEVC encoder: a coded size of at most 65535 samples that is a multiple of 8, the size of
+    // its smallest coding blocks. It also fits the 16-bit fields of the size of the images of a sequence
+    private const int HeicMaxDimension = 65528;
 
     private static ImageOutputCapabilities WebP(WebPEncoder encoder, bool isAnimated)
     {

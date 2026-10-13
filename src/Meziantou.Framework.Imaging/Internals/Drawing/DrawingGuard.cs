@@ -37,6 +37,14 @@ internal static class DrawingGuard
         Coordinate(value.Bottom, paramName);
     }
 
+    /// <summary>Validates an angle.</summary>
+    /// <exception cref="ArgumentException">The value is not a finite number.</exception>
+    public static void Angle(double value, string paramName)
+    {
+        if (!double.IsFinite(value))
+            throw new ArgumentException("The angle must be a finite number.", paramName);
+    }
+
     /// <summary>Validates a length that may be zero (a radius).</summary>
     /// <exception cref="ArgumentException">The value is not a finite number.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The value is negative or exceeds <see cref="MaxCoordinate"/>.</exception>

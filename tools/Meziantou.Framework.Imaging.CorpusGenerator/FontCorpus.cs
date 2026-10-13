@@ -1680,6 +1680,7 @@ internal static partial class FontCorpus
         var manifest = CorpusDriver.LoadCommittedManifest();
         CorpusDriver.CopyCommittedFiles(outDir, CorpusDriver.Fixtures(manifest));
         CorpusDriver.CopyCommittedAv1Vectors(outDir, manifest);
+        CorpusDriver.PreserveHevcVectors(outDir, manifest);
         CorpusDriver.PreserveColorSections(outDir, manifest);
 
         var work = FullPath.FromPath(Directory.CreateTempSubdirectory("mfi-font-work-").FullName);

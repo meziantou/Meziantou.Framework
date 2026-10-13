@@ -67,8 +67,14 @@ public enum ImageFormat
     JpegXl = 14,
 
     /// <summary>
+    /// High Efficiency Image File Format images coded with HEVC (H.265): still images and image sequences in an ISO base
+    /// media (HEIF) container.
+    /// </summary>
+    Heic = 15,
+
+    /// <summary>
     /// JPEG 2000 (ISO/IEC 15444-1): a codestream or a JP2 file, coded with the reversible or the irreversible wavelet
     /// transformation. Codestreams that use the high-throughput block coder (ISO/IEC 15444-15, HTJ2K) are read.
     /// </summary>
-    Jpeg2000 = 15,
+    Jpeg2000 = 16,
 }

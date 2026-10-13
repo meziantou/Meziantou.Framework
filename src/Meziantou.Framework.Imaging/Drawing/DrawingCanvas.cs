@@ -13,7 +13,8 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// pixel boundaries: the pixel <c>(x, y)</c> covers the square from <c>(x, y)</c> to <c>(x + 1, y + 1)</c>. A rectangle
 /// on integer coordinates is therefore filled exactly, and a one-pixel horizontal line is crisp when its path runs
 /// through the middle of a row of pixels (<c>y + 0.5</c>). Shapes are clipped to the canvas; what lies outside is
-/// ignored. Every coordinate must be a finite number whose magnitude does not exceed 16777216.
+/// ignored, and so is what lies outside the clips of <see cref="Clip(VectorPath, DrawingAction, FillRule)"/>. Every
+/// coordinate must be a finite number whose magnitude does not exceed 16777216.
 /// </para>
 /// <para>
 /// <b>Antialiasing.</b> Each pixel is painted in proportion to the area of it that the shape covers. That area is exact,
@@ -24,7 +25,9 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// <para>
 /// <b>Compositing.</b> The paint is composited over the existing pixels (source-over) on the stored sample values, with
 /// straight alpha and exact integer arithmetic, rounded to nearest with ties upward. Pixel formats without alpha stay
-/// opaque. See <see cref="Brush"/> for the conversion of colors to the pixel format of the frame.
+/// opaque. See <see cref="Brush"/> for the conversion of colors to the pixel format of the frame, and
+/// <see cref="Brush.CompositeMode"/> for the other ways a paint is combined with the pixels (replacing, erasing,
+/// painting behind, masking).
 /// </para>
 /// <para>
 /// <b>Failures.</b> Drawing is a pixel-only edit: when a call fails or is canceled, the calls that completed stay, and
@@ -46,6 +49,17 @@ public readonly ref struct DrawingCanvas
 
     /// <summary>Gets the height of the canvas, in pixels (0 for a default instance).</summary>
     public int Height => _session?.Height ?? 0;
+
+    /// <summary>Replaces every pixel of the canvas by a color, alpha included: a transparent color erases the canvas.</summary>
+    /// <remarks>
+    /// This is filling the canvas with <see cref="CompositeMode.Source"/>; <see cref="Fill(Brush)"/> paints over the
+    /// pixels instead. On a pixel format without alpha, the pixels get the color multiplied by its alpha.
+    /// </remarks>
+    /// <param name="color">The color, with straight alpha. An <see cref="Rgba32"/> converts implicitly.</param>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Clear(Rgba64 color) => GetSession().Clear(color);
 
     /// <summary>Paints the whole canvas.</summary>
     /// <param name="brush">The paint. A color converts implicitly.</param>
@@ -75,6 +89,62 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void Stroke(Pen pen, VectorPath path) => GetSession().Stroke(pen, path);
 
+    /// <summary>Draws the pixels of a frame of another image, without scaling them.</summary>
+    /// <remarks>
+    /// <para>
+    /// The image is composited over the canvas like a paint, with its own alpha. At a position on whole pixels, its
+    /// pixels are those of the source, exactly; elsewhere they are interpolated (see <see cref="ImageBrush"/>, which
+    /// this method is a shortcut for, with the pixels of the edges extended). The pixels are converted to the pixel
+    /// format of the canvas; no color profile is applied.
+    /// </para>
+    /// <para>
+    /// The frame is read while it is drawn: it must not be one of the frames the canvas draws on.
+    /// </para>
+    /// </remarks>
+    /// <param name="source">The frame to draw.</param>
+    /// <param name="position">The position of its top-left corner on the canvas. A <see cref="Point"/> converts implicitly.</param>
+    /// <param name="opacity">The opacity of the image, from 0 to 1.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or <paramref name="opacity"/> is not between 0 and 1.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned, or <paramref name="source"/> is a frame that is being drawn on or whose pixels are being accessed.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void DrawImage(ImageFrame source, PointD position, double opacity = 1) => GetSession().DrawImage(source, position, opacity);
+
+    /// <summary>Draws the pixels of a frame of another image, stretched to a rectangle.</summary>
+    /// <remarks>
+    /// The pixels are interpolated (see <see cref="ImageBrush"/>): an image that is made much smaller skips pixels, so
+    /// reduce it first for a result without aliasing. See <see cref="DrawImage(ImageFrame, PointD, double)"/>.
+    /// </remarks>
+    /// <param name="source">The frame to draw.</param>
+    /// <param name="destination">The rectangle of the canvas the frame fills. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="opacity">The opacity of the image, from 0 to 1.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or <paramref name="opacity"/> is not between 0 and 1.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned, or <paramref name="source"/> is a frame that is being drawn on or whose pixels are being accessed.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void DrawImage(ImageFrame source, RectangleD destination, double opacity = 1) => GetSession().DrawImage(source, sourceRegion: null, destination, opacity);
+
+    /// <summary>Draws some of the pixels of a frame of another image, stretched to a rectangle.</summary>
+    /// <remarks>See <see cref="DrawImage(ImageFrame, RectangleD, double)"/>. The pixels around the region are not read.</remarks>
+    /// <param name="source">The frame to draw.</param>
+    /// <param name="sourceRegion">The pixels of the frame to draw. Must be inside the frame.</param>
+    /// <param name="destination">The rectangle of the canvas the region fills. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="opacity">The opacity of the image, from 0 to 1.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, <paramref name="sourceRegion"/> is not inside the frame, or <paramref name="opacity"/> is not between 0 and 1.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned, or <paramref name="source"/> is a frame that is being drawn on or whose pixels are being accessed.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void DrawImage(ImageFrame source, Rectangle sourceRegion, RectangleD destination, double opacity = 1) => GetSession().DrawImage(source, sourceRegion, destination, opacity);
+
     /// <summary>Paints a rectangle.</summary>
     /// <param name="brush">The paint. A color converts implicitly.</param>
     /// <param name="rectangle">The rectangle. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
@@ -96,6 +166,92 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void StrokeRectangle(Pen pen, RectangleD rectangle) => GetSession().StrokeRectangle(pen, rectangle);
+
+    /// <summary>Paints a rectangle whose corners are quarters of a circle.</summary>
+    /// <param name="brush">The paint. A color converts implicitly.</param>
+    /// <param name="rectangle">The rectangle. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="radius">The radius of the corners. Must be zero or positive; it is limited to half the shortest side of the rectangle.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="brush"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate or the radius is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or the radius is negative or exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void FillRoundedRectangle(Brush brush, RectangleD rectangle, double radius) => GetSession().FillRoundedRectangle(brush, rectangle, radius);
+
+    /// <summary>Paints the outline of a rectangle whose corners are quarters of a circle. The stroke is centered on the outline.</summary>
+    /// <param name="pen">The stroke.</param>
+    /// <param name="rectangle">The rectangle. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="radius">The radius of the corners. Must be zero or positive; it is limited to half the shortest side of the rectangle.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate or the radius is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or the radius is negative or exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokeRoundedRectangle(Pen pen, RectangleD rectangle, double radius) => GetSession().StrokeRoundedRectangle(pen, rectangle, radius);
+
+    /// <summary>Paints the inside of the closed contour made of straight segments between consecutive points.</summary>
+    /// <param name="brush">The paint. A color converts implicitly.</param>
+    /// <param name="points">The vertices. At least one is required.</param>
+    /// <param name="fillRule">The rule deciding what is inside when the contour crosses itself.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="brush"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="points"/> is empty, or a coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or <paramref name="fillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void FillPolygon(Brush brush, ReadOnlySpan<PointD> points, FillRule fillRule = FillRule.NonZero) => GetSession().FillPolygon(brush, points, fillRule);
+
+    /// <summary>Paints the outline of the closed contour made of straight segments between consecutive points.</summary>
+    /// <param name="pen">The stroke.</param>
+    /// <param name="points">The vertices. At least one is required.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="points"/> is empty, or a coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokePolygon(Pen pen, ReadOnlySpan<PointD> points) => GetSession().StrokePoints(pen, points, close: true);
+
+    /// <summary>Paints the straight segments between consecutive points, with the caps of the pen at both ends.</summary>
+    /// <param name="pen">The stroke.</param>
+    /// <param name="points">The points. At least one is required.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="points"/> is empty, or a coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokePolyline(Pen pen, ReadOnlySpan<PointD> points) => GetSession().StrokePoints(pen, points, close: false);
+
+    /// <summary>Paints a slice of a disk: the part between two radii and the arc that joins them.</summary>
+    /// <param name="brush">The paint. A color converts implicitly.</param>
+    /// <param name="center">The center of the disk.</param>
+    /// <param name="radius">The radius. Must be zero or positive.</param>
+    /// <param name="startAngle">The angle of the first radius, in degrees from the positive x axis, clockwise on the image.</param>
+    /// <param name="sweepAngle">The angle of the slice, in degrees: positive to turn clockwise on the image, negative for the other way. Beyond 360 degrees either way, the slice is the whole disk.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="brush"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate, the radius or an angle is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or the radius is negative or exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void FillPie(Brush brush, PointD center, double radius, double startAngle, double sweepAngle) => GetSession().FillPie(brush, center, radius, startAngle, sweepAngle);
+
+    /// <summary>Paints an arc of a circle, with the caps of the pen at both ends.</summary>
+    /// <param name="pen">The stroke.</param>
+    /// <param name="center">The center of the circle.</param>
+    /// <param name="radius">The radius. Must be zero or positive.</param>
+    /// <param name="startAngle">The angle of the first point, in degrees from the positive x axis, clockwise on the image.</param>
+    /// <param name="sweepAngle">The angle of the arc, in degrees: positive to turn clockwise on the image, negative for the other way. Beyond 360 degrees either way, the arc is the whole circle.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate, the radius or an angle is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or the radius is negative or exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokeArc(Pen pen, PointD center, double radius, double startAngle, double sweepAngle) => GetSession().StrokeArc(pen, center, radius, startAngle, sweepAngle);
 
     /// <summary>Paints an ellipse whose axes are horizontal and vertical.</summary>
     /// <param name="brush">The paint. A color converts implicitly.</param>
@@ -283,6 +439,128 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void StrokeText(Pen pen, TextLayout layout, VectorPath path, TextPathOptions? options = null) => GetSession().StrokeText(pen, layout, path, options);
+
+    /// <summary>Runs a callback whose drawings only change the inside of a path.</summary>
+    /// <remarks>
+    /// <para>
+    /// The clip lasts as long as the callback, and applies to every drawing made with the canvas it receives:
+    /// <see cref="Fill(Brush)"/> then paints the inside of the path. A clip started inside another one keeps what both
+    /// let through.
+    /// </para>
+    /// <para>
+    /// The edge of a clip is antialiased like the edge of a shape: each pixel has the area of it that is inside the
+    /// path, and the coverage of what is drawn is multiplied by it, rounded to the nearest 1/65536. A pixel on the edge
+    /// of both a shape and the clip therefore gets the product of the two areas, not the area of what they have in
+    /// common. The clip keeps one value per pixel of the bounds of the path, rented from the allocation scope of the
+    /// image when the clip starts.
+    /// </para>
+    /// </remarks>
+    /// <param name="path">The path. Open contours are closed by a straight segment.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="fillRule">The rule deciding what is inside when contours overlap.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="path"/> or <paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="fillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. The callback is not run.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Clip(VectorPath path, DrawingAction action, FillRule fillRule = FillRule.NonZero)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushClip(path, fillRule);
+        try
+        {
+            action(this);
+        }
+        finally
+        {
+            session.PopClip();
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings only change the inside of a path, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="path">The path. Open contours are closed by a straight segment.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="fillRule">The rule deciding what is inside when contours overlap.</param>
+    /// <remarks>See <see cref="Clip(VectorPath, DrawingAction, FillRule)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="path"/> or <paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="fillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. The callback is not run.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Clip<TState>(VectorPath path, TState state, DrawingAction<TState> action, FillRule fillRule = FillRule.NonZero)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushClip(path, fillRule);
+        try
+        {
+            action(this, state);
+        }
+        finally
+        {
+            session.PopClip();
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings only change the inside of a rectangle.</summary>
+    /// <remarks>
+    /// A rectangle on whole coordinates (a <see cref="Rectangle"/> of pixels) is exact and costs nothing: its pixels are
+    /// in or out. Any other rectangle is a clip like the one of a path: see <see cref="Clip(VectorPath, DrawingAction, FillRule)"/>.
+    /// </remarks>
+    /// <param name="rectangle">The rectangle. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. The callback is not run.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Clip(RectangleD rectangle, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushClip(rectangle);
+        try
+        {
+            action(this);
+        }
+        finally
+        {
+            session.PopClip();
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings only change the inside of a rectangle, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="rectangle">The rectangle. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Clip(RectangleD, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. The callback is not run.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Clip<TState>(RectangleD rectangle, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushClip(rectangle);
+        try
+        {
+            action(this, state);
+        }
+        finally
+        {
+            session.PopClip();
+        }
+    }
 
     private DrawingSession GetSession()
     {

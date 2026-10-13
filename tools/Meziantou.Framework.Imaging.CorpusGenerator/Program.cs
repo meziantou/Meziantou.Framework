@@ -24,6 +24,13 @@ const string Usage = """
                       AVIF fixtures: stills, grids, alpha, transformations, metadata, image sequences, layered images,
                       malformed and over-limit files (libavif avifenc/avifdec and the ffmpeg of the pinned
                       meziantou/prebuilt release)
+        hevc          HEVC conformance vectors, intra and inter, with plane digests (the tools of the pinned
+                      meziantou/prebuilt release: x265 and kvazaar through ffmpeg and HM TAppEncoder as encoders; the
+                      hevc decoder of ffmpeg, libde265 dec265 and HM TAppDecoder as decoders; trace_headers)
+        heic-container
+                      HEIC fixtures: stills, grids, alpha, transformations, metadata, image sequences, configuration
+                      records, malformed and over-limit files (libheif heif-enc/heif-dec, x265 through ffmpeg, and the
+                      three HEVC decoders of the pinned meziantou/prebuilt release)
         jxl           JPEG XL fixtures: lossless and lossy stills, metadata, containers, animations, malformed, unsupported
                       and over-limit files (cjxl, jxl_from_tree, djxl and jxl-oxide of the pinned meziantou/prebuilt release)
         jp2           JPEG 2000 fixtures: codestreams and JP2 files, lossless and lossy, the high-throughput block coder,
@@ -44,7 +51,8 @@ const string Usage = """
     Verification (read-only, any tool versions):
         verify        re-decode the committed corpus with the ffmpeg, dwebp and anim_dump of the pinned meziantou/prebuilt release and
                       compare with the committed references: detects reference drift and the impact of a tool upgrade. The AV1
-                      vectors are checked too: file hashes, and plane digests re-derived with dav1d and libaom
+                      vectors are checked too: file hashes, and plane digests re-derived with dav1d and libaom; and the HEVC
+                      vectors: file hashes, and plane digests re-derived with ffmpeg, dec265 and TAppDecoder
 
     Options:
         --write                   replace the committed fixtures of the generator (explicit, reviewed operation);
@@ -150,6 +158,10 @@ try
             return AvifCorpus.Run(options);
         case "avif-container":
             return AvifCorpus.RunContainer(options);
+        case "hevc":
+            return HevcCorpus.Run(options);
+        case "heic-container":
+            return HeicCorpus.RunContainer(options);
         case "jxl":
             return JxlCorpus.Run(options);
         case "jp2":

@@ -16,6 +16,9 @@
     <Project Path="../tests/Meziantou.Framework.Imaging.AvifEncoder.Tests/Meziantou.Framework.Imaging.AvifEncoder.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Bmp.Tests/Meziantou.Framework.Imaging.Bmp.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Gif.Tests/Meziantou.Framework.Imaging.Gif.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Heic.Tests/Meziantou.Framework.Imaging.Heic.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.HeicEncoder.Tests/Meziantou.Framework.Imaging.HeicEncoder.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Hevc.Tests/Meziantou.Framework.Imaging.Hevc.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Ico.Tests/Meziantou.Framework.Imaging.Ico.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.InteropTests/Meziantou.Framework.Imaging.InteropTests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Jpeg.Tests/Meziantou.Framework.Imaging.Jpeg.Tests.csproj" />

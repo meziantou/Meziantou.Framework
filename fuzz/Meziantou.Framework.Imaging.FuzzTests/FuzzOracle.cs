@@ -123,7 +123,9 @@ internal static class FuzzOracle
                     return FuzzFailure.Property("header-failure-but-" + name, $"Header identification failed ({Describe(header.Exception)}) but {name} succeeded");
             }
         }
-        else if (header.Value!.Format != detected)
+        // The detection of a file of the HEIF family only sees the brands of its first bytes, which can name both AVIF and
+        // HEIC (or be cut by the prefix): the identification, which reads the codec of the image, decides
+        else if (header.Value!.Format != detected && !(IsHeifFamily(header.Value.Format) && IsHeifFamily(detected)))
         {
             return FuzzFailure.Property("identify-format", $"Identify reported {header.Value.Format}, DetectFormat {detected}");
         }
@@ -171,6 +173,16 @@ internal static class FuzzOracle
         else if (sequential.Succeeded && !IsLiveAllocationLimit(typed.Exception))
         {
             return FuzzFailure.Property("clean-end-on-malformed-data", $"Eager Rgba64 load {Describe(typed.Exception)} but the reader ended cleanly after {sequential.Value}");
+        }
+
+        // HEIC: a decoding that is interrupted (a cancellation while the file is read, a reader that is disposed before the
+        // last image) releases what it holds: the pictures that wait for their turn in the decoded picture buffer, the
+        // reference pictures, the decoders of the color and of the alpha
+        if (detected == ImageFormat.Heic)
+        {
+            var interrupted = Run(audit, "interrupted", () => CheckInterruptedDecodingAsync(input, variant, typed.Value?.Frames.Count ?? 0).GetAwaiter().GetResult());
+            if (interrupted.Failure is not null)
+                return interrupted.Failure;
         }
 
         // A JPEG file that is recompressed as a JPEG XL file comes back byte for byte, whatever the mutation; reconstruction
@@ -329,6 +341,50 @@ internal static class FuzzOracle
 
         return string.Empty;
     }
+
+    private static async Task<string> CheckInterruptedDecodingAsync(byte[] input, int variant, int frameCount)
+    {
+        var options = new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion };
+        using (var cancellation = new CancellationTokenSource())
+        {
+            // The token is cancelled when the reading of the file reaches a position: an eighth to seven eighths of the file
+            await using var stream = new TestInputStream(input)
+            {
+                Seekable = (variant & 1) is 0,
+                MaxBytesPerRead = 1024,
+                CancellationSource = cancellation,
+                CancelAtPosition = Math.Max(1, (long)input.Length * (1 + ((variant >> 1) % 7)) / 8),
+            };
+            try
+            {
+                using var image = await Image.LoadAsync<Rgba64>(stream, options, cancellation.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (ImageException)
+            {
+            }
+        }
+
+        if (frameCount >= 2)
+        {
+            // Some of the images of a sequence, then the reader is disposed
+            await using var stream = new TestInputStream(input);
+            using var reader = Image.OpenReader<Rgba64>(stream, new ImageReaderOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
+            var count = 1 + ((variant >> 4) % (frameCount - 1));
+            for (var i = 0; i < count; i++)
+            {
+                using var frame = reader.ReadFrame();
+                if (frame is null)
+                    break;
+            }
+        }
+
+        return "";
+    }
+
+    private static bool IsHeifFamily(ImageFormat format) => format is ImageFormat.Avif or ImageFormat.Heic;
 
     private static bool IsLiveAllocationLimit(Exception? exception) => exception is ImageResourceLimitException { Kind: ImageResourceLimitKind.LiveAllocationBytes };
 

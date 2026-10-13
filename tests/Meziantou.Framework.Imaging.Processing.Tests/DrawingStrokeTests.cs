@@ -298,6 +298,346 @@ public sealed class DrawingStrokeTests
         Assert.Equal(0, frame[8, 1].Value);
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+    // Dashes
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void ADashPatternAlternatesDashesAndGapsAlongThePath()
+    {
+        // Width 1 through the middle of a row of 9 pixels, from x = 0 to x = 9
+        // Dashes of 2 and gaps of 1
+        AssertDashedRow([2, 1], 0, LineCap.Butt, [255, 255, 0, 255, 255, 0, 255, 255, 0]);
+
+        // A pattern of an odd number of lengths is used twice: dashes of 2, gaps of 2
+        AssertDashedRow([2], 0, LineCap.Butt, [255, 255, 0, 0, 255, 255, 0, 0, 255]);
+        AssertDashedRow([1, 2, 3], 0, LineCap.Butt, [255, 0, 0, 255, 255, 255, 0, 255, 255]);
+
+        // Lengths are not rounded: dashes and gaps of 1.5 (half a pixel is 127.5 -> 128)
+        AssertDashedRow([1.5, 1.5], 0, LineCap.Butt, [255, 128, 0, 255, 128, 0, 255, 128, 0]);
+
+        // The offset is where the path starts in the pattern: 1 into a dash of 2; 2.5 is half way through the gap
+        AssertDashedRow([2, 1], 1, LineCap.Butt, [255, 0, 255, 255, 0, 255, 255, 0, 255]);
+        AssertDashedRow([2, 1], 2.5, LineCap.Butt, [128, 255, 128, 128, 255, 128, 128, 255, 128]);
+
+        // A negative offset starts before the pattern, and whole patterns change nothing
+        AssertDashedRow([2, 1], -1, LineCap.Butt, [0, 255, 255, 0, 255, 255, 0, 255, 255]);
+        AssertDashedRow([2, 1], 301, LineCap.Butt, [255, 0, 255, 255, 0, 255, 255, 0, 255]);
+        AssertDashedRow([2, 1], -299, LineCap.Butt, [255, 0, 255, 255, 0, 255, 255, 0, 255]);
+
+        // A pattern longer than the path
+        AssertDashedRow([20, 5], 0, LineCap.Butt, [255, 255, 255, 255, 255, 255, 255, 255, 255]);
+        AssertDashedRow([20, 5], 21, LineCap.Butt, [0, 0, 0, 0, 255, 255, 255, 255, 255]);
+
+        // A gap without length: the dashes touch
+        AssertDashedRow([2, 0], 0, LineCap.Butt, [255, 255, 255, 255, 255, 255, 255, 255, 255]);
+    }
+
+    [Fact]
+    public void EveryDashHasTheCapsOfThePen()
+    {
+        // Dashes of 2 and gaps of 3, square caps of half the width (1/2): each dash covers half a pixel more on each side
+        AssertDashedRow([2, 3], 0, LineCap.Square, [255, 255, 128, 0, 128, 255, 255, 128, 0]);
+
+        // Round caps: the half disk of radius 1/2 is 4 triangles, 0.35355 of a pixel -> 90
+        AssertDashedRow([2, 3], 0, LineCap.Round, [255, 255, 90, 0, 90, 255, 255, 90, 0]);
+
+        // A dash without length is its two caps: nothing, a square of the width of the pen, a disk (two half disks)
+        AssertDashedRow([0, 3], 0, LineCap.Butt, [0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        AssertDashedRow([0, 3], 1.5, LineCap.Square, [0, 255, 0, 0, 255, 0, 0, 255, 0]);
+        AssertDashedRow([0, 3], 1.5, LineCap.Round, [0, 180, 0, 0, 180, 0, 0, 180, 0]);
+
+        // A square dot is turned to the direction of the path: on a diagonal, a square of side 2 is a diamond that reaches
+        // sqrt(2) from its center along the axes. It covers the pixel around its center; of a pixel next to that one, the
+        // trapezoid of area sqrt(2) - 1/2 - 1/4 = 0.6642 (-> 169); of a pixel in diagonal, the triangle of legs
+        // sqrt(2) - 1, of area 0.0858 (-> 22)
+        using var image = NewBlack(5, 5);
+        var pen = new Pen(White, 2) { DashPattern = [0, 100], DashOffset = -Math.Sqrt(12.5), LineCap = LineCap.Square };
+        image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(0, 0), new PointD(5, 5)), Ct);
+        AssertGray8(image, [[0, 0, 0, 0, 0], [0, 22, 169, 22, 0], [0, 169, 255, 169, 0], [0, 22, 169, 22, 0], [0, 0, 0, 0, 0]]);
+    }
+
+    [Fact]
+    public void ADashFollowsThePathThroughItsVertices()
+    {
+        // A dash from 2 to 6 along a path that turns at 4: the stroke of the same polyline, with its join
+        var corner = new VectorPathBuilder().MoveTo(0.5, 1.5).LineTo(4.5, 1.5).LineTo(4.5, 6.5).Build();
+        var dash = new VectorPathBuilder().MoveTo(2.5, 1.5).LineTo(4.5, 1.5).LineTo(4.5, 3.5).Build();
+        foreach (var join in new[] { LineJoin.Miter, LineJoin.Round, LineJoin.Bevel })
+        {
+            var dashed = new Pen(White, 1.5) { DashPattern = [4, 100], DashOffset = -2, LineJoin = join, LineCap = LineCap.Square };
+            var solid = new Pen(White, 1.5) { LineJoin = join, LineCap = LineCap.Square };
+            AssertSamePixels(canvas => canvas.Stroke(dashed, corner), canvas => canvas.Stroke(solid, dash));
+        }
+
+        // Along a curve: the vertices the flattening creates stay smooth inside a dash
+        var curve = new VectorPathBuilder().MoveTo(1, 7).CubicBezierTo(1, 1, 7, 1, 7, 7).Build();
+        var whole = new Pen(White, 2.5) { DashPattern = [1000, 1] };
+        AssertSamePixels(canvas => canvas.Stroke(whole, curve), canvas => canvas.Stroke(new Pen(White, 2.5), curve));
+
+        // Every contour starts the pattern over
+        var two = new VectorPathBuilder().MoveTo(0, 1.5).LineTo(8, 1.5).MoveTo(0, 4.5).LineTo(8, 4.5).Build();
+        using var image = NewBlack(8, 6);
+        image.Frames[0].Draw(canvas => canvas.Stroke(new Pen(White, 1) { DashPattern = [3, 2] }, two), Ct);
+        AssertGray8(image, [[0, 0, 0, 0, 0, 0, 0, 0], [255, 255, 255, 0, 0, 255, 255, 255], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [255, 255, 255, 0, 0, 255, 255, 255], [0, 0, 0, 0, 0, 0, 0, 0]]);
+    }
+
+    [Fact]
+    public void TheLastDashOfAClosedContourContinuesWithTheFirstOne()
+    {
+        // A square of side 4 (16 around), dashes of 6 and gaps of 2, starting 3 into a dash: the dashes are 0-3, 5-11 and
+        // 13-16, and the last one continues with the first one through the first corner, which is joined, not capped
+        var square = new VectorPathBuilder().MoveTo(2, 2).LineTo(6, 2).LineTo(6, 6).LineTo(2, 6).Close().Build();
+        var dashes = new VectorPathBuilder()
+            .MoveTo(2, 5).LineTo(2, 2).LineTo(5, 2)
+            .MoveTo(6, 3).LineTo(6, 6).LineTo(3, 6)
+            .Build();
+        foreach (var join in new[] { LineJoin.Miter, LineJoin.Round, LineJoin.Bevel })
+        {
+            var dashed = new Pen(White, 1.5) { DashPattern = [6, 2], DashOffset = 3, LineJoin = join };
+            AssertSamePixels(canvas => canvas.Stroke(dashed, square), canvas => canvas.Stroke(new Pen(White, 1.5) { LineJoin = join }, dashes));
+            AssertSamePixels(canvas => canvas.StrokeRectangle(dashed, new RectangleD(2, 2, 4, 4)), canvas => canvas.Stroke(new Pen(White, 1.5) { LineJoin = join }, dashes));
+        }
+
+        // The corner is joined: a miter fills the pixel outside the corner, which two butt caps would leave empty
+        using (var image = NewBlack(8, 8))
+        {
+            image.Frames[0].Draw(canvas => canvas.Stroke(new Pen(White, 2) { DashPattern = [6, 2], DashOffset = 3 }, square), Ct);
+            Assert.Equal(new Gray8(255), image.Frames[0][1, 1]);
+        }
+
+        // When the contour ends in a gap, the first dash has a cap at the first point
+        using (var image = NewBlack(8, 8))
+        {
+            image.Frames[0].Draw(canvas => canvas.Stroke(new Pen(White, 2) { DashPattern = [6, 2] }, square), Ct);
+            Assert.Equal(new Gray8(0), image.Frames[0][1, 1]);
+            Assert.Equal(new Gray8(255), image.Frames[0][2, 1]);
+        }
+
+        // A closed contour shorter than its first dash is stroked whole
+        AssertSamePixels(canvas => canvas.Stroke(new Pen(White, 1.5) { DashPattern = [100, 5] }, square), canvas => canvas.Stroke(new Pen(White, 1.5), square));
+        var circle = new VectorPathBuilder().AddCircle(new PointD(4, 4), 2.5).Build();
+        AssertSamePixels(canvas => canvas.Stroke(new Pen(White, 1.5) { DashPattern = [100, 5] }, circle), canvas => canvas.Stroke(new Pen(White, 1.5), circle));
+
+        // An open contour that comes back to its first point has caps there
+        var open = new VectorPathBuilder().MoveTo(2, 2).LineTo(6, 2).LineTo(6, 6).LineTo(2, 6).LineTo(2, 2).Build();
+        AssertSamePixels(canvas => canvas.Stroke(new Pen(White, 1.5) { DashPattern = [100, 5] }, open), canvas => canvas.Stroke(new Pen(White, 1.5), open));
+    }
+
+    [Fact]
+    public void ADashedCircleHasItsDashesWhereThePatternSaysAlongIt()
+    {
+        // Eight dashes and eight gaps of the same length around a circle, which starts at the right of its center and
+        // turns clockwise on the image: the middle of dash k is at 11.25 + 45 k degrees, the middle of gap k 22.5 further
+        var circle = new VectorPathBuilder().AddCircle(new PointD(32, 32), 24).Build();
+        var length = circle.GetLength();
+        var pen = new Pen(White, 4) { DashPattern = [length / 16] };
+        using var image = NewBlack(64, 64);
+        image.Frames[0].Draw(canvas => canvas.Stroke(pen, circle), Ct);
+        long painted = 0;
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                foreach (var pixel in pixels.GetRowSpan(y))
+                {
+                    painted += pixel.Value;
+                }
+            }
+        });
+
+        // Half of the stroke of the circle
+        Assert.Equal(length * 4 / 2, painted / 255.0, 3.0);
+        for (var k = 0; k < 8; k++)
+        {
+            var (sin, cos) = Math.SinCos((11.25 + (45 * k)) * Math.PI / 180);
+            Assert.Equal(new Gray8(255), image.Frames[0][(int)(32 + (24 * cos)), (int)(32 + (24 * sin))]);
+            (sin, cos) = Math.SinCos((33.75 + (45 * k)) * Math.PI / 180);
+            Assert.Equal(new Gray8(0), image.Frames[0][(int)(32 + (24 * cos)), (int)(32 + (24 * sin))]);
+        }
+    }
+
+    [Fact]
+    public void WhatIsOutsideTheCanvasIsNotCutIntoDashesAndThePatternGoesOn()
+    {
+        // A line of two million pixels through a canvas of 10: the pattern is where the length of the line puts it.
+        // The pixel 0 is 1000000 - 0.25 from the start, which is 4.75 into a pattern of 5: the dashes of 3 start at
+        // x = 0.25, 5.25, ...
+        using (var image = NewBlack(10, 3))
+        {
+            var pen = new Pen(White, 1) { DashPattern = [3, 2] };
+            image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(-1000000 + 0.25, 1.5), new PointD(1000000, 1.5)), Ct);
+            AssertGray8(image, [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [191, 255, 255, 64, 0, 191, 255, 255, 64, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]);
+        }
+
+        // The shortest pattern on the longest line: billions of dashes outside the canvas, a few thousand inside
+        using (var image = NewBlack(4, 3))
+        {
+            var pen = new Pen(White, 1) { DashPattern = [1.0 / 2048, 1.0 / 2048] };
+            image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(-16777216, 1.5), new PointD(16777216, 1.5)), Ct);
+            AssertGray8(image, [[0, 0, 0, 0], [128, 128, 128, 128], [0, 0, 0, 0]]);
+        }
+
+        // A path that leaves the canvas and comes back: the same pixels as the same path on a canvas that shows all of it
+        var path = new VectorPathBuilder().MoveTo(2, 2).LineTo(300, 2).LineTo(300, 300).LineTo(5.5, 300).LineTo(5.5, -200).LineTo(2, 7).Close().Build();
+        var dashed = new Pen(White, 1.5) { DashPattern = [2.5, 1.25, 0.5, 1.25], LineCap = LineCap.Round, LineJoin = LineJoin.Round };
+        using var small = NewBlack(8, 8);
+        using var large = NewBlack(320, 320);
+        small.Frames[0].Draw(canvas => canvas.Stroke(dashed, path), Ct);
+        large.Frames[0].Draw(canvas => canvas.Stroke(dashed, path), Ct);
+        for (var y = 0; y < 8; y++)
+        {
+            for (var x = 0; x < 8; x++)
+            {
+                Assert.True(Math.Abs(small.Frames[0][x, y].Value - large.Frames[0][x, y].Value) <= 1, $"pixel ({x}, {y}): {small.Frames[0][x, y].Value} and {large.Frames[0][x, y].Value}");
+            }
+        }
+    }
+
+    [Fact]
+    public void AWidePenIsNotCutIntoTheDashesTheCanvasDoesNotShow()
+    {
+        // The time a stroke takes if it is cut into every dash of its path: more than the test allows
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        timeout.CancelAfter(TimeSpan.FromMinutes(2));
+
+        // A pen a million pixels wide, the shortest pattern, the longest line: the dashes are slivers across the whole
+        // canvas, which cover half of it. Only those the canvas shows are cut.
+        using (var image = NewBlack(4, 3))
+        {
+            var pen = new Pen(White, 1000000) { DashPattern = [1.0 / 2048] };
+            image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(-16777216, 1.5), new PointD(16777216, 1.5)), timeout.Token);
+            AssertGray8(image, [[128, 128, 128, 128], [128, 128, 128, 128], [128, 128, 128, 128]]);
+        }
+
+        // With round caps, each dash is a disk a million pixels wide: the first one that covers the canvas ends the stroke
+        using (var image = NewBlack(4, 3))
+        {
+            var pen = new Pen(White, 1000000) { DashPattern = [1.0 / 2048], LineCap = LineCap.Round };
+            image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(-16777216, 1.5), new PointD(16777216, 1.5)), timeout.Token);
+            AssertGray8(image, [[255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255]]);
+        }
+
+        // Far from the canvas across the line, nothing is cut at all
+        using (var image = NewBlack(4, 3))
+        {
+            var pen = new Pen(White, 10) { DashPattern = [1.0 / 2048] };
+            image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(-16777216, 100), new PointD(16777216, 100.5)), timeout.Token);
+            AssertGray8(image, [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]);
+        }
+    }
+
+    [Fact]
+    public void AJoinOutsideTheCanvasStillShowsWhereItReachesIt()
+    {
+        // A sharp corner on the right of the canvas, pointing to the left: its two segments stay outside, and only the
+        // tip of its miter crosses the canvas. A dash that goes through the corner draws it like a stroke without dashes.
+        var corner = new VectorPathBuilder().MoveTo(40, 2).LineTo(12, 4).LineTo(40, 6).Build();
+        var solid = new Pen(White, 2) { MiterLimit = 20 };
+        using (var image = NewBlack(8, 8))
+        {
+            image.Draw(canvas => canvas.Stroke(solid, corner), Ct);
+            Assert.True(image.Frames[0][4, 3].Value > 0 && image.Frames[0][4, 4].Value > 0);
+            Assert.Equal(new Gray8(0), image.Frames[0][4, 1]);
+        }
+
+        AssertSamePixels(canvas => canvas.Stroke(new Pen(White, 2) { MiterLimit = 20, DashPattern = [1000, 1] }, corner), canvas => canvas.Stroke(solid, corner));
+        AssertSamePixels(canvas => canvas.Stroke(new Pen(White, 2) { MiterLimit = 20, DashPattern = [20, 1], DashOffset = 10 }, corner), canvas => canvas.Stroke(solid, corner));
+
+        // A dash that ends before the corner leaves no miter: two butt caps near the corner, outside the canvas
+        using (var image = NewBlack(8, 8))
+        {
+            image.Draw(canvas => canvas.Stroke(new Pen(White, 2) { MiterLimit = 20, DashPattern = [27, 2] }, corner), Ct);
+            Assert.Equal(new int[64], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // The cap of an open contour that ends outside the canvas, a square cap of half the width 6
+        var line = new VectorPathBuilder().MoveTo(40, 4).LineTo(12, 4).Build();
+        var capped = new Pen(White, 12) { LineCap = LineCap.Square };
+        AssertSamePixels(canvas => canvas.Stroke(new Pen(White, 12) { LineCap = LineCap.Square, DashPattern = [1000, 1] }, line), canvas => canvas.Stroke(capped, line));
+    }
+
+    [Fact]
+    public void ADashedStrokeIsBoundedByTheAllocationLimitOfTheImage()
+    {
+        // Sixty-four thousand dashes on the canvas need more edges than the limit allows: nothing is drawn
+        var configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 1024 * 1024 } };
+        using var image = new Image<Gray8>(64, 4, new Gray8(0), configuration);
+        var pen = new Pen(White, 1) { DashPattern = [1.0 / 2048] };
+        Assert.Throws<ImageResourceLimitException>(() => image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(0, 1.5), new PointD(64, 1.5)), Ct));
+        Assert.Equal(new int[256], DrawingTestSupport.ReadSamples(image.Frames[0]));
+
+        // The image can still be drawn on
+        image.Frames[0].Draw(canvas => canvas.StrokeLine(new Pen(White, 1) { DashPattern = [1, 1] }, new PointD(0, 1.5), new PointD(4, 1.5)), Ct);
+        Assert.Equal([255, 0, 255, 0], DrawingTestSupport.ReadSamples(image.Frames[0])[64..68]);
+    }
+
+    [Fact]
+    public void ADashPatternIsValidatedAndCopied()
+    {
+        Assert.True(new Pen(White, 1).DashPattern.IsEmpty);
+        Assert.Equal(0, new Pen(White, 1).DashOffset);
+        double[] lengths = [3, 1.5, 0];
+        var pen = new Pen(White, 1) { DashPattern = lengths, DashOffset = -2.5 };
+        lengths[0] = 100;
+        Assert.Equal([3, 1.5, 0], pen.DashPattern.ToArray());
+        Assert.Equal(-2.5, pen.DashOffset);
+        Assert.True(new Pen(White, 1) { DashPattern = [] }.DashPattern.IsEmpty);
+
+        Assert.Throws<ArgumentException>(() => new Pen(White, 1) { DashPattern = [1, double.NaN] });
+        Assert.Throws<ArgumentException>(() => new Pen(White, 1) { DashPattern = [double.PositiveInfinity] });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Pen(White, 1) { DashPattern = [1, -1] });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Pen(White, 1) { DashPattern = [16777217] });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Pen(White, 1) { DashPattern = [0, 0] });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Pen(White, 1) { DashPattern = [1.0 / 4096, 1.0 / 4096] });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Pen(White, 1) { DashPattern = [1.0 / 4096] });
+        Assert.HasCount(1, new Pen(White, 1) { DashPattern = [1.0 / 2048] }.DashPattern);
+        Assert.HasCount(2, new Pen(White, 1) { DashPattern = [1.0 / 2048, 1.0 / 2048] }.DashPattern);
+        Assert.Throws<ArgumentException>(() => new Pen(White, 1) { DashOffset = double.NaN });
+        Assert.Throws<ArgumentException>(() => new Pen(White, 1) { DashOffset = double.NegativeInfinity });
+    }
+
+    [Fact]
+    public void FillingTheWidenedPathOfADashedPenIsStrokingWithIt()
+    {
+        var path = new VectorPathBuilder()
+            .MoveTo(1, 1).LineTo(6.5, 1.25).LineTo(2, 3).QuadraticBezierTo(7, 4, 6, 7).Close()
+            .MoveTo(0.75, 5).CubicBezierTo(2, 3.5, 3, 8.5, 4.5, 6.25)
+            .AddCircle(new PointD(4, 4), 2.75)
+            .Build();
+        foreach (var pen in new[]
+        {
+            new Pen(White, 1) { DashPattern = [1.5, 1] },
+            new Pen(White, 0.75) { DashPattern = [0, 1.25], LineCap = LineCap.Round },
+            new Pen(White, 1.25) { DashPattern = [2, 0.5, 0, 0.5], DashOffset = 0.75, LineCap = LineCap.Square, LineJoin = LineJoin.Round },
+            new Pen(White, 1) { DashPattern = [7], DashOffset = 3, LineJoin = LineJoin.Bevel },
+        })
+        {
+            var widened = path.Widen(pen);
+            AssertSamePixels(canvas => canvas.Stroke(pen, path), canvas => canvas.Fill(White, widened));
+        }
+    }
+
+    /// <summary>Strokes a horizontal line of width 1 through the middle of a row of 9 pixels and checks that row.</summary>
+    private static void AssertDashedRow(double[] pattern, double offset, LineCap cap, int[] expected)
+    {
+        using var image = NewBlack(9, 3);
+        var pen = new Pen(White, 1) { DashPattern = pattern, DashOffset = offset, LineCap = cap };
+        image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(0, 1.5), new PointD(9, 1.5)), Ct);
+        AssertGray8(image, [new int[9], expected, new int[9]]);
+    }
+
+    private static void AssertSamePixels(DrawingAction first, DrawingAction second)
+    {
+        using var left = NewBlack(8, 8);
+        using var right = NewBlack(8, 8);
+        left.Draw(first, Ct);
+        right.Draw(second, Ct);
+        var expected = DrawingTestSupport.ReadSamples(left.Frames[0]);
+        Assert.Contains(expected, sample => sample != 0);
+        Assert.Equal(expected, DrawingTestSupport.ReadSamples(right.Frames[0]));
+    }
+
     private static Image<Gray8> NewBlack(int width, int height) => new(width, height, new Gray8(0));
 
     private static void AssertGray8(Image<Gray8> image, int[][] expected)

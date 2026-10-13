@@ -21,7 +21,7 @@ internal static partial class GoldenCorpus
     private const int SchemaVersion = CorpusDriver.SchemaVersion;
 
     // Formats whose fixtures this generator produces. The fixtures of every other format are produced by their own generators
-    // (WebPCorpus, QoiCorpus, BmpCorpus, TgaCorpus, PnmCorpus, AvifCorpus, JxlCorpus, Jp2Corpus) and are kept as they are
+    // (WebPCorpus, QoiCorpus, BmpCorpus, TgaCorpus, PnmCorpus, AvifCorpus, HeicCorpus, JxlCorpus, Jp2Corpus) and are kept as they are
     private static readonly HashSet<string> OwnFormats = new(StringComparer.Ordinal) { "png", "gif", "jpeg" };
 
     public static int Run(GeneratorOptions options)
@@ -88,6 +88,8 @@ internal static partial class GoldenCorpus
             CorpusDriver.CopyCommittedAv1Vectors(outDir, committed);
         }
 
+        // So are the HEVC conformance vectors, which HevcCorpus generates
+        CorpusDriver.PreserveHevcVectors(outDir, manifest);
         CorpusDriver.PreserveColorSections(outDir, manifest);
         CorpusDriver.PreserveFonts(outDir, manifest);
         CorpusDriver.WriteManifest(outDir, manifest);

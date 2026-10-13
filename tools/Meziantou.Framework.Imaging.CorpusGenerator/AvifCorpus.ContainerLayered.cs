@@ -1,6 +1,6 @@
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
-using Meziantou.Framework.Imaging.TestHarness.Avif;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 
 namespace Meziantou.Framework.Imaging.CorpusGenerator;
 
@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 // - Written by avifenc: --progressive (two layers, the first one at half the size) and --layered (one input per layer,
 //   2 to 4 layers, with a quality and a scale per layer). avifenc writes one extent per layer and an a1lx property; it
 //   writes neither a1op nor lsel, and neither a layered grid nor a layered sequence.
-// - Assembled around the payloads of such files (AvifFileBuilder): the lsel and a1op properties, a grid whose tiles are
+// - Assembled around the payloads of such files (HeifFileBuilder): the lsel and a1op properties, a grid whose tiles are
 //   layered images, and an image sequence whose samples are layered temporal units.
 //
 // References: as for every AVIF fixture, the planes both decoders agree on, converted by ReferenceYuvConverter. Both
@@ -43,17 +43,17 @@ internal static partial class AvifCorpus
     }
 
     /// <summary>A property added to an item, marked essential.</summary>
-    private static void AddEssential(AvifFileBuilder builder, AvifFileBuilder.Item item, byte[] box) => item.Associations.Add((builder.AddProperty(box), true));
+    private static void AddEssential(HeifFileBuilder builder, HeifFileBuilder.Item item, byte[] box) => item.Associations.Add((builder.AddProperty(box), true));
 
     /// <summary>A grid assembled from files that each hold one coded image: the first file becomes the grid, its image
     /// the first tile, and the images of the other files the next tiles, each with its own properties.</summary>
-    private static AvifFileBuilder AssembleGrid(List<AvifFileBuilder> tiles, int rows, int columns, uint width, uint height)
+    private static HeifFileBuilder AssembleGrid(List<HeifFileBuilder> tiles, int rows, int columns, uint width, uint height)
     {
         var grid = tiles[0];
         var first = grid.GetItem(1);
         first.Id = 2;
         first.IsHidden = true;
-        var gridItem = grid.AddItem(1, "grid", AvifFileBuilder.GridDescriptor(rows, columns, width, height), grid.AddProperty(AvifFileBuilder.ImageSize(width, height)));
+        var gridItem = grid.AddItem(1, "grid", HeifFileBuilder.GridDescriptor(rows, columns, width, height), grid.AddProperty(HeifFileBuilder.ImageSize(width, height)));
         foreach (var (index, _) in first.Associations.Where(association => PropertyType(grid.Properties[association.PropertyIndex - 1]) is "colr" or "pixi"))
             gridItem.Associations.Add((index, false));
 
@@ -123,57 +123,57 @@ internal static partial class AvifCorpus
         // an operating point; avifenc declares one per number of layers (the first one holds every layer, the last one
         // the first layer only), so operating point 1 of three is the first two layers
         const string Source = "layered-3-quality-rgb";
-        Assembled(context, "layered-lsel-none", Source, builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(0xFFFF)),
+        Assembled(context, "layered-lsel-none", Source, builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(0xFFFF)),
             ["avif.lsel=65535", "avif.layers=3", "avif.layers.hiddenPixels=128"], "An lsel property whose layer_id is 0xFFFF: no layer is selected, the image is the last layer, as without the property.", Function, sourceLayer: 2);
-        Assembled(context, "layered-lsel-2", Source, builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(2)),
+        Assembled(context, "layered-lsel-2", Source, builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(2)),
             ["avif.lsel=2", "avif.layers=3", "avif.layers.hiddenPixels=128"], "An lsel property selects layer 2, the last of three: the same image as without the property.", Function, sourceLayer: 2);
-        Assembled(context, "layered-lsel-0", Source, builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(0)),
+        Assembled(context, "layered-lsel-0", Source, builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(0)),
             ["avif.lsel=0", "avif.layers=3"], "An lsel property selects layer 0 of three layers of 8x8: the image is the frame of the first layer (quality 20), and the other layers are not decoded.", Function, sourceLayer: 0);
-        Assembled(context, "layered-lsel-1", Source, builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(1)),
+        Assembled(context, "layered-lsel-1", Source, builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(1)),
             ["avif.lsel=1", "avif.layers=3", "avif.layers.hiddenPixels=64"], "An lsel property selects layer 1 of three layers of 8x8: the image is the frame of the second layer (quality 60); the first layer is decoded on the way.", Function, sourceLayer: 1);
-        Assembled(context, "layered-a1op-0", Source, builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.OperatingPointSelector(0)),
+        Assembled(context, "layered-a1op-0", Source, builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.OperatingPointSelector(0)),
             ["avif.a1op=0", "avif.layers=3", "avif.layers.hiddenPixels=128"], "An a1op property selects operating point 0, the default one: the same image as without the property.", Function, sourceLayer: 2);
-        Assembled(context, "layered-a1op-1", Source, builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.OperatingPointSelector(1)),
+        Assembled(context, "layered-a1op-1", Source, builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.OperatingPointSelector(1)),
             ["avif.a1op=1", "avif.layers=3", "avif.layers.hiddenPixels=64"], "An a1op property selects operating point 1 of three (operating_point_idc 0x301: the first two layers): the image is the frame of layer 1, its highest layer.", Function, sourceLayer: 1);
-        Assembled(context, "layered-a1op-2", Source, builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.OperatingPointSelector(2)),
+        Assembled(context, "layered-a1op-2", Source, builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.OperatingPointSelector(2)),
             ["avif.a1op=2", "avif.layers=3"], "An a1op property selects operating point 2 of three (operating_point_idc 0x101: the first layer only): the image is the frame of layer 0.", Function, sourceLayer: 0);
         Assembled(context, "layered-a1op-1-lsel-0", Source, builder =>
         {
-            AddEssential(builder, builder.GetItem(1), AvifFileBuilder.OperatingPointSelector(1));
-            AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(0));
+            AddEssential(builder, builder.GetItem(1), HeifFileBuilder.OperatingPointSelector(1));
+            AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(0));
         }, ["avif.a1op=1", "avif.lsel=0", "avif.layers=3"], "An a1op property selects operating point 1 (the first two layers) and an lsel property layer 0 of it: the image is the frame of layer 0.", Function, sourceLayer: 0);
 
-        Assembled(context, "layered-lsel-3", "layered-4-quality-gray12", builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(3)),
+        Assembled(context, "layered-lsel-3", "layered-4-quality-gray12", builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(3)),
             ["avif.lsel=3", "avif.layers=4", "avif.layers.hiddenPixels=192"], "An lsel property selects layer 3 of avif/layered-4-quality-gray12, the last of the four spatial layers AV1 has.", Function, sourceLayer: 3);
 
         // A layer that is smaller than the last one: the ispe property of the item is the size of the selected frame
         Assembled(context, "layered-lsel-0-smaller", "layered-progressive-444-10bit", builder =>
         {
-            AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(0));
-            ReplaceProperty(builder, builder.GetItem(1), "ispe", AvifFileBuilder.ImageSize(4, 4));
+            AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(0));
+            ReplaceProperty(builder, builder.GetItem(1), "ispe", HeifFileBuilder.ImageSize(4, 4));
         }, ["avif.lsel=0", "avif.layers=2", "avif.layers.scaled", "avif.bitDepth=10"], "An lsel property selects layer 0 of avif/layered-progressive-444-10bit, a 4x4 frame, and the ispe property declares 4x4: the image is that frame, at its own size.", Function);
         Assembled(context, "layered-a1op-1-smaller", "layered-progressive-444-10bit", builder =>
         {
-            AddEssential(builder, builder.GetItem(1), AvifFileBuilder.OperatingPointSelector(1));
-            ReplaceProperty(builder, builder.GetItem(1), "ispe", AvifFileBuilder.ImageSize(4, 4));
+            AddEssential(builder, builder.GetItem(1), HeifFileBuilder.OperatingPointSelector(1));
+            ReplaceProperty(builder, builder.GetItem(1), "ispe", HeifFileBuilder.ImageSize(4, 4));
         }, ["avif.a1op=1", "avif.layers=2", "avif.layers.scaled"], "An a1op property selects operating point 1 of avif/layered-progressive-444-10bit, which holds its first layer only, a 4x4 frame, and the ispe property declares 4x4.", Function);
 
         // Matrixed content: the selected layer is converted like any image
-        Assembled(context, "layered-lsel-0-420", "layered-2-quality-420", builder => AddEssential(builder, builder.GetItem(1), AvifFileBuilder.LayerSelector(0)),
+        Assembled(context, "layered-lsel-0-420", "layered-2-quality-420", builder => AddEssential(builder, builder.GetItem(1), HeifFileBuilder.LayerSelector(0)),
             ["avif.lsel=0", "avif.layers=2", "avif.subsampling=4:2:0"], "An lsel property selects layer 0 of avif/layered-2-quality-420 (quality 20): 4:2:0 samples in limited range, converted like any image.", Function, sourceLayer: 0);
 
         // A grid whose tiles are layered images. avifenc refuses to write one ("Layered grid image unimplemented in
         // avifenc"): two 8x8 images are coded one by one and assembled. The tiles are smaller than the 64 samples MIAF asks
         // for, so avifdec rejects the file (as it rejects avif/grid-3x2-small-tiles)
         var mosaic = CommonCorpus.PatternDetailColor(16, 8, 4);
-        List<AvifFileBuilder> Tiles(string prefix, string arguments, List<string> commands)
+        List<HeifFileBuilder> Tiles(string prefix, string arguments, List<string> commands)
         {
-            var tiles = new List<AvifFileBuilder>();
+            var tiles = new List<HeifFileBuilder>();
             for (var i = 0; i < 2; i++)
             {
                 var tile = new Img(8, 8, "rgb", 8, CommonCorpus.Grid(8, 8, (x, y) => mosaic.Pixels[(y * 16) + (8 * i) + x]));
                 var (data, command) = Avifenc(context, Inv($"{prefix}-tile{i}"), new Dictionary<string, byte[]>(StringComparer.Ordinal) { ["source0.png"] = Png(tile) }, arguments);
-                tiles.Add(AvifFileBuilder.From(data));
+                tiles.Add(HeifFileBuilder.From(data));
                 commands.Add(command);
             }
 
@@ -190,7 +190,7 @@ internal static partial class AvifCorpus
         // Each tile of a grid has its own selection, and the grid item none: two tiles of three layers that select
         // different layers, then different operating points. The two tiles were coded with the same settings: their
         // sequence headers are the same bytes, whatever each tile selects in them
-        void SelectingTiles(string name, Action<AvifFileBuilder, AvifFileBuilder.Item> first, Action<AvifFileBuilder, AvifFileBuilder.Item> second, string notes, string[] requires)
+        void SelectingTiles(string name, Action<HeifFileBuilder, HeifFileBuilder.Item> first, Action<HeifFileBuilder, HeifFileBuilder.Item> second, string notes, string[] requires)
         {
             var commands = new List<string>();
             var tiles = Tiles(name, Qualities(Identity, 20, 60, 95), commands);
@@ -203,13 +203,13 @@ internal static partial class AvifCorpus
         }
 
         SelectingTiles("layered-grid-2x1-tile-layers",
-            (builder, tile) => AddEssential(builder, tile, AvifFileBuilder.LayerSelector(1)),
-            (builder, tile) => AddEssential(builder, tile, AvifFileBuilder.LayerSelector(0)),
+            (builder, tile) => AddEssential(builder, tile, HeifFileBuilder.LayerSelector(1)),
+            (builder, tile) => AddEssential(builder, tile, HeifFileBuilder.LayerSelector(0)),
             "A grid of two tiles of three layers each (quality 20, 60 and 95). The first tile has an lsel property that selects layer 1 and the second tile one that selects layer 0: each tile of a grid has its own selection, and the grid item has none.",
             ["avif.lsel=0", "avif.lsel=1", "avif.layers.hiddenPixels=64"]);
         SelectingTiles("layered-grid-2x1-tile-operating-points",
-            (builder, tile) => AddEssential(builder, tile, AvifFileBuilder.OperatingPointSelector(1)),
-            (builder, tile) => AddEssential(builder, tile, AvifFileBuilder.OperatingPointSelector(2)),
+            (builder, tile) => AddEssential(builder, tile, HeifFileBuilder.OperatingPointSelector(1)),
+            (builder, tile) => AddEssential(builder, tile, HeifFileBuilder.OperatingPointSelector(2)),
             "A grid of two tiles of three layers each, whose sequence headers are the same bytes. The first tile has an a1op property that selects operating point 1 (the first two layers) and the second tile one that selects operating point 2 (the first layer only): each tile of a grid has its own operating point.",
             ["avif.a1op=1", "avif.a1op=2", "avif.layers.hiddenPixels=64"]);
 
@@ -219,20 +219,20 @@ internal static partial class AvifCorpus
         // (Content of few colors: the references are also the sources of the encoder suites; see BuildStills)
         var (firstSample, firstCommand) = Avifenc(context, "sequence-layered-sample0", new Dictionary<string, byte[]>(StringComparer.Ordinal) { ["source0.png"] = Png(Moving(8, 8, 0)) }, Qualities(Identity, 30, 90));
         var (secondSample, secondCommand) = Avifenc(context, "sequence-layered-sample1", new Dictionary<string, byte[]>(StringComparer.Ordinal) { ["source0.png"] = Png(Moving(8, 8, 2)) }, "--progressive " + Identity + " @source0.png");
-        var samples = new[] { ReferenceAvif.Parse(firstSample), ReferenceAvif.Parse(secondSample) };
+        var samples = new[] { ReferenceHeif.Parse(firstSample), ReferenceHeif.Parse(secondSample) };
         var configuration = samples[0].PrimaryItem!.Find("av1C")!.Payload.ToArray();
         Py.Assert(samples[1].PrimaryItem!.Find("av1C")!.Payload.Span.SequenceEqual(configuration), "the samples have the same configuration record");
-        var sequence = new AvifFileBuilder { MajorBrand = "avis", MovieTimescale = 10 };
+        var sequence = new HeifFileBuilder { MajorBrand = "avis", MovieTimescale = 10 };
         sequence.CompatibleBrands.Clear();
         foreach (var brand in new[] { "avis", "msf1", "iso8" })
             sequence.CompatibleBrands.Add(brand);
         sequence.Layout.Clear();
-        foreach (var box in new[] { AvifFileBuilder.FileTypeBox, AvifFileBuilder.MovieBox, AvifFileBuilder.MediaDataBox })
+        foreach (var box in new[] { HeifFileBuilder.FileTypeBox, HeifFileBuilder.MovieBox, HeifFileBuilder.MediaDataBox })
             sequence.Layout.Add(box);
 
-        var track = new AvifFileBuilder.Track(1, "pict", 8, 8) { Timescale = 10, Duration = 5 };
-        track.SampleEntryBoxes.Add(AvifFileBuilder.Box("av1C", configuration));
-        track.SampleEntryBoxes.Add(AvifFileBuilder.ColorNclx(1, 13, 0, fullRange: true));
+        var track = new HeifFileBuilder.Track(1, "pict", 8, 8) { Timescale = 10, Duration = 5 };
+        track.SampleEntryBoxes.Add(HeifFileBuilder.Box("av1C", configuration));
+        track.SampleEntryBoxes.Add(HeifFileBuilder.ColorNclx(1, 13, 0, fullRange: true));
         track.Samples.Add((samples[0].ReadItemData(samples[0].PrimaryItem!), 2));
         track.Samples.Add((samples[1].ReadItemData(samples[1].PrimaryItem!), 3));
         sequence.Tracks.Add(track);

@@ -77,6 +77,20 @@ internal static class PathFlattener
                     currentY = startY = points[index + 1];
                     index += 4;
                     break;
+
+                case PathCommand.Arc or PathCommand.ArcContinuation:
+                    Arc(sink, new ArcPiece(points.Slice(index, ArcPiece.CoordinateCount), command == PathCommand.ArcContinuation));
+                    currentX = points[index + 10];
+                    currentY = points[index + 11];
+                    index += ArcPiece.CoordinateCount;
+                    break;
+
+                case PathCommand.EllipseAxes:
+                    Ellipse(sink, points[index], points[index + 1], points[index + 2], points[index + 3], points[index + 4], points[index + 5]);
+                    currentX = startX = points[index] + points[index + 2];
+                    currentY = startY = points[index + 1] + points[index + 3];
+                    index += 6;
+                    break;
             }
         }
 
@@ -122,15 +136,7 @@ internal static class PathFlattener
     /// <summary>Sends a closed ellipse as one contour starting at the right end of its horizontal axis.</summary>
     public static void Ellipse(PathSink sink, double centerX, double centerY, double radiusX, double radiusY)
     {
-        // Each quadrant is cut in 2^depth arcs of angle a = (pi / 2) / 2^depth; r a^2 / 8 <= Tolerance when
-        // 4^depth >= pi^2 r / (32 Tolerance), which 4^depth >= 5 r guarantees for a tolerance of 1/16
-        var limit = 5 * Math.Max(radiusX, radiusY);
-        var depth = 0;
-        for (double arcs = 1; arcs < limit && depth < MaxArcDepth; arcs *= 4)
-        {
-            depth++;
-        }
-
+        var depth = GetArcDepth(Math.Max(radiusX, radiusY));
         sink.MoveTo(centerX + radiusX, centerY);
         for (var quadrant = 0; quadrant < 4; quadrant++)
         {
@@ -138,6 +144,73 @@ internal static class PathFlattener
         }
 
         sink.Close(smooth: true);
+    }
+
+    /// <summary>
+    /// Sends a closed ellipse given by its center and two conjugate half-diameters <c>u</c> and <c>v</c> (the points
+    /// <c>center + x u + y v</c> for the points <c>(x, y)</c> of the unit circle), as one contour that starts at
+    /// <c>center + u</c> and turns toward <c>center + v</c>.
+    /// </summary>
+    /// <remarks>
+    /// The ellipse is the image of the polygon of the unit circle, whose chords stay within the tolerance of a circle of
+    /// the largest radius of the ellipse: no chord is further from the ellipse than that.
+    /// </remarks>
+    public static void Ellipse(PathSink sink, double centerX, double centerY, double ux, double uy, double vx, double vy)
+    {
+        var depth = GetArcDepth(GetLargestRadius(ux, uy, vx, vy));
+        sink.MoveTo(centerX + ux, centerY + uy);
+        for (var quadrant = 0; quadrant < 4; quadrant++)
+        {
+            EllipseArc(sink, centerX, centerY, ux, uy, vx, vy, quadrant, 1, 0, 0, 1, depth);
+        }
+
+        sink.Close(smooth: true);
+    }
+
+    /// <summary>
+    /// Sends the chords of an arc of at most a quarter turn, from the current point of the sink (the start of the arc) to
+    /// its end point.
+    /// </summary>
+    /// <remarks>
+    /// The arc is halved until its chords are within the tolerance: on a circle of radius <c>r</c>, the chord of two unit
+    /// vectors <c>a</c> and <c>b</c> is at <c>r |a + b| / 2</c> from the center, and an ellipse is the image of the unit
+    /// circle, which moves no chord further from its arc than its largest radius does.
+    /// </remarks>
+    public static void Arc(PathSink sink, scoped in ArcPiece piece)
+    {
+        var radius = GetLargestRadius(piece.Ux, piece.Uy, piece.Vx, piece.Vy);
+        var smooth = piece.IsContinuation;
+        ArcInterior(sink, piece, radius, piece.Ax, piece.Ay, piece.Bx, piece.By, depth: 0, ref smooth);
+        sink.LineTo(piece.EndX, piece.EndY, smooth);
+    }
+
+    /// <summary>
+    /// Gets the largest distance from the center of the ellipse of two conjugate half-diameters to one of its points: the
+    /// largest singular value of the matrix of the two vectors.
+    /// </summary>
+    public static double GetLargestRadius(double ux, double uy, double vx, double vy)
+    {
+        // The squares of the singular values are the roots of t^2 - s t + d^2, with s the sum of the squares of the
+        // coefficients and d the determinant
+        var sum = (ux * ux) + (uy * uy) + (vx * vx) + (vy * vy);
+        var determinant = (ux * vy) - (uy * vx);
+        var discriminant = (sum * sum) - (4 * determinant * determinant);
+        return Math.Sqrt((sum + Math.Sqrt(discriminant > 0 ? discriminant : 0)) / 2);
+    }
+
+    /// <summary>Gets the number of times a quarter of a circle of a radius is halved for its chords to stay within the tolerance.</summary>
+    public static int GetArcDepth(double radius)
+    {
+        // Each quadrant is cut in 2^depth arcs of angle a = (pi / 2) / 2^depth; r a^2 / 8 <= Tolerance when
+        // 4^depth >= pi^2 r / (32 Tolerance), which 4^depth >= 5 r guarantees for a tolerance of 1/16
+        var limit = 5 * radius;
+        var depth = 0;
+        for (double arcs = 1; arcs < limit && depth < MaxArcDepth; arcs *= 4)
+        {
+            depth++;
+        }
+
+        return depth;
     }
 
     /// <summary>Gets the smallest positive integer whose square is at least <paramref name="value"/>.</summary>
@@ -174,5 +247,48 @@ internal static class PathFlattener
         my /= length;
         EllipseArc(sink, centerX, centerY, radiusX, radiusY, quadrant, ux, uy, mx, my, depth - 1);
         EllipseArc(sink, centerX, centerY, radiusX, radiusY, quadrant, mx, my, vx, vy, depth - 1);
+    }
+
+    /// <summary>Sends the vertices strictly between the unit vectors <c>a</c> and <c>b</c> of an arc.</summary>
+    private static void ArcInterior(PathSink sink, scoped in ArcPiece piece, double radius, double ax, double ay, double bx, double by, int depth, ref bool smooth)
+    {
+        var mx = ax + bx;
+        var my = ay + by;
+        var length = Length(mx, my);
+        if (depth >= MaxArcDepth || !(radius * (1 - (length / 2)) > Tolerance))
+            return;
+
+        mx /= length;
+        my /= length;
+        ArcInterior(sink, piece, radius, ax, ay, mx, my, depth + 1, ref smooth);
+        sink.LineTo(piece.CenterX + ((piece.Ux * mx) + (piece.Vx * my)), piece.CenterY + ((piece.Uy * mx) + (piece.Vy * my)), smooth);
+        smooth = true;
+        ArcInterior(sink, piece, radius, mx, my, bx, by, depth + 1, ref smooth);
+    }
+
+    /// <summary>The same for an ellipse given by two conjugate half-diameters <c>a</c> and <c>b</c>.</summary>
+    private static void EllipseArc(PathSink sink, double centerX, double centerY, double ax, double ay, double bx, double by, int quadrant, double ux, double uy, double vx, double vy, int depth)
+    {
+        if (depth == 0)
+        {
+            var (x, y) = quadrant switch
+            {
+                0 => (vx, vy),
+                1 => (-vy, vx),
+                2 => (-vx, -vy),
+                _ => (vy, -vx),
+            };
+
+            sink.LineTo(centerX + ((ax * x) + (bx * y)), centerY + ((ay * x) + (by * y)), smooth: true);
+            return;
+        }
+
+        var mx = ux + vx;
+        var my = uy + vy;
+        var length = Length(mx, my);
+        mx /= length;
+        my /= length;
+        EllipseArc(sink, centerX, centerY, ax, ay, bx, by, quadrant, ux, uy, mx, my, depth - 1);
+        EllipseArc(sink, centerX, centerY, ax, ay, bx, by, quadrant, mx, my, vx, vy, depth - 1);
     }
 }

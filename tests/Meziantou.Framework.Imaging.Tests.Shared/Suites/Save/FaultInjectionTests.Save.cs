@@ -81,9 +81,9 @@ public sealed partial class FaultInjectionTests
                 audit.FailureInjector = null;
 
                 // Output failures at many positions of a non-seekable stream (a seekable stream for WebP animations, which
-                // patch their RIFF size, and for AVIF image sequences, which write their moov box last: they reject
-                // non-seekable output before writing anything)
-                var patched = (encoder is WebPEncoder && (image.Frames.Count > 1 || image.IsAnimated)) || (encoder is AvifEncoder && image.Frames.Count > 1);
+                // patch their RIFF size, and for AVIF and HEIC image sequences, which write their moov box last: they
+                // reject non-seekable output before writing anything)
+                var patched = (encoder is WebPEncoder && (image.Frames.Count > 1 || image.IsAnimated)) || (encoder is AvifEncoder or HeicEncoder && image.Frames.Count > 1);
                 if (patched)
                 {
                     await using var rejected = new TestOutputStream();
@@ -112,7 +112,7 @@ public sealed partial class FaultInjectionTests
                 Assert.Equal(live, audit.LiveBytes);
 
                 // A writer faulted by an I/O failure stays faulted
-                var patchedWriter = encoder is WebPEncoder or AvifEncoder && image.Frames.Count > 1;
+                var patchedWriter = encoder is WebPEncoder or AvifEncoder or HeicEncoder && image.Frames.Count > 1;
                 await using (var output = new TestOutputStream { FailAtPosition = 0, Seekable = patchedWriter, AllowPatching = patchedWriter })
                 using (var writer = CreateWriter(output, image, encoder))
                 {
@@ -167,8 +167,11 @@ public sealed partial class FaultInjectionTests
 
                 return image;
             case "avif":
+            case "heic":
                 // The fastest search: the test encodes each input once per rental of the encoder
-                encoder = new AvifEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, Effort = 0 };
+                encoder = encoderName is "avif"
+                    ? new AvifEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, Effort = 0 }
+                    : new HeicEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, Effort = 0 };
                 image.RemovePosterFrame();
                 if (image.Frames.Count == 1)
                 {

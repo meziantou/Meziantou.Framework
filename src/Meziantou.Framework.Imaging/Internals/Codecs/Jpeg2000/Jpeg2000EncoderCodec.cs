@@ -698,7 +698,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         private void WriteHead(ReadOnlySpan<byte> reversibleExponents, int guardBits, long packetsLength)
         {
             var head = _head;
-            var boxes = new AvifBoxWriter(head);
+            var boxes = new HeifBoxWriter(head);
             var isFile = _encoder.Container == Jpeg2000Container.Jp2;
             var codestreamBox = -1;
             var isLargeBox = false;
@@ -812,7 +812,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             _pieces!.Span[0].Length = head.Length;
         }
 
-        private void WriteComponentStyle(AvifBoxWriter boxes, bool isReversible)
+        private void WriteComponentStyle(HeifBoxWriter boxes, bool isReversible)
         {
             boxes.WriteByte((byte)_levels);
             boxes.WriteByte(BlockExponent - 2);
@@ -821,7 +821,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             boxes.WriteByte((byte)(isReversible ? 1 : 0));
         }
 
-        private static void WriteReversibleQuantization(AvifBoxWriter boxes, ReadOnlySpan<byte> exponents)
+        private static void WriteReversibleQuantization(HeifBoxWriter boxes, ReadOnlySpan<byte> exponents)
         {
             boxes.WriteByte((LosslessGuardBits << 5) | Jpeg2000Quantization.StyleNone);
             foreach (var exponent in exponents)
@@ -831,7 +831,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         }
 
         /// <summary>Writes the boxes of a JP2 file that precede the codestream box (T.800, Annex I).</summary>
-        private void WriteFileBoxes(AvifBoxWriter boxes)
+        private void WriteFileBoxes(HeifBoxWriter boxes)
         {
             var metadata = Options.Metadata;
             boxes.WriteBytes(Jpeg2000Format.FileSignature);

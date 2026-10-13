@@ -18,6 +18,9 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 /// <item><description>AV1 conformance vectors (<see cref="AvifCorpus.Verify"/>): the hash of every stream, and the SHA-256
 /// of every plane of every output frame re-derived with each of the two decoders of the FFmpeg build, dav1d and libaom
 /// (AV1 decoding is bit-exact: any difference is a disagreement).</description></item>
+/// <item><description>HEVC conformance vectors (<see cref="HevcCorpus.Verify"/>): the hash of every stream, and the SHA-256
+/// of every plane of every output picture re-derived with each of the decoders that agreed when the vector was generated
+/// (FFmpeg's hevc decoder, libde265 and HM).</description></item>
 /// </list>
 /// </summary>
 internal static class CorpusVerifier
@@ -36,9 +39,9 @@ internal static class CorpusVerifier
                 var id = (string)fixture["id"]!;
                 var format = (string)fixture["format"]!;
                 List<string> errors;
-                if (format == "avif")
+                if (format is "avif" or "heic")
                 {
-                    // Verified below from the AV1 payloads (AvifCorpus.VerifyContainer)
+                    // Verified below from the AV1 and the HEVC payloads (AvifCorpus.VerifyContainer, HeicCorpus.VerifyContainer)
                     continue;
                 }
                 else if (format == "jp2")
@@ -76,9 +79,15 @@ internal static class CorpusVerifier
         verified += containers;
         failures.AddRange(containerFailures);
 
+        var (hevcVectors, hevcFailures) = HevcCorpus.Verify();
+        failures.AddRange(hevcFailures);
+        var (heicContainers, heicFailures) = HeicCorpus.VerifyContainer();
+        verified += heicContainers;
+        failures.AddRange(heicFailures);
+
         foreach (var failure in failures)
             Console.WriteLine("  " + failure);
-        Console.WriteLine($"{verified} fixtures and {vectors} AV1 vectors verified, {failures.Count} disagreement(s).");
+        Console.WriteLine($"{verified} fixtures, {vectors} AV1 vectors and {hevcVectors} HEVC vectors verified, {failures.Count} disagreement(s).");
         return failures.Count == 0 ? 0 : 1;
     }
 

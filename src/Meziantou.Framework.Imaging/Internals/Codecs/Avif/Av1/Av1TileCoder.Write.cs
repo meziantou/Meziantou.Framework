@@ -139,6 +139,19 @@ internal ref partial struct Av1TileCoder
         _interpFilter1 = _header.InterpolationFilter;
     }
 
+    // A block of an intra frame that is predicted from a part of the frame that is already coded (intra block copy): the
+    // values that intra_frame_mode_info gives it
+    private void SetCopyBlockDefaults()
+    {
+        SetIntraBlockDefaults();
+        _useIntrabc = true;
+        _isInter = true;
+        _yMode = Av1Constants.DcPred;
+        _uvMode = Av1Constants.DcPred;
+        _interpFilter0 = Av1Constants.Bilinear;
+        _interpFilter1 = Av1Constants.Bilinear;
+    }
+
     // Section 5.11.6 "Mode info syntax"
     private void WriteModeInfo()
     {
@@ -224,7 +237,7 @@ internal ref partial struct Av1TileCoder
         SetPredMv(refList: 0, _yMode);
         if (_yMode is Av1Constants.Newmv)
         {
-            WriteMv();
+            WriteMv(mvCtx: 0);
         }
         else
         {
@@ -262,24 +275,24 @@ internal ref partial struct Av1TileCoder
     }
 
     // Section 5.11.31 "MV syntax", for the first reference list of a block that is not coded with intra block copy
-    private void WriteMv()
+    private void WriteMv(int mvCtx)
     {
         var diffRow = _mv[0] - _predMv[0];
         var diffCol = _mv[1] - _predMv[1];
         var mvJoint = (diffRow is not 0 ? Av1Constants.MvJointHzvnz : Av1Constants.MvJointZero) | (diffCol is not 0 ? Av1Constants.MvJointHnzvz : Av1Constants.MvJointZero);
-        WriteSymbol(Av1CdfLayout.MvJoint, Av1CdfLayout.MvJointSize, mvJoint);
+        WriteSymbol(Av1CdfLayout.MvJoint + (mvCtx * Av1CdfLayout.MvJointSize), Av1CdfLayout.MvJointSize, mvJoint);
         if (diffRow is not 0)
-            WriteMvComponent(comp: 0, diffRow);
+            WriteMvComponent(mvCtx, comp: 0, diffRow);
 
         if (diffCol is not 0)
-            WriteMvComponent(comp: 1, diffCol);
+            WriteMvComponent(mvCtx, comp: 1, diffCol);
     }
 
     // Section 5.11.32 "MV component syntax": the difference is mag = offset + 1 eighths of a sample, where the class of
     // offset is the position of its most significant bit, and its 3 least significant bits are the fraction
-    private void WriteMvComponent(int comp, int diff)
+    private void WriteMvComponent(int mvCtx, int comp, int diff)
     {
-        var context = comp;
+        var context = (mvCtx * 2) + comp;
         var offset = Math.Abs(diff) - 1;
         Debug.Assert(offset >= 0 && offset < Av1Constants.Class0Size << (Av1Constants.MvClasses + 2));
         var mvClass = offset < Av1Constants.Class0Size << 3 ? Av1Constants.MvClass0 : BitOperations.Log2((uint)(offset >> 3));
@@ -348,7 +361,15 @@ internal ref partial struct Av1TileCoder
             WriteSymbol(Av1CdfLayout.Intrabc, Av1CdfLayout.IntrabcSize, _useIntrabc ? 1 : 0);
 
         if (_useIntrabc)
-            throw new NotSupportedException("Intra block copy is not encoded yet.");
+        {
+            // Like the decoder, builds the motion vector stack of the block: the motion vector is coded as its
+            // difference with the one that the stack predicts
+            FindMvStack(isCompound: false);
+            SetIntrabcPredMv();
+            WriteMv(Av1Constants.MvIntrabcContext);
+            Debug.Assert(IsMvValid(isCompound: false));
+            return;
+        }
 
         WriteYMode();
         WriteIntraModeDetails();

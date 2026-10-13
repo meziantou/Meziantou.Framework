@@ -601,6 +601,99 @@ public sealed class Av1EncoderRoundTripTests
         Assert.True(tools.HasFlag(Av1Tools.Palette), $"{name}: no block has a palette");
     }
 
+    [Theory]
+    [InlineData(448, 136, 8, "444", 5)]
+    [InlineData(448, 136, 8, "420", 2)]
+    [InlineData(520, 200, 10, "400", 9)]
+    [InlineData(392, 190, 12, "422", 1)]
+    public void BlocksOfALosslessScreenAreCopiedFromTheFrame(int width, int height, int bitDepth, string format, int effort)
+    {
+        var name = $"copy-{width}x{height}-{bitDepth}-{format}-e{effort}";
+        var scope = AllocationScope.Create(ImageConfiguration.Default, name);
+        var monochrome = format is "400";
+        var subsamplingX = format is "420" or "422" ? 1 : 0;
+        var subsamplingY = format is "420" ? 1 : 0;
+        var settings = new Av1EncoderSettings(width, height, bitDepth, monochrome, subsamplingX, subsamplingY, ColorPrimaries: 1, TransferCharacteristics: 13, MatrixCoefficients: format is "444" ? 0 : 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: true, Lossless: true, Quality: 100, Effort: effort);
+        var planeCount = monochrome ? 1 : 3;
+        var max = (1 << bitDepth) - 1;
+
+        // A page of samples of three values, drawn at random. It repeats every 96 samples across and every 40 samples
+        // down: no intra mode predicts it, and every block is somewhere else in the frame, at a distance that is not a
+        // whole number of superblocks. The chroma planes repeat with the luma plane. The same page without repetition
+        // is the same content for every other tool
+        var sizes = new int[2];
+        var tools = new Av1Tools[2];
+        for (var repeats = 0; repeats < 2; repeats++)
+        {
+            using var encoder = new Av1Encoder(scope, settings);
+            using var decoder = new Av1Decoder(scope);
+            var source = new ushort[planeCount][];
+            for (var plane = 0; plane < planeCount; plane++)
+            {
+                var buffer = encoder.GetSourcePlane(plane);
+                var subX = plane > 0 ? subsamplingX : 0;
+                var subY = plane > 0 ? subsamplingY : 0;
+                var (periodX, periodY) = repeats is 1 ? (96 >> subX, 40 >> subY) : (buffer.Width, buffer.Height);
+                var random = new Random(1234 + plane);
+                var page = new ushort[periodX * periodY];
+                ReadOnlySpan<int> levels = [max / 8, max - (max / 5), max / 2];
+                for (var i = 0; i < page.Length; i++)
+                {
+                    page[i] = (ushort)levels[random.Next(levels.Length)];
+                }
+
+                source[plane] = new ushort[buffer.Width * buffer.Height];
+                for (var y = 0; y < buffer.Height; y++)
+                {
+                    for (var x = 0; x < buffer.Width; x++)
+                    {
+                        source[plane][(y * buffer.Width) + x] = page[((y % periodY) * periodX) + (x % periodX)];
+                    }
+
+                    source[plane].AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+                }
+            }
+
+            encoder.BeginFrame();
+            while (!encoder.Encode(XunitCancellationToken))
+            {
+            }
+
+            var payload = encoder.Payload.ToArray();
+            sizes[repeats] = payload.Length;
+            decoder.SetInput(payload, 0, payload.Length);
+            var frame = decoder.DecodeNextOutputFrame(XunitCancellationToken);
+            Assert.NotNull(frame);
+            try
+            {
+                Assert.True(frame.Header.AllowIntrabc, $"{name}: the frame does not allow intra block copy");
+                Assert.True(frame.Header.CodedLossless);
+                for (var plane = 0; plane < planeCount; plane++)
+                {
+                    var decoded = frame.GetPlane(plane);
+                    var reconstructed = encoder.Reconstruction.GetPlane(plane);
+                    for (var y = 0; y < decoded.Height; y++)
+                    {
+                        Assert.True(reconstructed.GetRow(y).SequenceEqual(decoded.GetRow(y)), $"{name}: row {y} of plane {plane} is not the row that the encoder reconstructed");
+                        Assert.True(source[plane].AsSpan(y * decoded.Width, decoded.Width).SequenceEqual(decoded.GetRow(y)), $"{name}: row {y} of plane {plane} is not the encoded row");
+                    }
+                }
+            }
+            finally
+            {
+                frame.Release();
+            }
+
+            tools[repeats] = decoder.Tools;
+        }
+
+        // The first superblocks of the page that repeats have nothing to copy: the rest is most of the frame
+        TestContext.Current.TestOutputHelper?.WriteLine($"{name}: {sizes[0]} bytes ({tools[0]}), {sizes[1]} bytes when the page repeats ({tools[1]})");
+        Assert.False(tools[0].HasFlag(Av1Tools.IntraBlockCopy), $"{name}: a block of a page that does not repeat is a copy");
+        Assert.True(tools[1].HasFlag(Av1Tools.IntraBlockCopy), $"{name}: no block is a copy");
+        Assert.True(sizes[1] * 2 < sizes[0], $"{name}: {sizes[1]} bytes when the page repeats, {sizes[0]} bytes otherwise");
+    }
+
     [Fact]
     public void APhotographIsNotCodedWithTheToolsOfScreenContent()
     {

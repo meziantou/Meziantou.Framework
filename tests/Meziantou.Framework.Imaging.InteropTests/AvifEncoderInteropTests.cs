@@ -292,6 +292,74 @@ public sealed class AvifEncoderInteropTests
     }
 
     [Theory]
+    [InlineData(8, "444", 1, 448, 136)]
+    [InlineData(8, "444", 5, 520, 200)]
+    [InlineData(12, "444", 3, 392, 190)]
+    [InlineData(10, "400", 9, 448, 136)]
+    public async Task TheReferenceDecodersReconstructBlocksThatAreCopies(int bitDepth, string format, int effort, int width, int height)
+    {
+        // A lossless image of a screen that repeats: its blocks are copies of parts of the image that are far enough
+        // before them (intra block copy), which the two reference decoders and avifdec reconstruct as the library does
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var libavif = await RequiredTools.LibAvifAsync();
+        var dav1d = new Av1ReferenceDecoder(ffmpeg, Av1ReferenceDecoder.Dav1d);
+        var libaom = new Av1ReferenceDecoder(ffmpeg, Av1ReferenceDecoder.Libaom);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(AvifEncoderInteropTests));
+        var name = string.Create(CultureInfo.InvariantCulture, $"copies-{bitDepth}-{format}-e{effort}-{width}x{height}");
+
+        // A page of samples of three colors, drawn at random, that repeats every 96 samples across and every 40 down,
+        // with an alpha plane that repeats the same way
+        var deep = bitDepth > 8;
+        var max = deep ? 65535 : 255;
+        var random = new Random(width + bitDepth);
+        int[][] colors = [[max, max / 5 * 4, 0, max], [0, max / 5, max / 5 * 3, max], [max / 5 * 2, max, max / 5, 0]];
+        var page = new int[96 * 40];
+        for (var i = 0; i < page.Length; i++)
+        {
+            page[i] = random.Next(colors.Length);
+        }
+
+        var samples = new int[width * height * 4];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                colors[page[((y % 40) * 96) + (x % 96)]].CopyTo(samples.AsSpan(((y * width) + x) * 4, 4));
+            }
+        }
+
+        using var image = CreateImage(samples, width, height, format is "400", deep);
+        var encoder = new AvifEncoder { Effort = effort, BitDepth = bitDepth };
+        var path = await SaveAsync(image, encoder, name);
+        var reader = ReferenceAvif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        Assert.Equal(format is "400", reader.AlphaItem is null);
+        foreach (var (item, kind) in new[] { (reader.PrimaryItem, "color"), (reader.AlphaItem, "alpha") })
+        {
+            // A grayscale image has no alpha plane
+            if (item is null)
+                continue;
+
+            var payload = reader.ReadItemData(item);
+            var stream = directory / $"{name}-{kind}.obu";
+            await File.WriteAllBytesAsync(stream, [0x12, 0x00, .. payload], XunitCancellationToken);
+            var frame = Assert.Single(await dav1d.ProbeAsync(stream, XunitCancellationToken));
+            Assert.Equal((width, height), (frame.Width, frame.Height));
+            var first = Assert.Single(await dav1d.DecodeAsync(stream, frame.PixelFormat, directory / $"{name}-{kind}-dav1d", XunitCancellationToken));
+            var second = Assert.Single(await libaom.DecodeAsync(stream, frame.PixelFormat, directory / $"{name}-{kind}-libaom", XunitCancellationToken));
+            Assert.True(first.AsSpan().SequenceEqual(second), $"{name} {kind}: dav1d and libaom reconstruct different planes ({frame.PixelFormat}).");
+            var library = Assert.Single(DecodeFramesWithLibrary([payload], name, out var tools));
+            Assert.True(first.AsSpan().SequenceEqual(library), $"{name} {kind}: the reference decoders and the library reconstruct different planes ({frame.PixelFormat}; first difference at byte {first.AsSpan().CommonPrefixLength(library)} of {first.Length}).");
+            Assert.True(tools.HasFlag(Av1Tools.IntraBlockCopy), $"{name} {kind}: no block is a copy ({tools}).");
+        }
+
+        if (bitDepth is 8)
+        {
+            var decoded = Assert.Single(await libavif.DecodeAllFramesAsync(path, XunitCancellationToken));
+            AssertSamples(ImageSnapshots.CaptureFrame(image.Frames[0]), decoded.Pixels, $"{name}: decoded by avifdec {libavif.Version}");
+        }
+    }
+
+    [Theory]
     [InlineData(AvifCompression.Lossless, null)]
     [InlineData(AvifCompression.Lossless, 4)]
     [InlineData(AvifCompression.Lossy, 1)]

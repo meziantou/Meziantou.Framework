@@ -84,6 +84,11 @@ internal ref partial struct Av1TileCoder
         {
             workspace.CurrentQIndex = _header.BaseQIdx;
             ClearAboveContext();
+            if (_header.AllowIntrabc)
+            {
+                var luma = workspace.GetSource(0);
+                workspace.ResetBlockCopy(luma.Width, luma.Height);
+            }
         }
 
         _currentQIndex = workspace.CurrentQIndex;
@@ -106,6 +111,12 @@ internal ref partial struct Av1TileCoder
     private void EncodeSuperblock(int r, int c, int sbSize, int sbSize4)
     {
         var workspace = _workspace!;
+        if (_header.AllowIntrabc)
+        {
+            AddBlockCopySources(r, c);
+            FindBlockCopyCells(r, c, sbSize4);
+        }
+
         CopyContexts(workspace.SuperblockContexts, r, c, sbSize4, sbSize4, save: true);
         _recordPosition = 0;
         _sink = SymbolSink.Cost;
@@ -141,19 +152,24 @@ internal ref partial struct Av1TileCoder
         }
         else if (hasRows && hasCols)
         {
-            if (level <= _decisions.MaxBlockLevel)
+            // A block of a frame with intra block copy whose cells are copies of parts of the frame: the block as a
+            // whole is one, or it is split in four down to the blocks that are, without trying the other partitions.
+            // A large block that is mostly made of copies is not even tried as a whole
+            var copies = _header.AllowIntrabc ? GetBlockCopyState(r, c, bSize) : BlockCopyState.None;
+            var canSplit = level > _decisions.MinBlockLevel;
+            if (level <= _decisions.MaxBlockLevel && !(copies is BlockCopyState.Most && canSplit && level >= 3))
                 candidates[count++] = Av1Constants.PartitionNone;
 
-            if (level > _decisions.MinBlockLevel || count is 0)
+            if ((canSplit && copies is not BlockCopyState.Whole) || count is 0)
             {
                 candidates[count++] = Av1Constants.PartitionSplit;
-                if (_decisions.RectangularPartitions && level <= _decisions.MaxBlockLevel)
+                if (_decisions.RectangularPartitions && level <= _decisions.MaxBlockLevel && copies is BlockCopyState.None)
                 {
                     candidates[count++] = Av1Constants.PartitionHorz;
                     candidates[count++] = Av1Constants.PartitionVert;
                 }
 
-                if (_decisions.ExtendedPartitions && level <= _decisions.MaxBlockLevel && bSize > Av1Constants.Block8x8)
+                if (_decisions.ExtendedPartitions && level <= _decisions.MaxBlockLevel && bSize > Av1Constants.Block8x8 && copies is BlockCopyState.None)
                 {
                     // A half and two quarters, and four strips: a block of 8x8 samples has neither, and the block sizes
                     // that have no strips are filtered below
@@ -391,7 +407,7 @@ internal ref partial struct Av1TileCoder
     // _recordPosition. A block of an inter frame is predicted from the previous frame, unless the intra prediction costs less
     private long SearchBlock(int r, int c, int subSize, int level)
     {
-        if (_header.FrameIsIntra)
+        if (_header.FrameIsIntra && !_header.AllowIntrabc)
             return SearchIntraBlock(r, c, subSize, level);
 
         var workspace = _workspace!;
@@ -402,10 +418,15 @@ internal ref partial struct Av1TileCoder
         BeginBlock(r, c, subSize);
         CopyContexts(contexts, r, c, bw4, bh4, save: true);
         var search = new InterSearch { R = r, C = c, SubSize = subSize, Bw4 = bw4, Bh4 = bh4, Level = level, Start = start, BestCost = MaxCost };
-        SearchInterModes(ref search);
+        if (_header.FrameIsIntra)
+            SearchBlockCopy(ref search);
+        else
+            SearchInterModes(ref search);
+
         _isPredictedExactly = search.BestHasNoResidual;
 
-        // A block that the previous frame predicts without coefficient is not compared with the intra prediction
+        // A block that the previous frame, or another part of the frame, predicts without coefficient is not compared
+        // with the intra prediction
         if (!search.BestIsSkipped)
         {
             CopyContexts(contexts, r, c, bw4, bh4, save: false);
@@ -417,6 +438,12 @@ internal ref partial struct Av1TileCoder
                 var length = _recordPosition - intraStart;
                 workspace.Records.Slice(intraStart, length).CopyTo(workspace.Records[start..]);
                 _recordPosition = start + length;
+
+                // A block that a palette predicts exactly is not split, unless parts of it are copies of the frame,
+                // which cost less than the colors of their samples
+                if (_isPredictedExactly && _header.FrameIsIntra && subSize > Av1Constants.Block8x8 && GetBlockCopyState(r, c, subSize) is not BlockCopyState.None)
+                    _isPredictedExactly = false;
+
                 return intraCost;
             }
 
@@ -560,7 +587,11 @@ internal ref partial struct Av1TileCoder
         var candidateStart = search.Start + search.BestLength;
         workspace.EnsureRecords(candidateStart, RecordHeaderLength);
         CopyContexts(contexts, r, c, bw4, bh4, save: false);
-        SetInterBlockDefaults();
+        if (_header.FrameIsIntra)
+            SetCopyBlockDefaults();
+        else
+            SetInterBlockDefaults();
+
         _yMode = mode;
         _refMvIdx = refMvIdx;
         _mv[0] = mvRow;
@@ -1173,7 +1204,12 @@ internal ref partial struct Av1TileCoder
         var flags = record[RecordFlags];
         if ((flags & RecordInterFlag) is not 0)
         {
-            SetInterBlockDefaults();
+            // An inter block of an intra frame is a copy of a part of the frame
+            if (_header.FrameIsIntra)
+                SetCopyBlockDefaults();
+            else
+                SetInterBlockDefaults();
+
             _refMvIdx = record[RecordRefMvIdx];
             _mv[0] = record[RecordMvRow];
             _mv[1] = record[RecordMvCol];

@@ -148,6 +148,15 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   - The palettes of the block being coded live where the decoder has them (the scratch of the tile), and those of the
     blocks above and to the left are contexts: a candidate with a palette changes them, so they are in the context
     snapshots of a frame that has palettes, and the palettes of a block are in its record.
+  - A lossless key frame of screen content allows intra block copy (`Av1TileCoder.BlockCopy.cs`): the blocks of 8x8
+    source samples that a block may copy are in a hash table of the workspace, filled superblock by superblock with
+    the delay that `IsMvValid` requires, and a candidate is always validated by `IsMvValid`, which is the function
+    of the decoder. A copy is an inter block of an intra frame: it is searched, recorded and replayed by the code of
+    the inter blocks. Lossy frames do not copy blocks, because a frame that does has no in-loop filter.
+  - A tool is enabled at the efforts where the `avif-quality` report (`benchmarks/ImagingBenchmarks`) shows that it
+    makes its inputs smaller at equal quality, and stays out otherwise: the Limitations row of the readme lists the
+    tools that were measured and left out, with their figures. Measure before and after with the report (it takes a
+    filter on the names of its inputs), and add an input when the tool needs content that the report does not have.
   - A frame of a sequence that is not a key frame is an inter frame whose only reference is the previous frame
     (`LAST_FRAME`; every slot is refreshed by every frame). An inter block is written from the motion vector stack that
     `FindMvStack` builds, like a decoder: the stack reads which blocks of the frame are written, so the search marks

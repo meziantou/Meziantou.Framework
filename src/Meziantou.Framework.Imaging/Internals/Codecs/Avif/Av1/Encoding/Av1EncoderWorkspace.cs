@@ -40,6 +40,9 @@ internal sealed class Av1EncoderWorkspace : IDisposable
     private readonly Av1PooledArray<ushort> _pixels;
     private readonly Av1PooledArray<int> _coefficients;
     private Av1PooledArray<int>? _records;
+    private Av1PooledArray<int>? _copyHeads;
+    private Av1PooledArray<int>? _copyNext;
+    private readonly byte[] _copyCells = new byte[16 * 16];
 
     /// <summary>Rents the buffers for frames of <paramref name="width"/> x <paramref name="height"/> samples.</summary>
     /// <exception cref="ImageResourceLimitException">The buffers exceed the live-allocation limit.</exception>
@@ -80,6 +83,44 @@ internal sealed class Av1EncoderWorkspace : IDisposable
 
     /// <summary>Gets the quantizer index of the frame after the block-level deltas of the tile being encoded (<c>CurrentQIndex</c>).</summary>
     public int CurrentQIndex { get; set; }
+
+    /// <summary>The number of lists of the table of the blocks that intra block copy may copy.</summary>
+    public const int BlockCopyBuckets = 1 << 16;
+
+    /// <summary>
+    /// Gets the number of superblocks of the tile being encoded, in raster order, whose blocks are in the table of the
+    /// blocks that intra block copy may copy.
+    /// </summary>
+    public int BlockCopySuperblocks { get; set; }
+
+    /// <summary>
+    /// Gets the heads of the lists of the table of the blocks that intra block copy may copy: for each value of the hash
+    /// of a block of 8x8 luma samples, the position of the last block that was added, or -1.
+    /// </summary>
+    public Span<int> BlockCopyHeads => _copyHeads!.Span[..BlockCopyBuckets];
+
+    /// <summary>Gets, for the position of each block of the table, the position of the block that was added before it with the same hash, or -1.</summary>
+    public Span<int> BlockCopyNext => _copyNext!.Span;
+
+    /// <summary>
+    /// Gets what the search knows of each cell of 8x8 luma samples of the superblock being searched, 16 cells per row: 0
+    /// for a flat cell or a cell that is not whole in the frame, 1 for a cell that no part of the frame repeats, 2 for a
+    /// cell that is the copy of a part of the frame.
+    /// </summary>
+    public Span<byte> BlockCopyCells => _copyCells;
+
+    /// <summary>
+    /// Rents the table of the blocks that intra block copy may copy, for a luma plane of <paramref name="width"/> x
+    /// <paramref name="height"/> samples, and empties it: a tile only copies its own blocks.
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The table exceeds the live-allocation limit.</exception>
+    public void ResetBlockCopy(int width, int height)
+    {
+        _copyHeads ??= Av1PooledArray<int>.Rent(_scope, BlockCopyBuckets, clear: false, AllocationKind.Temporary);
+        _copyNext ??= Av1PooledArray<int>.Rent(_scope, (long)width * height, clear: false, AllocationKind.Temporary);
+        BlockCopyHeads.Fill(-1);
+        BlockCopySuperblocks = 0;
+    }
 
     /// <summary>Gets the decisions of the superblock being searched.</summary>
     public Span<int> Records => _records!.Span;
@@ -154,6 +195,10 @@ internal sealed class Av1EncoderWorkspace : IDisposable
         _coefficients?.Dispose();
         _records?.Dispose();
         _records = null;
+        _copyHeads?.Dispose();
+        _copyHeads = null;
+        _copyNext?.Dispose();
+        _copyNext = null;
     }
 
     // The samples of the 3 planes of the levels below: a level is a square of 4 << level luma samples

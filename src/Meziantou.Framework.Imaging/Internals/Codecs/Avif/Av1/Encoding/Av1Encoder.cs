@@ -334,6 +334,12 @@ internal sealed class Av1Encoder : IDisposable
         // A frame that is not a key frame is predicted from the frame that precedes it, which every reference slot holds:
         // the distributions it starts with are the ones that the previous frame ended with
         var isKeyFrame = _frameIndex is 0 || (_settings.KeyFrameInterval > 0 && _frameIndex % _settings.KeyFrameInterval is 0);
+        var hasFewColors = HasFewColors(_workspace.GetSource(0), _sequence.BitDepth);
+
+        // Intra block copy turns the in-loop filters off: it is for the lossless frames, which have none. A block copies
+        // samples that are five superblocks behind it: a smaller frame has none
+        var superblocks = (long)((_settings.Width + 63) >> 6) * ((_settings.Height + 63) >> 6);
+        var allowsBlockCopy = isKeyFrame && hasFewColors && _settings.Lossless && _decisions.IntraBlockCopy && superblocks > Av1Constants.IntrabcDelaySb64 + 1;
         var syntax = new Av1FrameHeader
         {
             FrameType = isKeyFrame ? Av1Constants.KeyFrame : Av1Constants.InterFrame,
@@ -341,7 +347,8 @@ internal sealed class Av1Encoder : IDisposable
             PrimaryRefFrame = isKeyFrame ? Av1Constants.PrimaryRefNone : 0,
             RefreshFrameFlags = (1 << Av1Constants.NumRefFrames) - 1,
             InterpolationFilter = Av1Constants.Eighttap,
-            AllowScreenContentTools = HasFewColors(_workspace.GetSource(0), _sequence.BitDepth),
+            AllowScreenContentTools = hasFewColors,
+            AllowIntrabc = allowsBlockCopy,
             OrderHint = _sequence.EnableOrderHint ? _frameIndex & ((1 << _sequence.OrderHintBits) - 1) : 0,
             TileColsLog2 = limits.MinLog2TileCols,
             TileRowsLog2 = Math.Max(limits.MinLog2Tiles - limits.MinLog2TileCols, 0),

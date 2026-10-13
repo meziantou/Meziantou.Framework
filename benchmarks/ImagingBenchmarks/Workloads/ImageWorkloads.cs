@@ -18,6 +18,42 @@ internal static class ImageWorkloads
         return output.Length;
     }
 
+    /// <summary>Recompresses a JPEG file as a JPEG XL file that can give it back, without decoding its pixels, and returns the size.</summary>
+    public static long Recompress(byte[] jpeg, MemoryStream output)
+    {
+        output.SetLength(0);
+        JpegXlTranscoder.RecompressJpeg(jpeg, output);
+        return output.Length;
+    }
+
+    /// <summary>Rebuilds the JPEG file a JPEG XL file was made from and returns its size.</summary>
+    public static long Reconstruct(byte[] jpegXl, MemoryStream output)
+    {
+        output.SetLength(0);
+        JpegXlTranscoder.ReconstructJpeg(jpegXl, output);
+        return output.Length;
+    }
+
+    /// <summary>
+    /// Progressive display: reads the first frame refinement after refinement into one image, as a viewer that shows every
+    /// intermediate rendering does.
+    /// </summary>
+    /// <returns>The number of refinements, the final one included.</returns>
+    public static int ReadRefinements<TPixel>(byte[] input, Image<TPixel> destination)
+        where TPixel : unmanaged
+    {
+        using var reader = Image.OpenReader<TPixel>(new MemoryStream(input, writable: false));
+        var count = 0;
+        while (reader.ReadFrameRefinementInto(destination) is { } refinement)
+        {
+            count++;
+            if (refinement.IsFinal)
+                break;
+        }
+
+        return count;
+    }
+
     /// <summary>Service-style request: decode a JPEG, resize it to fit <paramref name="size"/> (Catmull-Rom), encode a JPEG.</summary>
     public static long JpegDecodeResizeEncode(byte[] input, Size size, MemoryStream output, ImageConfiguration? configuration = null)
     {

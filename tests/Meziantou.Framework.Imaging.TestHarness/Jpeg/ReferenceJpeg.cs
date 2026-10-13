@@ -4,15 +4,23 @@ using Meziantou.Framework.Imaging.TestHarness.Pixels;
 namespace Meziantou.Framework.Imaging.TestHarness.Jpeg;
 
 /// <summary>
-/// A small reference reader for baseline JPEG files, written from ITU-T T.81 and JFIF 1.02 for encoder tests.
-/// It never uses the library under test. <see cref="Parse"/> checks the marker structure strictly: SOI first; marker
-/// segments with exact lengths and no fill bytes; only APPn, COM, DQT, DHT and SOF0 before a single SOS; 8-bit DQT tables
-/// with nonzero values; at most two DC and two AC Huffman tables (baseline) with consistent code counts; an 8-bit SOF0 with
-/// 1 or 3 components whose sampling factors are 1 to 4 and at most 10 blocks per MCU; one scan coding every component
-/// with Ss = 0, Se = 63, Ah = Al = 0 and defined tables; entropy-coded data without restart markers; EOI last with nothing
-/// after it.
+/// A small reference reader for baseline and progressive JPEG files, written from ITU-T T.81 and JFIF 1.02 for encoder
+/// tests. It never uses the library under test. <see cref="Parse"/> checks the marker structure strictly: SOI first; marker
+/// segments with exact lengths and no fill bytes; only APPn, COM, DQT, DHT and one SOF0 or SOF2 before the first SOS; 8-bit
+/// DQT tables with nonzero values; Huffman tables with consistent code counts; an 8-bit frame with 1 or 3 components whose
+/// sampling factors are 1 to 4 and at most 10 blocks per MCU; entropy-coded data without restart markers; EOI last with
+/// nothing after it. A baseline file has at most two DC and two AC Huffman tables and one scan coding every component with
+/// Ss = 0, Se = 63, Ah = Al = 0 and defined tables.
 /// </summary>
 /// <remarks>
+/// <para>
+/// A progressive file (SOF2) has several scans, with only DHT segments between them. Each scan is checked against T.81
+/// G.1.1.1: a DC scan (Ss = Se = 0) of one or more components in frame order, or an AC scan (1 &lt;= Ss &lt;= Se &lt;= 63) of
+/// one component whose DC coefficient was already coded; Ah is 0 for the first scan of a coefficient and the Al of its
+/// previous scan otherwise, with Al = Ah - 1; the table each scan needs is defined. At EOI every coefficient of every
+/// component must have been coded down to bit 0. <see cref="DecodeCoefficients"/> then decodes every scan (DC and AC,
+/// first scans and refinements, end-of-band runs) and requires each to end exactly after its last MCU.
+/// </para>
 /// <para>
 /// <see cref="DecodeCoefficients"/> decodes the entropy-coded segment (its own canonical Huffman decoding, DC prediction,
 /// run-length AC decoding) to the quantized coefficients and requires the data to end exactly after the last MCU, padded
@@ -31,6 +39,7 @@ public sealed class ReferenceJpeg
     private const byte MarkerDqt = 0xDB;
     private const byte MarkerDht = 0xC4;
     private const byte MarkerSof0 = 0xC0;
+    private const byte MarkerSof2 = 0xC2;
     private const byte MarkerCom = 0xFE;
 
     private static readonly int[] ZigZag =
@@ -44,18 +53,20 @@ public sealed class ReferenceJpeg
     private readonly int[]?[] _quantization;
     private readonly HuffmanTable?[] _dcTables;
     private readonly HuffmanTable?[] _acTables;
-    private readonly ReadOnlyMemory<byte> _entropyData;
+    private readonly IReadOnlyList<ScanData> _scans;
 
-    private ReferenceJpeg(int width, int height, IReadOnlyList<ReferenceJpegComponent> components, IReadOnlyList<ReferenceJpegSegment> segments, int[]?[] quantization, HuffmanTable?[] dcTables, HuffmanTable?[] acTables, ReadOnlyMemory<byte> entropyData)
+    private ReferenceJpeg(int width, int height, bool progressive, IReadOnlyList<ReferenceJpegComponent> components, IReadOnlyList<ReferenceJpegSegment> segments, int[]?[] quantization, HuffmanTable?[] dcTables, HuffmanTable?[] acTables, IReadOnlyList<ScanData> scans)
     {
         Width = width;
         Height = height;
+        IsProgressive = progressive;
         Components = components;
         Segments = segments;
         _quantization = quantization;
         _dcTables = dcTables;
         _acTables = acTables;
-        _entropyData = entropyData;
+        _scans = scans;
+        Scans = [.. scans.Select(scan => scan.Header)];
         MaxH = components.Max(component => component.H);
         MaxV = components.Max(component => component.V);
         McusX = (width + (8 * MaxH) - 1) / (8 * MaxH);
@@ -66,8 +77,17 @@ public sealed class ReferenceJpeg
 
     public int Height { get; }
 
-    /// <summary>Gets the frame components in frame order (with the Huffman tables selected by the scan).</summary>
+    /// <summary>Gets a value indicating whether the frame is progressive (SOF2) rather than baseline (SOF0).</summary>
+    public bool IsProgressive { get; }
+
+    /// <summary>
+    /// Gets the frame components in frame order, with the Huffman tables selected by the scan (for a progressive file, by
+    /// the first DC scan and the first AC scan of the component).
+    /// </summary>
     public IReadOnlyList<ReferenceJpegComponent> Components { get; }
+
+    /// <summary>Gets the scans in file order.</summary>
+    public IReadOnlyList<ReferenceJpegScan> Scans { get; }
 
     /// <summary>Gets every marker segment in file order (SOI, the entropy-coded data and EOI excluded).</summary>
     public IReadOnlyList<ReferenceJpegSegment> Segments { get; }
@@ -87,8 +107,8 @@ public sealed class ReferenceJpeg
     /// <summary>Gets the number of MCU rows of the interleaved scan.</summary>
     public int McusY { get; }
 
-    /// <summary>Gets the length of the entropy-coded segment (stuffed bytes included).</summary>
-    public int EntropyCodedLength => _entropyData.Length;
+    /// <summary>Gets the length of the entropy-coded segments (stuffed bytes included).</summary>
+    public int EntropyCodedLength => _scans.Sum(scan => scan.Entropy.Length);
 
     /// <summary>Gets the raw layout <see cref="DecodePixels"/> produces.</summary>
     public RawPixelLayout Layout => Components.Count == 1 ? RawPixelLayout.Gray8 : RawPixelLayout.Rgb8;
@@ -99,10 +119,10 @@ public sealed class ReferenceJpeg
     /// <summary>Gets a value indicating whether an Adobe APP14 segment is present.</summary>
     public bool HasAdobeSegment => Segments.Any(segment => segment.Marker == 0xEE && segment.Payload.Span.StartsWith("Adobe"u8));
 
-    /// <summary>Parses and validates the marker structure of a baseline JPEG file.</summary>
+    /// <summary>Parses and validates the marker structure of a baseline or progressive JPEG file.</summary>
     /// <param name="data">The file.</param>
     /// <returns>The parsed file.</returns>
-    /// <exception cref="InvalidDataException">The structure is invalid or not baseline.</exception>
+    /// <exception cref="InvalidDataException">The structure is invalid, or neither baseline nor progressive.</exception>
     public static ReferenceJpeg Parse(ReadOnlyMemory<byte> data)
     {
         var span = data.Span;
@@ -114,19 +134,46 @@ public sealed class ReferenceJpeg
         var dcTables = new HuffmanTable?[4];
         var acTables = new HuffmanTable?[4];
         (int Id, int H, int V, int Tq)[]? frame = null;
+        var progressive = false;
+        var scans = new List<ScanData>();
+
+        // Progressive: the Al of the last scan of each coefficient of each component, or -1 before its first scan
+        int[][]? approximation = null;
         var width = 0;
         var height = 0;
         var offset = 2;
         while (true)
         {
-            Require(span, offset, 4, "marker segment");
+            Require(span, offset, 2, "marker");
             if (span[offset] != 0xFF || span[offset + 1] is 0xFF or 0x00)
                 throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"Expected a marker at offset {offset} (fill bytes are not expected)."));
 
             var marker = span[offset + 1];
-            if (marker is MarkerEoi or MarkerSoi or (>= 0xD0 and <= 0xD7))
-                throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"Unexpected marker 0xFF{marker:X2} at offset {offset} before the scan."));
+            if (marker == MarkerEoi && scans.Count > 0)
+            {
+                if (offset + 2 != span.Length)
+                    throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"{span.Length - offset - 2} byte(s) follow EOI."));
 
+                if (approximation is not null)
+                {
+                    for (var c = 0; c < approximation.Length; c++)
+                    {
+                        var k = Array.FindIndex(approximation[c], al => al != 0);
+                        if (k >= 0)
+                            throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"The coefficient {k} of the component {c} is not coded down to bit 0."));
+                    }
+                }
+
+                return new ReferenceJpeg(width, height, progressive, GetComponents(frame!, scans), segments, quantization, dcTables, acTables, scans);
+            }
+
+            if (marker is MarkerEoi or MarkerSoi or (>= 0xD0 and <= 0xD7))
+                throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"Unexpected marker 0xFF{marker:X2} at offset {offset}."));
+
+            if (scans.Count > 0 && marker is not (MarkerDht or MarkerSos))
+                throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"Unexpected marker 0xFF{marker:X2} between two scans (only DHT is expected)."));
+
+            Require(span, offset, 4, "marker segment");
             var length = BinaryPrimitives.ReadUInt16BigEndian(span[(offset + 2)..]);
             if (length < 2)
                 throw new InvalidDataException("A marker segment length is below 2.");
@@ -148,21 +195,34 @@ public sealed class ReferenceJpeg
                     ParseHuffman(payload.Span, dcTables, acTables);
                     break;
 
-                case MarkerSof0:
+                case MarkerSof0 or MarkerSof2:
                     if (frame is not null)
                         throw new InvalidDataException("Several frame headers.");
 
                     (width, height, frame) = ParseFrame(payload.Span);
+                    progressive = marker == MarkerSof2;
+                    if (progressive)
+                    {
+                        approximation = new int[frame.Length][];
+                        for (var c = 0; c < frame.Length; c++)
+                        {
+                            approximation[c] = new int[64];
+                            Array.Fill(approximation[c], -1);
+                        }
+                    }
+
                     break;
 
                 case MarkerSos:
                 {
                     if (frame is null)
-                        throw new InvalidDataException("SOS before SOF0.");
+                        throw new InvalidDataException("SOS before the frame header.");
 
-                    var components = ParseScan(payload.Span, frame, quantization, dcTables, acTables);
+                    var header = approximation is null
+                        ? ParseScan(payload.Span, frame, quantization, dcTables, acTables)
+                        : ParseProgressiveScan(payload.Span, frame, quantization, dcTables, acTables, approximation);
 
-                    // Entropy-coded data: every 0xFF is followed by a stuffed 0x00, up to the next marker (which must be EOI)
+                    // Entropy-coded data: every 0xFF is followed by a stuffed 0x00, up to the next marker
                     var start = offset;
                     while (true)
                     {
@@ -183,18 +243,16 @@ public sealed class ReferenceJpeg
                         break;
                     }
 
-                    var entropy = data[start..offset];
-                    if (span[offset + 1] != MarkerEoi)
+                    // A scan uses the tables defined when it starts: later DHT segments may replace them
+                    scans.Add(new ScanData(header, [.. dcTables], [.. acTables], data[start..offset]));
+                    if (!progressive && span[offset + 1] != MarkerEoi)
                         throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"Expected EOI after the scan, found 0xFF{span[offset + 1]:X2} (a single scan without restart markers is expected)."));
 
-                    if (offset + 2 != span.Length)
-                        throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"{span.Length - offset - 2} byte(s) follow EOI."));
-
-                    return new ReferenceJpeg(width, height, components, segments, quantization, dcTables, acTables, entropy);
+                    break;
                 }
 
                 default:
-                    throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"Unexpected marker 0xFF{marker:X2} in a baseline file written by the encoder."));
+                    throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"Unexpected marker 0xFF{marker:X2} in a file written by the encoder."));
             }
         }
     }
@@ -237,39 +295,20 @@ public sealed class ReferenceJpeg
             data[c] = new int[blocksX * blocksY * 64];
         }
 
-        var reader = new BitReader(_entropyData.Span);
-        var predictions = new int[Components.Count];
-        if (Components.Count == 1)
+        foreach (var scan in _scans)
         {
-            for (var block = 0; block < sizes[0].BlocksX * sizes[0].BlocksY; block++)
-            {
-                DecodeBlock(ref reader, 0, predictions, data[0].AsSpan(block * 64, 64));
-            }
-        }
-        else
-        {
-            for (var my = 0; my < McusY; my++)
-            {
-                for (var mx = 0; mx < McusX; mx++)
-                {
-                    for (var c = 0; c < Components.Count; c++)
-                    {
-                        var component = Components[c];
-                        for (var by = 0; by < component.V; by++)
-                        {
-                            for (var bx = 0; bx < component.H; bx++)
-                            {
-                                var index = (((my * component.V) + by) * sizes[c].BlocksX) + (mx * component.H) + bx;
-                                DecodeBlock(ref reader, c, predictions, data[c].AsSpan(index * 64, 64));
-                            }
-                        }
-                    }
-                }
-            }
+            DecodeScan(scan, sizes, data);
         }
 
-        reader.EnsureEndPadding();
-        return [.. sizes.Select((size, c) => new ReferenceJpegBlocks(size.BlocksX, size.BlocksY, data[c]))];
+        return
+        [
+            .. sizes.Select((size, c) => new ReferenceJpegBlocks(size.BlocksX, size.BlocksY, data[c])
+            {
+                // The AC scans of a progressive file only code the blocks that hold samples of the component (T.81 A.2.2)
+                AcBlocksX = IsProgressive ? (GetComponentWidth(c) + 7) / 8 : size.BlocksX,
+                AcBlocksY = IsProgressive ? (GetComponentHeight(c) + 7) / 8 : size.BlocksY,
+            }),
+        ];
     }
 
     /// <summary>Gets the width of a component's sample plane: <c>ceil(X * H / Hmax)</c>.</summary>
@@ -416,8 +455,8 @@ public sealed class ReferenceJpeg
         {
             var tableClass = payload[0] >> 4;
             var id = payload[0] & 0x0F;
-            if (tableClass > 1 || id > 1)
-                throw new InvalidDataException("Baseline DHT tables are DC or AC with identifiers 0 or 1.");
+            if (tableClass > 1 || id > 3)
+                throw new InvalidDataException("DHT tables are DC or AC with identifiers 0 to 3.");
 
             if (payload.Length < 17)
                 throw new InvalidDataException("The DHT segment is truncated.");
@@ -441,7 +480,7 @@ public sealed class ReferenceJpeg
     private static (int Width, int Height, (int Id, int H, int V, int Tq)[] Components) ParseFrame(ReadOnlySpan<byte> payload)
     {
         if (payload.Length < 6 || payload[0] != 8)
-            throw new InvalidDataException("A baseline frame header has 8-bit precision.");
+            throw new InvalidDataException("The frame header must have 8-bit precision.");
 
         var height = BinaryPrimitives.ReadUInt16BigEndian(payload[1..]);
         var width = BinaryPrimitives.ReadUInt16BigEndian(payload[3..]);
@@ -470,18 +509,21 @@ public sealed class ReferenceJpeg
         return (width, height, components);
     }
 
-    private static ReferenceJpegComponent[] ParseScan(ReadOnlySpan<byte> payload, (int Id, int H, int V, int Tq)[] frame, int[]?[] quantization, HuffmanTable?[] dcTables, HuffmanTable?[] acTables)
+    private static ReferenceJpegScan ParseScan(ReadOnlySpan<byte> payload, (int Id, int H, int V, int Tq)[] frame, int[]?[] quantization, HuffmanTable?[] dcTables, HuffmanTable?[] acTables)
     {
         var count = payload.Length > 0 ? payload[0] : 0;
         if (count != frame.Length || payload.Length != 1 + (2 * count) + 3)
             throw new InvalidDataException("The scan must code every component in one interleaved scan.");
 
-        var components = new ReferenceJpegComponent[count];
+        if (dcTables[2] is not null || dcTables[3] is not null || acTables[2] is not null || acTables[3] is not null)
+            throw new InvalidDataException("Baseline DHT tables have the identifiers 0 or 1.");
+
+        var components = new ReferenceJpegScanComponent[count];
         for (var i = 0; i < count; i++)
         {
             var id = payload[1 + (2 * i)];
             var tables = payload[2 + (2 * i)];
-            var (frameId, h, v, tq) = frame[i];
+            var (frameId, _, _, tq) = frame[i];
             if (id != frameId)
                 throw new InvalidDataException("The scan components are not in frame order.");
 
@@ -490,26 +532,179 @@ public sealed class ReferenceJpeg
             if (dc > 1 || ac > 1 || dcTables[dc] is null || acTables[ac] is null || quantization[tq] is null)
                 throw new InvalidDataException("The scan refers to an undefined table.");
 
-            components[i] = new ReferenceJpegComponent(id, h, v, tq, dc, ac);
+            components[i] = new ReferenceJpegScanComponent(i, dc, ac);
         }
 
         var tail = payload[(1 + (2 * count))..];
         if (tail[0] != 0 || tail[1] != 63 || tail[2] != 0)
             throw new InvalidDataException("A baseline scan has Ss = 0, Se = 63 and Ah = Al = 0.");
 
+        return new ReferenceJpegScan(components, 0, 63, 0, 0);
+    }
+
+    private static ReferenceJpegScan ParseProgressiveScan(ReadOnlySpan<byte> payload, (int Id, int H, int V, int Tq)[] frame, int[]?[] quantization, HuffmanTable?[] dcTables, HuffmanTable?[] acTables, int[][] approximation)
+    {
+        var count = payload.Length > 0 ? payload[0] : 0;
+        if (count < 1 || count > frame.Length || payload.Length != 1 + (2 * count) + 3)
+            throw new InvalidDataException("The scan header has an invalid component count or length.");
+
+        var tail = payload[(1 + (2 * count))..];
+        int start = tail[0];
+        int end = tail[1];
+        var high = tail[2] >> 4;
+        var low = tail[2] & 0x0F;
+        if (start == 0 ? end != 0 : count != 1 || end < start || end > 63)
+            throw new InvalidDataException("A progressive scan codes the DC coefficient (Ss = Se = 0) or a band of AC coefficients of one component.");
+
+        if (low > 13 || (high != 0 && high != low + 1))
+            throw new InvalidDataException("A progressive scan has Al of at most 13 and Ah equal to 0 or Al + 1.");
+
+        var components = new ReferenceJpegScanComponent[count];
+        var previous = -1;
+        for (var i = 0; i < count; i++)
+        {
+            var id = payload[1 + (2 * i)];
+            var tables = payload[2 + (2 * i)];
+            var index = Array.FindIndex(frame, component => component.Id == id);
+            if (index <= previous)
+                throw new InvalidDataException("The scan components are unknown or not in frame order.");
+
+            previous = index;
+            var dc = tables >> 4;
+            var ac = tables & 0x0F;
+            if (dc > 3 || ac > 3 || quantization[frame[index].Tq] is null)
+                throw new InvalidDataException("The scan refers to an undefined table.");
+
+            // A DC refinement scan has no Huffman-coded symbol
+            if (start == 0 ? high == 0 && dcTables[dc] is null : acTables[ac] is null)
+                throw new InvalidDataException("The scan refers to an undefined Huffman table.");
+
+            if (start > 0 && approximation[index][0] < 0)
+                throw new InvalidDataException("An AC scan precedes the first DC scan of its component.");
+
+            for (var k = start; k <= end; k++)
+            {
+                if (approximation[index][k] != (high == 0 ? -1 : high))
+                    throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"The scan (Ah {high}, Al {low}) does not follow the previous scan of the coefficient {k} of the component {index}."));
+
+                approximation[index][k] = low;
+            }
+
+            components[i] = new ReferenceJpegScanComponent(index, dc, ac);
+        }
+
+        return new ReferenceJpegScan(components, start, end, high, low);
+    }
+
+    private static ReferenceJpegComponent[] GetComponents((int Id, int H, int V, int Tq)[] frame, List<ScanData> scans)
+    {
+        var components = new ReferenceJpegComponent[frame.Length];
+        for (var c = 0; c < frame.Length; c++)
+        {
+            var dcScan = scans.FirstOrDefault(scan => scan.Header.SpectralStart == 0 && scan.Header.Components.Any(component => component.Index == c))
+                ?? throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"No scan codes the component {c}."));
+            var acScan = scans.FirstOrDefault(scan => scan.Header.SpectralEnd > 0 && scan.Header.Components.Any(component => component.Index == c))
+                ?? throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"No scan codes the AC coefficients of the component {c}."));
+            var (id, h, v, tq) = frame[c];
+            components[c] = new ReferenceJpegComponent(id, h, v, tq, dcScan.Header.Components.First(component => component.Index == c).DcTable, acScan.Header.Components.First(component => component.Index == c).AcTable);
+        }
+
         return components;
     }
 
-    private void DecodeBlock(ref BitReader reader, int component, int[] predictions, Span<int> natural)
+    /// <summary>Decodes one scan into the block grids: the MCUs of an interleaved scan, else the blocks of the component's own grid (T.81 A.2).</summary>
+    private void DecodeScan(ScanData scan, (int BlocksX, int BlocksY)[] sizes, int[][] data)
     {
-        var dcTable = _dcTables[Components[component].DcTable]!;
-        var acTable = _acTables[Components[component].AcTable]!;
+        var header = scan.Header;
+        var reader = new BitReader(scan.Entropy.Span);
+        var predictions = new int[Components.Count];
+        var endOfBandRun = 0;
+        if (header.Components.Count == 1)
+        {
+            var selection = header.Components[0];
+            var c = selection.Index;
+            var blocksX = (GetComponentWidth(c) + 7) / 8;
+            var blocksY = (GetComponentHeight(c) + 7) / 8;
+            for (var by = 0; by < blocksY; by++)
+            {
+                for (var bx = 0; bx < blocksX; bx++)
+                {
+                    DecodeBlock(ref reader, scan, selection, predictions, ref endOfBandRun, data[c].AsSpan(((by * sizes[c].BlocksX) + bx) * 64, 64));
+                }
+            }
+        }
+        else
+        {
+            for (var my = 0; my < McusY; my++)
+            {
+                for (var mx = 0; mx < McusX; mx++)
+                {
+                    foreach (var selection in header.Components)
+                    {
+                        var c = selection.Index;
+                        var component = Components[c];
+                        for (var by = 0; by < component.V; by++)
+                        {
+                            for (var bx = 0; bx < component.H; bx++)
+                            {
+                                var index = (((my * component.V) + by) * sizes[c].BlocksX) + (mx * component.H) + bx;
+                                DecodeBlock(ref reader, scan, selection, predictions, ref endOfBandRun, data[c].AsSpan(index * 64, 64));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (endOfBandRun != 0)
+            throw new InvalidDataException("An end-of-band run passes the last block of its scan.");
+
+        reader.EnsureEndPadding();
+    }
+
+    private void DecodeBlock(ref BitReader reader, ScanData scan, ReferenceJpegScanComponent selection, int[] predictions, ref int endOfBandRun, Span<int> natural)
+    {
+        var header = scan.Header;
+        if (!IsProgressive)
+        {
+            DecodeSequentialBlock(ref reader, scan.DcTables[selection.DcTable]!, scan.AcTables[selection.AcTable]!, ref predictions[selection.Index], natural);
+        }
+        else if (header.SpectralStart == 0)
+        {
+            if (header.SuccessiveHigh == 0)
+            {
+                // DC first scan: the difference of the coefficients shifted right by Al (T.81 G.1.2.1)
+                var size = scan.DcTables[selection.DcTable]!.Decode(ref reader);
+                if (size > 11)
+                    throw new InvalidDataException("A DC category is above 11.");
+
+                predictions[selection.Index] += Extend(reader.ReadBits(size), size);
+                natural[0] = predictions[selection.Index] * (1 << header.SuccessiveLow);
+            }
+            else if (reader.ReadBits(1) == 1)
+            {
+                // DC refinement scan: the bit Al of the two's complement value
+                natural[0] |= 1 << header.SuccessiveLow;
+            }
+        }
+        else if (header.SuccessiveHigh == 0)
+        {
+            DecodeAcFirst(ref reader, scan.AcTables[selection.AcTable]!, header, ref endOfBandRun, natural);
+        }
+        else
+        {
+            DecodeAcRefinement(ref reader, scan.AcTables[selection.AcTable]!, header, ref endOfBandRun, natural);
+        }
+    }
+
+    private static void DecodeSequentialBlock(ref BitReader reader, HuffmanTable dcTable, HuffmanTable acTable, ref int prediction, Span<int> natural)
+    {
         var size = dcTable.Decode(ref reader);
         if (size > 11)
             throw new InvalidDataException("A DC category is above 11.");
 
-        predictions[component] += Extend(reader.ReadBits(size), size);
-        natural[0] = predictions[component];
+        prediction += Extend(reader.ReadBits(size), size);
+        natural[0] = prediction;
         for (var k = 1; k < 64;)
         {
             var symbol = acTable.Decode(ref reader);
@@ -536,7 +731,123 @@ public sealed class ReferenceJpeg
         }
     }
 
+    /// <summary>AC first scan (T.81 G.1.2.2): run/size codes within the band, the values scaled by <c>2^Al</c>, and EOBn codes ending a run of blocks.</summary>
+    private static void DecodeAcFirst(ref BitReader reader, HuffmanTable table, ReferenceJpegScan header, ref int endOfBandRun, Span<int> natural)
+    {
+        if (endOfBandRun > 0)
+        {
+            endOfBandRun--;
+            return;
+        }
+
+        for (var k = header.SpectralStart; k <= header.SpectralEnd;)
+        {
+            var symbol = table.Decode(ref reader);
+            var run = symbol >> 4;
+            var magnitude = symbol & 0x0F;
+            if (magnitude == 0)
+            {
+                if (run == 15)
+                {
+                    k += 16; // ZRL
+                    continue;
+                }
+
+                // EOBn: this block and the next 2^n + bits - 1 blocks have no more coefficient in the band
+                endOfBandRun = (1 << run) + reader.ReadBits(run) - 1;
+                return;
+            }
+
+            k += run;
+            if (k > header.SpectralEnd || magnitude > 10)
+                throw new InvalidDataException("An AC run passes the end of the band or a magnitude is above 10.");
+
+            natural[ZigZag[k]] = Extend(reader.ReadBits(magnitude), magnitude) * (1 << header.SuccessiveLow);
+            k++;
+        }
+    }
+
+    /// <summary>
+    /// AC refinement scan (T.81 G.1.2.3): each code gives the number of still-zero coefficients to pass and either a
+    /// coefficient that becomes nonzero (magnitude 1 at bit Al, with its sign) or nothing (ZRL, EOBn); every nonzero
+    /// coefficient passed over, including those of the blocks of an end-of-band run, has one correction bit.
+    /// </summary>
+    private static void DecodeAcRefinement(ref BitReader reader, HuffmanTable table, ReferenceJpegScan header, ref int endOfBandRun, Span<int> natural)
+    {
+        var bit = 1 << header.SuccessiveLow;
+        var k = header.SpectralStart;
+        while (endOfBandRun == 0 && k <= header.SpectralEnd)
+        {
+            var symbol = table.Decode(ref reader);
+            var run = symbol >> 4;
+            var magnitude = symbol & 0x0F;
+            var value = 0;
+            if (magnitude == 1)
+            {
+                value = reader.ReadBits(1) == 1 ? bit : -bit;
+            }
+            else if (magnitude != 0)
+            {
+                throw new InvalidDataException("A refinement scan codes a magnitude other than 1.");
+            }
+            else if (run != 15)
+            {
+                endOfBandRun = (1 << run) + reader.ReadBits(run);
+                break;
+            }
+
+            // Pass the run of zeros (16 for ZRL), correcting the nonzero coefficients on the way
+            for (; k <= header.SpectralEnd; k++)
+            {
+                ref var coefficient = ref natural[ZigZag[k]];
+                if (coefficient != 0)
+                {
+                    Correct(ref reader, ref coefficient, bit);
+                }
+                else if (run-- == 0)
+                {
+                    break;
+                }
+            }
+
+            if (magnitude == 1)
+            {
+                if (k > header.SpectralEnd)
+                    throw new InvalidDataException("An AC run passes the end of the band.");
+
+                natural[ZigZag[k]] = value;
+            }
+
+            k++;
+        }
+
+        if (endOfBandRun > 0)
+        {
+            for (; k <= header.SpectralEnd; k++)
+            {
+                ref var coefficient = ref natural[ZigZag[k]];
+                if (coefficient != 0)
+                {
+                    Correct(ref reader, ref coefficient, bit);
+                }
+            }
+
+            endOfBandRun--;
+        }
+
+        static void Correct(ref BitReader reader, ref int coefficient, int bit)
+        {
+            if (reader.ReadBits(1) == 1)
+            {
+                coefficient += coefficient > 0 ? bit : -bit;
+            }
+        }
+    }
+
     private static int Extend(int bits, int size) => size == 0 ? 0 : bits < (1 << (size - 1)) ? bits - (1 << size) + 1 : bits;
+
+    /// <summary>A scan with the Huffman tables defined when it starts and its entropy-coded data.</summary>
+    private sealed record ScanData(ReferenceJpegScan Header, HuffmanTable?[] DcTables, HuffmanTable?[] AcTables, ReadOnlyMemory<byte> Entropy);
 
     private sealed class HuffmanTable
     {

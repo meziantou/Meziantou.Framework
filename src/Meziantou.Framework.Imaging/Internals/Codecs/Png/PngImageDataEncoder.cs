@@ -22,8 +22,16 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// not (as for the decoder's inflater).
 /// </para>
 /// <para>
+/// Indexed output (color type 3) maps the pixels of each scanline to palette indexes (<see cref="PngIndexedRows"/>, only the
+/// pixels of the pass for Adam7) and packs them at the bit depth of the palette, which is only known once the palette is
+/// final (<see cref="SetIndexedLayout"/>): the buffers are sized for 8-bit indexes. The filters work on the packed bytes
+/// with a distance of one byte.
+/// </para>
+/// <para>
 /// Adaptive filtering applies the heuristic recommended by the PNG specification (section 12.8): every filter type is tried
 /// for each scanline and the one with the smallest sum of absolute signed filtered bytes is kept (ties keep the lowest type).
+/// Indexed output uses filter type 0 instead, as the same section recommends for palette images and for bit depths below 8:
+/// the difference between two indexes is unrelated to the difference between their colors.
 /// </para>
 /// </remarks>
 internal sealed class PngImageDataEncoder : IDisposable
@@ -34,12 +42,13 @@ internal sealed class PngImageDataEncoder : IDisposable
     /// <summary>The number of unfiltered scanline bytes processed per <see cref="Encode"/> call (at least one scanline).</summary>
     public const int BandBytes = 64 * 1024;
 
-    private readonly PngEncodedLayout _layout;
+    private readonly PngIndexedRows? _indexedRows;
     private readonly int _width;
     private readonly int _height;
     private readonly int _passCount;
     private readonly int _fixedFilter;
     private readonly CompressionLevel _compressionLevel;
+    private PngEncodedLayout _layout;
     private PooledBuffer? _current;
     private PooledBuffer? _previous;
     private PooledBuffer? _filtered;
@@ -63,13 +72,19 @@ internal sealed class PngImageDataEncoder : IDisposable
     /// <param name="interlaced">Whether Adam7 interlacing is used.</param>
     /// <param name="filter">The filter strategy.</param>
     /// <param name="compressionLevel">The zlib compression level.</param>
+    /// <param name="indexedRows">
+    /// The palette of indexed output (borrowed, not disposed), or <see langword="null"/> for the layout of the pixel format.
+    /// </param>
     /// <exception cref="ImageResourceLimitException">The working buffers exceed the allocation limit.</exception>
-    public PngImageDataEncoder(AllocationScope scope, PixelFormat pixelFormat, int width, int height, bool interlaced, PngFilter filter, CompressionLevel compressionLevel)
+    public PngImageDataEncoder(AllocationScope scope, PixelFormat pixelFormat, int width, int height, bool interlaced, PngFilter filter, CompressionLevel compressionLevel, PngIndexedRows? indexedRows = null)
     {
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
-        _layout = PngEncodedLayout.Get(pixelFormat);
+
+        // The bit depth of indexed output follows the palette: until it is final, the layout is the widest one
+        _indexedRows = indexedRows;
+        _layout = indexedRows is null ? PngEncodedLayout.Get(pixelFormat) : PngEncodedLayout.GetIndexed(pixelFormat, bitDepth: 8);
         _width = width;
         _height = height;
         _passCount = interlaced ? PngInterlace.PassCount : 1;
@@ -81,6 +96,7 @@ internal sealed class PngImageDataEncoder : IDisposable
             PngFilter.Up => PngFilters.Up,
             PngFilter.Average => PngFilters.Average,
             PngFilter.Paeth => PngFilters.Paeth,
+            _ when indexedRows is not null => PngFilters.None,
             _ => -1, // Adaptive
         };
 
@@ -99,7 +115,8 @@ internal sealed class PngImageDataEncoder : IDisposable
                 _trial = scope.Rent((int)rowLength + 1, AllocationKind.Temporary, clear: false);
             }
 
-            if (interlaced)
+            // One stored row for Adam7, or the indexes of a scanline before they are packed
+            if (interlaced || indexedRows is not null)
             {
                 _row = scope.Rent((int)rowLength, AllocationKind.Temporary, clear: false);
             }
@@ -119,6 +136,21 @@ internal sealed class PngImageDataEncoder : IDisposable
     /// for every emitted chunk.
     /// </summary>
     public uint NextSequenceNumber => _chunks?.SequenceNumber ?? 0;
+
+    /// <summary>Sets the layout of indexed output, once its palette is final and before the first datastream.</summary>
+    /// <param name="layout">The indexed layout.</param>
+    public void SetIndexedLayout(PngEncodedLayout layout)
+    {
+        ArgumentNullException.ThrowIfNull(layout);
+        ObjectDisposedException.ThrowIf(_chunks is null, this);
+        if (_indexedRows is null || !layout.IsIndexed)
+            throw new InvalidOperationException("Only indexed PNG output takes its layout from the palette.");
+
+        if (_started)
+            throw new InvalidOperationException("The layout cannot change during a PNG datastream.");
+
+        _layout = layout;
+    }
 
     /// <summary>Starts a new datastream emitted as <c>IDAT</c> chunks (the previous one, if any, must be complete).</summary>
     public void Start() => StartCore(frameData: false, sequenceNumber: 0);
@@ -208,10 +240,26 @@ internal sealed class PngImageDataEncoder : IDisposable
     private int EncodeScanline(scoped in PixelLease lease, ZLibStream zlib)
     {
         var bytesPerPixel = _layout.BytesPerPixel;
-        var length = _passWidth * bytesPerPixel;
+        var length = _layout.GetScanlineLength(_passWidth);
         var current = _current!.RawBuffer.AsSpan(0, length);
         var previous = _previous!.RawBuffer.AsSpan(0, length);
-        if (_passCount == 1)
+        if (_indexedRows is not null)
+        {
+            // Only the pixels of the pass are mapped; 8-bit indexes are the scanline itself
+            var (x0, y0, dx, dy) = _passCount == 1 ? (0, 0, 1, 1) : PngInterlace.GetPass(_pass);
+            var source = lease.GetRowBytes(y0 + (_passRow * dy));
+            if (_layout.BitDepth == 8)
+            {
+                _indexedRows.Map(source, x0, dx, current);
+            }
+            else
+            {
+                var indexes = _row!.RawBuffer.AsSpan(0, _passWidth);
+                _indexedRows.Map(source, x0, dx, indexes);
+                _layout.PackIndexes(indexes, current);
+            }
+        }
+        else if (_passCount == 1)
         {
             _layout.ToSamples(lease.GetRowBytes(_passRow), current);
         }
@@ -247,7 +295,8 @@ internal sealed class PngImageDataEncoder : IDisposable
             StartNextPass();
         }
 
-        return length + 1;
+        // The work of a scanline follows its pixels: a packed scanline is up to eight times shorter than its pixels
+        return (_indexedRows is null ? length : _passWidth) + 1;
     }
 
     private Span<byte> FilterAdaptive(ReadOnlySpan<byte> current, ReadOnlySpan<byte> previous, int bytesPerPixel, int length)
@@ -283,7 +332,7 @@ internal sealed class PngImageDataEncoder : IDisposable
                 continue; // empty pass: no scanline at all, not even filter bytes
 
             _passRow = 0;
-            _previous!.RawBuffer.AsSpan(0, _passWidth * _layout.BytesPerPixel).Clear();
+            _previous!.RawBuffer.AsSpan(0, _layout.GetScanlineLength(_passWidth)).Clear();
             return;
         }
     }

@@ -11,6 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The only dependency of the library: the Unicode algorithms text layout needs (properties, normalization, scripts, line breaking, bidi) -->
+    <ProjectReference Include="..\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Av1.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Avif.Tests" />

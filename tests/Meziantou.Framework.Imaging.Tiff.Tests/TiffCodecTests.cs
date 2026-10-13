@@ -1237,11 +1237,24 @@ public sealed class TiffCodecTests
         Assert.Equal(ImageFormat.Tiff, truncated.Format);
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(16, 8, 3, 6, [1, 2, 3, 4])));
 
-        // What a JPEG file cannot be either is reported for the page: here an arithmetic-coded frame (SOF9)
-        var arithmetic = (byte[])strip.Clone();
-        arithmetic[arithmetic.AsSpan().IndexOf((ReadOnlySpan<byte>)[0xFF, 0xC0]) + 1] = 0xC9;
-        var unsupported = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 6, arithmetic)));
+        // What a JPEG file cannot be either is reported for the page: here a lossless frame (SOF3)
+        var lossless = (byte[])strip.Clone();
+        lossless[lossless.AsSpan().IndexOf((ReadOnlySpan<byte>)[0xFF, 0xC0]) + 1] = 0xC3;
+        var unsupported = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 6, lossless)));
         Assert.Equal(ImageFormat.Tiff, unsupported.Format);
+        Assert.Equal("Compression: JPEG lossless", unsupported.Feature);
+
+        // And what a JPEG file can be is decoded: an arithmetic-coded datastream has the samples of the Huffman-coded one
+        var image = JpegTestImage.CreateRandom(16, 8, sampling, seed: 9);
+        using (var huffman = Image.Load(Page(16, 8, 3, 6, strip)))
+        using (var arithmetic = Image.Load(Page(16, 8, 3, 6, image.Encode(new JpegTestEncodeOptions { Arithmetic = true, RestartInterval = 1 }))))
+        {
+            Assert.Equal(GetBytes(huffman), GetBytes(arithmetic));
+        }
+
+        // A datastream of 12-bit samples is a JPEG file the library reads, but not a strip: the samples of a page are bytes
+        var deep = JpegTestImage.CreateRandom(16, 8, sampling, seed: 9, precision: 12).Encode();
+        Assert.Equal("Compression: JPEG 12-bit precision", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 6, deep))).Feature);
 
         // JPEG stores 8-bit samples without alpha, no palette indexes, and YCbCr samples as JFIF defines them
         Assert.Equal("Compression: JPEG with 16-bit samples", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 2, strip, bitsPerSample: 16))).Feature);

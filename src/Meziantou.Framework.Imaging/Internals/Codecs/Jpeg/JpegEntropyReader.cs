@@ -6,7 +6,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// The bit reader of one entropy-coded segment (the data between two restart markers, ITU-T T.81 section F.2.2.5). The
 /// decoder pushes the segment bytes (byte stuffing already removed) as the container walker delivers them; the reader keeps
-/// them in a bounded buffer and serves bits most significant first.
+/// them in a bounded buffer and serves bits most significant first to the Huffman decoders, or whole bytes to the
+/// arithmetic decoder (<see cref="ReadByteOrZero"/>).
 /// </summary>
 /// <remarks>
 /// While the end of the segment is unknown, the decoder only decodes an MCU when <see cref="AvailableBytes"/> covers the
@@ -72,6 +73,17 @@ internal sealed class JpegEntropyReader : IDisposable
         _bitCount = 0;
         _paddingBits = 0;
         _endOfSegment = false;
+    }
+
+    /// <summary>
+    /// Reads the next byte of the segment for the arithmetic decoder, or zero after its end: the decoder is fed zero bytes
+    /// once the marker that ends the segment is met (T.81 D.2.6), so this never fails.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int ReadByteOrZero()
+    {
+        Debug.Assert(_bitCount == 0);
+        return _start < _end ? _data[_start++] : 0;
     }
 
     /// <summary>Decodes one Huffman-coded symbol.</summary>

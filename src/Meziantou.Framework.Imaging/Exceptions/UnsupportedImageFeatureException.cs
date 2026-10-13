@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Imaging;
 
 /// <summary>
-/// The exception thrown when valid content uses a feature this version does not support (for example an arithmetic-coded
+/// The exception thrown when valid content uses a feature this version does not support (for example a lossless
 /// JPEG or a GIF plain-text extension), or when an operation would lose information (animation, alpha, precision,
 /// metadata, color profile) and no explicit policy allows the loss.
 /// </summary>
@@ -31,7 +31,7 @@ public class UnsupportedImageFeatureException : ImageException
     /// <summary>Initializes a new instance of the <see cref="UnsupportedImageFeatureException"/> class for a specific format and feature.</summary>
     /// <param name="message">The error message.</param>
     /// <param name="format">The format involved, or <see cref="ImageFormat.Unknown"/> for format-independent conversions.</param>
-    /// <param name="feature">A short, stable, human-readable feature name (for example <c>"JPEG arithmetic coding"</c>).</param>
+    /// <param name="feature">A short, stable, human-readable feature name (for example <c>"JPEG lossless"</c>).</param>
     public UnsupportedImageFeatureException(string? message, ImageFormat format, string? feature)
         : base(message)
     {

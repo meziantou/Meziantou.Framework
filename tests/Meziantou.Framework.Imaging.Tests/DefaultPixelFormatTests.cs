@@ -64,7 +64,13 @@ public sealed class DefaultPixelFormatTests
     public void GifAndJpegDefaults()
     {
         Assert.Equal(PixelFormat.Rgba32, DefaultPixelFormats.Gif);
-        Assert.Equal(PixelFormat.Gray8, DefaultPixelFormats.ForJpeg(1));
-        Assert.Equal(PixelFormat.Rgb24, DefaultPixelFormats.ForJpeg(3));
+        Assert.Equal(PixelFormat.Gray8, DefaultPixelFormats.ForJpeg(1, precision: 8));
+        Assert.Equal(PixelFormat.Rgb24, DefaultPixelFormats.ForJpeg(3, precision: 8));
+        Assert.Equal(PixelFormat.Rgb24, DefaultPixelFormats.ForJpeg(4, precision: 8));
+
+        // No 16-bit RGB format: deep color samples are opaque RGBA
+        Assert.Equal(PixelFormat.Gray16, DefaultPixelFormats.ForJpeg(1, precision: 12));
+        Assert.Equal(PixelFormat.Rgba64, DefaultPixelFormats.ForJpeg(3, precision: 12));
+        Assert.Equal(PixelFormat.Rgba64, DefaultPixelFormats.ForJpeg(4, precision: 12));
     }
 }

@@ -27,6 +27,8 @@ internal sealed class JpegXlCodestreamWalker : IDisposable
     private bool _previewPending;
     private bool _attemptNeeded;
     private long _payloadRemaining;
+    private long[] _checkpoints = [];
+    private int _nextCheckpoint;
     private bool _bufferPayload;
 
     public JpegXlCodestreamWalker(AllocationScope scope, InputResourceTracker tracker)
@@ -80,8 +82,26 @@ internal sealed class JpegXlCodestreamWalker : IDisposable
             throw new InvalidOperationException("No frame header was reported.");
 
         _bufferPayload = buffer;
+        _checkpoints = [];
+        _nextCheckpoint = 0;
         Payload?.Dispose();
         Payload = buffer ? new WebPPayloadBuffer(_scope, Toc.TotalLength) : null;
+    }
+
+    /// <summary>
+    /// Asks to be told when the payload of the frame that was begun reaches some lengths: <see cref="Feed"/> then stops at
+    /// each of them and returns <see cref="JpegXlCodestreamEvent.PayloadCheckpoint"/>, whatever the size of the pieces it is
+    /// given.
+    /// </summary>
+    /// <param name="checkpoints">The lengths, in increasing order, each above zero and below the length of the payload.</param>
+    public void SetPayloadCheckpoints(long[] checkpoints)
+    {
+        ArgumentNullException.ThrowIfNull(checkpoints);
+        if (_phase != Phase.FramePayload || !_bufferPayload)
+            throw new InvalidOperationException("The payload of no frame is being buffered.");
+
+        _checkpoints = checkpoints;
+        _nextCheckpoint = 0;
     }
 
     /// <summary>Releases the sections of the current frame.</summary>
@@ -146,10 +166,15 @@ internal sealed class JpegXlCodestreamWalker : IDisposable
 
     private JpegXlCodestreamEvent FeedPayload(ReadOnlySpan<byte> data, ref int consumed)
     {
+        // The payload is taken up to the next checkpoint, then up to its end
+        var total = Toc!.TotalLength;
+        var limit = _nextCheckpoint < _checkpoints.Length ? _checkpoints[_nextCheckpoint] : total;
+        var allowed = limit - (total - _payloadRemaining);
+
         // The bytes received with the headers come first
-        if (_pending.Length > 0 && _payloadRemaining > 0)
+        if (_pending.Length > 0 && allowed > 0)
         {
-            var count = (int)Math.Min(_pending.Length, _payloadRemaining);
+            var count = (int)Math.Min(_pending.Length, allowed);
             if (_bufferPayload)
             {
                 Payload!.Append(_pending.Span[..count]);
@@ -157,11 +182,12 @@ internal sealed class JpegXlCodestreamWalker : IDisposable
 
             _pending.Discard(count);
             _payloadRemaining -= count;
+            allowed -= count;
         }
 
-        if (_payloadRemaining > 0 && !data.IsEmpty)
+        if (allowed > 0 && !data.IsEmpty)
         {
-            var count = (int)Math.Min(data.Length, _payloadRemaining);
+            var count = (int)Math.Min(data.Length, allowed);
             if (_bufferPayload)
             {
                 Payload!.Append(data[..count]);
@@ -169,6 +195,13 @@ internal sealed class JpegXlCodestreamWalker : IDisposable
 
             consumed = count;
             _payloadRemaining -= count;
+            allowed -= count;
+        }
+
+        if (allowed == 0 && limit < total)
+        {
+            _nextCheckpoint++;
+            return JpegXlCodestreamEvent.PayloadCheckpoint;
         }
 
         if (_payloadRemaining > 0)

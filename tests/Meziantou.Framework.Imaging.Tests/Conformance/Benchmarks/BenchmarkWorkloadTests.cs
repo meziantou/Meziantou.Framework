@@ -317,6 +317,48 @@ public sealed class BenchmarkWorkloadTests
     }
 
     [Fact]
+    public void JpegXlWorkloadsGiveBackTheirInputsAndTheirGatesRejectWrongResults()
+    {
+        // Transcoding: the JPEG file of the service request is recompressed, and rebuilt byte for byte
+        using var output = new MemoryStream();
+        Assert.True(ImageWorkloads.Recompress(BenchmarkInputs.ServiceJpeg, output) < BenchmarkInputs.ServiceJpeg.Length);
+        var recompressed = output.ToArray();
+        Assert.Equal(ImageFormat.JpegXl, Image.DetectFormat(recompressed));
+        Assert.Equal(BenchmarkInputs.ServiceJpeg.Length, ImageWorkloads.Reconstruct(recompressed, output));
+        Assert.Equal(BenchmarkInputs.ServiceJpeg, output.ToArray());
+
+        // Progressive output: the pixels of the file written in one pass, or exactly the source for lossless output
+        const int Width = 320;
+        const int Height = 240;
+        var source = ToRgb24(BenchmarkPixels.Rgb24(Width, Height, seed: 5));
+        using var image = Image.ImportPixelData<Rgb24>(source, Width, Height);
+        ImageWorkloads.Encode(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy }, output);
+        var single = output.ToArray();
+        ImageWorkloads.Encode(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Progressive = true }, output);
+        var progressive = output.ToArray();
+        ImageWorkloads.Encode(image, new JpegXlEncoder { Progressive = true }, output);
+        var lossless = output.ToArray();
+        WorkloadChecks.RequireLossless(lossless, source);
+        WorkloadChecks.RequireSamePixels<Rgb24>(single, progressive);
+        var refinements = WorkloadChecks.RequireRefinements<Rgb24>(progressive, minimum: 3);
+
+        // The workload renders every refinement into one image, which ends as the image that is loaded at once
+        using var destination = new Image<Rgb24>(Width, Height);
+        Assert.Equal(refinements, ImageWorkloads.ReadRefinements(progressive, destination));
+        using var expected = Image.Load<Rgb24>(progressive);
+        var pixels = new Rgb24[Width * Height];
+        var others = new Rgb24[Width * Height];
+        expected.Frames[0].CopyPixelDataTo(pixels);
+        destination.Frames[0].CopyPixelDataTo(others);
+        Assert.Equal(pixels, others);
+
+        // Other pixels, or a file that is not read in as many refinements, fail
+        Assert.Throws<InvalidOperationException>(() => WorkloadChecks.RequireSamePixels<Rgb24>(single, lossless));
+        Assert.Throws<InvalidOperationException>(() => WorkloadChecks.RequireRefinements<Rgb24>(progressive, refinements + 1));
+        Assert.Throws<InvalidOperationException>(() => WorkloadChecks.RequireRefinements<Rgb24>(single, refinements));
+    }
+
+    [Fact]
     public void TheBenchmarkSetupGatesAcceptTheInputsAndRejectWrongResults()
     {
         // The gates run by the benchmarks' global setups (before any timed region)

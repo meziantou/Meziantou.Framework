@@ -9,11 +9,20 @@ namespace Meziantou.Framework.Imaging.TestHarness.Png;
 /// A small reference PNG reader written from the W3C PNG specification for encoder tests. It never
 /// uses the library under test: it checks the container strictly (signature, chunk lengths, a bitwise CRC-32 of every chunk,
 /// IHDR first with legal fields, consecutive IDAT chunks, IEND last with nothing after it, critical chunks limited to IHDR,
-/// IDAT and IEND), and decodes the non-palette 8- and 16-bit color types (inflation by the BCL, the five filters, Adam7) to
-/// raw buffers in explicit layouts. Metadata fields are read with <see cref="Fixtures.EncodedFieldInspector"/>.
+/// IDAT and IEND, plus PLTE for the indexed color type only), and decodes the 8- and 16-bit color types and the indexed
+/// color type at every bit depth (inflation by the BCL, the five filters, Adam7) to raw buffers in explicit layouts.
+/// Metadata fields are read with <see cref="Fixtures.EncodedFieldInspector"/>.
 /// </summary>
 /// <remarks>
-/// APNG files (an <c>acTL</c> chunk) are validated against the APNG rules of the PNG specification (third edition, section
+/// <para>
+/// Indexed files (color type 3) are validated against the palette rules of the PNG specification (sections 5.6, 11.2.3
+/// and 11.3.2.1): exactly one <c>PLTE</c> before the first <c>IDAT</c>, holding 1 to <c>2^bit depth</c> entries of three
+/// bytes; at most one <c>tRNS</c>, after <c>PLTE</c> and before <c>IDAT</c>, with at most one alpha value per palette entry;
+/// <c>iCCP</c>, <c>sRGB</c>, <c>gAMA</c>, <c>cHRM</c> and <c>sBIT</c> before <c>PLTE</c>. Their pixels are expanded through
+/// the palette to 8-bit RGBA (opaque for the entries without an alpha value); an index beyond the palette is an error.
+/// A <c>PLTE</c> chunk in a file of another color type is rejected: the encoder under test never writes a suggested palette.
+/// </para>
+/// <para>/// APNG files (an <c>acTL</c> chunk) are validated against the APNG rules of the PNG specification (third edition, section
 /// 11.3.6 and the APNG frame rules): one <c>acTL</c> before the first <c>IDAT</c> with a frame count of 1 to 2^31 - 1 and a
 /// play count of at most 2^31 - 1; <c>fcTL</c> and <c>fdAT</c> sequence numbers consecutive from 0 across both chunk types;
 /// at most one <c>fcTL</c> before <c>IDAT</c>, covering the canvas at offset 0; frame regions non-empty and inside the
@@ -23,6 +32,7 @@ namespace Meziantou.Framework.Imaging.TestHarness.Png;
 /// produced for full-canvas <c>SOURCE</c> frames (<see cref="DecodeDisplayedFrame"/>), whose displayed image is the frame
 /// data whatever the previous frames and disposals: the reader deliberately has no compositor, so it checks encoder
 /// output without depending on compositing.
+/// </para>
 /// </remarks>
 public sealed class ReferencePng
 {
@@ -31,6 +41,8 @@ public sealed class ReferencePng
 
     private ReferencePng(int width, int height, byte bitDepth, byte colorType, byte interlaceMethod, IReadOnlyList<ReferencePngChunk> chunks, ReferenceApngAnimation? animation)
     {
+        Palette = chunks.FirstOrDefault(chunk => chunk.Type == "PLTE")?.Data ?? ReadOnlyMemory<byte>.Empty;
+        Transparency = colorType == 3 ? chunks.FirstOrDefault(chunk => chunk.Type == "tRNS")?.Data ?? ReadOnlyMemory<byte>.Empty : ReadOnlyMemory<byte>.Empty;
         Width = width;
         Height = height;
         BitDepth = bitDepth;
@@ -49,8 +61,14 @@ public sealed class ReferencePng
 
     public byte BitDepth { get; }
 
-    /// <summary>Gets the IHDR color type: 0 gray, 2 RGB, 4 gray+alpha, 6 RGBA.</summary>
+    /// <summary>Gets the IHDR color type: 0 gray, 2 RGB, 3 indexed, 4 gray+alpha, 6 RGBA.</summary>
     public byte ColorType { get; }
+
+    /// <summary>Gets the palette of an indexed file: three bytes (red, green, blue) per entry. Empty for the other color types.</summary>
+    public ReadOnlyMemory<byte> Palette { get; }
+
+    /// <summary>Gets the alpha values of the first palette entries of an indexed file (the <c>tRNS</c> data). Empty without <c>tRNS</c>.</summary>
+    public ReadOnlyMemory<byte> Transparency { get; }
 
     /// <summary>Gets the IHDR interlace method: 0 none, 1 Adam7.</summary>
     public byte InterlaceMethod { get; }
@@ -67,6 +85,7 @@ public sealed class ReferencePng
         (0, 8) => RawPixelLayout.Gray8,
         (0, 16) => RawPixelLayout.Gray16Le,
         (2, 8) => RawPixelLayout.Rgb8,
+        (3, _) => RawPixelLayout.Rgba8,
         (4, 8) => RawPixelLayout.GrayAlpha8,
         (4, 16) => RawPixelLayout.GrayAlpha16Le,
         (6, 8) => RawPixelLayout.Rgba8,
@@ -111,7 +130,7 @@ public sealed class ReferencePng
             if (chunks.Count == 0 && type != "IHDR")
                 throw new InvalidDataException("The first chunk is not IHDR.");
 
-            if (char.IsUpper(type[0]) && type is not ("IHDR" or "IDAT" or "IEND"))
+            if (char.IsUpper(type[0]) && type is not ("IHDR" or "IDAT" or "IEND" or "PLTE"))
                 throw new InvalidDataException($"Unexpected critical chunk '{type}'.");
 
             if (type == "IHDR" && chunks.Count != 0)
@@ -164,6 +183,7 @@ public sealed class ReferencePng
         if (!legal || header[10] != 0 || header[11] != 0 || header[12] > 1)
             throw new InvalidDataException("Invalid IHDR fields.");
 
+        ValidatePalette(chunks, colorType: header[9], bitDepth: header[8]);
         var animation = ParseAnimation(chunks, (int)width, (int)height);
         return new ReferencePng((int)width, (int)height, header[8], header[9], header[12], chunks, animation);
     }
@@ -207,6 +227,51 @@ public sealed class ReferencePng
             throw new InvalidOperationException("The file has no separate poster: its IDAT image is frame zero, or it is a static PNG.");
 
         return DecodePixels();
+    }
+
+    private static void ValidatePalette(List<ReferencePngChunk> chunks, byte colorType, byte bitDepth)
+    {
+        var palettes = chunks.Where(chunk => chunk.Type == "PLTE").ToList();
+        if (colorType != 3)
+        {
+            if (palettes.Count > 0)
+                throw new InvalidDataException("Unexpected critical chunk 'PLTE' in a file that is not indexed.");
+
+            return;
+        }
+
+        if (palettes.Count != 1)
+            throw new InvalidDataException($"An indexed PNG has exactly one PLTE chunk; the file has {palettes.Count}.");
+
+        var firstIdat = chunks.FindIndex(chunk => chunk.Type == "IDAT");
+        var paletteIndex = chunks.IndexOf(palettes[0]);
+        if (paletteIndex > firstIdat)
+            throw new InvalidDataException("PLTE after the first IDAT.");
+
+        var length = palettes[0].Data.Length;
+        var entries = length / 3;
+        if (length % 3 != 0 || entries == 0 || entries > 1 << bitDepth)
+            throw new InvalidDataException($"A PLTE chunk of {length} bytes is invalid at bit depth {bitDepth}.");
+
+        var transparencies = chunks.Where(chunk => chunk.Type == "tRNS").ToList();
+        if (transparencies.Count > 1)
+            throw new InvalidDataException("Duplicate tRNS.");
+
+        if (transparencies.Count == 1)
+        {
+            var transparencyIndex = chunks.IndexOf(transparencies[0]);
+            if (transparencyIndex < paletteIndex || transparencyIndex > firstIdat)
+                throw new InvalidDataException("tRNS must follow PLTE and precede the first IDAT.");
+
+            if (transparencies[0].Data.Length == 0 || transparencies[0].Data.Length > entries)
+                throw new InvalidDataException($"A tRNS chunk of {transparencies[0].Data.Length} bytes is invalid for a palette of {entries} entries.");
+        }
+
+        for (var i = paletteIndex + 1; i < chunks.Count; i++)
+        {
+            if (chunks[i].Type is "iCCP" or "sRGB" or "gAMA" or "cHRM" or "sBIT")
+                throw new InvalidDataException($"{chunks[i].Type} after PLTE.");
+        }
     }
 
     private static ReferenceApngAnimation? ParseAnimation(List<ReferencePngChunk> chunks, int width, int height)
@@ -379,13 +444,30 @@ public sealed class ReferencePng
     /// <exception cref="InvalidDataException">The image data is invalid (zlib error, wrong length, invalid filter type).</exception>
     public RawPixelBuffer DecodePixels() => DecodeDatastream(GetImageData(), Width, Height);
 
-    private RawPixelBuffer DecodeDatastream(byte[] zlib, int width, int height)
+    /// <summary>
+    /// Gets a value indicating whether the unused low-order bits of the last byte of every scanline of the <c>IDAT</c> image
+    /// are zero (always <see langword="true"/> when the pixels fill whole bytes). The specification does not require it of a
+    /// file, but an encoder should not leak arbitrary bits.
+    /// </summary>
+    /// <returns><see langword="true"/> when every padding bit is zero.</returns>
+    public bool ArePaddingBitsZero()
+    {
+        _ = DecodeDatastream(GetImageData(), Width, Height, out var paddingBitsAreZero);
+        return paddingBitsAreZero;
+    }
+
+    private RawPixelBuffer DecodeDatastream(byte[] zlib, int width, int height) => DecodeDatastream(zlib, width, height, out _);
+
+    private RawPixelBuffer DecodeDatastream(byte[] zlib, int width, int height, out bool paddingBitsAreZero)
     {
         var layout = Layout;
         var bytesPerPixel = layout.BytesPerPixel;
+        var isIndexed = ColorType == 3;
+        var filterDistance = isIndexed ? 1 : bytesPerPixel;
         var inflated = Inflate(zlib);
         var pixels = new byte[width * height * bytesPerPixel];
         var offset = 0;
+        paddingBitsAreZero = true;
         var passes = InterlaceMethod == 0 ? [(0, 0, 1, 1)] : Adam7;
         foreach (var (x0, y0, dx, dy) in passes)
         {
@@ -394,7 +476,7 @@ public sealed class ReferencePng
             if (passWidth == 0 || passHeight == 0)
                 continue;
 
-            var rowLength = passWidth * bytesPerPixel;
+            var rowLength = GetScanlineLength(passWidth);
             var previous = new byte[rowLength];
             for (var row = 0; row < passHeight; row++)
             {
@@ -404,11 +486,24 @@ public sealed class ReferencePng
                 var filter = inflated[offset];
                 var current = inflated.AsSpan(offset + 1, rowLength).ToArray();
                 offset += 1 + rowLength;
-                Unfilter(filter, current, previous, bytesPerPixel);
+                Unfilter(filter, current, previous, filterDistance);
                 for (var i = 0; i < passWidth; i++)
                 {
                     var target = ((((y0 + (row * dy)) * width) + x0 + (i * dx)) * bytesPerPixel);
-                    current.AsSpan(i * bytesPerPixel, bytesPerPixel).CopyTo(pixels.AsSpan(target));
+                    if (isIndexed)
+                    {
+                        ExpandPaletteIndex(ReadPackedSample(current, i), pixels.AsSpan(target, 4));
+                    }
+                    else
+                    {
+                        current.AsSpan(i * bytesPerPixel, bytesPerPixel).CopyTo(pixels.AsSpan(target));
+                    }
+                }
+
+                var usedBits = passWidth * BitDepth;
+                if (isIndexed && usedBits % 8 != 0 && (current[^1] & (0xFF >> (usedBits % 8))) != 0)
+                {
+                    paddingBitsAreZero = false;
                 }
 
                 previous = current;
@@ -430,11 +525,34 @@ public sealed class ReferencePng
         return RawPixelBuffer.Create(width, height, layout, pixels);
     }
 
+    /// <summary>Gets the length of the scanline of a row of pixels, without its filter type byte.</summary>
+    private int GetScanlineLength(int passWidth) => ColorType == 3 ? ((passWidth * BitDepth) + 7) / 8 : passWidth * Layout.BytesPerPixel;
+
+    /// <summary>Reads a sample of less than eight bits: the leftmost pixel is in the high-order bits of a byte.</summary>
+    private int ReadPackedSample(byte[] scanline, int index)
+    {
+        if (BitDepth == 8)
+            return scanline[index];
+
+        var bit = index * BitDepth;
+        return (scanline[bit / 8] >> (8 - BitDepth - (bit % 8))) & ((1 << BitDepth) - 1);
+    }
+
+    private void ExpandPaletteIndex(int index, Span<byte> pixel)
+    {
+        var palette = Palette.Span;
+        if (index >= palette.Length / 3)
+            throw new InvalidDataException($"The palette index {index} is outside the {palette.Length / 3} PLTE entries.");
+
+        palette.Slice(index * 3, 3).CopyTo(pixel);
+        var transparency = Transparency.Span;
+        pixel[3] = index < transparency.Length ? transparency[index] : byte.MaxValue;
+    }
+
     /// <summary>Gets the filter type byte of every scanline, in datastream order.</summary>
     /// <returns>The filter types.</returns>
     public IReadOnlyList<byte> GetFilterTypes()
     {
-        var bytesPerPixel = Layout.BytesPerPixel;
         var inflated = Inflate(GetImageData());
         var result = new List<byte>();
         var offset = 0;
@@ -449,7 +567,7 @@ public sealed class ReferencePng
             for (var row = 0; row < passHeight; row++)
             {
                 result.Add(inflated[offset]);
-                offset += 1 + (passWidth * bytesPerPixel);
+                offset += 1 + GetScanlineLength(passWidth);
             }
         }
 

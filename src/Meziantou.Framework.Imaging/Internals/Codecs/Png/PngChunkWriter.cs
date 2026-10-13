@@ -17,6 +17,8 @@ internal static class PngChunkWriter
     public const uint Ihdr = 0x49484452;
     public const uint Idat = 0x49444154;
     public const uint Iend = 0x49454E44;
+    public const uint Plte = 0x504C5445;
+    public const uint Trns = 0x74524E53;
     public const uint Phys = 0x70485973;
     public const uint Iccp = 0x69434350;
     public const uint Exif = 0x65584966;

@@ -1,6 +1,8 @@
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
+using Meziantou.Framework.Imaging.TestHarness.Png;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
 
 namespace Meziantou.Framework.Imaging.Tests.Conformance.Hardening;
@@ -143,6 +145,14 @@ public sealed partial class FaultInjectionTests
             case "png":
                 encoder = new PngEncoder { MetadataHandling = MetadataHandling.Strip };
                 return image;
+            case "png-indexed":
+                // The palette pass of every image before the header, then the mapping and the packing of the rows
+                encoder = new PngEncoder { MetadataHandling = MetadataHandling.Strip, PixelLayout = PngPixelLayout.Indexed, Interlaced = true };
+                if (CanStoreIndexed(image))
+                    return image;
+
+                image.Dispose();
+                return null;
             case "gif":
                 encoder = new GifEncoder { MetadataHandling = MetadataHandling.Strip, AlphaMode = GifAlphaMode.Threshold };
                 image.RemovePosterFrame();
@@ -167,7 +177,18 @@ public sealed partial class FaultInjectionTests
 
                 return image;
             case "jxl":
-                encoder = new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip };
+            case "jxl-lossy":
+            case "jxl-progressive":
+                encoder = encoderName switch
+                {
+                    "jxl" => new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip },
+
+                    // The fastest search of the lossy coding, in three passes: the test encodes each input once per rental
+                    "jxl-lossy" => new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip, Compression = JpegXlCompression.Lossy, Progressive = true, Effort = 0 },
+
+                    // The lossless coding of a squeezed image, whose resolutions are spread over the sections of the frame
+                    _ => new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip, Progressive = true, Effort = 0 },
+                };
                 image.RemovePosterFrame();
                 if (image.Frames.Count > 1)
                 {
@@ -210,13 +231,29 @@ public sealed partial class FaultInjectionTests
                 image.Dispose();
                 return null;
             default:
-                encoder = new JpegEncoder { MetadataHandling = MetadataHandling.Strip, BackgroundColor = new Rgba64(65535, 65535, 65535, 65535), AllowBitDepthReduction = true };
+                // The progressive process keeps the coefficients of the image and codes each scan in two passes
+                encoder = new JpegEncoder { MetadataHandling = MetadataHandling.Strip, BackgroundColor = new Rgba64(65535, 65535, 65535, 65535), AllowBitDepthReduction = true, Process = encoderName == "jpeg-progressive" ? JpegEncodingProcess.Progressive : JpegEncodingProcess.Baseline };
                 if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated)
                     return image;
 
                 image.Dispose();
                 return null;
         }
+    }
+
+    /// <summary>
+    /// Whether an exact palette can hold the image, both for an eager save (one palette for every frame and the poster) and
+    /// for the sequential writes of this suite (the palette of frame zero, which every later frame must then use).
+    /// </summary>
+    private static bool CanStoreIndexed(Image image)
+    {
+        var frames = Enumerable.Range(0, image.Frames.Count).Select(index => ImageSnapshots.CaptureFrame(image.Frames[index])).ToList();
+        var stills = image.PosterFrame is { } poster ? frames.Append(ImageSnapshots.CaptureFrame(poster)) : frames;
+        if (!IndexedPngExpectation.Create(stills).IsStorable)
+            return false;
+
+        var first = IndexedPngExpectation.Create(frames[0]).ColorCount;
+        return frames.Skip(1).All(frame => IndexedPngExpectation.Create(frames[0], frame).ColorCount == first);
     }
 
     private static ImageWriter<Rgba32> CreateWriter(string path, Image image, ImageEncoder encoder)
@@ -227,7 +264,7 @@ public sealed partial class FaultInjectionTests
 
     private static ImageWriterOptions WriterOptions(Image image, ImageEncoder encoder) => new(image.Size)
     {
-        Encoder = encoder is PngEncoder png && image.Frames.Count > 1 ? new PngEncoder { AnimationMode = PngAnimationMode.Animated, MetadataHandling = png.MetadataHandling } : encoder,
+        Encoder = encoder is PngEncoder png && image.Frames.Count > 1 ? new PngEncoder { AnimationMode = PngAnimationMode.Animated, MetadataHandling = png.MetadataHandling, PixelLayout = png.PixelLayout, Interlaced = png.Interlaced } : encoder,
         ExpectedFrameCount = encoder is GifEncoder ? null : image.Frames.Count,
     };
 

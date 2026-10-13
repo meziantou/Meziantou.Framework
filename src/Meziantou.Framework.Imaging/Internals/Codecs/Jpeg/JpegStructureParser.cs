@@ -14,21 +14,25 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><description>Full scan: walks every scan to EOI; metadata after the first scan (for example COM) is included.</description></item>
 /// <item><description>Decode: like a full scan, with every segment and entropy-coded byte delivered to a <see cref="JpegDecodeObserver"/>.</description></item>
 /// </list>
-/// Supported: 8-bit baseline (SOF0), extended sequential Huffman (SOF1) and progressive Huffman (SOF2) frames with 1, 3
-/// or 4 components (a 4-component frame is CMYK or YCCK: it is identified here, and decoded only with a color conversion,
-/// see <see cref="JpegDecoder"/>). Recognized and rejected with <see cref="UnsupportedImageFeatureException"/>: lossless
-/// (SOF3), hierarchical (SOF5-7, SOF13-15, DHP, EXP), arithmetic coding (SOF9-11, DAC), JPEG-LS, 12/16-bit precision,
-/// DNL-defined heights, other component counts and sampling factors that do not divide the largest factors.
+/// Supported: baseline (SOF0), extended sequential (SOF1, or SOF9 with arithmetic coding) and progressive (SOF2, or
+/// SOF10 with arithmetic coding) frames of 8-bit or
+/// 12-bit samples with 1, 3 or 4 components (a 4-component frame is CMYK or YCCK: it is identified here, and decoded only
+/// with a color conversion, see <see cref="JpegDecoder"/>). A baseline frame only has 8-bit samples by definition; a
+/// 12-bit one is read as an extended sequential frame, as common decoders do. Recognized and rejected with
+/// <see cref="UnsupportedImageFeatureException"/>: lossless (SOF3, SOF11), hierarchical (SOF5-7, SOF13-15, DHP, EXP),
+/// JPEG-LS, other precisions than 8 and 12 bits, DNL-defined heights, other component counts and sampling factors that do not divide the largest factors.
 /// Malformed or misplaced markers and segments, a missing frame header or scan, interleaved scans of more than 10 blocks
 /// per MCU, progressive scans with invalid spectral selection, successive approximation or coefficient progression (see
 /// <see cref="ValidateProgressiveScan"/>), and truncation (including a missing EOI) are
-/// <see cref="InvalidImageContentException"/>. Table contents (DQT/DHT) are validated by the decoder only.
+/// <see cref="InvalidImageContentException"/>. Table contents (DQT/DHT/DAC) are validated by the decoder only.
 /// </remarks>
 internal sealed class JpegStructureParser : ImageParser<ImageInfo>
 {
     private const byte MarkerSof0 = 0xC0;
     private const byte MarkerSof1 = 0xC1;
     private const byte MarkerSof2 = 0xC2;
+    private const byte MarkerSof9 = 0xC9;
+    private const byte MarkerSof10 = 0xCA;
     private const byte MarkerDht = 0xC4;
     private const byte MarkerJpg = 0xC8;
     private const byte MarkerDac = 0xCC;
@@ -92,10 +96,19 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         Done,
     }
 
-    /// <summary>Gets the SOF marker of the frame (0xC0 baseline, 0xC1 extended sequential, 0xC2 progressive), or 0 before the frame header.</summary>
+    /// <summary>
+    /// Gets the SOF marker of the frame (0xC0 baseline, 0xC1 extended sequential, 0xC2 progressive, 0xC9 and 0xCA the same
+    /// two with arithmetic coding), or 0 before the frame header.
+    /// </summary>
     public byte FrameMarker { get; private set; }
 
-    public bool IsProgressive => FrameMarker == MarkerSof2;
+    public bool IsProgressive => FrameMarker is MarkerSof2 or MarkerSof10;
+
+    /// <summary>Gets a value indicating whether the scans are arithmetic coded rather than Huffman coded.</summary>
+    public bool IsArithmetic => FrameMarker is MarkerSof9 or MarkerSof10;
+
+    /// <summary>Gets the number of bits of a sample (8 or 12), or 0 before the frame header.</summary>
+    public int Precision { get; private set; }
 
     public int Width { get; private set; }
 
@@ -143,7 +156,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     public ImageMetadata Metadata => _metadata.Metadata;
 
     /// <summary>Gets the default working representation.</summary>
-    public PixelFormat DefaultPixelFormat => DefaultPixelFormats.ForJpeg(Components.Count);
+    public PixelFormat DefaultPixelFormat => DefaultPixelFormats.ForJpeg(Components.Count, Precision);
 
     public override ParseStatus Parse(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed)
     {
@@ -329,17 +342,16 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
             case MarkerSof0:
             case MarkerSof1:
             case MarkerSof2:
+            case MarkerSof9:
+            case MarkerSof10:
                 ProcessFrameHeader(marker, payload);
                 break;
 
-            case 0xC3:
-                throw Unsupported("Lossless JPEG (SOF3) is not supported.", "JPEG lossless");
+            case 0xC3 or 0xCB:
+                throw Unsupported("Lossless JPEG (SOF3, SOF11) is not supported.", "JPEG lossless");
 
-            case 0xC5 or 0xC6 or 0xC7 or MarkerDhp or MarkerExp:
+            case 0xC5 or 0xC6 or 0xC7 or 0xCD or 0xCE or 0xCF or MarkerDhp or MarkerExp:
                 throw Unsupported("Hierarchical JPEG is not supported.", "JPEG hierarchical");
-
-            case 0xC9 or 0xCA or 0xCB or 0xCD or 0xCE or 0xCF or MarkerDac:
-                throw Unsupported("Arithmetic-coded JPEG is not supported.", "JPEG arithmetic coding");
 
             case MarkerJpg:
                 throw Unsupported("The JPEG extension marker JPG (0xFFC8) is not supported.", "JPEG extensions");
@@ -357,7 +369,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
 
                 break;
 
-            case MarkerDht or MarkerDqt or MarkerDnl:
+            case MarkerDht or MarkerDqt or MarkerDac or MarkerDnl:
                 // Tables are parsed by the decoder; they are bounded segments
                 break;
 
@@ -446,8 +458,8 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         if (width == 0)
             throw Invalid("The JPEG frame width is zero.");
 
-        if (precision != 8)
-            throw Unsupported(string.Create(CultureInfo.InvariantCulture, $"{precision}-bit JPEG precision is not supported (only 8-bit samples)."), "JPEG " + precision.ToString(CultureInfo.InvariantCulture) + "-bit precision");
+        if (precision is not (8 or 12))
+            throw Unsupported(string.Create(CultureInfo.InvariantCulture, $"{precision}-bit JPEG precision is not supported (only 8-bit and 12-bit samples)."), "JPEG " + precision.ToString(CultureInfo.InvariantCulture) + "-bit precision");
 
         if (height == 0)
             throw Unsupported("JPEG images whose height is defined by a DNL marker are not supported.", "JPEG DNL height");
@@ -465,10 +477,11 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         }
 
         FrameMarker = marker;
+        Precision = precision;
         Width = width;
         Height = height;
         Components = components;
-        if (marker == MarkerSof2)
+        if (marker is MarkerSof2 or MarkerSof10)
         {
             _coefficientBits = new sbyte[64 * count];
             _coefficientBits.AsSpan().Fill(-1);
@@ -647,7 +660,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
             Size,
             DefaultPixelFormat,
             ColorModel,
-            bitsPerComponent: 8,
+            bitsPerComponent: Precision,
             frameCount: 1,
             isAnimated: false,
             hasPosterFrame: false,

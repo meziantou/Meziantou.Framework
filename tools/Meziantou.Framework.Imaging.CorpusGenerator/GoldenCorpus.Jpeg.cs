@@ -6,7 +6,8 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 // ---------------------------------------------------------------------------------------------------------------------
 // JPEG fixtures: inputs encoded by libjpeg-turbo cjpeg; references decoded by libjpeg-turbo djpeg from the SAME encoded
 // input; FFmpeg (libavcodec mjpeg, an independent implementation) measures the inter-decoder disagreement that justifies
-// each tolerance.
+// each tolerance. The 12-bit samples that djpeg writes (0 to 4095) are scaled to 16 bits, as the library stores them; like
+// every tolerance of the corpus, their errors are in units of the 8-bit scale (257 units of a 16-bit sample).
 // ---------------------------------------------------------------------------------------------------------------------
 internal static partial class GoldenCorpus
 {
@@ -59,6 +60,21 @@ internal static partial class GoldenCorpus
         ["jpeg/ffmpeg-mjpeg-444-17x2"] = (2, 0.0490),
         ["jpeg/ffmpeg-mjpeg-444-37x23"] = (2, 0.0474),
         ["jpeg/ffmpeg-mjpeg-444-64x48"] = (2, 0.0473),
+        // 12-bit samples: three units of a 12-bit sample at most, a fifth of a unit of the 8-bit scale (counted as one)
+        // Arithmetic coding: the coefficients of a Huffman-coded frame, so the same disagreement
+        ["jpeg/arithmetic-420-partial-mcu-restart-rows"] = (2, 0.0352),
+        ["jpeg/arithmetic-422-smooth"] = (2, 0.0137),
+        ["jpeg/arithmetic-444-detail"] = (3, 0.0599),
+        ["jpeg/arithmetic-gray-odd-restart-blocks"] = (1, 0.0153),
+        ["jpeg/progressive-arithmetic-420"] = (2, 0.0333),
+        ["jpeg/progressive-arithmetic-420-restart-rows-deep"] = (2, 0.0468),
+        ["jpeg/progressive-arithmetic-gray-refinement"] = (1, 0.0205),
+        ["jpeg/precision12-420-odd-restart-rows"] = (1, 0.0050),
+        ["jpeg/precision12-422-smooth"] = (1, 0.0031),
+        ["jpeg/precision12-444-detail"] = (1, 0.0077),
+        ["jpeg/precision12-gray-odd"] = (1, 0.0051),
+        ["jpeg/progressive-precision12-420"] = (1, 0.0071),
+        ["jpeg/progressive-precision12-gray-refinement"] = (1, 0.0045),
     };
 
     // Hard ceilings enforced by the managed validator (ComparisonPolicy): maxAbsoluteError <= 12, maxMeanAbsoluteError <= 2
@@ -154,8 +170,9 @@ internal static partial class GoldenCorpus
                                                     "0,1,2: 0-0, 1, 0;\n0: 1-9, 1, 0;\n0: 10-63, 2, 1;\n";
 
     /// <summary>One JPEG fixture: id, image, cjpeg arguments (FFmpeg arguments when <paramref name="FfmpegEncoded"/>), sampling
-    /// label, exif orientation, scan script, notes.</summary>
-    private sealed record JpegCase(string Id, Img Image, string[] Arguments, string Sampling, int? Orientation, string? Scans, string? Notes, bool FfmpegEncoded = false);
+    /// label, exif orientation, scan script, notes, and the precision of the samples (the image of a 12-bit fixture has
+    /// samples from 0 to 4095).</summary>
+    private sealed record JpegCase(string Id, Img Image, string[] Arguments, string Sampling, int? Orientation, string? Scans, string? Notes, bool FfmpegEncoded = false, int Precision = 8);
 
     private static void BuildJpeg(Corpus<GoldenTools> c)
     {
@@ -240,15 +257,51 @@ internal static partial class GoldenCorpus
             new("jpeg/ffmpeg-mjpeg-420-64x48", CommonCorpus.PatternDetailColor(64, 48, 70), ["-q:v", "3", "-pix_fmt", "yuvj420p"], "4:2:0", null, null, null, FfmpegEncoded: true),
             new("jpeg/ffmpeg-mjpeg-420-1x1", CommonCorpus.PatternDetailColor(1, 1, 71), ["-q:v", "3", "-pix_fmt", "yuvj420p"], "4:2:0", null, null, null, FfmpegEncoded: true),
             new("jpeg/ffmpeg-mjpeg-420-17x2", CommonCorpus.PatternDetailColor(17, 2, 72), ["-q:v", "3", "-pix_fmt", "yuvj420p"], "4:2:0", null, null, null, FfmpegEncoded: true),
+            // 12-bit samples (extended sequential and progressive frames with P = 12): decoded like 8-bit ones at their
+            // precision, then scaled to 16 bits. The DC differences and the AC coefficients have four more bits
+            new("jpeg/precision12-444-detail", CommonCorpus.Deepen(CommonCorpus.PatternDetailColor(24, 16, 81)), ["-precision", "12", "-quality", "95", "-sample", "1x1"], "4:4:4", null, null,
+                "12-bit samples on high-frequency content, without chroma subsampling.", Precision: 12),
+            new("jpeg/precision12-420-odd-restart-rows", CommonCorpus.Deepen(CommonCorpus.PatternDetailColor(33, 17, 82)), ["-precision", "12", "-quality", "85", "-sample", "2x2", "-optimize", "-restart", "1"], "4:2:0", null, null,
+                "12-bit samples with odd dimensions and 4:2:0 (partial MCUs on both edges, triangle chroma filters on 12-bit samples), optimized Huffman tables, one restart interval per MCU row.", Precision: 12),
+            new("jpeg/precision12-422-smooth", CommonCorpus.Deepen(CommonCorpus.PatternSmoothColor(29, 13)), ["-precision", "12", "-quality", "90", "-sample", "2x1"], "4:2:2", null, null,
+                "12-bit samples on a smooth gradient, 4:2:2 with an odd width.", Precision: 12),
+            new("jpeg/precision12-gray-odd", CommonCorpus.Deepen(CommonCorpus.PatternDetailGray(23, 17, 83)), ["-precision", "12", "-quality", "90", "-restart", "3B"], "gray", null, null,
+                "12-bit grayscale samples, restart interval of 3 blocks crossing block rows.", Precision: 12),
+            new("jpeg/progressive-precision12-420", CommonCorpus.Deepen(CommonCorpus.PatternDetailColor(20, 12, 85)), ["-precision", "12", "-quality", "85", "-sample", "2x2", "-progressive"], "4:2:0", null, null,
+                "12-bit samples with libjpeg-turbo's default progression.", Precision: 12),
+            // Arithmetic coding (SOF9 and SOF10): the coefficients of the Huffman-coded frames, coded as binary decisions
+            // with adaptive probability estimates; the statistics start again at each restart marker. cjpeg writes no
+            // DAC segment (the default conditioning) and omits the final zero bytes of each entropy-coded segment. The
+            // unit tests cover arithmetic coding of 12-bit samples
+            new("jpeg/arithmetic-444-detail", CommonCorpus.PatternDetailColor(24, 16, 91), ["-quality", "95", "-sample", "1x1", "-arithmetic"], "4:4:4", null, null,
+                "Arithmetic coding (SOF9) on high-frequency content, without chroma subsampling."),
+            // Even dimensions with chroma subsampling: FFmpeg's conversion of odd chroma planes would leave no cross-check
+            new("jpeg/arithmetic-420-partial-mcu-restart-rows", CommonCorpus.PatternDetailColor(36, 20, 92), ["-quality", "80", "-sample", "2x2", "-arithmetic", "-restart", "1"], "4:2:0", null, null,
+                "Arithmetic coding with 4:2:0 and partial MCUs on both edges, one restart interval per MCU row: the statistics and the conditioning of the DC differences start again at each marker."),
+            new("jpeg/arithmetic-422-smooth", CommonCorpus.PatternSmoothColor(28, 13), ["-quality", "90", "-sample", "2x1", "-arithmetic"], "4:2:2", null, null,
+                "Arithmetic coding on a smooth gradient (few decisions per block), 4:2:2 with an odd height."),
+            new("jpeg/arithmetic-gray-odd-restart-blocks", CommonCorpus.PatternDetailGray(23, 17, 93), ["-quality", "90", "-arithmetic", "-restart", "3B"], "gray", null, null,
+                "Arithmetic-coded grayscale frame, restart interval of 3 blocks crossing block rows."),
+            new("jpeg/progressive-arithmetic-420", CommonCorpus.PatternDetailColor(20, 12, 95), ["-quality", "85", "-sample", "2x2", "-progressive", "-arithmetic"], "4:2:0", null, null,
+                "Progressive arithmetic coding (SOF10) with libjpeg-turbo's default progression: DC and AC first scans and refinements."),
+            new("jpeg/progressive-arithmetic-420-restart-rows-deep", CommonCorpus.PatternDetailColor(36, 20, 96), ["-quality", "80", "-sample", "2x2", "-arithmetic", "-restart", "1"], "4:2:0", null, ProgressiveDeepScript,
+                "Progressive arithmetic coding with a custom scan script: interleaved DC scans refined from bit 3 to bit 0, a luma band 1-9 refined from bit 4, chroma AC refined from bit 1, one restart interval per MCU row."),
+            new("jpeg/progressive-arithmetic-gray-refinement", CommonCorpus.PatternDetailGray(23, 17, 97), ["-quality", "75", "-arithmetic", "-restart", "3B"], "gray", null, ProgressiveGrayScript,
+                "Progressive arithmetic-coded grayscale frame with a custom scan script: DC from bit 2, luma band 1-5 refined from bit 3, band 6-63 from bit 1, restart interval of 3 blocks."),
+            new("jpeg/progressive-precision12-gray-refinement", CommonCorpus.Deepen(CommonCorpus.PatternDetailGray(17, 9, 86)), ["-precision", "12", "-quality", "80", "-restart", "3B"], "gray", null, ProgressiveGrayScript,
+                "12-bit grayscale samples with a custom scan script: DC from bit 2, luma band 1-5 refined from bit 3, band 6-63 from bit 1, restart interval of 3 blocks.", Precision: 12),
         ];
         var jpegXmp = Bytes.Utf8("<?xpacket begin=\"﻿\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?><x:xmpmeta xmlns:x=\"adobe:ns:meta/\">" +
                                  "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"/></x:xmpmeta><?xpacket end=\"r\"?>");
-        foreach (var (fixtureId, img, arguments, sampling, orientation, scans, caseNotes, ffmpegEncoded) in cases)
+        foreach (var (fixtureId, img, arguments, sampling, orientation, scans, caseNotes, ffmpegEncoded, precision) in cases)
         {
             var notes = caseNotes;
             var stem = fixtureId.Replace('/', '_');
             var path = c.Scratch / (stem + ".jpg");
-            var (data, command) = ffmpegEncoded ? FfmpegJpegEncode(c, stem, img, arguments) : CjpegEncode(c, stem, img, arguments, scans);
+            var deep = precision > 8;
+            var sampleBytes = deep ? 2 : 1;
+            var canonical = deep ? "rgba16le" : "rgba8";
+            var (data, command) = ffmpegEncoded ? FfmpegJpegEncode(c, stem, img, arguments) : CjpegEncode(c, stem, img, arguments, scans, maximum: (1 << precision) - 1);
             List<string> commands = [command];
             var iccLabel = "none";
             if (fixtureId == "jpeg/metadata-icc-exif-dpcm")
@@ -294,26 +347,60 @@ internal static partial class GoldenCorpus
 
             var (info, features) = CommonCorpus.JpegInspect(data);
             Py.Assert((info.Width, info.Height) == (img.Width, img.Height));
-            var progressive = info.Sof == 0xC2;
+            Py.Assert(info.Precision == precision, fixtureId);
+            var progressive = info.Sof is 0xC2 or 0xCA;
+            var arithmetic = info.Sof is 0xC9 or 0xCA;
             Py.Assert(progressive == fixtureId.StartsWith("jpeg/progressive-", StringComparison.Ordinal), fixtureId);
+            Py.Assert(arithmetic == fixtureId.Contains("arithmetic-", StringComparison.Ordinal), fixtureId);
             // Reference: djpeg with explicit settings (accurate integer IDCT, default fancy upsampling); never rotates. Block
             // smoothing (progressive frames only) is inactive: DC and the AC coefficients 1-9 are complete in every fixture
             List<string> decode = [t.Djpeg, "-dct", "int", "-pnm", path.Value];
             var reference = CommonCorpus.ReadPnm(Proc.Run(decode));
             Py.Assert((reference.Width, reference.Height) == (img.Width, img.Height));
-            var referenceRgba = reference.Raw("rgba8");
-            List<string> layouts = img.Model == "gray" ? ["rgba8", "gray8"] : ["rgba8", "rgb8"];
+            if (deep)
+            {
+                // djpeg writes the 12-bit samples as they are (maximum value 4095): the library scales them to 16 bits
+                Py.Assert(reference.Depth == 16);
+                reference = CommonCorpus.ScaleToSixteenBits(reference, (1 << precision) - 1);
+            }
+
+            var referenceRgba = reference.Raw(canonical);
+            List<string> layouts = deep ? (img.Model == "gray" ? ["rgba16le", "gray16le"] : ["rgba16le"]) : img.Model == "gray" ? ["rgba8", "gray8"] : ["rgba8", "rgb8"];
             var checks = new List<Obj>();
 
             // Cross-check 1: FFmpeg (libavcodec mjpeg, independent implementation), no auto-rotation
-            var (decoded, ffCommand) = CommonCorpus.FfmpegDecode(t, path, "rgba", img.Width, img.Height, 4, false);
+            var ffmpegInput = path;
+            string? transcodeCommand = null;
+            if (arithmetic)
+            {
+                // FFmpeg has no arithmetic decoder (a version that has one must decode the fixture itself): it decodes the
+                // file jpegtran rewrites with Huffman codes, which has the same coefficients. This checks everything but
+                // the arithmetic decoding itself, for which libjpeg-turbo is the only decoder at hand
+                try
+                {
+                    CommonCorpus.FfmpegDecode(t, path, "rgba", img.Width, img.Height, 4, false);
+                    throw new FatalException($"{fixtureId}: {t.FfmpegLabel} decodes arithmetic-coded JPEG: record it as a direct cross-check.");
+                }
+                catch (ToolException)
+                {
+                }
+
+                ffmpegInput = c.Scratch / (stem + ".huffman.jpg");
+                List<string> transcode = [t.Jpegtran, "-copy", "all", "-outfile", ffmpegInput.Value, path.Value];
+                Proc.Run(transcode);
+                Py.Assert(CommonCorpus.JpegInspect(File.ReadAllBytes(ffmpegInput)).Info.Sof is 0xC0 or 0xC1 or 0xC2, fixtureId);
+                transcodeCommand = CommonCorpus.Display(transcode, t, [(ffmpegInput.Value, "{huffman}"), (path.Value, "{input}")]);
+            }
+
+            var (decoded, ffCommand) = CommonCorpus.FfmpegDecode(t, ffmpegInput, deep ? "rgba64le" : "rgba", img.Width, img.Height, 4 * sampleBytes, false, deep ? CommonCorpus.FfmpegDeepDecodeFlags : null);
             Py.Assert(decoded.Count == 1);
-            var (maxError, meanError, alphaError) = CommonCorpus.Compare(referenceRgba, decoded[0], 1);
+            var (maxError, meanError, alphaError) = JpegCompare(referenceRgba, decoded[0], sampleBytes);
             Py.Assert(alphaError == 0);
             var check = new Obj
             {
-                ["decoder"] = $"{t.FfmpegLabel} (libavcodec mjpeg decoder, swscale yuvj->rgba)",
-                ["command"] = CommonCorpus.Display(ffCommand, t, [(path.Value, "{input}")]),
+                ["decoder"] = $"{t.FfmpegLabel} (libavcodec mjpeg decoder, swscale {(deep ? "yuv->rgba64; the decoder shifts the 12-bit samples to 16 bits" : "yuvj->rgba")})" +
+                              (arithmetic ? $", after the entropy coding is rewritten with Huffman codes by libjpeg-turbo {t.JpegtranVersion} jpegtran (same coefficients): FFmpeg has no arithmetic decoder" : ""),
+                ["command"] = (transcodeCommand is null ? "" : transcodeCommand + " && ") + CommonCorpus.Display(ffCommand, t, [(ffmpegInput.Value, arithmetic ? "{huffman}" : "{input}")]),
                 ["result"] = maxError == 0 ? "exact" : "within-tolerance",
                 ["maxAbsoluteError"] = maxError,
                 ["meanAbsoluteError"] = Py.Round(meanError, 4),
@@ -333,24 +420,45 @@ internal static partial class GoldenCorpus
             checks.Add(check);
 
             // Cross-check 2: Apple ImageIO through sips (independent implementation; it honors EXIF orientation, which is
-            // undone here to compare stored pixels)
-            var bmp = c.Scratch / (stem + ".bmp");
-            List<string> sipsCommand = [t.Sips, "-s", "format", "bmp", path.Value, "--out", bmp.Value];
+            // undone here to compare stored pixels). The 16-bit samples of a 12-bit file are written to a PNG file, which
+            // FFmpeg reads back without loss
+            var bmp = c.Scratch / (stem + (deep ? ".png" : ".bmp"));
+            List<string> sipsCommand = [t.Sips, "-s", "format", deep ? "png" : "bmp", path.Value, "--out", bmp.Value];
             Proc.Run(sipsCommand);
-            var apple = CommonCorpus.Unrotate(CommonCorpus.ReadBmp(File.ReadAllBytes(bmp)), orientation);
-            Py.Assert((apple.Width, apple.Height) == (img.Width, img.Height), fixtureId);
-            (maxError, meanError, _) = CommonCorpus.Compare(referenceRgba, apple.Model != "rgb" ? apple.Raw("rgba8") :
-                new Img(apple.Width, apple.Height, "rgba", 8, apple.Rgba()).Raw("rgba8"), 1);
+            if (deep)
+            {
+                var (png, _) = CommonCorpus.FfmpegDecode(t, bmp, "rgba64le", img.Width, img.Height, 8, false);
+                (maxError, meanError, _) = JpegCompare(referenceRgba, png[0], sampleBytes);
+            }
+            else
+            {
+                var apple = CommonCorpus.Unrotate(CommonCorpus.ReadBmp(File.ReadAllBytes(bmp)), orientation);
+                Py.Assert((apple.Width, apple.Height) == (img.Width, img.Height), fixtureId);
+                (maxError, meanError, _) = CommonCorpus.Compare(referenceRgba, apple.Model != "rgb" ? apple.Raw("rgba8") :
+                    new Img(apple.Width, apple.Height, "rgba", 8, apple.Rgba()).Raw("rgba8"), 1);
+            }
+
             check = new Obj
             {
                 ["decoder"] = $"Apple ImageIO ({t.MacOS}, {t.SipsVersion})",
-                ["command"] = CommonCorpus.Display(sipsCommand, t, [(path.Value, "{input}"), (bmp.Value, "{output}.bmp")]) +
+                ["command"] = CommonCorpus.Display(sipsCommand, t, [(path.Value, "{input}"), (bmp.Value, deep ? "{output}.png" : "{output}.bmp")]) +
+                              (deep ? " (16-bit PNG, read back with FFmpeg)" : "") +
                               (orientation is not null and not 0 ? $" (EXIF orientation {CommonCorpus.Str(orientation.Value)} applied by ImageIO is undone before comparing)" : ""),
                 ["result"] = maxError == 0 ? "exact" : "within-tolerance",
                 ["maxAbsoluteError"] = maxError,
                 ["meanAbsoluteError"] = Py.Round(meanError, 4),
             };
-            if (iccLabel != "none" && maxError != 0)
+            if (arithmetic)
+            {
+                // Exact on files without chroma subsampling, where it differs for Huffman-coded files of the same content
+                check["excludedFromTolerance"] = true;
+                check["result"] = maxError == 0 ? "exact" : "differs";
+                check["notes"] = "ImageIO agrees exactly with the reference on the arithmetic-coded files that have no chroma subsampling, where its " +
+                                 "own decoder differs by a few units on Huffman-coded files of the same content: it does not decode " +
+                                 "arithmetic coding with an implementation of its own, so it is recorded but is not an independent " +
+                                 "decoder and does not justify the tolerance (with chroma subsampling it upsamples differently).";
+            }
+            else if (iccLabel != "none" && maxError != 0)
             {
                 check["excludedFromTolerance"] = true;
                 check["result"] = "differs";
@@ -379,14 +487,16 @@ internal static partial class GoldenCorpus
                 }
             }
 
-            var expected = CommonCorpus.StillExpected("jpeg", img, img.Model == "gray" ? "Gray8" : "Rgb24",
-                img.Model == "gray" ? "Grayscale" : (arguments.Contains("-rgb", StringComparer.Ordinal) ? "Rgb" : "YCbCr"), 8, orientation is null or 0 ? 1 : orientation.Value);
+            // No 16-bit RGB pixel format: the 12-bit color samples are loaded as opaque RGBA
+            var expected = CommonCorpus.StillExpected("jpeg", img, deep ? (img.Model == "gray" ? "Gray16" : "Rgba64") : img.Model == "gray" ? "Gray8" : "Rgb24",
+                img.Model == "gray" ? "Grayscale" : (arguments.Contains("-rgb", StringComparer.Ordinal) ? "Rgb" : "YCbCr"), precision, orientation is null or 0 ? 1 : orientation.Value);
             expected["iccProfile"] = iccLabel;
             var reference2 = new Obj
             {
                 ["method"] = "decoded",
                 ["description"] = "Decoded from the same encoded input by libjpeg-turbo djpeg (accurate integer IDCT, fancy upsampling, no rotation" +
-                                  (progressive ? "; block smoothing inactive: DC and AC coefficients 1-9 complete" : "") + ").",
+                                  (progressive ? "; block smoothing inactive: DC and AC coefficients 1-9 complete" : "") + ")" +
+                                  (deep ? "; each 12-bit sample s scaled to 16 bits as (s * 65535 + 2047) / 4095." : "."),
                 ["decoder"] = $"libjpeg-turbo {t.DjpegVersion} djpeg",
                 ["backend"] = $"libjpeg-turbo {t.DjpegVersion} (jidctint islow IDCT, h2v1/h1v2/h2v2 fancy upsampling, jdcolor YCbCr->RGB)",
                 ["command"] = CommonCorpus.Display(decode, t, [(path.Value, "{input}")]),
@@ -397,12 +507,20 @@ internal static partial class GoldenCorpus
             c.AddValid(fixtureId, fixtureId + ".jpg", data, [reference], expected,
                 c.Provenance("generated", (ffmpegEncoded ? "BuildJpegFfmpegDecoding " : "BuildJpeg ") + img.PatternName,
                     new Obj { ["width"] = img.Width, ["height"] = img.Height },
-                    [.. ffmpegEncoded ? [t.FfmpegLabel, $"libjpeg-turbo {t.DjpegVersion} djpeg"] : new[] { t.LibjpegLabel, t.FfmpegLabel + " (cross-check only)" },
+                    [.. ffmpegEncoded ? [t.FfmpegLabel, $"libjpeg-turbo {t.DjpegVersion} djpeg"] : arithmetic ? [t.LibjpegLabel, $"libjpeg-turbo {t.JpegtranVersion} jpegtran (cross-check only)", t.FfmpegLabel + " (cross-check only)"] : new[] { t.LibjpegLabel, t.FfmpegLabel + " (cross-check only)" },
                      $"Apple ImageIO {t.MacOS} {t.SipsVersion} (cross-check only)", ToolSet.RuntimeLabel], commands),
                 reference2, features, comparison: policy, layouts: layouts, notes: notes);
         }
 
         BuildUnsupportedJpeg(c);
+    }
+
+    /// <summary>Compares two raw buffers on the 8-bit scale, like every tolerance of the corpus: the errors of 16-bit samples
+    /// are counted in units of 257 (the maximum rounded up, so that any difference counts).</summary>
+    private static (int Max, double Mean, int MaxAlpha) JpegCompare(byte[] expected, byte[] actual, int sampleBytes)
+    {
+        var (max, mean, alpha) = CommonCorpus.Compare(expected, actual, sampleBytes);
+        return sampleBytes == 1 ? (max, mean, alpha) : ((max + 256) / 257, mean / 257, (alpha + 256) / 257);
     }
 
     /// <summary>A part of a JPEG file: the marker byte of a marker segment (SOI/EOI included) or <see cref="JpegEcs"/> for
@@ -457,12 +575,12 @@ internal static partial class GoldenCorpus
     }
 
     /// <summary>Encodes a pattern with cjpeg; returns (data, display command).</summary>
-    private static (byte[] Data, string Command) CjpegEncode(Corpus<GoldenTools> c, string stem, Img img, IReadOnlyList<string> arguments, string? scans = null)
+    private static (byte[] Data, string Command) CjpegEncode(Corpus<GoldenTools> c, string stem, Img img, IReadOnlyList<string> arguments, string? scans = null, int maximum = 255)
     {
         var t = c.Tools;
         var source = c.Scratch / (stem + (img.Model == "gray" ? ".pgm" : ".ppm"));
         var path = c.Scratch / (stem + ".jpg");
-        CommonCorpus.WritePnm(source, img);
+        CommonCorpus.WritePnm(source, img, maximum);
         List<(string Path, string Symbol)> substitutions = [(source.Value, "{source}.pnm"), (path.Value, "{input}")];
         if (!string.IsNullOrEmpty(scans))
         {
@@ -477,25 +595,14 @@ internal static partial class GoldenCorpus
         return (File.ReadAllBytes(path), CommonCorpus.Display(command, t, substitutions));
     }
 
-    /// <summary>Recognized JPEG modes outside the first release: UnsupportedImageFeatureException,
+    /// <summary>Recognized JPEG modes that are not decoded: UnsupportedImageFeatureException,
     /// also from a header identification (the frame header precedes the first scan).</summary>
     private static void BuildUnsupportedJpeg(Corpus<GoldenTools> c)
     {
         var t = c.Tools;
 
-        // Arithmetic coding is recognized and rejected (UnsupportedImageFeatureException)
-        var img = CommonCorpus.PatternSmoothColor(8, 8);
-        var source = c.Scratch / "arith.ppm";
-        var path = c.Scratch / "arith.jpg";
-        CommonCorpus.WritePnm(source, img);
-        List<string> command = [t.Cjpeg, "-arithmetic", "-quality", "90", "-outfile", path.Value, source.Value];
-        Proc.Run(command);
-        var data = File.ReadAllBytes(path);
-        c.AddError("invalid/jpeg/arithmetic-coding", "unsupported", "invalid/jpeg/arithmetic-coding.jpg", data, "jpeg",
-            c.Provenance("generated", "BuildJpeg PatternSmoothColor", new Obj { ["width"] = 8, ["height"] = 8 },
-                [t.LibjpegLabel, ToolSet.RuntimeLabel], [CommonCorpus.Display(command, t, [(source.Value, "{source}.ppm"), (path.Value, "{input}")])]),
-            new Obj { ["exception"] = "UnsupportedImageFeatureException", ["format"] = "Jpeg" },
-            features: CommonCorpus.JpegInspect(data).Features, notes: "Arithmetic-coded JPEG (SOF9) is out of scope.");
+        Img img;
+        byte[] data;
 
         void Add(string fixtureId, byte[] data, IList<string> commands, string feature, string notes, string function = "BuildUnsupportedJpeg PatternDetailColor", Obj? parameters = null,
             string origin = "generated") =>
@@ -507,8 +614,16 @@ internal static partial class GoldenCorpus
         img = CommonCorpus.PatternDetailColor(12, 8, 21);
         (data, var encodeCommand) = CjpegEncode(c, "lossless", img, ["-lossless", "1"]);
         Add("invalid/jpeg/lossless", data, [encodeCommand], "JPEG lossless", "Lossless JPEG (SOF3) is out of scope.", parameters: new Obj { ["width"] = 12, ["height"] = 8 });
-        (data, encodeCommand) = CjpegEncode(c, "precision12", img, ["-precision", "12", "-quality", "90"]);
-        Add("invalid/jpeg/precision-12", data, [encodeCommand], "JPEG 12-bit precision", "12-bit JPEG (extended sequential, P = 12) is out of scope: only 8-bit samples are decoded.",
+
+        // The DCT processes of ITU-T T.81 have 8-bit or 12-bit samples: any other precision is rejected. cjpeg does not
+        // write one, so the frame header of a valid 12-bit file is modified by hand
+        (data, encodeCommand) = CjpegEncode(c, "precision16", CommonCorpus.Deepen(img), ["-precision", "12", "-quality", "90"], maximum: 4095);
+        var deepSof = JpegSegments(data).First(p => p.Kind == 0xC1);
+        Py.Assert(data[deepSof.Start + 4] == 12);
+        data = (byte[])data.Clone();
+        data[deepSof.Start + 4] = 16;
+        Add("invalid/jpeg/precision-16", data, [encodeCommand, "set the sample precision of the frame header to 16"], "JPEG 16-bit precision",
+            "A sample precision of 16 bits in an extended sequential frame: T.81 defines DCT processes for 8-bit and 12-bit samples only, and only those are decoded.",
             parameters: new Obj { ["width"] = 12, ["height"] = 8 });
 
         // Hand-modified frame headers of a valid 4:2:2 file

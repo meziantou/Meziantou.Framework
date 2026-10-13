@@ -209,7 +209,7 @@ jobs:
             "tests/Meziantou.Framework.Imaging.InteropTests/Meziantou.Framework.Imaging.InteropTests.csproj" = 3500
             "tests/Meziantou.Framework.Imaging.AvifEncoder.Tests/Meziantou.Framework.Imaging.AvifEncoder.Tests.csproj" = 1784
             "tests/Meziantou.Framework.Imaging.Processing.Tests/Meziantou.Framework.Imaging.Processing.Tests.csproj" = 1055
-            "tests/Meziantou.Framework.Imaging.JpegXl.Tests/Meziantou.Framework.Imaging.JpegXl.Tests.csproj" = 725
+            "tests/Meziantou.Framework.Imaging.JpegXl.Tests/Meziantou.Framework.Imaging.JpegXl.Tests.csproj" = 2900
             "tests/Meziantou.Framework.Imaging.Jpeg2000.Tests/Meziantou.Framework.Imaging.Jpeg2000.Tests.csproj" = 825
             "tests/Meziantou.Framework.Imaging.Avif.Tests/Meziantou.Framework.Imaging.Avif.Tests.csproj" = 569
             "tests/Meziantou.Framework.Imaging.Av1.Tests/Meziantou.Framework.Imaging.Av1.Tests.csproj" = 539

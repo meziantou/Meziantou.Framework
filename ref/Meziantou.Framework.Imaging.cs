@@ -122,6 +122,13 @@ namespace Meziantou.Framework.Imaging
         public static bool operator >=(Meziantou.Framework.Imaging.FrameDuration left, Meziantou.Framework.Imaging.FrameDuration right) => throw null;
     }
 
+    public sealed class FrameRefinement
+    {
+        public bool IsFinal { get => throw null; }
+        public int Downsampling { get => throw null; }
+        public int CompletedPasses { get => throw null; }
+    }
+
     public struct Gray16 : System.IEquatable<Meziantou.Framework.Imaging.Gray16>
     {
         public ushort Value;
@@ -447,6 +454,8 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.Image<TPixel>? ReadFrame() => throw null;
         public System.Threading.Tasks.ValueTask<Meziantou.Framework.Imaging.Image<TPixel>?> ReadFrameAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public bool ReadFrameInto(Meziantou.Framework.Imaging.Image<TPixel> destination) => throw null;
+        public Meziantou.Framework.Imaging.FrameRefinement? ReadFrameRefinementInto(Meziantou.Framework.Imaging.Image<TPixel> destination) => throw null;
+        public System.Threading.Tasks.ValueTask<Meziantou.Framework.Imaging.FrameRefinement?> ReadFrameRefinementIntoAsync(Meziantou.Framework.Imaging.Image<TPixel> destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.ValueTask<bool> ReadFrameIntoAsync(Meziantou.Framework.Imaging.Image<TPixel> destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
@@ -473,6 +482,11 @@ namespace Meziantou.Framework.Imaging
         EncodedBytes = 6,
         MetadataBytes = 7,
         LiveAllocationBytes = 8,
+        FontBytes = 9,
+        GlyphComplexity = 10,
+        TextLength = 11,
+        TextGlyphs = 12,
+        TextLines = 13,
     }
 
     public sealed class ImageResourceLimits
@@ -484,6 +498,11 @@ namespace Meziantou.Framework.Imaging
         public const long DefaultMaxEncodedBytes = 268435456L;
         public const long DefaultMaxMetadataBytes = 16777216L;
         public const long DefaultMaxLiveAllocationBytes = 536870912L;
+        public const long DefaultMaxFontBytes = 268435456L;
+        public const long DefaultMaxGlyphComplexity = 1000000L;
+        public const long DefaultMaxTextLength = 1000000L;
+        public const long DefaultMaxTextGlyphs = 1000000L;
+        public const int DefaultMaxTextLines = 100000;
         public static Meziantou.Framework.Imaging.ImageResourceLimits Default { get => throw null; }
         public int MaxWidth { get => throw null; init { } }
         public int MaxHeight { get => throw null; init { } }
@@ -493,6 +512,11 @@ namespace Meziantou.Framework.Imaging
         public long MaxEncodedBytes { get => throw null; init { } }
         public long MaxMetadataBytes { get => throw null; init { } }
         public long MaxLiveAllocationBytes { get => throw null; init { } }
+        public long MaxFontBytes { get => throw null; init { } }
+        public long MaxGlyphComplexity { get => throw null; init { } }
+        public long MaxTextLength { get => throw null; init { } }
+        public long MaxTextGlyphs { get => throw null; init { } }
+        public int MaxTextLines { get => throw null; init { } }
     }
 
     public sealed class ImageWriterOptions
@@ -545,6 +569,35 @@ namespace Meziantou.Framework.Imaging
         public InvalidImageContentException(string? message) { }
         public InvalidImageContentException(string? message, System.Exception? innerException) { }
         public InvalidImageContentException(string? message, Meziantou.Framework.Imaging.ImageFormat format, System.Exception? innerException = null) { }
+    }
+
+    public sealed class JpegXlTranscodeOptions
+    {
+        public static Meziantou.Framework.Imaging.JpegXlTranscodeOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.ImageConfiguration Configuration { get => throw null; init { } }
+        public int Effort { get => throw null; init { } }
+    }
+
+    public static class JpegXlTranscoder
+    {
+        public static bool HasJpegReconstructionData(System.ReadOnlySpan<byte> jpegXl, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) => throw null;
+        public static bool HasJpegReconstructionData(System.IO.Stream jpegXl, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) => throw null;
+        public static bool HasJpegReconstructionData(string jpegXlPath, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) => throw null;
+        public static System.Threading.Tasks.Task<bool> HasJpegReconstructionDataAsync(System.IO.Stream jpegXl, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static void RecompressJpeg(System.ReadOnlySpan<byte> jpeg, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) { }
+        public static void RecompressJpeg(System.IO.Stream jpeg, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) { }
+        public static void RecompressJpeg(string jpegPath, string destinationPath, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) { }
+        public static System.Threading.Tasks.Task RecompressJpegAsync(System.IO.Stream jpeg, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task RecompressJpegAsync(string jpegPath, string destinationPath, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static void ReconstructJpeg(System.ReadOnlySpan<byte> jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) { }
+        public static void ReconstructJpeg(System.IO.Stream jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) { }
+        public static void ReconstructJpeg(string jpegXlPath, string destinationPath, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) { }
+        public static System.Threading.Tasks.Task ReconstructJpegAsync(System.IO.Stream jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task ReconstructJpegAsync(string jpegXlPath, string destinationPath, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static bool TryReconstructJpeg(System.ReadOnlySpan<byte> jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) => throw null;
+        public static bool TryReconstructJpeg(System.IO.Stream jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) => throw null;
+        public static bool TryReconstructJpeg(string jpegXlPath, string destinationPath, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) => throw null;
+        public static System.Threading.Tasks.Task<bool> TryReconstructJpegAsync(System.IO.Stream jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public ref struct PixelAccessor<TPixel> where TPixel : unmanaged
@@ -850,6 +903,11 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void StrokeLine(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.PointD start, Meziantou.Framework.Imaging.PointD end) { }
         public void StrokeBezier(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.PointD start, Meziantou.Framework.Imaging.PointD control, Meziantou.Framework.Imaging.PointD end) { }
         public void StrokeBezier(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.PointD start, Meziantou.Framework.Imaging.PointD control1, Meziantou.Framework.Imaging.PointD control2, Meziantou.Framework.Imaging.PointD end) { }
+        public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.PointD origin) { }
+        public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, string text, Meziantou.Framework.Imaging.Typography.Font font, double size, Meziantou.Framework.Imaging.PointD origin) { }
+        public void StrokeText(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.PointD origin) { }
+        public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.TextPathOptions? options = null) { }
+        public void StrokeText(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.TextPathOptions? options = null) { }
     }
 
     public enum FillRule
@@ -926,6 +984,35 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public Meziantou.Framework.Imaging.Rgba64 Color { get => throw null; }
         public SolidBrush(Meziantou.Framework.Imaging.Rgba64 color) { }
+    }
+
+    public enum TextPathAlignment
+    {
+        Start = 0,
+        Center = 1,
+        End = 2,
+    }
+
+    public sealed class TextPathOptions
+    {
+        public static Meziantou.Framework.Imaging.Drawing.TextPathOptions Default { get => throw null; }
+        public double StartOffset { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.TextPathAlignment Alignment { get => throw null; init { } }
+        public double BaselineOffset { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.TextPathSide Side { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.TextPathOverflow Overflow { get => throw null; init { } }
+    }
+
+    public enum TextPathOverflow
+    {
+        Extend = 0,
+        Clip = 1,
+    }
+
+    public enum TextPathSide
+    {
+        Left = 0,
+        Right = 1,
     }
 
     public sealed class VectorPath
@@ -1126,13 +1213,29 @@ namespace Meziantou.Framework.Imaging.Formats
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public int Quality { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling ChromaSubsampling { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.JpegEncodingProcess Process { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
         public bool AllowBitDepthReduction { get => throw null; init { } }
+    }
+
+    public enum JpegEncodingProcess
+    {
+        Baseline = 0,
+        Progressive = 1,
+    }
+
+    public enum JpegXlCompression
+    {
+        Lossless = 0,
+        Lossy = 1,
     }
 
     public sealed class JpegXlEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
     {
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.JpegXlCompression Compression { get => throw null; init { } }
+        public int Quality { get => throw null; init { } }
+        public bool Progressive { get => throw null; init { } }
         public int Effort { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
     }
@@ -1155,6 +1258,7 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public Meziantou.Framework.Imaging.Formats.PngAnimationMode AnimationMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.PngPixelLayout PixelLayout { get => throw null; init { } }
         public System.IO.Compression.CompressionLevel CompressionLevel { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.PngFilter Filter { get => throw null; init { } }
         public bool Interlaced { get => throw null; init { } }
@@ -1169,6 +1273,12 @@ namespace Meziantou.Framework.Imaging.Formats
         Up = 3,
         Average = 4,
         Paeth = 5,
+    }
+
+    public enum PngPixelLayout
+    {
+        Auto = 0,
+        Indexed = 1,
     }
 
     public sealed class PnmEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
@@ -1409,5 +1519,304 @@ namespace Meziantou.Framework.Imaging.Metadata
     {
         public Meziantou.Framework.Imaging.Metadata.MetadataBlob Data { get => throw null; }
         public XmpProfile(Meziantou.Framework.Imaging.Metadata.MetadataBlob data) { }
+    }
+}
+namespace Meziantou.Framework.Imaging.Typography
+{
+    public sealed class Font
+    {
+        public string FamilyName { get => throw null; }
+        public string SubfamilyName { get => throw null; }
+        public string? PostScriptName { get => throw null; }
+        public int Weight { get => throw null; }
+        public bool IsItalic { get => throw null; }
+        public bool IsMonospaced { get => throw null; }
+        public int UnitsPerEm { get => throw null; }
+        public int GlyphCount { get => throw null; }
+        public Meziantou.Framework.Imaging.Typography.FontMetrics Metrics { get => throw null; }
+        public bool HasColorGlyphs { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontColorPalette> ColorPalettes { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontVariationAxis> VariationAxes { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontNamedInstance> NamedInstances { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontVariationSetting> Variations { get => throw null; }
+        public Meziantou.Framework.Imaging.Typography.Font WithVariations(params System.ReadOnlySpan<Meziantou.Framework.Imaging.Typography.FontVariationSetting> settings) => throw null;
+        public Meziantou.Framework.Imaging.Typography.Font WithVariations(Meziantou.Framework.Imaging.Typography.FontNamedInstance instance) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.Font Load(string path, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.Font Load(System.IO.Stream stream, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.Font Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Typography.Font> LoadAsync(string path, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Typography.Font> LoadAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public Meziantou.Framework.Imaging.Typography.FontMetrics GetMetrics(double size) => throw null;
+        public bool ContainsGlyph(System.Text.Rune codePoint) => throw null;
+    }
+
+    public sealed class FontCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.Typography.Font>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Imaging.Typography.Font>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.Font>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public Meziantou.Framework.Imaging.Typography.Font this[int index] { get => throw null; }
+        public static Meziantou.Framework.Imaging.Typography.FontCollection Load(string path, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.FontCollection Load(System.IO.Stream stream, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.FontCollection Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Typography.FontCollection> LoadAsync(string path, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Typography.FontCollection> LoadAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.Typography.Font> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+    }
+
+    public sealed class FontColorPalette
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Rgba32> Colors { get => throw null; }
+        public bool IsForLightBackground { get => throw null; }
+        public bool IsForDarkBackground { get => throw null; }
+    }
+
+    public readonly struct FontFeature : System.IEquatable<Meziantou.Framework.Imaging.Typography.FontFeature>
+    {
+        public string Tag { get => throw null; }
+        public int Value { get => throw null; }
+        public FontFeature(string tag, int value = 1) { }
+        public bool Equals(Meziantou.Framework.Imaging.Typography.FontFeature other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Typography.FontFeature left, Meziantou.Framework.Imaging.Typography.FontFeature right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Typography.FontFeature left, Meziantou.Framework.Imaging.Typography.FontFeature right) => throw null;
+    }
+
+    public sealed class FontLoadOptions
+    {
+        public static Meziantou.Framework.Imaging.Typography.FontLoadOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.ImageConfiguration Configuration { get => throw null; init { } }
+        public bool UseEmbeddedBitmaps { get => throw null; init { } }
+    }
+
+    public readonly struct FontMetrics : System.IEquatable<Meziantou.Framework.Imaging.Typography.FontMetrics>
+    {
+        public double Ascent { get => throw null; }
+        public double Descent { get => throw null; }
+        public double LineGap { get => throw null; }
+        public double LineHeight { get => throw null; }
+        public double CapHeight { get => throw null; }
+        public double XHeight { get => throw null; }
+        public double UnderlinePosition { get => throw null; }
+        public double UnderlineThickness { get => throw null; }
+        public double StrikethroughPosition { get => throw null; }
+        public double StrikethroughThickness { get => throw null; }
+        public bool Equals(Meziantou.Framework.Imaging.Typography.FontMetrics other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Typography.FontMetrics left, Meziantou.Framework.Imaging.Typography.FontMetrics right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Typography.FontMetrics left, Meziantou.Framework.Imaging.Typography.FontMetrics right) => throw null;
+    }
+
+    public sealed class FontNamedInstance
+    {
+        public string Name { get => throw null; }
+        public string? PostScriptName { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontVariationSetting> Settings { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class FontStack
+    {
+        public Meziantou.Framework.Imaging.Typography.Font Primary { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.Font> Fonts { get => throw null; }
+        public FontStack(Meziantou.Framework.Imaging.Typography.Font primary) { }
+        public FontStack(Meziantou.Framework.Imaging.Typography.Font primary, params System.ReadOnlySpan<Meziantou.Framework.Imaging.Typography.Font> fallbacks) { }
+        public static implicit operator Meziantou.Framework.Imaging.Typography.FontStack(Meziantou.Framework.Imaging.Typography.Font font) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.FontStack FromFont(Meziantou.Framework.Imaging.Typography.Font font) => throw null;
+    }
+
+    [System.Flags]
+    public enum FontSynthesis
+    {
+        None = 0,
+        Bold = 1,
+        Oblique = 2,
+    }
+
+    public sealed class FontVariationAxis
+    {
+        public string Tag { get => throw null; }
+        public string Name { get => throw null; }
+        public double Minimum { get => throw null; }
+        public double Default { get => throw null; }
+        public double Maximum { get => throw null; }
+        public bool IsHidden { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public readonly struct FontVariationSetting : System.IEquatable<Meziantou.Framework.Imaging.Typography.FontVariationSetting>
+    {
+        public string Tag { get => throw null; }
+        public double Value { get => throw null; }
+        public FontVariationSetting(string tag, double value) { }
+        public bool Equals(Meziantou.Framework.Imaging.Typography.FontVariationSetting other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Typography.FontVariationSetting left, Meziantou.Framework.Imaging.Typography.FontVariationSetting right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Typography.FontVariationSetting left, Meziantou.Framework.Imaging.Typography.FontVariationSetting right) => throw null;
+    }
+
+    public sealed class RichText
+    {
+        public string Text { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.TextSpan> Spans { get => throw null; }
+    }
+
+    public sealed class RichTextBuilder
+    {
+        public Meziantou.Framework.Imaging.Typography.RichTextBuilder Append(string text, Meziantou.Framework.Imaging.Typography.TextStyle style) => throw null;
+        public Meziantou.Framework.Imaging.Typography.RichText Build() => throw null;
+        public void Clear() { }
+    }
+
+    public enum TextAlignment
+    {
+        Start = 0,
+        Center = 1,
+        End = 2,
+        Justify = 3,
+    }
+
+    [System.Flags]
+    public enum TextDecorations
+    {
+        None = 0,
+        Underline = 1,
+        Strikethrough = 2,
+        Overline = 4,
+    }
+
+    public enum TextDirection
+    {
+        Auto = 0,
+        LeftToRight = 1,
+        RightToLeft = 2,
+    }
+
+    public enum TextHyphenation
+    {
+        Manual = 0,
+        None = 1,
+        Automatic = 2,
+    }
+
+    public sealed class TextLayout
+    {
+        public double Width { get => throw null; }
+        public double Height { get => throw null; }
+        public double Baseline { get => throw null; }
+        public int LineCount { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.TextLine> Lines { get => throw null; }
+        public Meziantou.Framework.Imaging.RectangleD InkBounds { get => throw null; }
+        public bool HasMissingGlyphs { get => throw null; }
+        public bool IsTruncated { get => throw null; }
+        public static Meziantou.Framework.Imaging.Typography.TextLayout Create(string text, Meziantou.Framework.Imaging.Typography.Font font, double size) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.TextLayout Create(string text, Meziantou.Framework.Imaging.Typography.TextStyle style, Meziantou.Framework.Imaging.Typography.TextLayoutOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.TextLayout Create(Meziantou.Framework.Imaging.Typography.RichText text, Meziantou.Framework.Imaging.Typography.TextLayoutOptions? options = null) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPath ToPath(Meziantou.Framework.Imaging.PointD origin) => throw null;
+    }
+
+    public sealed class TextLayoutOptions
+    {
+        public static Meziantou.Framework.Imaging.Typography.TextLayoutOptions Default { get => throw null; }
+        public double MaxWidth { get => throw null; init { } }
+        public double MaxHeight { get => throw null; init { } }
+        public int MaxLines { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextWrapping Wrapping { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextWordBreak WordBreak { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextLineBreak LineBreak { get => throw null; init { } }
+        public Meziantou.Framework.LineBreakDictionary? LineBreakDictionary { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextOverflowWrap OverflowWrap { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextHyphenation Hyphenation { get => throw null; init { } }
+        public string? HyphenCharacter { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextAlignment Alignment { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextDirection Direction { get => throw null; init { } }
+        public double? LineHeight { get => throw null; init { } }
+        public int TabSize { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextTrimming Trimming { get => throw null; init { } }
+        public string? Ellipsis { get => throw null; init { } }
+        public double FirstLineIndent { get => throw null; init { } }
+    }
+
+    public readonly struct TextLine : System.IEquatable<Meziantou.Framework.Imaging.Typography.TextLine>
+    {
+        public int Start { get => throw null; }
+        public int Length { get => throw null; }
+        public double X { get => throw null; }
+        public double Y { get => throw null; }
+        public double Width { get => throw null; }
+        public double Height { get => throw null; }
+        public double Baseline { get => throw null; }
+        public bool IsRightToLeft { get => throw null; }
+        public bool Equals(Meziantou.Framework.Imaging.Typography.TextLine other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Typography.TextLine left, Meziantou.Framework.Imaging.Typography.TextLine right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Typography.TextLine left, Meziantou.Framework.Imaging.Typography.TextLine right) => throw null;
+    }
+
+    public enum TextLineBreak
+    {
+        Normal = 0,
+        Strict = 1,
+        Anywhere = 2,
+    }
+
+    public enum TextOverflowWrap
+    {
+        Normal = 0,
+        Anywhere = 1,
+    }
+
+    public readonly struct TextSpan : System.IEquatable<Meziantou.Framework.Imaging.Typography.TextSpan>
+    {
+        public int Start { get => throw null; }
+        public int Length { get => throw null; }
+        public Meziantou.Framework.Imaging.Typography.TextStyle Style { get => throw null; }
+        public bool Equals(Meziantou.Framework.Imaging.Typography.TextSpan other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Typography.TextSpan left, Meziantou.Framework.Imaging.Typography.TextSpan right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Typography.TextSpan left, Meziantou.Framework.Imaging.Typography.TextSpan right) => throw null;
+    }
+
+    public sealed class TextStyle
+    {
+        public Meziantou.Framework.Imaging.Typography.FontStack Fonts { get => throw null; }
+        public double Size { get => throw null; }
+        public Meziantou.Framework.Imaging.Drawing.Brush? Brush { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontFeature> Features { get => throw null; init { } }
+        public string? Language { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.FontSynthesis Synthesis { get => throw null; init { } }
+        public double LetterSpacing { get => throw null; init { } }
+        public double WordSpacing { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextDecorations Decorations { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.Brush? DecorationBrush { get => throw null; init { } }
+        public int ColorPaletteIndex { get => throw null; init { } }
+        public Meziantou.Framework.Hyphenator? Hyphenator { get => throw null; init { } }
+        public TextStyle(Meziantou.Framework.Imaging.Typography.FontStack fonts, double size) { }
+    }
+
+    public enum TextTrimming
+    {
+        None = 0,
+        Character = 1,
+        Word = 2,
+    }
+
+    public enum TextWordBreak
+    {
+        Normal = 0,
+        BreakAll = 1,
+        KeepAll = 2,
+    }
+
+    public enum TextWrapping
+    {
+        Wrap = 0,
+        NoWrap = 1,
     }
 }

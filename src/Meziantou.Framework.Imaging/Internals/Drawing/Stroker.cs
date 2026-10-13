@@ -82,6 +82,18 @@ internal sealed class Stroker : PathSink
         _hasStart = false;
     }
 
+    /// <summary>Sets the width and the joins of the stroke of the next closed contours: the stroke a glyph is thickened with.</summary>
+    public void Configure(double width, LineJoin join, double miterLimit)
+    {
+        CoversFrame = false;
+        _testFrame = width >= Math.Min(_edges.Width, _edges.Height);
+        _halfWidth = width / 2;
+        _join = join;
+        _cap = LineCap.Butt;
+        _miterLimitSquared = miterLimit * miterLimit;
+        _hasStart = false;
+    }
+
     public override void MoveTo(double x, double y)
     {
         FinishOpenContour();

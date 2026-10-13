@@ -139,6 +139,23 @@ public sealed partial class LibJxlTool
         return ReferencePnm.Parse(await File.ReadAllBytesAsync(output, cancellationToken).ConfigureAwait(false));
     }
 
+    /// <summary>
+    /// Rebuilds the JPEG file a JPEG XL file was made from, with <c>djxl</c>: a JPEG output is the original file, byte for
+    /// byte, when the input holds JPEG bitstream reconstruction data. Without these data djxl encodes the pixels as a new
+    /// JPEG file: check <see cref="JxlInfo.HasJpegReconstruction"/> first.
+    /// </summary>
+    /// <param name="inputPath">The JPEG XL file.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The JPEG file.</returns>
+    /// <exception cref="InvalidOperationException">djxl rejected the file.</exception>
+    public async Task<byte[]> ReconstructJpegAsync(FullPath inputPath, CancellationToken cancellationToken)
+    {
+        var output = inputPath + ".djxl.jpg";
+        File.Delete(output);
+        await RunCheckedAsync(DjxlPath, [inputPath, output, "--quiet", "--num_threads=0"], cancellationToken).ConfigureAwait(false);
+        return await File.ReadAllBytesAsync(output, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>Extracts the ICC profile of the image with <c>djxl --orig_icc_out</c>: the embedded one, or the one libjxl synthesizes for an enumerated color encoding.</summary>
     /// <param name="inputPath">The JPEG XL file.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>

@@ -10,14 +10,15 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// even/odd decomposition with the constants <c>C(k)/2 * cos(k*pi/16)</c> written below as literals, so results do not depend
 /// on the platform's <c>Math.Cos</c>), the level shift +128, rounding to nearest with ties upward (<c>floor(x + 0.5)</c>),
 /// and clamping to 0..255. A block whose AC coefficients are all zero is computed exactly in integers:
-/// <c>floor((DC * Q + 4) / 8) + 128</c>, clamped.
+/// <c>floor((DC * Q + 4) / 8) + 128</c>, clamped. Samples of 12 bits follow the same contract with the level shift +2048
+/// and the range 0..4095.
 /// </summary>
 /// <remarks>
 /// With hardware vector support, <see cref="Transform"/> runs each pass on <see cref="Vector{T}.Count"/> columns (then rows)
 /// at once: every lane performs exactly the operations of the scalar reference (<see cref="TransformScalar"/>) in the same
 /// order, without fused multiply-adds, so the samples are bit-identical. The scalar shortcut for columns without
 /// AC coefficients is skipped there; it is itself exact (the full formula reduces to <c>x0 * C0</c> when the other inputs are
-/// zero).
+/// zero). The transform of 12-bit samples is the scalar one.
 /// </remarks>
 internal static class JpegIdct
 {
@@ -56,6 +57,47 @@ internal static class JpegIdct
         }
     }
 
+    /// <summary>Writes the samples of more than 8 bits of a block whose AC coefficients are all zero.</summary>
+    /// <param name="dequantizedDc">The DC coefficient multiplied by its quantization value.</param>
+    /// <param name="destination">The first sample of the block.</param>
+    /// <param name="stride">The distance between two sample rows.</param>
+    /// <param name="precision">The number of bits of a sample.</param>
+    public static void TransformDeepDcOnly(long dequantizedDc, Span<ushort> destination, int stride, int precision)
+    {
+        var value = (ushort)Math.Clamp(((dequantizedDc + 4) >> 3) + (1 << (precision - 1)), 0, (1 << precision) - 1);
+        for (var y = 0; y < 8; y++)
+        {
+            destination.Slice(y * stride, 8).Fill(value);
+        }
+    }
+
+    /// <summary>Transforms dequantized coefficients (natural order) into 8x8 samples of more than 8 bits.</summary>
+    /// <param name="coefficients">64 dequantized coefficients, natural order; overwritten (used as the intermediate buffer).</param>
+    /// <param name="destination">The first sample of the block.</param>
+    /// <param name="stride">The distance between two sample rows.</param>
+    /// <param name="precision">The number of bits of a sample.</param>
+    public static void TransformDeep(Span<double> coefficients, Span<ushort> destination, int stride, int precision)
+    {
+        var block = coefficients[..64];
+        TransformColumns(block);
+
+        // Rows: block[y * 8 + u] -> samples, level shifted and rounded like the 8-bit samples
+        var shift = (1 << (precision - 1)) + 0.5;
+        double max = (1 << precision) - 1;
+        Span<double> samples = stackalloc double[8];
+        for (var y = 0; y < 8; y++)
+        {
+            var row = block.Slice(y * 8, 8);
+            Transform1D(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], out samples[0], out samples[1], out samples[2], out samples[3], out samples[4], out samples[5], out samples[6], out samples[7]);
+            var output = destination.Slice(y * stride, 8);
+            for (var x = 0; x < 8; x++)
+            {
+                var rounded = Math.Floor(samples[x] + shift);
+                output[x] = rounded <= 0 ? (ushort)0 : rounded >= max ? (ushort)max : (ushort)rounded;
+            }
+        }
+    }
+
     /// <summary>Transforms dequantized coefficients (natural order) into 8x8 samples.</summary>
     /// <param name="coefficients">64 dequantized coefficients, natural order; overwritten (used as the intermediate buffer).</param>
     /// <param name="destination">The first sample of the block.</param>
@@ -76,8 +118,28 @@ internal static class JpegIdct
     internal static void TransformScalar(Span<double> coefficients, Span<byte> destination, int stride)
     {
         var block = coefficients[..64];
+        TransformColumns(block);
 
-        // Columns: block[v * 8 + u] -> block[y * 8 + u]
+        // Rows: block[y * 8 + u] -> samples
+        for (var y = 0; y < 8; y++)
+        {
+            var row = block.Slice(y * 8, 8);
+            Transform1D(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
+            var output = destination.Slice(y * stride, 8);
+            output[0] = ToSample(o0);
+            output[1] = ToSample(o1);
+            output[2] = ToSample(o2);
+            output[3] = ToSample(o3);
+            output[4] = ToSample(o4);
+            output[5] = ToSample(o5);
+            output[6] = ToSample(o6);
+            output[7] = ToSample(o7);
+        }
+    }
+
+    /// <summary>The column pass of the scalar transform: <c>block[v * 8 + u]</c> becomes <c>block[y * 8 + u]</c>.</summary>
+    private static void TransformColumns(Span<double> block)
+    {
         for (var u = 0; u < 8; u++)
         {
             var x0 = block[u];
@@ -108,22 +170,6 @@ internal static class JpegIdct
             block[40 + u] = o5;
             block[48 + u] = o6;
             block[56 + u] = o7;
-        }
-
-        // Rows: block[y * 8 + u] -> samples
-        for (var y = 0; y < 8; y++)
-        {
-            var row = block.Slice(y * 8, 8);
-            Transform1D(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
-            var output = destination.Slice(y * stride, 8);
-            output[0] = ToSample(o0);
-            output[1] = ToSample(o1);
-            output[2] = ToSample(o2);
-            output[3] = ToSample(o3);
-            output[4] = ToSample(o4);
-            output[5] = ToSample(o5);
-            output[6] = ToSample(o6);
-            output[7] = ToSample(o7);
         }
     }
 

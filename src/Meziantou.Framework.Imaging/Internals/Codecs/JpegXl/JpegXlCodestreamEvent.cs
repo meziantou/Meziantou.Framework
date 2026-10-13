@@ -14,4 +14,7 @@ internal enum JpegXlCodestreamEvent
 
     /// <summary>The sections of the frame were all received (or skipped).</summary>
     FrameComplete,
+
+    /// <summary>The payload of the frame reached the next of the positions the caller asked to be told about.</summary>
+    PayloadCheckpoint,
 }

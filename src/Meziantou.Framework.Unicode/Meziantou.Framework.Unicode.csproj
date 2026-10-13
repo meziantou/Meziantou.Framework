@@ -3,14 +3,13 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.0.6</Version>
+    <Version>2.0.7</Version>
     <IsTrimmable>true</IsTrimmable>
-    <Description>Unicode helpers for confusable character normalization and character metadata.</Description>
-    <PackageTags>unicode, confusables, homoglyph, normalization, text</PackageTags>
+    <Description>Unicode text algorithms that do not depend on the runtime or on ICU: character properties, grapheme, word and line segmentation, normalization, bidirectional algorithm, script runs, hyphenation and confusable detection.</Description>
+    <PackageTags>unicode, confusables, homoglyph, normalization, text, script, bidi, line-break, grapheme, hyphenation</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../../common/GlobalizationHelper.cs" Link="GlobalizationHelper.cs" />
     <InternalsVisibleTo Include="Meziantou.Framework.Unicode.Tests" />
   </ItemGroup>
 

@@ -10,7 +10,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The plane holds whole bands of <c>8 * V</c> sample rows (one MCU row of an interleaved scan, or one block row of a
 /// single-component frame) of <c>McusX * H * 8</c> samples. A streaming plane keeps a ring of at most three bands (the band
 /// being written, the band waiting for its lower context row, and the band providing the upper context row); a full plane
-/// keeps every band (frames coded in several sequential scans).
+/// keeps every band (frames coded in several sequential scans). A sample is a byte, or 16 bits in native byte order when
+/// the precision of the frame is above 8 bits.
 /// <para>
 /// Progressive frames also keep the quantized coefficients of every block of the padded block grid (<c>McusX * H</c> by
 /// <c>McusY * V</c> blocks, 64 16-bit values each in natural order) until the end of the image: a later scan may refine any
@@ -24,10 +25,11 @@ internal sealed class JpegFrameComponent : IDisposable
     private PooledBuffer? _coefficients;
     private int _coefficientBlocksPerLine;
 
-    public JpegFrameComponent(int index, byte id, int horizontalSampling, int verticalSampling, int quantizationTable)
+    public JpegFrameComponent(int index, byte id, int horizontalSampling, int verticalSampling, int quantizationTable, int precision)
     {
         Index = index;
         Id = id;
+        Precision = precision;
         HorizontalSampling = horizontalSampling;
         VerticalSampling = verticalSampling;
         QuantizationTable = quantizationTable;
@@ -44,6 +46,9 @@ internal sealed class JpegFrameComponent : IDisposable
     public int VerticalSampling { get; }
 
     public int QuantizationTable { get; }
+
+    /// <summary>Gets the number of bits of a sample (8 or 12).</summary>
+    public int Precision { get; }
 
     /// <summary>Gets the number of samples per row: <c>ceil(X * H / Hmax)</c>.</summary>
     public int Width { get; private set; }
@@ -63,7 +68,7 @@ internal sealed class JpegFrameComponent : IDisposable
     /// <summary>Gets the number of block rows of a non-interleaved scan: <c>ceil(Height / 8)</c>.</summary>
     public int BlocksPerColumn => (Height + 7) / 8;
 
-    /// <summary>Gets the distance between two sample rows of the plane.</summary>
+    /// <summary>Gets the distance between two sample rows of the plane, in samples.</summary>
     public int Stride { get; private set; }
 
     /// <summary>Gets the number of sample rows of one band: <c>8 * V</c>.</summary>
@@ -81,8 +86,11 @@ internal sealed class JpegFrameComponent : IDisposable
     /// <summary>Gets the number of blocks per row of the coefficient grid: <c>McusX * H</c>.</summary>
     public int CoefficientBlocksPerLine => _coefficientBlocksPerLine;
 
-    /// <summary>Gets the samples of the plane (bands in ring order).</summary>
+    /// <summary>Gets the samples of the plane (bands in ring order), for a precision of 8 bits.</summary>
     public byte[] Samples => (_plane ?? throw new InvalidOperationException("The JPEG component plane is not allocated.")).RawBuffer;
+
+    /// <summary>Gets the samples of the plane (bands in ring order), for a precision above 8 bits.</summary>
+    public Span<ushort> DeepSamples => unsafe(MemoryMarshal.Cast<byte, ushort>((_plane ?? throw new InvalidOperationException("The JPEG component plane is not allocated.")).RawBuffer.AsSpan()));
 
     public void SetGeometry(int frameWidth, int frameHeight, int maxHorizontal, int maxVertical)
     {
@@ -100,7 +108,7 @@ internal sealed class JpegFrameComponent : IDisposable
     public void AllocatePlane(AllocationScope scope, int mcusX, int bandCount, ImageResourceLimits limits)
     {
         var stride = (long)mcusX * HorizontalSampling * 8;
-        var length = stride * BandRows * bandCount;
+        var length = stride * BandRows * bandCount * (Precision > 8 ? sizeof(ushort) : 1);
         if (stride > int.MaxValue || length > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(limits);
 
@@ -142,7 +150,7 @@ internal sealed class JpegFrameComponent : IDisposable
         _coefficients = null;
     }
 
-    /// <summary>Gets the offset of a sample row in <see cref="Samples"/>.</summary>
+    /// <summary>Gets the offset of a sample row in <see cref="Samples"/> or <see cref="DeepSamples"/>.</summary>
     /// <param name="row">The row, in component sample coordinates (rows of one band are contiguous).</param>
     public int GetRowOffset(int row)
     {
@@ -153,6 +161,9 @@ internal sealed class JpegFrameComponent : IDisposable
 
     /// <summary>Gets a sample row, at most <see cref="Width"/> valid samples.</summary>
     public ReadOnlySpan<byte> GetRow(int row) => Samples.AsSpan(GetRowOffset(row), Width);
+
+    /// <summary>Gets a sample row of a precision above 8 bits, at most <see cref="Width"/> valid samples.</summary>
+    public ReadOnlySpan<ushort> GetDeepRow(int row) => DeepSamples.Slice(GetRowOffset(row), Width);
 
     public void Dispose()
     {

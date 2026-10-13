@@ -319,8 +319,15 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         if (capabilities.RequiresSeekableOutput && stream is { CanSeek: false })
             throw new ArgumentException($"{capabilities.Name} animation output requires a seekable stream: the file size is written before the frames and patched once every frame is written. Write to a seekable stream or a path, or write a still image (ImageWriterOptions.ExpectedFrameCount = 1, no animation settings).", nameof(stream));
 
-        // A profile describes the written samples: the bilevel and palette layouts of TIFF do not follow the pixel format
-        var labeledFormat = encoder is TiffEncoder tiff ? TiffSampleLayout.GetLabeledPixelFormat(tiff.PixelLayout, pixelFormat) : pixelFormat;
+        // A profile describes the written samples: the bilevel and palette layouts of TIFF and the palette layout of PNG do
+        // not follow the pixel format
+        var labeledFormat = encoder switch
+        {
+            TiffEncoder tiff => TiffSampleLayout.GetLabeledPixelFormat(tiff.PixelLayout, pixelFormat),
+            PngEncoder png => PngEncodedLayout.GetLabeledPixelFormat(png.PixelLayout, pixelFormat),
+            _ => pixelFormat,
+        };
+
         var metadata = MetadataWritePlan.Create(snapshot.Metadata, capabilities.Format, encoder.MetadataHandling, snapshot.CanvasSize, labeledFormat, encoder);
         var animation = capabilities.IsAnimated ? snapshot.Animation?.Clone() ?? new AnimationMetadata() : null;
         var scope = AllocationScope.Create(snapshot.Configuration, "ImageWriter");

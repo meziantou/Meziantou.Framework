@@ -281,6 +281,7 @@ internal static partial class IccCorpus
         var manifest = CorpusDriver.LoadCommittedManifest();
         CorpusDriver.CopyCommittedFiles(outDir, CorpusDriver.Fixtures(manifest));
         CorpusDriver.CopyCommittedAv1Vectors(outDir, manifest);
+        CorpusDriver.PreserveFonts(outDir, manifest);
 
         // The corpus holds the whole collection: a profile added by another commit needs its entry and its conversions
         var external = Profiles.Where(profile => profile.Build is null).Select(profile => profile.FileName).ToHashSet(StringComparer.Ordinal);
@@ -384,7 +385,7 @@ internal static partial class IccCorpus
             });
         }
 
-        manifest["schemaVersion"] = 3;
+        manifest["schemaVersion"] = CorpusDriver.SchemaVersion;
         manifest["colorProfiles"] = profileEntries;
         manifest["colorTransforms"] = transformEntries;
         CorpusDriver.WriteManifest(outDir, manifest);

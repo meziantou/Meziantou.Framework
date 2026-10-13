@@ -7,8 +7,8 @@ namespace Meziantou.Framework.Imaging.Benchmarks.Workloads;
 /// Builds a realistic progressive JPEG (SOF2) from source pixels: full-range YCbCr 4:2:0 (2x2 box-filtered chroma), a
 /// direct double-precision forward DCT, quantization with the Annex K tables scaled for a quality, then the independent
 /// test-side progressive writer of the unit tests (<see cref="JpegTestImage"/>, linked source) with the usual
-/// successive-approximation progression. The library encoder only writes baseline JPEG, so this is the only way to get
-/// large progressive inputs without committing them or depending on an external tool.
+/// successive-approximation progression. The decoder benchmarks do not take their input from the library encoder, so
+/// this is the way to get large progressive inputs without committing them or depending on an external tool.
 /// </summary>
 internal static class ProgressiveJpegInput
 {

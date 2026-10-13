@@ -1,9 +1,10 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The entropy-coded data of one Huffman scan (ITU-T T.81 sections E.2.3/E.2.4 and F.2.2.5): the MCU structure (interleaved
+/// The entropy-coded data of one scan (ITU-T T.81 sections E.2.3/E.2.4 and F.2.2.5): the MCU structure (interleaved
 /// or not), restart intervals and the bounded buffering of the data. The block decoding is the subclass's: sequential
-/// (<see cref="JpegSequentialScanDecoder"/>) or progressive (<see cref="JpegProgressiveScanDecoder"/>).
+/// (<see cref="JpegSequentialScanDecoder"/>) or progressive (<see cref="JpegProgressiveScanDecoder"/>) Huffman coding, or
+/// arithmetic coding (<see cref="JpegArithmeticScanDecoder"/>).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -20,10 +21,19 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal abstract class JpegScanDecoder
 {
-    // Worst case of one block: DC (16-bit code + 11 bits), 63 AC coefficients (16 + 10 bits) and 4 ZRL codes: 1729 bits. The
-    // progressive scans need less: an AC first scan at most 63 x (16 + 10) bits and 4 ZRL codes; a refinement scan at most
-    // 63 x (16 + 1 + 1) bits (code, sign and correction bits), 3 ZRL codes and an EOB run (16 + 14 bits)
+    // Worst case of one block of 8-bit samples: DC (16-bit code + 11 bits), 63 AC coefficients (16 + 10 bits) and 4 ZRL
+    // codes: 1729 bits. The progressive scans need less: an AC first scan at most 63 x (16 + 10) bits and 4 ZRL codes; a
+    // refinement scan at most 63 x (16 + 1 + 1) bits (code, sign and correction bits), 3 ZRL codes and an EOB run (16 + 14 bits)
     private const int MaxBytesPerBlock = 220;
+
+    // The same with the categories of 12-bit samples: DC 16 + 15 bits and AC 16 + 14 bits, 1985 bits
+    private const int MaxBytesPerDeepBlock = 256;
+
+    // Arithmetic coding: a binary decision renormalizes the interval by at most 15 bits (the smallest estimate is 1), and a
+    // block has at most 2111 decisions: 32 for the DC difference (zero, sign, magnitude 1, 15 magnitude categories, 14
+    // magnitude bits) and 33 for each of the 63 AC coefficients (end of block, zero, sign, magnitude 1 and 2, 14 categories,
+    // 14 bits). That is 3959 bytes
+    private const int MaxBytesPerArithmeticBlock = 4096;
 
     private readonly ScanComponent[] _components;
     private readonly JpegEntropyReader _reader;
@@ -46,7 +56,8 @@ internal abstract class JpegScanDecoder
     /// <param name="restartInterval">The restart interval in MCUs, or 0.</param>
     /// <param name="mcuRowDecoded">Called after each completed MCU row (block row for a non-interleaved scan) with its index.</param>
     /// <param name="cancellationToken">Checked after each MCU row.</param>
-    protected JpegScanDecoder(ScanComponent[] components, JpegEntropyReader reader, int mcusPerLine, int mcuRows, int restartInterval, Action<int>? mcuRowDecoded, CancellationToken cancellationToken)
+    /// <param name="arithmetic">Whether the scan is arithmetic coded.</param>
+    protected JpegScanDecoder(ScanComponent[] components, JpegEntropyReader reader, int mcusPerLine, int mcuRows, int restartInterval, Action<int>? mcuRowDecoded, CancellationToken cancellationToken, bool arithmetic = false)
     {
         _components = components;
         _reader = reader;
@@ -70,7 +81,10 @@ internal abstract class JpegScanDecoder
             blocksPerMcu += _interleaved ? scanComponent.Component.HorizontalSampling * scanComponent.Component.VerticalSampling : 1;
         }
 
-        _safeBytes = (blocksPerMcu * MaxBytesPerBlock) + 8;
+        var precision = components[0].Component.Precision;
+        _safeBytes = GetRequiredBufferCapacity(blocksPerMcu, precision, arithmetic);
+        MaxDcCategory = precision > 8 ? 15 : 11;
+        MaxAcCategory = precision > 8 ? 14 : 10;
         _restartInterval = restartInterval;
         _intervalRemaining = restartInterval;
         _mcuRowDecoded = mcuRowDecoded;
@@ -79,13 +93,23 @@ internal abstract class JpegScanDecoder
     }
 
     /// <summary>Gets the number of bytes the entropy reader must be able to buffer.</summary>
-    public static int GetRequiredBufferCapacity(int blocksPerMcu) => (blocksPerMcu * MaxBytesPerBlock) + 8;
+    /// <param name="blocksPerMcu">The largest number of blocks of an MCU.</param>
+    /// <param name="precision">The number of bits of a sample (8 or 12).</param>
+    /// <param name="arithmetic">Whether the scans are arithmetic coded.</param>
+    public static int GetRequiredBufferCapacity(int blocksPerMcu, int precision, bool arithmetic)
+        => (blocksPerMcu * (arithmetic ? MaxBytesPerArithmeticBlock : precision > 8 ? MaxBytesPerDeepBlock : MaxBytesPerBlock)) + 8;
 
     /// <summary>Gets a value indicating whether every MCU of the scan was decoded.</summary>
     public bool IsComplete => _mcu >= _totalMcus;
 
     /// <summary>Gets the entropy reader of the scan.</summary>
     protected JpegEntropyReader Reader => _reader;
+
+    /// <summary>Gets the largest category of a DC difference: 11 for 8-bit samples, 15 for 12-bit samples (T.81 tables F.1 and F.6).</summary>
+    protected int MaxDcCategory { get; }
+
+    /// <summary>Gets the largest category of an AC coefficient: 10 for 8-bit samples, 14 for 12-bit samples (T.81 tables F.2 and F.7).</summary>
+    protected int MaxAcCategory { get; }
 
     private bool IsDiscarding => _mcu >= _totalMcus || (_restartInterval > 0 && _intervalRemaining == 0);
 
@@ -143,6 +167,47 @@ internal abstract class JpegScanDecoder
     /// <param name="blockRow">The block row in the component's block grid.</param>
     /// <param name="blockColumn">The block column in the component's block grid.</param>
     protected abstract void DecodeBlock(ScanComponent scanComponent, int blockRow, int blockColumn);
+
+    /// <summary>Gets the components of the scan, in scan order.</summary>
+    protected ReadOnlySpan<ScanComponent> Components => _components;
+
+    /// <summary>
+    /// Writes the samples of a block of a sequential scan: the inverse DCT of its dequantized coefficients.
+    /// </summary>
+    /// <param name="scanComponent">The component of the block.</param>
+    /// <param name="blockRow">The block row in the component's block grid.</param>
+    /// <param name="blockColumn">The block column in the component's block grid.</param>
+    /// <param name="block">The dequantized AC coefficients (natural order), when <paramref name="hasAc"/>; cleared.</param>
+    /// <param name="dc">The quantized DC coefficient.</param>
+    /// <param name="hasAc">Whether an AC coefficient is not zero.</param>
+    protected static void TransformBlock(ScanComponent scanComponent, int blockRow, int blockColumn, double[] block, int dc, bool hasAc)
+    {
+        var component = scanComponent.Component;
+        var quantization = scanComponent.Quantization;
+        var offset = component.GetRowOffset(blockRow * 8) + (blockColumn * 8);
+        if (hasAc)
+        {
+            block[0] = dc * (double)quantization[0];
+            if (component.Precision > 8)
+            {
+                JpegIdct.TransformDeep(block, component.DeepSamples[offset..], component.Stride, component.Precision);
+            }
+            else
+            {
+                JpegIdct.Transform(block, component.Samples.AsSpan(offset), component.Stride);
+            }
+
+            Array.Clear(block);
+        }
+        else if (component.Precision > 8)
+        {
+            JpegIdct.TransformDeepDcOnly((long)dc * quantization[0], component.DeepSamples[offset..], component.Stride, component.Precision);
+        }
+        else
+        {
+            JpegIdct.TransformDcOnly((long)dc * quantization[0], component.Samples.AsSpan(offset), component.Stride);
+        }
+    }
 
     /// <summary>Resets the decoding state at a restart marker (T.81 F.2.1.3.1, G.1.2.2): the DC predictions.</summary>
     protected virtual void OnRestart()
@@ -253,7 +318,10 @@ internal abstract class JpegScanDecoder
     }
 
     /// <summary>A component of a scan: its plane or coefficients, tables (captured when the scan starts) and DC prediction.</summary>
-    /// <remarks>Progressive scans have only the table they use: DC first scans a DC table, DC refinements none, AC scans an AC table.</remarks>
+    /// <remarks>
+    /// Progressive scans have only the table they use: DC first scans a DC table, DC refinements none, AC scans an AC table.
+    /// An arithmetic-coded scan has no Huffman table but the conditioning of its components (<see cref="Arithmetic"/>).
+    /// </remarks>
     internal sealed class ScanComponent(JpegFrameComponent component, JpegHuffmanTable? dcTable, JpegHuffmanTable? acTable, ushort[] quantization)
     {
         public JpegFrameComponent Component { get; } = component;
@@ -266,5 +334,8 @@ internal abstract class JpegScanDecoder
         public ushort[] Quantization { get; } = quantization;
 
         public int Predictor { get; set; }
+
+        /// <summary>Gets the statistics and the conditioning of the component in an arithmetic-coded scan, or <see langword="null"/>.</summary>
+        public JpegArithmeticConditioning? Arithmetic { get; init; }
     }
 }

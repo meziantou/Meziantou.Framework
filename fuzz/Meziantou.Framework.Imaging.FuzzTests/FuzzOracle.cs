@@ -20,7 +20,10 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// <item><description>eager and sequential decoding agree: the reader returns exactly the frames (pixels and durations) and the
 /// poster of the eager load and then reports its clean end, and when the eager load fails the reader fails too (never a
 /// clean end on malformed data); the only accepted difference is the live-allocation limit, since the reader does not keep
-/// every frame alive.</description></item>
+/// every frame alive. A reader that renders every refinement of a frame ends each frame with the same pixels;</description></item>
+/// <item><description>transcoding is exact or refused: a JPEG file that is recompressed as a JPEG XL file is rebuilt byte for
+/// byte, a refused input writes nothing, and JPEG reconstruction data that a mutation damaged never make anything else
+/// than a documented exception or a file.</description></item>
 /// </list>
 /// </summary>
 internal static class FuzzOracle
@@ -52,13 +55,13 @@ internal static class FuzzOracle
 
     /// <summary>Checks one input.</summary>
     /// <param name="input">The input.</param>
-    /// <param name="variant">Selects the reader input (stream kind, read sizes) and the reader methods; part of the case identity.</param>
+    /// <param name="variant">Selects the reader input (stream kind, read sizes) and the reader methods (whole frames, or every refinement of a frame); part of the case identity.</param>
     /// <returns>The first violated property, or <see langword="null"/>.</returns>
     public static FuzzFailure? Check(byte[] input, int variant) => Check(input, variant, out _);
 
     /// <summary>Checks one input.</summary>
     /// <param name="input">The input.</param>
-    /// <param name="variant">Selects the reader input (stream kind, read sizes) and the reader methods; part of the case identity.</param>
+    /// <param name="variant">Selects the reader input (stream kind, read sizes) and the reader methods (whole frames, or every refinement of a frame); part of the case identity.</param>
     /// <param name="outcome">"decoded" when the eager load succeeded, otherwise the exception type of the load (statistics).</param>
     /// <returns>The first violated property, or <see langword="null"/>.</returns>
     public static FuzzFailure? Check(byte[] input, int variant, out string outcome)
@@ -170,6 +173,18 @@ internal static class FuzzOracle
             return FuzzFailure.Property("clean-end-on-malformed-data", $"Eager Rgba64 load {Describe(typed.Exception)} but the reader ended cleanly after {sequential.Value}");
         }
 
+        // A JPEG file that is recompressed as a JPEG XL file comes back byte for byte, whatever the mutation; reconstruction
+        // data that a mutation damaged are refused or give a file, never anything else
+        if (detected is ImageFormat.Jpeg or ImageFormat.JpegXl)
+        {
+            var transcoded = Run(audit, "transcode", () => CheckTranscoding(input, detected));
+            if (transcoded.Failure is not null)
+                return transcoded.Failure;
+
+            if (transcoded.Value is { Length: > 0 } violation)
+                return FuzzFailure.Property(violation.Split(':')[0], violation);
+        }
+
         // Decoded images (whatever metadata and geometry the mutation produced) can be processed and re-encoded, and every
         // encoder output decodes again (exactly for PNG)
         if (eager.Succeeded)
@@ -183,6 +198,47 @@ internal static class FuzzOracle
         }
 
         return null;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckTranscoding(byte[] input, ImageFormat format)
+    {
+        var options = new JpegXlTranscodeOptions { Configuration = Configuration };
+        using var output = new MemoryStream();
+        if (format == ImageFormat.JpegXl)
+        {
+            var hasData = JpegXlTranscoder.HasJpegReconstructionData(input, options);
+            var rebuilt = JpegXlTranscoder.TryReconstructJpeg(input, output, options);
+            if (rebuilt && !hasData)
+                return "transcode-without-data: a JPEG file was rebuilt from a file that has no reconstruction data";
+
+            if (!rebuilt && output.Length != 0)
+                return $"transcode-partial-output: {output.Length} bytes were written for a file that is not rebuilt";
+
+            return string.Empty;
+        }
+
+        try
+        {
+            JpegXlTranscoder.RecompressJpeg(input, output, options);
+        }
+        catch (ImageException)
+        {
+            // Refused: nothing is written
+            return output.Length == 0 ? string.Empty : $"transcode-partial-output: {output.Length} bytes were written for a JPEG file that is refused";
+        }
+
+        var recompressed = output.ToArray();
+        output.SetLength(0);
+        if (!JpegXlTranscoder.TryReconstructJpeg(recompressed, output, options))
+            return "transcode-round-trip: the recompressed file has no reconstruction data";
+
+        if (!output.GetBuffer().AsSpan(0, (int)output.Length).SequenceEqual(input))
+            return $"transcode-round-trip: the JPEG file rebuilt from the recompressed file has {output.Length} bytes that are not the {input.Length} bytes of the input";
+
+        // The recompressed file is an image like any other
+        using var image = Image.Load(recompressed, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion });
+        return string.Empty;
     }
 
     /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
@@ -203,7 +259,9 @@ internal static class FuzzOracle
         {
             ImageFormat.Png => [new PngEncoder { CompressionLevel = System.IO.Compression.CompressionLevel.Fastest, Interlaced = (variant & 16) != 0 }, new PngEncoder { MetadataHandling = MetadataHandling.Strip }],
             ImageFormat.Gif => [new GifEncoder { Interlaced = (variant & 16) != 0 }, new GifEncoder { MetadataHandling = MetadataHandling.Strip }],
-            _ => [new JpegEncoder { Quality = 1 + (variant % 100) }, new JpegEncoder { MetadataHandling = MetadataHandling.Strip }],
+
+            // Either process; the 16-bit pixels of a 12-bit file are reduced to the 8 bits the encoder writes
+            _ => [new JpegEncoder { Quality = 1 + (variant % 100), Process = (variant & 16) != 0 ? JpegEncodingProcess.Progressive : JpegEncodingProcess.Baseline, AllowBitDepthReduction = true }, new JpegEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true }],
         };
         byte[]? encoded = null;
         foreach (var encoder in encoders)
@@ -288,6 +346,7 @@ internal static class FuzzOracle
         var useInto = (variant & 2) != 0;
         var asynchronous = (variant & 4) != 0;
         var readPoster = (variant & 8) == 0;
+        var readRefinements = (variant & 128) != 0;
         await using var stream = new TestInputStream(input)
         {
             Seekable = !shortReads,
@@ -306,6 +365,11 @@ internal static class FuzzOracle
         }
 
         var frames = new List<FrameSummary>();
+        if (readRefinements)
+        {
+            await ReadRefinementsAsync(reader, frames, asynchronous).ConfigureAwait(false);
+        }
+
         Image<Rgba64>? destination = null;
         try
         {
@@ -346,6 +410,34 @@ internal static class FuzzOracle
 
         // When the poster is not requested, the eager load still reports it: the reader skipped it (and validated it)
         return new DecodedSummary(info.Width, info.Height, PixelFormat.Rgba64, frames, readPoster ? poster : null, comparePoster: readPoster);
+    }
+
+    /// <summary>Reads every frame through every rendering of it, coarse ones included: the last one is the frame of the eager load.</summary>
+    private static async Task ReadRefinementsAsync(ImageReader<Rgba64> reader, List<FrameSummary> frames, bool asynchronous)
+    {
+        using var destination = new Image<Rgba64>(reader.Info.Width, reader.Info.Height);
+        while (true)
+        {
+            FrameRefinement? refinement;
+            var renderings = 0;
+            do
+            {
+                refinement = asynchronous ? await reader.ReadFrameRefinementIntoAsync(destination).ConfigureAwait(false) : reader.ReadFrameRefinementInto(destination);
+                if (refinement is not null && (refinement.Downsampling < 1 || refinement.CompletedPasses < 0 || ++renderings > 64))
+                    throw new UnreachableException($"Refinement {renderings} has the downsampling {refinement.Downsampling} and {refinement.CompletedPasses} passes");
+            }
+            while (refinement is { IsFinal: false });
+
+            if (refinement is null)
+            {
+                if (renderings != 0)
+                    throw new UnreachableException("The reader ended a frame without its final refinement");
+
+                return;
+            }
+
+            frames.Add(FrameSummary.Capture(destination.Frames[0]));
+        }
     }
 
     private static async Task<ImageReader<Rgba64>> OpenReaderAsync(Stream stream, ImageReaderOptions options, bool asynchronous)

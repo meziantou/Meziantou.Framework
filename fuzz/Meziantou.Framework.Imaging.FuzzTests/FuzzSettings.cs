@@ -16,6 +16,7 @@ internal static class FuzzSettings
     public const string SeedVariable = "MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED";
     public const string DurationVariable = "MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_DURATION_SECONDS";
     public const string CaseTimeoutVariable = "MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_CASE_TIMEOUT_SECONDS";
+    public const string SeedFilterVariable = "MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED_FILTER";
 
     public const int DefaultIterations = 1500;
     public const ulong DefaultSeed = 0x4D657A69616E746FUL;
@@ -25,6 +26,12 @@ internal static class FuzzSettings
     public static ulong Seed => ulong.TryParse(Environment.GetEnvironmentVariable(SeedVariable), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) ? value : DefaultSeed;
 
     public static TimeSpan? Duration => ReadInt32(DurationVariable) is { } seconds ? TimeSpan.FromSeconds(seconds) : null;
+
+    /// <summary>
+    /// Gets a text the identifier of a seed must contain for a campaign on one kind of input, or <see langword="null"/>
+    /// for every seed. Only the fuzzers whose seeds have identifiers use it.
+    /// </summary>
+    public static string? SeedFilter => Environment.GetEnvironmentVariable(SeedFilterVariable) is { Length: > 0 } value ? value : null;
 
     public static TimeSpan CaseTimeout => TimeSpan.FromSeconds(ReadInt32(CaseTimeoutVariable) ?? 60);
 

@@ -86,12 +86,15 @@ internal sealed class JpegXlFrameRenderer : IDisposable
     /// <param name="isDisplayed">Whether the frame is shown.</param>
     /// <param name="visibleFrameIndex">The number of frames that are shown up to this one, this one included: a seed of the noise.</param>
     /// <param name="invisibleFrameIndex">The number of frames that are not shown since the last frame that is shown, this one included.</param>
+    /// <param name="isIntermediate">Whether the samples are those of a part of the sections of the frame: the frame is then not kept for the frames that refer to it.</param>
     /// <returns>The image to show, of the size of the image, which the caller disposes; <see langword="null"/> when the frame is not shown.</returns>
-    public JpegXlImageBuffer? Render(JpegXlDecodedFrame decoded, JpegXlFrameHeader frame, bool isDisplayed, uint visibleFrameIndex, uint invisibleFrameIndex)
+    public JpegXlImageBuffer? Render(JpegXlDecodedFrame decoded, JpegXlFrameHeader frame, bool isDisplayed, uint visibleFrameIndex, uint invisibleFrameIndex, bool isIntermediate = false)
     {
         ArgumentNullException.ThrowIfNull(decoded);
         ArgumentNullException.ThrowIfNull(frame);
-        var canBeReferenced = CanBeReferenced(frame);
+
+        // An intermediate rendering of a frame is shown and forgotten: the frames that follow refer to the complete frame
+        var canBeReferenced = CanBeReferenced(frame) && !isIntermediate;
         JpegXlImageBuffer? owned = null;
         try
         {

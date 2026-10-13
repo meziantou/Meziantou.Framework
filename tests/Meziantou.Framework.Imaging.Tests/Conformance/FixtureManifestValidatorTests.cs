@@ -370,6 +370,68 @@ public sealed class FixtureManifestValidatorTests : IDisposable
         AssertError("has sha256", [Profile()], [Transform()]);
     }
 
+    [Fact]
+    public void FontsAreValidated()
+    {
+        var file = WriteFile("fonts/a.ttf", [0, 1, 0, 0]);
+        var woff = WriteFile("fonts/a.woff", [(byte)'w', (byte)'O', (byte)'F', (byte)'F']);
+        var vectors = WriteFile("fonts/vectors/a.json", [(byte)'{', (byte)'}']);
+        FontEntry Font(string id = "fonts/a", string license = "OFL-1.1", string flavor = "ttf", string modification = "none", string? reserved = null, string? original = null, int faceCount = 1, FixtureFile? fontFile = null, string[]? features = null) => new()
+        {
+            Id = id,
+            File = fontFile ?? file,
+            Provenance = new FixtureProvenance { Origin = "external", License = license, Source = "https://example.com/a.ttf" },
+            Flavor = flavor,
+            FaceCount = faceCount,
+            Modification = modification,
+            ReservedFontName = reserved,
+            Original = original,
+            Features = features ?? ["font.table=glyf"],
+            Vectors = fontFile is null ? vectors : null,
+        };
+
+        IReadOnlyList<string> Validate(params FontEntry[] fonts)
+            => FixtureManifestValidator.Validate(new FixtureManifest { SchemaVersion = FixtureManifest.CurrentSchemaVersion, Fixtures = [], Fonts = fonts }, _root);
+
+        Assert.Empty(Validate(Font(), Font(id: "fonts/a-woff", flavor: "woff", modification: "container", original: "fonts/a", fontFile: woff)));
+        Assert.Single(Validate(Font(reserved: "Example"), Font(id: "fonts/a-woff", flavor: "woff", modification: "container", original: "fonts/a", fontFile: woff)));
+
+        // Without the section, the files are orphans: every committed file needs provenance and a license
+        Assert.Equal(3, FixtureManifestValidator.Validate(CreateManifest(), _root).Count(error => error.Contains("is not referenced by the manifest", StringComparison.Ordinal)));
+
+        void AssertError(string expected, params FontEntry[] fonts)
+            => Assert.Contains(Validate(fonts), error => error.Contains(expected, StringComparison.Ordinal));
+
+        AssertError("license 'GPL-3.0' is not in the allowed list", Font(license: "GPL-3.0"));
+        AssertError("duplicate id", Font(), Font());
+        AssertError("invalid id", Font(id: "Fonts/A"));
+        AssertError("invalid flavor 'eot'", Font(flavor: "eot"));
+        AssertError("invalid modification 'edited'", Font(modification: "edited"));
+        AssertError("faceCount must be 1, or more for a collection", Font(faceCount: 0));
+        AssertError("faceCount must be 1, or more for a collection", Font(faceCount: 2));
+        AssertError("features must be non-empty and unique", Font(features: ["font.table=glyf", "font.table=glyf"]));
+
+        // A font with a Reserved Font Name is only stored as published
+        AssertError("with the Reserved Font Name 'Example' must be stored unmodified", Font(modification: "subset", reserved: "Example"));
+        AssertError("with the Reserved Font Name 'Example' must be stored unmodified", Font(), Font(id: "fonts/a-woff", flavor: "woff", modification: "container", original: "fonts/a", reserved: "Example", fontFile: woff));
+        AssertError("has the Reserved Font Name 'Example' and must only be stored unmodified", Font(reserved: "Example"), Font(id: "fonts/a-woff", flavor: "woff", modification: "container", original: "fonts/a", fontFile: woff));
+
+        AssertError("must name the font it comes from", Font(), Font(id: "fonts/a-woff", flavor: "woff", modification: "container", fontFile: woff));
+        AssertError("must name the font it comes from", Font(), Font(id: "fonts/a-woff", flavor: "woff", modification: "container", original: "fonts/missing", fontFile: woff));
+        AssertError("must name the font it comes from", Font(id: "fonts/a-woff", flavor: "woff", modification: "container", original: "fonts/a-woff", fontFile: woff));
+        AssertError("'original' is only for a font in another container", Font(), Font(id: "fonts/b", original: "fonts/a", fontFile: woff));
+
+        // The font license is not accepted for anything else than a font
+        var image = WriteFile("a.png", [1]);
+        Assert.Contains(
+            FixtureManifestValidator.Validate(CreateManifest(CreateEntry("a", image, new FixtureProvenance { Origin = "hand-authored", License = "OFL-1.1" })), _root),
+            error => error.Contains("the license 'OFL-1.1' is only accepted for font files", StringComparison.Ordinal));
+
+        // A changed font no longer matches its hash
+        File.WriteAllBytes(_root / "fonts" / "a.ttf", [0, 1, 0, 1]);
+        AssertError("has sha256", Font());
+    }
+
     private static FixtureManifest CreateManifest(params FixtureEntry[] entries) => new() { SchemaVersion = FixtureManifest.CurrentSchemaVersion, Fixtures = entries };
 
     private static FixtureProvenance HandAuthored() => new() { Origin = "hand-authored", License = "CC0-1.0" };

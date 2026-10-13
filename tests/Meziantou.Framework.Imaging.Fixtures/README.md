@@ -2,7 +2,7 @@
 
 Independent reference data for the conformance and interop tests, extended with each codec.
 
-- `manifest.json` — the versioned manifest (schema version 3: `manifest.schema.json`), **written by the reviewed generator**
+- `manifest.json` — the versioned manifest (schema version 5: `manifest.schema.json`), **written by the reviewed generator**
   `tools/Meziantou.Framework.Imaging.CorpusGenerator` (a .NET console app: the `golden` generator, `GoldenCorpus.cs`, writes
   the PNG, APNG, GIF and JPEG entries; WebP entries: `webp`, `WebPCorpus.cs`; QOI entries: `qoi`, `QoiCorpus.cs`; BMP entries:
   `bmp`, `BmpCorpus.cs`; TGA entries: `tga`, `TgaCorpus.cs`; Netpbm entries: `pnm`, `PnmCorpus.cs`; ICC profiles and
@@ -28,7 +28,10 @@ tests/Meziantou.Framework.Imaging.Fixtures/
   limit/avif/                         over-limit inputs that are not valid fixtures (an AVIF sequence with hidden frames)
   av1/                                raw AV1 OBU streams (*.obu): conformance vectors with plane digests, no raw references
   icc/profiles/   icc/vectors/        ICC profiles and colors converted between them (see Color management)
-  LICENSES/                           full texts of non-standard licenses (none yet)
+  fonts/<family>/   fonts/vectors/    font files and the values independent font readers give for them (see Fonts)
+  fonts/shaping/                      glyphs and positions the reference shaper gives for texts set in the fonts
+  font-suites/<suite>/                third-party suites of test fonts and expectations, stored as published
+  LICENSES/                           full texts of the licenses of third-party files (OFL-1.1, Apache-2.0, Unicode-3.0)
 ```
 
 - Fixture ids are lowercase paths without extension (`png/gray16-low-bit-gradient`); `format` is the container
@@ -121,6 +124,207 @@ Files are named `<input-name>.<role>.<layout>.raw` (`.raw.gz` when compressed) w
 AVIF fixtures that present the same pixels (one coded payload in several containers: the assembled layouts, the
 orientations) share their reference files, which are named after the first of them. 16-bit samples are always
 little-endian. Every frame and the poster provide the same layouts; 16-bit fixtures always include a 16-bit layout.
+
+## Fonts
+
+The `fonts` section of the manifest lists the font files of the text rendering tests. Fonts are not image fixtures:
+they have no expected pixels, and the generic conformance, hardening and fuzz suites never enumerate them. They are
+written by the `fonts` generator (`FontCorpus.cs`).
+
+| Field | Meaning |
+| --- | --- |
+| `file` | The font file and its SHA-256 |
+| `flavor` | `ttf` (TrueType outlines), `otf` (CFF outlines), `ttc` (collection), `woff`, `woff2` |
+| `faceCount` | The number of faces; more than one for a collection |
+| `modification` | `none` (the file as published, or the output of the generator), `subset` (glyphs and tables removed by the pinned `hb-subset`), `container` (the tables of `original` in another container) |
+| `reservedFontName` | The Reserved Font Name the license of the font declares, when there is one |
+| `original` | For a `container`: the id of the font it wraps |
+| `features` | Tags read from the file by the generator: `font.table=<tag>` for the tables that matter to a feature, `font.cmap=<format>`, `font.loca=short|long`, `font.container=ttc` |
+| `vectors` | The reference values of the font, a JSON file of `fonts/vectors/` |
+| `shaping` | The glyphs and positions the reference shaper gives for texts set in the font, a JSON file of `fonts/shaping/` |
+
+Three kinds of fonts are stored:
+
+- **Synthetic fonts** (`fonts/synthetic/`, `CC0-1.0`), built by `Common/FontBuilder.cs` from the descriptions of
+  `Common/FontSamples.cs`. Both files are compiled into the tests, which build the same fonts, and variants of them, in
+  memory: the geometry (coordinates that are multiples of 64 for the fonts drawn in text tests, charstrings of a few
+  operators for the CFF ones) makes the expected values of a test computable by hand. `FontCorpusTests` checks that the committed files are what the builder writes.
+- **Third-party fonts**, from the sources `FontCorpus.cs` lists with their pinned SHA-256. A font whose license allows a
+  modified copy is subset to the characters the tests need, with every layout feature kept; a font with a Reserved Font
+  Name is stored as published.
+- **Other containers** of these fonts: WOFF (written by `FontBuilder.WriteWoff`, since no pinned tool writes WOFF 1.0)
+  and WOFF2 (written by `woff2_compress`, the reference encoder). The reference encoder chooses what it transforms and
+  how it encodes each point, and it does not transform the horizontal metrics of these fonts: the WOFF2 files with a
+  variant in their name (`boxes.metrics.woff2`, `deltas.boxes.woff2`) are written by `Common/FontWoff2Writer.cs`
+  instead, with the transformations the reference encoder leaves out.
+
+The vectors of a font (`FontVectors` in the test harness) hold, for each face: the names, the units per em, the glyph
+count, the metrics the font declares (by OpenType metric tag), the character map, the advance of each glyph and the
+outline of each glyph as SVG path data in font units. They are read by the HarfBuzz utilities of the pinned
+meziantou/prebuilt release with **two independent implementations**, HarfBuzz's own font functions (`--font-funcs=ot`)
+and FreeType (`--font-funcs=ft`): a value is recorded only when both agree, and a disagreement stops the generator. The
+character map is the join of `hb-info --list-unicodes` and `--list-glyphs`, so that it does not go through shaping.
+
+A container has no vectors of its own: the generator reads it back through FreeType (`--face-loader=ft`, the only
+reader of the pinned tools that opens WOFF and WOFF2) and requires the advances and the outlines of the font it wraps;
+`woff2_decompress`, the reference decoder, must accept a WOFF2 file. The files written by `FontWoff2Writer` are
+therefore known to mean, for two independent decoders, the font they were made from. FreeType rebuilds the glyphs of
+a WOFF2 file in a buffer of the length the file declares for the glyph table and drops what does not fit: the writer
+declares the length of the table with each glyph padded to four bytes, as the reference encoder does.
+
+Two properties of the pinned readers shape the synthetic fonts. FreeType rounds the coordinates of a CFF outline to
+whole units and HarfBuzz does not, so the charstrings of the corpus only use whole numbers (fractions are tested with
+literals in `FontTests`). Both readers keep a contour of one point and always close a TrueType contour with a line to
+its first point, even a line without length: the library does the same, so that the recorded outlines compare exactly.
+
+| Font | Flavor | Faces | License | Covers |
+| --- | --- | --- | --- | --- |
+| `fonts/synthetic-boxes` | ttf | 1 | CC0-1.0 | Straight-edged glyphs, composite glyphs (offset, scale, `USE_MY_METRICS`), `cmap` formats 4 and 12, `kern`, compact glyph encoding, short `loca` |
+| `fonts/synthetic-curves` | ttf | 1 | CC0-1.0 | Quadratic contours: no on-curve point, a contour that starts off-curve, consecutive off-curve points, a hole; 16-bit glyph encoding, long `loca`, `cmap` format 12 only |
+| `fonts/synthetic-deltas` | ttf | 1 | CC0-1.0 | Points at every kind of distance from the previous one (each coordinate encoding of the glyph table and of WOFF2), instructions, the overlap flag, a composite with 16-bit offsets, contours of one and two points |
+| `fonts/synthetic-collection` | ttc | 2 | CC0-1.0 | The boxes and curves fonts in a collection |
+| `fonts/synthetic-charstrings` | otf | 1 | CC0-1.0 | CFF outlines: one glyph per group of Type 2 charstring operators (lines, curves, flex, hints and masks, widths, local and global subroutines, number encodings, empty and implicitly closed contours) |
+| `fonts/synthetic-cid` | otf | 1 | CC0-1.0 | A CID-keyed CFF font: two font DICTs whose local subroutines differ, a font DICT selector of format 3 |
+| `fonts/noto-sans-regular` | ttf | 1 | OFL-1.1 | Noto Sans Regular 2.015, subset to 232 characters (Basic Latin, Latin-1, combining marks, punctuation): 425 glyphs, `GDEF`, `GSUB`, `GPOS` |
+| `fonts/noto-sans-regular-cff` | otf | 1 | OFL-1.1 | The CFF flavor of the same font and the same characters: 421 glyphs, subroutines |
+| `fonts/noto-sans-cjk-jp-regular` | otf | 1 | OFL-1.1 | Noto Sans CJK JP Regular 2.004, subset to 408 characters (Basic Latin, kana, a few ideographs, fullwidth forms): 1,099 glyphs, a CID-keyed CFF table with several font DICTs, hints kept |
+| `fonts/synthetic-variable` | ttf | 1 | CC0-1.0 | A variable font of two axes: `fvar` with named instances, `avar`, `gvar` (deltas for every point, for some points with inferred deltas, shared and private point numbers, a region that starts away from the default, composite glyphs, phantom points), `HVAR` with a delta set index map and two subtables, `MVAR`, a glyph whose left side bearing is not the left of its outline |
+| `fonts/synthetic-variable-phantom` | ttf | 1 | CC0-1.0 | The same font without `HVAR`: the advances vary with the phantom points, and a glyph varies its origin |
+| `fonts/synthetic-variable-charstrings` | otf | 1 | CC0-1.0 | A variable font with CFF2 outlines: `blend` of one and of several values, `vsindex` in a private DICT and in a charstring, a blending subroutine, two font DICTs, a variation store of two subtables |
+| `fonts/noto-sans-variable` | ttf | 1 | OFL-1.1 | Noto Sans 2.015 variable (weight and width), subset to 123 characters (279 glyphs) with every variation table kept: `gvar`, `HVAR`, `MVAR`, `avar`, positions and anchors of `GPOS` that vary |
+| `fonts/noto-sans-cjk-jp-variable` | otf | 1 | OFL-1.1 | Noto Sans CJK JP 2.004 variable (weight), subset to 133 characters (566 glyphs): a CID-keyed `CFF2` table with several font DICTs, blended hints kept, `HVAR`, `avar` |
+| `fonts/noto-naskh-arabic` | ttf | 1 | OFL-1.1 | Noto Naskh Arabic 2.019, subset to 134 characters: the letters of Arabic, Persian and Urdu, the vowel marks and the marks that are reordered, both sets of digits, punctuation, the joiners and a few presentation forms, with the forms, the ligatures and the anchors of these letters |
+| `fonts/noto-nastaliq-urdu` | ttf | 1 | OFL-1.1 | Noto Nastaliq Urdu 4.000, subset to the letters of Urdu: cursive attachment, marks on letters that were moved, glyphs inserted to make room for dots, many contextual lookups |
+| `fonts/noto-sans-hebrew` | ttf | 1 | OFL-1.1 | Noto Sans Hebrew 3.001, stored as it is: letters, points, cantillation marks, precomposed letters, with anchors for the marks |
+| `fonts/noto-sans-hebrew-without-positioning` | ttf | 1 | OFL-1.1 | The same font without its `GPOS` table (`hb-subset --drop-tables+=GPOS`), as a font made before OpenType Layout: a letter and its point are then drawn with the precomposed letter |
+| `fonts/noto-sans-syriac` | ttf | 1 | OFL-1.1 | Noto Sans Syriac 3.000, stored as it is: the forms of the letters and of alaph (`fin2`, `fin3`, `med2`), marks, and the abbreviation mark that stretches (`stch`) |
+| `fonts/noto-sans-devanagari`, `-bengali`, `-gurmukhi`, `-gujarati`, `-oriya`, `-tamil`, `-telugu`, `-kannada`, `-malayalam` | ttf | 1 | OFL-1.1 | The Noto Sans font of each Indic script (versions 2.003 to 2.106), stored as they are: the features of the Indic shaping model under the script tag of the second version of the specifications (half forms, forms below and after the base, reph, conjuncts, presentation forms), anchors for the marks |
+| `fonts/noto-sans-devanagari-first-version`, `fonts/noto-sans-malayalam-first-version` | ttf | 1 | OFL-1.1 | The same fonts with the script tag of the first version of the specifications only (`hb-subset --layout-scripts`): the "old behavior" of the model |
+| `fonts/noto-sans-khmer` | ttf | 1 | OFL-1.1 | Noto Sans Khmer 2.004, stored as it is: the forms of the subscripts (`pref`, `blwf`, `abvf`, `pstf`, `cfar`), the parts of the split vowels, ligatures of the presentation features |
+| `fonts/noto-sans-myanmar` | ttf | 1 | OFL-1.1 | Noto Sans Myanmar 2.107, stored as it is: the features of the Myanmar shaping model under the tag `mym2` (kinzi, medials, stacked consonants), the letters of the extended blocks |
+| `fonts/noto-serif-tibetan` | ttf | 1 | OFL-1.1 | Noto Serif Tibetan 2.103, stored as it is: stacks of subjoined letters, vowel signs and marks placed by anchors, and more than two thousand substitution subtables, which a long text tries at each glyph |
+| `fonts/noto-sans-sinhala`, `-javanese`, `-balinese`, `-tai-tham`, `-cham`, `-newa`, `-kaithi`, `-lepcha` | ttf | 1 | OFL-1.1 | The Noto Sans font of scripts of the universal shaping model (versions 2.002 to 2.007), stored as they are: among them the features of the model (`rphf` in Sinhala, Newa and Kaithi; `pref` in Javanese, Cham and Newa; `akhn`, `half`, `blwf`, `abvf`, `pstf`, `vatu`, `cjct`), vowel signs Unicode decomposes, a glyph a font moves after the marks of its letter (Lepcha) |
+| `fonts/noto-sans-nko`, `-mongolian`, `-adlam` | ttf | 1 | OFL-1.1 | Noto Sans NKo 2.004, Mongolian 3.002 and Adlam 3.002, stored as they are: scripts of the universal model whose letters join (`isol`, `init`, `medi`, `fina`), two of them from right to left; the free variation selectors of Mongolian |
+| `fonts/noto-sans-duployan` | ttf | 1 | OFL-1.1 | Noto Sans Duployan 3.002, subset to a few letters, the marks and the format controls: each letter becomes many glyphs, connected by cursive attachments that several lookups make and remake, with marks attached before them; some six thousand subtables |
+| `fonts/noto-sans-thai`, `fonts/noto-sans-lao` | ttf | 1 | OFL-1.1 | Noto Sans Thai 2.002 and Noto Sans Lao 2.003, stored as they are: the marks above tall consonants and below consonants that have a tail, the sara am, ligatures of a ring and a tone mark |
+| `fonts/noto-sans-cjk-kr-regular` | otf | 1 | OFL-1.1 | Noto Sans CJK KR 2.004, subset to the letters of Hangul (the modern ones, a few of Old Hangul and of the extended blocks, the fillers), the tone marks and thirty syllables, with the glyphs the font has for a letter at each position of a block (`ljmo`, `vjmo`, `tjmo`); CFF outlines, hints kept |
+| `fonts/noto-sans-cjk-kr-letters` | otf | 1 | OFL-1.1 | The same subset without any syllable: every block is drawn with its letters |
+| `fonts/trt-*` | ttf, otf | 1 | OFL-1.1, Apache-2.0 or CC0-1.0 (see the manifest) | Ten fonts of the text-rendering-tests suite of the Unicode Consortium, stored as they are (`fonts/text-rendering-tests/`), each made for one feature: `avar`, `gvar` (also composite glyphs and regions between two values), `HVAR` with TrueType and with CFF2 outlines, `CFF2`, feature variations (`rvrn`) with both kinds of outlines, anchors of `GPOS` that vary |
+| `fonts/synthetic-color-boxes` | ttf | 1 | CC0-1.0 | A color font of rectangles: `COLR` version 0 (layers, a layer with the color of the text), `CPAL` version 1 with two palettes and their types |
+| `fonts/synthetic-color-transforms`, `-gradients`, `-clips` | ttf | 1 | CC0-1.0 | `COLR` version 1, one glyph per case: opacity, translation, scale, rotation, skew, matrix, nested clips, compositions; linear, radial and sweep gradients with each extend mode and the degenerate color lines; clip boxes, a glyph that paints another one, a glyph that paints itself |
+| `fonts/colr-test-glyphs`, `fonts/colr-test-glyphs-variable` | ttf | 1 | Apache-2.0 | The COLRv1 test glyphs of the googlefonts/color-fonts project, stored as they are: 220 glyphs, one per feature of the paints (every composition mode, extend modes of each gradient, transformations, clip boxes, the color of the text, cycles), and their variable form (18 axes that vary the fields of the paints) |
+| `fonts/colr-twemoji-smiley`, `fonts/colr-twemoji-smiley-cff2` | ttf, otf | 1 | CC-BY-4.0 | Fifteen emoji of the Twemoji set as `COLR` version 1 paints, with TrueType and with CFF2 outlines, from the same project |
+| `fonts/synthetic-bitmap-boxes`, `fonts/synthetic-color-bitmaps` | ttf | 1 | CC0-1.0 | Glyphs that are PNG images of a few flat colors, in strikes of 16 and 32 pixels per em: an `sbix` table (an image that stands for another glyph's, a glyph without image) and `CBLC` and `CBDT` tables; one glyph is an outline only |
+| `fonts/sbix-twemoji-smiley` | ttf | 1 | CC-BY-4.0 | The fifteen emoji of the same project as PNG images of an `sbix` table, in one strike of 109 pixels per em |
+| `fonts/*-woff`, `fonts/*-woff2` | woff, woff2 | as the original | as the original | WOFF of the boxes, deltas, charstrings, Noto Sans and Noto Sans CJK fonts; WOFF2 of the boxes, curves, deltas, charstrings, collection and both Noto Sans fonts |
+| `fonts/synthetic-boxes-woff2-metrics`, `fonts/synthetic-deltas-woff2-boxes` | woff2 | 1 | CC0-1.0 | Written by `FontWoff2Writer`: transformed horizontal metrics (both flags, then one), every bounding box stored |
+| `fonts/synthetic-variable-axes` | ttf | 1 | CC0-1.0 | The synthetic variable font with version 2 of the `avar` table: a variation store whose deltas change the normalized weight and width from both of them, through a delta set index map |
+| `fonts/synthetic-languages` | ttf | 1 | CC0-1.0 | The boxes font with a language system for each of the 680 tags of the registry of language system tags of OpenType: the `locl` feature of each one replaces A by four glyphs that tell which one it is |
+| `fonts/synthetic-monochrome-boxes` | ttf | 1 | CC0-1.0 | The boxes font with strikes of one bit per pixel (`EBLC` and `EBDT`) at 12 and 16 pixels per em, whose bitmaps do not draw what the outlines draw. The reference tools do not draw these bitmaps: the vectors are those of the outlines, and the bitmaps have literals in the tests |
+| `fonts/synthetic-marks` | ttf | 1 | CC0-1.0 | A font without substitution and positioning tables whose marks, of every kind of combining class, are all drawn at one place, with letters whose ink is not in the middle of their advance |
+| `fonts/synthetic-arabic-forms` | ttf | 1 | CC0-1.0 | A font of Arabic without substitution and positioning tables: a glyph for each letter and for each character of the Arabic Presentation Forms blocks |
+| `fonts/synthetic-thai-forms`, `fonts/synthetic-thai-forms-mac` | ttf | 1 | CC0-1.0 | A font of Thai without substitution and positioning tables: a glyph for each character of the Thai block and for each form of the private use area, at the code points of the fonts of Windows (U+F700 to U+F71A) or of Mac OS (U+F884 to U+F89E) |
+| `fonts/noto-color-emoji` | ttf | 1 | OFL-1.1 | Noto Color Emoji 2.057 (the `COLR` version 1 build), subset to 60 characters of each kind of emoji sequence: emoji that are emoji or text by default, the skin tone modifiers, people and what joins them, four regional indicators, the keycap, the tags of a subdivision flag; the ligatures of their sequences, and their variation sequences with U+FE0F |
+
+### Shaping vectors
+
+A variable font also has **instances** in its vectors: for values of its axes listed in `FontCorpus.cs`, the metrics,
+the advance of each glyph and the outline of each glyph. The advances are whole font units, on which the two readers
+must agree. The points of an instance are fractions of font units: HarfBuzz keeps them, with the precision of single
+precision numbers, where FreeType rounds the deltas of the offsets of components and gives whole units for CFF2
+outlines. The outlines recorded are those of HarfBuzz to three decimals (`hb-vector --precision=3`), once FreeType has
+drawn the same segments within two units; the tests accept a difference of 0.005 unit. The metrics of an instance are
+those of `hb-info`. A glyph whose origin varies is only in the font without `HVAR`: with that table, FreeType takes the
+side bearings from it and HarfBuzz from the phantom points.
+
+The fonts of the text-rendering-tests suite come from `test/shape/data/text-rendering-tests/fonts` of the checkout of
+HarfBuzz the AOTS suite comes from, copied to a `text-rendering-tests` directory of the fonts directory. Only the fonts
+whose own license (the one their `name` table declares, or the Apache-2.0 license of the suite when they declare none)
+is accepted by the corpus are stored; the fonts of the suite under another license are not.
+
+A color font has **renders** instead of outline vectors (`renders` of its entry, `FontRender` in the test harness):
+lines of its characters drawn by `hb-raster`, the rasterizer of the HarfBuzz utilities, as PNG files of
+`fonts/renders/`. A line is drawn in its box (`--logical`, with the ascent and the descent given by
+`--font-extents`, so that they are whole pixels) with a margin of 32 pixels, on a white background: the origin of its
+first glyph is at (margin, margin + ascent). The tests draw the same line at the same place and compare the images
+(`Conformance/ColorFontConformanceTests`): the two rasterizers anti-alias edges differently and the reference one
+works with 8-bit colors, so the test bounds the mean difference, the part of the pixels that differ by more than 24
+levels, and the size of a block of such pixels, which an edge never is. This is a cross-check of the whole pipeline,
+not an exact reference: the exact expectations are the literals of `ColorFontTests`, computed by hand on the
+synthetic color fonts, which `hb-raster` also draws.
+
+A few characters are left out of the lines (`CharactersWithoutReference` in `FontCorpus.cs`) because the reference
+renderer does not draw them as the OpenType specification says: it draws nothing for a sweep gradient that pads and
+whose angles are equal or whose stops are at one offset (the specification gives it two colors), and nothing for a
+glyph that paints the same glyph several times, which is not a cycle. These cases have literals in `ColorFontTests`.
+
+The fonts whose glyphs are images are drawn at the sizes of their strikes (`--font-ppem`, without which the reference
+renderer takes the largest strike), where a pixel of an image is a pixel of the render. The reference renderer draws
+an image one pixel higher than the specification places it (the row of an image that is on the baseline is drawn above
+it): a render records that shift (`imageShift`, in pixels, down when positive) and the test draws its line there. A
+line of these fonts has no glyph that is an outline, which the reference renderer does not shift.
+
+Regenerating the renders and the vectors runs the reference tools thousands of times. When
+`MEZIANTOU_FRAMEWORK_IMAGING_CORPUS_CACHE` names a directory, the generator keeps there the output of each command,
+keyed by its arguments and by the content of its input files, and reuses it; the variable is not set by default.
+
+The fonts of the googlefonts/color-fonts project (`fonts/color-fonts/`) come from its `fonts` directory at the commit
+`FontCorpus.cs` pins. The test glyphs are generated by a script of the project (Apache-2.0); the emoji are those of
+Twemoji (CC-BY-4.0, Twitter, Inc and other contributors).
+
+The `shaping` file of a font (`ShapingVectors` in the test harness) holds texts and what the OpenType shaper of
+HarfBuzz gives for them: `hb-shape --shapers=ot --font-funcs=ot --no-glyph-names`, with the features of the case, for a variable font the
+instance of the case (`--variations`), and the language of the case when it has one (`--language`, a BCP 47 language tag). A text
+is stored as the hexadecimal code points of its characters, so that no invisible character is lost in an editor; a
+glyph is six numbers: the glyph identifier, the cluster (an index of character), the two offsets and the two advances,
+in font units. The texts are listed in `FontCorpus.cs`, chosen for what shaping does to them: kerning, ligatures, marks
+that compose or are attached, invisible characters, spaces and hyphens a font lacks, fractions, features turned on
+and off. `ShapingConformanceTests` compares the glyphs, the clusters, the place each glyph is drawn at and the
+advance of the text; how an adjustment is split between an advance and an offset is not compared.
+
+The reference shaper guesses the script of a text from its first letter and lays it out in the direction of that
+script; the test does the same, so a right-to-left text is compared in the order its glyphs are drawn in. The texts of
+Arabic, Urdu, Hebrew and Syriac are about what the shaping model of these scripts does: the forms of the letters and
+what joins or separates them, the order of the marks, the ligatures and what keeps them from forming, the forms of the
+Syriac alaph, the mark that stretches over a word, the precomposed Hebrew letters. Those of Thai and Lao are about the
+sara am and the order of the marks; those of Hangul about the letters that make a syllable or not, in a font that has
+the syllables and in one that does not, and about the tone marks. The Indic scripts share a set of cases written with
+the letters they have at the same place of their blocks (conjuncts, reph, joiners, the vowel sign drawn before its
+syllable, signs without a base, each feature of the model turned off), followed by the cases of each script. Those of
+Khmer are about the subscripts, the ro among them, the vowels with two parts and the register shifters; those of
+Myanmar about the kinzi, the medials, the marks whose order changes and the bases that are not letters. Those of the
+scripts of the universal model are about the classes of their characters (what a cluster can have, and in which order),
+the glyphs that are moved, the forms of the letters that join, and what is not a cluster. Several of them were found by
+shaping random sequences of the characters of a script with both shapers.
+
+The fonts without layout tables are about what a shaper does in their place. For the fonts without positioning table
+(the Hebrew font without `GPOS`, the marks font), the reference shaper places each mark from the shapes of the glyphs
+and from its combining class, by rules no specification gives: the positions are compared like any other, on a mark
+of each kind of class, on marks that stack, and on marks a font draws lower or higher than the others. The Arabic
+font without substitution table has the forms of its letters as characters, and the Thai ones the forms of their marks
+in the private use area. The emoji font is about the sequences a font draws with one glyph, and about the variation
+selector that is part of a sequence the font has.
+
+The languages font has a case for each of some 1,500 language tags (the codes of two letters, the codes of the
+registry of OpenType, the languages of a macrolanguage and the deprecated subtags of the registry of BCP 47, and
+tags with a script, a region or a variant): the glyphs tell which language system the shaper took. The differences
+with the reference shaper are listed in `ShapingConformanceTests`, by group, with the reason of each.
+
+There is one reference shaper: the pinned tools have no other one. A difference with it is settled by the
+specifications, and a deliberate one is listed in the test with its reason.
+
+### Font suites
+
+The `fontSuites` section lists third-party suites of test fonts, each a directory stored as published and identified
+as a whole: the number of its files and the SHA-256 of their list (for each file, by ordinal order of its path, the
+path, a line feed, the SHA-256 of its content, a line feed).
+
+| Suite | License | Content |
+| --- | --- | --- |
+| `font-suites/aots` | Apache-2.0 | The Annotated OpenType Specification tests of Adobe, as the HarfBuzz project distributes them (`test/shape/data/aots` at the commit the manifest records): 205 fonts that each exercise one format of the `cmap`, class definition, coverage, `GSUB` or `GPOS` tables, and 128 files of tests (a font, the options of `hb-shape`, characters, the expected glyphs and positions). `ShapingSuiteTests` runs every test that is not commented out; the commented ones are the cases HarfBuzz itself does not pass |
+
+The generator copies a suite from a directory of the fonts directory (`aots`) and refuses a content whose hash is not
+the pinned one. The tools HarfBuzz keeps next to the suite (its test driver and build files) are not copied.
 
 ## Color management
 
@@ -218,6 +422,29 @@ plus Apple ImageIO for JPEG (libjpeg-turbo `djpeg` is the reference; FFmpeg's od
 recorded and excluded from the tolerance; for progressive fixtures djpeg's optional block smoothing is inactive because
 every scan script completes the DC and AC coefficients 1-9, so the reference is a plain decoding of the coefficients as
 sent). Disagreements are documented, never hidden.
+
+12-bit JPEG fixtures (`jpeg/precision12-*`, `jpeg/progressive-precision12-*`): `cjpeg -precision 12` encodes a pattern of
+12-bit samples and `djpeg` writes the decoded 12-bit samples as they are (a portable anymap with the maximum value 4095).
+The reference is each sample `s` scaled to 16 bits as the library does, `(s * 65535 + 2047) / 4095`, in 16-bit layouts;
+the errors are recorded on the 8-bit scale like every tolerance (units of 257, the maximum rounded up), so three units of
+a 12-bit sample count as one. The cross-checks are FFmpeg, whose decoder shifts the samples left by four bits instead (a
+difference below one unit of the 8-bit scale) and whose planes are converted by swscale with its default scaler (the
+bilinear scaler of FFmpeg 9.0.2 does not convert subsampled planes of more than 8 bits), and Apple ImageIO, whose 16-bit
+PNG output FFmpeg reads back without loss. Both upsample the chroma of 12-bit files very differently from `djpeg` on
+detailed content (maximum 19 to 44, mean 5 to 10), which bounds what independent decoders justify; the tolerance of each
+fixture is the disagreement measured for the library (`LibraryJpegMeasurements`), which decodes like `djpeg`. No
+fixture has 12-bit RGB samples (Adobe transform 0): neither FFmpeg nor ImageIO reads them as RGB, so nothing would
+cross-check the reference; the unit tests cover them.
+
+Arithmetic-coded JPEG fixtures (`jpeg/arithmetic-*`, `jpeg/progressive-arithmetic-*`): `cjpeg -arithmetic` encodes them
+and `djpeg` is the reference, as for the Huffman-coded ones. libjpeg-turbo is the only arithmetic decoder at hand: FFmpeg
+has none (the generator checks that it still fails), and Apple ImageIO agrees exactly with `djpeg` on the files without
+chroma subsampling, where its own decoder differs on Huffman-coded files, so it is recorded and excluded from the
+tolerance. The cross-check is FFmpeg on the file `jpegtran` rewrites with Huffman codes, which has the same
+coefficients: it checks everything but the arithmetic decoding itself. The fixtures with chroma subsampling therefore
+have even dimensions (FFmpeg's conversion of odd chroma planes is excluded from tolerances), and none has 12-bit
+samples. The unit tests decode arithmetic-coded streams written by the test-side encoder (`JpegTestArithmeticCoder`),
+8-bit and 12-bit, with every conditioning.
 
 Four-component JPEG fixtures (`BuildInkJpeg`, `inkConversion`): LittleCMS `jpgicc` separates an RGB JPEG into a YCCK
 file, `jpegtran` rewrites its scans (progressive, restart intervals) without changing a coefficient, and the generator
@@ -384,8 +611,8 @@ header (65,536 bytes) rejects.
 | PNG | every legal color type/bit depth: gray 1/2/4/8/16, RGB 8/16, palette 1/2/4/8 (partial tRNS, 256 colors, fewer entries than the depth allows), gray+alpha 8/16, RGBA 8/16; tRNS keys for gray 4/8/16 and RGB 8/16 (16-bit keys differing from opaque pixels only in the low bit or by a byte swap); 16-bit low-bit gradients (gray, gray+alpha, RGB, RGBA); Adam7 for 8/16-bit and sub-byte samples and the edge cases 1x1 (passes 2-7 empty), 1x9, 9x1, 3x2 and odd sizes; split and empty IDAT chunks; every filter type on 1-, 2-, 4-, 6- and 8-byte pixels; FFmpeg-encoded (compressed) and hand-authored (stored deflate) inputs; native `gray8`/`gray16le` and `rgb8` references for `Gray8`/`Gray16`/`Rgb24` decoding |
 | APNG | SOURCE/OVER blending, dispose NONE/BACKGROUND/PREVIOUS, separate poster with first-frame PREVIOUS (treated as BACKGROUND), exact rational delays (`3/30`, `0/0`, `7/1000`), finite and infinite plays, FFmpeg-encoded 8/16-bit animations; compositing fixtures: translucent OVER at 8 bits (`over-alpha-rgba8`: over opaque, translucent and cleared pixels, OVER on the first frame drawn with SOURCE, BACKGROUND then OVER, SOURCE transparent replacement with hidden colors, PREVIOUS, delays `65535/1000`, `7/0`) and 16 bits (`over-alpha-rgba16`), a separate 16-bit poster with partial first frame and consecutive PREVIOUS (`poster-rgba16-dispose`, delays `0/1`, `1/65535`), gray + `tRNS` key with Adam7 frame regions of odd sizes and `fdAT` split in three chunks (`gray8-trns-adam7`), a poster plus one partial frame (`poster-partial-single-frame`), and a one-frame palette + `tRNS` animation (`palette-single-frame`) |
 | GIF | GIF87a 2-color palette (minimum code size 2), interlaced frame with local palette, disposal 0-3 with transparency, LZW full table with clear codes and with deferred clear (KwKwK runs), FFmpeg-encoded animation with finite loop; for the decoder (`build_gif_decoding`, every frame a literal grid): palette changes (global, local 4/16/2 entries with a transparent index, an image without Graphic Control Extension, delay 65535, loop 1), disposal and the background color (bg index never painted: partial first image with disposal 3, disposal 2 without transparent index), undefined disposals 4 and 5-7, a transparent first image, interlaced images of heights 1-9, rectangles larger than / partly / entirely outside the screen, LZW minimum code size 1, code-size boundaries (no initial clear, two leading clears, clears at 2^k and 2^k + 1, KwKwK runs, minimum code size 8 with 16 colors), a missing end code, data after the end code, ANIMEXTS1.0, loop extensions after the first image (the last wins), a single image with loop 65535 and a NETSCAPE2.0 buffering sub-block, skipped extensions and comments |
-| JPEG | baseline 4:2:0 / 4:2:2 (odd width, restart markers) / 4:4:4, progressive 4:2:0 with partial MCUs, grayscale odd size, EXIF orientation 6 (metadata only), JFIF density 300x150 dpi + XMP + COM; for the sequential decoder: high-frequency content (`pattern_detail_*`) with odd 4:2:0 and one restart interval per MCU row and optimized Huffman tables, 4:4:0 (vertical triangle filter), 4:1:1 (replication), 4:4:4 detail, grayscale with 3-block restart intervals, optimized tables and a gray ICC profile, extended sequential SOF1 with 16-bit DQT (quality 3), Adobe RGB (transform 0, `R`/`G`/`B` identifiers), multi-scan sequential frames (Cb/Y/Cr in separate non-interleaved scans with restarts; Y then interleaved CbCr), RGB ICC in three out-of-order APP2 chunks + big-endian EXIF orientation 3 + JFIF dots per centimeter; tiny frames whose chroma planes are at most 2 samples wide (4:2:0 4x9 and 2x13, 4:2:2 3x5, progressive 4:2:0 4x6: replicated like libjpeg-turbo); for the progressive decoder: the default libjpeg-turbo progression (DC/AC successive approximation, luma band split) at 4:4:4 detail, odd 4:2:2 with 2-MCU restarts, gray smaller than two blocks and Adobe RGB, and `-scans` scripts (`PROGRESSIVE_*_SCRIPT`): DC refined from bit 3 and a luma band refined from bit 4 at odd 4:2:0 with per-row restarts, spectral selection only at 4:4:0, separate DC scans with different point transforms at 4:1:1 with 3-block restarts, a gray refinement script with 3-block restarts, and a partial progression (high frequencies never refined to bit 0 or never sent) — encoded by libjpeg-turbo `cjpeg`. Every color JPEG also has an `rgb8` reference for `Rgb24` decoding |
-| JPEG errors | Unsupported (header): arithmetic coding, lossless (SOF3), 12-bit precision, non-integral sampling ratios; unsupported without a color conversion (identified, and loaded with the conversion their `inkConversion` declares): four components, as YCCK inks with an embedded CMYK profile, as CMYK inks (Adobe transform 0) in a progressive frame, and as CMYK inks without Adobe segment with restart intervals; structure: interleaved scan with 18 blocks per MCU; decoding only (valid containers): truncated entropy-coded data, an unassigned Huffman code, a zero quantization value, a truncated DQT, an undefined Huffman table, an oversubscribed Huffman table, a restart marker out of sequence, a missing last restart marker, a frame whose third component has no scan; progressive: structure (scan headers, found by a full identification): an AC scan with Ss > Se, a refinement scan moved before the first scan of its band; decoding only: a truncated scan followed by the remaining scans, an invalid code at the start of an AC refinement, a frame whose Cr component has no scan; limit: a frame header declaring 20000x20000 pixels (`MaxFramePixels`, before any allocation) |
+| JPEG | baseline 4:2:0 / 4:2:2 (odd width, restart markers) / 4:4:4, progressive 4:2:0 with partial MCUs, grayscale odd size, EXIF orientation 6 (metadata only), JFIF density 300x150 dpi + XMP + COM; for the sequential decoder: high-frequency content (`pattern_detail_*`) with odd 4:2:0 and one restart interval per MCU row and optimized Huffman tables, 4:4:0 (vertical triangle filter), 4:1:1 (replication), 4:4:4 detail, grayscale with 3-block restart intervals, optimized tables and a gray ICC profile, extended sequential SOF1 with 16-bit DQT (quality 3), Adobe RGB (transform 0, `R`/`G`/`B` identifiers), multi-scan sequential frames (Cb/Y/Cr in separate non-interleaved scans with restarts; Y then interleaved CbCr), RGB ICC in three out-of-order APP2 chunks + big-endian EXIF orientation 3 + JFIF dots per centimeter; tiny frames whose chroma planes are at most 2 samples wide (4:2:0 4x9 and 2x13, 4:2:2 3x5, progressive 4:2:0 4x6: replicated like libjpeg-turbo); for the progressive decoder: the default libjpeg-turbo progression (DC/AC successive approximation, luma band split) at 4:4:4 detail, odd 4:2:2 with 2-MCU restarts, gray smaller than two blocks and Adobe RGB, and `-scans` scripts (`PROGRESSIVE_*_SCRIPT`): DC refined from bit 3 and a luma band refined from bit 4 at odd 4:2:0 with per-row restarts, spectral selection only at 4:4:0, separate DC scans with different point transforms at 4:1:1 with 3-block restarts, a gray refinement script with 3-block restarts, and a partial progression (high frequencies never refined to bit 0 or never sent) — encoded by libjpeg-turbo `cjpeg`. Every color JPEG also has an `rgb8` reference for `Rgb24` decoding; 12-bit samples (`cjpeg -precision 12`, references in 16-bit layouts): 4:4:4 detail, odd 4:2:0 with optimized tables and one restart interval per MCU row, odd 4:2:2 on a smooth gradient, grayscale with 3-block restart intervals, the default progression at 4:2:0 and a grayscale refinement script; arithmetic coding (`cjpeg -arithmetic`): sequential frames at 4:4:4 detail, 4:2:0 with partial MCUs and one restart interval per MCU row, 4:2:2 on a smooth gradient and grayscale with 3-block restart intervals, progressive frames with the default progression at 4:2:0, a scan script that refines DC from bit 3 and a luma band from bit 4 with per-row restarts, and a grayscale refinement script |
+| JPEG errors | Unsupported (header): lossless (SOF3), a sample precision of 16 bits in an extended sequential frame (the DCT processes have 8-bit or 12-bit samples), non-integral sampling ratios; unsupported without a color conversion (identified, and loaded with the conversion their `inkConversion` declares): four components, as YCCK inks with an embedded CMYK profile, as CMYK inks (Adobe transform 0) in a progressive frame, and as CMYK inks without Adobe segment with restart intervals; structure: interleaved scan with 18 blocks per MCU; decoding only (valid containers): truncated entropy-coded data, an unassigned Huffman code, a zero quantization value, a truncated DQT, an undefined Huffman table, an oversubscribed Huffman table, a restart marker out of sequence, a missing last restart marker, a frame whose third component has no scan; progressive: structure (scan headers, found by a full identification): an AC scan with Ss > Se, a refinement scan moved before the first scan of its band; decoding only: a truncated scan followed by the remaining scans, an invalid code at the start of an AC refinement, a frame whose Cr component has no scan; limit: a frame header declaring 20000x20000 pixels (`MaxFramePixels`, before any allocation) |
 | WebP | lossless (VP8L): 1x1, odd width, RGBA corner markers, hidden colors under alpha 0 (`-exact`), a detailed pattern with the transforms `cwebp -z 9` chooses (`lossless-detail-transforms`), a small palette with pixel bundling and a 256-color palette, extended layout with ICC/EXIF/XMP, an opaque extended file with an unknown chunk; lossy (VP8): normal and simple loop filters with segmentation, no filter at high quality, odd and tiny (3x2) sizes, raw `ALPH` and lossless-compressed `ALPH` with horizontal filtering, metadata; animations: blend/dispose combinations with partial frames and a finite loop, a partial first frame with infinite loop, mixed lossy and lossless frames, a single-frame animation |
 | BMP | 24-bit bottom-up and top-down with row padding, 32-bit `BITMAPV4HEADER` with an alpha mask and the same bytes as 32-bit `BI_RGB` (unspecified fourth byte), 16-bit implicit 5-5-5 and explicit 5-6-5 masks after a 40-byte header, 16-bit 1-5-5-5 with a `BITMAPV3INFOHEADER` alpha mask, 8-bit palette with five entries and a gap before the pixel data, 4-bit and 1-bit palettes with odd widths, `biXPelsPerMeter`/`biYPelsPerMeter`, FFmpeg-encoded 24-bit and 32-bit files; run-length streams: `BI_RLE8` and `BI_RLE4` with encoded runs (alternating indexes for 4 bits), absolute runs with and without a padding byte, and every way of skipping pixels (delta to the right, delta to a later row, early end of line, early end of bitmap) over a palette whose first entry is not black; OS/2: `BITMAPCOREHEADER` with 24-bit rows and with 1-, 4- and 8-bit `RGBTRIPLE` palettes (one shorter than its bit count allows, ended by `bfOffBits`), `BITMAPCOREHEADER2` complete (64 bytes, with a resolution) and cut after its bit count (16 bytes), and `BCA_RLE24` |
 | BMP errors | invalid: zero width/height, two planes, bit count 7, undefined compression, pixel offset inside the header, truncated header and pixel data, palette index out of range, overlapping/non-contiguous/zero masks; run-length: `BI_RLE8` with top-down rows or 4 bits per pixel, a run past the end of its row, a delta outside the canvas, data after the last row, a missing end-of-bitmap marker, a palette index out of range; OS/2: `BITMAPCOREHEADER` with 16 bits per pixel or a pixel offset that leaves no palette entry; unsupported: OS/2 Huffman 1D, `BI_PNG`, 2 bits per pixel, a 10-bit channel mask; limits: width, frame pixels |
@@ -438,7 +665,7 @@ follows it, so keep both headings unique in this file.
 | avif | 139 | 33 | 14 | 12 |
 | bmp | 24 | 21 | 4 | 2 |
 | gif | 24 | 15 | 1 | 2 |
-| jpeg | 42 | 15 | 7 | 1 |
+| jpeg | 55 | 15 | 6 | 1 |
 | jp2 | 92 | 17 | 11 | 5 |
 | jxl | 53 | 7 | 4 | 6 |
 | png | 109 | 31 | 1 | 6 |
@@ -521,33 +748,35 @@ follows it, so keep both headings unique in this file.
 | GIF LZW missing end code | `gif.lzw.missingEndCode` | 1 | 0 | 0 | 0 |
 | GIF LZW data after the end code | `gif.lzw.dataAfterEndCode` | 1 | 0 | 0 | 0 |
 | JPEG baseline (SOF0) | `jpeg.process=baseline` | 30 | 10 | 3 | 1 |
-| JPEG extended sequential (SOF1) | `jpeg.process=extended` | 1 | 0 | 1 | 0 |
-| JPEG progressive (SOF2) | `jpeg.process=progressive` | 11 | 5 | 1 | 0 |
-| JPEG progressive spectral selection | `jpeg.progressive=spectral-selection` | 10 | 4 | 1 | 0 |
-| JPEG progressive successive approximation | `jpeg.progressive=successive-approximation` | 10 | 4 | 1 | 0 |
-| JPEG progressive DC refinement | `jpeg.progressive=dc-refinement` | 10 | 4 | 1 | 0 |
-| JPEG progressive AC refinement | `jpeg.progressive=ac-refinement` | 10 | 4 | 1 | 0 |
+| JPEG extended sequential (SOF1) | `jpeg.process=extended` | 5 | 0 | 1 | 0 |
+| JPEG progressive (SOF2) | `jpeg.process=progressive` | 13 | 5 | 1 | 0 |
+| JPEG progressive spectral selection | `jpeg.progressive=spectral-selection` | 15 | 4 | 1 | 0 |
+| JPEG progressive successive approximation | `jpeg.progressive=successive-approximation` | 15 | 4 | 1 | 0 |
+| JPEG progressive DC refinement | `jpeg.progressive=dc-refinement` | 15 | 4 | 1 | 0 |
+| JPEG progressive AC refinement | `jpeg.progressive=ac-refinement` | 15 | 4 | 1 | 0 |
 | JPEG progressive separate DC scans | `jpeg.progressive=dc-separate` | 1 | 1 | 0 | 0 |
 | JPEG partial progression | `jpeg.progressive=partial` | 1 | 1 | 0 | 0 |
 | JPEG multi-scan sequential frames | `jpeg.process=baseline` + `jpeg.scans=3` | 1 | 0 | 0 | 0 |
 | JPEG non-interleaved scans | `jpeg.scanComponents=1` | 2 | 1 | 0 | 0 |
-| JPEG grayscale (one component) | `jpeg.components=1` | 4 | 0 | 0 | 1 |
-| JPEG three components (YCbCr or RGB) | `jpeg.components=3` | 38 | 15 | 4 | 0 |
+| JPEG grayscale (one component) | `jpeg.components=1` | 8 | 0 | 0 | 1 |
+| JPEG three components (YCbCr or RGB) | `jpeg.components=3` | 47 | 15 | 3 | 0 |
 | JPEG Adobe APP14 segment (RGB, CMYK or YCCK) | `jpeg.app14=Adobe` | 2 | 0 | 3 | 0 |
-| JPEG sampling 4:4:4 | `jpeg.sampling=4:4:4` | 7 | 0 | 1 | 0 |
-| JPEG sampling 4:2:2 | `jpeg.sampling=4:2:2` | 5 | 0 | 0 | 0 |
-| JPEG sampling 4:2:0 | `jpeg.sampling=4:2:0` | 14 | 14 | 2 | 0 |
+| JPEG sampling 4:4:4 | `jpeg.sampling=4:4:4` | 9 | 0 | 1 | 0 |
+| JPEG sampling 4:2:2 | `jpeg.sampling=4:2:2` | 7 | 0 | 0 | 0 |
+| JPEG sampling 4:2:0 | `jpeg.sampling=4:2:0` | 19 | 14 | 1 | 0 |
 | JPEG sampling 4:4:0 | `jpeg.sampling=4:4:0` | 2 | 0 | 0 | 0 |
 | JPEG sampling 4:1:1 | `jpeg.sampling=4:1:1` | 2 | 0 | 0 | 0 |
-| JPEG restart intervals | `jpeg.restartInterval` | 8 | 2 | 1 | 0 |
+| JPEG restart intervals | `jpeg.restartInterval` | 15 | 2 | 1 | 0 |
 | JPEG 16-bit quantization tables | `jpeg.quantization=16-bit` | 1 | 0 | 0 | 0 |
-| JPEG JFIF APP0 (density) | `jpeg.app0=JFIF` | 28 | 15 | 6 | 0 |
+| JPEG JFIF APP0 (density) | `jpeg.app0=JFIF` | 41 | 15 | 5 | 0 |
 | JPEG EXIF (APP1) | `jpeg.app1=Exif` | 2 | 0 | 0 | 0 |
 | JPEG XMP (APP1) | `jpeg.app1=http://ns.adobe.com/xap/1.0/` | 1 | 0 | 0 | 0 |
 | JPEG ICC profile (APP2) | `jpeg.app2=ICC_PROFILE` | 2 | 0 | 1 | 0 |
-| JPEG arithmetic coding (rejected) | `jpeg.process=arithmetic-sequential` | 0 | 0 | 1 | 0 |
+| JPEG arithmetic coding, sequential (SOF9) | `jpeg.process=arithmetic-sequential` | 4 | 0 | 0 | 0 |
+| JPEG arithmetic coding, progressive (SOF10) | `jpeg.process=arithmetic-progressive` | 3 | 0 | 0 | 0 |
 | JPEG lossless (rejected) | `jpeg.process=lossless` | 0 | 0 | 1 | 0 |
-| JPEG 12-bit precision (rejected) | `jpeg.precision=12` | 0 | 0 | 1 | 0 |
+| JPEG 12-bit samples | `jpeg.precision=12` | 6 | 0 | 0 | 0 |
+| JPEG precisions other than 8 and 12 bits (rejected) | `jpeg.precision=16` | 0 | 0 | 1 | 0 |
 | JPEG four components (CMYK/YCCK inks), loaded only with a color conversion (rejected) | `jpeg.components=4` | 0 | 0 | 3 | 0 |
 | WebP simple layout | `webp.layout=simple` | 12 | 4 | 1 | 2 |
 | WebP extended layout (`VP8X`) | `webp.layout=extended` | 9 | 4 | 0 | 3 |
@@ -1404,6 +1633,13 @@ tool version to see what changes; the interop CI job runs it on every build to d
 
 - The generators are the subcommands of one .NET console app (`tools/Meziantou.Framework.Imaging.CorpusGenerator`) and
   never use the library under test.
+- A generator writes a whole corpus to a temporary directory: its own entries and files, and a copy of the files the
+  other sections of the committed manifest reference. `--write` then removes every committed file that is not in that
+  directory. The files each section references are listed in `Infrastructure/CorpusDriver.Files.cs`: a section that
+  gains a kind of file (the `renders` of a font, for instance) must be added there, or the next `--write` of another
+  generator deletes those files. A generator stops before comparing or writing when its manifest describes a file its
+  output does not have, or when its output has a file these lists do not name, and `CorpusManifestTests` checks the
+  lists against the committed corpus.
 - Requirements of `golden`: macOS (Apple ImageIO `sips`: JPEG cross-checks and PNG arbitration; `swift` from the Xcode
   command line tools runs `imageio_frames.swift` for the APNG cross-checks), the .NET SDK of `global.json` (the generator
   targets .NET 10 and has no dependency on the library), FFmpeg, libjpeg-turbo `cjpeg`/`djpeg`/`jpegtran` and LittleCMS
@@ -1552,6 +1788,18 @@ tool version to see what changes; the interop CI job runs it on every build to d
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- icc-builtin          # check
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- icc-builtin --write  # replace, then review the diff
   ```
+- `fonts` (`FontCorpus.cs`; any OS; the HarfBuzz utilities `hb-info`, `hb-shape`, `hb-vector`, `hb-subset` and the
+  woff2 tools of the pinned meziantou/prebuilt release) writes the `fonts` section and the `fonts/` directory, and
+  keeps the rest of the corpus unchanged. It needs the third-party font files listed in `FontCorpus.cs`, downloaded
+  from their pinned sources into one directory given by `--fonts <directory>`; each file is checked against its pinned
+  SHA-256 before it is used. The same directory holds the font suites: `aots` is `test/shape/data/aots` of a checkout of
+  HarfBuzz at the commit pinned in the generator. The generator also records the shaping vectors. The WOFF files are compressed by the zlib of the runtime that runs the generator, which
+  the manifest records: they are reproducible with that runtime.
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- fonts --fonts <directory>          # check
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- fonts --fonts <directory> --write  # replace, then review the diff
+  ```
 - To add fixtures for a feature: add a builder (or a case) to the generator, run it with `--write`, review the diff and
   the cross-check results in the manifest, update the [coverage matrix](#fixture-coverage-matrix), and reference the
   fixture ids from the feature's tests.
@@ -1608,7 +1856,21 @@ undiscriminating tolerances and error fixtures with expected pixels fail the bui
 
 ### Allowed fixture licenses
 
-`CC0-1.0`, `MIT`, `Unlicense`, `CC-BY-4.0`, `Libpng`, `Zlib`.
+`CC0-1.0`, `MIT`, `Unlicense`, `CC-BY-4.0`, `Libpng`, `Zlib`, `Apache-2.0`, `Unicode-3.0`, and `OFL-1.1` for font
+files only.
+
+The SIL Open Font License is accepted for the entries of the `fonts` section and for nothing else, because open fonts
+for most scripts exist under no other license. Its conditions are met as follows, and the validator enforces the ones
+it can check:
+
+- A font stays under the OFL, with its copyright notice (in its `name` table) and the license text
+  (`LICENSES/OFL-1.1.txt`). It is test data only: it is never embedded in a package or in a test assembly.
+- A font with a Reserved Font Name is stored exactly as published (`modification: none`): no subset, no other
+  container. A font without one may be subset by the pinned subsetter or stored in another container.
+- A third-party font always names its source, with the commit or the version it was taken from.
+
+`Apache-2.0` and `Unicode-3.0` are the licenses of the test suites and test fonts published for font implementations;
+their texts are in `LICENSES/`.
 
 Content created by contributors for this repository (hand-authored patterns, outputs of committed generators, and files
 produced by running third-party tools on such content) is contributed under `CC0-1.0` unless stated otherwise. Tool

@@ -741,7 +741,7 @@ canvas. A coordinate must be finite (`ArgumentException`) and no larger than 16,
 (`ArgumentOutOfRangeException`). `PointD` has the usual arithmetic (`+`, `-`, `*`, `/`, `DistanceTo`) and `RectangleD`
 the usual helpers (`Center`, `Contains`, `Intersect`, `Union`, `Offset`, `Inflate`).
 
-**Brushes**. A `SolidBrush` paints one color (an `Rgba32` or `Rgba64` converts implicitly to a brush). A
+**Brushes**. A brush is a `SolidBrush`, a gradient or an `ImageBrush` (see Images below). A `SolidBrush` paints one color (an `Rgba32` or `Rgba64` converts implicitly to a brush). A
 `LinearGradientBrush` (between two points), a `RadialGradientBrush` (around a center, up to a radius) and a
 `SweepGradientBrush` (around a center, by the angle) paint the color of their `GradientStop`s at the center of each
 pixel; `SpreadMode` gives the colors beyond the stops: `Pad` (default), `Repeat` or `Reflect`. Gradients are positioned
@@ -754,6 +754,16 @@ strictly inside the circle. A sweep gradient goes around its center clockwise on
 it ends on the color it starts with, and that edge is not antialiased. Every gradient has a `Transform` that places it
 on the canvas: the points of the gradient are given before it applies, so a scaling that is not the same on both axes
 makes an elliptical radial gradient, and a rotation turns a gradient without recomputing its points.
+
+**Images**. `canvas.DrawImage` draws a frame of another image: at a position (its pixels as they are), stretched to a
+rectangle, or a region of it stretched to a rectangle (a sprite of a sheet), with an optional opacity. An `ImageBrush`
+paints any shape or text with an image: `Transform` places the image on the canvas, `WrapMode` gives the colors around
+it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), `Sampling` chooses between the interpolation of
+the four pixels around a position (`Bilinear`, the default) and the nearest pixel, and `Opacity` fades it. An image
+drawn on whole pixels without scaling keeps its pixels exactly; its pixels are converted to the pixel format of the
+canvas like any brush color, and no color profile is applied. An image that is drawn much smaller than it is skips
+pixels: `Resize` it first. The frame is read while it is drawn: it cannot be one of the frames the canvas draws on, but
+it can be another frame of the same image when the drawing is on one frame (`ImageFrame.Draw`).
 
 **Operators**. A brush is painted over the pixels (`CompositeMode.SourceOver`) unless its `CompositeMode` says
 otherwise. The modes are the compositing operators of Porter and Duff: `Source` replaces the pixels, alpha included (a
@@ -815,6 +825,10 @@ public static void MarkAnimation(string inputPath, string outputPath)
 - **Operators.** The other compositing operators use the same exact arithmetic and the same rounding. A pixel whose
   alpha becomes zero becomes transparent black. A frame without alpha stays opaque: its pixels get the color the result
   would have over black, so an eraser darkens them.
+- **Images.** The color an image gives a pixel is the color it has at the position the center of the pixel comes from:
+  the four pixels around that position, weighted by their distance to it, interpolated at 16 bits on alpha-premultiplied
+  values and rounded to nearest (or the pixel that contains the position, with nearest sampling). At the center of a
+  pixel of the image, it is that pixel exactly. The opacity of an image multiplies the coverage, as a clip does.
 - **Clips.** The coverage of a pixel under a clip is the product of the coverage of the shape and of the coverage of
   the clip, rounded to the nearest 1/65536 (ties upward). It is the area of what the shape and the clip have in common
   wherever one of them covers the pixel entirely; on a pixel that both only cover in part, it is the product of the two
@@ -1058,7 +1072,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 | Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
 | Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
 | Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
-| Drawing | Filled and stroked text, at a point or along a path; color glyphs and bitmap glyphs; rich text with decorations (underline, strikethrough, overline), letter and word spacing. Bold and italic are fonts: the bold or italic file of a family, or an instance of a variable font; when there is none, `TextStyle.Synthesis` thickens or slants the glyphs of any font |
+| Drawing | No transform on the canvas (a path is transformed with `VectorPath.Transform`), no blend mode (multiply, screen, ...) beyond the compositing operators, no layer or group opacity; always antialiased; composited on the encoded sample values (no linear-light option); sequential; an image is read with four pixels at most per pixel of the canvas (no filter when it is reduced), and gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline; coordinates are limited to ±16,777,216 |
 | Fonts made before OpenType Layout | The marks of a font without positioning table are placed from the shapes of the glyphs; the letters of an Arabic font without substitution table take the presentation forms the font has as characters, with the ligatures of lam and alef; the marks of a Thai font without substitution table take the forms the font has in the private use area |
 
 The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of

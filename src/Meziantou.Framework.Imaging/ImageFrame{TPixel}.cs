@@ -94,6 +94,12 @@ public sealed class ImageFrame<TPixel> : ImageFrame
     internal override DrawingColor ConvertDrawingColor(Rgba64 color)
         => DrawingKernels.ConvertColor<TPixel>(color);
 
+    internal override void ConvertDrawingColors(ReadOnlySpan<Rgba64> colors, Span<ushort> destination)
+        => DrawingKernels.ConvertColors<TPixel>(colors, destination);
+
+    internal override void ReadRgba64(PixelStorage storage, int y, int x, Span<Rgba64> destination)
+        => DrawingKernels.ReadColors<TPixel>(storage, y, x, destination);
+
     internal override void CompositePixels(PixelStorage storage, int y, int x, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
         => DrawingKernels.Composite<TPixel>(storage, y, x, coverage, source);
 

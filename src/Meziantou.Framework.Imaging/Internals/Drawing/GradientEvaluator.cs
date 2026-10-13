@@ -29,7 +29,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// color a solid brush has. A degenerate gradient (no length, no radius) has the color of the last stop everywhere.
 /// </para>
 /// </remarks>
-internal sealed class GradientEvaluator : IDisposable
+internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
 {
     /// <summary>The values kept for each stop: offset, alpha, three color samples.</summary>
     private const int ValuesPerStop = 5;
@@ -42,6 +42,7 @@ internal sealed class GradientEvaluator : IDisposable
     private int _stopCapacity;
     private PooledBuffer? _colors;
     private int _stopCount;
+    private bool _isTransparent;
     private GradientKind _kind;
     private bool _degenerate;
     private bool _hasTransform;
@@ -60,7 +61,7 @@ internal sealed class GradientEvaluator : IDisposable
     }
 
     /// <summary>Gets a value indicating whether every stop is fully transparent: the gradient paints nothing.</summary>
-    public bool IsTransparent { get; private set; }
+    public override bool IsTransparent => _isTransparent;
 
     private Span<double> Stops => unsafe(MemoryMarshal.Cast<byte, double>(_stops!.Span));
 
@@ -106,7 +107,7 @@ internal sealed class GradientEvaluator : IDisposable
             transparent &= color.Alpha == 0;
         }
 
-        IsTransparent = transparent;
+        _isTransparent = transparent;
         switch (brush)
         {
             case LinearGradientBrush linear:
@@ -158,7 +159,7 @@ internal sealed class GradientEvaluator : IDisposable
     }
 
     /// <summary>Computes the colors of a run of pixels: four samples per pixel, laid out as <see cref="DrawingColor"/>.</summary>
-    public ReadOnlySpan<ushort> Evaluate(int y, int x, int count)
+    public override ReadOnlySpan<ushort> Evaluate(int y, int x, int count)
     {
         var colors = unsafe(MemoryMarshal.Cast<byte, ushort>(_colors!.Span))[..(count * 4)];
         var stops = Stops[..(_stopCount * ValuesPerStop)];

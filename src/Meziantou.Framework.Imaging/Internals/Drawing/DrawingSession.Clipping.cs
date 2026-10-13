@@ -83,7 +83,7 @@ internal sealed partial class DrawingSession
         var width = right - left;
         var height = bottom - top;
         level.Reserve(_image.Owner.Scope, (long)width * height);
-        _clipRow ??= ResampleWeights.Rent<uint>(_image.Owner.Scope, Width);
+        EnsureCoverageRow();
         var mask = level.Mask[..(width * height)];
         mask.Clear();
         var parent = parentMaskLevel < 0 ? null : _clipLevels[parentMaskLevel];
@@ -153,6 +153,22 @@ internal sealed partial class DrawingSession
         coverage = product;
         return any;
     }
+
+    /// <summary>Multiplies the coverages of a run by an opacity, into the row of the session.</summary>
+    private ReadOnlySpan<uint> ApplyOpacity(ReadOnlySpan<uint> coverage, uint opacity)
+    {
+        // The run may already be in that row, after a clip: each value is read before it is written
+        var product = unsafe(MemoryMarshal.Cast<byte, uint>(_clipRow!.Span))[..coverage.Length];
+        for (var i = 0; i < coverage.Length; i++)
+        {
+            product[i] = (uint)((((ulong)coverage[i] * opacity) + (CoverageRasterizer.FullCoverage / 2)) >> 16);
+        }
+
+        return product;
+    }
+
+    /// <summary>Rents the row the products of coverages are written to; a draw call that needs it rents it before it changes a pixel.</summary>
+    private void EnsureCoverageRow() => _clipRow ??= ResampleWeights.Rent<uint>(_image.Owner.Scope, Width);
 
     /// <summary>Multiplies coverages: <c>round(a b / 65536)</c>, to nearest with ties upward.</summary>
     /// <returns><see langword="false"/> when every product is zero.</returns>

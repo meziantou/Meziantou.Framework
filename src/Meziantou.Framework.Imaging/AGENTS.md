@@ -270,6 +270,12 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   parts of a segment outside the box where a stroke can change a pixel are skipped and the pattern is advanced by
   their length: the cost of a dashed stroke must stay what the canvas shows of it, whatever the length of the path
   (`WhatIsOutsideTheCanvasIsNotCutIntoDashesAndThePatternGoesOn`). `Widen` has no canvas and cuts everything.
+- A brush that is not a single color is a `PaintEvaluator`: it gives a row of colors in the pixel format of the frame
+  (`GradientEvaluator`, `ImageEvaluator`). An image is read through the lease of its frame, taken when a shape is painted
+  and released in `finally` (`Begin` / `End`): never keep it between two draw calls. `ImageEvaluator` interpolates
+  16-bit colors read with the pixel conversion (`ReadRgba64`), then converts them like any brush color; when the rows
+  of the canvas stay rows of the image, it converts each row of the image once. `DrawImage` is a fill of the rectangle
+  with that evaluator: no brush is allocated.
 - A clip is a stack of levels in the session (`DrawingSession.Clipping.cs`): bounds in whole pixels and, unless the clip
   is a rectangle of whole pixels, a mask of coverages rasterized once, when the clip starts, by the same rasterizer.
   Draw calls multiply their coverage by the mask row by row (`ApplyClip`), into a row of the session: they rent nothing.

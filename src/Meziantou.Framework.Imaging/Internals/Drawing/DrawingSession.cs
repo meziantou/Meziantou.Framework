@@ -33,6 +33,7 @@ internal sealed partial class DrawingSession : IDisposable
     private Stroker? _stroker;
     private Dasher? _dasher;
     private GradientEvaluator? _gradient;
+    private ImageEvaluator? _imagePaint;
     private GlyphPathSink? _glyphSink;
     private GlyphScratch? _glyphScratch;
     private PathMeasure? _pathMeasure;
@@ -102,7 +103,58 @@ internal sealed partial class DrawingSession : IDisposable
         var converted = _frames[0].ConvertDrawingColor(color);
         if (_rasterizer!.Begin(_edges!, FillRule.NonZero, _cancellationToken))
         {
-            Paint(converted, gradient: null, CompositeMode.Source);
+            Paint(converted, evaluator: null, CompositeMode.Source);
+        }
+    }
+
+    public void DrawImage(ImageFrame source, PointD position, double opacity)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        DrawingGuard.Point(position, nameof(position));
+
+        // The image starts at a valid position: its far corner may be a few pixels beyond the largest coordinate
+        DrawImageCore(source, sourceRegion: null, new RectangleD(position.X, position.Y, source.Width, source.Height), opacity);
+    }
+
+    public void DrawImage(ImageFrame source, Rectangle? sourceRegion, RectangleD destination, double opacity)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        DrawingGuard.Rectangle(destination, nameof(destination));
+        DrawImageCore(source, sourceRegion, destination, opacity);
+    }
+
+    private void DrawImageCore(ImageFrame source, Rectangle? sourceRegion, RectangleD destination, double opacity)
+    {
+        var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
+        var region = sourceRegion ?? new Rectangle(0, 0, source.Width, source.Height);
+        var sink = BeginFill();
+        AddRectangle(sink, destination);
+        sink.End();
+
+        // The region of the image is stretched to the rectangle: its pixels on the edges are extended, so that the
+        // edges of the rectangle are the only ones that are antialiased. A region without pixels is validated, and
+        // paints nothing.
+        var transform = default(AffineTransform);
+        if (!region.IsEmpty && !destination.IsEmpty)
+        {
+            var scaleX = destination.Width / region.Width;
+            var scaleY = destination.Height / region.Height;
+            transform = new AffineTransform(scaleX, 0, 0, scaleY, destination.X - (region.X * scaleX), destination.Y - (region.Y * scaleY));
+        }
+
+        var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
+        evaluator.Prepare(source, region, transform, ImageWrapMode.Pad, ImageSampling.Bilinear, _frames[0], Width, nameof(sourceRegion));
+        if (coverage == 0 || region.IsEmpty || destination.IsEmpty || _edges!.Count == 0)
+            return;
+
+        if (coverage != CoverageRasterizer.FullCoverage)
+        {
+            EnsureCoverageRow();
+        }
+
+        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _cancellationToken))
+        {
+            Paint(default, evaluator, CompositeMode.SourceOver, coverage);
         }
     }
 
@@ -448,6 +500,8 @@ internal sealed partial class DrawingSession : IDisposable
         _glyphScratch?.Dispose();
         _glyphScratch = null;
         _gradient?.Dispose();
+        _imagePaint?.Dispose();
+        _imagePaint = null;
         _rasterizer?.Dispose();
         _edges?.Dispose();
         _gradient = null;
@@ -522,14 +576,32 @@ internal sealed partial class DrawingSession : IDisposable
     /// <summary>Rasterizes the edges of the call and composites every row onto every frame.</summary>
     private void Render(Brush brush, FillRule fillRule)
     {
-        if (Prepare(brush, fillRule, out var color, out var gradient))
+        if (Prepare(brush, fillRule, out var color, out var evaluator))
         {
-            Paint(color, gradient, brush.CompositeMode);
+            Paint(color, evaluator, brush.CompositeMode, brush is ImageBrush image ? image.OpacityCoverage : CoverageRasterizer.FullCoverage);
         }
     }
 
     /// <summary>Composites every row of the sweep that was prepared onto every frame.</summary>
-    private void Paint(DrawingColor color, GradientEvaluator? gradient, CompositeMode mode)
+    /// <param name="color">The color of the paint, when it has a single one.</param>
+    /// <param name="evaluator">What gives the color of each pixel, or <see langword="null"/> for a single color.</param>
+    /// <param name="mode">The operator that combines the paint with the pixels.</param>
+    /// <param name="opacity">The coverage every coverage is multiplied by.</param>
+    private void Paint(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, uint opacity = CoverageRasterizer.FullCoverage)
+    {
+        // What the paint reads is held before the first pixel is changed
+        evaluator?.Begin();
+        try
+        {
+            PaintRows(color, evaluator, mode, opacity);
+        }
+        finally
+        {
+            evaluator?.End();
+        }
+    }
+
+    private void PaintRows(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, uint opacity)
     {
         if (!_thumbnailRemoved)
         {
@@ -547,7 +619,12 @@ internal sealed partial class DrawingSession : IDisposable
             if (_clipDepth != 0 && !ApplyClip(y, ref x, ref coverage, out _))
                 continue;
 
-            var source = gradient is null ? new DrawingSource(color, mode) : new DrawingSource(gradient.Evaluate(y, x, coverage.Length), mode);
+            if (opacity != CoverageRasterizer.FullCoverage)
+            {
+                coverage = ApplyOpacity(coverage, opacity);
+            }
+
+            var source = evaluator is null ? new DrawingSource(color, mode) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], y, x, coverage, source);
@@ -557,10 +634,10 @@ internal sealed partial class DrawingSession : IDisposable
 
     /// <summary>Prepares the paint and the sweep of the edges of the call: every rental happens here, and no pixel is changed.</summary>
     /// <returns><see langword="false"/> when there is nothing to paint.</returns>
-    private bool Prepare(Brush brush, FillRule fillRule, out DrawingColor color, out GradientEvaluator? gradient)
+    private bool Prepare(Brush brush, FillRule fillRule, out DrawingColor color, out PaintEvaluator? evaluator)
     {
         color = default;
-        gradient = null;
+        evaluator = null;
         var edges = _edges!;
         if (edges.Count == 0)
             return false;
@@ -573,12 +650,28 @@ internal sealed partial class DrawingSession : IDisposable
             if (color.Alpha == 0 && isInert)
                 return false;
         }
+        else if (brush is ImageBrush image)
+        {
+            var imagePaint = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
+            imagePaint.Prepare(image.Source, image.SourceRegion, image.Transform, image.WrapMode, image.Sampling, _frames[0], Width, nameof(brush));
+            if (image.OpacityCoverage == 0)
+                return false;
+
+            if (image.OpacityCoverage != CoverageRasterizer.FullCoverage)
+            {
+                EnsureCoverageRow();
+            }
+
+            evaluator = imagePaint;
+        }
         else
         {
-            gradient = _gradient ??= new GradientEvaluator(_image.Owner.Scope);
+            var gradient = _gradient ??= new GradientEvaluator(_image.Owner.Scope);
             gradient.Prepare((GradientBrush)brush, _frames[0], Width);
             if (gradient.IsTransparent && isInert)
                 return false;
+
+            evaluator = gradient;
         }
 
         return _rasterizer!.Begin(edges, fillRule, _cancellationToken);

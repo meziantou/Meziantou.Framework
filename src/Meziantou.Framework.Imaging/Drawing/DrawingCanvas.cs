@@ -89,6 +89,62 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void Stroke(Pen pen, VectorPath path) => GetSession().Stroke(pen, path);
 
+    /// <summary>Draws the pixels of a frame of another image, without scaling them.</summary>
+    /// <remarks>
+    /// <para>
+    /// The image is composited over the canvas like a paint, with its own alpha. At a position on whole pixels, its
+    /// pixels are those of the source, exactly; elsewhere they are interpolated (see <see cref="ImageBrush"/>, which
+    /// this method is a shortcut for, with the pixels of the edges extended). The pixels are converted to the pixel
+    /// format of the canvas; no color profile is applied.
+    /// </para>
+    /// <para>
+    /// The frame is read while it is drawn: it must not be one of the frames the canvas draws on.
+    /// </para>
+    /// </remarks>
+    /// <param name="source">The frame to draw.</param>
+    /// <param name="position">The position of its top-left corner on the canvas. A <see cref="Point"/> converts implicitly.</param>
+    /// <param name="opacity">The opacity of the image, from 0 to 1.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or <paramref name="opacity"/> is not between 0 and 1.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned, or <paramref name="source"/> is a frame that is being drawn on or whose pixels are being accessed.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void DrawImage(ImageFrame source, PointD position, double opacity = 1) => GetSession().DrawImage(source, position, opacity);
+
+    /// <summary>Draws the pixels of a frame of another image, stretched to a rectangle.</summary>
+    /// <remarks>
+    /// The pixels are interpolated (see <see cref="ImageBrush"/>): an image that is made much smaller skips pixels, so
+    /// reduce it first for a result without aliasing. See <see cref="DrawImage(ImageFrame, PointD, double)"/>.
+    /// </remarks>
+    /// <param name="source">The frame to draw.</param>
+    /// <param name="destination">The rectangle of the canvas the frame fills. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="opacity">The opacity of the image, from 0 to 1.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or <paramref name="opacity"/> is not between 0 and 1.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned, or <paramref name="source"/> is a frame that is being drawn on or whose pixels are being accessed.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void DrawImage(ImageFrame source, RectangleD destination, double opacity = 1) => GetSession().DrawImage(source, sourceRegion: null, destination, opacity);
+
+    /// <summary>Draws some of the pixels of a frame of another image, stretched to a rectangle.</summary>
+    /// <remarks>See <see cref="DrawImage(ImageFrame, RectangleD, double)"/>. The pixels around the region are not read.</remarks>
+    /// <param name="source">The frame to draw.</param>
+    /// <param name="sourceRegion">The pixels of the frame to draw. Must be inside the frame.</param>
+    /// <param name="destination">The rectangle of the canvas the region fills. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="opacity">The opacity of the image, from 0 to 1.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, <paramref name="sourceRegion"/> is not inside the frame, or <paramref name="opacity"/> is not between 0 and 1.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned, or <paramref name="source"/> is a frame that is being drawn on or whose pixels are being accessed.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void DrawImage(ImageFrame source, Rectangle sourceRegion, RectangleD destination, double opacity = 1) => GetSession().DrawImage(source, sourceRegion, destination, opacity);
+
     /// <summary>Paints a rectangle.</summary>
     /// <param name="brush">The paint. A color converts implicitly.</param>
     /// <param name="rectangle">The rectangle. A <see cref="Rectangle"/> of pixels converts implicitly.</param>

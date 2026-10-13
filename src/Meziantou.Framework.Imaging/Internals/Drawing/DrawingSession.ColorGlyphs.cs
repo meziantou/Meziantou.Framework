@@ -74,8 +74,16 @@ internal sealed partial class DrawingSession
             return;
         }
 
+        if (brush is not GradientBrush gradientBrush)
+        {
+            // An image has no color of its own to give to a glyph that draws with its own colors: the text is black
+            surface.Foreground = (0, 0, 0, 1);
+            surface.ForegroundGradient = null;
+            return;
+        }
+
         var gradient = _foregroundGradient ??= new GradientEvaluator(_image.Owner.Scope);
-        gradient.PrepareColors((GradientBrush)brush, Width);
+        gradient.PrepareColors(gradientBrush, Width);
         surface.ForegroundGradient = gradient;
     }
 

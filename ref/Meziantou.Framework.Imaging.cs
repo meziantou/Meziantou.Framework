@@ -1114,6 +1114,9 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void Fill(Meziantou.Framework.Imaging.Drawing.Brush brush) { }
         public void Fill(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) { }
         public void Stroke(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Drawing.VectorPath path) { }
+        public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.PointD position, double opacity = 1d) { }
+        public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.RectangleD destination, double opacity = 1d) { }
+        public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.Rectangle sourceRegion, Meziantou.Framework.Imaging.RectangleD destination, double opacity = 1d) { }
         public void FillRectangle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.RectangleD rectangle) { }
         public void StrokeRectangle(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.RectangleD rectangle) { }
         public void FillRoundedRectangle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.RectangleD rectangle, double radius) { }
@@ -1172,6 +1175,31 @@ namespace Meziantou.Framework.Imaging.Drawing
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Drawing.GradientStop left, Meziantou.Framework.Imaging.Drawing.GradientStop right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Drawing.GradientStop left, Meziantou.Framework.Imaging.Drawing.GradientStop right) => throw null;
+    }
+
+    public sealed class ImageBrush : Meziantou.Framework.Imaging.Drawing.Brush
+    {
+        public Meziantou.Framework.Imaging.ImageFrame Source { get => throw null; }
+        public Meziantou.Framework.Imaging.Rectangle? SourceRegion { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.AffineTransform Transform { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.ImageWrapMode WrapMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.ImageSampling Sampling { get => throw null; init { } }
+        public double Opacity { get => throw null; init { } }
+        public ImageBrush(Meziantou.Framework.Imaging.ImageFrame source) { }
+    }
+
+    public enum ImageSampling
+    {
+        Bilinear = 0,
+        Nearest = 1,
+    }
+
+    public enum ImageWrapMode
+    {
+        Transparent = 0,
+        Pad = 1,
+        Repeat = 2,
+        Reflect = 3,
     }
 
     public enum LineCap

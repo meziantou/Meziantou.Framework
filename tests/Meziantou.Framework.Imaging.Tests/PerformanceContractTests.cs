@@ -72,6 +72,7 @@ public sealed class PerformanceContractTests
         // it allocate nothing once the scratch has grown to the largest of them, whatever their number
         using var image = DrawingTestSupport.Create(format, 64, 48);
         ((Image)image).AppendFrame();
+        using var sprite = new Image<Rgba64>(24, 16, new Rgba64(60000, 30000, 1000, 40000));
         var state = new DrawingState(
             new SolidBrush(new Rgba32(10, 200, 30, 120)),
             new LinearGradientBrush(new PointD(0, 0), new PointD(64, 48), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(0.5, new Rgba32(0, 255, 0, 80)), new GradientStop(1, new Rgba32(0, 0, 255))]) { SpreadMode = GradientSpreadMode.Reflect },
@@ -91,6 +92,8 @@ public sealed class PerformanceContractTests
             new SweepGradientBrush(new PointD(30, 22), 15, 300, [new GradientStop(0, new Rgba32(255, 255, 0, 40)), new GradientStop(1, new Rgba32(0, 255, 255))]) { SpreadMode = GradientSpreadMode.Reflect, Transform = AffineTransform.CreateSkew(20, 0) },
             new RadialGradientBrush(new PointD(30, 20), 25, [new GradientStop(0, new Rgba32(255, 255, 255)), new GradientStop(1, new Rgba32(0, 0, 0, 0))]) { FocalPoint = new PointD(22, 14) },
             new RadialGradientBrush(new PointD(25, 14), 12, [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 0, 0))]) { CompositeMode = CompositeMode.DestinationOut },
+            sprite.Frames[0],
+            new ImageBrush(sprite.Frames[0]) { Transform = AffineTransform.CreateRotation(20).Then(AffineTransform.CreateScale(1.5, 0.75)), WrapMode = ImageWrapMode.Reflect, Opacity = 0.75, CompositeMode = CompositeMode.DestinationOver },
             new StrongBox<long>(long.MaxValue));
 
         // Tiered compilation running concurrently can attribute a few bytes to this thread, and the many methods behind a
@@ -139,8 +142,14 @@ public sealed class PerformanceContractTests
             canvas.Stroke(state.DashedPen, state.Path);
             canvas.StrokeRectangle(state.DashedPen, new RectangleD(-20, 5.5, 200, 20));
             canvas.StrokeText(state.DashedPen, state.Text, new PointD(1, 10.5));
+            canvas.DrawImage(state.Sprite, new Point(3, 4));
+            canvas.DrawImage(state.Sprite, new PointD(30.5, 20.25), 0.5);
+            canvas.DrawImage(state.Sprite, new Rectangle(4, 2, 10, 8), new RectangleD(-5, 6.5, 80, 30), 0.9);
+            canvas.Fill(state.Tile, state.Path);
+            canvas.FillText(state.Tile, state.Text, new PointD(2.5, 3));
             canvas.Clip(state.Path, state, static (clipped, state) =>
             {
+                clipped.DrawImage(state.Sprite, new RectangleD(1.5, 2, 60, 44), 0.6);
                 clipped.Fill(state.Gradient);
                 clipped.FillText(state.Gradient, state.ColorText, new PointD(1, 20));
                 clipped.Clip(new Rectangle(8, 4, 40, 30), state, static (inner, state) => inner.Stroke(state.Pen, state.Path));
@@ -371,5 +380,5 @@ public sealed class PerformanceContractTests
         return stream.ToArray();
     }
 
-    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, TextLayout RichText, TextLayout VariableText, TextLayout BlendedText, TextLayout ColorText, TextLayout BitmapText, TextLayout ScaledBitmapText, TextPathOptions PathOptions, Pen DashedPen, SweepGradientBrush Sweep, RadialGradientBrush Focal, Brush Eraser, StrongBox<long> Allocated);
+    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, TextLayout RichText, TextLayout VariableText, TextLayout BlendedText, TextLayout ColorText, TextLayout BitmapText, TextLayout ScaledBitmapText, TextPathOptions PathOptions, Pen DashedPen, SweepGradientBrush Sweep, RadialGradientBrush Focal, Brush Eraser, ImageFrame Sprite, ImageBrush Tile, StrongBox<long> Allocated);
 }

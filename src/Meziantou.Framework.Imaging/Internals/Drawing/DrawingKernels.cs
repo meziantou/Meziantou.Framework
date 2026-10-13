@@ -89,6 +89,36 @@ internal static class DrawingKernels
         throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
     }
 
+    /// <summary>Converts paint colors to the pixel format of a frame: four samples per color, laid out as <see cref="DrawingColor"/>.</summary>
+    public static void ConvertColors<TPixel>(ReadOnlySpan<Rgba64> colors, Span<ushort> destination)
+        where TPixel : unmanaged
+    {
+        for (var i = 0; i < colors.Length; i++)
+        {
+            var color = ConvertColor<TPixel>(colors[i]);
+            var entry = destination.Slice(i * 4, 4);
+            entry[0] = color.C0;
+            entry[1] = color.C1;
+            entry[2] = color.C2;
+            entry[3] = color.Alpha;
+        }
+    }
+
+    /// <summary>Reads pixels of a row as 16-bit colors, with the rules of pixel conversion.</summary>
+    /// <param name="storage">The storage of the frame, leased by the caller.</param>
+    /// <param name="y">The row.</param>
+    /// <param name="x">The first column.</param>
+    /// <param name="destination">The colors; as many pixels are read as it holds.</param>
+    public static void ReadColors<TPixel>(PixelStorage storage, int y, int x, Span<Rgba64> destination)
+        where TPixel : unmanaged
+    {
+        if (Unsafe.SizeOf<TPixel>() != storage.BytesPerPixel)
+            throw new InvalidOperationException($"The pixel type '{typeof(TPixel).Name}' does not match the storage pixel size.");
+
+        var row = unsafe(MemoryMarshal.Cast<byte, TPixel>(storage.GetRowSpanCore(y))).Slice(x, destination.Length);
+        PixelConverter.ConvertRow<TPixel, Rgba64>(row, destination);
+    }
+
     /// <summary>Composites a paint over a run of pixels of a row.</summary>
     /// <param name="storage">The storage of the frame, leased by the caller.</param>
     /// <param name="y">The row.</param>

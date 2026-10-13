@@ -230,7 +230,12 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   rebuilds the files of cjxl). The library reading back what it writes proves nothing about the layout: the two lists
   of a scan (reset points, extra zero runs) were once written list by list instead of scan by scan, which only djxl
   refused, and only for a file of several scans that has them; cjxl and the JPEG encoders of the corpus never write
-  such a file, `JpegTestImage` does (`FilesWithRedundantSymbolsGoThroughBothChains`). The JPEG entropy coding shares `JpegBitWriter` and `JpegHuffmanEncoder` with the JPEG
+  such a file, `JpegTestImage` does (`FilesWithRedundantSymbolsGoThroughBothChains`). The reconstruction data may
+  follow the codestream, which no encoder writes (cjxl puts them between two `jxlp` boxes, after the image header);
+  jxl-oxide rebuilds such a file and djxl does not. `JpegXlJpegReconstructor` keeps a frame that could be the one of
+  a JPEG file as it is coded (`IsJpegFrame`) until the end of the container, and `JpegXlReconstructionProbe` reads
+  such a container to its end; any other frame without data before it ends the parsing at once, and a bare
+  codestream at its header. The JPEG entropy coding shares `JpegBitWriter` and `JpegHuffmanEncoder` with the JPEG
   encoder: there is still one JPEG implementation of each direction of pixels, and one of coefficients.
 - **TIFF** (`Internals/Codecs/Tiff`). `TiffPage` resolves and validates a directory without reading a pixel, so every
   rejection also comes from `Identify`, except the ones of the compressed data. `TiffBlockReader` turns a strip or a

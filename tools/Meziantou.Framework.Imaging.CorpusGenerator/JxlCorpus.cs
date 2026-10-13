@@ -41,6 +41,7 @@ internal static partial class JxlCorpus
     private static readonly Dictionary<string, (int Max, double Mean)> LibraryJxlMeasurements = new(StringComparer.Ordinal)
     {
         ["jxl/jpeg-420"] = (0, 0.0),
+        ["jxl/jpeg-420-reconstruction-after"] = (0, 0.0),
         ["jxl/jpeg-422"] = (1, 0.0022),
         ["jxl/jpeg-444"] = (1, 0.0009),
         ["jxl/lossy-gray8"] = (0, 0.0),

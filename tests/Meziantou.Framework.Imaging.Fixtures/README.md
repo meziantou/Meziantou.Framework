@@ -661,7 +661,7 @@ follows it, so keep both headings unique in this file.
 | bmp | 24 | 21 | 4 | 2 |
 | gif | 24 | 15 | 1 | 2 |
 | jpeg | 55 | 15 | 6 | 1 |
-| jxl | 53 | 7 | 4 | 6 |
+| jxl | 54 | 7 | 4 | 6 |
 | png | 109 | 31 | 1 | 6 |
 | pnm | 15 | 12 | 1 | 2 |
 | qoi | 10 | 12 | 0 | 4 |
@@ -1055,32 +1055,32 @@ follows it, so keep both headings unique in this file.
 | JPEG XL 12-bit samples | `jxl.bits=12` | 1 | 0 | 0 | 0 |
 | JPEG XL 16-bit samples | `jxl.bits=16` | 6 | 0 | 0 | 0 |
 | JPEG XL 32-bit floating-point samples (rejected) | `jxl.bits=32` | 0 | 0 | 1 | 0 |
-| JPEG XL 8-bit samples | `jxl.bits=8` | 46 | 7 | 3 | 6 |
+| JPEG XL 8-bit samples | `jxl.bits=8` | 47 | 7 | 3 | 6 |
 | JPEG XL frame that is added | `jxl.blend=add` | 1 | 0 | 0 | 1 |
 | JPEG XL frame with the blend mode | `jxl.blend=blend` | 2 | 0 | 0 | 1 |
 | JPEG XL frame that is multiplied | `jxl.blend=multiply` | 1 | 0 | 0 | 0 |
-| JPEG XL frame that replaces | `jxl.blend=replace` | 51 | 7 | 3 | 6 |
+| JPEG XL frame that replaces | `jxl.blend=replace` | 52 | 7 | 3 | 6 |
 | JPEG XL `Exif` box | `jxl.box=Exif` | 2 | 0 | 0 | 1 |
 | JPEG XL `abcd` box | `jxl.box=abcd` | 1 | 0 | 0 | 0 |
 | JPEG XL `brob` box | `jxl.box=brob` | 1 | 0 | 0 | 0 |
 | JPEG XL `free` box | `jxl.box=free` | 1 | 0 | 0 | 0 |
-| JPEG XL `jbrd` box | `jxl.box=jbrd` | 4 | 0 | 0 | 0 |
+| JPEG XL `jbrd` box | `jxl.box=jbrd` | 5 | 0 | 0 | 0 |
 | JPEG XL `jxlc` box | `jxl.box=jxlc` | 10 | 0 | 1 | 0 |
 | JPEG XL `jxll` box | `jxl.box=jxll` | 5 | 0 | 1 | 0 |
-| JPEG XL `jxlp` box | `jxl.box=jxlp` | 7 | 0 | 0 | 1 |
+| JPEG XL `jxlp` box | `jxl.box=jxlp` | 8 | 0 | 0 | 1 |
 | JPEG XL `xml ` box | `jxl.box=xml` | 2 | 0 | 0 | 1 |
-| JPEG XL boxes after the codestream | `jxl.boxesAfterCodestream` | 2 | 0 | 0 | 0 |
+| JPEG XL boxes after the codestream | `jxl.boxesAfterCodestream` | 3 | 0 | 0 | 0 |
 | JPEG XL enumerated color encoding other than sRGB | `jxl.color=enumerated` | 4 | 0 | 1 | 0 |
 | JPEG XL ICC profile in the codestream | `jxl.color=icc` | 2 | 0 | 1 | 0 |
 | JPEG XL grayscale | `jxl.colorSpace=gray` | 8 | 0 | 0 | 0 |
-| JPEG XL RGB | `jxl.colorSpace=rgb` | 45 | 7 | 4 | 6 |
-| JPEG XL samples stored in the color space of the image | `jxl.colorTransform=none` | 38 | 7 | 3 | 6 |
+| JPEG XL RGB | `jxl.colorSpace=rgb` | 46 | 7 | 4 | 6 |
+| JPEG XL samples stored in the color space of the image | `jxl.colorTransform=none` | 39 | 7 | 3 | 6 |
 | JPEG XL samples stored in XYB (lossy) | `jxl.colorTransform=xyb` | 15 | 0 | 1 | 0 |
-| JPEG XL YCbCr frame (recompressed JPEG) | `jxl.colorTransform=ycbcr` | 4 | 0 | 0 | 0 |
+| JPEG XL YCbCr frame (recompressed JPEG) | `jxl.colorTransform=ycbcr` | 5 | 0 | 0 | 0 |
 | JPEG XL Modular frame | `jxl.encoding=modular` | 37 | 7 | 3 | 6 |
-| JPEG XL VarDCT frame | `jxl.encoding=vardct` | 16 | 0 | 0 | 0 |
+| JPEG XL VarDCT frame | `jxl.encoding=vardct` | 17 | 0 | 0 | 0 |
 | JPEG XL bare codestream | `jxl.file=codestream` | 36 | 7 | 3 | 5 |
-| JPEG XL container (boxes) | `jxl.file=container` | 17 | 0 | 1 | 1 |
+| JPEG XL container (boxes) | `jxl.file=container` | 18 | 0 | 1 | 1 |
 | JPEG XL frame that is decoded without being shown | `jxl.frame=hidden` | 3 | 0 | 0 | 1 |
 | JPEG XL LF frame | `jxl.frame=lf` | 2 | 0 | 0 | 0 |
 | JPEG XL frame smaller than the image | `jxl.frame=partial` | 1 | 0 | 0 | 1 |

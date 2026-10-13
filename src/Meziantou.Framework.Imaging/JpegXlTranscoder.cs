@@ -19,13 +19,18 @@ namespace Meziantou.Framework.Imaging;
 /// </remarks>
 public static class JpegXlTranscoder
 {
-    /// <summary>Tells whether a JPEG XL file holds, before its first frame, the data that rebuild the JPEG file it was made from.</summary>
+    /// <summary>Tells whether a JPEG XL file holds the data that rebuild the JPEG file it was made from.</summary>
     /// <param name="jpegXl">The JPEG XL file.</param>
     /// <param name="options">The options, or <see langword="null"/> for the default ones.</param>
     /// <returns><see langword="true"/> when the data are present; they are not validated.</returns>
+    /// <remarks>
+    /// Encoders write the data before the image: the answer is then known from the start of the file, and nothing else
+    /// is read. When no data precede an image that could be the one of a JPEG file, the rest of the file is read, without
+    /// decoding it, since the data may follow the image.
+    /// </remarks>
     /// <exception cref="UnknownImageFormatException">The format of the input is not recognized.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The input is not a JPEG XL file.</exception>
-    /// <exception cref="InvalidImageContentException">The start of the file is malformed or truncated.</exception>
+    /// <exception cref="InvalidImageContentException">The part of the file that is read is malformed or truncated.</exception>
     public static bool HasJpegReconstructionData(ReadOnlySpan<byte> jpegXl, JpegXlTranscodeOptions? options = null)
         => JpegXlTranscodeIO.HasJpegReconstructionData(jpegXl, options);
 
@@ -37,21 +42,21 @@ public static class JpegXlTranscoder
         return JpegXlTranscodeIO.HasJpegReconstructionData(jpegXl, ownsStream: false, options);
     }
 
-    /// <summary>Tells whether a JPEG XL file holds, before its first frame, the data that rebuild the JPEG file it was made from.</summary>
+    /// <summary>Tells whether a JPEG XL file holds the data that rebuild the JPEG file it was made from.</summary>
     /// <param name="jpegXlPath">The path of the JPEG XL file.</param>
     /// <param name="options">The options, or <see langword="null"/> for the default ones.</param>
     /// <returns><see langword="true"/> when the data are present; they are not validated.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="jpegXlPath"/> is <see langword="null"/>.</exception>
     /// <exception cref="UnknownImageFormatException">The format of the input is not recognized.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The input is not a JPEG XL file.</exception>
-    /// <exception cref="InvalidImageContentException">The start of the file is malformed or truncated.</exception>
+    /// <exception cref="InvalidImageContentException">The part of the file that is read is malformed or truncated.</exception>
     public static bool HasJpegReconstructionData(string jpegXlPath, JpegXlTranscodeOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(jpegXlPath);
         return JpegXlTranscodeIO.HasJpegReconstructionData(ImageIO.OpenFile(jpegXlPath, asynchronous: false), ownsStream: true, options);
     }
 
-    /// <summary>Asynchronously tells whether a JPEG XL file holds, before its first frame, the data that rebuild the JPEG file it was made from.</summary>
+    /// <summary>Asynchronously tells whether a JPEG XL file holds the data that rebuild the JPEG file it was made from.</summary>
     /// <param name="jpegXl">The JPEG XL file.</param>
     /// <param name="options">The options, or <see langword="null"/> for the default ones.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>

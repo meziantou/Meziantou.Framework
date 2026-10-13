@@ -170,6 +170,35 @@ public sealed class JpegXlTranscoderInteropTests
     }
 
     /// <summary>
+    /// The reconstruction data may follow the codestream, which no encoder writes: the library and jxl-oxide rebuild the
+    /// same JPEG file, the one the file was made from. djxl 0.12.0 sees the data (jxlinfo reports them) and does not
+    /// rebuild the file, which is why nothing is asserted on what it gives.
+    /// </summary>
+    [Fact]
+    public async Task ReconstructionDataAfterTheCodestreamAreReadLikeJxlOxide()
+    {
+        var jxl = await RequiredTools.LibJxlAsync();
+        var oxide = await RequiredTools.JxlOxideAsync();
+        var fixture = GoldenCorpus.Default.Get("jxl/jpeg-420-reconstruction-after");
+        var jpeg = GoldenCorpus.Default.Get("jpeg/ffmpeg-mjpeg-420-37x23").ReadInput();
+
+        // The tools write next to their input: not in the corpus
+        var path = InteropSettings.GetArtifactsDirectory(nameof(ReconstructionDataAfterTheCodestreamAreReadLikeJxlOxide)) / "jpeg-420-reconstruction-after.jxl";
+        await File.WriteAllBytesAsync(path, fixture.ReadInput(), XunitCancellationToken);
+        var info = await jxl.GetInfoAsync(path, XunitCancellationToken);
+        Assert.True(info.HasJpegReconstruction);
+        Assert.Equal("jbrd", info.Boxes[^1].Type);
+
+        var rebuiltByOxide = await oxide.TryReconstructJpegAsync(path, XunitCancellationToken);
+        Assert.NotNull(rebuiltByOxide);
+        Assert.True(jpeg.AsSpan().SequenceEqual(rebuiltByOxide), $"jxl-oxide {oxide.Version} rebuilds {rebuiltByOxide.Length} bytes that are not the {jpeg.Length} bytes of the JPEG file.");
+
+        using var rebuilt = new MemoryStream();
+        Assert.True(JpegXlTranscoder.TryReconstructJpeg(fixture.ReadInput(), rebuilt));
+        Assert.True(jpeg.AsSpan().SequenceEqual(rebuilt.GetBuffer().AsSpan(0, (int)rebuilt.Length)), "The library does not rebuild the JPEG file.");
+    }
+
+    /// <summary>
     /// Files with what an encoder is free to write and a decoder must give back, through both chains: runs of blocks
     /// without coefficient that stop early (the reset points of the reconstruction data), and runs of sixteen zeros
     /// before the end of a block (its extra zero runs), in one scan and in several, where the order of the two lists in

@@ -42386,7 +42386,121 @@
         "maxMeanAbsoluteError": 0.01,
         "justification": "Lossy JPEG XL decoding is defined in floating point (measured: max 0, mean 0.0000). Allowed: the measured max (at least 1) and the measured mean + 0.01; the independent decoder differs from the reference by max 1, mean 0.0004, which would justify max 2, mean 0.50."
       },
-      "notes": "A JPEG file recompressed by cjxl: the frame is YCbCr with the quantization tables of the JPEG file; the data that rebuilds the JPEG file (jbrd) is not read."
+      "notes": "A JPEG file recompressed by cjxl: the frame is YCbCr with the quantization tables of the JPEG file. The data that rebuild the JPEG file (jbrd) are read by JpegXlTranscoder, not by a load."
+    },
+    {
+      "id": "jxl/jpeg-420-reconstruction-after",
+      "kind": "valid",
+      "format": "jxl",
+      "input": {
+        "path": "jxl/jpeg-420-reconstruction-after.jxl",
+        "sha256": "338a2b95b93c2645d37737dfbf912d912de4781b2462c7b0edb3d6f2823cf65c",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/JxlCorpus.cs (BuildLossy)",
+        "tools": [
+          "libjxl 0.12.0 (cjxl, jxl_from_tree, djxl)",
+          "jxl-oxide 0.12.6 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "source": "jpeg/ffmpeg-mjpeg-420-37x23.jpg",
+          "layout": "the boxes of jxl/jpeg-420, the jbrd box moved after the last jxlp box"
+        },
+        "commands": [
+          "cjxl {jpeg/ffmpeg-mjpeg-420-37x23.jpg} {output}.jxl --lossless_jpeg=1 --quiet --num_threads=0"
+        ]
+      },
+      "features": [
+        "jxl.bits=8",
+        "jxl.blend=replace",
+        "jxl.box=jbrd",
+        "jxl.box=jxlp",
+        "jxl.boxesAfterCodestream",
+        "jxl.colorSpace=rgb",
+        "jxl.colorTransform=none",
+        "jxl.colorTransform=ycbcr",
+        "jxl.encoding=vardct",
+        "jxl.file=container"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Decoded from the same encoded input by djxl to floating-point samples, rounded to the nearest integer.",
+        "decoder": "libjxl 0.12.0 djxl",
+        "backend": "libjxl 0.12.0",
+        "command": "djxl {input} {output}.npy --quiet --num_threads=0",
+        "crossChecks": [
+          {
+            "decoder": "jxl-oxide 0.12.6",
+            "command": "jxl-oxide decode {input} -o {output}.npy -f npy -j 1",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0004,
+            "result": "differs",
+            "notes": "An independent decoder: JPEG XL defines lossy decoding in floating point, so two conforming decoders round some samples differently."
+          }
+        ]
+      },
+      "expected": {
+        "width": 37,
+        "height": 23,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jxl/jpeg-420-reconstruction-after.frame-0.rgba8.raw",
+                "sha256": "99f4c0e7c24d0fcdbb4935842f351513a8f722bdf9b4cba9fab28e2316ab00b0",
+                "layout": "rgba8",
+                "width": 37,
+                "height": 23,
+                "rowBytes": 148,
+                "byteLength": 3404,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jxl/jpeg-420-reconstruction-after.frame-0.rgb8.raw",
+                "sha256": "b40c2a4848bd19191775b09bf93237af02e98a35370e0b04931252f886c53940",
+                "layout": "rgb8",
+                "width": 37,
+                "height": 23,
+                "rowBytes": 111,
+                "byteLength": 2553,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Lossy JPEG XL decoding is defined in floating point (measured: max 0, mean 0.0000). Allowed: the measured max (at least 1) and the measured mean + 0.01; the independent decoder differs from the reference by max 1, mean 0.0004, which would justify max 2, mean 0.50."
+      },
+      "notes": "A JPEG file recompressed by cjxl, whose reconstruction data (jbrd) were moved after the codestream: JpegXlTranscoder rebuilds the JPEG file all the same."
     },
     {
       "id": "jxl/jpeg-422",
@@ -42498,7 +42612,7 @@
         "maxMeanAbsoluteError": 0.02,
         "justification": "Lossy JPEG XL decoding is defined in floating point (measured: max 1, mean 0.0022). Allowed: the measured max (at least 1) and the measured mean + 0.01; the independent decoder differs from the reference by max 1, mean 0.0022, which would justify max 2, mean 0.50."
       },
-      "notes": "A JPEG file recompressed by cjxl: the frame is YCbCr with the quantization tables of the JPEG file; the data that rebuilds the JPEG file (jbrd) is not read."
+      "notes": "A JPEG file recompressed by cjxl: the frame is YCbCr with the quantization tables of the JPEG file. The data that rebuild the JPEG file (jbrd) are read by JpegXlTranscoder, not by a load."
     },
     {
       "id": "jxl/jpeg-444",
@@ -42610,7 +42724,7 @@
         "maxMeanAbsoluteError": 0.02,
         "justification": "Lossy JPEG XL decoding is defined in floating point (measured: max 1, mean 0.0009). Allowed: the measured max (at least 1) and the measured mean + 0.01; the independent decoder differs from the reference by max 1, mean 0.0009, which would justify max 2, mean 0.50."
       },
-      "notes": "A JPEG file recompressed by cjxl: the frame is YCbCr with the quantization tables of the JPEG file; the data that rebuilds the JPEG file (jbrd) is not read."
+      "notes": "A JPEG file recompressed by cjxl: the frame is YCbCr with the quantization tables of the JPEG file. The data that rebuild the JPEG file (jbrd) are read by JpegXlTranscoder, not by a load."
     },
     {
       "id": "jxl/jpeg-gray",
@@ -42718,7 +42832,7 @@
       "comparison": {
         "mode": "exact"
       },
-      "notes": "A JPEG file recompressed by cjxl: the frame is YCbCr with the quantization tables of the JPEG file; the data that rebuilds the JPEG file (jbrd) is not read."
+      "notes": "A JPEG file recompressed by cjxl: the frame is YCbCr with the quantization tables of the JPEG file. The data that rebuild the JPEG file (jbrd) are read by JpegXlTranscoder, not by a load."
     },
     {
       "id": "jxl/lossless-container",

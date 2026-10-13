@@ -107,6 +107,9 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
     /// <summary>Gets a value indicating whether a <c>jbrd</c> box was met: the data that rebuild the JPEG file the codestream was made from.</summary>
     public bool HasJpegReconstructionData { get; private set; }
 
+    /// <summary>Gets a value indicating whether the file is a container, which may hold other boxes than its codestream, and not a bare codestream.</summary>
+    public bool IsContainer => _isContainer;
+
     /// <summary>Gets the ICC profile of the codestream, when the image header announces one and it is read.</summary>
     public byte[]? IccProfileBytes => _walker.IccProfile;
 
@@ -507,6 +510,9 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
             {
                 _context.Sequential?.OnHeader(CreateInfo(ImageIdentifyMode.Header));
                 _observer!.OnHeaderComplete(this);
+                if (_observer.EndsAtHeader(this))
+                    return Finish();
+
                 if (TryYield())
                     return ParseStatus.Complete;
             }
@@ -595,9 +601,10 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
             _context.Limits.EnsureCanvasWithinLimits(frame.Width, frame.Height);
         }
 
-        _walker.BeginPayload(buffer: _walk == StructureWalk.Decode && !_walker.IsPreviewFrame && _observer!.WantsFrames);
+        var wantsFrame = _walk == StructureWalk.Decode && !_walker.IsPreviewFrame && _observer!.WantsFrame(this, frame);
+        _walker.BeginPayload(buffer: wantsFrame);
         _checkpoint = 0;
-        if (_walk == StructureWalk.Decode && !_walker.IsPreviewFrame && _observer!.WantsFrames && _context.Sequential is not null && IsDisplayed(frame))
+        if (wantsFrame && _context.Sequential is not null && IsDisplayed(frame))
         {
             // A sequential reader may ask for the frame before it is complete
             var checkpoints = _observer!.GetPayloadCheckpoints(this, frame, _walker.Toc!);
@@ -616,8 +623,8 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
             var isDisplayed = IsDisplayed(frame);
             if (_walk == StructureWalk.Decode)
             {
-                // An observer that does not want the frames ends the parsing at the first one
-                var continues = _walker.Payload is { } payload && _observer!.OnFrame(this, frame, _walker.Toc!, payload);
+                // An observer that does not want a frame says whether the parsing goes on without it: by default, it ends there
+                var continues = _walker.Payload is { } payload ? _observer!.OnFrame(this, frame, _walker.Toc!, payload) : _observer!.OnFrameSkipped(this, frame);
                 _walker.ReleasePayload();
                 if (isDisplayed)
                 {

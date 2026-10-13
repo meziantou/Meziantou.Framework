@@ -36,6 +36,40 @@ public sealed class JpegXlTranscoderTests
         Assert.Equal(expected, output.ToArray());
     }
 
+    /// <summary>
+    /// What a decoder reads and the encoders of the corpus do not write: bytes after the last block of a scan, a
+    /// quantization table defined between two scans (before the scan of its component, again with the same values, or in
+    /// the slot of another one), a table that repeats the one before it and that no component uses. A table that no
+    /// component uses and that is not such a copy has no place in a JPEG XL file: the file is refused, and nothing is written.
+    /// </summary>
+    [Fact]
+    public void FilesWithMovedAndRepeatedSegmentsAreRebuiltOrRefused()
+    {
+        var variants = JpegTestVariants.Create(GoldenCorpus.Default.Get("jpeg/baseline-420").ReadInput(), GoldenCorpus.Default.Get("jpeg/multiscan-chroma-interleaved").ReadInput());
+        Assert.Contains(variants, variant => variant.IsRecompressed);
+        Assert.Contains(variants, variant => !variant.IsRecompressed);
+        foreach (var variant in variants)
+        {
+            // Every variant is a file the decoder reads: what is refused is refused as a file a JPEG XL file cannot hold
+            using var loaded = Image.Load<Rgba32>(variant.File);
+            using var output = new MemoryStream();
+            if (!variant.IsRecompressed)
+            {
+                var exception = Assert.Throws<UnsupportedImageFeatureException>(() => JpegXlTranscoder.RecompressJpeg(variant.File, output));
+                Assert.Equal(ImageFormat.Jpeg, exception.Format);
+                Assert.Equal(0, output.Length);
+                continue;
+            }
+
+            AssertRoundTrips(variant.File, variant.Name);
+
+            // The pixels of the JPEG XL file are the ones of the JPEG file, to the rounding of the two decoders
+            JpegXlTranscoder.RecompressJpeg(variant.File, output);
+            using var recompressed = Image.Load<Rgba32>(output.ToArray());
+            Assert.True(GetMaxDifference(loaded, recompressed) <= 48, $"{variant.Name}: the pixels of the recompressed file differ by {GetMaxDifference(loaded, recompressed)}.");
+        }
+    }
+
     /// <summary>The file of the corpus whose reconstruction data follow the codestream gives back the JPEG file it was made from.</summary>
     [Fact]
     public void AFileWhoseReconstructionDataFollowTheCodestreamGivesBackItsJpegFile()

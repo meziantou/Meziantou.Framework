@@ -169,6 +169,53 @@ public sealed class JpegXlTranscoderInteropTests
         Assert.True(jpeg.AsSpan().SequenceEqual(rebuilt.GetBuffer().AsSpan(0, (int)rebuilt.Length)), $"{name}: the library does not rebuild the JPEG file from the output of cjxl {jxl.Version}.");
     }
 
+    public static TheoryData<string> VariantNames => [.. CreateVariants().Select(variant => variant.Name)];
+
+    /// <summary>
+    /// Files whose segments were moved, repeated and changed (<see cref="JpegTestVariants"/>), through both chains: what the
+    /// library recompresses is rebuilt by djxl, and what cjxl recompresses is rebuilt by the library. The library refuses
+    /// nothing that cjxl recompresses, and recompresses one file that cjxl refuses (a table slot used again for other
+    /// values between two scans), which djxl rebuilds.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(VariantNames))]
+    public async Task FilesWithMovedAndRepeatedSegmentsGoThroughBothChains(string name)
+    {
+        var jxl = await RequiredTools.LibJxlAsync();
+        var variant = CreateVariants().Single(variant => variant.Name == name);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(FilesWithMovedAndRepeatedSegmentsGoThroughBothChains));
+        var jpegPath = directory / (name + ".jpg");
+        var libraryPath = directory / (name + ".library.jxl");
+        var referencePath = directory / (name + ".cjxl.jxl");
+        await File.WriteAllBytesAsync(jpegPath, variant.File, XunitCancellationToken);
+        File.Delete(libraryPath);
+        if (variant.IsRecompressed)
+        {
+            await JpegXlTranscoder.RecompressJpegAsync(jpegPath, libraryPath, cancellationToken: XunitCancellationToken);
+            var rebuiltByDjxl = await jxl.ReconstructJpegAsync(libraryPath, XunitCancellationToken);
+            Assert.True(variant.File.AsSpan().SequenceEqual(rebuiltByDjxl), $"{name}: djxl {jxl.Version} rebuilds {rebuiltByDjxl.Length} bytes that are not the {variant.File.Length} bytes of the JPEG file.");
+        }
+        else
+        {
+            await Assert.ThrowsAsync<UnsupportedImageFeatureException>(() => JpegXlTranscoder.RecompressJpegAsync(jpegPath, libraryPath, cancellationToken: XunitCancellationToken));
+            Assert.False(File.Exists(libraryPath));
+        }
+
+        if (!variant.IsRecompressedByCjxl)
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(() => jxl.EncodeAsync(jpegPath, referencePath, ["--lossless_jpeg=1"], XunitCancellationToken));
+            return;
+        }
+
+        await jxl.EncodeAsync(jpegPath, referencePath, ["--lossless_jpeg=1"], XunitCancellationToken);
+        using var rebuilt = new MemoryStream();
+        Assert.True(JpegXlTranscoder.TryReconstructJpeg(await File.ReadAllBytesAsync(referencePath, XunitCancellationToken), rebuilt));
+        Assert.True(variant.File.AsSpan().SequenceEqual(rebuilt.GetBuffer().AsSpan(0, (int)rebuilt.Length)), $"{name}: the library does not rebuild the JPEG file from the output of cjxl {jxl.Version}.");
+    }
+
+    private static IReadOnlyList<JpegTestVariants.Variant> CreateVariants()
+        => JpegTestVariants.Create(GoldenCorpus.Default.Get("jpeg/baseline-420").ReadInput(), GoldenCorpus.Default.Get("jpeg/multiscan-chroma-interleaved").ReadInput());
+
     /// <summary>
     /// The reconstruction data may follow the codestream, which no encoder writes: the library and jxl-oxide rebuild the
     /// same JPEG file, the one the file was made from. djxl 0.12.0 sees the data (jxlinfo reports them) and does not

@@ -190,6 +190,17 @@ internal sealed class JpegXlJpegReconstructor : JpegXlDecodeObserver
             table.HasValues = true;
         }
 
+        // A table that no component uses repeats the table before it
+        for (var i = 1; i < model.QuantizationTables.Count; i++)
+        {
+            var table = model.QuantizationTables[i];
+            if (!table.HasValues && model.QuantizationTables[i - 1].HasValues)
+            {
+                model.QuantizationTables[i - 1].Values.CopyTo(table.Values, 0);
+                table.HasValues = true;
+            }
+        }
+
         if (!frame.IsYCbCr)
         {
             // The samples of a JPEG file are centered on zero, which the frame only undoes for YCbCr samples: the DC

@@ -736,6 +736,15 @@ is the pieces the library fills (one per segment, join and cap, overlapping): fi
 not a single outline. Lengths and containment are those of the path as it is drawn, with its curves replaced by their
 chords.
 
+**Reading and cutting a path**. `EnumerateSegments` gives the elements of a path, without allocating: each
+`PathSegment` is what a method of the builder adds (`MoveTo`, `LineTo`, `QuadraticBezierTo`, `CubicBezierTo`, `ArcTo`,
+`Close`), so a path can be written in another format or built again from them. An arc comes as the arc of SVG paths, in
+pieces of at most a quarter turn, and a whole ellipse as two arcs of half a turn. `Reverse` returns the path followed
+from its end (what the dashes of a pen, a text on the path and the points at a distance start from), and
+`Trim(start, end)` the part of it between two distances from its start: the stroke of a path that is drawn
+progressively, or the arc of a gauge. A part of a path is made of the chords the path is drawn with: transform a path
+before cutting it, not after.
+
 <!-- snippet: draw-route -->
 ```csharp
 public static void DrawRoute(string outputPath)

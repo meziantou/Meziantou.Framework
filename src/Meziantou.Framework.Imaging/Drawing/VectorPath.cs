@@ -269,6 +269,70 @@ public sealed class VectorPath
         return result;
     }
 
+    /// <summary>Enumerates the elements of the path, in the order they were added to it.</summary>
+    /// <remarks>
+    /// <para>
+    /// A segment is what a method of <see cref="VectorPathBuilder"/> adds: the path can be written in another format,
+    /// or built again, from its segments. Every contour starts with a <see cref="PathSegmentKind.MoveTo"/>.
+    /// </para>
+    /// <para>
+    /// An arc is given as the arc of SVG paths that <see cref="VectorPathBuilder.ArcTo(double, double, double, bool, bool, PointD)"/>
+    /// takes, in pieces of at most a quarter turn, and an ellipse as two arcs of half a turn in a closed contour: the
+    /// radii and the rotation are computed from the ellipse the path stores, and are those that were given to the
+    /// builder to a few units of the last place only (exactly for an ellipse that is not turned). An arc of an ellipse
+    /// that a transformation flattened to a segment is a <see cref="PathSegmentKind.LineTo"/>.
+    /// </para>
+    /// </remarks>
+    /// <returns>An enumerator, to use with <see langword="foreach"/>. It does not allocate.</returns>
+    public PathSegmentEnumerator EnumerateSegments() => new(this);
+
+    /// <summary>Creates the path that goes through the points of this one from its end to its start.</summary>
+    /// <remarks>
+    /// The contours come in the opposite order, and each one is followed the other way: an open contour starts where
+    /// it ended, and a closed contour keeps its first point. The result paints the same pixels when it is filled or
+    /// stroked; what follows a path in its direction changes side: the dashes of a pen, the points at a distance, a
+    /// text on the path, and what <see cref="FillRule.NonZero"/> counts when the path is combined with another one.
+    /// </remarks>
+    /// <returns>The reversed path; this instance when the path is empty.</returns>
+    public VectorPath Reverse() => IsEmpty ? this : PathReverser.Reverse(_commands, _points, Bounds);
+
+    /// <summary>Creates the part of the path between two distances from its start: what is left of a stroke that is drawn progressively.</summary>
+    /// <remarks>
+    /// <para>
+    /// The distances are those of <see cref="GetLength"/> and <see cref="TryGetPointAtDistance"/>: the contours follow
+    /// each other, without the gap between them. A distance before the start of the path is its start, a distance
+    /// beyond its end is its end.
+    /// </para>
+    /// <para>
+    /// The result is made of the chords the path is drawn with, which stay within 1/16 of a pixel of its curves at the
+    /// size the path has: transform a path before taking a part of it, not after. The vertices of these chords are
+    /// vertices of the result: a pen joins them as it joins any corner, where the stroke of the path itself is always
+    /// round (the two only differ on curves a few pixels wide; <see cref="LineJoin.Round"/> makes them the same). A
+    /// contour that is cut becomes an open contour; a closed contour that is kept entirely stays closed. A contour
+    /// without length is not kept.
+    /// </para>
+    /// </remarks>
+    /// <param name="start">The distance from the start of the path at which the part starts, in pixels.</param>
+    /// <param name="end">The distance from the start of the path at which the part ends, in pixels.</param>
+    /// <returns>The part of the path; an empty path when <paramref name="end"/> is not after <paramref name="start"/>.</returns>
+    /// <exception cref="ArgumentException"><paramref name="start"/> or <paramref name="end"/> is not a number.</exception>
+    public VectorPath Trim(double start, double end)
+    {
+        if (double.IsNaN(start))
+            throw new ArgumentException("The distance must be a number.", nameof(start));
+
+        if (double.IsNaN(end))
+            throw new ArgumentException("The distance must be a number.", nameof(end));
+
+        var builder = new VectorPathBuilder();
+        if (!IsEmpty && start < end)
+        {
+            PathFlattener.Flatten(this, new TrimSink(builder, start, end));
+        }
+
+        return builder.Build();
+    }
+
     /// <summary>Gets the smallest rectangle containing every point and control point of a list of elements.</summary>
     internal static RectangleD ComputeBounds(ReadOnlySpan<PathCommand> commands, ReadOnlySpan<double> points)
     {

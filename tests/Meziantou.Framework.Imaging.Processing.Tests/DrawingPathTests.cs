@@ -1084,6 +1084,208 @@ public sealed class DrawingPathTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().MoveTo(16777216, 0).LineTo(16777216, 10).Build().Widen(new Pen(White, 3)));
     }
 
+    [Fact]
+    public void TheSegmentsOfAPathAreWhatTheBuilderAdded()
+    {
+        var path = new VectorPathBuilder()
+            .MoveTo(1, 2)
+            .LineTo(3, 4)
+            .QuadraticBezierTo(5, 6, 7, 8)
+            .CubicBezierTo(9, 10, 11, 12, 13, 14)
+            .Close()
+            .MoveTo(10, 0)
+            .ArcTo(10, 10, 0, largeArc: false, clockwise: true, 0, 10)
+            .AddEllipse(new PointD(5, 5), 3, 2)
+            .Build();
+        PathSegment[] segments = [.. path.EnumerateSegments()];
+        Assert.Equal(
+            [
+                "M1 2", "L3 4", "Q5 6 7 8", "C9 10 11 12 13 14", "Z",
+                "M10 0", "A10 10 0 0 1 0 10",
+                "M8 5", "A3 2 0 0 1 2 5", "A3 2 0 0 1 8 5", "Z",
+            ],
+            segments.Select(segment => segment.ToString()));
+        Assert.Equal(PathSegmentKind.QuadraticBezierTo, segments[2].Kind);
+        Assert.Equal(new PointD(5, 6), segments[2].Control1);
+        Assert.Equal(new PointD(7, 8), segments[2].Point);
+        Assert.Equal(new PointD(11, 12), segments[3].Control2);
+
+        // The end of a closed contour gives the point the contour goes back to
+        Assert.Equal(PathSegmentKind.Close, segments[4].Kind);
+        Assert.Equal(new PointD(1, 2), segments[4].Point);
+        Assert.Equal(new PointD(8, 5), segments[^1].Point);
+        Assert.True(segments[6].IsClockwise);
+        Assert.False(segments[6].IsLargeArc);
+        Assert.Equal(segments[0], segments[0]);
+        Assert.NotEqual(segments[8], segments[9]);
+        Assert.Equal(segments[8].GetHashCode(), path.EnumerateSegments().ElementAt(8).GetHashCode());
+
+        // An arc of more than a quarter turn comes in pieces, and an arc that turns the other way says so
+        var arc = new VectorPathBuilder().AddArc(new PointD(0, 0), 4, 4, 0, -180).Build();
+        PathSegment[] pieces = [.. arc.EnumerateSegments()];
+        Assert.Equal([PathSegmentKind.MoveTo, PathSegmentKind.ArcTo, PathSegmentKind.ArcTo], pieces.Select(piece => piece.Kind));
+        Assert.All(pieces[1..], piece => Assert.False(piece.IsClockwise));
+        Assert.Equal(new PointD(4, 0), pieces[0].Point);
+        Assert.Equal(new PointD(-4, 0), pieces[2].Point);
+
+        // An ellipse that is turned gives its radii and its rotation
+        var turned = new VectorPathBuilder().AddEllipse(new PointD(0, 0), 5, 2, 30).Build().EnumerateSegments().ElementAt(1);
+        Assert.Equal(5, turned.RadiusX, 1e-12);
+        Assert.Equal(2, turned.RadiusY, 1e-12);
+        Assert.Equal(30, turned.Rotation, 1e-9);
+
+        // A mirror makes a clockwise arc turn the other way, and an ellipse flattened to a segment is a segment
+        var mirrored = new VectorPathBuilder().MoveTo(10, 0).ArcTo(10, 10, 0, largeArc: false, clockwise: true, 0, 10).Build().Transform(AffineTransform.CreateScale(-1, 1));
+        Assert.False(mirrored.EnumerateSegments().ElementAt(1).IsClockwise);
+        var flattened = new VectorPathBuilder().MoveTo(10, 0).ArcTo(10, 10, 0, largeArc: false, clockwise: true, 0, 10).Build().Transform(AffineTransform.CreateScale(1, 0));
+        Assert.Equal(PathSegmentKind.LineTo, flattened.EnumerateSegments().ElementAt(1).Kind);
+
+        Assert.Empty(new VectorPathBuilder().Build().EnumerateSegments());
+        Assert.False(default(PathSegmentEnumerator).MoveNext());
+        var enumerator = path.EnumerateSegments();
+        Assert.True(enumerator.MoveNext());
+        Assert.True(enumerator.MoveNext());
+        enumerator.Reset();
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal(segments[0], enumerator.Current);
+    }
+
+    [Fact]
+    public void APathBuiltFromItsSegmentsDrawsTheSamePixels()
+    {
+        var pen = new Pen(White, 1.5) { LineJoin = LineJoin.Round };
+        VectorPath[] paths =
+        [
+            new VectorPathBuilder().MoveTo(1, 1).LineTo(6, 2).QuadraticBezierTo(8, 6, 3, 7).CubicBezierTo(0, 6, 2, 3, 1, 5).Close().Build(),
+            new VectorPathBuilder().AddRoundedRectangle(new RectangleD(0.5, 1, 7, 5.5), new CornerRadii(1, 2.5, 0.5, 2)).Build(),
+            new VectorPathBuilder().AddEllipse(new PointD(4, 4), 3.5, 2).AddEllipse(new PointD(4, 4), 3, 1.5, 35).Build(),
+            new VectorPathBuilder().MoveTo(1, 4).ArcTo(4, 2.5, 20, largeArc: true, clockwise: false, 6.5, 5).Build(),
+            new VectorPathBuilder().AddPie(new PointD(4, 4), 3.5, 3, 20, 290).Build().Transform(AffineTransform.CreateSkew(15, -10).Then(AffineTransform.CreateScale(-1, 1, new PointD(4, 4)))),
+        ];
+        foreach (var path in paths)
+        {
+            var builder = new VectorPathBuilder();
+            foreach (var segment in path.EnumerateSegments())
+            {
+                _ = segment.Kind switch
+                {
+                    PathSegmentKind.MoveTo => builder.MoveTo(segment.Point),
+                    PathSegmentKind.LineTo => builder.LineTo(segment.Point),
+                    PathSegmentKind.QuadraticBezierTo => builder.QuadraticBezierTo(segment.Control1, segment.Point),
+                    PathSegmentKind.CubicBezierTo => builder.CubicBezierTo(segment.Control1, segment.Control2, segment.Point),
+                    PathSegmentKind.ArcTo => builder.ArcTo(segment.RadiusX, segment.RadiusY, segment.Rotation, segment.IsLargeArc, segment.IsClockwise, segment.Point),
+                    _ => builder.Close(),
+                };
+            }
+
+            var rebuilt = builder.Build();
+            AssertClosePixels(canvas => canvas.Fill(White, path), canvas => canvas.Fill(White, rebuilt));
+            AssertClosePixels(canvas => canvas.Stroke(pen, path), canvas => canvas.Stroke(pen, rebuilt));
+        }
+    }
+
+    [Fact]
+    public void AReversedPathGoesThroughTheSamePointsFromItsEnd()
+    {
+        // An open contour starts where it ended; a closed one keeps its first point
+        var path = new VectorPathBuilder()
+            .MoveTo(1, 2).LineTo(3, 4).QuadraticBezierTo(5, 6, 7, 8).CubicBezierTo(9, 10, 11, 12, 13, 14)
+            .AddPolygon([new PointD(0, 0), new PointD(4, 0), new PointD(4, 4)])
+            .Build();
+        var reversed = path.Reverse();
+        Assert.Equal(
+            ["M0 0", "L4 4", "L4 0", "Z", "M13 14", "C11 12 9 10 7 8", "Q5 6 3 4", "L1 2"],
+            reversed.EnumerateSegments().Select(segment => segment.ToString()));
+        Assert.Equal(path.Bounds, reversed.Bounds);
+
+        // Reversed twice, a path is itself
+        Assert.Equal(path.EnumerateSegments().ToArray(), reversed.Reverse().EnumerateSegments().ToArray());
+        var empty = new VectorPathBuilder().Build();
+        Assert.Same(empty, empty.Reverse());
+
+        // A closed contour that ends on a curve gets its closing segment first
+        var closed = new VectorPathBuilder().MoveTo(0, 0).LineTo(4, 0).QuadraticBezierTo(4, 4, 2, 4).Close().Build();
+        Assert.Equal(["M0 0", "L2 4", "Q4 4 4 0", "Z"], closed.Reverse().EnumerateSegments().Select(segment => segment.ToString()));
+
+        // The same chords, the other way, whatever the elements
+        var pen = new Pen(White, 1.25) { LineCap = LineCap.Round, DashPattern = [2, 1.5] };
+        VectorPath[] shapes =
+        [
+            new VectorPathBuilder().MoveTo(1, 6).CubicBezierTo(2, -3, 6, 9, 7, 1).Build(),
+            new VectorPathBuilder().AddEllipse(new PointD(4, 4), 3.5, 2).Build(),
+            new VectorPathBuilder().AddEllipse(new PointD(4, 4), 3, 1.5, 35).Build(),
+            new VectorPathBuilder().AddRoundedRectangle(new RectangleD(0.5, 1, 7, 5.5), new CornerRadii(1, 2.5, 0.5, 2)).Build(),
+            new VectorPathBuilder().MoveTo(1, 4).ArcTo(4, 2.5, 20, largeArc: true, clockwise: false, 6.5, 5).LineTo(7, 7).Build(),
+        ];
+        foreach (var shape in shapes)
+        {
+            var other = shape.Reverse();
+            var length = shape.GetLength();
+            Assert.Equal(length, other.GetLength(), 1e-9);
+            AssertClosePixels(canvas => canvas.Fill(White, shape), canvas => canvas.Fill(White, other));
+            for (var i = 0; i <= 8; i++)
+            {
+                // The middle of a chord has one direction; a vertex has the direction of the chord that starts there
+                var distance = length * ((2 * i) + 1) / 18;
+                Assert.True(shape.TryGetPointAtDistance(distance, out var point, out var tangent));
+                Assert.True(other.TryGetPointAtDistance(length - distance, out var otherPoint, out var otherTangent));
+                Assert.Equal(point.X, otherPoint.X, 1e-9);
+                Assert.Equal(point.Y, otherPoint.Y, 1e-9);
+                Assert.Equal(tangent.X, -otherTangent.X, 1e-6);
+                Assert.Equal(tangent.Y, -otherTangent.Y, 1e-6);
+            }
+
+            // The dashes start from the other end
+            Assert.NotEqual(Render(canvas => canvas.Stroke(pen, shape)), Render(canvas => canvas.Stroke(pen, other)));
+        }
+    }
+
+    [Fact]
+    public void APartOfAPathIsWhatLiesBetweenTwoDistances()
+    {
+        var line = new VectorPathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).Build();
+        Assert.Equal(["M5 0", "L10 0", "L10 5"], Describe(line.Trim(5, 15)));
+        Assert.Equal(["M0 0", "L10 0", "L10 10"], Describe(line.Trim(-5, 100)));
+        Assert.Equal(["M0 0", "L10 0"], Describe(line.Trim(0, 10)));
+        Assert.Equal(["M10 0", "L10 10"], Describe(line.Trim(10, double.PositiveInfinity)));
+        Assert.Equal(["M2.5 0", "L3 0"], Describe(line.Trim(2.5, 3)));
+        Assert.True(line.Trim(3, 3).IsEmpty);
+        Assert.True(line.Trim(7, 3).IsEmpty);
+        Assert.True(line.Trim(20, 30).IsEmpty);
+        Assert.True(line.Trim(-3, 0).IsEmpty);
+        Assert.True(new VectorPathBuilder().Build().Trim(0, 10).IsEmpty);
+        Assert.True(new VectorPathBuilder().MoveTo(1, 1).Build().Trim(0, 10).IsEmpty);
+        Assert.Throws<ArgumentException>(() => line.Trim(double.NaN, 1));
+        Assert.Throws<ArgumentException>(() => line.Trim(0, double.NaN));
+
+        // A closed contour that is kept entirely stays closed; one that is cut is open
+        var square = new VectorPathBuilder().AddRectangle(new RectangleD(0, 0, 10, 10)).Build();
+        Assert.Equal(["M0 0", "L10 0", "L10 10", "L0 10", "Z"], Describe(square.Trim(0, 40)));
+        Assert.Equal(["M5 0", "L10 0", "L10 10", "L0 10", "L0 5"], Describe(square.Trim(5, 35)));
+        Assert.Equal(["M0 0", "L10 0", "L10 10", "L0 10", "L0 0.5"], Describe(square.Trim(0, 39.5)));
+
+        // The contours follow each other, without the gap between them
+        var two = new VectorPathBuilder().MoveTo(0, 0).LineTo(10, 0).AddRectangle(new RectangleD(20, 20, 10, 10)).MoveTo(50, 50).LineTo(50, 60).Build();
+        Assert.Equal(["M8 0", "L10 0", "M20 20", "L30 20", "L30 30", "L20 30", "Z", "M50 50", "L50 54"], Describe(two.Trim(8, 54)));
+        Assert.Equal(["M25 20", "L30 20", "L30 25"], Describe(two.Trim(15, 25)));
+
+        // The parts of a curve add up to the curve, and have the length that was asked
+        var curve = new VectorPathBuilder().MoveTo(1, 6).CubicBezierTo(2, -3, 6, 9, 7, 1).AddEllipse(new PointD(4, 4), 3, 1.5, 35).Build();
+        var length = curve.GetLength();
+        Assert.Equal(length / 3, curve.Trim(length / 4, length * 7 / 12).GetLength(), 1e-9);
+        Assert.Equal(length, curve.Trim(0, length / 3).GetLength() + curve.Trim(length / 3, length).GetLength(), 1e-9);
+        Assert.True(curve.Trim(length / 5, length / 2).TryGetPointAtDistance(0, out var start, out _));
+        Assert.True(curve.TryGetPointAtDistance(length / 5, out var expected, out _));
+        Assert.Equal(expected.X, start.X, 1e-9);
+        Assert.Equal(expected.Y, start.Y, 1e-9);
+
+        // The vertices of the chords are vertices of the part: joined as the library joins them, the part is the path
+        var pen = new Pen(White, 1.5) { LineJoin = LineJoin.Round };
+        AssertSamePixels(canvas => canvas.Stroke(pen, curve), canvas => canvas.Stroke(pen, curve.Trim(0, length)));
+
+        static string[] Describe(VectorPath path) => [.. path.EnumerateSegments().Select(segment => segment.ToString())];
+    }
+
     private static void AssertRectangle(RectangleD expected, RectangleD actual, double tolerance)
     {
         Assert.Equal(expected.Left, actual.Left, tolerance);
@@ -1109,6 +1311,26 @@ public sealed class DrawingPathTests
         var expected = DrawingTestSupport.ReadSamples(left.Frames[0]);
         Assert.Contains(expected, sample => sample != 0);
         Assert.Equal(expected, DrawingTestSupport.ReadSamples(right.Frames[0]));
+    }
+
+    /// <summary>Gets the pixels a drawing gives on a black image of 8 by 8 pixels.</summary>
+    private static int[] Render(DrawingAction action)
+    {
+        using var image = new Image<Gray8>(8, 8, new Gray8(0));
+        image.Draw(action, Ct);
+        return DrawingTestSupport.ReadSamples(image.Frames[0]);
+    }
+
+    /// <summary>Checks that two drawings give the same pixels, to one level of gray: the same shape described in two ways.</summary>
+    private static void AssertClosePixels(DrawingAction first, DrawingAction second)
+    {
+        var expected = Render(first);
+        var actual = Render(second);
+        Assert.Contains(expected, sample => sample != 0);
+        for (var i = 0; i < expected.Length; i++)
+        {
+            Assert.InRange(actual[i], expected[i] - 1, expected[i] + 1, message: $"pixel ({i % 8}, {i / 8})");
+        }
     }
 
     private sealed class VertexSink : Internals.PathSink

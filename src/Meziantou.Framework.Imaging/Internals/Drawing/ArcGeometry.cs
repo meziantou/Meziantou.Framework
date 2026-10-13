@@ -251,6 +251,48 @@ internal static class ArcGeometry
     }
 
     /// <summary>
+    /// Gets the radii of the ellipse of two conjugate half-diameters and the angle of its first radius, in degrees from
+    /// the x axis: what describes the ellipse of an arc of SVG.
+    /// </summary>
+    /// <remarks>
+    /// The radii are the singular values of the matrix of the two vectors. Half-diameters that are horizontal and
+    /// vertical give their lengths and no rotation, exactly; a circle has no rotation.
+    /// </remarks>
+    public static void GetAxes(double ux, double uy, double vx, double vy, out double radiusX, out double radiusY, out double rotation)
+    {
+        rotation = 0;
+        if (uy == 0 && vx == 0)
+        {
+            radiusX = Math.Abs(ux);
+            radiusY = Math.Abs(vy);
+            return;
+        }
+
+        if (ux == 0 && vy == 0)
+        {
+            radiusX = Math.Abs(vx);
+            radiusY = Math.Abs(uy);
+            return;
+        }
+
+        // The squares of the radii are the eigenvalues of the symmetric matrix [[a, b], [b, d]]
+        var a = (ux * ux) + (vx * vx);
+        var b = (ux * uy) + (vx * vy);
+        var d = (uy * uy) + (vy * vy);
+        var half = (a + d) / 2;
+        var difference = (a - d) / 2;
+        var root = Math.Sqrt((difference * difference) + (b * b));
+        var small = half - root;
+        radiusX = Math.Sqrt(half + root);
+        radiusY = small > 0 ? Math.Sqrt(small) : 0;
+        if (root > 0)
+        {
+            // The first radius is along the eigenvector of the largest eigenvalue, at half the angle of (difference, b)
+            rotation = DeterministicAngle.Atan2(b, difference) * 90;
+        }
+    }
+
+    /// <summary>
     /// Finds the ellipse of an arc given by its two ends, as the arcs of SVG are: the radii and the rotation of the
     /// ellipse, whether the arc is the larger of the two the ellipse has between the points, and the way it turns.
     /// </summary>

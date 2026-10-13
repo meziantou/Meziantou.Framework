@@ -263,6 +263,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   into a sink, as drawing does, so that they answer for what is drawn; `GetTightBounds` (`PathBounds`) is computed from
   the curves, and contains their chords. `Widen` runs the `Stroker` into a path builder: the same pieces in the same
   order as a draw call, so filling the result is stroking, bit for bit (`FillingAWidenedPathIsStrokingThePath`).
+- `EnumerateSegments` is the only public view of the elements of a path: it gives what the builder takes, never the
+  internal form (an `ArcPiece` becomes the arc of SVG, through `ArcGeometry.GetAxes`; an ellipse becomes two arcs).
+  `Reverse` (`PathReverser`) works on the elements, exactly; `Trim` (`TrimSink`) works on the chords, like the other
+  queries, and its result is a polyline.
 - A stroke is a union of convex pieces with one orientation (`Stroker`): overlaps are harmless because the coverage is
   the area of the union. The 1/16 pixel flattening tolerance is public; the positions of the chord vertices are not.
 - Dashes are cut before the stroker (`Dasher`), which strokes each dash as an open contour. The first dash of a contour

@@ -1242,6 +1242,47 @@ namespace Meziantou.Framework.Imaging.Drawing
         public LinearGradientBrush(Meziantou.Framework.Imaging.PointD start, Meziantou.Framework.Imaging.PointD end, System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.GradientStop> stops) { }
     }
 
+    public readonly struct PathSegment : System.IEquatable<Meziantou.Framework.Imaging.Drawing.PathSegment>
+    {
+        public Meziantou.Framework.Imaging.Drawing.PathSegmentKind Kind { get => throw null; }
+        public Meziantou.Framework.Imaging.PointD Point { get => throw null; }
+        public Meziantou.Framework.Imaging.PointD Control1 { get => throw null; }
+        public Meziantou.Framework.Imaging.PointD Control2 { get => throw null; }
+        public double RadiusX { get => throw null; }
+        public double RadiusY { get => throw null; }
+        public double Rotation { get => throw null; }
+        public bool IsLargeArc { get => throw null; }
+        public bool IsClockwise { get => throw null; }
+        public bool Equals(Meziantou.Framework.Imaging.Drawing.PathSegment other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Drawing.PathSegment left, Meziantou.Framework.Imaging.Drawing.PathSegment right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Drawing.PathSegment left, Meziantou.Framework.Imaging.Drawing.PathSegment right) => throw null;
+    }
+
+    public struct PathSegmentEnumerator : System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.Drawing.PathSegment>, System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.Drawing.PathSegment>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
+    {
+        public readonly Meziantou.Framework.Imaging.Drawing.PathSegment Current { get => throw null; }
+        readonly object System.Collections.IEnumerator.Current { get => throw null; }
+        public readonly Meziantou.Framework.Imaging.Drawing.PathSegmentEnumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.Drawing.PathSegment> System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.Drawing.PathSegment>.GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool MoveNext() => throw null;
+        public void Reset() { }
+        public readonly void Dispose() { }
+    }
+
+    public enum PathSegmentKind
+    {
+        MoveTo = 0,
+        LineTo = 1,
+        QuadraticBezierTo = 2,
+        CubicBezierTo = 3,
+        ArcTo = 4,
+        Close = 5,
+    }
+
     public sealed class Pen
     {
         public Meziantou.Framework.Imaging.Drawing.Brush Brush { get => throw null; }
@@ -1316,6 +1357,9 @@ namespace Meziantou.Framework.Imaging.Drawing
         public bool TryGetPointAtDistance(double distance, out Meziantou.Framework.Imaging.PointD point, out Meziantou.Framework.Imaging.PointD tangent) => throw null;
         public Meziantou.Framework.Imaging.RectangleD GetTightBounds() => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Widen(Meziantou.Framework.Imaging.Drawing.Pen pen) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.PathSegmentEnumerator EnumerateSegments() => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPath Reverse() => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPath Trim(double start, double end) => throw null;
     }
 
     public sealed class VectorPathBuilder

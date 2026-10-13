@@ -1415,7 +1415,8 @@ internal static partial class AvifCorpus
         {
             var message = Encoding.UTF8.GetString(result.Stderr).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).LastOrDefault() ?? "error";
             check["result"] = "differs";
-            check["notes"] = "avifdec rejects the file: " + message.Replace(path.Value, "{input}", StringComparison.Ordinal).Replace(output.Value, "{output}.png", StringComparison.Ordinal);
+            // (the images of a sequence are written to files named after the output, with their index)
+            check["notes"] = "avifdec rejects the file: " + message.Replace(path.Value, "{input}", StringComparison.Ordinal).Replace(output.Value, "{output}.png", StringComparison.Ordinal).Replace(output.Value[..^".png".Length], "{output}", StringComparison.Ordinal);
             return check;
         }
 

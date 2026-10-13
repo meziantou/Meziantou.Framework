@@ -26407,7 +26407,7 @@
             "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
             "command": "avifdec -j 1 -d 16 --index all {input} {output}.png",
             "result": "differs",
-            "notes": "avifdec rejects the file: Conversion to RGB failed: /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-aHFW5X/236-sequence-ictcp-hlg/avifdec-0000000000.png"
+            "notes": "avifdec rejects the file: Conversion to RGB failed: {output}-0000000000.png"
           },
           {
             "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/sequence-10bit-once",

@@ -20,6 +20,8 @@ internal sealed class AvifBinding : HeifCodecBinding
 
     public override uint ConfigurationBoxType => HeifFormat.Av1C;
 
+    public override HeifContainerFeatures ContainerFeatures => HeifContainerFeatures.PremultipliedAlpha | HeifContainerFeatures.DerivedImages | HeifContainerFeatures.EditLists | HeifContainerFeatures.Fragments | HeifContainerFeatures.ExtendedMatrices | HeifContainerFeatures.SequenceOrientation | HeifContainerFeatures.DisplayMetadata;
+
     public override bool IsImageBrand(uint brand) => brand is HeifFormat.Avif;
 
     public override bool IsSequenceBrand(uint brand) => brand is HeifFormat.Avis;

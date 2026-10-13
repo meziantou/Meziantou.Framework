@@ -108,23 +108,46 @@ public static class EncodedFieldInspector
         var file = Heif.ReferenceHeif.Parse(data);
         var result = new EncodedFields();
         Heif.ReferenceHeif.ColorDescription? nclx;
+        Heif.ReferenceHeif.ContentLightLevel? lightLevel;
+        Heif.ReferenceHeif.MasteringDisplay? display;
+        Heif.ReferenceHeif.PixelAspectRatio? pixelAspectRatio;
         if (file.IsSequence)
         {
             var track = file.ColorTrack ?? throw new InvalidDataException($"The {formatName} image sequence has no track of {codecName} images.");
             nclx = track.Nclx;
+            lightLevel = track.ContentLightLevel;
+            display = track.MasteringDisplay;
+            pixelAspectRatio = track.PixelAspectRatio;
             result.Icc = track.IccProfile;
-            result.TransformOrientation = 1;
+            result.TransformOrientation = track.Orientation;
             var (exif, xmp) = file.FindSequenceMetadata();
             if (exif is not null)
                 result.Exif = file.ReadExifPayload(exif);
 
             if (xmp is not null)
                 result.Xmp = file.ReadItemData(xmp);
-            if (track.Samples.Count > 1)
+
+            // The images that the edit list shows: the duration of the sample is the encoded field of an image that is
+            // shown for all of it, and an image that is shown for a part of it has no field of its own
+            // The samples of a codec that reorders its images have composition offsets: an image lasts until the
+            // presentation time of the next one
+            var presentation = track.CompositionOffsets is null ? track.GetPresentation(file.MovieTimescale) : null;
+            if ((presentation?.Count ?? track.Samples.Count) > 1)
             {
-                foreach (var (_, duration) in track.PresentationOrder)
+                if (presentation is null)
                 {
-                    result.FrameDelays.Add(new EncodedDelayExpectation { SampleDelta = duration, Timescale = track.Timescale });
+                    foreach (var (_, duration) in track.PresentationOrder)
+                    {
+                        result.FrameDelays.Add(new EncodedDelayExpectation { SampleDelta = duration, Timescale = track.Timescale });
+                    }
+                }
+                else
+                {
+                    foreach (var image in presentation)
+                    {
+                        var sample = track.Samples[image.SampleIndex];
+                        result.FrameDelays.Add(image.Numerator * track.Timescale == sample.Duration * image.Denominator ? new EncodedDelayExpectation { SampleDelta = sample.Duration, Timescale = track.Timescale } : null);
+                    }
                 }
 
                 if (track.EditList is { Entries.Count: > 0 } edits)
@@ -132,7 +155,7 @@ public static class EncodedFieldInspector
                     result.EditList = new EditListExpectation
                     {
                         Repeating = edits.IsRepeating,
-                        SegmentDuration = edits.Entries[0].SegmentDuration is { } segment ? checked((long)segment) : null,
+                        SegmentDuration = edits.TotalSegmentDuration is { } segment ? checked((long)segment) : null,
                         TrackDuration = track.Duration is { } duration ? checked((long)duration) : null,
                     };
                 }
@@ -141,9 +164,25 @@ public static class EncodedFieldInspector
         else
         {
             var primary = file.PrimaryItem ?? throw new InvalidDataException($"The {formatName} file has no primary item.");
-            nclx = primary.Nclx;
-            result.Icc = primary.IccProfile;
-            result.TransformOrientation = primary.Orientation;
+
+            // An identity derivation is described by its own properties, or else by those of its input, and the samples
+            // of the coded image go through the transformations of every item of the chain
+            var chain = file.GetIdentityChain(primary);
+            nclx = chain.Select(item => item.Nclx).FirstOrDefault(value => value is not null);
+            if (file.IsBuiltImage(primary))
+            {
+                // An image that is built from other images has the color primaries and the transfer characteristics of
+                // its own colr box, or else of the first image of its tree that has one; its pixels are red, green and
+                // blue ones in full range
+                var description = file.GetImageTree(primary).Select(item => item.Nclx).FirstOrDefault(value => value is not null);
+                nclx = description is null ? null : new Heif.ReferenceHeif.ColorDescription(description.ColorPrimaries, description.TransferCharacteristics, 0, FullRange: true);
+            }
+
+            lightLevel = chain.Select(item => item.ContentLightLevel).FirstOrDefault(value => value is not null);
+            display = chain.Select(item => item.MasteringDisplay).FirstOrDefault(value => value is not null);
+            pixelAspectRatio = chain.Select(item => item.PixelAspectRatio).FirstOrDefault(value => value is not null);
+            result.Icc = (file.IsBuiltImage(primary) ? file.GetImageTree(primary) : chain).Select(item => item.IccProfile).FirstOrDefault(value => value is not null);
+            result.TransformOrientation = file.IsBuiltImage(primary) ? primary.Orientation : Heif.ReferenceHeif.ComposeOrientation(Heif.ReferenceHeif.GetTransforms(chain));
             foreach (var item in file.FindDescriptions(primary.Id))
             {
                 if (item.Type == "Exif")
@@ -160,6 +199,29 @@ public static class EncodedFieldInspector
         if (nclx is not null)
         {
             result.ContainerCicp = new CicpExpectation { ColorPrimaries = nclx.ColorPrimaries, TransferCharacteristics = nclx.TransferCharacteristics, MatrixCoefficients = nclx.MatrixCoefficients, FullRange = nclx.FullRange };
+        }
+
+        if (lightLevel is not null)
+        {
+            result.ContentLightLevel = new ContentLightLevelExpectation { MaxContentLightLevel = lightLevel.MaxContentLightLevel, MaxPictureAverageLightLevel = lightLevel.MaxPictureAverageLightLevel };
+        }
+
+        if (display is not null)
+        {
+            result.MasteringDisplay = new MasteringDisplayExpectation
+            {
+                Red = [display.Red.X, display.Red.Y],
+                Green = [display.Green.X, display.Green.Y],
+                Blue = [display.Blue.X, display.Blue.Y],
+                WhitePoint = [display.WhitePoint.X, display.WhitePoint.Y],
+                MaxLuminance = display.MaxLuminance,
+                MinLuminance = display.MinLuminance,
+            };
+        }
+
+        if (pixelAspectRatio is not null)
+        {
+            result.PixelAspectRatio = new PixelAspectRatioExpectation { HorizontalSpacing = pixelAspectRatio.HorizontalSpacing, VerticalSpacing = pixelAspectRatio.VerticalSpacing };
         }
 
         return result;

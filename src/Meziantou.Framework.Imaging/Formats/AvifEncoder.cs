@@ -25,8 +25,10 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// </para>
 /// <para>
 /// Metadata (subject to <see cref="ImageEncoder.MetadataHandling"/>): the CICP color description (<c>colr</c> box, with the
-/// matrix coefficients and the range that the encoder used), the ICC profile, EXIF and XMP items, and the orientation
-/// (<c>irot</c> and <c>imir</c> properties). AVIF has no text or resolution field.
+/// matrix coefficients and the range that the encoder used), the ICC profile, EXIF and XMP items, the orientation
+/// (<c>irot</c> and <c>imir</c> properties of a still image, the matrix of the track headers of an image sequence), the
+/// content light level, the mastering display color volume and the pixel
+/// aspect ratio (<c>clli</c>, <c>mdcv</c> and <c>pasp</c> boxes). AVIF has no text or resolution field.
 /// </para>
 /// </remarks>
 public sealed class AvifEncoder : ImageEncoder
@@ -127,6 +129,74 @@ public sealed class AvifEncoder : ImageEncoder
     /// </summary>
     /// <remarks>Setting it usually makes the output smaller; the visible pixels and every alpha value are unchanged.</remarks>
     public bool ClearTransparentColors { get; init; }
+
+    /// <summary>
+    /// Gets the size of the tiles of a still image that is coded as a grid, or <see langword="null"/> (the default) for an
+    /// image that is coded whole. An image that is larger than a tile is cut into tiles of this size, each one coded on
+    /// its own, which a grid item assembles; an image that one tile holds is coded whole.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A grid bounds the size of what a decoder decodes at once, and the memory that encoding takes (one tile at a time):
+    /// it is what the profiles of the format expect of large images. The tiles of the right column and of the bottom row
+    /// extend past the image, whose last column and last row they repeat. A tile is coded without its neighbors: lossy
+    /// output can show the edges of the tiles, and is larger than the image coded whole.
+    /// </para>
+    /// <para>
+    /// Each side of a tile is between 64 and 65,536 pixels, and a grid has at most 256 columns and 256 rows. With
+    /// subsampled chroma (<see cref="ChromaSubsampling"/>), the widths of the tiles and of the image must be even, and
+    /// their heights too for 4:2:0. Ignored by an image sequence.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">A side of the tiles is not between 64 and 65,536.</exception>
+    public Size? GridTileSize
+    {
+        get;
+        init
+        {
+            if (value is { } tile && (tile.Width is < 64 or > 65536 || tile.Height is < 64 or > 65536))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "Each side of a tile must be between 64 and 65,536 pixels.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the color of every pixel is stored multiplied by its alpha (premultiplied alpha).
+    /// Defaults to <see langword="false"/>: colors and alpha are stored independently.
+    /// </summary>
+    /// <remarks>
+    /// The multiplication is rounded to nearest at the precision of the pixels, then coded like any color, so it is the
+    /// consent to that rounding: a reader divides the colors by the alpha, which does not give the original color back for
+    /// the pixels that are nearly transparent, and nothing is left of the color of a fully transparent pixel
+    /// (<see cref="ClearTransparentColors"/> then changes nothing). The alpha values are unchanged. Lossless output codes
+    /// the multiplied samples exactly. Ignored when the image has no alpha.
+    /// </remarks>
+    public bool PremultiplyAlpha { get; init; }
+
+    /// <summary>
+    /// Gets the clean aperture of the image: the rectangle that readers show, or <see langword="null"/> (the default) for
+    /// the whole image. Every pixel is encoded; the ones outside the rectangle stay in the file and are hidden
+    /// (<c>clap</c> property of a still image, <c>clap</c> box of the tracks of an image sequence), so that loading the
+    /// file gives the rectangle.
+    /// </summary>
+    /// <remarks>
+    /// The rectangle is in the coordinates of the stored pixels, before the orientation of the image. It must be inside
+    /// the image. With subsampled chroma (<see cref="ChromaSubsampling"/>), its left coordinate must be even, and its top
+    /// coordinate too for 4:2:0: the aperture then selects whole chroma samples, which the format requires.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The rectangle is empty, or its left or top coordinate is negative.</exception>
+    public Rectangle? CleanAperture
+    {
+        get;
+        init
+        {
+            if (value is { } aperture && (aperture.Width is 0 || aperture.Height is 0 || aperture.X < 0 || aperture.Y < 0))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The clean aperture must not be empty and must have non-negative coordinates.");
+
+            field = value;
+        }
+    }
 
     /// <summary>
     /// Gets the number of images from a key frame to the next one in an image sequence. Defaults to 0: the first image is

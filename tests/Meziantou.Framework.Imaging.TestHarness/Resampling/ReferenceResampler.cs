@@ -72,7 +72,7 @@ public static class ReferenceResampler
         var xWeights = Enumerable.Range(0, width).Select(x => Weights(geometry.X, x, options.Kernel)).ToArray();
         var yWeights = Enumerable.Range(0, height).Select(y => Weights(geometry.Y, y, options.Kernel)).ToArray();
         var max = (decimal)layout.MaxSampleValue;
-        var working = Working(source, options.Linear);
+        var working = Working(source, options.Linear, options.Transfer);
         var sums = new decimal[channels];
         for (var y = 0; y < height; y++)
         {
@@ -104,7 +104,7 @@ public static class ReferenceResampler
                     {
                         // Colors are unpremultiplied by the exact filtered alpha (irrelevant when the alpha rounds to 0)
                         var color = layout.HasAlpha ? (alpha > 0 ? sums[c] / alpha : 0) : sums[c];
-                        value = options.Linear ? max * EncodeSrgb(Clamp(color, 1)) : Clamp(color, max);
+                        value = options.Linear ? max * Encode(options.Transfer, Clamp(color, 1)) : Clamp(color, max);
                     }
 
                     values[(((y * width) + x) * channels) + c] = value;
@@ -114,6 +114,21 @@ public static class ReferenceResampler
 
         return new ReferenceResizeResult(options, width, height, layout, values);
     }
+
+    /// <summary>
+    /// Converts an encoded value to linear light with the function of transfer characteristics (Rec. ITU-T H.273, table
+    /// 3): <see cref="DecodeSrgb"/> for 13, <see cref="Color.ReferenceCicpTransfer"/> for the other ones.
+    /// </summary>
+    /// <param name="transfer">The transfer characteristics.</param>
+    /// <param name="value">The encoded value in [0, 1].</param>
+    /// <returns>The linear value.</returns>
+    public static decimal Decode(int transfer, decimal value) => transfer == 13 ? DecodeSrgb(value) : Color.ReferenceCicpTransfer.Decode(transfer, value);
+
+    /// <summary>Converts linear light to an encoded value with the function of transfer characteristics.</summary>
+    /// <param name="transfer">The transfer characteristics.</param>
+    /// <param name="value">The linear value in [0, 1].</param>
+    /// <returns>The encoded value.</returns>
+    public static decimal Encode(int transfer, decimal value) => transfer == 13 ? EncodeSrgb(value) : Color.ReferenceCicpTransfer.Encode(transfer, value);
 
     /// <summary>The sRGB decoding function of IEC 61966-2-1 on a normalized value.</summary>
     /// <param name="value">The encoded value in [0, 1].</param>
@@ -254,7 +269,7 @@ public static class ReferenceResampler
     }
 
     /// <summary>Working samples: encoded values or linear light, premultiplied by alpha (0 to max) when present.</summary>
-    private static decimal[] Working(RawPixelBuffer source, bool linear)
+    private static decimal[] Working(RawPixelBuffer source, bool linear, int transfer)
     {
         var layout = source.Layout;
         var channels = layout.ChannelCount;
@@ -275,7 +290,7 @@ public static class ReferenceResampler
                     }
                     else
                     {
-                        result[offset] = (linear ? DecodeSrgb(sample / max) : sample) * alpha;
+                        result[offset] = (linear ? Decode(transfer, sample / max) : sample) * alpha;
                     }
                 }
             }

@@ -15,12 +15,13 @@ internal sealed class ConvolutionPlan : IDisposable
     private readonly ConvolutionKernel _kernel;
     private ConvolutionScratch?[] _scratch = [];
 
-    public ConvolutionPlan(ConvolutionKernel kernel, ConvolutionEdgeMode edgeMode, bool preserveAlpha, bool linear, PixelFormat format, Size size, int maxDegreeOfParallelism = 1)
+    public ConvolutionPlan(ConvolutionKernel kernel, ConvolutionEdgeMode edgeMode, bool preserveAlpha, bool linear, PixelFormat format, Size size, int maxDegreeOfParallelism = 1, byte transfer = CicpTransfer.Srgb)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxDegreeOfParallelism);
         _kernel = kernel;
         EdgeMode = edgeMode;
         IsLinear = linear;
+        Transfer = linear ? transfer : (byte)0;
         Size = size;
         Channels = PixelFormats.GetComponentCount(format);
         Alpha = !PixelFormats.HasAlpha(format) ? WorkingAlpha.None : preserveAlpha ? WorkingAlpha.Preserved : WorkingAlpha.Premultiplied;
@@ -46,8 +47,14 @@ internal sealed class ConvolutionPlan : IDisposable
     /// <summary>Gets the size of the frames.</summary>
     public Size Size { get; }
 
-    /// <summary>Gets a value indicating whether samples are filtered in linear light (sRGB transfer function).</summary>
+    /// <summary>Gets a value indicating whether samples are filtered in linear light.</summary>
     public bool IsLinear { get; }
+
+    /// <summary>
+    /// Gets the transfer characteristics (<see cref="CicpTransfer"/>) whose function decodes the samples to the linear
+    /// light they are filtered in, or 0 when they are filtered as they are stored.
+    /// </summary>
+    public byte Transfer { get; }
 
     /// <summary>Gets the number of samples per pixel (alpha included).</summary>
     public int Channels { get; }

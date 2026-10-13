@@ -88,6 +88,9 @@ public sealed class DefaultsTests
         Assert.Null(avif.BitDepth);
         Assert.False(avif.AllowBitDepthReduction);
         Assert.False(avif.ClearTransparentColors);
+        Assert.Null(avif.CleanAperture);
+        Assert.False(avif.PremultiplyAlpha);
+        Assert.Null(avif.GridTileSize);
         Assert.Equal(0, avif.KeyFrameInterval);
         Assert.Equal(FrameDurationRounding.RequireExact, avif.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, avif.MetadataHandling);
@@ -122,6 +125,10 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { BitDepth = 9 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { DurationRounding = (FrameDurationRounding)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { KeyFrameInterval = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { CleanAperture = new Rectangle(0, 0, 0, 4) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { CleanAperture = new Rectangle(-1, 0, 4, 4) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { GridTileSize = new Size(63, 64) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { GridTileSize = new Size(64, 65537) });
         Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { Compression = (HeicCompression)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { Quality = -1 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { Quality = 101 });

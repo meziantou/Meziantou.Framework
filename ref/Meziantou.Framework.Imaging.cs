@@ -331,6 +331,23 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.Gray8 left, Meziantou.Framework.Imaging.Gray8 right) => throw null;
     }
 
+    public enum HdrToneMappingOperator
+    {
+        Bt2390 = 0,
+        Clip = 1,
+        Reinhard = 2,
+        Hable = 3,
+        Mobius = 4,
+    }
+
+    public sealed class HdrToneMappingOptions
+    {
+        public static Meziantou.Framework.Imaging.HdrToneMappingOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.HdrToneMappingOperator Operator { get => throw null; init { } }
+        public double? SourcePeakLuminance { get => throw null; init { } }
+        public double TargetWhiteLuminance { get => throw null; init { } }
+    }
+
     public sealed class IccColorTransform
     {
         public int SourceChannelCount { get => throw null; }
@@ -346,6 +363,7 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.IccColorTransformOptions Default { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.IccRenderingIntent Intent { get => throw null; init { } }
         public bool BlackPointCompensation { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.HdrToneMappingOptions? ToneMapping { get => throw null; init { } }
     }
 
     public abstract class Image : System.IDisposable
@@ -1482,6 +1500,9 @@ namespace Meziantou.Framework.Imaging.Formats
         public int? BitDepth { get => throw null; init { } }
         public bool AllowBitDepthReduction { get => throw null; init { } }
         public bool ClearTransparentColors { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Size? GridTileSize { get => throw null; init { } }
+        public bool PremultiplyAlpha { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Rectangle? CleanAperture { get => throw null; init { } }
         public int KeyFrameInterval { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
     }
@@ -1812,6 +1833,17 @@ namespace Meziantou.Framework.Imaging.Metadata
         Linear = 1,
     }
 
+    public sealed class ContentLightLevel : System.IEquatable<Meziantou.Framework.Imaging.Metadata.ContentLightLevel>
+    {
+        public ushort MaxContentLightLevel { get => throw null; }
+        public ushort MaxPictureAverageLightLevel { get => throw null; }
+        public ContentLightLevel(ushort maxContentLightLevel, ushort maxPictureAverageLightLevel) { }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.ContentLightLevel? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+    }
+
     public enum ExifOrientation
     {
         TopLeft = 1,
@@ -1888,6 +1920,9 @@ namespace Meziantou.Framework.Imaging.Metadata
         public Meziantou.Framework.Imaging.Metadata.IccProfile? IccProfile { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ColorTransferFunction TransferFunction { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.CicpColorDescription? Cicp { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Metadata.ContentLightLevel? ContentLightLevel { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Metadata.MasteringDisplayColorVolume? MasteringDisplay { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Metadata.PixelAspectRatio? PixelAspectRatio { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ExifProfile? ExifProfile { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.XmpProfile? XmpProfile { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.Imaging.Metadata.ImageTextEntry> TextEntries { get => throw null; }
@@ -1919,6 +1954,27 @@ namespace Meziantou.Framework.Imaging.Metadata
         public override string ToString() => throw null;
     }
 
+    public sealed class MasteringDisplayColorVolume : System.IEquatable<Meziantou.Framework.Imaging.Metadata.MasteringDisplayColorVolume>
+    {
+        public ushort RedX { get => throw null; }
+        public ushort RedY { get => throw null; }
+        public ushort GreenX { get => throw null; }
+        public ushort GreenY { get => throw null; }
+        public ushort BlueX { get => throw null; }
+        public ushort BlueY { get => throw null; }
+        public ushort WhitePointX { get => throw null; }
+        public ushort WhitePointY { get => throw null; }
+        public uint MaxLuminance { get => throw null; }
+        public uint MinLuminance { get => throw null; }
+        public double MaxLuminanceCandelasPerSquareMeter { get => throw null; }
+        public double MinLuminanceCandelasPerSquareMeter { get => throw null; }
+        public MasteringDisplayColorVolume(ushort redX, ushort redY, ushort greenX, ushort greenY, ushort blueX, ushort blueY, ushort whitePointX, ushort whitePointY, uint maxLuminance, uint minLuminance) { }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.MasteringDisplayColorVolume? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+    }
+
     public sealed class MetadataBlob : System.IEquatable<Meziantou.Framework.Imaging.Metadata.MetadataBlob>
     {
         public int Length { get => throw null; }
@@ -1929,6 +1985,19 @@ namespace Meziantou.Framework.Imaging.Metadata
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.MetadataBlob? other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
+    }
+
+    public sealed class PixelAspectRatio : System.IEquatable<Meziantou.Framework.Imaging.Metadata.PixelAspectRatio>
+    {
+        public uint HorizontalSpacing { get => throw null; }
+        public uint VerticalSpacing { get => throw null; }
+        public double Ratio { get => throw null; }
+        public bool IsSquare { get => throw null; }
+        public PixelAspectRatio(uint horizontalSpacing, uint verticalSpacing) { }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.PixelAspectRatio? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
     }
 
     public sealed class XmpProfile

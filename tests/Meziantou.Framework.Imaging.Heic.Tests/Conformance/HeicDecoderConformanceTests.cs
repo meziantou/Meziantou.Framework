@@ -603,8 +603,8 @@ public sealed class HeicDecoderConformanceTests
 
         // One direction at a time: a window that removes the padding of the rows and whole blocks of columns counts the
         // coded width and the output height
-        Assert.Equal((32, 18), FixtureTraits.GetLimitedCanvas(GoldenCorpus.Default.Get("heic/window-beyond-padding-columns-444"), decodes: true));
-        Assert.Equal((20, 18), FixtureTraits.GetLimitedCanvas(GoldenCorpus.Default.Get("heic/window-beyond-padding-columns-444")));
+        Assert.Equal((32, 18, 32L * 18), FixtureTraits.GetLimitedCanvas(GoldenCorpus.Default.Get("heic/window-beyond-padding-columns-444"), decodes: true));
+        Assert.Equal((20, 18, 20L * 18), FixtureTraits.GetLimitedCanvas(GoldenCorpus.Default.Get("heic/window-beyond-padding-columns-444")));
     }
 
     [Fact]
@@ -640,7 +640,7 @@ public sealed class HeicDecoderConformanceTests
         }
 
         // The limits of the canvas apply to the pictures, as for the clean aperture of an image item
-        Assert.Equal((20, 18), FixtureTraits.GetLimitedCanvas(odd));
+        Assert.Equal((20, 18, 20L * 18), FixtureTraits.GetLimitedCanvas(odd));
     }
 
     [Fact]

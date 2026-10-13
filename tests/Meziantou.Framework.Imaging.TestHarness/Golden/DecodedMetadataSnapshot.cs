@@ -22,6 +22,15 @@ public sealed class DecodedMetadataSnapshot
     /// </summary>
     public string? Cicp { get; init; }
 
+    /// <summary>Gets the content light level as <c>MaxCLL content, MaxPALL picture</c>, or <see langword="null"/> when the image has none.</summary>
+    public string? ContentLightLevel { get; init; }
+
+    /// <summary>Gets the mastering display color volume as <c>R x,y G x,y B x,y W x,y L min..max</c> (stored integers), or <see langword="null"/> when the image has none.</summary>
+    public string? MasteringDisplay { get; init; }
+
+    /// <summary>Gets the pixel aspect ratio as <c>horizontal:vertical</c>, or <see langword="null"/> when the image has none.</summary>
+    public string? PixelAspectRatio { get; init; }
+
     /// <summary>Gets the ICC profile bytes, or <see langword="null"/>.</summary>
     public ReadOnlyMemory<byte>? IccProfile { get; init; }
 

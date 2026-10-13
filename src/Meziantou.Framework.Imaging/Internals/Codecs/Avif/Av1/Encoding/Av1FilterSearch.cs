@@ -72,6 +72,11 @@ internal static class Av1FilterSearch
         }
 
         postFilter.Apply(scope, frame, state, Av1InLoopFilters.Deblock, cancellationToken);
+
+        // The loop restoration reads rows of the frame as it is now, around the boundaries of its stripes
+        if (header.UsesLr)
+            postFilter.SaveRestorationBoundaries(scope, frame);
+
         if (!frame.Sequence.EnableCdef)
             return;
 

@@ -240,6 +240,16 @@ public sealed partial class IdentifyConformanceTests
             return;
         }
 
+        if (FixtureTraits.IsFragmentedSequence(fixture))
+        {
+            // The moov box of a fragmented AVIF image sequence does not tell how many images its fragments hold: the
+            // header says that it is an animation, and how many times it is played
+            Assert.Null(info.FrameCount);
+            Assert.True(info.IsAnimated);
+            Assert.Equal(expected.Animation?.TotalPlays, info.Animation?.TotalPlays);
+            return;
+        }
+
         if (fixture.Entry.Format is "webp" or "jxl" && expected.Animation is not null)
         {
             // A WebP header (VP8X animation flag, ANIM) declares an animation and its loop count, never its frame count; the

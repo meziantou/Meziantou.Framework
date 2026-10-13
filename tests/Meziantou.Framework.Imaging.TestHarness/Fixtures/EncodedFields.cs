@@ -40,6 +40,15 @@ public sealed class EncodedFields
     /// </summary>
     public CicpExpectation? ContainerCicp { get; internal set; }
 
+    /// <summary>Gets the <c>clli</c> box of the primary item or of the track of an AVIF input, or <see langword="null"/>.</summary>
+    public ContentLightLevelExpectation? ContentLightLevel { get; internal set; }
+
+    /// <summary>Gets the <c>mdcv</c> box of the primary item or of the track of an AVIF input, or <see langword="null"/>.</summary>
+    public MasteringDisplayExpectation? MasteringDisplay { get; internal set; }
+
+    /// <summary>Gets the <c>pasp</c> box of the primary item or of the track of an AVIF input, or <see langword="null"/>.</summary>
+    public PixelAspectRatioExpectation? PixelAspectRatio { get; internal set; }
+
     /// <summary>
     /// Gets the EXIF orientation that is equivalent to the <c>irot</c> and <c>imir</c> properties of the primary item of an
     /// AVIF input, or <see langword="null"/> for every other format.

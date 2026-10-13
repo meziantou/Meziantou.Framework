@@ -50,7 +50,19 @@ internal static class FixtureTraits
         return fixture.Entry.HasFeature("jxl.boxesAfterCodestream");
     }
 
-    public static bool ProperPrefixMayBeValid(GoldenFixture fixture) => IsDelimitedByEndOfInput(fixture) || HasUnreadTrailingBytes(fixture) || HasBoxesAfterTheCodestream(fixture);
+    public static bool ProperPrefixMayBeValid(GoldenFixture fixture) => IsDelimitedByEndOfInput(fixture) || HasUnreadTrailingBytes(fixture) || HasBoxesAfterTheCodestream(fixture) || IsFragmentedSequence(fixture);
+
+    /// <summary>
+    /// Gets a value indicating whether the input is a fragmented AVIF image sequence: its images are described by movie
+    /// fragments that follow each other until the end of the file, which nothing announces. The file that ends after one
+    /// of its fragments is a complete sequence of fewer images, and a header identification, which stops at the
+    /// <c>moov</c> box, does not know how many images follow.
+    /// </summary>
+    public static bool IsFragmentedSequence(GoldenFixture fixture)
+    {
+        ArgumentNullException.ThrowIfNull(fixture);
+        return fixture.Entry.Features?.Any(feature => feature.StartsWith("avif.seq.fragments=", StringComparison.Ordinal)) ?? false;
+    }
 
     /// <summary>
     /// Gets a value indicating whether a header identification needs the whole input: an AVIF or HEIC file whose last box is
@@ -100,7 +112,9 @@ internal static class FixtureTraits
         var hiddenFrames = GetFeatureValue(fixture, "avif.seq.hiddenFrames=");
         // JPEG XL: the frames that are decoded without being shown (reference frames, LF frames, layers) and what a shown
         // frame has beyond the image, as the corpus generator summed them from the frame headers (jxl.hiddenPixels)
-        return (hiddenFrames * fixture.Expected.Width * fixture.Expected.Height) + GetFeatureValue(fixture, "avif.layers.hiddenPixels=") + GetFeatureValue(fixture, "jxl.hiddenPixels=");
+        // The coded images of an image that is built from other images are decoded without being the image that is
+        // returned: the generator sums their pixels (avif.derived.inputPixels)
+        return GetFeatureValue(fixture, "avif.derived.inputPixels=") + (hiddenFrames * fixture.Expected.Width * fixture.Expected.Height) + GetFeatureValue(fixture, "avif.layers.hiddenPixels=") + GetFeatureValue(fixture, "jxl.hiddenPixels=");
 
         static long GetFeatureValue(GoldenFixture fixture, string prefix)
         {
@@ -139,11 +153,16 @@ internal static class FixtureTraits
         }
         else
         {
-            var primary = file.PrimaryItem!;
-            if (primary.Nclx is not null)
+            // An image that is built from other images has red, green, blue and alpha samples, whatever they are
+            if (file.IsBuiltImage(file.PrimaryItem!))
                 return false;
 
-            var coded = primary.Type == "grid" ? file.GetGridTiles(primary)[0] : primary;
+            // The color description of an identity derivation is its own, or else the one of its input
+            var chain = file.GetIdentityChain(file.PrimaryItem!);
+            if (chain.Any(item => item.Nclx is not null))
+                return false;
+
+            var coded = chain[^1].Type == "grid" ? file.GetGridTiles(chain[^1])[0] : chain[^1];
             if (coded.ConstructionMethod != 0 || HasSequenceParameterSet(coded.HevcConfiguration))
                 return false;
 
@@ -176,19 +195,48 @@ internal static class FixtureTraits
     /// that only removes the padding does not count: the limit of an image of 1080 rows accepts its pictures of 1088.)
     /// </description></item>
     /// </list>
+    /// An image that is built from other images has several canvases: the ones of its coded images, of its grids and of
+    /// its overlays. Each limit applies to each of them, so the requirement of each limit is its largest value, and the
+    /// pixels are not the product of the two sides. The coded image of an identity derivation is the one it is derived
+    /// from.
     /// </summary>
     /// <param name="fixture">The fixture.</param>
     /// <param name="decodes">Whether the pixels are decoded (a load or a sequential read), not only identified.</param>
-    public static (int Width, int Height) GetLimitedCanvas(GoldenFixture fixture, bool decodes = false)
+    public static (int Width, int Height, long Pixels) GetLimitedCanvas(GoldenFixture fixture, bool decodes = false)
     {
         ArgumentNullException.ThrowIfNull(fixture);
+        if (fixture.Entry.Format == "avif" && ReferenceHeif.Parse(fixture.ReadInput()) is { PrimaryItem: { } root } built && built.IsBuiltImage(root))
+        {
+            var canvases = new List<(long Width, long Height)>();
+            Collect(root);
+            return ((int)canvases.Max(canvas => canvas.Width), (int)canvases.Max(canvas => canvas.Height), canvases.Max(canvas => canvas.Width * canvas.Height));
+
+            void Collect(ReferenceHeif.Item item)
+            {
+                // An identity derivation has no canvas of its own
+                if (item.Type != "iden")
+                {
+                    canvases.Add(item.Size!.Value);
+                }
+
+                // The tiles of a grid of coded images are smaller than the grid
+                if (item.Type != "av01" && (item.Type != "grid" || built.IsBuiltImage(item)))
+                {
+                    foreach (var id in built.ItemReferences.Where(reference => reference.Type == "dimg" && reference.FromItemId == item.Id).SelectMany(reference => reference.ToItemIds))
+                    {
+                        Collect(built.FindItem(id)!);
+                    }
+                }
+            }
+        }
+
         (int Width, int Height) size = (fixture.Expected.Width, fixture.Expected.Height);
-        if (fixture.Entry.HasFeature("avif.clap") || fixture.Entry.HasFeature("heic.clap"))
+        if (fixture.Entry.HasFeature("avif.clap") || fixture.Entry.HasFeature("heic.clap") || fixture.Entry.HasFeature("avif.seq.clap"))
         {
             var file = ReferenceHeif.Parse(fixture.ReadInput());
             if (file.IsSequence && file.ColorTrack is { } track)
                 size = (track.Width, track.Height);
-            else if (file.PrimaryItem?.Size is var (width, height))
+            else if (file.PrimaryItem is { } primary && file.GetIdentityChain(primary)[^1].Size is var (width, height))
                 size = ((int)width, (int)height);
         }
 
@@ -199,6 +247,6 @@ internal static class FixtureTraits
             size = (Math.Max(size.Width, int.Parse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture)), Math.Max(size.Height, int.Parse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture)));
         }
 
-        return size;
+        return (size.Width, size.Height, (long)size.Width * size.Height);
     }
 }

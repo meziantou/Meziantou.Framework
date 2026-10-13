@@ -153,6 +153,34 @@ internal sealed class HeifCodedImage
         return image;
     }
 
+    /// <summary>
+    /// Reads the properties of an identity derivation (<c>iden</c> item): its size and its transformative properties. It
+    /// has no coded item of its own.
+    /// </summary>
+    public static HeifCodedImage CreateIdentityDerivation(HeifCodecBinding binding, HeifMetaBox meta, ReadOnlySpan<byte> payload, HeifItem item, ImageResourceLimits limits)
+        => CreateDerivation(binding, meta, payload, item, limits, enforceLimits: false);
+
+    /// <summary>
+    /// Reads the properties of a derived image item (<c>iden</c>, <c>iovl</c>, or a <c>grid</c> of derived images): its
+    /// size and its transformative properties. It has no coded item of its own.
+    /// </summary>
+    /// <param name="binding">The codec of the file.</param>
+    /// <param name="meta">The parsed box.</param>
+    /// <param name="payload">The payload of the box.</param>
+    /// <param name="item">The item.</param>
+    /// <param name="limits">The resource limits of the operation.</param>
+    /// <param name="enforceLimits">
+    /// Whether the size of the item is checked against the canvas limits. The size of an identity derivation is not one
+    /// that is decoded or allocated: it must be the size of its input, as the input is presented, and the limits apply
+    /// to the coded image and to the image that is returned.
+    /// </param>
+    public static HeifCodedImage CreateDerivation(HeifCodecBinding binding, HeifMetaBox meta, ReadOnlySpan<byte> payload, HeifItem item, ImageResourceLimits limits, bool enforceLimits)
+    {
+        var image = new HeifCodedImage(binding, item, []);
+        image.Size = ReadProperties(binding, meta, payload, item, limits, isCodedItem: false, image, enforceLimits);
+        return image;
+    }
+
     /// <summary>Returns whether two images declare the same transformative properties, in the same order.</summary>
     public static bool HasSameTransforms(HeifCodedImage first, HeifCodedImage second, ReadOnlySpan<byte> payload)
     {
@@ -171,7 +199,7 @@ internal sealed class HeifCodedImage
     }
 
     // Reads the properties of an image item: the size of the item is returned, the sample format is stored in the image
-    private static Size ReadProperties(HeifCodecBinding binding, HeifMetaBox meta, ReadOnlySpan<byte> payload, HeifItem item, ImageResourceLimits limits, bool isCodedItem, HeifCodedImage image)
+    private static Size ReadProperties(HeifCodecBinding binding, HeifMetaBox meta, ReadOnlySpan<byte> payload, HeifItem item, ImageResourceLimits limits, bool isCodedItem, HeifCodedImage image, bool enforceLimits = true)
     {
         Size? size = null;
         var hasConfiguration = false;
@@ -189,10 +217,20 @@ internal sealed class HeifCodedImage
                     if (width is 0 || height is 0)
                         throw binding.Invalid("the size of an image is zero.");
 
-                    if (width > int.MaxValue || height > int.MaxValue)
-                        throw new ImageResourceLimitException(ImageResourceLimitKind.Width, limits.MaxWidth, width);
+                    if (!enforceLimits)
+                    {
+                        // No coded image has a side of 2^31 samples or more
+                        if (width > int.MaxValue || height > int.MaxValue)
+                            throw binding.Invalid("the size of an identity derivation is not the size of its input image.");
+                    }
+                    else
+                    {
+                        if (width > int.MaxValue || height > int.MaxValue)
+                            throw new ImageResourceLimitException(ImageResourceLimitKind.Width, limits.MaxWidth, width);
 
-                    limits.EnsureCanvasWithinLimits((int)width, (int)height);
+                        limits.EnsureCanvasWithinLimits((int)width, (int)height);
+                    }
+
                     size = new Size((int)width, (int)height);
                     break;
                 }

@@ -39,7 +39,20 @@ internal static class IccBlackPoint
         if (GetDestinationLightness(destination, intent) is not { } destinationLightness)
             return null;
 
-        var sourceBlack = DecodeLightness(GetBlackPoint(source, intent).L);
+        return CreateCompensation(GetBlackPoint(source, intent).L, destinationLightness);
+    }
+
+    /// <summary>Creates the compensation stage on CIEXYZ relative to D50, for a source whose black point has a known lightness.</summary>
+    /// <param name="sourceLightness">The lightness (L*) of the black point of the source.</param>
+    /// <param name="destination">The destination profile.</param>
+    /// <param name="intent">The rendering intent.</param>
+    /// <returns>The stage, or <see langword="null"/> when the two black points are the same or cannot be estimated.</returns>
+    public static IccStage? CreateCompensation(double sourceLightness, IccProfileModel destination, IccRenderingIntent intent)
+        => GetDestinationLightness(destination, intent) is { } destinationLightness ? CreateCompensation(sourceLightness, destinationLightness) : null;
+
+    private static IccMatrixStage? CreateCompensation(double sourceLightness, double destinationLightness)
+    {
+        var sourceBlack = DecodeLightness(sourceLightness);
         var destinationBlack = DecodeLightness(destinationLightness);
         if (sourceBlack == destinationBlack)
             return null;

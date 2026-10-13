@@ -455,6 +455,109 @@ public sealed class ResizeTests
         }
     }
 
+    /// <summary>
+    /// The linear working space decodes the samples with the transfer function that the image declares. Black and white
+    /// average to half of the light, which each function encodes to another sample: <c>65535 * Encode(0.5)</c>, computed
+    /// with the <c>decimal</c> module of Python from the functions of Rec. ITU-T H.273 (BT.709: 46230.72; gamma 2.2:
+    /// 47823.51; gamma 2.8: 51163.78; 100:1 logarithm: 55671.00; sRGB: 48191.62; PQ: 60721.24; HLG: 57123.15).
+    /// </summary>
+    [Theory]
+    [InlineData(1, 46231)]
+    [InlineData(4, 47824)]
+    [InlineData(5, 51164)]
+    [InlineData(6, 46231)] // the function of BT.709
+    [InlineData(9, 55671)]
+    [InlineData(13, 48192)]
+    [InlineData(14, 46231)]
+    [InlineData(16, 60721)]
+    [InlineData(18, 57123)]
+    [InlineData(2, 48192)] // unspecified: sRGB, like an image without description
+    [InlineData(8, 32768)] // linear: filtered as stored (32767.5, and ties round up)
+    public void LinearWorkingSpaceUsesTheTransferCharacteristicsOfTheImage(byte transfer, int expected)
+    {
+        var options = new ResizeOptions(1, 1) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Bilinear, WorkingSpace = ResizeWorkingSpace.LinearSrgb };
+        foreach (var primaries in new byte[] { 1, 9, 12 })
+        {
+            // The primaries do not change how the light of a channel adds up
+            using var image = new Image<Gray16>(2, 1);
+            image.Frames[0][1, 0] = new Gray16(65535);
+            var cicp = new CicpColorDescription(primaries, transfer, 0, fullRange: true);
+            image.Metadata.Cicp = cicp;
+            image.Resize(options, Ct);
+            Assert.Equal(expected, image.Frames[0][0, 0].Value);
+            Assert.Equal(cicp, image.Metadata.Cicp);
+        }
+
+        // The colors of an image with alpha, and the convolution, use the same function
+        using (var color = new Image<Rgba64>(2, 1))
+        {
+            color.Frames[0][0, 0] = new Rgba64(0, 65535, 0, 65535);
+            color.Frames[0][1, 0] = new Rgba64(65535, 0, 0, 65535);
+            color.Metadata.Cicp = new CicpColorDescription(9, transfer, 0, fullRange: true);
+            color.Resize(options, Ct);
+            Assert.Equal(new Rgba64((ushort)expected, (ushort)expected, 0, 65535), color.Frames[0][0, 0]);
+        }
+
+        using (var convolved = new Image<Gray16>(2, 1))
+        {
+            convolved.Frames[0][1, 0] = new Gray16(65535);
+            convolved.Metadata.Cicp = new CicpColorDescription(9, transfer, 0, fullRange: true);
+
+            // Half of the pixel and half of its left neighbor, which wraps around to the white pixel
+            convolved.Convolve(new ConvolutionOptions(new ConvolutionKernel(3, 1, [0.5, 0.5, 0])) { EdgeMode = ConvolutionEdgeMode.Wrap, WorkingSpace = ConvolutionWorkingSpace.LinearSrgb }, Ct);
+            Assert.Equal(expected, convolved.Frames[0][0, 0].Value);
+        }
+    }
+
+    [Fact]
+    public void LinearWorkingSpaceOfACicpDescriptionFollowsTheOtherColorLabels()
+    {
+        var options = new ResizeOptions(1, 1) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Bilinear, WorkingSpace = ResizeWorkingSpace.LinearSrgb };
+        var pq = new CicpColorDescription(9, 16, 0, fullRange: true);
+
+        // An ICC profile describes the colors in the place of the CICP description: a recognized sRGB profile is decoded
+        // as sRGB, and another profile is still rejected
+        using (var image = new Image<Gray16>(2, 1))
+        {
+            image.Frames[0][1, 0] = new Gray16(65535);
+            image.Metadata.Cicp = pq;
+            image.Metadata.IccProfile = IccProfiles.Gray(IccProfiles.SrgbParametricCurve());
+            image.Resize(options, Ct);
+            Assert.Equal(48192, image.Frames[0][0, 0].Value);
+        }
+
+        using (var image = new Image<Rgba32>(2, 1))
+        {
+            image.Metadata.Cicp = pq;
+            image.Metadata.IccProfile = IccProfiles.Rgb(IccProfiles.DisplayP3Colorants, IccProfiles.SrgbParametricCurve());
+            Assert.Throws<UnsupportedImageFeatureException>(() => image.Resize(options, Ct));
+        }
+
+        // Samples labeled as linear light are filtered as stored, whatever the description says
+        using (var image = new Image<Gray16>(2, 1))
+        {
+            image.Frames[0][1, 0] = new Gray16(65535);
+            image.Metadata.Cicp = pq;
+            image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+            image.Resize(options, Ct);
+            Assert.Equal(32768, image.Frames[0][0, 0].Value);
+        }
+
+        // Reserved transfer characteristics have no function: nothing is changed, and the encoded working space still works
+        foreach (var reserved in new byte[] { 0, 3, 19, 255 })
+        {
+            using var image = new Image<Gray16>(2, 1);
+            image.Frames[0][1, 0] = new Gray16(65535);
+            image.Metadata.Cicp = new CicpColorDescription(1, reserved, 0, fullRange: true);
+            var storage = image.Frames[0].Storage;
+            Assert.Throws<UnsupportedImageFeatureException>(() => image.Resize(options, Ct));
+            Assert.Throws<UnsupportedImageFeatureException>(() => image.Convolve(new ConvolutionOptions(new ConvolutionKernel(3, 1, [0.5, 0, 0.5])) { WorkingSpace = ConvolutionWorkingSpace.LinearSrgb }, Ct));
+            Assert.Same(storage, image.Frames[0].Storage);
+            image.Resize(new ResizeOptions(1, 1) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Bilinear }, Ct);
+            Assert.Equal(32768, image.Frames[0][0, 0].Value);
+        }
+    }
+
     [Fact]
     public void LinearWorkingSpaceRequiresUntaggedOrRecognizedSrgbPixels()
     {

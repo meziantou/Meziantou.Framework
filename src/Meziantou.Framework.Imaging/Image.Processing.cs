@@ -24,7 +24,11 @@ public abstract partial class Image
     {
         Owner.EnsureCanModify(operation);
         cancellationToken.ThrowIfCancellationRequested();
+
+        // A transposition swaps the axes of the pixels too: the ratio is computed before the transaction and published after it
+        var pixelAspectRatio = transform.Transpose ? _metadata.PixelAspectRatio?.Transpose() : _metadata.PixelAspectRatio;
         ReplaceGeometry(transform.GetOutputSize(region.Size), normalizeOrientation, operation, new TransformFiller(region, transform), cancellationToken);
+        _metadata.PixelAspectRatio = pixelAspectRatio;
     }
 
     /// <summary>
@@ -40,13 +44,14 @@ public abstract partial class Image
     {
         const string Operation = "resize the image";
         Owner.EnsureCanModify(Operation);
-        var workingSpace = options.WorkingSpace == ResizeWorkingSpace.LinearSrgb && UseLinearLight("resizing", "resize") ? ResizeWorkingSpace.LinearSrgb : ResizeWorkingSpace.Encoded;
+        var transfer = options.WorkingSpace == ResizeWorkingSpace.LinearSrgb ? GetLinearLightTransfer("resizing", "resize") : (byte)0;
+        var workingSpace = transfer is not 0 ? ResizeWorkingSpace.LinearSrgb : ResizeWorkingSpace.Encoded;
         cancellationToken.ThrowIfCancellationRequested();
         if (geometry.IsIdentity)
             return;
 
         // Large frames are resized by up to MaxDegreeOfParallelism workers (row bands, bit-identical results)
-        using var plan = new ResizePlan(geometry, options.Filter, workingSpace, PixelFormat, _configuration.MaxDegreeOfParallelism);
+        using var plan = new ResizePlan(geometry, options.Filter, workingSpace, PixelFormat, _configuration.MaxDegreeOfParallelism, transfer);
         ReplaceGeometry(geometry.OutputSize, normalizeOrientation: false, Operation, new ResizeFiller(plan, geometry), cancellationToken);
     }
 
@@ -334,8 +339,8 @@ public abstract partial class Image
     /// <summary>Large frames are convolved by up to MaxDegreeOfParallelism workers (row bands, bit-identical results).</summary>
     private ConvolutionPlan CreateConvolutionPlan(ConvolutionOptions options)
     {
-        var linear = options.WorkingSpace == ConvolutionWorkingSpace.LinearSrgb && UseLinearLight("convolution", "convolve");
-        return new ConvolutionPlan(options.Kernel, options.EdgeMode, options.PreserveAlpha, linear, PixelFormat, _size, _configuration.MaxDegreeOfParallelism);
+        var transfer = options.WorkingSpace == ConvolutionWorkingSpace.LinearSrgb ? GetLinearLightTransfer("convolution", "convolve") : (byte)0;
+        return new ConvolutionPlan(options.Kernel, options.EdgeMode, options.PreserveAlpha, transfer is not 0, PixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer);
     }
 
     /// <summary>
@@ -363,16 +368,100 @@ public abstract partial class Image
                 "Incompatible color profile");
         }
 
-        var transform = IccColorTransform.Create(GetSourceColorProfile(), destination, options);
+        // The colors are those of the CICP color description when it is what describes them; otherwise those of a profile
+        var hasCicpSource = TryGetCicpColorSpace(options.ToneMapping, out var colorSpace, out var toneMapping);
+        var pipeline = hasCicpSource
+            ? IccPipeline.Create(colorSpace, destination, options.Intent, options.BlackPointCompensation, toneMapping)
+            : IccColorTransform.Create(GetSourceColorProfile(), destination, options).Pipeline;
         cancellationToken.ThrowIfCancellationRequested();
-        if (!transform.Pipeline.IsIdentity)
+        if (!pipeline.IsIdentity)
         {
-            ReplaceGeometry(_size, normalizeOrientation: false, Operation, new ColorConversionFiller(transform.Pipeline), cancellationToken);
+            ReplaceGeometry(_size, normalizeOrientation: false, Operation, new ColorConversionFiller(pipeline), cancellationToken);
         }
 
-        // Committed (or nothing to convert): the pixels are now described by the destination profile
+        // Committed (or nothing to convert): the pixels are now described by the destination profile. A CICP description
+        // of another color space than sRGB, and the light levels that go with it, no longer describe them, whether they
+        // were converted from it or from a profile that stood in its place. A description that is equivalent to sRGB is
+        // kept: it says nothing that the profile contradicts, and its matrix coefficients are those of the file
         _metadata.IccProfile = destination;
         _metadata.TransferFunction = ColorTransferFunction.Srgb;
+        if (hasCicpSource || (_metadata.Cicp is { } description && !MetadataWritePlan.IsSrgbEquivalent(description)))
+        {
+            _metadata.Cicp = null;
+            _metadata.ContentLightLevel = null;
+            _metadata.MasteringDisplay = null;
+        }
+    }
+
+    /// <summary>
+    /// Gets the color space that the CICP color description gives to the stored pixels, when it is what describes them:
+    /// an image without ICC profile whose description is not the one of sRGB or of linear sRGB samples, which keep
+    /// their built-in profiles (<see cref="GetSourceColorProfile"/>).
+    /// </summary>
+    /// <remarks>
+    /// Unspecified code points (2) say nothing: the primaries are then those of BT.709 and the function is the sRGB
+    /// one, as for an image without description. The linear transfer function label
+    /// (<see cref="ImageMetadata.TransferFunction"/>) wins over the transfer characteristics, as it does for a profile.
+    /// The matrix coefficients and the range describe how a file stored the samples, not the pixels of the image.
+    /// </remarks>
+    /// <param name="options">How high dynamic range samples are brought to a standard dynamic range, or <see langword="null"/> to refuse them.</param>
+    /// <param name="colorSpace">Receives the color space.</param>
+    /// <param name="toneMapping">Receives the stage that compresses the light of PQ and HLG samples, or <see langword="null"/> for the other ones.</param>
+    /// <exception cref="UnsupportedImageFeatureException">
+    /// The primaries or the transfer characteristics are reserved, or the samples are high dynamic range ones (PQ, HLG),
+    /// which no ICC profile describes, and <paramref name="options"/> is <see langword="null"/>: their highlights are
+    /// not compressed implicitly.
+    /// </exception>
+    private bool TryGetCicpColorSpace(HdrToneMappingOptions? options, out CicpColorSpace colorSpace, out HdrToneMapStage? toneMapping)
+    {
+        colorSpace = default;
+        toneMapping = null;
+        if (_metadata.IccProfile is not null || _metadata.Cicp is not { } cicp)
+            return false;
+
+        var isGray = PixelFormats.IsGrayscale(PixelFormat);
+        var isLabeledLinear = _metadata.TransferFunction == ColorTransferFunction.Linear;
+        var primaries = cicp.ColorPrimaries is 2 ? (byte)1 : cicp.ColorPrimaries;
+        var transfer = isLabeledLinear ? CicpTransfer.Linear
+            : cicp.TransferCharacteristics is 2 ? CicpTransfer.Srgb
+            : cicp.TransferCharacteristics;
+
+        // sRGB samples, and samples labeled as linear sRGB, are those of the built-in profiles
+        if ((isGray || primaries is 1) && (transfer is CicpTransfer.Srgb || isLabeledLinear))
+            return false;
+
+        if (!CicpTransfer.IsSupported(transfer))
+            throw new UnsupportedImageFeatureException(
+                $"The transfer characteristics of the CICP color description ({cicp}) are reserved: the color space of the image is unknown. Set Metadata.Cicp or Metadata.IccProfile to what the samples are before converting them.",
+                ImageFormat.Unknown,
+                "Color conversion from reserved transfer characteristics");
+
+        if (!isGray && !CicpPrimaries.IsSupported(primaries))
+            throw new UnsupportedImageFeatureException(
+                $"The color primaries of the CICP color description ({cicp}) are reserved: the color space of the image is unknown. Set Metadata.Cicp or Metadata.IccProfile to what the samples are before converting them.",
+                ImageFormat.Unknown,
+                "Color conversion from reserved color primaries");
+
+        colorSpace = new CicpColorSpace(primaries, transfer, isGray);
+        if (!CicpTransfer.IsHdr(transfer))
+            return true;
+
+        if (options is null)
+            throw new UnsupportedImageFeatureException(
+                $"The samples of the image are high dynamic range ones ({cicp}): an ICC profile describes a standard dynamic range, so converting them means choosing how their highlights are compressed, which is not done implicitly. Set IccColorTransformOptions.ToneMapping.",
+                ImageFormat.Unknown,
+                "Color conversion of high dynamic range samples without tone mapping");
+
+        // The peak of the source: what the caller says, else what the image declares, else the nominal peak of the
+        // function. A content light level describes the light of a display, which PQ samples are; the light of HLG
+        // samples depends on the display, whose peak is the one of the mastering display
+        var peak = options.SourcePeakLuminance
+            ?? (transfer is CicpTransfer.Pq && _metadata.ContentLightLevel is { MaxContentLightLevel: > 0 } lightLevel ? lightLevel.MaxContentLightLevel
+            : _metadata.MasteringDisplay is { MaxLuminance: > 0 } display ? Math.Min(display.MaxLuminanceCandelasPerSquareMeter, 10_000)
+            : transfer is CicpTransfer.Pq ? 10_000
+            : 1_000);
+        toneMapping = new HdrToneMapStage(colorSpace, options.Operator, peak, options.TargetWhiteLuminance);
+        return true;
     }
 
     /// <summary>
@@ -401,30 +490,51 @@ public abstract partial class Image
     }
 
     /// <summary>
-    /// Gets a value indicating whether a filter requested in linear light decodes the samples as sRGB: linear-light samples
-    /// (QOI colorspace 1) are filtered as stored, since decoding them as sRGB would apply the curve twice.
+    /// Gets the transfer characteristics (<see cref="CicpTransfer"/>) whose function decodes the samples of the image to
+    /// linear light, for a filter that is requested in linear light: the function that the image declares, which is
+    /// sRGB for an image that declares none. Returns 0 when the samples are filtered as stored: linear-light samples
+    /// (QOI colorspace 1, or linear transfer characteristics) are already what the filter works on, and decoding them
+    /// would apply a curve to light.
     /// </summary>
+    /// <remarks>
+    /// An ICC profile describes the colors in the place of a CICP description; only a profile that is recognized as sRGB
+    /// has a function here. Without profile, the transfer characteristics of the CICP description are used, whatever its
+    /// color primaries: a filter combines the light of each channel, which does not depend on the primaries. PQ and HLG
+    /// samples are filtered in the light their function decodes to, relative to its nominal peak.
+    /// </remarks>
     /// <param name="operation">The operation, as a noun ("resizing").</param>
     /// <param name="verb">The operation, as a verb ("resize").</param>
-    /// <exception cref="UnsupportedImageFeatureException">The ICC profile is not recognized as sRGB for the pixel format. No ICC transform is applied implicitly.</exception>
-    private bool UseLinearLight(string operation, string verb)
+    /// <exception cref="UnsupportedImageFeatureException">
+    /// The ICC profile is not recognized as sRGB for the pixel format (no ICC transform is applied implicitly), or the
+    /// transfer characteristics of the CICP description have no function.
+    /// </exception>
+    private byte GetLinearLightTransfer(string operation, string verb)
     {
         if (_metadata.TransferFunction == ColorTransferFunction.Linear)
-            return false;
+            return 0;
 
-        if (_metadata.IccProfile is { } profile && !SrgbProfileRecognition.IsSrgb(profile, PixelFormat))
+        if (_metadata.IccProfile is { } profile)
+        {
+            if (!SrgbProfileRecognition.IsSrgb(profile, PixelFormat))
+                throw new UnsupportedImageFeatureException(
+                    $"Linear-light {operation} assumes sRGB pixels, but the ICC profile ({profile.ColorSpace} color space) is not recognized as sRGB for {PixelFormat} pixels. No ICC transform is applied implicitly: convert the image to sRGB with ConvertColorProfile first, {verb} in the encoded working space, or remove the profile if the pixels are sRGB.",
+                    ImageFormat.Unknown,
+                    $"Linear sRGB {operation} of a non-sRGB color profile");
+
+            return CicpTransfer.Srgb;
+        }
+
+        // Unspecified transfer characteristics (2) say nothing: the samples are sRGB, like those of an image without description
+        if (_metadata.Cicp is not { } cicp || cicp.TransferCharacteristics is CicpTransfer.Srgb or 2)
+            return CicpTransfer.Srgb;
+
+        if (!CicpTransfer.IsSupported(cicp.TransferCharacteristics))
             throw new UnsupportedImageFeatureException(
-                $"Linear-light {operation} assumes sRGB pixels, but the ICC profile ({profile.ColorSpace} color space) is not recognized as sRGB for {PixelFormat} pixels. No ICC transform is applied implicitly: convert the image to sRGB with ConvertColorProfile first, {verb} in the encoded working space, or remove the profile if the pixels are sRGB.",
+                $"Linear-light {operation} decodes the samples with their transfer function, but the transfer characteristics of the CICP color description ({cicp}) are reserved. Use the encoded working space to {verb} the stored samples.",
                 ImageFormat.Unknown,
-                $"Linear sRGB {operation} of a non-sRGB color profile");
+                $"Linear-light {operation} of reserved transfer characteristics");
 
-        if (_metadata.IccProfile is null && _metadata.Cicp is { } cicp && !MetadataWritePlan.IsSrgbEquivalent(cicp))
-            throw new UnsupportedImageFeatureException(
-                $"Linear-light {operation} assumes sRGB pixels, but the CICP color description ({cicp}) is not equivalent to sRGB. No color transform is applied: use the encoded working space to {verb} the stored samples.",
-                ImageFormat.Unknown,
-                $"Linear sRGB {operation} of a non-sRGB color description");
-
-        return true;
+        return cicp.TransferCharacteristics is CicpTransfer.Linear ? (byte)0 : cicp.TransferCharacteristics;
     }
 
     /// <summary>

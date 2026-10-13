@@ -830,6 +830,27 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>A high dynamic range image is converted to sRGB by choosing how its highlights are compressed.</summary>
+    // begin-snippet: convert-hdr-to-srgb
+    public static void ConvertHdrToSrgb(string avifPath, string pngPath)
+    {
+        using var image = Image.Load(avifPath);
+
+        // The image has no ICC profile: its color description (BT.2020 primaries with PQ samples, for
+        // example) is what the colors are converted from. PQ and HLG samples are only converted when
+        // the options say how the light above the white of the result is compressed.
+        var options = new IccColorTransformOptions
+        {
+            ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Bt2390 },
+        };
+        var grayscale = image.PixelFormat is PixelFormat.Gray8 or PixelFormat.Gray16;
+        image.ConvertColorProfile(grayscale ? IccProfile.SrgbGray : IccProfile.Srgb, options);
+
+        // The pixels are sRGB ones: the color description and the light levels went with the conversion
+        image.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
+    }
+    // end-snippet
+
     /// <summary>A CMYK JPEG is only loaded with a color conversion.</summary>
     // begin-snippet: load-cmyk-jpeg
     public static Image LoadCmykJpeg(string path)

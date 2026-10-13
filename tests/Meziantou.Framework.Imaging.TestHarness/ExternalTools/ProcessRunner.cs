@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 
 namespace Meziantou.Framework.Imaging.TestHarness.ExternalTools;
@@ -37,7 +38,7 @@ public static class ProcessRunner
             startInfo.ArgumentList.Add(argument);
         }
 
-        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException($"Cannot start '{fileName}'.");
+        using var process = await StartAsync(startInfo, cancellationToken).ConfigureAwait(false);
         process.StandardInput.Close();
 
         // Not disposed: MemoryStream holds no unmanaged resource
@@ -64,5 +65,29 @@ public static class ProcessRunner
         var error = await errorTask.ConfigureAwait(false);
         await outputTask.ConfigureAwait(false);
         return new ProcessResult(process.ExitCode, output.ToArray(), error);
+    }
+
+    /// <summary>
+    /// Starts a process. Linux refuses to run a file that any process holds open for writing ("Text file busy"), and a
+    /// tool that was just downloaded is in that state for a moment: a process forked by another thread inherited the
+    /// handle the tool was written with, and keeps it until it runs its own image. The start is tried again until that
+    /// process is gone; any other failure, such as a file that does not exist, is reported at once.
+    /// </summary>
+    private static async Task<Process> StartAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken)
+    {
+        const int TextFileBusy = 26;
+
+        var stopwatch = Stopwatch.StartNew();
+        while (true)
+        {
+            try
+            {
+                return Process.Start(startInfo) ?? throw new InvalidOperationException($"Cannot start '{startInfo.FileName}'.");
+            }
+            catch (Win32Exception ex) when (!OperatingSystem.IsWindows() && ex.NativeErrorCode is TextFileBusy && stopwatch.Elapsed <= TimeSpan.FromSeconds(30))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(50), cancellationToken).ConfigureAwait(false);
+            }
+        }
     }
 }

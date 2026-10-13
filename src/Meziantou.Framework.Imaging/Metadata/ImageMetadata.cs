@@ -2,7 +2,10 @@ using System.Collections.ObjectModel;
 
 namespace Meziantou.Framework.Imaging.Metadata;
 
-/// <summary>Mutable image-wide metadata: orientation, resolution, color profile, transfer function, CICP color description, EXIF, XMP and text entries.</summary>
+/// <summary>
+/// Mutable image-wide metadata: orientation, resolution, pixel aspect ratio, color profile, transfer function, CICP color
+/// description, content light level, mastering display color volume, EXIF, XMP and text entries.
+/// </summary>
 /// <remarks>
 /// <para>
 /// <see cref="Clone"/> produces an independent container: mutable state (such as <see cref="TextEntries"/>) is copied,
@@ -69,14 +72,43 @@ public sealed class ImageMetadata
     /// assumed sRGB, or described by <see cref="IccProfile"/>).
     /// </summary>
     /// <remarks>
-    /// This is a label: no operation converts the pixels. When an <see cref="IccProfile"/> is also present, the profile
-    /// describes the color primaries and the transfer function. AVIF and HEIC files declare a description, and so do the
-    /// JPEG XL files whose enumerated color encoding has code points. The AVIF and HEIC encoders store any description and the JPEG XL
+    /// This is a label: loading and saving never convert the pixels. When an <see cref="IccProfile"/> is also present, the
+    /// profile describes the color primaries and the transfer function. Without profile,
+    /// <see cref="ImageProcessingExtensions.ConvertColorProfile"/> converts the pixels from the color space of the
+    /// description (and removes it), and linear-light resizing and convolution decode the samples with the function of
+    /// its transfer characteristics. AVIF and HEIC files declare a description, and so do the JPEG XL
+    /// files whose enumerated color encoding has code points. The AVIF and HEIC encoders store any description and the JPEG XL
     /// encoder the ones the format can enumerate; the other encoders treat a description that is not equivalent to sRGB as
     /// metadata they cannot store
     /// (<see cref="Formats.ImageEncoder.MetadataHandling"/>).
     /// </remarks>
     public CicpColorDescription? Cicp { get; set; }
+
+    /// <summary>Gets or sets the content light level of high dynamic range pixels, or <see langword="null"/> when none is declared.</summary>
+    /// <remarks>
+    /// This is a label: no operation computes it from the pixels, and the operations that keep the color space of the
+    /// pixels keep it. <see cref="ImageProcessingExtensions.ConvertColorProfile"/> removes it, since it no longer describes
+    /// the converted pixels. Only AVIF stores it; the other encoders treat it as metadata they cannot store
+    /// (<see cref="Formats.ImageEncoder.MetadataHandling"/>).
+    /// </remarks>
+    public ContentLightLevel? ContentLightLevel { get; set; }
+
+    /// <summary>Gets or sets the color volume of the display the pixels were mastered on, or <see langword="null"/> when none is declared.</summary>
+    /// <remarks>
+    /// This is a label: it does not describe the color space of the pixels (<see cref="Cicp"/> or
+    /// <see cref="IccProfile"/> does). <see cref="ImageProcessingExtensions.ConvertColorProfile"/> removes it, since it no
+    /// longer describes the converted pixels. Only AVIF stores it; the other encoders treat it as metadata they cannot
+    /// store (<see cref="Formats.ImageEncoder.MetadataHandling"/>).
+    /// </remarks>
+    public MasteringDisplayColorVolume? MasteringDisplay { get; set; }
+
+    /// <summary>Gets or sets the aspect ratio of the pixels, or <see langword="null"/> when none is declared (the pixels are square).</summary>
+    /// <remarks>
+    /// This is a label: no operation resamples the pixels to make them square. The operations that swap the axes of the
+    /// image swap its terms. Only AVIF stores it; the other encoders treat a ratio that is not square as metadata they
+    /// cannot store (<see cref="Formats.ImageEncoder.MetadataHandling"/>).
+    /// </remarks>
+    public PixelAspectRatio? PixelAspectRatio { get; set; }
 
     /// <summary>Gets or sets the EXIF profile, or <see langword="null"/> if none.</summary>
     public ExifProfile? ExifProfile { get; set; }
@@ -99,6 +131,9 @@ public sealed class ImageMetadata
             IccProfile = IccProfile,
             TransferFunction = TransferFunction,
             Cicp = Cicp,
+            ContentLightLevel = ContentLightLevel,
+            MasteringDisplay = MasteringDisplay,
+            PixelAspectRatio = PixelAspectRatio,
             ExifProfile = ExifProfile,
             XmpProfile = XmpProfile,
         };

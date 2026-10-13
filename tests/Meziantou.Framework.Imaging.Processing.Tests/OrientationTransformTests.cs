@@ -76,6 +76,57 @@ public sealed class OrientationTransformTests
     }
 
     [Fact]
+    public void MapRectangleToSourceSelectsTheStoredCellsThatARectangleOfTheResultShows()
+    {
+        var source = new Size(3, 2);
+        foreach (var (orientation, displayed) in Displayed)
+        {
+            var transform = OrientationTransform.ForOrientation(orientation);
+            var size = transform.GetOutputSize(source);
+            Assert.Equal(new Size(displayed[0].Length, displayed.Length), size);
+
+            // Every rectangle of the displayed grid shows the cells of one rectangle of the stored grid
+            for (var y = 0; y < size.Height; y++)
+            {
+                for (var x = 0; x < size.Width; x++)
+                {
+                    for (var height = 1; y + height <= size.Height; height++)
+                    {
+                        for (var width = 1; x + width <= size.Width; width++)
+                        {
+                            var mapped = transform.MapRectangleToSource(source, new Rectangle(x, y, width, height));
+                            Assert.Equal(width * height, mapped.Width * mapped.Height);
+                            Assert.True(mapped.X >= 0 && mapped.Y >= 0 && mapped.Right <= source.Width && mapped.Bottom <= source.Height, $"{orientation}: {mapped} is not inside the stored grid");
+                            var shown = Cells(displayed, new Rectangle(x, y, width, height));
+                            var stored = Cells(Stored, mapped);
+                            Assert.Equal(shown, stored);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Orientation 6 displays the stored grid as "da" / "eb" / "fc": its right column is the stored row "abc"
+        Assert.Equal(new Rectangle(0, 0, 3, 1), OrientationTransform.ForOrientation(ExifOrientation.RightTop).MapRectangleToSource(source, new Rectangle(1, 0, 1, 3)));
+
+        // The cells of a rectangle, in a canonical order
+        static string Cells(string[] grid, Rectangle rectangle)
+        {
+            var cells = new List<char>();
+            for (var y = rectangle.Y; y < rectangle.Bottom; y++)
+            {
+                for (var x = rectangle.X; x < rectangle.Right; x++)
+                {
+                    cells.Add(grid[y][x]);
+                }
+            }
+
+            cells.Sort();
+            return new string([.. cells]);
+        }
+    }
+
+    [Fact]
     public void ThenAppliesTheSecondTransformToTheResultOfTheFirst()
     {
         foreach (var first in AllTransforms)

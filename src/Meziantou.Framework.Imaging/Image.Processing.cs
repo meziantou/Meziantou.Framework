@@ -296,6 +296,41 @@ public abstract partial class Image
         frame.ConvolvePixels(lease, plan, cancellationToken);
     }
 
+    /// <summary>
+    /// Blurs every displayed frame and the poster in place: a convolution by a row of weights, then by the same weights
+    /// as a column. Both are prepared before a pixel changes.
+    /// </summary>
+    internal void BlurAllFrames(double[] weights, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace, CancellationToken cancellationToken)
+    {
+        Owner.EnsureCanModify("blur the image");
+        using var horizontal = CreateConvolutionPlan(new ConvolutionOptions(new ConvolutionKernel(weights.Length, 1, weights)) { EdgeMode = edgeMode, WorkingSpace = workingSpace });
+        using var vertical = CreateConvolutionPlan(new ConvolutionOptions(new ConvolutionKernel(1, weights.Length, weights)) { EdgeMode = edgeMode, WorkingSpace = workingSpace });
+        cancellationToken.ThrowIfCancellationRequested();
+        horizontal.Prepare(Owner.Scope);
+        vertical.Prepare(Owner.Scope);
+        _metadata.RemoveStaleThumbnail();
+        foreach (var frame in GetAllFrames())
+        {
+            using var lease = frame.GetStorage().AcquireLease();
+            frame.ConvolvePixels(lease, horizontal, cancellationToken);
+            frame.ConvolvePixels(lease, vertical, cancellationToken);
+        }
+    }
+
+    /// <summary>Blurs one attached frame of this image in place, as <see cref="BlurAllFrames"/> does for all of them.</summary>
+    internal void BlurFrame(ImageFrame frame, PixelStorage storage, double[] weights, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace, CancellationToken cancellationToken)
+    {
+        using var horizontal = CreateConvolutionPlan(new ConvolutionOptions(new ConvolutionKernel(weights.Length, 1, weights)) { EdgeMode = edgeMode, WorkingSpace = workingSpace });
+        using var vertical = CreateConvolutionPlan(new ConvolutionOptions(new ConvolutionKernel(1, weights.Length, weights)) { EdgeMode = edgeMode, WorkingSpace = workingSpace });
+        cancellationToken.ThrowIfCancellationRequested();
+        using var lease = storage.AcquireLease();
+        horizontal.Prepare(Owner.Scope);
+        vertical.Prepare(Owner.Scope);
+        _metadata.RemoveStaleThumbnail();
+        frame.ConvolvePixels(lease, horizontal, cancellationToken);
+        frame.ConvolvePixels(lease, vertical, cancellationToken);
+    }
+
     /// <summary>Large frames are convolved by up to MaxDegreeOfParallelism workers (row bands, bit-identical results).</summary>
     private ConvolutionPlan CreateConvolutionPlan(ConvolutionOptions options)
     {

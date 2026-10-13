@@ -313,6 +313,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   applied when the layer is drawn); ending it is `DrawImage` of that image at the origin, with the operator and the
   opacity of the layer. A layer whose callback throws is not drawn. Anything that composites must use the current
   `_frames` and go through `ApplyClip`, so that it works in a layer without knowing it.
+- A shadow (`DrawingSession.Shadows.cs`) is a layer whose alpha is blurred, moved and painted before the layer is
+  drawn: the layer covers a margin around the bounds of the clip (the reach of the blur and of the offset), and the
+  blur reads beyond it as its edge pixels (a shape that leaves the canvas keeps its shadow along the edge). The
+  weights are those of `GaussianKernel`, shared with `GaussianBlur`: computed without `Math.Exp`.
 - Every rental of a draw call happens before its first pixel write (edges, then the sweep and gradient scratch in
   `Render`). Draw calls allocate nothing once the scratch of the session has grown (`PerformanceContractTests`).
 - The cost of a shape follows its edges and their crossings. Keep the events of the sweep logarithmic: no pass over

@@ -159,6 +159,8 @@ public sealed class PerformanceContractTests
                 layer.Clip(new RectangleD(8.5, 4, 40, 30), state, static (inner, state) => inner.Layer(1, state, static (mask, state) => mask.Stroke(state.Pen, state.Path), CompositeMode.DestinationIn));
             });
             canvas.Layer(0.9, state, static (layer, state) => layer.FillEllipse(state.Focal, new PointD(30, 20), 25, 15), CompositeMode.SourceAtop, BlendMode.Overlay);
+            canvas.Shadow(new Rgba32(0, 0, 0, 100), new PointD(2.5, 3), 1.75, state, static (shadowed, state) => shadowed.FillText(state.Solid, state.Text, new PointD(4, 6)));
+            canvas.Clip(new Rectangle(10, 8, 30, 24), state, static (clipped, state) => clipped.Shadow(new Rgba32(255, 255, 0), default, 0.8, state, static (glow, state) => glow.Stroke(state.Pen, state.Path)));
             canvas.Clip(state.Path, state, static (clipped, state) =>
             {
                 clipped.DrawImage(state.Sprite, new RectangleD(1.5, 2, 60, 44), 0.6);

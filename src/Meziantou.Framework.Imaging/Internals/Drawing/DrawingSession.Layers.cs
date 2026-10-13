@@ -42,6 +42,41 @@ internal sealed partial class DrawingSession
         if ((uint)blend > (uint)BlendMode.Luminosity)
             throw new ArgumentOutOfRangeException(nameof(blend), blend, "The blend mode is not valid.");
 
+        var level = PushLayerCore(margin: 0);
+        level.Opacity = coverage;
+        level.Mode = mode;
+        level.Blend = blend;
+        level.HasShadow = false;
+    }
+
+    /// <summary>Starts a layer whose drawings are drawn with their shadow when it ends.</summary>
+    /// <param name="color">The color of the shadow; its alpha is the opacity of the shadow of an opaque drawing.</param>
+    /// <param name="offset">The distance from the drawing to its shadow.</param>
+    /// <param name="sigma">The standard deviation of the blur of the shadow.</param>
+    /// <exception cref="ArgumentException">A coordinate of the offset, or the standard deviation, is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The offset is beyond the largest coordinate, or the standard deviation is negative or too large.</exception>
+    /// <exception cref="ImageResourceLimitException">The image of the layer exceeds the allocation limit.</exception>
+    public void PushShadow(Rgba64 color, PointD offset, double sigma)
+    {
+        DrawingGuard.Point(offset, nameof(offset));
+        GaussianKernel.Validate(sigma, nameof(sigma));
+
+        // What is drawn around the pixels the clip can show casts a shadow on them: the layer keeps that much more
+        var reach = GaussianKernel.GetRadius(sigma) + Math.Ceiling(Math.Max(Math.Abs(offset.X), Math.Abs(offset.Y))) + 1;
+        var level = PushLayerCore((int)Math.Min(reach, Math.Max(Width, Height)));
+        level.Opacity = CoverageRasterizer.FullCoverage;
+        level.Mode = CompositeMode.SourceOver;
+        level.Blend = BlendMode.Normal;
+        level.HasShadow = true;
+        level.ShadowColor = color;
+        level.ShadowOffsetX = offset.X;
+        level.ShadowOffsetY = offset.Y;
+        level.ShadowSigma = sigma;
+    }
+
+    /// <summary>Starts a layer on the pixels the clip can show, and on a margin around them.</summary>
+    private LayerLevel PushLayerCore(int margin)
+    {
         _cancellationToken.ThrowIfCancellationRequested();
         GetClipBounds(out var left, out var top, out var right, out var bottom, out _);
         if (_layerDepth == _layers.Count)
@@ -50,10 +85,19 @@ internal sealed partial class DrawingSession
         }
 
         var level = _layers[_layerDepth];
+        level.VisibleLeft = left;
+        level.VisibleTop = top;
+        level.VisibleRight = right;
+        level.VisibleBottom = bottom;
+        if (right > left && bottom > top)
+        {
+            left = Math.Max(0, left - margin);
+            top = Math.Max(0, top - margin);
+            right = Math.Min(Width, right + margin);
+            bottom = Math.Min(Height, bottom + margin);
+        }
+
         level.Begin(_image, _frames[0].PixelFormat is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24), Width, Height, left, top, right, bottom);
-        level.Opacity = coverage;
-        level.Mode = mode;
-        level.Blend = blend;
         level.ParentFrames = _frames;
         level.ParentStorages = _storages;
         _frames = level.Frames!;
@@ -69,6 +113,7 @@ internal sealed partial class DrawingSession
         clip.Bottom = bottom;
         clip.MaskLevel = -1;
         _clipDepth++;
+        return level;
     }
 
     /// <summary>Ends the layer that was started last, and draws it on what is under it.</summary>
@@ -81,8 +126,20 @@ internal sealed partial class DrawingSession
         _storages = level.ParentStorages!;
         level.ParentFrames = null;
         level.ParentStorages = null;
-        level.End();
-        if (!draw || level.Opacity == 0 || level.Right <= level.Left || level.Bottom <= level.Top)
+        var isEmpty = level.Opacity == 0 || level.Right <= level.Left || level.Bottom <= level.Top;
+        try
+        {
+            if (draw && !isEmpty && level.HasShadow)
+            {
+                DrawShadow(level);
+            }
+        }
+        finally
+        {
+            level.End();
+        }
+
+        if (!draw || isEmpty)
             return;
 
         // The layer is an image at the origin of the canvas: its pixels are those of the canvas, read as they are
@@ -120,6 +177,7 @@ internal sealed partial class DrawingSession
         }
 
         _layers.Clear();
+        DisposeShadows();
     }
 
     /// <summary>A layer of the stack: its image, what was drawn on before it started, and how it is drawn when it ends.</summary>
@@ -142,7 +200,27 @@ internal sealed partial class DrawingSession
 
         public BlendMode Blend { get; set; }
 
-        /// <summary>Gets the pixels of the layer that can be drawn on, and are drawn when it ends: the bounds of the clip it started under.</summary>
+        /// <summary>Gets or sets a value indicating whether the shadow of the layer is drawn under it.</summary>
+        public bool HasShadow { get; set; }
+
+        public Rgba64 ShadowColor { get; set; }
+
+        public double ShadowOffsetX { get; set; }
+
+        public double ShadowOffsetY { get; set; }
+
+        public double ShadowSigma { get; set; }
+
+        /// <summary>Gets or sets the left of the pixels the clip the layer started under can show: the layer is drawn on them only.</summary>
+        public int VisibleLeft { get; set; }
+
+        public int VisibleTop { get; set; }
+
+        public int VisibleRight { get; set; }
+
+        public int VisibleBottom { get; set; }
+
+        /// <summary>Gets the pixels of the layer that can be drawn on: the bounds of the clip it started under, and for a shadow what is around them and casts a shadow on them.</summary>
         public int Left { get; private set; }
 
         public int Top { get; private set; }

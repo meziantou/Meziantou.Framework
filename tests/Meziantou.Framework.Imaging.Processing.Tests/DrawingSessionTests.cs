@@ -1213,6 +1213,200 @@ public sealed class DrawingSessionTests
         }
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+    // Shadows
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void AShadowHasTheShapeOfTheDrawingMovedByItsOffset()
+    {
+        // A white square of 2 pixels and its black shadow, 2 pixels to the right and 1 down, without blur
+        var black = new Rgba32(0, 0, 0);
+        var white = new Rgba32(255, 255, 255);
+        using var image = new Image<Rgba32>(6, 5);
+        image.Draw(canvas => canvas.Shadow(black, new PointD(2, 1), 0, layer => layer.FillRectangle(White, new Rectangle(1, 1, 2, 2))), Ct);
+        for (var y = 0; y < 5; y++)
+        {
+            for (var x = 0; x < 6; x++)
+            {
+                var expected = x is 1 or 2 && y is 1 or 2 ? white : x is 3 or 4 && y is 2 or 3 ? black : default;
+                Assert.Equal(expected, image.Frames[0][x, y]);
+            }
+        }
+
+        // The drawing is over its shadow, and the shadow of several shapes is one shadow: where two translucent
+        // shapes overlap, the alpha of the drawing is 0.5 + 0.5 * 0.5 = 0.75, and so is its shadow (191.75 -> 192)
+        using var overlapping = new Image<Rgba32>(4, 3);
+        var half = new SolidBrush(new Rgba32(255, 255, 255, 128));
+        overlapping.Draw(
+            canvas => canvas.Shadow(black, new PointD(0, 1), 0, layer =>
+            {
+                layer.FillRectangle(half, new Rectangle(0, 1, 2, 1));
+                layer.FillRectangle(half, new Rectangle(1, 1, 2, 1));
+            }),
+            Ct);
+        Assert.Equal([0, 0, 0, 0], Enumerable.Range(0, 4).Select(x => (int)overlapping.Frames[0][x, 0].A));
+        Assert.Equal([128, 192, 128, 0], Enumerable.Range(0, 4).Select(x => (int)overlapping.Frames[0][x, 1].A));
+        Assert.Equal([128, 192, 128, 0], Enumerable.Range(0, 4).Select(x => (int)overlapping.Frames[0][x, 2].A));
+        Assert.Equal(new Rgba32(0, 0, 0, 192), overlapping.Frames[0][1, 2]);
+
+        // An offset that is not whole: the shadow is between two pixels, half on each
+        using var between = new Image<Rgba32>(6, 4);
+        between.Draw(canvas => canvas.Shadow(new Rgba32(200, 0, 0), new PointD(0.5, 1), 0, layer => layer.FillRectangle(White, new Rectangle(1, 1, 1, 1))), Ct);
+        Assert.Equal([default, new Rgba32(200, 0, 0, 128), new Rgba32(200, 0, 0, 128), default, default, default], Enumerable.Range(0, 6).Select(x => between.Frames[0][x, 2]));
+        between.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
+        between.Draw(canvas => canvas.Shadow(new Rgba32(200, 0, 0), new PointD(-1.25, 0.5), 0, layer => layer.FillRectangle(White, new Rectangle(3, 1, 2, 1))), Ct);
+
+        // 1.25 pixel to the left: a quarter of the pixel 1, the pixel 2 and three quarters of the pixel 3; half a pixel
+        // down: half of the rows 1 and 2. The drawing is over its shadow.
+        Assert.Equal([0, 0, 0, 0, 0, 0], Enumerable.Range(0, 6).Select(x => (int)between.Frames[0][x, 0].A));
+        Assert.Equal([default, new Rgba32(200, 0, 0, 32), new Rgba32(200, 0, 0, 128), white, white, default], Enumerable.Range(0, 6).Select(x => between.Frames[0][x, 1]));
+        Assert.Equal([default, new Rgba32(200, 0, 0, 32), new Rgba32(200, 0, 0, 128), new Rgba32(200, 0, 0, 96), default, default], Enumerable.Range(0, 6).Select(x => between.Frames[0][x, 2]));
+        Assert.Equal([0, 0, 0, 0, 0, 0], Enumerable.Range(0, 6).Select(x => (int)between.Frames[0][x, 3].A));
+
+        // A drawing that reaches an edge of the canvas is taken to continue beyond it: its shadow comes from there too
+        using var edge = new Image<Rgba32>(2, 2);
+        edge.Draw(canvas => canvas.Shadow(black, new PointD(1, 1), 0, layer => layer.FillRectangle(new SolidBrush(new Rgba32(255, 255, 255, 128)), new Rectangle(0, 0, 1, 1))), Ct);
+        Assert.Equal([192, 128, 128, 128], DrawingTestSupport.ReadSamples(edge.Frames[0]).Where((_, index) => index % 4 == 3));
+
+        // The alpha of the color is the opacity of the shadow of an opaque drawing; without it there is no shadow
+        using var faint = new Image<Rgba32>(2, 1);
+        faint.Draw(canvas => canvas.Shadow(new Rgba32(0, 0, 0, 51), new PointD(1, 0), 0, layer => layer.FillRectangle(White, new Rectangle(0, 0, 1, 1))), Ct);
+        Assert.Equal(new Rgba32(0, 0, 0, 51), faint.Frames[0][1, 0]);
+        faint.Draw(canvas => canvas.Shadow(new Rgba32(9, 9, 9, 0), new PointD(1, 0), 3, layer => layer.FillRectangle(new Rgba32(1, 2, 3), new Rectangle(0, 0, 1, 1))), Ct);
+        Assert.Equal(new Rgba32(1, 2, 3), faint.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(0, 0, 0, 51), faint.Frames[0][1, 0]);
+    }
+
+    [Fact]
+    public void AShadowIsBlurredByTheWeightsOfABell()
+    {
+        // One opaque pixel and a glow of deviation 1: the alpha of the glow is the product of the weights of its
+        // column and of its row, 0.004433, 0.054006, 0.242036 and 0.399050. In the row of the pixel, 255 times
+        // 0.399050 times each: 0.45, 5.5, 24.6, 40.6; on the diagonal, the squares: 0.005, 0.74, 14.9, 40.6
+        var red = new Rgba32(255, 0, 0);
+        using var image = new Image<Rgba32>(7, 7);
+        image.Draw(canvas => canvas.Shadow(red, default, 1, layer => layer.FillRectangle(new Rgba32(0, 0, 255), new Rectangle(3, 3, 1, 1))), Ct);
+        Assert.Equal([0, 5, 25, 255, 25, 5, 0], Enumerable.Range(0, 7).Select(x => (int)image.Frames[0][x, 3].A));
+        Assert.Equal([0, 5, 25, 255, 25, 5, 0], Enumerable.Range(0, 7).Select(y => (int)image.Frames[0][3, y].A));
+        Assert.Equal([0, 1, 15, 255, 15, 1, 0], Enumerable.Range(0, 7).Select(i => (int)image.Frames[0][i, i].A));
+        Assert.Equal(new Rgba32(255, 0, 0, 25), image.Frames[0][2, 3]);
+        Assert.Equal(new Rgba32(0, 0, 255), image.Frames[0][3, 3]);
+
+        // Moved by 4 pixels: the whole glow, 41 at its center, beside the pixel
+        using var moved = new Image<Rgba32>(12, 7);
+        moved.Draw(canvas => canvas.Shadow(red, new PointD(5, 0), 1, 7, static (layer, _) => layer.FillRectangle(new Rgba32(0, 0, 255), new Rectangle(3, 3, 1, 1))), Ct);
+        Assert.Equal([0, 5, 25, 41, 25, 5, 0], Enumerable.Range(5, 7).Select(x => (int)moved.Frames[0][x, 3].A));
+        Assert.Equal(new Rgba32(0, 0, 255), moved.Frames[0][3, 3]);
+
+        // A bar across the whole canvas and its shadow under it: the bar continues beyond the edges of the canvas, so
+        // its shadow is the same along the whole row. Two rows down from the bar, the rows the blur reads are opaque
+        // for the weights that add up to 0.9416, then 0.6995, 0.3005, 0.0584 and 0.0044
+        using var bar = new Image<Rgba32>(5, 8);
+        bar.Draw(canvas => canvas.Shadow(new Rgba32(0, 0, 0), new PointD(0, 2), 1, layer => layer.FillRectangle(White, new Rectangle(0, 0, 5, 2))), Ct);
+        for (var x = 0; x < 5; x++)
+        {
+            Assert.Equal([255, 255, 240, 178, 77, 15, 1, 0], Enumerable.Range(0, 8).Select(y => (int)bar.Frames[0][x, y].A));
+            Assert.Equal(new Rgba32(0, 0, 0, 178), bar.Frames[0][x, 3]);
+        }
+    }
+
+    [Fact]
+    public void AShadowCombinesWithClipsLayersAndFrames()
+    {
+        // What is drawn outside the clip is not drawn, and still casts its shadow in it
+        var black = new Rgba32(0, 0, 0);
+        using (var image = new Image<Rgba32>(4, 6))
+        {
+            image.Draw(
+                canvas => canvas.Clip(new Rectangle(0, 3, 4, 3), clipped => clipped.Shadow(black, new PointD(0, 3), 0, layer => layer.FillRectangle(White, new Rectangle(1, 0, 2, 2)))),
+                Ct);
+            for (var y = 0; y < 6; y++)
+            {
+                for (var x = 0; x < 4; x++)
+                {
+                    Assert.Equal(x is 1 or 2 && y is 3 or 4 ? black : default, image.Frames[0][x, y]);
+                }
+            }
+        }
+
+        // In a layer, the drawing and its shadow are faded together; on a format without alpha, the shadow darkens
+        using (var image = new Image<Gray8>(3, 1, new Gray8(200)))
+        {
+            image.Draw(canvas => canvas.Layer(0.5, layer => layer.Shadow(black, new PointD(1, 0), 0, inner => inner.FillRectangle(White, new Rectangle(0, 0, 1, 1)))), Ct);
+
+            // (255 + 200) / 2 = 227.5 -> 228 and (0 + 200) / 2 = 100
+            Assert.Equal([228, 100, 200], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // Every frame gets the same shadow
+        using (var image = NewAnimation())
+        {
+            image.Draw(canvas => canvas.Shadow(black, new PointD(1, 1), 0, layer => layer.FillRectangle(new Rgba32(9, 8, 7), new Rectangle(1, 0, 1, 1))), Ct);
+            foreach (var frame in new[] { image.Frames[0], image.Frames[1], image.PosterFrame! })
+            {
+                Assert.Equal(new Rgba32(9, 8, 7), frame[1, 0]);
+                Assert.Equal(black, frame[2, 1]);
+            }
+
+            Assert.False(ExifTiff.HasThumbnail(image.Metadata.ExifProfile!.Data.Span));
+        }
+
+        // A callback that throws draws nothing, not even a shadow
+        using (var image = new Image<Gray8>(2, 1, new Gray8(100)))
+        {
+            image.Draw(
+                canvas =>
+                {
+                    try
+                    {
+                        canvas.Shadow(black, new PointD(1, 0), 0, layer =>
+                        {
+                            layer.Fill(White);
+                            throw new FormatException("stop");
+                        });
+                    }
+                    catch (FormatException)
+                    {
+                    }
+                },
+                Ct);
+            Assert.Equal([100, 100], DrawingTestSupport.ReadSamples(image.Frames[0]));
+            Assert.Equal(0, image.Owner.ActiveLeaseCount);
+        }
+    }
+
+    [Fact]
+    public void AShadowValidatesItsArgumentsAndIsChargedToTheImage()
+    {
+        using var image = new Image<Gray8>(16, 16, new Gray8(200), ImageConfiguration.Default);
+        var before = image.Owner.Scope.LiveBytes;
+        image.Draw(
+            canvas =>
+            {
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Shadow(default, default, 1, null!));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Shadow(default, default, 1, 1, null!));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.Shadow(default, new PointD(double.NaN, 0), 1, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Shadow(default, new PointD(0, 16777217), 1, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.Shadow(default, default, double.NaN, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Shadow(default, default, -1, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Shadow(default, default, 10001, 1, static (_, _) => Assert.Fail("The callback ran.")));
+
+                // The storage of a shadow is kept for the next one
+                canvas.Shadow(new Rgba32(0, 0, 0), new PointD(2, 2), 1.5, layer => layer.FillCircle(White, new PointD(6, 6), 3));
+                var live = image.Owner.Scope.LiveBytes;
+                Assert.True(live > before);
+                canvas.Shadow(new Rgba32(0, 0, 0, 128), new PointD(-1, 3.5), 1, layer => layer.FillCircle(White, new PointD(9, 6), 2));
+                Assert.Equal(live, image.Owner.Scope.LiveBytes);
+            },
+            Ct);
+        Assert.Equal(before, image.Owner.Scope.LiveBytes);
+        Assert.Equal(new Gray8(255), image.Frames[0][9, 6]);
+        Assert.InRange(image.Frames[0][6, 6].Value, 201, 255);
+        Assert.InRange(image.Frames[0][8, 10].Value, 1, 150);
+        Assert.Equal(new Gray8(200), image.Frames[0][0, 15]);
+    }
+
     private delegate void CanvasAction(DrawingCanvas canvas);
 
     private static void AssertThrows<TException>(DrawingCanvas canvas, CanvasAction action)

@@ -610,6 +610,8 @@ namespace Meziantou.Framework.Imaging
         public static void ConvertColorProfile(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Metadata.IccProfile destinationProfile, Meziantou.Framework.Imaging.IccColorTransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Convolve(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Convolve(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void GaussianBlur(this Meziantou.Framework.Imaging.Image image, double sigma, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void GaussianBlur(this Meziantou.Framework.Imaging.ImageFrame frame, double sigma, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
     }
 
     public sealed class ImageReaderOptions
@@ -1188,6 +1190,8 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void Clip<TState>(Meziantou.Framework.Imaging.RectangleD rectangle, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void Layer(double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) { }
         public void Layer<TState>(double opacity, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) where TState : allows ref struct { }
+        public void Shadow(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
+        public void Shadow<TState>(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
     }
 
     public enum FillRule

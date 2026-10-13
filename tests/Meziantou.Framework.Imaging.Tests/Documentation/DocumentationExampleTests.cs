@@ -147,6 +147,43 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawBadgeDrawsACardItsShadowAndAFadedMark()
+    {
+        var output = GetPath("badge.png");
+        Examples.DrawBadge(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(220, 120), image.Size);
+        var frame = image.Frames[0];
+
+        // The background, far from the card and from its shadow
+        Assert.Equal(Colors.WhiteSmoke, frame[4, 4]);
+        Assert.Equal(Colors.WhiteSmoke, frame[215, 60]);
+
+        // The card is blue, lighter at its top (the gradient, and the light over it) than at its bottom
+        var top = frame[60, 30];
+        var bottom = frame[60, 84];
+        Assert.True(top.B > top.R && bottom.B > bottom.R);
+        Assert.True(top.R + top.G + top.B > bottom.R + bottom.G + bottom.B);
+
+        // The shadow is under the card, 6 pixels lower: it shows below it, darker than the background and gray
+        var shadow = frame[110, 96];
+        Assert.Equal(shadow.R, shadow.G);
+        Assert.Equal(shadow.G, shadow.B);
+        Assert.InRange(shadow.R, 150, 235);
+        Assert.Equal(Colors.WhiteSmoke, frame[110, 118]);
+
+        // Its bottom-right corner is nearly square, and the others are rounded: the card reaches that corner only
+        Assert.True(frame[187, 85].B > frame[187, 85].R + 40);
+        Assert.False(frame[32, 26].B > frame[32, 26].R + 40);
+
+        // The two disks are faded as one shape: where they overlap, the mark is what it is elsewhere
+        Assert.Equal(frame[90, 56], frame[107, 56]);
+        Assert.Equal(frame[90, 56], frame[124, 56]);
+        Assert.True(frame[107, 56].R > frame[140, 56].R);
+    }
+
+    [Fact]
     public void DrawRoutePlacesItsMarksAlongThePath()
     {
         var output = GetPath("route.png");

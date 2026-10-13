@@ -629,7 +629,13 @@ rounded to nearest (ties up) and clamped to the sample range: negative sums beco
 with a scratch of a few rows per worker proportional to the matrix height, charged to the allocation limit; the pixel
 format, the size, the frames and the metadata are kept (the EXIF thumbnail, now stale, is removed). As for resizing,
 results do not depend on the worker count or on SIMD support. The cost grows with the number of non-zero weights: there
-is no dedicated fast path for separable matrices such as large blurs.
+is no dedicated fast path for separable matrices such as large blurs: use `GaussianBlur` for these.
+
+`GaussianBlur(sigma)` blurs an image or a frame with a bell curve of standard deviation `sigma` (the radius CSS
+gives to a blur is twice the deviation): two convolutions, by a row of `2 ceil(3 sigma) + 1` weights then by the same
+weights as a column, so that the time grows with the deviation and not with its square. It takes the edge mode and the
+working space of a convolution, and follows its rules; both passes are prepared before a pixel changes. The weights
+`exp(-i^2 / (2 sigma^2))`, divided by their sum, are computed without any function of the platform.
 
 <!-- snippet: convolve -->
 ```csharp
@@ -910,6 +916,46 @@ image of a layer comes from the allocation scope of the image (4 bytes per pixel
 otherwise) and is kept while the canvas lasts; a layer costs the clearing and the drawing of the pixels the clip can
 show, so start a layer inside `Clip` when it covers a small part of a large canvas.
 
+**Shadows**. `canvas.Shadow(color, offset, blur, callback)` draws what the callback draws with its shadow under it: a
+drop shadow, or a glow when there is no offset. The drawings are made on a layer; the shadow is the alpha of that layer
+(the shape of everything the callback drew, as a whole), blurred by a Gaussian blur of the given standard deviation,
+moved by the offset and painted with the color, whose alpha makes the shadow translucent. A drawing that goes beyond
+an edge of the canvas is taken to continue there, so that its shadow does not fade along that edge. The cost grows
+with the pixels the clip can show and with the blur: draw the shadow of a small shape inside `Clip`, with room for the
+shadow.
+
+<!-- snippet: draw-badge -->
+```csharp
+public static void DrawBadge(string outputPath)
+{
+    using var image = new Image<Rgba32>(220, 120, Colors.WhiteSmoke);
+    var card = new RectangleD(30, 24, 160, 64);
+    var face = new LinearGradientBrush(new PointD(0, 24), new PointD(0, 88), [new GradientStop(0, Rgba32.ParseHex("#4F8EF7")), new GradientStop(1, Rgba32.ParseHex("#2456C8"))]) { ColorSpace = GradientColorSpace.Oklab };
+    var shine = new SolidBrush(new Rgba32(255, 255, 255, 90)) { BlendMode = BlendMode.SoftLight };
+    var mark = new SolidBrush(Colors.White);
+
+    image.Draw(canvas =>
+    {
+        // The card and its shadow: black at a third of its opacity, 6 pixels down, blurred
+        canvas.Shadow(new Rgba32(0, 0, 0, 85), new PointD(0, 6), 5, shadowed =>
+            shadowed.FillRoundedRectangle(face, card, new CornerRadii(18, 18, 4, 18)));
+
+        // A light that lightens the top of the card without hiding it, only where the card is
+        canvas.Clip(new VectorPathBuilder().AddRoundedRectangle(card, new CornerRadii(18, 18, 4, 18)).Build(), clipped =>
+            clipped.FillEllipse(shine, new PointD(110, 20), 120, 34));
+
+        // Two disks that overlap, faded together: they do not show through each other
+        canvas.Layer(0.6, layer =>
+        {
+            layer.FillCircle(mark, new PointD(96, 56), 16);
+            layer.FillCircle(mark, new PointD(118, 56), 16);
+        });
+    });
+
+    image.Save(outputPath);
+}
+```
+
 **Operators**. A brush is painted over the pixels (`CompositeMode.SourceOver`) unless its `CompositeMode` says
 otherwise. The modes are the compositing operators of Porter and Duff: `Source` replaces the pixels, alpha included (a
 transparent color erases), `DestinationOut` erases them where the paint is opaque (an eraser, with any shape and any
@@ -1000,6 +1046,10 @@ public static void MarkAnimation(string inputPath, string outputPath)
   whole pixels: its pixels are converted to the pixel format of the canvas like brush colors, and its opacity
   multiplies the coverage. A drawing of opaque colors on whole pixels is the same in a layer as on the canvas;
   elsewhere the alpha of the layer is rounded to its samples before it is drawn, which can change a sample by one.
+- **Shadows.** With the alpha of the pixels of the layer as fractions of one, extended beyond the layer by its pixels
+  on the edges, the shadow of a pixel is the alpha blurred by the weights of a Gaussian blur (see `GaussianBlur`) at
+  the position the offset moves it to, interpolated between the four pixels around it, and rounded to a coverage
+  (`floor(65536 s + 1/2)`); the color of the shadow is composited with that coverage as a shape is.
 - **Clips.** The coverage of a pixel under a clip is the product of the coverage of the shape and of the coverage of
   the clip, rounded to the nearest 1/65536 (ties upward). It is the area of what the shape and the clip have in common
   wherever one of them covers the pixel entirely; on a pixel that both only cover in part, it is the product of the two

@@ -745,6 +745,82 @@ public readonly ref struct DrawingCanvas
         }
     }
 
+    /// <summary>Runs a callback whose drawings are drawn with their shadow: a drop shadow, or a glow without offset.</summary>
+    /// <remarks>
+    /// <para>
+    /// The drawings are made on a layer (see <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode)"/>).
+    /// When the callback returns, the shadow of the layer is painted on the canvas, then the layer over it. The
+    /// shadow has the shape of everything the callback drew, as a whole: its opacity is the alpha of the layer,
+    /// blurred by a Gaussian blur of standard deviation <paramref name="blur"/> (what CSS calls a blur radius is twice
+    /// that), moved by <paramref name="offset"/> and multiplied by the alpha of <paramref name="color"/>.
+    /// </para>
+    /// <para>
+    /// A drawing that goes beyond an edge of the canvas is taken to continue as it does on that edge, so that its
+    /// shadow does not fade there. A clip that is active when the callback starts applies to the drawings and to
+    /// their shadow; what is drawn around it still casts its shadow in it. The time and the storage grow with the
+    /// pixels the clip can show and with the blur: start the shadow of a small drawing inside
+    /// <see cref="Clip(RectangleD, DrawingAction)"/>, with room for the shadow.
+    /// </para>
+    /// </remarks>
+    /// <param name="color">The color of the shadow, with straight alpha: black at a third of its opacity is a soft shadow. An <see cref="Rgba32"/> converts implicitly.</param>
+    /// <param name="offset">The distance from the drawings to their shadow: to the right and downward when positive.</param>
+    /// <param name="blur">The standard deviation of the blur of the shadow, in pixels: 0 for a shadow with the edges of the drawings. Must be between 0 and 10000.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="offset"/>, or <paramref name="blur"/>, is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of <paramref name="offset"/> exceeds 16777216, or <paramref name="blur"/> is negative or exceeds 10000.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Shadow(Rgba64 color, PointD offset, double blur, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushShadow(color, offset, blur);
+        var isDrawn = false;
+        try
+        {
+            action(this);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are drawn with their shadow, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="color">The color of the shadow, with straight alpha. An <see cref="Rgba32"/> converts implicitly.</param>
+    /// <param name="offset">The distance from the drawings to their shadow: to the right and downward when positive.</param>
+    /// <param name="blur">The standard deviation of the blur of the shadow, in pixels. Must be between 0 and 10000.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Shadow(Rgba64, PointD, double, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="offset"/>, or <paramref name="blur"/>, is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of <paramref name="offset"/> exceeds 16777216, or <paramref name="blur"/> is negative or exceeds 10000.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Shadow<TState>(Rgba64 color, PointD offset, double blur, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushShadow(color, offset, blur);
+        var isDrawn = false;
+        try
+        {
+            action(this, state);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
     private DrawingSession GetSession()
     {
         var session = _session;

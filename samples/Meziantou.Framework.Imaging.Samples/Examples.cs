@@ -209,6 +209,38 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>A shadow, a blend mode, a gradient mixed in Oklab, a rounded rectangle with a radius per corner and a layer.</summary>
+    // begin-snippet: draw-badge
+    public static void DrawBadge(string outputPath)
+    {
+        using var image = new Image<Rgba32>(220, 120, Colors.WhiteSmoke);
+        var card = new RectangleD(30, 24, 160, 64);
+        var face = new LinearGradientBrush(new PointD(0, 24), new PointD(0, 88), [new GradientStop(0, Rgba32.ParseHex("#4F8EF7")), new GradientStop(1, Rgba32.ParseHex("#2456C8"))]) { ColorSpace = GradientColorSpace.Oklab };
+        var shine = new SolidBrush(new Rgba32(255, 255, 255, 90)) { BlendMode = BlendMode.SoftLight };
+        var mark = new SolidBrush(Colors.White);
+
+        image.Draw(canvas =>
+        {
+            // The card and its shadow: black at a third of its opacity, 6 pixels down, blurred
+            canvas.Shadow(new Rgba32(0, 0, 0, 85), new PointD(0, 6), 5, shadowed =>
+                shadowed.FillRoundedRectangle(face, card, new CornerRadii(18, 18, 4, 18)));
+
+            // A light that lightens the top of the card without hiding it, only where the card is
+            canvas.Clip(new VectorPathBuilder().AddRoundedRectangle(card, new CornerRadii(18, 18, 4, 18)).Build(), clipped =>
+                clipped.FillEllipse(shine, new PointD(110, 20), 120, 34));
+
+            // Two disks that overlap, faded together: they do not show through each other
+            canvas.Layer(0.6, layer =>
+            {
+                layer.FillCircle(mark, new PointD(96, 56), 16);
+                layer.FillCircle(mark, new PointD(118, 56), 16);
+            });
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
     /// <summary>Typed row access with a static callback (no closure allocation).</summary>
     // begin-snippet: typed-rows
     public static void InvertColors(string path)

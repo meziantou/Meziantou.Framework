@@ -378,7 +378,14 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     for all of them, from the two factors of the operator; source-over keeps its own, unchanged. A paint without
     opacity is skipped only with the operators it changes nothing with (`IsTransparentPaintInert`): with the others it
     erases. `ReferenceCompositor` has the same operators from their definition, in rational numbers.
-  - Gradients interpolate premultiplied values of the converted stops, evaluated per pixel at its center.
+  - A `BlendMode` (a property of the brush, like the operator) replaces the color of the paint pixel by pixel before
+    the kernels above (`CompositeBlended`): the functions are in `BlendFunctions`, shared with the paints of color
+    glyphs (`ColorSurface`), in double precision without any function of the platform. The kernels do not know the
+    order of the samples: the caller says when blue comes first, which only the modes that take a whole color need.
+  - Gradients interpolate premultiplied values of the converted stops, evaluated per pixel at its center. With a
+    `GradientColorSpace` other than `Encoded`, the stops stay 16-bit sRGB colors, are mixed in linear light or in
+    Oklab (`SrgbTransfer`, `Math.Cbrt`: the one place of the drawing code that uses functions of the platform), and
+    the 16-bit result is converted like a brush color; the color of a stop is always written as it is.
 - Only `+ - * /` and `Math.Sqrt` in the geometry (no trigonometry, no fused multiply-add), and every order that
   influences a sum is total (events and crossings are sorted with a tie-break): results must not depend on the
   platform, the framework version or a sorting algorithm.
@@ -394,6 +401,21 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   into a sink, as drawing does, so that they answer for what is drawn; `GetTightBounds` (`PathBounds`) is computed from
   the curves, and contains their chords. `Widen` runs the `Stroker` into a path builder: the same pieces in the same
   order as a draw call, so filling the result is stroking, bit for bit (`FillingAWidenedPathIsStrokingThePath`).
+- `EnumerateSegments` is the only public view of the elements of a path: it gives what the builder takes, never the
+  internal form (an `ArcPiece` becomes the arc of SVG, through `ArcGeometry.GetAxes`; an ellipse becomes two arcs).
+  `Reverse` (`PathReverser`) works on the elements, exactly; `Trim` (`TrimSink`) works on the chords, like the other
+  queries, and its result is a polyline.
+- `Combine` and `Simplify` (`PathCombiner`) work on the chords of the paths, moved to a grid of 1/1024 of a pixel,
+  with exact integer arithmetic (`Int128` products): cut the segments where they meet until they only share ends,
+  merge equal segments into edges with a count per path, sweep the rows of vertices for the winding numbers on both
+  sides of each edge, then follow the edges whose sides differ. Never decide anything there with a floating-point
+  comparison. An end within 1.5 unit of a segment cuts it (`AddCutWhenNear`): the pieces of a stroke share sides that
+  the grid moves apart, and would leave cracks in the outline; that cut must shorten the segment, or three close
+  vertices cut each other without end (the pass and growth limits are only a safety net). The result is canonical
+  (contours from their top-left vertex, in the order of their first edge): tests compare path data.
+- `SvgPathData` reads and writes the path data of SVG. Reading goes through the builder (an arc is `ArcTo`), writing
+  through `EnumerateSegments`; numbers are parsed and formatted by the runtime with the invariant culture (correctly
+  rounded on every platform). The reader rejects the whole text on an error, with its position.
 - A stroke is a union of convex pieces with one orientation (`Stroker`): overlaps are harmless because the coverage is
   the area of the union. The 1/16 pixel flattening tolerance is public; the positions of the chord vertices are not.
 - Dashes are cut before the stroker (`Dasher`), which strokes each dash as an open contour. The first dash of a contour
@@ -409,11 +431,32 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   and released in `finally` (`Begin` / `End`): never keep it between two draw calls. `ImageEvaluator` interpolates
   16-bit colors read with the pixel conversion (`ReadRgba64`), then converts them like any brush color; when the rows
   of the canvas stay rows of the image, it converts each row of the image once. `DrawImage` is a fill of the rectangle
-  with that evaluator: no brush is allocated.
+  with that evaluator: no brush is allocated. `ImageSampling.Smooth` is the bilinear paths themselves when the image
+  is not reduced; when it is, `ReduceRows` and `ReducePixels` add the same terms in the same order (rows, then
+  columns), so that the row-by-row path and the pixel-by-pixel one give the same bits: keep them in step.
 - A clip is a stack of levels in the session (`DrawingSession.Clipping.cs`): bounds in whole pixels and, unless the clip
   is a rectangle of whole pixels, a mask of coverages rasterized once, when the clip starts, by the same rasterizer.
   Draw calls multiply their coverage by the mask row by row (`ApplyClip`), into a row of the session: they rent nothing.
   Every path that composites pixels (`PaintRows`, the color glyphs) must go through `ApplyClip`.
+- A layer (`DrawingSession.Layers.cs`) replaces what the draw calls paint (`_frames`, `_storages`: never assume they
+  are the frames of the image) by an internal image created from the scope of the image, one per depth, kept until
+  the session ends. Starting a layer pushes a clip of whole pixels with the bounds of the clip under it (its mask is
+  applied when the layer is drawn); ending it is `DrawImage` of that image at the origin, with the operator and the
+  opacity of the layer. A layer whose callback throws is not drawn. Anything that composites must use the current
+  `_frames` and go through `ApplyClip`, so that it works in a layer without knowing it.
+- A shadow (`DrawingSession.Shadows.cs`) is a layer whose alpha is blurred, moved and painted before the layer is
+  drawn: the layer covers a margin around the bounds of the clip (the reach of the blur and of the offset), and the
+  blur reads beyond it as its edge pixels (a shape that leaves the canvas keeps its shadow along the edge). The
+  weights are those of `GaussianKernel`, shared with `GaussianBlur`: computed without `Math.Exp`.
+- The transformation of the canvas (`DrawingSession.Transforms.cs`) is applied where a shape becomes edges, not where
+  it is described: `BeginFill` wraps the fill sink in a `TransformSink`, the `Stroker` transforms the vertices of its
+  pieces (`SetOutput`: the path is stroked in the coordinates of the drawing, so the pen is transformed with it), and
+  the evaluators of the brushes get the transformation of the brush followed by the one of the canvas (`ToCanvas`).
+  The flatteners read `PathSink.Scale` of the sink they emit to, and cut curves that much finer; it is 1 without
+  transformation, where nothing may change (every product by it is exact). What is given in pixels must use
+  `BeginDeviceFill`: the frame, a layer that ends, the outlines of a color glyph (whose placement is composed with
+  the transformation instead, because its paints are evaluated in pixels). The whole-frame test of the stroker and
+  the canvas-aware cutting of the dasher are off under a transformation.
 - Every rental of a draw call happens before its first pixel write (edges, then the sweep and gradient scratch in
   `Render`). Draw calls allocate nothing once the scratch of the session has grown (`PerformanceContractTests`).
 - The cost of a shape follows its edges and their crossings. Keep the events of the sweep logarithmic: no pass over
@@ -502,6 +545,12 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   `Lines` and `InkBounds` come from the positions that are drawn. A layout is immutable and thread-safe, holds exact
   managed arrays (like `VectorPath`) and no pooled storage; so are `TextStyle`, `TextLayoutOptions`, `RichText` and
   `FontStack`.
+- **The positions of the text come from the positions that are drawn.** `Finish` records, for each line, its clusters
+  from the left (`TextHitBox`: the characters of the cluster, and the span of the pen over its glyphs, after alignment
+  and justification), with the direction of the item they come from. `HitTest`, `GetCaretRectangle` and
+  `GetSelectionRectangles` only read these: the layout does not keep the text. A cluster holds the characters up to
+  the next cluster of its line in the order of the text; the grapheme boundaries of a cluster of several characters
+  (a ligature) are kept, and share its width. What a line adds (a hyphen, an ellipsis) has no character.
 - **Validate at layout, not at draw.** Creating a layout decodes each distinct glyph once, so the errors of the font
   data surface there; drawing a layout then only fails on a limit of the image or on cancellation. Do not add a failure
   mode to `FillText` that `TextLayout.Create` could have reported.

@@ -121,6 +121,121 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawIconFillsTheIconAndStrokesAPartOfItsOutline()
+    {
+        var output = GetPath("icon.png");
+        var data = Examples.DrawIcon(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(96, 96), image.Size);
+        var frame = image.Frames[0];
+        Assert.Equal(Colors.MistyRose, frame[48, 48]);
+        Assert.Equal(Colors.White, frame[48, 10]);
+        Assert.Equal(Colors.White, frame[4, 90]);
+
+        // The path that is written is the icon, four times larger
+        Assert.StartsWith("M48 85.4 L42.2 80.12 C", data, StringComparison.Ordinal);
+        Assert.EndsWith(" Z", data, StringComparison.Ordinal);
+        var icon = Drawing.VectorPath.ParseSvgPathData(data);
+        var length = icon.GetLength();
+
+        // The outline is stroked over its first three quarters only
+        Assert.True(icon.TryGetPointAtDistance(length * 0.4, out var stroked, out _));
+        Assert.Equal(Colors.Crimson, frame[(int)stroked.X, (int)stroked.Y]);
+        Assert.True(icon.TryGetPointAtDistance(length * 0.9, out var bare, out _));
+        Assert.NotEqual(Colors.Crimson, frame[(int)bare.X, (int)bare.Y]);
+    }
+
+    [Fact]
+    public void DrawBadgeDrawsACardItsShadowAndAFadedMark()
+    {
+        var output = GetPath("badge.png");
+        Examples.DrawBadge(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(220, 120), image.Size);
+        var frame = image.Frames[0];
+
+        // The background, far from the card and from its shadow
+        Assert.Equal(Colors.WhiteSmoke, frame[4, 4]);
+        Assert.Equal(Colors.WhiteSmoke, frame[215, 60]);
+
+        // The card is blue, lighter at its top (the gradient, and the light over it) than at its bottom
+        var top = frame[60, 30];
+        var bottom = frame[60, 84];
+        Assert.True(top.B > top.R && bottom.B > bottom.R);
+        Assert.True(top.R + top.G + top.B > bottom.R + bottom.G + bottom.B);
+
+        // The shadow is under the card, 6 pixels lower: it shows below it, darker than the background and gray
+        var shadow = frame[110, 96];
+        Assert.Equal(shadow.R, shadow.G);
+        Assert.Equal(shadow.G, shadow.B);
+        Assert.InRange(shadow.R, 150, 235);
+        Assert.Equal(Colors.WhiteSmoke, frame[110, 118]);
+
+        // Its bottom-right corner is nearly square, and the others are rounded: the card reaches that corner only
+        Assert.True(frame[187, 85].B > frame[187, 85].R + 40);
+        Assert.False(frame[32, 26].B > frame[32, 26].R + 40);
+
+        // The two disks are faded as one shape: where they overlap, the mark is what it is elsewhere
+        Assert.Equal(frame[90, 56], frame[107, 56]);
+        Assert.Equal(frame[90, 56], frame[124, 56]);
+        Assert.True(frame[107, 56].R > frame[140, 56].R);
+    }
+
+    [Fact]
+    public void DrawWatermarkTurnsATextOverAnImage()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var input = GetPath("photo.png");
+        var output = GetPath("watermarked.png");
+        using (var photo = new Image<Rgba32>(300, 200, new Rgba32(20, 60, 120)))
+        {
+            photo.Save(input);
+        }
+
+        Examples.DrawWatermark(fontPath, input, output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(300, 200), image.Size);
+        var frame = image.Frames[0];
+
+        // The ink lightens the pixels it covers, and leaves the others: the corners the turned text does not reach
+        var background = new Rgba32(20, 60, 120);
+        Assert.Equal(background, frame[2, 2]);
+        Assert.Equal(background, frame[297, 197]);
+        var inked = 0;
+        long sumX = 0;
+        long sumY = 0;
+        long lowerLeft = 0;
+        long upperLeft = 0;
+        for (var y = 0; y < 200; y++)
+        {
+            for (var x = 0; x < 300; x++)
+            {
+                if (frame[x, y] == background)
+                    continue;
+
+                inked++;
+                sumX += x;
+                sumY += y;
+
+                // Under or over the diagonal of the image that goes from its bottom-left corner to its top-right one
+                var side = ((x - 150) * 2) + ((y - 100) * 3);
+                lowerLeft += side < -150 ? 1 : 0;
+                upperLeft += side > 150 ? 1 : 0;
+            }
+        }
+
+        // The three lines are around the center, and the text climbs to the right
+        Assert.InRange(inked, 3000, 30000);
+        Assert.InRange(sumX / inked, 135, 165);
+        Assert.InRange(sumY / inked, 85, 115);
+        Assert.True(frame[150, 100].R >= background.R);
+        Assert.True(lowerLeft > 0 && upperLeft > 0);
+    }
+
+    [Fact]
     public void DrawRoutePlacesItsMarksAlongThePath()
     {
         var output = GetPath("route.png");

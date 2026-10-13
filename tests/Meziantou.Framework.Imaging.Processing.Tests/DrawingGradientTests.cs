@@ -311,6 +311,89 @@ public sealed class DrawingGradientTests
         AssertGray8(image, [[0, 0, 0, 0], [32, 96, 159, 223], [0, 0, 0, 0]]);
     }
 
+    [Fact]
+    public void TheColorSpaceDecidesHowTheColorsOfTwoStopsAreMixed()
+    {
+        // From black to white over 2 pixels, then over 1: the parameters are 1/4 and 3/4, then 1/2.
+        // Encoded: the sample values themselves, 63.75 -> 64, 191.25 -> 191 and 127.5 -> 128
+        var encoded = new LinearGradientBrush(new PointD(0, 0), new PointD(2, 0), BlackToWhite);
+        Assert.Equal(GradientColorSpace.Encoded, encoded.ColorSpace);
+        AssertFill(2, 1, encoded, [[64, 191]]);
+        AssertFill(1, 1, new LinearGradientBrush(new PointD(0, 0), new PointD(1, 0), BlackToWhite), [[128]]);
+
+        // Linear light: the light itself is 1/4, 3/4 and 1/2, which sRGB encodes as 1.055 v^(1 / 2.4) - 0.055:
+        // 0.5371 -> 137, 0.8808 -> 225 and 0.7354 -> 188
+        AssertFill(2, 1, new LinearGradientBrush(new PointD(0, 0), new PointD(2, 0), BlackToWhite) { ColorSpace = GradientColorSpace.LinearSrgb }, [[137, 225]]);
+        AssertFill(1, 1, new LinearGradientBrush(new PointD(0, 0), new PointD(1, 0), BlackToWhite) { ColorSpace = GradientColorSpace.LinearSrgb }, [[188]]);
+
+        // Oklab: the lightness is 1/4, 3/4 and 1/2, and a gray of lightness L has the light L^3: 1/64, 27/64 and 1/8,
+        // encoded as 0.1315 -> 34, 0.6813 -> 174 and 0.3886 -> 99
+        AssertFill(2, 1, new LinearGradientBrush(new PointD(0, 0), new PointD(2, 0), BlackToWhite) { ColorSpace = GradientColorSpace.Oklab }, [[34, 174]]);
+        AssertFill(1, 1, new LinearGradientBrush(new PointD(0, 0), new PointD(1, 0), BlackToWhite) { ColorSpace = GradientColorSpace.Oklab }, [[99]]);
+
+        // Half way from red to green: a dark olive with the encoded values, the yellow that is as bright as both in
+        // linear light (half the light of each), and in Oklab the color whose lightness and hue are between theirs
+        GradientStop[] redToGreen = [new(0, new Rgba32(255, 0, 0)), new(1, new Rgba32(0, 255, 0))];
+        Assert.Equal(new Rgba32(128, 128, 0), Middle(redToGreen, GradientColorSpace.Encoded));
+        Assert.Equal(new Rgba32(188, 188, 0), Middle(redToGreen, GradientColorSpace.LinearSrgb));
+        Assert.Equal(new Rgba32(208, 168, 0), Middle(redToGreen, GradientColorSpace.Oklab));
+
+        // Half way from blue to yellow, complementary colors: gray, or a color in Oklab
+        GradientStop[] blueToYellow = [new(0, new Rgba32(0, 0, 255)), new(1, new Rgba32(255, 255, 0))];
+        Assert.Equal(new Rgba32(128, 128, 128), Middle(blueToYellow, GradientColorSpace.Encoded));
+        Assert.Equal(new Rgba32(188, 188, 188), Middle(blueToYellow, GradientColorSpace.LinearSrgb));
+        Assert.Equal(new Rgba32(108, 171, 199), Middle(blueToYellow, GradientColorSpace.Oklab));
+
+        // The colors are mixed multiplied by their alpha in every space: a transparent stop gives no color, and a
+        // stop at half its opacity counts for half. In linear light, from red at 128/255 to opaque blue: the alpha is
+        // (0.502 + 1) / 2 = 0.751 -> 192, the red light 0.502 / 2 / 0.751 = 0.334 -> 156, the blue 0.5 / 0.751 -> 213
+        GradientStop[] fromTransparent = [new(0, new Rgba32(255, 0, 0, 0)), new(1, new Rgba32(0, 0, 255))];
+        GradientStop[] fromTranslucent = [new(0, new Rgba32(255, 0, 0, 128)), new(1, new Rgba32(0, 0, 255))];
+        foreach (var space in Enum.GetValues<GradientColorSpace>())
+        {
+            Assert.Equal(new Rgba32(0, 0, 255, 128), Middle(fromTransparent, space));
+        }
+
+        Assert.Equal(new Rgba32(85, 0, 170, 192), Middle(fromTranslucent, GradientColorSpace.Encoded));
+        Assert.Equal(new Rgba32(156, 0, 213, 192), Middle(fromTranslucent, GradientColorSpace.LinearSrgb));
+        Assert.Equal(new Rgba32(101, 78, 194, 192), Middle(fromTranslucent, GradientColorSpace.Oklab));
+
+        // At 16 bits, the colors keep their precision
+        using (var image = new Image<Rgba64>(1, 1))
+        {
+            image.Draw(canvas => canvas.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(1, 0), redToGreen) { ColorSpace = GradientColorSpace.Oklab }), Ct);
+            Assert.Equal(new Rgba64(53496, 43277, 116), image.Frames[0][0, 0]);
+        }
+
+        // At a stop and beyond the stops, the color is the color of the stop, exactly, whatever the space; so is the
+        // color between two stops of the same color
+        var color = new Rgba32(201, 37, 119, 77);
+        GradientStop[] stops = [new(0, new Rgba32(3, 250, 17)), new(0.5, color), new(0.75, color), new(1, new Rgba32(90, 5, 211, 9))];
+        foreach (var space in Enum.GetValues<GradientColorSpace>())
+        {
+            // The centers of the 8 pixels have the parameters -3/8 to 11/8, by steps of 1/4
+            using var image = new Image<Rgba32>(8, 1);
+            image.Draw(canvas => canvas.Fill(new LinearGradientBrush(new PointD(2, 0), new PointD(6, 0), stops) { ColorSpace = space }), Ct);
+            Assert.Equal(new Rgba32(3, 250, 17), image.Frames[0][0, 0]);
+            Assert.Equal(new Rgba32(3, 250, 17), image.Frames[0][1, 0]);
+            Assert.Equal(color, image.Frames[0][4, 0]);
+            Assert.Equal(new Rgba32(90, 5, 211, 9), image.Frames[0][6, 0]);
+            Assert.Equal(new Rgba32(90, 5, 211, 9), image.Frames[0][7, 0]);
+        }
+
+        // Radial and sweep gradients, and the gradient a text is given, take their colors the same way
+        AssertFill(1, 1, new RadialGradientBrush(new PointD(0.5, 1.5), 2, BlackToWhite) { ColorSpace = GradientColorSpace.LinearSrgb }, [[188]]);
+        AssertFill(1, 1, new SweepGradientBrush(new PointD(0.5, 1.5), 0, 360, BlackToWhite) { ColorSpace = GradientColorSpace.Oklab }, [[174]]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new LinearGradientBrush(new PointD(0, 0), new PointD(1, 0), BlackToWhite) { ColorSpace = (GradientColorSpace)3 });
+
+        static Rgba32 Middle(GradientStop[] stops, GradientColorSpace space)
+        {
+            using var image = new Image<Rgba32>(1, 1);
+            image.Draw(canvas => canvas.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(1, 0), stops) { ColorSpace = space }), Ct);
+            return image.Frames[0][0, 0];
+        }
+    }
+
     [Theory]
     [MemberData(nameof(DrawingTestSupport.AllFormats), MemberType = typeof(DrawingTestSupport))]
     public void AGradientOfIdenticalStopsPaintsWhatASolidBrushPaints(PixelFormat format)
@@ -331,6 +414,8 @@ public sealed class DrawingGradientTests
                 new RadialGradientBrush(new PointD(3.3, 4.1), 2.5, stops) { SpreadMode = GradientSpreadMode.Reflect, FocalPoint = new PointD(4.5, 3) },
                 new SweepGradientBrush(new PointD(3.3, 4.1), 20, 75, stops) { SpreadMode = GradientSpreadMode.Repeat },
                 new LinearGradientBrush(new PointD(1, 2), new PointD(6.5, 3.25), stops) { Transform = new AffineTransform(0.5, 1.25, -2, 0.75, 3, -1) },
+                new LinearGradientBrush(new PointD(1, 2), new PointD(6.5, 3.25), stops) { SpreadMode = GradientSpreadMode.Reflect, ColorSpace = GradientColorSpace.LinearSrgb },
+                new RadialGradientBrush(new PointD(3.3, 4.1), 2.5, stops) { SpreadMode = GradientSpreadMode.Repeat, ColorSpace = GradientColorSpace.Oklab },
             ];
 
             using var solid = DrawingTestSupport.CreateRandom(format, 8, 8, new Random(i).Next);

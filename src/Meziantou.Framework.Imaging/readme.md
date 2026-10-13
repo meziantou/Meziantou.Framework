@@ -27,11 +27,14 @@ color conversion, and bounded-memory streaming.
   hotspot that follows its pixel through geometry operations
 - Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision preserved
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip,
-  grayscale and convolution matrices (sharpen, blur, edge detection) applied to all frames
+  grayscale, Gaussian blur and convolution matrices (sharpen, edge detection) applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves and
-  arcs, dashed strokes, solid colors, linear, radial and sweep gradients, images, clips and compositing operators, with
-  exact pixel coverage
-- Text drawn from font files with the same rasterizer, measured by the layout that is drawn
+  arcs, dashed strokes, solid colors, linear, radial and sweep gradients, images, clips, layers, shadows, blend modes,
+  compositing operators and transformations of the canvas, with exact pixel coverage
+- Paths that are read from and written to SVG path data, combined (union, intersection, difference), simplified,
+  reversed, cut and measured
+- Text drawn from font files with the same rasterizer, measured by the layout that is drawn, with the positions of
+  its characters (hit testing, carets, selections)
 - Font files read without any system library: TrueType and OpenType (TrueType and CFF outlines), font collections,
   WOFF and WOFF2, with their names, metrics, character map and glyph outlines
 - ICC color management on request: convert an image to another color profile, or convert sample buffers between two
@@ -634,7 +637,13 @@ rounded to nearest (ties up) and clamped to the sample range: negative sums beco
 with a scratch of a few rows per worker proportional to the matrix height, charged to the allocation limit; the pixel
 format, the size, the frames and the metadata are kept (the EXIF thumbnail, now stale, is removed). As for resizing,
 results do not depend on the worker count or on SIMD support. The cost grows with the number of non-zero weights: there
-is no dedicated fast path for separable matrices such as large blurs.
+is no dedicated fast path for separable matrices such as large blurs: use `GaussianBlur` for these.
+
+`GaussianBlur(sigma)` blurs an image or a frame with a bell curve of standard deviation `sigma` (the radius CSS
+gives to a blur is twice the deviation): two convolutions, by a row of `2 ceil(3 sigma) + 1` weights then by the same
+weights as a column, so that the time grows with the deviation and not with its square. It takes the edge mode and the
+working space of a convolution, and follows its rules; both passes are prepared before a pixel changes. The weights
+`exp(-i^2 / (2 sigma^2))`, divided by their sum, are computed without any function of the platform.
 
 <!-- snippet: convolve -->
 ```csharp
@@ -711,7 +720,9 @@ rotation of the ellipse, the large-arc and direction flags, the end point; radii
 enlarged), and the arc around a center (the radii, the angle of its first point and its sweep), which a straight
 segment joins to the current point. `AddArc` starts a contour with an arc around a center, `AddPie` adds the closed
 slice between an arc and its center, and `AddRoundedRectangle` a rectangle whose corners are quarters of an ellipse
-(radii are limited to half the sides). Angles are in degrees from the positive x axis; a positive angle turns clockwise
+(radii are limited to half the sides). With a `CornerRadii`, each corner is a quarter of a circle of its own radius (a
+tab, a speech bubble; zero for a corner that is not rounded): when the radii of the two corners of a side add up to
+more than that side, every radius is reduced by the same factor, as CSS does. Angles are in degrees from the positive x axis; a positive angle turns clockwise
 on the image, and a sweep beyond 360 degrees is the whole ellipse. An arc is an element of the path like a curve: it
 ends exactly on its end point, and it is transformed as an arc.
 
@@ -720,8 +731,40 @@ ends exactly on its end point, and it is transformed as an arc.
 applied first), and `VectorPath.Transform` returns the path it gives. The result is exact: curves are transformed as
 curves and an ellipse stays an ellipse, so a path that is enlarged stays smooth. Angles are in degrees, and a positive
 angle turns clockwise on the image (Y grows downward); sines and cosines do not come from the platform, and a rotation
-by a multiple of 90 degrees is exact. The canvas has no transform of its own: a shape is transformed before it is
-drawn, and a text through `TextLayout.ToPath`.
+by a multiple of 90 degrees is exact.
+
+`canvas.Transform(transform, callback)` transforms everything a callback draws: shapes, strokes (the pen is
+transformed with the path it strokes, so a scaling makes it wider), the gradients and the images of the brushes,
+images, texts with the paints of their spans and the glyphs a font draws with its own colors, clips, and the offset
+and the blur of a shadow. A drawing is flattened for the size the transformation gives it: curves stay smooth however
+they are enlarged, and straight sides are placed exactly where `VectorPath.Transform` places them. Transformations
+nest (the inner one applies first), with clips and layers in any order.
+
+<!-- snippet: draw-watermark -->
+```csharp
+public static void DrawWatermark(string fontPath, string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+    var layout = TextLayout.Create("DRAFT", Font.Load(fontPath), size: image.Width / 6.0);
+    var ink = new SolidBrush(new Rgba32(255, 255, 255, 110));
+    var center = new PointD(image.Width / 2.0, image.Height / 2.0);
+
+    image.Draw(canvas =>
+    {
+        // Everything the callback draws is turned around the center of the image: the text is drawn as usual
+        canvas.Transform(AffineTransform.CreateRotation(-30, center), turned =>
+        {
+            for (var row = -1; row <= 1; row++)
+            {
+                var origin = new PointD(center.X - (layout.Width / 2), center.Y - (layout.Height / 2) + (row * layout.Height * 1.5));
+                turned.FillText(ink, layout, origin);
+            }
+        });
+    });
+
+    image.Save(outputPath);
+}
+```
 
 **Clipping**. `canvas.Clip` runs a callback whose drawings only change the inside of a path or of a rectangle: the clip
 lasts as long as the callback, and a clip started inside another one keeps what both let through. The edge of a clip
@@ -736,8 +779,60 @@ the point at a distance along it with the direction of the path there (to place 
 the path a pen draws when it strokes the path, so that all of these also answer for a stroke: the bounds of a stroke
 are the tight bounds of the widened path, and a click is on a line when the widened path contains it. A widened path
 is the pieces the library fills (one per segment, join and cap, overlapping): fill it with the non-zero rule; it is
-not a single outline. Lengths and containment are those of the path as it is drawn, with its curves replaced by their
+not a single outline (see `Simplify` below). Lengths and containment are those of the path as it is drawn, with its curves replaced by their
 chords.
+
+**Reading and cutting a path**. `EnumerateSegments` gives the elements of a path, without allocating: each
+`PathSegment` is what a method of the builder adds (`MoveTo`, `LineTo`, `QuadraticBezierTo`, `CubicBezierTo`, `ArcTo`,
+`Close`), so a path can be written in another format or built again from them. An arc comes as the arc of SVG paths, in
+pieces of at most a quarter turn, and a whole ellipse as two arcs of half a turn. `Reverse` returns the path followed
+from its end (what the dashes of a pen, a text on the path and the points at a distance start from), and
+`Trim(start, end)` the part of it between two distances from its start: the stroke of a path that is drawn
+progressively, or the arc of a gauge. A part of a path is made of the chords the path is drawn with: transform a path
+before cutting it, not after.
+
+**Combining paths**. `Combine` returns the outline of what two paths fill, combined by a `PathCombineMode`: `Union`
+(what one of them fills), `Intersect` (what both fill), `Exclude` (what the first one fills and the second one does
+not) or `Xor` (what only one fills). `Simplify` returns the outline of what one path fills: a path that crosses itself,
+or whose contours overlap, becomes the boundary of its area, and the pieces of `Widen` become the outline of the
+stroke, which can be stroked or combined in turn. The result is closed contours that do not cross each other or
+themselves: the outer ones turn clockwise on the image and the holes the other way, so both fill rules paint the same
+pixels. It is made of straight segments (the chords the paths are drawn with, their vertices moved to the nearest
+1/1024 of a pixel, where every decision is exact): combine paths at the size they are drawn at. The time grows with the
+number of segments and of their crossings, and with the square of the number of segments for shapes stacked on each
+other: pass a `CancellationToken` for untrusted paths.
+
+**SVG path data**. `VectorPath.ParseSvgPathData` reads the `d` attribute of an SVG `path` element, the format icons
+come in: every command (`M L H V C S Q T A Z`, absolute and relative) with the grammar of SVG, in the coordinates of
+the canvas (Y grows downward, as in SVG). The whole text must be valid: an error is a `FormatException` that gives its
+position (or `false` from `TryParseSvgPathData`), where a browser draws what comes before it. `ToSvgPathData` writes a
+path the same way, with absolute coordinates and numbers that read back as the same values: lines and curves are read
+back exactly, an arc to a few units of the last place.
+
+<!-- snippet: draw-icon -->
+```csharp
+public static string DrawIcon(string outputPath)
+{
+    // The path data of an icon of 24 by 24 pixels, as the "d" attribute of an SVG file has it
+    var heart = VectorPath.ParseSvgPathData("M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z");
+
+    // A path is scaled before it is drawn or cut: its curves stay curves
+    var icon = heart.Transform(AffineTransform.CreateScale(4, 4));
+    var outline = new Pen(Colors.Crimson, 3) { LineCap = LineCap.Round, LineJoin = LineJoin.Round };
+
+    using var image = new Image<Rgba32>(96, 96, Colors.White);
+    image.Draw(canvas =>
+    {
+        canvas.Fill(Colors.MistyRose, icon);
+
+        // The first three quarters of the outline
+        canvas.Stroke(outline, icon.Trim(0, icon.GetLength() * 0.75));
+    });
+
+    image.Save(outputPath);
+    return icon.ToSvgPathData();
+}
+```
 
 <!-- snippet: draw-route -->
 ```csharp
@@ -789,6 +884,12 @@ the color of their `GradientStop`s at the center of each pixel; `SpreadMode` giv
 stops with the same offset make a hard edge, and stops are interpolated on alpha-premultiplied values, so a transparent
 stop does not tint its neighbors.
 
+`ColorSpace` says in which space the colors of two stops are mixed. `Encoded` (the default, as in CSS and SVG) mixes
+the stored sample values: half way from red to green is a dark olive, (128, 128, 0). `LinearSrgb` mixes light, as
+paints of light do: the yellow (188, 188, 0). `Oklab` mixes in a space made for it, where the lightness and the hue
+change evenly: (208, 168, 0), with no dull band between two saturated colors. The stops are taken as sRGB colors; at
+a stop, the color is the color of the stop in every space.
+
 A radial gradient can spread from a `FocalPoint` that is not its center (a highlight on a sphere): the point must be
 strictly inside the circle. A sweep gradient goes around its center clockwise on the image, from `StartAngle` to
 `EndAngle` (a full turn from the right of the center by default); its colors change abruptly at its start angle unless
@@ -797,13 +898,21 @@ on the canvas: the points of the gradient are given before it applies, so a scal
 makes an elliptical radial gradient, and a rotation turns a gradient without recomputing its points.
 
 **Images**. `canvas.DrawImage` draws a frame of another image: at a position (its pixels as they are), stretched to a
-rectangle, or a region of it stretched to a rectangle (a sprite of a sheet), with an optional opacity. An `ImageBrush`
+rectangle, a region of it stretched to a rectangle (a sprite of a sheet), or placed by an `AffineTransform` (turned,
+skewed, mirrored: its edges are antialiased, and a quarter turn or a mirror keeps its pixels exactly), with an optional
+opacity. An `ImageBrush`
 paints any shape or text with an image: `Transform` places the image on the canvas, `WrapMode` gives the colors around
-it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), `Sampling` chooses between the interpolation of
-the four pixels around a position (`Bilinear`, the default) and the nearest pixel, and `Opacity` fades it. An image
-drawn on whole pixels without scaling keeps its pixels exactly; its pixels are converted to the pixel format of the
-canvas like any brush color, and no color profile is applied. An image that is drawn much smaller than it is skips
-pixels: `Resize` it first. The frame is read while it is drawn: it cannot be one of the frames the canvas draws on, but
+it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), `Sampling` chooses how the image is read, and
+`Opacity` fades it. An image drawn on whole pixels without scaling keeps its pixels exactly; its pixels are converted
+to the pixel format of the canvas like any brush color, and no color profile is applied.
+
+An `ImageSampling` is `Bilinear` (the default: the four pixels around a position, interpolated), `Nearest` (the pixel
+that contains the position: an enlarged image keeps its pixels as squares) or `Smooth`. With the first two, an image
+that is drawn much smaller than it is skips pixels. `Smooth` reads every pixel of the image a pixel of the canvas
+covers, with the weights of the interpolation stretched over them, so that a photograph drawn as a thumbnail has no
+aliasing; an image that is not reduced is interpolated as with `Bilinear`, bit for bit. `DrawImage` takes the sampling
+as an argument. Painting a pixel then costs as many pixels of the image as it covers: `Resize` an image that is drawn
+many times, which also has sharper filters. The frame is read while it is drawn: it cannot be one of the frames the canvas draws on, but
 it can be another frame of the same image when the drawing is on one frame (`ImageFrame.Draw`).
 
 <!-- snippet: draw-card -->
@@ -837,6 +946,56 @@ public static void ComposeCard(string photoPath, string outputPath)
 }
 ```
 
+**Layers**. `canvas.Layer(opacity, callback)` runs a callback whose drawings are made on a transparent image of the
+size of the canvas, which is then drawn on the canvas as a whole. Shapes that overlap, drawn one after the other with a
+translucent paint, show through each other; in a layer they are drawn as they are, then the whole is faded. A layer can
+also be combined with the canvas by a compositing operator (see below): `CompositeMode.DestinationIn` makes a mask of
+any drawing, a text included, and `DestinationOut` an eraser. A layer starts transparent and has the coordinates of
+the canvas; layers and clips nest, and a clip that is active when a layer starts applies to the layer as a whole. The
+image of a layer comes from the allocation scope of the image (4 bytes per pixel on an 8-bit color canvas, 8 bytes
+otherwise) and is kept while the canvas lasts; a layer costs the clearing and the drawing of the pixels the clip can
+show, so start a layer inside `Clip` when it covers a small part of a large canvas.
+
+**Shadows**. `canvas.Shadow(color, offset, blur, callback)` draws what the callback draws with its shadow under it: a
+drop shadow, or a glow when there is no offset. The drawings are made on a layer; the shadow is the alpha of that layer
+(the shape of everything the callback drew, as a whole), blurred by a Gaussian blur of the given standard deviation,
+moved by the offset and painted with the color, whose alpha makes the shadow translucent. A drawing that goes beyond
+an edge of the canvas is taken to continue there, so that its shadow does not fade along that edge. The cost grows
+with the pixels the clip can show and with the blur: draw the shadow of a small shape inside `Clip`, with room for the
+shadow.
+
+<!-- snippet: draw-badge -->
+```csharp
+public static void DrawBadge(string outputPath)
+{
+    using var image = new Image<Rgba32>(220, 120, Colors.WhiteSmoke);
+    var card = new RectangleD(30, 24, 160, 64);
+    var face = new LinearGradientBrush(new PointD(0, 24), new PointD(0, 88), [new GradientStop(0, Rgba32.ParseHex("#4F8EF7")), new GradientStop(1, Rgba32.ParseHex("#2456C8"))]) { ColorSpace = GradientColorSpace.Oklab };
+    var shine = new SolidBrush(new Rgba32(255, 255, 255, 90)) { BlendMode = BlendMode.SoftLight };
+    var mark = new SolidBrush(Colors.White);
+
+    image.Draw(canvas =>
+    {
+        // The card and its shadow: black at a third of its opacity, 6 pixels down, blurred
+        canvas.Shadow(new Rgba32(0, 0, 0, 85), new PointD(0, 6), 5, shadowed =>
+            shadowed.FillRoundedRectangle(face, card, new CornerRadii(18, 18, 4, 18)));
+
+        // A light that lightens the top of the card without hiding it, only where the card is
+        canvas.Clip(new VectorPathBuilder().AddRoundedRectangle(card, new CornerRadii(18, 18, 4, 18)).Build(), clipped =>
+            clipped.FillEllipse(shine, new PointD(110, 20), 120, 34));
+
+        // Two disks that overlap, faded together: they do not show through each other
+        canvas.Layer(0.6, layer =>
+        {
+            layer.FillCircle(mark, new PointD(96, 56), 16);
+            layer.FillCircle(mark, new PointD(118, 56), 16);
+        });
+    });
+
+    image.Save(outputPath);
+}
+```
+
 **Operators**. A brush is painted over the pixels (`CompositeMode.SourceOver`) unless its `CompositeMode` says
 otherwise. The modes are the compositing operators of Porter and Duff: `Source` replaces the pixels, alpha included (a
 transparent color erases), `DestinationOut` erases them where the paint is opaque (an eraser, with any shape and any
@@ -845,6 +1004,15 @@ gradient), `DestinationOver` paints behind them, `DestinationIn` keeps them wher
 is. An operator gives the result where a shape covers a pixel entirely; a pixel covered in part is that result for the
 part that is covered and what it was for the rest, so a pixel the shape does not touch never changes. `canvas.Clear`
 replaces every pixel by a color (`Colors.Transparent` erases the canvas).
+
+**Blend modes**. `Brush.BlendMode` mixes the color of a paint with the color of the pixels before the operator
+combines them: `Multiply` darkens (a shadow, a texture, a tint over a photograph), `Screen` lightens (a glow),
+`Overlay`, `HardLight` and `SoftLight` do one or the other by the lightness of the pixel or of the paint, `Darken` and
+`Lighten` keep the darker or the lighter color, `ColorDodge` and `ColorBurn` brighten or darken the pixel to reflect
+the paint, `Difference` and `Exclusion` invert, and `Hue`, `Saturation`, `Color` and `Luminosity` take some of the
+three from the paint and the rest from the pixel (`Color` tints a gray image). These are the blend modes of CSS and
+of image editors, with the formulas of the W3C. A paint keeps its own color on a transparent pixel, since there is
+nothing to mix it with. `canvas.Layer` takes a blend mode too, and mixes a whole drawing with the canvas at once.
 
 **Pens**. A `Pen` is a brush and a width, centered on the path, with a `LineJoin` for the corners (`Miter` by default,
 beveled beyond `MiterLimit`; `Round`; `Bevel`) and a `LineCap` for the ends of open contours (`Butt` by default; `Round`;
@@ -893,14 +1061,40 @@ public static void MarkAnimation(string inputPath, string outputPath)
 - **Compositing.** The paint is composited over the pixels (source-over) on the stored sample values, with straight
   alpha and exact integer arithmetic, rounded to nearest with ties upward. A full coverage with an opaque color writes
   that color exactly; frames without alpha stay opaque; a pixel that would stay fully transparent is not written and
-  keeps its hidden color. A gradient whose stops have the same color paints exactly what a solid brush paints.
+  keeps its hidden color. A gradient whose stops have the same color paints exactly what a solid brush paints. A
+  gradient that mixes its colors in linear light or in Oklab computes them at 16 bits with the power and cube root
+  functions of the platform, as `ResizeWorkingSpace.LinearSrgb` does: a sample within about 1e-12 of a rounding
+  boundary can differ by one from a platform to another.
 - **Operators.** The other compositing operators use the same exact arithmetic and the same rounding. A pixel whose
   alpha becomes zero becomes transparent black. A frame without alpha stays opaque: its pixels get the color the result
   would have over black, so an eraser darkens them.
+- **Blend modes.** With the colors as fractions of one, a paint `s` on a pixel `d` of alpha `ad` takes the color
+  `(1 - ad) s + ad B(s, d)`, where `B` is the function of the mode in "Compositing and Blending Level 1" of the W3C. It
+  is computed in double precision with additions, multiplications, divisions and square roots only, rounded to the
+  nearest sample value (ties upward), then composited with the exact arithmetic above. The modes that take a color as
+  a whole use the luminosity `0.3 R + 0.59 G + 0.11 B`; a gray level is a color without saturation.
 - **Images.** The color an image gives a pixel is the color it has at the position the center of the pixel comes from:
   the four pixels around that position, weighted by their distance to it, interpolated at 16 bits on alpha-premultiplied
   values and rounded to nearest (or the pixel that contains the position, with nearest sampling). At the center of a
-  pixel of the image, it is that pixel exactly. The opacity of an image multiplies the coverage, as a clip does.
+  pixel of the image, it is that pixel exactly. With smooth sampling, a pixel of the canvas that covers `sx` columns
+  and `sy` rows of the image (the lengths of the rows of the inverse of the transformation, at least 1, at most the
+  size of the region) reads the pixels whose centers are less than `sx` and `sy` away from that position, with the
+  weights `(1 - dx / sx) (1 - dy / sy)`; the weights of the pixels that are outside a transparent image count for the
+  alpha. The opacity of an image multiplies the coverage, as a clip does.
+- **Layers.** A layer is an image with colors and alpha (`Rgba32` on an `Rgba32`, `Bgra32` or `Rgb24` canvas,
+  `Rgba64` otherwise) on which the drawings follow the rules of any frame. When it ends, it is drawn as an image is on
+  whole pixels: its pixels are converted to the pixel format of the canvas like brush colors, and its opacity
+  multiplies the coverage. A drawing of opaque colors on whole pixels is the same in a layer as on the canvas;
+  elsewhere the alpha of the layer is rounded to its samples before it is drawn, which can change a sample by one.
+- **Shadows.** With the alpha of the pixels of the layer as fractions of one, extended beyond the layer by its pixels
+  on the edges, the shadow of a pixel is the alpha blurred by the weights of a Gaussian blur (see `GaussianBlur`) at
+  the position the offset moves it to, interpolated between the four pixels around it, and rounded to a coverage
+  (`floor(65536 s + 1/2)`); the color of the shadow is composited with that coverage as a shape is.
+- **Transformations.** Under a transformation of the canvas, a shape is flattened as it is given, by chords that
+  stay within 1/16 of a pixel of its curves divided by the largest factor the transformation enlarges a length by,
+  then its vertices are transformed: on the canvas the chords stay within 1/16 of a pixel. A stroke is the stroke of
+  the path as it is given, transformed the same way. A brush is placed by its own transformation, then by the one of
+  the canvas. A shape with straight sides is, bit for bit, the transformed path.
 - **Clips.** The coverage of a pixel under a clip is the product of the coverage of the shape and of the coverage of
   the clip, rounded to the nearest 1/65536 (ties upward). It is the area of what the shape and the clip have in common
   wherever one of them covers the pixel entirely; on a pixel that both only cover in part, it is the product of the two
@@ -1144,7 +1338,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 | Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
 | Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
 | Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
-| Drawing | No transform on the canvas (a path is transformed with `VectorPath.Transform`), no blend mode (multiply, screen, ...) beyond the compositing operators, no layer or group opacity; always antialiased; composited on the encoded sample values (no linear-light option); sequential; an image is read with four pixels at most per pixel of the canvas (no filter when it is reduced), and gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline; coordinates are limited to ±16,777,216 |
+| Drawing | Always antialiased; under a transformation of the canvas, every dash of a dashed stroke is cut, also those the canvas does not show; composited on the encoded sample values (no linear-light option); sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
 | Fonts made before OpenType Layout | The marks of a font without positioning table are placed from the shapes of the glyphs; the letters of an Arabic font without substitution table take the presentation forms the font has as characters, with the ligatures of lam and alef; the marks of a Thai font without substitution table take the forms the font has in the private use area |
 
 The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of
@@ -1342,6 +1536,14 @@ of their characters and were not compared with a font.
   tight curve, neighboring characters overlap or part; give letter spacing to the style when that matters.
 - **Measuring.** `Width` and `Height` are the size of the text, `Lines` gives each line (its part of the text, its
   position, its width, its baseline), and `InkBounds` contains everything that is drawn.
+- **Positions of the text.** `HitTest(point)` gives the character at a point of the layout (the point of the canvas
+  less the origin the layout is drawn at), or the nearest one, and which half of it the point is on: its `CaretIndex`
+  is where a click puts a caret. `GetCaretRectangle(index)` is where that caret is drawn, and
+  `GetSelectionRectangles(start, length)` the rectangles that highlight a range of the text, line by line. A
+  character is a grapheme cluster (a letter with its marks, an emoji sequence), and takes the space of its advance, not
+  of its ink; the characters a font draws as one glyph share its width. A right-to-left character starts on its
+  right: in a text that mixes directions, a caret jumps where the direction changes, and a range of the text can be
+  several rectangles on one line.
 - **Cost.** Creating a layout allocates (its glyphs and positions) and decodes each distinct glyph once, which validates
   the font data the text uses: drawing a layout then only fails on a limit of the image or on cancellation, and
   allocates nothing. The time to create a layout grows with the length of the text and with the number of lookups

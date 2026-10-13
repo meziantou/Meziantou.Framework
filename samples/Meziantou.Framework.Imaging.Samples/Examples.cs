@@ -184,6 +184,63 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>The path data of an SVG icon, scaled to the image, and a part of its outline.</summary>
+    // begin-snippet: draw-icon
+    public static string DrawIcon(string outputPath)
+    {
+        // The path data of an icon of 24 by 24 pixels, as the "d" attribute of an SVG file has it
+        var heart = VectorPath.ParseSvgPathData("M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z");
+
+        // A path is scaled before it is drawn or cut: its curves stay curves
+        var icon = heart.Transform(AffineTransform.CreateScale(4, 4));
+        var outline = new Pen(Colors.Crimson, 3) { LineCap = LineCap.Round, LineJoin = LineJoin.Round };
+
+        using var image = new Image<Rgba32>(96, 96, Colors.White);
+        image.Draw(canvas =>
+        {
+            canvas.Fill(Colors.MistyRose, icon);
+
+            // The first three quarters of the outline
+            canvas.Stroke(outline, icon.Trim(0, icon.GetLength() * 0.75));
+        });
+
+        image.Save(outputPath);
+        return icon.ToSvgPathData();
+    }
+    // end-snippet
+
+    /// <summary>A shadow, a blend mode, a gradient mixed in Oklab, a rounded rectangle with a radius per corner and a layer.</summary>
+    // begin-snippet: draw-badge
+    public static void DrawBadge(string outputPath)
+    {
+        using var image = new Image<Rgba32>(220, 120, Colors.WhiteSmoke);
+        var card = new RectangleD(30, 24, 160, 64);
+        var face = new LinearGradientBrush(new PointD(0, 24), new PointD(0, 88), [new GradientStop(0, Rgba32.ParseHex("#4F8EF7")), new GradientStop(1, Rgba32.ParseHex("#2456C8"))]) { ColorSpace = GradientColorSpace.Oklab };
+        var shine = new SolidBrush(new Rgba32(255, 255, 255, 90)) { BlendMode = BlendMode.SoftLight };
+        var mark = new SolidBrush(Colors.White);
+
+        image.Draw(canvas =>
+        {
+            // The card and its shadow: black at a third of its opacity, 6 pixels down, blurred
+            canvas.Shadow(new Rgba32(0, 0, 0, 85), new PointD(0, 6), 5, shadowed =>
+                shadowed.FillRoundedRectangle(face, card, new CornerRadii(18, 18, 4, 18)));
+
+            // A light that lightens the top of the card without hiding it, only where the card is
+            canvas.Clip(new VectorPathBuilder().AddRoundedRectangle(card, new CornerRadii(18, 18, 4, 18)).Build(), clipped =>
+                clipped.FillEllipse(shine, new PointD(110, 20), 120, 34));
+
+            // Two disks that overlap, faded together: they do not show through each other
+            canvas.Layer(0.6, layer =>
+            {
+                layer.FillCircle(mark, new PointD(96, 56), 16);
+                layer.FillCircle(mark, new PointD(118, 56), 16);
+            });
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
     /// <summary>Typed row access with a static callback (no closure allocation).</summary>
     // begin-snippet: typed-rows
     public static void InvertColors(string path)
@@ -890,6 +947,32 @@ internal static class Examples
 
         // The brush of the call paints the spans that have none
         image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(10, 10)));
+        image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>A transformation of the canvas: a text repeated along a diagonal, over an image.</summary>
+    // begin-snippet: draw-watermark
+    public static void DrawWatermark(string fontPath, string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+        var layout = TextLayout.Create("DRAFT", Font.Load(fontPath), size: image.Width / 6.0);
+        var ink = new SolidBrush(new Rgba32(255, 255, 255, 110));
+        var center = new PointD(image.Width / 2.0, image.Height / 2.0);
+
+        image.Draw(canvas =>
+        {
+            // Everything the callback draws is turned around the center of the image: the text is drawn as usual
+            canvas.Transform(AffineTransform.CreateRotation(-30, center), turned =>
+            {
+                for (var row = -1; row <= 1; row++)
+                {
+                    var origin = new PointD(center.X - (layout.Width / 2), center.Y - (layout.Height / 2) + (row * layout.Height * 1.5));
+                    turned.FillText(ink, layout, origin);
+                }
+            });
+        });
+
         image.Save(outputPath);
     }
     // end-snippet

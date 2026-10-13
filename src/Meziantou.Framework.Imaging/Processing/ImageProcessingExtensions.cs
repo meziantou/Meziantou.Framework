@@ -483,4 +483,81 @@ public static class ImageProcessingExtensions
         var storage = frame.GetStorage();
         frame.OwnerImage.ConvolveFrame(frame, storage, options, cancellationToken);
     }
+
+    /// <summary>Blurs every displayed frame and the poster frame in place with a Gaussian blur. The EXIF thumbnail, now stale, is removed.</summary>
+    /// <remarks>
+    /// <para>
+    /// Each pixel becomes the mean of the pixels around it, weighted by a bell curve of standard deviation
+    /// <paramref name="sigma"/>: the weight of a pixel at a distance <c>d</c> is <c>exp(-d^2 / (2 sigma^2))</c>, up to
+    /// three standard deviations. A deviation of 1 softens an image; the blur a CSS filter or a shadow calls a radius
+    /// is twice the deviation.
+    /// </para>
+    /// <para>
+    /// The blur is two convolutions (<see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>), by a row of
+    /// <c>2 ceil(3 sigma) + 1</c> weights then by the same weights as a column: the time grows with the deviation, not
+    /// with its square. Each one follows the rules of a convolution (colors filtered premultiplied by alpha, samples
+    /// rounded to nearest at the storage precision, the same result whatever the number of workers); the weights are
+    /// computed without any function of the platform, and are the same everywhere. Without deviation, nothing changes.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="sigma">The standard deviation of the blur, in pixels. Must be between 0 and 10000.</param>
+    /// <param name="edgeMode">The pixels the blur reads beyond the edges of the image.</param>
+    /// <param name="workingSpace">The numeric space the samples are filtered in.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some frames or rows may already be blurred, in one direction or in both.</param>
+    /// <exception cref="ArgumentException"><paramref name="sigma"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="sigma"/> is negative or exceeds 10000, or <paramref name="edgeMode"/> or <paramref name="workingSpace"/> is not a defined value.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile. Nothing is changed.</exception>
+    /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static void GaussianBlur(this Image image, double sigma, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        GaussianKernel.Validate(sigma, nameof(sigma));
+        ValidateBlur(edgeMode, workingSpace);
+        if (sigma == 0)
+        {
+            image.Owner.EnsureCanModify("blur the image");
+            return;
+        }
+
+        image.BlurAllFrames(GaussianKernel.Create(sigma), edgeMode, workingSpace, cancellationToken);
+    }
+
+    /// <summary>
+    /// Blurs one frame in place with a Gaussian blur. The EXIF thumbnail of the image, now stale, is removed. See
+    /// <see cref="GaussianBlur(Image, double, ConvolutionEdgeMode, ConvolutionWorkingSpace, CancellationToken)"/>.
+    /// </summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="sigma">The standard deviation of the blur, in pixels. Must be between 0 and 10000.</param>
+    /// <param name="edgeMode">The pixels the blur reads beyond the edges of the frame.</param>
+    /// <param name="workingSpace">The numeric space the samples are filtered in.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be blurred, in one direction or in both.</param>
+    /// <exception cref="ArgumentException"><paramref name="sigma"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="sigma"/> is negative or exceeds 10000, or <paramref name="edgeMode"/> or <paramref name="workingSpace"/> is not a defined value.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile. Nothing is changed.</exception>
+    /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The frame is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    public static void GaussianBlur(this ImageFrame frame, double sigma, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        GaussianKernel.Validate(sigma, nameof(sigma));
+        ValidateBlur(edgeMode, workingSpace);
+        var storage = frame.GetStorage();
+        if (sigma == 0)
+            return;
+
+        frame.OwnerImage.BlurFrame(frame, storage, GaussianKernel.Create(sigma), edgeMode, workingSpace, cancellationToken);
+    }
+
+    private static void ValidateBlur(ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace)
+    {
+        if (!Enum.IsDefined(edgeMode))
+            throw new ArgumentOutOfRangeException(nameof(edgeMode), edgeMode, "The edge mode is not valid.");
+
+        if (!Enum.IsDefined(workingSpace))
+            throw new ArgumentOutOfRangeException(nameof(workingSpace), workingSpace, "The working space is not valid.");
+    }
 }

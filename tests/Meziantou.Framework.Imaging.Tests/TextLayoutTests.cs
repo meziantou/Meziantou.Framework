@@ -733,6 +733,169 @@ public sealed class TextLayoutTests
         Assert.Equal(expected, actual);
     }
 
+    [Fact]
+    public void APointOfALayoutIsOnACharacterOfTheText()
+    {
+        // At 16 pixels, A is 16 pixels wide, B and the space 8, C 12. "AB C" then, on a second line, "A":
+        // A from 0 to 16, B to 24, the space to 32, C to 44.
+        var style = new TextStyle(Extended, 16);
+        var layout = TextLayout.Create("AB C\nA", style);
+        Assert.Equal(new TextHit(0, 0, 1, isTrailing: false, isInside: true), layout.HitTest(new PointD(1, 1)));
+        Assert.Equal(new TextHit(0, 0, 1, isTrailing: true, isInside: true), layout.HitTest(new PointD(9, 5)));
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: false, isInside: true), layout.HitTest(new PointD(17, 3)));
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: true, isInside: true), layout.HitTest(new PointD(22, 15.9)));
+        Assert.Equal(new TextHit(0, 2, 1, isTrailing: false, isInside: true), layout.HitTest(new PointD(27, 3)));
+        Assert.Equal(new TextHit(0, 3, 1, isTrailing: true, isInside: true), layout.HitTest(new PointD(43, 3)));
+        Assert.Equal(new TextHit(1, 5, 1, isTrailing: false, isInside: true), layout.HitTest(new PointD(5, 20)));
+
+        // The middle of a character is its second half: a click there puts the caret after it
+        Assert.False(layout.HitTest(new PointD(7.9, 3)).IsTrailing);
+        Assert.True(layout.HitTest(new PointD(8, 3)).IsTrailing);
+        Assert.Equal(0, layout.HitTest(new PointD(7.9, 3)).CaretIndex);
+        Assert.Equal(1, layout.HitTest(new PointD(8, 3)).CaretIndex);
+        Assert.Equal(4, layout.HitTest(new PointD(43, 3)).CaretIndex);
+
+        // Beside, above or below the text: the nearest character, and the point is not on it
+        Assert.Equal(new TextHit(0, 3, 1, isTrailing: true, isInside: false), layout.HitTest(new PointD(100, 3)));
+        Assert.Equal(new TextHit(0, 0, 1, isTrailing: false, isInside: false), layout.HitTest(new PointD(-5, 3)));
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: false, isInside: false), layout.HitTest(new PointD(17, -10)));
+        Assert.Equal(new TextHit(1, 5, 1, isTrailing: true, isInside: false), layout.HitTest(new PointD(50, 20)));
+        Assert.Equal(new TextHit(1, 5, 1, isTrailing: false, isInside: false), layout.HitTest(new PointD(5, 100)));
+        Assert.Equal(6, layout.HitTest(new PointD(50, 100)).CaretIndex);
+        Assert.Equal(new TextHit(1, 5, 1, isTrailing: false, isInside: false), layout.HitTest(new PointD(double.NegativeInfinity, double.PositiveInfinity)));
+        Assert.Throws<ArgumentException>(() => layout.HitTest(new PointD(double.NaN, 0)));
+        Assert.Throws<ArgumentException>(() => layout.HitTest(new PointD(0, double.NaN)));
+        Assert.Equal("line 0, character 3+1, trailing, outside", layout.HitTest(new PointD(100, 3)).ToString());
+        Assert.NotEqual(layout.HitTest(new PointD(1, 1)), layout.HitTest(new PointD(9, 5)));
+        Assert.Equal(layout.HitTest(new PointD(1, 1)).GetHashCode(), layout.HitTest(new PointD(2, 2)).GetHashCode());
+
+        // A letter and its mark are one character: the font draws them as one glyph, and a caret cannot go between them
+        var accented = TextLayout.Create("A\u0301B", style);
+        Assert.Equal(new TextHit(0, 0, 2, isTrailing: true, isInside: true), accented.HitTest(new PointD(12, 3)));
+        Assert.Equal(2, accented.HitTest(new PointD(12, 3)).CaretIndex);
+        Assert.Equal(new TextHit(0, 2, 1, isTrailing: false, isInside: true), accented.HitTest(new PointD(17, 3)));
+        Assert.Equal(new RectangleD(0, 0, 0, 16), accented.GetCaretRectangle(1));
+        Assert.Equal(new RectangleD(16, 0, 0, 16), accented.GetCaretRectangle(2));
+
+        // The space that ends a wrapped line hangs beyond its width, and is still a character of that line; an
+        // aligned line has its characters where they are drawn
+        var wrapped = TextLayout.Create("AA AA", style, new TextLayoutOptions { MaxWidth = 40 });
+        Assert.Equal(new TextHit(0, 2, 1, isTrailing: false, isInside: true), wrapped.HitTest(new PointD(35, 3)));
+        Assert.Equal(new TextHit(1, 4, 1, isTrailing: true, isInside: true), wrapped.HitTest(new PointD(30, 17)));
+        var centered = TextLayout.Create("AB", style, new TextLayoutOptions { MaxWidth = 100, Alignment = TextAlignment.Center });
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: false, isInside: true), centered.HitTest(new PointD(55, 3)));
+        Assert.Equal(new TextHit(0, 0, 1, isTrailing: false, isInside: false), centered.HitTest(new PointD(10, 3)));
+        Assert.Equal(new RectangleD(54, 0, 0, 16), centered.GetCaretRectangle(1));
+
+        // A line without character, and a text without character
+        var blank = TextLayout.Create("A\n\nA", style);
+        Assert.Equal(new TextHit(1, 2, 0, isTrailing: false, isInside: false), blank.HitTest(new PointD(5, 20)));
+        Assert.Equal(2, blank.HitTest(new PointD(5, 20)).CaretIndex);
+        Assert.Equal(new RectangleD(0, 16, 0, 16), blank.GetCaretRectangle(2));
+        var empty = TextLayout.Create(string.Empty, style);
+        Assert.Equal(new TextHit(0, 0, 0, isTrailing: false, isInside: false), empty.HitTest(new PointD(3, 3)));
+        Assert.Equal(new RectangleD(0, 0, 0, 16), empty.GetCaretRectangle(0));
+        Assert.Empty(empty.GetSelectionRectangles(0, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => empty.GetCaretRectangle(1));
+    }
+
+    [Fact]
+    public void ACaretAndASelectionAreWhereTheirCharactersAre()
+    {
+        var style = new TextStyle(Extended, 16);
+        var layout = TextLayout.Create("AB C\nA", style);
+
+        // Before each character; at a line break, after the last character of its line; then the second line
+        Assert.Equal(
+            [new RectangleD(0, 0, 0, 16), new RectangleD(16, 0, 0, 16), new RectangleD(24, 0, 0, 16), new RectangleD(32, 0, 0, 16), new RectangleD(44, 0, 0, 16), new RectangleD(0, 16, 0, 16), new RectangleD(16, 16, 0, 16)],
+            Enumerable.Range(0, 7).Select(layout.GetCaretRectangle));
+        Assert.Throws<ArgumentOutOfRangeException>(() => layout.GetCaretRectangle(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => layout.GetCaretRectangle(7));
+
+        // A caret is where a click puts it
+        foreach (var x in new[] { -3.0, 1, 9, 17, 23, 30, 43, 60 })
+        {
+            var hit = layout.HitTest(new PointD(x, 3));
+            var caret = layout.GetCaretRectangle(hit.CaretIndex);
+            Assert.InRange(caret.X, Math.Clamp(x, 0, 44) - 8, Math.Clamp(x, 0, 44) + 8);
+        }
+
+        // The characters of a range that follow each other on a line are one rectangle, as tall as the line
+        Assert.Equal([new RectangleD(16, 0, 28, 16)], layout.GetSelectionRectangles(1, 3));
+        Assert.Equal([new RectangleD(32, 0, 12, 16), new RectangleD(0, 16, 16, 16)], layout.GetSelectionRectangles(3, 3));
+        Assert.Equal([new RectangleD(0, 0, 44, 16), new RectangleD(0, 16, 16, 16)], layout.GetSelectionRectangles(0, 6));
+        Assert.Equal([new RectangleD(0, 16, 16, 16)], layout.GetSelectionRectangles(4, 2));
+        Assert.Empty(layout.GetSelectionRectangles(4, 1));
+        Assert.Empty(layout.GetSelectionRectangles(2, 0));
+        Assert.Empty(layout.GetSelectionRectangles(6, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => layout.GetSelectionRectangles(-1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => layout.GetSelectionRectangles(0, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => layout.GetSelectionRectangles(5, 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => layout.GetSelectionRectangles(7, 0));
+
+        // A wrapped paragraph: the position between two lines is the start of the second one, and the space that
+        // hangs at the end of a line is selected with it
+        var wrapped = TextLayout.Create("AA AA", style, new TextLayoutOptions { MaxWidth = 40 });
+        Assert.Equal(new RectangleD(32, 0, 0, 16), wrapped.GetCaretRectangle(2));
+        Assert.Equal(new RectangleD(0, 16, 0, 16), wrapped.GetCaretRectangle(3));
+        Assert.Equal([new RectangleD(16, 0, 24, 16), new RectangleD(0, 16, 16, 16)], wrapped.GetSelectionRectangles(1, 3));
+
+        // Justified, the characters are where the wider spaces put them: the first line holds "A A", whose space is
+        // stretched from 8 to 28 pixels to fill the 60, and the space that hangs after it
+        var justified = TextLayout.Create("A A A A", style, new TextLayoutOptions { MaxWidth = 60, Alignment = TextAlignment.Justify });
+        Assert.Equal(new TextLine(0, 4, 0, 0, 60, 16, 13, false), justified.Lines[0]);
+        Assert.Equal(new RectangleD(44, 0, 0, 16), justified.GetCaretRectangle(2));
+        Assert.Equal([new RectangleD(16, 0, 52, 16)], justified.GetSelectionRectangles(1, 3));
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: false, isInside: true), justified.HitTest(new PointD(28, 3)));
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: true, isInside: true), justified.HitTest(new PointD(31, 3)));
+    }
+
+    [Fact]
+    public void TheCharactersOfRightToLeftTextStartOnTheirRight()
+    {
+        // Alef then bet, drawn as C (12 pixels) then A (16): bet is from 0 to 16 and alef from 16 to 28
+        var style = new TextStyle(Extended, 16);
+        var layout = TextLayout.Create("\u05D0\u05D1", style);
+        Assert.Equal(new TextHit(0, 0, 1, isTrailing: false, isInside: true), layout.HitTest(new PointD(27, 3)));
+        Assert.Equal(new TextHit(0, 0, 1, isTrailing: true, isInside: true), layout.HitTest(new PointD(17, 3)));
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: false, isInside: true), layout.HitTest(new PointD(15, 3)));
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: true, isInside: true), layout.HitTest(new PointD(1, 3)));
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: true, isInside: false), layout.HitTest(new PointD(-4, 3)));
+        Assert.Equal(new TextHit(0, 0, 1, isTrailing: false, isInside: false), layout.HitTest(new PointD(40, 3)));
+
+        // The caret goes from the right to the left as it goes through the text
+        Assert.Equal([28.0, 16, 0], Enumerable.Range(0, 3).Select(index => layout.GetCaretRectangle(index).X));
+        Assert.Equal([new RectangleD(16, 0, 12, 16)], layout.GetSelectionRectangles(0, 1));
+        Assert.Equal([new RectangleD(0, 0, 28, 16)], layout.GetSelectionRectangles(0, 2));
+
+        // A line of a right-to-left paragraph that has no character starts on its right
+        var aligned = TextLayout.Create("\u05D0\n", style, new TextLayoutOptions { MaxWidth = 40 });
+        Assert.Equal(new RectangleD(40, 0, 0, 16), aligned.GetCaretRectangle(0));
+        Assert.Equal(new RectangleD(28, 0, 0, 16), aligned.GetCaretRectangle(1));
+
+        // Hebrew in a left-to-right paragraph: B from 0 to 8, bet to 24, alef to 36, B to 44. The text is B, alef,
+        // bet, B: what follows in the text does not follow on the line, and a range can be two rectangles
+        var mixed = TextLayout.Create("B\u05D0\u05D1B", style);
+        Assert.Equal([0.0, 36, 24, 36, 44], Enumerable.Range(0, 5).Select(index => mixed.GetCaretRectangle(index).X));
+        Assert.Equal([new RectangleD(0, 0, 8, 16), new RectangleD(24, 0, 12, 16)], mixed.GetSelectionRectangles(0, 2));
+        Assert.Equal([new RectangleD(8, 0, 28, 16)], mixed.GetSelectionRectangles(1, 2));
+        Assert.Equal([new RectangleD(8, 0, 16, 16), new RectangleD(36, 0, 8, 16)], mixed.GetSelectionRectangles(2, 2));
+        Assert.Equal(new TextHit(0, 2, 1, isTrailing: true, isInside: true), mixed.HitTest(new PointD(9, 3)));
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: false, isInside: true), mixed.HitTest(new PointD(35, 3)));
+        Assert.Equal(new TextHit(0, 3, 1, isTrailing: false, isInside: true), mixed.HitTest(new PointD(37, 3)));
+
+        // Lam and alef are drawn as one glyph, 8 pixels wide: each letter has half of it, lam on the right
+        var ligature = TextLayout.Create("\u0644\u0627", new TextStyle(FontTestSupport.Load(FontSamples.ArabicForms()), 16));
+        Assert.Equal(8, ligature.Width);
+        Assert.Equal(new TextHit(0, 0, 1, isTrailing: false, isInside: true), ligature.HitTest(new PointD(7, 3)));
+        Assert.Equal(new TextHit(0, 0, 1, isTrailing: true, isInside: true), ligature.HitTest(new PointD(5, 3)));
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: false, isInside: true), ligature.HitTest(new PointD(3, 3)));
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: true, isInside: true), ligature.HitTest(new PointD(1, 3)));
+        Assert.Equal([8.0, 4, 0], Enumerable.Range(0, 3).Select(index => ligature.GetCaretRectangle(index).X));
+        Assert.Equal([new RectangleD(4, 0, 4, 16)], ligature.GetSelectionRectangles(0, 1));
+        Assert.Equal([new RectangleD(0, 0, 4, 16)], ligature.GetSelectionRectangles(1, 1));
+    }
+
     private static (RectangleD Rectangle, Brush? Brush) A(double x, double y) => (new RectangleD(x + 2, y + 1, 12, 12), null);
 
     private static (RectangleD Rectangle, Brush? Brush) B(double x, double y) => (new RectangleD(x + 1, y + 5, 6, 8), null);

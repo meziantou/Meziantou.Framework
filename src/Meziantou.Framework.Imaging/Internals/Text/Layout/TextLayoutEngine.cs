@@ -892,7 +892,7 @@ internal sealed class TextLayoutEngine
             IncludeMetrics(line, item.Font, item.Style.Size);
             if (item.IsTabulation)
             {
-                line.Glyphs.Add(new PlacedGlyph { Glyph = -1, Cluster = item.Start, PenX = pen, Advance = tabulations[order[i]], Font = font, Size = item.Style.Size, Span = FindSpan(item.Start), IsInvisible = true, IsHanging = isHanging });
+                line.Glyphs.Add(new PlacedGlyph { Glyph = -1, Cluster = item.Start, PenX = pen, Advance = tabulations[order[i]], Font = font, Size = item.Style.Size, Span = FindSpan(item.Start), IsInvisible = true, IsHanging = isHanging, IsRightToLeft = (levels[order[i]] & 1) != 0 });
                 pen += tabulations[order[i]];
                 hanging += isHanging ? tabulations[order[i]] : 0;
                 continue;
@@ -916,6 +916,7 @@ internal sealed class TextLayoutEngine
                     IsInvisible = glyph.IsInvisible,
                     IsExpandable = !isHanging && character is ' ' or '\u00A0',
                     IsHanging = isHanging,
+                    IsRightToLeft = (levels[order[i]] & 1) != 0,
                 });
                 pen += glyph.Advance;
                 hanging += isHanging ? glyph.Advance : 0;
@@ -1107,11 +1108,16 @@ internal sealed class TextLayoutEngine
         var runs = new List<GlyphRun>();
         var brushes = new List<Brush?>();
         var decorations = new List<DecorationRectangle>();
+        var hitBoxes = new List<TextHitBox>();
+        var hitBoxStarts = new int[_lines.Count + 1];
+        var boundaries = new List<int>();
+        var clusters = new List<int>();
         var textLines = new TextLine[_lines.Count];
         for (var lineIndex = 0; lineIndex < _lines.Count; lineIndex++)
         {
             var line = _lines[lineIndex];
             var placed = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(line.Glyphs);
+            hitBoxStarts[lineIndex] = hitBoxes.Count;
 
             // Justification widens the spaces of a line so that it fills the width; not the last line of a paragraph,
             // which ends where its text ends.
@@ -1207,8 +1213,10 @@ internal sealed class TextLayoutEngine
             }
 
             AddDecorations(decorations, brushes, decoration, baseline);
+            AddHitBoxes(line, placed, x, hitBoxes, boundaries, clusters);
         }
 
+        hitBoxStarts[^1] = hitBoxes.Count;
         if (glyphs.Count > _limits.MaxTextGlyphs)
             throw new ImageResourceLimitException(ImageResourceLimitKind.TextGlyphs, _limits.MaxTextGlyphs, glyphs.Count);
 
@@ -1226,7 +1234,77 @@ internal sealed class TextLayoutEngine
             Height = GetHeight(),
             IsTruncated = _isTruncated,
             HasMissingGlyphs = _hasMissingGlyphs,
+            TextLength = _text.Length,
+            HitBoxes = [.. hitBoxes],
+            HitBoxStarts = hitBoxStarts,
+            CharacterBoundaries = [.. boundaries],
         };
+    }
+
+    /// <summary>
+    /// Adds the clusters of a line, from its left: the characters of each one and the space its glyphs take, from where
+    /// the pen is before the first one to where it is after the last one.
+    /// </summary>
+    /// <remarks>
+    /// A cluster has the characters from its first one to the first one of the next cluster of the line, in the order
+    /// of the text, or to the end of the line. What a line adds to its text (a hyphen, an ellipsis) has no character,
+    /// and is not a place of the text.
+    /// </remarks>
+    private void AddHitBoxes(Line line, ReadOnlySpan<PlacedGlyph> placed, double x, List<TextHitBox> hitBoxes, List<int> boundaries, List<int> clusters)
+    {
+        // The first characters of the clusters, in the order of the text
+        clusters.Clear();
+        foreach (ref readonly var glyph in placed)
+        {
+            clusters.Add(glyph.Cluster);
+        }
+
+        clusters.Sort();
+        for (var first = 0; first < placed.Length;)
+        {
+            ref readonly var glyph = ref placed[first];
+            var left = glyph.PenX;
+            var right = glyph.PenX + glyph.Advance;
+            var last = first + 1;
+            for (; last < placed.Length && placed[last].Cluster == glyph.Cluster; last++)
+            {
+                left = Math.Min(left, placed[last].PenX);
+                right = Math.Max(right, placed[last].PenX + placed[last].Advance);
+            }
+
+            first = last;
+
+            // The first cluster that starts after this one, or the end of the line
+            var index = clusters.BinarySearch(glyph.Cluster + 1);
+            index = index < 0 ? ~index : index;
+            while (index > 0 && index < clusters.Count && clusters[index - 1] > glyph.Cluster)
+            {
+                index--;
+            }
+
+            var end = Math.Min(index < clusters.Count ? clusters[index] : line.To, line.To);
+            if (end <= glyph.Cluster)
+                continue;
+
+            // The characters of the cluster: the width of a ligature is shared between them
+            var text = _text.AsSpan(glyph.Cluster, end - glyph.Cluster);
+            var count = 0;
+            var firstBoundary = boundaries.Count;
+            for (var position = 0; position < text.Length;)
+            {
+                position += Math.Max(Unicode.GetGraphemeClusterLength(text[position..]), 1);
+                boundaries.Add(position);
+                count++;
+            }
+
+            if (count == 1)
+            {
+                boundaries.RemoveAt(boundaries.Count - 1);
+                firstBoundary = -1;
+            }
+
+            hitBoxes.Add(new TextHitBox(glyph.Cluster, text.Length, x + left, x + right, glyph.IsRightToLeft, count, firstBoundary));
+        }
     }
 
     /// <summary>Adds the rectangles of the decorations of a part of a line.</summary>

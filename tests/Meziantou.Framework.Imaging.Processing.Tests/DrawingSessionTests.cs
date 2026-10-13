@@ -8,6 +8,7 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// The <c>Draw</c> entry points: the scope of the canvas, the lease held during the callback, the frames an image-level
 /// call paints, argument validation, cancellation, the working storage and the metadata side effects.
 /// </summary>
+[SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
 public sealed class DrawingSessionTests
 {
     private static readonly Brush White = new SolidBrush(new Rgba32(255, 255, 255));
@@ -911,6 +912,757 @@ public sealed class DrawingSessionTests
             Assert.Equal(new Gray8(0), image.Frames[0][40, 32]);
             Assert.Equal(new Gray8(0), image.Frames[0][2, 2]);
         }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Layers
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void ALayerFadesADrawingAsAWhole()
+    {
+        // Two white rectangles that overlap on two pixels, each at 128/255 of its opacity: where they overlap, the
+        // second one is over the first, (255 * 128 + 128 * 127) / 255 = 191.75 -> 192
+        var translucent = new SolidBrush(new Rgba32(255, 255, 255, 128));
+        using var direct = new Image<Gray8>(4, 1, new Gray8(0));
+        direct.Draw(
+            canvas =>
+            {
+                canvas.FillRectangle(translucent, new Rectangle(0, 0, 3, 1));
+                canvas.FillRectangle(translucent, new Rectangle(1, 0, 3, 1));
+            },
+            Ct);
+        Assert.Equal([128, 192, 192, 128], DrawingTestSupport.ReadSamples(direct.Frames[0]));
+
+        // In a layer, the rectangles are drawn as they are, then the whole is faded: 255 / 2 = 127.5 -> 128 everywhere
+        using var layered = new Image<Gray8>(4, 1, new Gray8(0));
+        layered.Draw(
+            canvas => canvas.Layer(0.5, layer =>
+            {
+                layer.FillRectangle(White, new Rectangle(0, 0, 3, 1));
+                layer.FillRectangle(White, new Rectangle(1, 0, 3, 1));
+            }),
+            Ct);
+        Assert.Equal([128, 128, 128, 128], DrawingTestSupport.ReadSamples(layered.Frames[0]));
+
+        // On transparent pixels, the layer keeps its colors and gets its opacity; a quarter is 63.75 -> 64
+        using var transparent = new Image<Rgba32>(2, 1);
+        transparent.Draw(canvas => canvas.Layer(0.25, layer => layer.FillRectangle(new Rgba32(10, 20, 30), new Rectangle(0, 0, 1, 1))), Ct);
+        Assert.Equal(new Rgba32(10, 20, 30, 64), transparent.Frames[0][0, 0]);
+        Assert.Equal(default, transparent.Frames[0][1, 0]);
+
+        // A layer in a layer: black at half its opacity over white is 127.5 -> 128, and that gray at half its opacity
+        // over the black of the canvas is 64. The state overloads pass their state.
+        using var nested = new Image<Gray8>(1, 1, new Gray8(0));
+        nested.Draw(
+            canvas => canvas.Layer(0.5, White, static (outer, white) =>
+            {
+                outer.Fill(white);
+                outer.Layer(0.5, new SolidBrush(new Rgba32(0, 0, 0)), static (inner, black) => inner.Fill(black));
+            }),
+            Ct);
+        Assert.Equal([64], DrawingTestSupport.ReadSamples(nested.Frames[0]));
+
+        // Without opacity nothing is drawn, and the callback still runs
+        var ran = false;
+        layered.Draw(
+            canvas => canvas.Layer(0, layer =>
+            {
+                ran = true;
+                layer.Clear(Colors.White);
+            }),
+            Ct);
+        Assert.True(ran);
+        Assert.Equal([128, 128, 128, 128], DrawingTestSupport.ReadSamples(layered.Frames[0]));
+    }
+
+    [Theory]
+    [MemberData(nameof(DrawingTestSupport.AllFormats), MemberType = typeof(DrawingTestSupport))]
+    public void ALayerIsDrawnAsAnImageOfItsDrawings(PixelFormat format)
+    {
+        // Whole pixels and opaque colors: the layer is the drawing itself, in every pixel format
+        var color = new Rgba64(0x1234, 0x5678, 0x9ABC);
+        using var direct = DrawingTestSupport.Create(format, 4, 3);
+        using var layered = DrawingTestSupport.Create(format, 4, 3);
+        direct.Draw(canvas => Paint(canvas, color), Ct);
+        layered.Draw(canvas => canvas.Layer(1, layer => Paint(layer, color)), Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(direct.Frames[0]), DrawingTestSupport.ReadSamples(layered.Frames[0]));
+
+        // Any drawing: the layer has the samples of the canvas and its own alpha, so each pixel is the drawing to one
+        // unit of an 8-bit sample (the alpha of the layer is rounded before it is drawn)
+        var path = new VectorPathBuilder().MoveTo(0.5, 2.25).CubicBezierTo(1, -3, 2.5, 5, 3.75, 0.5).Close().AddCircle(new PointD(2, 1.5), 1.2).Build();
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(4, 3), [new GradientStop(0, new Rgba32(255, 40, 0)), new GradientStop(1, new Rgba32(0, 90, 255))]);
+        using var first = DrawingTestSupport.CreateRandom(format, 4, 3, new Random(5).Next);
+        using var second = DrawingTestSupport.CreateRandom(format, 4, 3, new Random(5).Next);
+        first.Draw(canvas => canvas.Fill(gradient, path), Ct);
+        second.Draw(canvas => canvas.Layer(1, layer => layer.Fill(gradient, path)), Ct);
+        var expected = DrawingTestSupport.ReadSamples(first.Frames[0]);
+        var actual = DrawingTestSupport.ReadSamples(second.Frames[0]);
+        var unit = PixelFormats.GetBitsPerComponent(format) == 8 ? 1 : 257;
+        Assert.Contains(expected, sample => sample != 0);
+        for (var i = 0; i < expected.Length; i++)
+        {
+            Assert.InRange(actual[i], expected[i] - (2 * unit), expected[i] + (2 * unit), message: $"sample {i}");
+        }
+
+        static void Paint(DrawingCanvas canvas, Rgba64 color)
+        {
+            canvas.FillRectangle(color, new Rectangle(1, 0, 2, 2));
+            canvas.FillRectangle(new Rgba32(255, 255, 255), new Rectangle(2, 1, 2, 2));
+        }
+    }
+
+    [Fact]
+    public void ALayerIsCombinedWithTheCanvasByItsOperator()
+    {
+        // A mask made of two shapes: the canvas is kept where the layer is opaque, and erased elsewhere
+        var red = new Rgba32(255, 0, 0);
+        using var image = new Image<Rgba32>(5, 1, red);
+        image.Draw(
+            canvas => canvas.Layer(
+                1,
+                layer =>
+                {
+                    layer.FillRectangle(White, new Rectangle(1, 0, 1, 1));
+                    layer.FillRectangle(new SolidBrush(new Rgba32(0, 0, 0, 128)), new Rectangle(3, 0, 1, 1));
+                },
+                CompositeMode.DestinationIn),
+            Ct);
+        Assert.Equal(default, image.Frames[0][0, 0]);
+        Assert.Equal(red, image.Frames[0][1, 0]);
+        Assert.Equal(default, image.Frames[0][2, 0]);
+        Assert.Equal(new Rgba32(255, 0, 0, 128), image.Frames[0][3, 0]);
+        Assert.Equal(default, image.Frames[0][4, 0]);
+
+        // An eraser made of a drawing, and a drawing put behind the pixels
+        using var erased = new Image<Rgba32>(3, 1, red);
+        erased.Draw(canvas => canvas.Layer(1, layer => layer.FillRectangle(White, new Rectangle(1, 0, 1, 1)), CompositeMode.DestinationOut), Ct);
+        Assert.Equal([red, default, red], [erased.Frames[0][0, 0], erased.Frames[0][1, 0], erased.Frames[0][2, 0]]);
+        erased.Draw(canvas => canvas.Layer(1, new Rgba32(0, 0, 255), static (layer, blue) => layer.Fill(blue), CompositeMode.DestinationOver), Ct);
+        Assert.Equal([red, new Rgba32(0, 0, 255), red], [erased.Frames[0][0, 0], erased.Frames[0][1, 0], erased.Frames[0][2, 0]]);
+
+        // The operator applies inside the clip the layer started in, and nowhere else
+        using var clipped = new Image<Rgba32>(4, 1, red);
+        clipped.Draw(
+            canvas => canvas.Clip(new Rectangle(0, 0, 2, 1), inner => inner.Layer(1, layer => layer.FillRectangle(White, new Rectangle(1, 0, 3, 1)), CompositeMode.DestinationIn)),
+            Ct);
+        Assert.Equal([default, red, red, red], [clipped.Frames[0][0, 0], clipped.Frames[0][1, 0], clipped.Frames[0][2, 0], clipped.Frames[0][3, 0]]);
+    }
+
+    [Fact]
+    public void ClipsAndLayersCombine()
+    {
+        // The clip a layer starts in applies to the layer as a whole: its mask multiplies the coverage of the layer
+        using (var image = new Image<Gray8>(4, 1, new Gray8(0)))
+        {
+            image.Draw(canvas => canvas.Clip(new RectangleD(0.5, 0, 2, 1), inner => inner.Layer(1, layer => layer.Fill(White))), Ct);
+            Assert.Equal([128, 255, 128, 0], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // A clip started in a layer ends in it, and what the layer draws after it is not clipped
+        using (var image = new Image<Gray8>(4, 1, new Gray8(0)))
+        {
+            image.Draw(
+                canvas => canvas.Layer(0.5, layer =>
+                {
+                    layer.Clip(new Rectangle(0, 0, 1, 1), inner => inner.Fill(White));
+                    layer.FillRectangle(White, new Rectangle(3, 0, 1, 1));
+                }),
+                Ct);
+            Assert.Equal([128, 0, 0, 128], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // A clip around a layer around a clip: what both clips let through
+        using (var image = new Image<Gray8>(4, 1, new Gray8(0)))
+        {
+            image.Draw(
+                canvas => canvas.Clip(new Rectangle(1, 0, 3, 1), outer => outer.Layer(1, layer => layer.Clip(new Rectangle(0, 0, 3, 1), inner => inner.Fill(White)))),
+                Ct);
+            Assert.Equal([0, 255, 255, 0], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+    }
+
+    [Fact]
+    public void ALayerIsDrawnOnEveryFrameAndDiscardedWhenItsCallbackThrows()
+    {
+        using var image = NewAnimation();
+        image.Draw(canvas => canvas.Layer(1, layer => layer.FillRectangle(new Rgba32(9, 8, 7), new Rectangle(1, 1, 2, 1))), Ct);
+        foreach (var frame in new[] { image.Frames[0], image.Frames[1], image.PosterFrame! })
+        {
+            Assert.Equal(new Rgba32(9, 8, 7), frame[1, 1]);
+            Assert.Equal(new Rgba32(9, 8, 7), frame[2, 1]);
+            Assert.NotEqual(new Rgba32(9, 8, 7), frame[0, 1]);
+        }
+
+        Assert.False(ExifTiff.HasThumbnail(image.Metadata.ExifProfile!.Data.Span));
+        Assert.Equal(0, image.Owner.ActiveLeaseCount);
+
+        // A callback that throws ends its layer, and the clips it started; nothing of the layer is drawn
+        using var gray = new Image<Gray8>(2, 1, new Gray8(0));
+        gray.Draw(
+            canvas =>
+            {
+                try
+                {
+                    canvas.Layer(1, layer =>
+                    {
+                        layer.Fill(White);
+                        layer.Clip(new Rectangle(0, 0, 1, 1), _ => throw new FormatException("stop"));
+                    });
+                }
+                catch (FormatException)
+                {
+                }
+
+                try
+                {
+                    canvas.Layer(1, 5, static (layer, _) => layer.Layer(1, static _ => throw new FormatException("stop")));
+                }
+                catch (FormatException)
+                {
+                }
+
+                canvas.FillRectangle(White, new Rectangle(1, 0, 1, 1));
+            },
+            Ct);
+        Assert.Equal([0, 255], DrawingTestSupport.ReadSamples(gray.Frames[0]));
+        Assert.Equal(0, gray.Owner.ActiveLeaseCount);
+    }
+
+    [Fact]
+    public void ALayerValidatesItsArgumentsAndIsChargedToTheImage()
+    {
+        using (var image = new Image<Gray8>(4, 4, new Gray8(0)))
+        {
+            image.Draw(
+                canvas =>
+                {
+                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Layer(1, null!));
+                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Layer(1, 1, null!));
+                    AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Layer(-0.1, static _ => Assert.Fail("The callback ran.")));
+                    AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Layer(1.5, static _ => Assert.Fail("The callback ran.")));
+                    AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Layer(double.NaN, 1, static (_, _) => Assert.Fail("The callback ran.")));
+                    AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Layer(1, static _ => Assert.Fail("The callback ran."), (CompositeMode)11));
+
+                    // A rejected layer leaves the canvas as it was
+                    canvas.FillRectangle(White, new Rectangle(0, 0, 1, 1));
+                },
+                Ct);
+            Assert.Equal(new Gray8(255), image.Frames[0][0, 0]);
+        }
+
+        // Room for the pixels and for the scratch of a rectangle, not for the image of a layer: the callback is not
+        // run, and the canvas can still be drawn on
+        using var probe = new Image<Gray8>(64, 64, new Gray8(0), ImageConfiguration.Default);
+        long session = 0;
+        probe.Draw(
+            canvas =>
+            {
+                canvas.FillRectangle(White, new Rectangle(0, 0, 1, 1));
+                session = probe.Owner.Scope.LiveBytes;
+            },
+            Ct);
+        long before;
+        using (var image = new Image<Gray8>(64, 64, new Gray8(0), new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = session } }))
+        {
+            before = image.Owner.Scope.LiveBytes;
+            var thrown = false;
+            image.Draw(
+                canvas =>
+                {
+                    try
+                    {
+                        canvas.Layer(1, static _ => Assert.Fail("The callback ran."));
+                    }
+                    catch (ImageResourceLimitException)
+                    {
+                        thrown = true;
+                    }
+
+                    canvas.FillRectangle(White, new Rectangle(0, 0, 1, 1));
+                },
+                Ct);
+            Assert.True(thrown);
+            Assert.Equal(new Gray8(255), image.Frames[0][0, 0]);
+            Assert.Equal(new Gray8(0), image.Frames[0][1, 0]);
+            Assert.Equal(before, image.Owner.Scope.LiveBytes);
+            Assert.Equal(0, image.Owner.ActiveLeaseCount);
+        }
+
+        // The image of a layer is kept while the canvas lasts, used again by the next layer, and released with it
+        using (var image = new Image<Gray8>(64, 64, new Gray8(0), ImageConfiguration.Default))
+        {
+            before = image.Owner.Scope.LiveBytes;
+            image.Draw(
+                canvas =>
+                {
+                    canvas.Layer(0.75, layer => layer.Layer(1, inner => inner.FillRectangle(White, new Rectangle(0, 0, 2, 2))));
+                    var live = image.Owner.Scope.LiveBytes;
+                    Assert.True(live >= before + (2 * 64 * 64 * 8));
+                    canvas.Layer(0.5, layer => layer.Layer(1, inner => inner.FillRectangle(White, new Rectangle(1, 1, 2, 2))));
+                    Assert.Equal(live, image.Owner.Scope.LiveBytes);
+                },
+                Ct);
+            Assert.Equal(before, image.Owner.Scope.LiveBytes);
+
+            // The second layer started transparent: what the first one drew is not drawn again. White at 3/4 is
+            // 191.25 -> 191, and white at half over it (255 + 191) / 2 = 223
+            Assert.Equal(new Gray8(191), image.Frames[0][0, 0]);
+            Assert.Equal(new Gray8(223), image.Frames[0][1, 1]);
+            Assert.Equal(new Gray8(128), image.Frames[0][2, 2]);
+            Assert.Equal(new Gray8(0), image.Frames[0][3, 3]);
+        }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Shadows
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void AShadowHasTheShapeOfTheDrawingMovedByItsOffset()
+    {
+        // A white square of 2 pixels and its black shadow, 2 pixels to the right and 1 down, without blur
+        var black = new Rgba32(0, 0, 0);
+        var white = new Rgba32(255, 255, 255);
+        using var image = new Image<Rgba32>(6, 5);
+        image.Draw(canvas => canvas.Shadow(black, new PointD(2, 1), 0, layer => layer.FillRectangle(White, new Rectangle(1, 1, 2, 2))), Ct);
+        for (var y = 0; y < 5; y++)
+        {
+            for (var x = 0; x < 6; x++)
+            {
+                var expected = x is 1 or 2 && y is 1 or 2 ? white : x is 3 or 4 && y is 2 or 3 ? black : default;
+                Assert.Equal(expected, image.Frames[0][x, y]);
+            }
+        }
+
+        // The drawing is over its shadow, and the shadow of several shapes is one shadow: where two translucent
+        // shapes overlap, the alpha of the drawing is 0.5 + 0.5 * 0.5 = 0.75, and so is its shadow (191.75 -> 192)
+        using var overlapping = new Image<Rgba32>(4, 3);
+        var half = new SolidBrush(new Rgba32(255, 255, 255, 128));
+        overlapping.Draw(
+            canvas => canvas.Shadow(black, new PointD(0, 1), 0, layer =>
+            {
+                layer.FillRectangle(half, new Rectangle(0, 1, 2, 1));
+                layer.FillRectangle(half, new Rectangle(1, 1, 2, 1));
+            }),
+            Ct);
+        Assert.Equal([0, 0, 0, 0], Enumerable.Range(0, 4).Select(x => (int)overlapping.Frames[0][x, 0].A));
+        Assert.Equal([128, 192, 128, 0], Enumerable.Range(0, 4).Select(x => (int)overlapping.Frames[0][x, 1].A));
+        Assert.Equal([128, 192, 128, 0], Enumerable.Range(0, 4).Select(x => (int)overlapping.Frames[0][x, 2].A));
+        Assert.Equal(new Rgba32(0, 0, 0, 192), overlapping.Frames[0][1, 2]);
+
+        // An offset that is not whole: the shadow is between two pixels, half on each
+        using var between = new Image<Rgba32>(6, 4);
+        between.Draw(canvas => canvas.Shadow(new Rgba32(200, 0, 0), new PointD(0.5, 1), 0, layer => layer.FillRectangle(White, new Rectangle(1, 1, 1, 1))), Ct);
+        Assert.Equal([default, new Rgba32(200, 0, 0, 128), new Rgba32(200, 0, 0, 128), default, default, default], Enumerable.Range(0, 6).Select(x => between.Frames[0][x, 2]));
+        between.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
+        between.Draw(canvas => canvas.Shadow(new Rgba32(200, 0, 0), new PointD(-1.25, 0.5), 0, layer => layer.FillRectangle(White, new Rectangle(3, 1, 2, 1))), Ct);
+
+        // 1.25 pixel to the left: a quarter of the pixel 1, the pixel 2 and three quarters of the pixel 3; half a pixel
+        // down: half of the rows 1 and 2. The drawing is over its shadow.
+        Assert.Equal([0, 0, 0, 0, 0, 0], Enumerable.Range(0, 6).Select(x => (int)between.Frames[0][x, 0].A));
+        Assert.Equal([default, new Rgba32(200, 0, 0, 32), new Rgba32(200, 0, 0, 128), white, white, default], Enumerable.Range(0, 6).Select(x => between.Frames[0][x, 1]));
+        Assert.Equal([default, new Rgba32(200, 0, 0, 32), new Rgba32(200, 0, 0, 128), new Rgba32(200, 0, 0, 96), default, default], Enumerable.Range(0, 6).Select(x => between.Frames[0][x, 2]));
+        Assert.Equal([0, 0, 0, 0, 0, 0], Enumerable.Range(0, 6).Select(x => (int)between.Frames[0][x, 3].A));
+
+        // A drawing that reaches an edge of the canvas is taken to continue beyond it: its shadow comes from there too
+        using var edge = new Image<Rgba32>(2, 2);
+        edge.Draw(canvas => canvas.Shadow(black, new PointD(1, 1), 0, layer => layer.FillRectangle(new SolidBrush(new Rgba32(255, 255, 255, 128)), new Rectangle(0, 0, 1, 1))), Ct);
+        Assert.Equal([192, 128, 128, 128], DrawingTestSupport.ReadSamples(edge.Frames[0]).Where((_, index) => index % 4 == 3));
+
+        // The alpha of the color is the opacity of the shadow of an opaque drawing; without it there is no shadow
+        using var faint = new Image<Rgba32>(2, 1);
+        faint.Draw(canvas => canvas.Shadow(new Rgba32(0, 0, 0, 51), new PointD(1, 0), 0, layer => layer.FillRectangle(White, new Rectangle(0, 0, 1, 1))), Ct);
+        Assert.Equal(new Rgba32(0, 0, 0, 51), faint.Frames[0][1, 0]);
+        faint.Draw(canvas => canvas.Shadow(new Rgba32(9, 9, 9, 0), new PointD(1, 0), 3, layer => layer.FillRectangle(new Rgba32(1, 2, 3), new Rectangle(0, 0, 1, 1))), Ct);
+        Assert.Equal(new Rgba32(1, 2, 3), faint.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(0, 0, 0, 51), faint.Frames[0][1, 0]);
+    }
+
+    [Fact]
+    public void AShadowIsBlurredByTheWeightsOfABell()
+    {
+        // One opaque pixel and a glow of deviation 1: the alpha of the glow is the product of the weights of its
+        // column and of its row, 0.004433, 0.054006, 0.242036 and 0.399050. In the row of the pixel, 255 times
+        // 0.399050 times each: 0.45, 5.5, 24.6, 40.6; on the diagonal, the squares: 0.005, 0.74, 14.9, 40.6
+        var red = new Rgba32(255, 0, 0);
+        using var image = new Image<Rgba32>(7, 7);
+        image.Draw(canvas => canvas.Shadow(red, default, 1, layer => layer.FillRectangle(new Rgba32(0, 0, 255), new Rectangle(3, 3, 1, 1))), Ct);
+        Assert.Equal([0, 5, 25, 255, 25, 5, 0], Enumerable.Range(0, 7).Select(x => (int)image.Frames[0][x, 3].A));
+        Assert.Equal([0, 5, 25, 255, 25, 5, 0], Enumerable.Range(0, 7).Select(y => (int)image.Frames[0][3, y].A));
+        Assert.Equal([0, 1, 15, 255, 15, 1, 0], Enumerable.Range(0, 7).Select(i => (int)image.Frames[0][i, i].A));
+        Assert.Equal(new Rgba32(255, 0, 0, 25), image.Frames[0][2, 3]);
+        Assert.Equal(new Rgba32(0, 0, 255), image.Frames[0][3, 3]);
+
+        // Moved by 4 pixels: the whole glow, 41 at its center, beside the pixel
+        using var moved = new Image<Rgba32>(12, 7);
+        moved.Draw(canvas => canvas.Shadow(red, new PointD(5, 0), 1, 7, static (layer, _) => layer.FillRectangle(new Rgba32(0, 0, 255), new Rectangle(3, 3, 1, 1))), Ct);
+        Assert.Equal([0, 5, 25, 41, 25, 5, 0], Enumerable.Range(5, 7).Select(x => (int)moved.Frames[0][x, 3].A));
+        Assert.Equal(new Rgba32(0, 0, 255), moved.Frames[0][3, 3]);
+
+        // A bar across the whole canvas and its shadow under it: the bar continues beyond the edges of the canvas, so
+        // its shadow is the same along the whole row. Two rows down from the bar, the rows the blur reads are opaque
+        // for the weights that add up to 0.9416, then 0.6995, 0.3005, 0.0584 and 0.0044
+        using var bar = new Image<Rgba32>(5, 8);
+        bar.Draw(canvas => canvas.Shadow(new Rgba32(0, 0, 0), new PointD(0, 2), 1, layer => layer.FillRectangle(White, new Rectangle(0, 0, 5, 2))), Ct);
+        for (var x = 0; x < 5; x++)
+        {
+            Assert.Equal([255, 255, 240, 178, 77, 15, 1, 0], Enumerable.Range(0, 8).Select(y => (int)bar.Frames[0][x, y].A));
+            Assert.Equal(new Rgba32(0, 0, 0, 178), bar.Frames[0][x, 3]);
+        }
+    }
+
+    [Fact]
+    public void AShadowCombinesWithClipsLayersAndFrames()
+    {
+        // What is drawn outside the clip is not drawn, and still casts its shadow in it
+        var black = new Rgba32(0, 0, 0);
+        using (var image = new Image<Rgba32>(4, 6))
+        {
+            image.Draw(
+                canvas => canvas.Clip(new Rectangle(0, 3, 4, 3), clipped => clipped.Shadow(black, new PointD(0, 3), 0, layer => layer.FillRectangle(White, new Rectangle(1, 0, 2, 2)))),
+                Ct);
+            for (var y = 0; y < 6; y++)
+            {
+                for (var x = 0; x < 4; x++)
+                {
+                    Assert.Equal(x is 1 or 2 && y is 3 or 4 ? black : default, image.Frames[0][x, y]);
+                }
+            }
+        }
+
+        // In a layer, the drawing and its shadow are faded together; on a format without alpha, the shadow darkens
+        using (var image = new Image<Gray8>(3, 1, new Gray8(200)))
+        {
+            image.Draw(canvas => canvas.Layer(0.5, layer => layer.Shadow(black, new PointD(1, 0), 0, inner => inner.FillRectangle(White, new Rectangle(0, 0, 1, 1)))), Ct);
+
+            // (255 + 200) / 2 = 227.5 -> 228 and (0 + 200) / 2 = 100
+            Assert.Equal([228, 100, 200], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // Every frame gets the same shadow
+        using (var image = NewAnimation())
+        {
+            image.Draw(canvas => canvas.Shadow(black, new PointD(1, 1), 0, layer => layer.FillRectangle(new Rgba32(9, 8, 7), new Rectangle(1, 0, 1, 1))), Ct);
+            foreach (var frame in new[] { image.Frames[0], image.Frames[1], image.PosterFrame! })
+            {
+                Assert.Equal(new Rgba32(9, 8, 7), frame[1, 0]);
+                Assert.Equal(black, frame[2, 1]);
+            }
+
+            Assert.False(ExifTiff.HasThumbnail(image.Metadata.ExifProfile!.Data.Span));
+        }
+
+        // A callback that throws draws nothing, not even a shadow
+        using (var image = new Image<Gray8>(2, 1, new Gray8(100)))
+        {
+            image.Draw(
+                canvas =>
+                {
+                    try
+                    {
+                        canvas.Shadow(black, new PointD(1, 0), 0, layer =>
+                        {
+                            layer.Fill(White);
+                            throw new FormatException("stop");
+                        });
+                    }
+                    catch (FormatException)
+                    {
+                    }
+                },
+                Ct);
+            Assert.Equal([100, 100], DrawingTestSupport.ReadSamples(image.Frames[0]));
+            Assert.Equal(0, image.Owner.ActiveLeaseCount);
+        }
+    }
+
+    [Fact]
+    public void AShadowValidatesItsArgumentsAndIsChargedToTheImage()
+    {
+        using var image = new Image<Gray8>(16, 16, new Gray8(200), ImageConfiguration.Default);
+        var before = image.Owner.Scope.LiveBytes;
+        image.Draw(
+            canvas =>
+            {
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Shadow(default, default, 1, null!));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Shadow(default, default, 1, 1, null!));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.Shadow(default, new PointD(double.NaN, 0), 1, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Shadow(default, new PointD(0, 16777217), 1, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.Shadow(default, default, double.NaN, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Shadow(default, default, -1, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Shadow(default, default, 10001, 1, static (_, _) => Assert.Fail("The callback ran.")));
+
+                // The storage of a shadow is kept for the next one
+                canvas.Shadow(new Rgba32(0, 0, 0), new PointD(2, 2), 1.5, layer => layer.FillCircle(White, new PointD(6, 6), 3));
+                var live = image.Owner.Scope.LiveBytes;
+                Assert.True(live > before);
+                canvas.Shadow(new Rgba32(0, 0, 0, 128), new PointD(-1, 3.5), 1, layer => layer.FillCircle(White, new PointD(9, 6), 2));
+                Assert.Equal(live, image.Owner.Scope.LiveBytes);
+            },
+            Ct);
+        Assert.Equal(before, image.Owner.Scope.LiveBytes);
+        Assert.Equal(new Gray8(255), image.Frames[0][9, 6]);
+        Assert.InRange(image.Frames[0][6, 6].Value, 201, 255);
+        Assert.InRange(image.Frames[0][8, 10].Value, 1, 150);
+        Assert.Equal(new Gray8(200), image.Frames[0][0, 15]);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // The transformation of the canvas
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public static TheoryData<double, double, double, double, double, double> Transforms => new()
+    {
+        { 1, 0, 0, 1, 3, 2 },
+        { 1, 0, 0, 1, 2.25, -1.5 },
+        { 1.5, 0, 0, 1.5, 1, 1 },
+        { 2, 0, 0, 0.5, 0, 6 },
+        { 0, 1, -1, 0, 20, 2 },
+        { -1, 0, 0, 1, 22, 1 },
+        { 0.8, 0.6, -0.6, 0.8, 9, -3 },
+        { 1.2, 0.3, 0.5, 0.9, -2, 1.5 },
+        { 0.6, -0.9, 1.1, 0.4, 3, 12 },
+    };
+
+    [Theory]
+    [MemberData(nameof(Transforms))]
+    public void ATransformedDrawingIsTheDrawingOfTheTransformedShapes(double m11, double m12, double m21, double m22, double dx, double dy)
+    {
+        var transform = new AffineTransform(m11, m12, m21, m22, dx, dy);
+        var polygon = new VectorPathBuilder().AddPolygon([new PointD(2, 1), new PointD(13.5, 3), new PointD(9, 12.25), new PointD(1.5, 8)]).AddRectangle(new RectangleD(4, 4, 3, 3)).Build();
+        var curve = new VectorPathBuilder().MoveTo(2, 9).CubicBezierTo(3, -4, 9, 16, 13, 2).AddEllipse(new PointD(7, 7), 5, 3, 25).AddRoundedRectangle(new RectangleD(1, 1, 12, 9), new CornerRadii(2, 4, 0, 3)).Build();
+        GradientStop[] stops = [new(0, new Rgba32(255, 0, 0)), new(1, new Rgba32(0, 0, 255, 60))];
+        var gradient = new LinearGradientBrush(new PointD(1, 2), new PointD(12, 9), stops) { Transform = AffineTransform.CreateSkew(10, 0) };
+        var radial = new RadialGradientBrush(new PointD(6, 6), 7, stops) { SpreadMode = GradientSpreadMode.Reflect };
+        using var texture = DrawingTestSupport.CreateRandom(PixelFormat.Rgba32, 5, 4, new Random(3).Next);
+        var tile = new ImageBrush(texture.Frames[0]) { WrapMode = ImageWrapMode.Repeat, Transform = AffineTransform.CreateScale(1.5, 2) };
+
+        // Straight sides: the vertices are transformed as those of a path are, and the pixels are the same, bit for
+        // bit. The brushes are placed by their own transformation, then by the one of the canvas.
+        AssertSame(canvas => canvas.Fill(White, polygon.Transform(transform)), canvas => canvas.Transform(transform, inner => inner.Fill(White, polygon)));
+        AssertSame(canvas => canvas.Fill(White, polygon.Transform(transform), FillRule.EvenOdd), canvas => canvas.Transform(transform, inner => inner.Fill(White, polygon, FillRule.EvenOdd)));
+        AssertSame(
+            canvas => canvas.Fill(new LinearGradientBrush(new PointD(1, 2), new PointD(12, 9), stops) { Transform = AffineTransform.CreateSkew(10, 0).Then(transform) }, polygon.Transform(transform)),
+            canvas => canvas.Transform(transform, inner => inner.Fill(gradient, polygon)));
+        AssertSame(
+            canvas => canvas.Fill(new RadialGradientBrush(new PointD(6, 6), 7, stops) { SpreadMode = GradientSpreadMode.Reflect, Transform = transform }, polygon.Transform(transform)),
+            canvas => canvas.Transform(transform, inner => inner.Fill(radial, polygon)));
+        AssertSame(
+            canvas => canvas.Fill(new ImageBrush(texture.Frames[0]) { WrapMode = ImageWrapMode.Repeat, Transform = AffineTransform.CreateScale(1.5, 2).Then(transform) }, polygon.Transform(transform)),
+            canvas => canvas.Transform(transform, inner => inner.Fill(tile, polygon)));
+        AssertSame(
+            canvas => canvas.FillPolygon(White, [transform.Transform(new PointD(1, 1)), transform.Transform(new PointD(9, 2)), transform.Transform(new PointD(4, 11))]),
+            canvas => canvas.Transform(transform, 3, static (inner, _) => inner.FillPolygon(White, [new PointD(1, 1), new PointD(9, 2), new PointD(4, 11)])));
+        AssertSame(
+            canvas => canvas.Fill(White, new VectorPathBuilder().AddRectangle(new RectangleD(2.5, 1, 8, 6.25)).Build().Transform(transform)),
+            canvas => canvas.Transform(transform, inner => inner.FillRectangle(White, new RectangleD(2.5, 1, 8, 6.25))));
+
+        // An image, to a rectangle or with a transformation of its own
+        AssertSame(
+            canvas => canvas.DrawImage(texture.Frames[0], AffineTransform.CreateScale(2, 1.5).Then(AffineTransform.CreateTranslation(1, 2)).Then(transform), 0.75),
+            canvas => canvas.Transform(transform, inner => inner.DrawImage(texture.Frames[0], new RectangleD(1, 2, 10, 6), 0.75)));
+        AssertSame(
+            canvas => canvas.DrawImage(texture.Frames[0], AffineTransform.CreateRotation(20).Then(transform), ImageSampling.Smooth),
+            canvas => canvas.Transform(transform, inner => inner.DrawImage(texture.Frames[0], AffineTransform.CreateRotation(20), ImageSampling.Smooth)));
+
+        // The stroke of a pen is the stroke of the path, transformed: the pen is transformed with it. With straight
+        // joins and ends, the pieces are the same, bit for bit.
+        var pen = new Pen(White, 2.5) { LineJoin = LineJoin.Miter, LineCap = LineCap.Square };
+        var dashed = new Pen(White, 1.5) { LineJoin = LineJoin.Bevel, DashPattern = [3, 2, 1, 2], DashOffset = 1.25 };
+        AssertSame(canvas => canvas.Fill(White, polygon.Widen(pen).Transform(transform)), canvas => canvas.Transform(transform, inner => inner.Stroke(pen, polygon)));
+        AssertSame(canvas => canvas.Fill(White, polygon.Widen(dashed).Transform(transform)), canvas => canvas.Transform(transform, inner => inner.Stroke(dashed, polygon)));
+        AssertSame(
+            canvas => canvas.Fill(White, new VectorPathBuilder().MoveTo(2, 3).LineTo(11, 9).Build().Widen(pen).Transform(transform)),
+            canvas => canvas.Transform(transform, inner => inner.StrokeLine(pen, new PointD(2, 3), new PointD(11, 9))));
+
+        // A clip is the clip of the transformed path, and a rectangle is a path
+        AssertSame(canvas => canvas.Fill(White, polygon.Transform(transform)), canvas => canvas.Transform(transform, inner => inner.Clip(polygon, clipped => clipped.Fill(White))));
+        AssertSame(
+            canvas => canvas.Fill(White, new VectorPathBuilder().AddRectangle(new Rectangle(2, 1, 8, 6)).Build().Transform(transform)),
+            canvas => canvas.Transform(transform, inner => inner.Clip(new Rectangle(2, 1, 8, 6), clipped => clipped.Fill(White))));
+
+        // Curves are flattened for the size the transformation gives them, before their vertices are transformed: the
+        // chords are not those of the transformed path, and both stay within 1/16 of a pixel of the curve. Along an
+        // edge that crosses a pixel, that is at most 2 * sqrt(2) / 16 of the pixel: 45 levels.
+        var round = new Pen(White, 2) { LineJoin = LineJoin.Round, LineCap = LineCap.Round };
+        AssertClose(canvas => canvas.Fill(White, curve.Transform(transform)), canvas => canvas.Transform(transform, inner => inner.Fill(White, curve)), 46);
+        AssertClose(canvas => canvas.Stroke(round, curve.Transform(transform)), canvas => canvas.Transform(AffineTransform.CreateTranslation(dx, dy), inner => inner.Stroke(round, curve.Transform(new AffineTransform(m11, m12, m21, m22, 0, 0)))), 46);
+
+        // The stroke of a curve with a round pen: the pieces of the stroke, transformed. The pieces of a widened path
+        // are cut for the size the path has, so their chords are as far from the stroke as the transformation makes
+        // them (up to 2.3 / 16 of a pixel here), and those of the canvas within 1/16
+        AssertClose(canvas => canvas.Fill(White, curve.Widen(round).Transform(transform)), canvas => canvas.Transform(transform, inner => inner.Stroke(round, curve)), 96);
+        AssertClose(
+            canvas => canvas.Fill(White, new VectorPathBuilder().AddEllipse(new PointD(7, 6), 5, 3).Build().Transform(transform)),
+            canvas => canvas.Transform(transform, inner => inner.FillEllipse(White, new PointD(7, 6), 5, 3)),
+            46);
+
+        // A transformation inside another one applies first
+        var inner = AffineTransform.CreateRotation(15, new PointD(6, 6)).Then(AffineTransform.CreateScale(0.9, 1.1));
+        AssertSame(
+            canvas => canvas.Transform(inner.Then(transform), nested => nested.Fill(gradient, polygon)),
+            canvas => canvas.Transform(transform, outer => outer.Transform(inner, nested => nested.Fill(gradient, polygon))));
+
+        static void AssertSame(DrawingAction expected, DrawingAction actual) => AssertClose(expected, actual, 0);
+
+        static void AssertClose(DrawingAction expected, DrawingAction actual, int tolerance)
+        {
+            using var first = new Image<Rgba32>(32, 28, new Rgba32(10, 20, 30, 200));
+            using var second = new Image<Rgba32>(32, 28, new Rgba32(10, 20, 30, 200));
+            first.Draw(expected, Ct);
+            second.Draw(actual, Ct);
+            var left = DrawingTestSupport.ReadSamples(first.Frames[0]);
+            var right = DrawingTestSupport.ReadSamples(second.Frames[0]);
+            if (tolerance == 0)
+            {
+                Assert.Equal(left, right);
+                return;
+            }
+
+            for (var i = 0; i < left.Length; i++)
+            {
+                Assert.InRange(right[i], left[i] - tolerance, left[i] + tolerance, message: $"sample {i}");
+            }
+        }
+    }
+
+    [Fact]
+    public void ATransformationAppliesToTheDrawingsOfItsCallbackOnly()
+    {
+        // Enlarged 40 times, a circle of radius 1 is the circle of radius 40: its curve is not the octagon a circle
+        // of radius 1 is drawn with
+        using (var direct = new Image<Gray8>(100, 100, new Gray8(0)))
+        using (var scaled = new Image<Gray8>(100, 100, new Gray8(0)))
+        {
+            direct.Draw(canvas => canvas.FillCircle(White, new PointD(50, 50), 40), Ct);
+            scaled.Draw(canvas => canvas.Transform(AffineTransform.CreateScale(40, 40).Then(AffineTransform.CreateTranslation(10, 10)), inner => inner.FillCircle(White, new PointD(1, 1), 1)), Ct);
+            var expected = DrawingTestSupport.ReadSamples(direct.Frames[0]);
+            var actual = DrawingTestSupport.ReadSamples(scaled.Frames[0]);
+            for (var i = 0; i < expected.Length; i++)
+            {
+                Assert.InRange(actual[i], expected[i] - 2, expected[i] + 2, message: $"pixel {i}");
+            }
+
+            // The pen is enlarged with the path: a circle of radius 1 stroked with a pen of 0.1 is a ring 4 pixels wide
+            scaled.Draw(
+                canvas =>
+                {
+                    canvas.Clear(Colors.Black);
+                    canvas.Transform(AffineTransform.CreateScale(40, 40).Then(AffineTransform.CreateTranslation(10, 10)), inner => inner.StrokeCircle(new Pen(White, 0.1), new PointD(1, 1), 1));
+                },
+                Ct);
+            Assert.Equal(new Gray8(255), scaled.Frames[0][50, 10]);
+            Assert.Equal(new Gray8(255), scaled.Frames[0][50, 11]);
+            Assert.Equal(new Gray8(0), scaled.Frames[0][50, 14]);
+            Assert.Equal(new Gray8(0), scaled.Frames[0][50, 6]);
+            Assert.Equal(2 * Math.PI * 40 * 4, DrawingTestSupport.ReadSamples(scaled.Frames[0]).Sum() / 255.0, 3.0);
+        }
+
+        using var image = new Image<Gray8>(8, 4, new Gray8(0));
+        image.Draw(
+            canvas =>
+            {
+                canvas.Transform(AffineTransform.CreateTranslation(4, 0), inner => inner.FillRectangle(White, new Rectangle(0, 0, 1, 1)));
+
+                // The transformation ended with its callback, also when the callback throws
+                canvas.FillRectangle(White, new Rectangle(0, 1, 1, 1));
+                try
+                {
+                    canvas.Transform(AffineTransform.CreateTranslation(4, 0), 1, static (_, _) => throw new FormatException("stop"));
+                }
+                catch (FormatException)
+                {
+                }
+
+                canvas.FillRectangle(White, new Rectangle(0, 2, 1, 1));
+
+                // The size of the canvas does not change, and filling the canvas fills all of it: only the brush moves
+                canvas.Transform(AffineTransform.CreateScale(2, 2), inner =>
+                {
+                    Assert.Equal(8, inner.Width);
+                    Assert.Equal(4, inner.Height);
+                    inner.Clip(new Rectangle(0, 3, 8, 1), row => row.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(4, 0), [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))])));
+                });
+            },
+            Ct);
+
+        // The gradient goes from 0 to 4 before the transformation, so from 0 to 8 on the canvas: the parameters of the
+        // centers are 1/16, 3/16, ... 15/16, and the clip of the row 3 is the rows 6 and 7 of the canvas, outside it
+        Assert.Equal(
+            [
+                0, 0, 0, 0, 255, 0, 0, 0,
+                255, 0, 0, 0, 0, 0, 0, 0,
+                255, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+            ],
+            DrawingTestSupport.ReadSamples(image.Frames[0]));
+        image.Draw(
+            canvas => canvas.Transform(AffineTransform.CreateScale(2, 2), inner => inner.Clip(new RectangleD(0, 1.5, 4, 0.5), row => row.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(4, 0), [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))])))),
+            Ct);
+        Assert.Equal([16, 48, 80, 112, 143, 175, 207, 239], DrawingTestSupport.ReadSamples(image.Frames[0])[24..]);
+
+        // A transformation that flattens the plane draws nothing; one that sends a shape too far is rejected, and
+        // the canvas can still be drawn on
+        using var gray = new Image<Gray8>(4, 4, new Gray8(0));
+        gray.Draw(
+            canvas =>
+            {
+                canvas.Transform(AffineTransform.CreateScale(0, 1), inner => inner.FillRectangle(White, new Rectangle(0, 0, 4, 4)));
+                canvas.Transform(AffineTransform.CreateScale(1, 0), inner => inner.Stroke(WhitePen, new VectorPathBuilder().AddCircle(new PointD(2, 2), 1).Build()));
+                canvas.Transform(AffineTransform.CreateScale(1e6, 1e6), inner =>
+                {
+                    AssertThrows<ArgumentOutOfRangeException>(inner, static canvas => canvas.FillRectangle(White, new Rectangle(0, 0, 100, 100)));
+                    AssertThrows<ArgumentOutOfRangeException>(inner, static canvas => canvas.StrokeLine(WhitePen, new PointD(0, 0), new PointD(100, 100)));
+                    AssertThrows<ArgumentOutOfRangeException>(inner, static canvas => canvas.Shadow(Colors.Black, new PointD(100, 0), 1, static _ => Assert.Fail("The callback ran.")));
+                    AssertThrows<ArgumentException>(inner, static canvas => canvas.FillRectangle(White, new RectangleD(double.NaN, 0, 1, 1)));
+                });
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Transform(AffineTransform.Identity, null!));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Transform(AffineTransform.Identity, 1, null!));
+                canvas.FillRectangle(White, new Rectangle(3, 3, 1, 1));
+            },
+            Ct);
+        Assert.Equal([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255], DrawingTestSupport.ReadSamples(gray.Frames[0]));
+    }
+
+    [Fact]
+    public void ATransformationCombinesWithLayersAndShadows()
+    {
+        // A layer keeps the pixels of the canvas: what is drawn in it is transformed, and the layer itself is not
+        using (var image = new Image<Gray8>(6, 2, new Gray8(0)))
+        {
+            image.Draw(
+                canvas => canvas.Transform(AffineTransform.CreateTranslation(2, 0), inner => inner.Layer(0.5, layer => layer.FillRectangle(White, new Rectangle(0, 0, 2, 1)))),
+                Ct);
+            Assert.Equal([0, 0, 128, 128, 0, 0, 0, 0, 0, 0, 0, 0], DrawingTestSupport.ReadSamples(image.Frames[0]));
+            image.Draw(
+                canvas => canvas.Layer(1, layer => layer.Transform(AffineTransform.CreateScale(2, 2), inner => inner.FillRectangle(White, new Rectangle(0, 0, 1, 1)))),
+                Ct);
+            Assert.Equal([255, 255, 128, 128, 0, 0, 255, 255, 0, 0, 0, 0], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // The offset and the blur of a shadow are distances of the drawing: twice as large when the drawing is
+        using var plain = new Image<Rgba32>(24, 24);
+        using var scaled = new Image<Rgba32>(24, 24);
+        var black = new Rgba32(0, 0, 0);
+        plain.Draw(canvas => canvas.Shadow(black, new PointD(6, 4), 2, layer => layer.FillRectangle(White, new Rectangle(4, 4, 8, 8))), Ct);
+        scaled.Draw(
+            canvas => canvas.Transform(AffineTransform.CreateScale(2, 2), inner => inner.Shadow(black, new PointD(3, 2), 1, layer => layer.FillRectangle(White, new Rectangle(2, 2, 4, 4)))),
+            Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(plain.Frames[0]), DrawingTestSupport.ReadSamples(scaled.Frames[0]));
+        Assert.Equal(new Rgba32(255, 255, 255), scaled.Frames[0][5, 5]);
+        Assert.InRange(scaled.Frames[0][14, 13].A, 200, 255);
+
+        // A quarter turn moves the shadow with the drawing
+        using var turned = new Image<Rgba32>(6, 6);
+        turned.Draw(
+            canvas => canvas.Transform(AffineTransform.CreateRotation(90).Then(AffineTransform.CreateTranslation(6, 0)), inner => inner.Shadow(black, new PointD(2, 0), 0, layer => layer.FillRectangle(White, new Rectangle(1, 1, 1, 1)))),
+            Ct);
+
+        // The pixel (1, 1) goes to the column 6 - 2 = 4 and the row 1; its shadow, 2 to the right, goes 2 down
+        Assert.Equal(new Rgba32(255, 255, 255), turned.Frames[0][4, 1]);
+        Assert.Equal(black, turned.Frames[0][4, 3]);
+        Assert.Equal(2, DrawingTestSupport.ReadSamples(turned.Frames[0]).Where((_, index) => index % 4 == 3).Count(alpha => alpha != 0));
     }
 
     private delegate void CanvasAction(DrawingCanvas canvas);

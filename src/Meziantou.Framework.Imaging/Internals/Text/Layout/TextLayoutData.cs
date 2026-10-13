@@ -35,4 +35,16 @@ internal sealed class TextLayoutData
     public required bool IsTruncated { get; init; }
 
     public required bool HasMissingGlyphs { get; init; }
+
+    /// <summary>Gets the number of UTF-16 code units of the text.</summary>
+    public required int TextLength { get; init; }
+
+    /// <summary>Gets the clusters of every line, from the left of each line: what the positions of the text are found with.</summary>
+    public required TextHitBox[] HitBoxes { get; init; }
+
+    /// <summary>Gets the index of the first cluster of each line in <see cref="HitBoxes"/>, and after them the number of clusters.</summary>
+    public required int[] HitBoxStarts { get; init; }
+
+    /// <summary>Gets the ends of the characters of the clusters that hold several, from the start of their cluster.</summary>
+    public required int[] CharacterBoundaries { get; init; }
 }

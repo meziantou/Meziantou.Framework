@@ -26,7 +26,7 @@ internal sealed partial class DrawingSession
     public void PushClip(RectangleD rectangle)
     {
         DrawingGuard.Rectangle(rectangle, nameof(rectangle));
-        if (!IsWhole(rectangle.Left) || !IsWhole(rectangle.Top) || !IsWhole(rectangle.Right) || !IsWhole(rectangle.Bottom))
+        if (_hasTransform || !IsWhole(rectangle.Left) || !IsWhole(rectangle.Top) || !IsWhole(rectangle.Right) || !IsWhole(rectangle.Bottom))
         {
             var sink = BeginFill();
             AddRectangle(sink, rectangle);
@@ -61,9 +61,10 @@ internal sealed partial class DrawingSession
 
     /// <summary>Starts a clip from the edges of the call: rasterizes them into the mask of the next depth.</summary>
     /// <param name="fillRule">The fill rule of the clip.</param>
-    /// <param name="shapeBounds">A rectangle that contains the clip.</param>
+    /// <param name="shapeBounds">A rectangle that contains the clip, in the coordinates of the drawing.</param>
     private void PushClipFromEdges(FillRule fillRule, RectangleD shapeBounds)
     {
+        shapeBounds = ToCanvasBounds(shapeBounds);
         GetClipBounds(out var left, out var top, out var right, out var bottom, out var parentMaskLevel);
         left = (int)Math.Max(left, Math.Floor(shapeBounds.Left));
         top = (int)Math.Max(top, Math.Floor(shapeBounds.Top));

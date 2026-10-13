@@ -33,6 +33,7 @@ internal sealed partial class DrawingSession
         {
             layout.GetRun(run, out var face, out var scale, out var start, out var count, out var runBrush);
             var mode = (layout.GetBrush(runBrush) ?? brush).CompositeMode;
+            var blend = (layout.GetBrush(runBrush) ?? brush).BlendMode;
             var isForegroundSet = false;
             for (var i = start; i < start + count; i++)
             {
@@ -49,6 +50,9 @@ internal sealed partial class DrawingSession
                     continue;
                 }
 
+                // A color glyph is drawn in the pixels of the canvas: its placement includes the transformation
+                placement = ToCanvas(placement);
+
                 if (!surface.Reserve(glyph, placement, Width, Height))
                     continue;
 
@@ -58,7 +62,7 @@ internal sealed partial class DrawingSession
                     isForegroundSet = true;
                 }
 
-                DrawColorGlyph(surface, glyph, face, placement, mode, paint);
+                DrawColorGlyph(surface, glyph, face, placement, mode, blend, paint);
             }
         }
     }
@@ -83,11 +87,11 @@ internal sealed partial class DrawingSession
         }
 
         var gradient = _foregroundGradient ??= new GradientEvaluator(_image.Owner.Scope);
-        gradient.PrepareColors(gradientBrush, Width);
+        gradient.PrepareColors(gradientBrush, ToCanvas(gradientBrush.Transform), Width);
         surface.ForegroundGradient = gradient;
     }
 
-    private void DrawColorGlyph(ColorSurface surface, ColorGlyph glyph, FontFace face, in Affine2D placement, CompositeMode mode, bool paint)
+    private void DrawColorGlyph(ColorSurface surface, ColorGlyph glyph, FontFace face, in Affine2D placement, CompositeMode mode, BlendMode blend, bool paint)
     {
         var rasterizer = _rasterizer!;
         var numbers = glyph.Numbers.AsSpan();
@@ -199,7 +203,7 @@ internal sealed partial class DrawingSession
                 colors = colors.Slice(skipped * 4, coverage.Length * 4);
             }
 
-            var source = new DrawingSource(colors, mode);
+            var source = new DrawingSource(colors, mode, blend);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], surface.Top + row, x, coverage, source);
@@ -216,7 +220,7 @@ internal sealed partial class DrawingSession
     /// <returns><see langword="false"/> when the outline covers nothing of the canvas.</returns>
     private bool BeginOutline(FontFace face, int glyph, in Affine2D transform)
     {
-        var sink = BeginFill();
+        var sink = BeginDeviceFill();
         var glyphSink = _glyphSink ??= new GlyphPathSink();
         glyphSink.Begin(sink, transform);
         var budget = new GlyphBudget(face.Data.Limits);
@@ -228,7 +232,7 @@ internal sealed partial class DrawingSession
     /// <summary>Builds the edges of a box (its left, bottom, right and top, in the units of the glyph) and starts their sweep.</summary>
     private bool BeginBox(ReadOnlySpan<double> box, in Affine2D transform)
     {
-        var sink = BeginFill();
+        var sink = BeginDeviceFill();
         sink.MoveTo(transform.TransformX(box[0], box[1]), transform.TransformY(box[0], box[1]));
         sink.LineTo(transform.TransformX(box[0], box[3]), transform.TransformY(box[0], box[3]), smooth: false);
         sink.LineTo(transform.TransformX(box[2], box[3]), transform.TransformY(box[2], box[3]), smooth: false);

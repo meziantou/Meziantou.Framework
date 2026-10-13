@@ -368,6 +368,25 @@ public sealed class VectorPathBuilder
         return this;
     }
 
+    /// <summary>Adds a closed rectangular contour whose corners are quarters of circles, each with its own radius.</summary>
+    /// <remarks>
+    /// The contour starts at the left end of the straight part of its top side and turns clockwise on the image. A
+    /// corner whose radius is zero is a corner of the rectangle. Radii that do not fit are reduced together: see
+    /// <see cref="CornerRadii"/>.
+    /// </remarks>
+    /// <param name="rectangle">The rectangle.</param>
+    /// <param name="radii">The radius of each corner.</param>
+    /// <returns>This builder.</returns>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>
+    public VectorPathBuilder AddRoundedRectangle(RectangleD rectangle, CornerRadii radii)
+    {
+        DrawingGuard.Rectangle(rectangle, nameof(rectangle));
+        var receiver = new Receiver(this);
+        ArcGeometry.AppendRoundedRectangle(ref receiver, rectangle, radii);
+        return this;
+    }
+
     /// <summary>Adds a closed elliptical contour whose axes are horizontal and vertical.</summary>
     /// <param name="center">The center.</param>
     /// <param name="radiusX">The horizontal radius. Must be zero or positive.</param>

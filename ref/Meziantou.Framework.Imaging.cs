@@ -1102,6 +1102,23 @@ namespace Meziantou.Framework.Imaging.Drawing
         Clear = 10,
     }
 
+    public readonly struct CornerRadii : System.IEquatable<Meziantou.Framework.Imaging.Drawing.CornerRadii>
+    {
+        public double TopLeft { get => throw null; }
+        public double TopRight { get => throw null; }
+        public double BottomRight { get => throw null; }
+        public double BottomLeft { get => throw null; }
+        public bool IsEmpty { get => throw null; }
+        public CornerRadii(double radius) { }
+        public CornerRadii(double topLeft, double topRight, double bottomRight, double bottomLeft) { }
+        public bool Equals(Meziantou.Framework.Imaging.Drawing.CornerRadii other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Drawing.CornerRadii left, Meziantou.Framework.Imaging.Drawing.CornerRadii right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Drawing.CornerRadii left, Meziantou.Framework.Imaging.Drawing.CornerRadii right) => throw null;
+    }
+
     public delegate void DrawingAction(Meziantou.Framework.Imaging.Drawing.DrawingCanvas canvas);
 
     public delegate void DrawingAction<TState>(Meziantou.Framework.Imaging.Drawing.DrawingCanvas canvas, TState state) where TState : allows ref struct;
@@ -1121,6 +1138,8 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void StrokeRectangle(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.RectangleD rectangle) { }
         public void FillRoundedRectangle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.RectangleD rectangle, double radius) { }
         public void StrokeRoundedRectangle(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.RectangleD rectangle, double radius) { }
+        public void FillRoundedRectangle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.RectangleD rectangle, Meziantou.Framework.Imaging.Drawing.CornerRadii radii) { }
+        public void StrokeRoundedRectangle(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.RectangleD rectangle, Meziantou.Framework.Imaging.Drawing.CornerRadii radii) { }
         public void FillPolygon(Meziantou.Framework.Imaging.Drawing.Brush brush, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) { }
         public void StrokePolygon(Meziantou.Framework.Imaging.Drawing.Pen pen, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points) { }
         public void StrokePolyline(Meziantou.Framework.Imaging.Drawing.Pen pen, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points) { }
@@ -1318,6 +1337,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddRectangle(Meziantou.Framework.Imaging.RectangleD rectangle) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddRoundedRectangle(Meziantou.Framework.Imaging.RectangleD rectangle, double radius) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddRoundedRectangle(Meziantou.Framework.Imaging.RectangleD rectangle, double radiusX, double radiusY) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddRoundedRectangle(Meziantou.Framework.Imaging.RectangleD rectangle, Meziantou.Framework.Imaging.Drawing.CornerRadii radii) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddEllipse(Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddEllipse(Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY, double rotation) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddCircle(Meziantou.Framework.Imaging.PointD center, double radius) => throw null;

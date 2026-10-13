@@ -137,6 +137,8 @@ public sealed class PerformanceContractTests
             canvas.StrokeBezier(state.Pen, new PointD(2, 46), new PointD(20, 0), new PointD(40, 47), new PointD(62, 20));
             canvas.FillRoundedRectangle(state.Gradient, new RectangleD(3.5, 2.25, 40, 30), 6.5);
             canvas.StrokeRoundedRectangle(state.Pen, new Rectangle(5, 5, 20, 20), 100);
+            canvas.FillRoundedRectangle(state.Solid, new RectangleD(2.5, 3, 30, 20), new CornerRadii(4, 0, 9.5, 2));
+            canvas.StrokeRoundedRectangle(state.Pen, new Rectangle(5, 5, 20, 20), new CornerRadii(30, 1, 30, 1));
             canvas.FillPie(state.Solid, new PointD(30, 20), 17.5, 20, 250);
             canvas.StrokeArc(state.Pen, new PointD(30, 20), 17.5, -30, -400);
             canvas.Stroke(state.DashedPen, state.Path);

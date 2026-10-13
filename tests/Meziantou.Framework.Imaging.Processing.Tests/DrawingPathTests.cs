@@ -530,6 +530,80 @@ public sealed class DrawingPathTests
         Assert.Equal([(3d, 0d), (30d, 30d)], Flatten(new VectorPathBuilder().AddRoundedRectangle(new RectangleD(0, 0, 20, 10), 3).LineTo(30, 30).Build())[^2..]);
     }
 
+    [Fact]
+    public void ARoundedRectangleCanHaveARadiusPerCorner()
+    {
+        // Radii of 1, 2 and 3, and a corner that is not rounded
+        var rectangle = new RectangleD(0, 0, 20, 10);
+        var path = new VectorPathBuilder().AddRoundedRectangle(rectangle, new CornerRadii(1, 2, 3, 0)).Build();
+        Assert.Equal(rectangle, path.Bounds);
+        var points = Flatten(path);
+        Assert.Equal((1d, 0d), points[0]);
+        Assert.Equal((1d, 0d), points[^1]);
+        foreach (var vertex in new[] { (1d, 0d), (18d, 0d), (20d, 2d), (20d, 7d), (17d, 10d), (0d, 10d), (0d, 1d) })
+        {
+            Assert.Contains(vertex, points);
+        }
+
+        // Every vertex is on a side or on the circle of its corner
+        Assert.All(points, point =>
+        {
+            var (centerX, centerY, radius) = point switch
+            {
+                { X: < 1, Y: < 1 } => (1d, 1d, 1d),
+                { X: > 18, Y: < 2 } => (18d, 2d, 2d),
+                { X: > 17, Y: > 7 } => (17d, 7d, 3d),
+                _ => (double.NaN, double.NaN, 0d),
+            };
+
+            if (radius == 0)
+            {
+                Assert.True(point.X is 0 or 20 || point.Y is 0 or 10, $"({point.X}, {point.Y}) is not on a side");
+            }
+            else
+            {
+                Assert.Equal(radius, Math.Sqrt(((point.X - centerX) * (point.X - centerX)) + ((point.Y - centerY) * (point.Y - centerY))), 1e-12);
+            }
+        });
+
+        // The same radius for every corner is the rectangle of that radius, bit for bit; no radius is the rectangle
+        Assert.Equal(Flatten(new VectorPathBuilder().AddRoundedRectangle(rectangle, 3).Build()), Flatten(new VectorPathBuilder().AddRoundedRectangle(rectangle, new CornerRadii(3)).Build()));
+        Assert.Equal(Flatten(new VectorPathBuilder().AddRectangle(rectangle).Build()), Flatten(new VectorPathBuilder().AddRoundedRectangle(rectangle, default(CornerRadii)).Build()));
+
+        // Radii that do not fit are reduced together: 8 + 8 on a side of 10 multiplies every radius by 10 / 16
+        Assert.Equal(
+            Flatten(new VectorPathBuilder().AddRoundedRectangle(rectangle, new CornerRadii(2.5, 5, 5, 2.5)).Build()),
+            Flatten(new VectorPathBuilder().AddRoundedRectangle(rectangle, new CornerRadii(4, 8, 8, 4)).Build()));
+
+        // Two corners that take a whole side meet without a straight part, and the contour stays closed
+        var tab = Flatten(new VectorPathBuilder().AddRoundedRectangle(new RectangleD(0, 0, 8, 10), new CornerRadii(4, 4, 0, 0)).Build());
+        Assert.Equal((4d, 0d), tab[0]);
+        Assert.Equal((4d, 0d), tab[^1]);
+        Assert.Contains((8d, 4d), tab);
+        Assert.Contains((8d, 10d), tab);
+        Assert.Contains((0d, 10d), tab);
+        Assert.Contains((0d, 4d), tab);
+        Assert.DoesNotContain((8d, 0d), tab);
+
+        // The area of the fill: the rectangle without what each corner removes, r^2 (1 - pi / 4). The chords of a
+        // corner are inside its circle: they remove a little more.
+        using var image = new Image<Gray8>(40, 30, new Gray8(0));
+        image.Draw(canvas => canvas.FillRoundedRectangle(White, new RectangleD(0, 0, 40, 30), new CornerRadii(4, 8, 12, 0)), Ct);
+        var painted = DrawingTestSupport.ReadSamples(image.Frames[0]).Sum();
+        Assert.Equal(1200 - ((16 + 64 + 144) * (1 - (Math.PI / 4))), painted / 255.0, 1.5);
+
+        Assert.Equal(new CornerRadii(2, 2, 2, 2), new CornerRadii(2));
+        Assert.NotEqual(new CornerRadii(1, 2, 3, 4), new CornerRadii(1, 2, 3, 5));
+        Assert.True(default(CornerRadii).IsEmpty);
+        Assert.False(new CornerRadii(0, 0, 0, 1).IsEmpty);
+        Assert.Equal("[1 2 3 0.5]", new CornerRadii(1, 2, 3, 0.5).ToString());
+        Assert.Throws<ArgumentException>(() => new CornerRadii(double.NaN));
+        Assert.Throws<ArgumentException>(() => new CornerRadii(0, double.PositiveInfinity, 0, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CornerRadii(0, 0, -1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CornerRadii(0, 0, 0, 16777217));
+        Assert.Throws<ArgumentException>(() => new VectorPathBuilder().AddRoundedRectangle(new RectangleD(double.NaN, 0, 1, 1), new CornerRadii(1)));
+    }
+
     [Theory]
     [InlineData(4, LineJoin.Miter)]
     [InlineData(5, LineJoin.Miter)]
@@ -650,6 +724,9 @@ public sealed class DrawingPathTests
         PointD[] points = [new(0.5, 7), new(3, -2), new(6, 9), new(7.5, 1), new(1, 3)];
         AssertSamePixels(canvas => canvas.FillRoundedRectangle(White, rectangle, 1.5), canvas => canvas.Fill(White, new VectorPathBuilder().AddRoundedRectangle(rectangle, 1.5).Build()));
         AssertSamePixels(canvas => canvas.StrokeRoundedRectangle(pen, rectangle, 1.5), canvas => canvas.Stroke(pen, new VectorPathBuilder().AddRoundedRectangle(rectangle, 1.5).Build()));
+        var radii = new CornerRadii(0.5, 2, 0, 1.25);
+        AssertSamePixels(canvas => canvas.FillRoundedRectangle(White, rectangle, radii), canvas => canvas.Fill(White, new VectorPathBuilder().AddRoundedRectangle(rectangle, radii).Build()));
+        AssertSamePixels(canvas => canvas.StrokeRoundedRectangle(pen, rectangle, radii), canvas => canvas.Stroke(pen, new VectorPathBuilder().AddRoundedRectangle(rectangle, radii).Build()));
         AssertSamePixels(canvas => canvas.FillPolygon(White, points), canvas => canvas.Fill(White, new VectorPathBuilder().AddPolygon(points).Build()));
         AssertSamePixels(canvas => canvas.FillPolygon(White, points, FillRule.EvenOdd), canvas => canvas.Fill(White, new VectorPathBuilder().AddPolygon(points).Build(), FillRule.EvenOdd));
         AssertSamePixels(canvas => canvas.StrokePolygon(pen, points), canvas => canvas.Stroke(pen, new VectorPathBuilder().AddPolygon(points).Build()));
@@ -673,6 +750,9 @@ public sealed class DrawingPathTests
             {
                 AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.FillRoundedRectangle(null!, new RectangleD(0, 0, 1, 1), 1));
                 AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.StrokeRoundedRectangle(null!, new RectangleD(0, 0, 1, 1), 1));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.FillRoundedRectangle(null!, new RectangleD(0, 0, 1, 1), new CornerRadii(1)));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.StrokeRoundedRectangle(null!, new RectangleD(0, 0, 1, 1), new CornerRadii(1)));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.FillRoundedRectangle(White, new RectangleD(0, 0, 16777217, 1), new CornerRadii(1)));
                 AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.FillPolygon(null!, [default]));
                 AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.StrokePolygon(null!, [default]));
                 AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.StrokePolyline(null!, [default]));

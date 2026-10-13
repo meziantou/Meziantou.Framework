@@ -1,3 +1,5 @@
+using Meziantou.Framework.Imaging.Drawing;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>The geometry of elliptical arcs: cutting an arc in pieces of at most a quarter turn, and the shapes made of them.</summary>
@@ -149,6 +151,103 @@ internal static class ArcGeometry
 
         Append(ref receiver, x0, y0, x0 - left, 0, 0, y0 - top, 1, 0.5, x0, top);
         receiver.Close();
+    }
+
+    /// <summary>Sends the closed contour of a rectangle whose corners are quarters of circles, each with its own radius.</summary>
+    /// <remarks>
+    /// When the radii of the two corners of a side add up to more than that side, every radius is multiplied by the
+    /// largest factor that makes them all fit, as CSS does for the radii of a border. The contour starts at the left
+    /// end of the straight part of the top side and turns clockwise on the image; a corner without radius is a corner
+    /// of the rectangle.
+    /// </remarks>
+    public static void AppendRoundedRectangle<T>(ref T receiver, RectangleD rectangle, in CornerRadii radii)
+        where T : struct, IPathReceiver
+    {
+        var left = rectangle.Left;
+        var top = rectangle.Top;
+        var right = rectangle.Right;
+        var bottom = rectangle.Bottom;
+        var width = rectangle.Width;
+        var height = rectangle.Height;
+        if (radii.IsEmpty || !(width > 0 && height > 0))
+        {
+            receiver.MoveTo(left, top);
+            receiver.LineTo(right, top);
+            receiver.LineTo(right, bottom);
+            receiver.LineTo(left, bottom);
+            receiver.Close();
+            return;
+        }
+
+        var factor = 1.0;
+        Limit(ref factor, width, radii.TopLeft + radii.TopRight);
+        Limit(ref factor, height, radii.TopRight + radii.BottomRight);
+        Limit(ref factor, width, radii.BottomRight + radii.BottomLeft);
+        Limit(ref factor, height, radii.BottomLeft + radii.TopLeft);
+        var topLeft = radii.TopLeft * factor;
+        var topRight = radii.TopRight * factor;
+        var bottomRight = radii.BottomRight * factor;
+        var bottomLeft = radii.BottomLeft * factor;
+
+        // The ends of the straight part of each side, in the order of the contour. Each corner takes its radii from
+        // these coordinates, so that it starts and ends exactly on them; two corners that take a whole side meet at
+        // the end of the first one.
+        var topStart = Math.Min(left + topLeft, right);
+        var topEnd = Math.Max(right - topRight, topStart);
+        var rightStart = Math.Min(top + topRight, bottom);
+        var rightEnd = Math.Max(bottom - bottomRight, rightStart);
+        var bottomStart = Math.Max(right - bottomRight, left);
+        var bottomEnd = Math.Min(left + bottomLeft, bottomStart);
+        var leftStart = Math.Max(bottom - bottomLeft, top);
+        var leftEnd = Math.Min(top + topLeft, leftStart);
+
+        receiver.MoveTo(topStart, top);
+        if (topEnd > topStart)
+        {
+            receiver.LineTo(topEnd, top);
+        }
+
+        Corner(ref receiver, topEnd, rightStart, right - topEnd, rightStart - top, 1.5, right, rightStart);
+        if (rightEnd > rightStart)
+        {
+            receiver.LineTo(right, rightEnd);
+        }
+
+        Corner(ref receiver, bottomStart, rightEnd, right - bottomStart, bottom - rightEnd, 0, bottomStart, bottom);
+        if (bottomStart > bottomEnd)
+        {
+            receiver.LineTo(bottomEnd, bottom);
+        }
+
+        Corner(ref receiver, bottomEnd, leftStart, bottomEnd - left, bottom - leftStart, 0.5, left, leftStart);
+        if (leftStart > leftEnd)
+        {
+            receiver.LineTo(left, leftEnd);
+        }
+
+        Corner(ref receiver, topStart, leftEnd, topStart - left, leftEnd - top, 1, topStart, top);
+        receiver.Close();
+
+        static void Limit(ref double factor, double side, double sum)
+        {
+            if (sum > side)
+            {
+                factor = Math.Min(factor, side / sum);
+            }
+        }
+
+        static void Corner(ref T receiver, double centerX, double centerY, double radiusX, double radiusY, double start, double endX, double endY)
+        {
+            if (radiusX > 0 && radiusY > 0)
+            {
+                Append(ref receiver, centerX, centerY, radiusX, 0, 0, radiusY, start, 0.5, endX, endY);
+            }
+            else if (radiusX > 0 || radiusY > 0)
+            {
+                // A corner that one of its sides flattened: the contour still reaches its end
+                receiver.LineTo(endX, endY);
+            }
+        }
     }
 
     /// <summary>

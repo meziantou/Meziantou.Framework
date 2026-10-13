@@ -191,6 +191,30 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void StrokeRoundedRectangle(Pen pen, RectangleD rectangle, double radius) => GetSession().StrokeRoundedRectangle(pen, rectangle, radius);
 
+    /// <summary>Paints a rectangle whose corners are quarters of circles, each with its own radius.</summary>
+    /// <param name="brush">The paint. A color converts implicitly.</param>
+    /// <param name="rectangle">The rectangle. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="radii">The radius of each corner; radii that do not fit are reduced together (see <see cref="CornerRadii"/>).</param>
+    /// <exception cref="ArgumentNullException"><paramref name="brush"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void FillRoundedRectangle(Brush brush, RectangleD rectangle, CornerRadii radii) => GetSession().FillRoundedRectangle(brush, rectangle, radii);
+
+    /// <summary>Paints the outline of a rectangle whose corners are quarters of circles, each with its own radius. The stroke is centered on the outline.</summary>
+    /// <param name="pen">The stroke.</param>
+    /// <param name="rectangle">The rectangle. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="radii">The radius of each corner; radii that do not fit are reduced together (see <see cref="CornerRadii"/>).</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokeRoundedRectangle(Pen pen, RectangleD rectangle, CornerRadii radii) => GetSession().StrokeRoundedRectangle(pen, rectangle, radii);
+
     /// <summary>Paints the inside of the closed contour made of straight segments between consecutive points.</summary>
     /// <param name="brush">The paint. A color converts implicitly.</param>
     /// <param name="points">The vertices. At least one is required.</param>

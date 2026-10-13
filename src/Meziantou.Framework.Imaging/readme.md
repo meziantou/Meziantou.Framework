@@ -706,7 +706,9 @@ rotation of the ellipse, the large-arc and direction flags, the end point; radii
 enlarged), and the arc around a center (the radii, the angle of its first point and its sweep), which a straight
 segment joins to the current point. `AddArc` starts a contour with an arc around a center, `AddPie` adds the closed
 slice between an arc and its center, and `AddRoundedRectangle` a rectangle whose corners are quarters of an ellipse
-(radii are limited to half the sides). Angles are in degrees from the positive x axis; a positive angle turns clockwise
+(radii are limited to half the sides). With a `CornerRadii`, each corner is a quarter of a circle of its own radius (a
+tab, a speech bubble; zero for a corner that is not rounded): when the radii of the two corners of a side add up to
+more than that side, every radius is reduced by the same factor, as CSS does. Angles are in degrees from the positive x axis; a positive angle turns clockwise
 on the image, and a sweep beyond 360 degrees is the whole ellipse. An arc is an element of the path like a curve: it
 ends exactly on its end point, and it is transformed as an arc.
 

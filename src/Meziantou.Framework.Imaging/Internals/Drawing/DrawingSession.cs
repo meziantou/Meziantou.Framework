@@ -229,6 +229,28 @@ internal sealed partial class DrawingSession : IDisposable
         RenderStroke(pen);
     }
 
+    public void FillRoundedRectangle(Brush brush, RectangleD rectangle, CornerRadii radii)
+    {
+        ArgumentNullException.ThrowIfNull(brush);
+        DrawingGuard.Rectangle(rectangle, nameof(rectangle));
+        var sink = BeginFill();
+        var receiver = new SinkPathReceiver(sink);
+        ArcGeometry.AppendRoundedRectangle(ref receiver, rectangle, radii);
+        sink.End();
+        Render(brush, FillRule.NonZero);
+    }
+
+    public void StrokeRoundedRectangle(Pen pen, RectangleD rectangle, CornerRadii radii)
+    {
+        ArgumentNullException.ThrowIfNull(pen);
+        DrawingGuard.Rectangle(rectangle, nameof(rectangle));
+        var sink = BeginStroke(pen);
+        var receiver = new SinkPathReceiver(sink);
+        ArcGeometry.AppendRoundedRectangle(ref receiver, rectangle, radii);
+        sink.End();
+        RenderStroke(pen);
+    }
+
     public void FillPolygon(Brush brush, ReadOnlySpan<PointD> points, FillRule fillRule)
     {
         ArgumentNullException.ThrowIfNull(brush);

@@ -124,9 +124,10 @@ internal static class TextShaper
     /// origin (<see cref="FontFace.GetVerticalOrigin"/>). A vertical run is never right to left.
     /// </param>
     /// <param name="scratch">The working storage that measures the outlines of a font without vertical origins, or <see langword="null"/> when the run is horizontal.</param>
+    /// <param name="cache">What the runs of a layout share about their fonts, or <see langword="null"/> when the run is shaped on its own.</param>
     /// <exception cref="InvalidImageContentException">A layout table of the font is malformed.</exception>
     /// <exception cref="ImageResourceLimitException">The glyphs exceed <see cref="ImageResourceLimits.MaxTextGlyphs"/>.</exception>
-    public static void Shape(GlyphBuffer buffer, FontFace face, UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, ReadOnlySpan<ShapingFeature> features, bool isVertical = false, GlyphScratch? scratch = null)
+    public static void Shape(GlyphBuffer buffer, FontFace face, UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, ReadOnlySpan<ShapingFeature> features, bool isVertical = false, GlyphScratch? scratch = null, ShapingCache? cache = null)
     {
         buffer.StartShaping();
         SetCharacterProperties(buffer);
@@ -213,7 +214,7 @@ internal static class TextShaper
 
         if (face.Gsub is { } substitutionTable)
         {
-            applier.Begin(substitutionTable, face.GsubData, isPositioning: false, isRightToLeft);
+            applier.Begin(substitutionTable, face.GsubData, isPositioning: false, isRightToLeft, digests: cache?.GetDigests(face, isPositioning: false) ?? ShapingCache.Create(face, isPositioning: false));
         }
 
         // Stage after stage: the lookups of a stage, then what the model of the script does between two stages.
@@ -322,7 +323,7 @@ internal static class TextShaper
         if (face.Gpos is { } gpos)
         {
             var positioningLookups = CollectLookups(gpos, face.GposData.Span, scripts, languages, isRightToLeft, isVertical, plan, shaperPlan, coordinates, out _, out hasKerningFeature);
-            applier.Begin(gpos, face.GposData, isPositioning: true, isRightToLeft, isVertical);
+            applier.Begin(gpos, face.GposData, isPositioning: true, isRightToLeft, isVertical, cache?.GetDigests(face, isPositioning: true) ?? ShapingCache.Create(face, isPositioning: true));
             foreach (var lookup in positioningLookups)
             {
                 applier.ApplyLookup(lookup.Index, lookup.Mask, lookup.Flags & ~ShaperFeatureFlags.PerSyllable);

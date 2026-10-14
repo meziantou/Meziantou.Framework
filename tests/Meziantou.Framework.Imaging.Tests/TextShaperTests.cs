@@ -1082,6 +1082,53 @@ public sealed class TextShaperTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void TheDigestOfTheGlyphsALookupAppliesAtContainsEveryOneOfThem()
+    {
+        // A lookup is passed over at a glyph its digest does not contain: a digest may contain more glyphs than were
+        // added, never fewer.
+        var random = new Random(1234);
+        for (var round = 0; round < 300; round++)
+        {
+            var digest = default(GlyphDigest);
+            var glyphs = new HashSet<int>();
+            var count = random.Next(1, 40);
+            for (var i = 0; i < count; i++)
+            {
+                var first = random.Next(0, 65536);
+                if (random.Next(3) == 0)
+                {
+                    var last = Math.Min(65535, first + random.Next(0, round % 2 == 0 ? 20 : 2000));
+                    digest.AddRange(first, last);
+                    for (var glyph = first; glyph <= last; glyph++)
+                    {
+                        glyphs.Add(glyph);
+                    }
+                }
+                else
+                {
+                    digest.Add(first);
+                    glyphs.Add(first);
+                }
+            }
+
+            foreach (var glyph in glyphs)
+            {
+                Assert.True(digest.MayContain(glyph), $"glyph {glyph}");
+            }
+        }
+
+        // A few glyphs leave out most of the others; an empty range adds nothing.
+        var small = default(GlyphDigest);
+        small.Add(5);
+        small.Add(300);
+        small.AddRange(7, 6);
+        Assert.True(Enumerable.Range(0, 65536).Count(small.MayContain) < 200);
+        Assert.False(default(GlyphDigest).MayContain(0));
+        Assert.All(Enumerable.Range(0, 65536), glyph => Assert.True(GlyphDigest.All.MayContain(glyph)));
+    }
+
+    [Fact]
     public void TheSubtablesOfTheLookupsOfARunAreLimited()
     {
         // A font can make three lookups of thirty thousand subtables with a few bytes: every offset is the same one.

@@ -64,6 +64,7 @@ internal sealed class TextLayoutEngine
     private readonly bool _hasCentralBaseline;
     private readonly Dictionary<(FontFace Face, int CodePoint), bool> _verticalForms = [];
     private GlyphBuffer? _probeBuffer;
+    private readonly ShapingCache _shapingCache = new();
     private GlyphScratch? _scratch;
     private readonly List<Font> _fonts = [];
     private readonly List<Line> _lines = [];
@@ -351,7 +352,7 @@ internal sealed class TextLayoutEngine
             var buffer = _probeBuffer ??= new GlyphBuffer(_limits);
             buffer.Clear();
             buffer.Add(rune.Value, 0);
-            TextShaper.Shape(buffer, face, UnicodeScripts.GetScript(rune.Value), [], isRightToLeft: false, [], isVertical: true, GetScratch(face));
+            TextShaper.Shape(buffer, face, UnicodeScripts.GetScript(rune.Value), [], isRightToLeft: false, [], isVertical: true, GetScratch(face), _shapingCache);
             hasVerticalForm = buffer.Length == 1 && buffer.Info[0].Glyph != glyph;
         }
 
@@ -533,7 +534,7 @@ internal sealed class TextLayoutEngine
             features[i] = new ShapingFeature(style.Features[i].TagValue, style.Features[i].Value);
         }
 
-        TextShaper.Shape(_buffer, item.Font.Face, item.Script, style.LanguageTags, isRightToLeft, features, item.IsUpright, item.IsUpright ? GetScratch(item.Font.Face) : null);
+        TextShaper.Shape(_buffer, item.Font.Face, item.Script, style.LanguageTags, isRightToLeft, features, item.IsUpright, item.IsUpright ? GetScratch(item.Font.Face) : null, _shapingCache);
         var scale = GetSize(style) / item.Font.UnitsPerEm;
         var info = _buffer.Info;
         var positions = _buffer.Positions;

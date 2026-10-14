@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
@@ -36,6 +37,11 @@ internal sealed class TiffBlockReader : IDisposable
     private const int MaxBlockOverhead = 4096;
     private const int MaxJpegOverhead = 1024 * 1024;
 
+#if NET11_0_OR_GREATER
+    // The size of the reads of DeflateStream from its source (the length of its rented buffer)
+    private const int InflateStreamPiece = 8192;
+#endif
+
     private static readonly byte[] ReversedBits = CreateReversedBits();
 
     private readonly RandomAccessSource _source;
@@ -43,11 +49,13 @@ internal sealed class TiffBlockReader : IDisposable
     private readonly JpegBlockReceiver? _jpegReceiver;
     private readonly Jpeg2000BlockReceiver? _jpeg2000Receiver;
     private PooledBuffer? _block;
-    private PooledBuffer? _inflateScratch;
     private PooledBuffer? _units;
     private PooledBuffer? _changes;
     private PooledBuffer? _jpegRow;
     private TiffLzwDecoder? _lzw;
+#if NET11_0_OR_GREATER
+    private ZLibDecoder? _zlib;
+#endif
 
     public TiffBlockReader(RandomAccessSource source, TiffPage page)
     {
@@ -120,8 +128,10 @@ internal sealed class TiffBlockReader : IDisposable
     {
         _block?.Dispose();
         _block = null;
-        _inflateScratch?.Dispose();
-        _inflateScratch = null;
+#if NET11_0_OR_GREATER
+        _zlib?.Dispose();
+        _zlib = null;
+#endif
         _units?.Dispose();
         _units = null;
         _changes?.Dispose();
@@ -263,20 +273,28 @@ internal sealed class TiffBlockReader : IDisposable
 
     private void Inflate(PooledBuffer compressed, Span<byte> destination, int index)
     {
+#if NET11_0_OR_GREATER
+        if (TryInflate(compressed.Span, destination))
+            return;
+
+        // The stream path defines the errors: it reads the block again and reports how it fails
+#endif
+        InflateStream(compressed, destination, index);
+    }
+
+    private void InflateStream(PooledBuffer compressed, Span<byte> destination, int index)
+    {
         using var input = new MemoryStream(compressed.RawBuffer, 0, compressed.Length, writable: false);
         using var zlib = new ZLibStream(input, CompressionMode.Decompress);
         try
         {
-            var buffer = _inflateScratch ??= _source.Scope.Rent(64 * 1024, AllocationKind.DecoderState, clear: false);
             var written = 0;
             while (written < destination.Length)
             {
-                var chunk = Math.Min(buffer.Length, destination.Length - written);
-                var read = zlib.Read(buffer.Span[..chunk]);
+                var read = zlib.Read(destination[written..]);
                 if (read <= 0)
                     throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The Deflate data of the TIFF block {index} of page {_page.Index} produced {written} bytes; {destination.Length} are required."));
 
-                buffer.Span[..read].CopyTo(destination[written..]);
                 written += read;
             }
         }
@@ -285,6 +303,49 @@ internal sealed class TiffBlockReader : IDisposable
             throw new InvalidImageContentException(string.Create(CultureInfo.InvariantCulture, $"The Deflate data of the TIFF block {index} of page {_page.Index} is malformed."), ImageFormat.Tiff, exception);
         }
     }
+
+#if NET11_0_OR_GREATER
+    /// <summary>
+    /// Decompresses a block with a decoder reused by every block of the page, fed with the pieces of
+    /// <see cref="InflateStreamPiece"/> bytes in which <see cref="InflateStream"/> reads its source: the decoder sees the
+    /// same input at every step, so it fills the block exactly when the stream path does.
+    /// </summary>
+    /// <returns><see langword="false"/> when the block is malformed or too short (the stream path then reports it).</returns>
+    private bool TryInflate(ReadOnlySpan<byte> compressed, Span<byte> destination)
+    {
+        var decoder = _zlib ??= new ZLibDecoder();
+        decoder.Reset();
+        var written = 0;
+        var position = 0;
+        var pieceEnd = Math.Min(compressed.Length, InflateStreamPiece);
+        while (written < destination.Length)
+        {
+            var status = decoder.Decompress(compressed[position..pieceEnd], destination[written..], out var consumed, out var produced);
+            position += consumed;
+            written += produced;
+            switch (status)
+            {
+                case OperationStatus.Done:
+                    return written == destination.Length;
+
+                case OperationStatus.NeedMoreData:
+                    if (pieceEnd == compressed.Length)
+                        return false;
+
+                    pieceEnd = Math.Min(compressed.Length, pieceEnd + InflateStreamPiece);
+                    break;
+
+                case OperationStatus.DestinationTooSmall:
+                    break;
+
+                default:
+                    return false;
+            }
+        }
+
+        return true;
+    }
+#endif
 
     private void DecodeFax(ReadOnlySpan<byte> compressed, Span<byte> destination, int rowCount, int index)
     {

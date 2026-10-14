@@ -36,6 +36,7 @@ internal static class BenchmarkInputs
     private static readonly Lazy<byte[]> TgaRgbaData = new(() => EncodeRgba32(ServiceRgba32Source, ServiceWidth, ServiceHeight, new TgaEncoder { Compression = TgaCompression.RunLength }));
     private static readonly Lazy<byte[]> TiffLzwData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TiffEncoder { Compression = TiffCompression.Lzw }));
     private static readonly Lazy<byte[]> TiffDeflateData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TiffEncoder { Compression = TiffCompression.Deflate }));
+    private static readonly Lazy<byte[]> TiffDeflateRowStripsData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TiffEncoder { Compression = TiffCompression.Deflate, RowsPerStrip = 1 }));
     private static readonly Lazy<byte[]> TiffPredictor8Data = new(() => TiffPredictorInput.Encode(LargeRgb24Bytes.Value, LargeWidth, LargeHeight, samplesPerPixel: 3, bitsPerSample: 8, bigEndian: false));
     private static readonly Lazy<byte[]> TiffPredictor16Data = new(() => TiffPredictorInput.Encode(unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(LargeRgba64Source.AsSpan())), Large16Width, Large16Height, samplesPerPixel: 4, bitsPerSample: 16, bigEndian: true));
     private static readonly Lazy<byte[]> PnmRgbData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new PnmEncoder()));
@@ -154,6 +155,9 @@ internal static class BenchmarkInputs
 
     /// <summary>Gets the 2048x1536 RGB source encoded as a Deflate TIFF (<see cref="TiffEncoder"/>, strips of 64 KB, no predictor).</summary>
     public static byte[] TiffDeflate => TiffDeflateData.Value;
+
+    /// <summary>Gets the 2048x1536 RGB source encoded as a Deflate TIFF of one row (6 KB) per strip, the size libtiff writes by default.</summary>
+    public static byte[] TiffDeflateRowStrips => TiffDeflateRowStripsData.Value;
 
     /// <summary>Gets the 2048x1536 RGB source as an uncompressed little-endian TIFF with the horizontal differencing predictor.</summary>
     public static byte[] TiffPredictor8 => TiffPredictor8Data.Value;

@@ -24,6 +24,7 @@ public class TiffBenchmarks : IDisposable
         // Untimed correctness gates: the format is lossless for these samples
         WorkloadChecks.RequireLossless(BenchmarkInputs.TiffLzw, BenchmarkInputs.LargeRgb24Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.TiffDeflate, BenchmarkInputs.LargeRgb24Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffDeflateRowStrips, BenchmarkInputs.LargeRgb24Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.TiffPredictor8, BenchmarkInputs.LargeRgb24Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.TiffPredictor16, BenchmarkInputs.LargeRgba64Source);
     }
@@ -44,6 +45,14 @@ public class TiffBenchmarks : IDisposable
     public int DecodeTiffDeflate()
     {
         using var image = Image.Load<Rgb24>(BenchmarkInputs.TiffDeflate);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 TIFF RGB Deflate, one row per strip -> Rgb24")]
+    public int DecodeTiffDeflateRowStrips()
+    {
+        using var image = Image.Load<Rgb24>(BenchmarkInputs.TiffDeflateRowStrips);
         return image.Width;
     }
 

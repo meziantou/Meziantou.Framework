@@ -56,7 +56,10 @@ public sealed class PublicApiGenericParameter
     /// <summary>Gets a value indicating whether the parameter has the <c>allows ref struct</c> anti-constraint.</summary>
     public bool AllowsRefLikeType { get; }
 
-    /// <summary>Gets the base type and interface constraints. The <c>System.ValueType</c> constraint that encodes <c>struct</c> is not included.</summary>
+    /// <summary>
+    /// Gets the base type and interface constraints: the base type, then the other constraints sorted by name.
+    /// The <c>System.ValueType</c> constraint that encodes <c>struct</c> is not included.
+    /// </summary>
     public ImmutableArray<PublicApiTypeReference> ConstraintTypes { get; }
 
     /// <summary>

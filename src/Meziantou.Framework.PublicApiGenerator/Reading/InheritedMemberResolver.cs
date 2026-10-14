@@ -122,6 +122,15 @@ internal sealed class InheritedMemberResolver : IDisposable
         return false;
     }
 
+    /// <summary>Gets a value indicating whether a type used by the assembly being read is an interface. It is <see langword="null"/> when the type cannot be found.</summary>
+    public bool? IsInterface(EntityHandle handle)
+    {
+        if (ResolveTypeDefinition(_mainModule, handle) is not { } definition)
+            return null;
+
+        return (definition.Module.Reader.GetTypeDefinition(definition.Handle).Attributes & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
+    }
+
     /// <summary>Gets the members inherited by a type of the assembly being read.</summary>
     public InheritedMemberSet GetInheritedMembers(TypeDefinitionHandle typeDefinitionHandle)
     {

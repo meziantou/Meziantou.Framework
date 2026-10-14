@@ -67,7 +67,8 @@ internal sealed partial class PublicApiMetadataReader
             result.Add(ReadMethod(typeDefinitionHandle, methodHandle, GetMethodKind(method, name), explicitImplementations));
         }
 
-        return result.ToImmutable();
+        // Sorted so that the model does not depend on the order of the metadata tables, which is the order of the declarations
+        return [.. result.OrderBy(static member => member.SortKey, MemberSortKey.Comparer)];
     }
 
     private static bool IsOperatorName(string name) => name.StartsWith("op_", StringComparison.Ordinal);

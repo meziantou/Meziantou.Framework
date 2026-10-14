@@ -218,7 +218,7 @@ internal sealed partial class PublicApiMetadataReader
             result.Add(ReadField(typeDefinitionHandle, fieldHandle, field, isEnumMember: true));
         }
 
-        return result.ToImmutable();
+        return [.. result.Order(Comparer<PublicApiMember>.Create(PublicApiOrdering.CompareEnumMembers))];
     }
 
     private ImmutableArray<PublicApiTypeReference> ReadUnionCaseTypes(TypeDefinitionHandle typeDefinitionHandle, TypeDefinition typeDefinition)
@@ -264,7 +264,8 @@ internal sealed partial class PublicApiMetadataReader
             var attributes = genericParameter.Attributes;
             var hasValueTypeConstraint = attributes.HasFlag(GenericParameterAttributes.NotNullableValueTypeConstraint);
             var hasUnmanagedTypeConstraint = hasValueTypeConstraint && HasAttribute(genericParameter.GetCustomAttributes(), "System.Runtime.CompilerServices.IsUnmanagedAttribute");
-            var constraintTypes = ImmutableArray.CreateBuilder<PublicApiTypeReference>();
+            var constraintTypes = new List<PublicApiTypeReference>();
+            var isFirstConstraintBaseType = false;
             foreach (var constraintHandle in genericParameter.GetConstraints())
             {
                 var constraint = _metadataReader.GetGenericParameterConstraint(constraintHandle);
@@ -273,6 +274,11 @@ internal sealed partial class PublicApiMetadataReader
                 // The struct constraint is encoded as a System.ValueType constraint
                 if (hasValueTypeConstraint && rawType is RawType.Named named && named.IsSystemType("ValueType"))
                     continue;
+
+                if (constraintTypes.Count == 0)
+                {
+                    isFirstConstraintBaseType = !IsInterfaceOrTypeParameter(constraint.Type);
+                }
 
                 var nullableInfo = GetNullableMetadataInfo(declaringTypeHandle, constraint.GetCustomAttributes(), methodHandle);
                 constraintTypes.Add(TypeReferenceBuilder.Build(rawType, nullableInfo, GetTupleElementNames(constraint.GetCustomAttributes())));
@@ -303,12 +309,59 @@ internal sealed partial class PublicApiMetadataReader
                 hasUnmanagedTypeConstraint,
                 hasConstructorConstraint: attributes.HasFlag(GenericParameterAttributes.DefaultConstructorConstraint) && !hasValueTypeConstraint,
                 allowsRefLikeType: attributes.HasFlag(AllowByRefLikeGenericParameterConstraint),
-                constraintTypes.ToImmutable(),
+                SortConstraintTypes(constraintTypes, isFirstConstraintBaseType),
                 nullableAnnotation,
                 ReadAttributes(genericParameter.GetCustomAttributes())));
         }
 
         return result.MoveToImmutable();
+    }
+
+    // The base type constraint must be the first one in C#. The other constraints are sorted so that the model does not depend on the order of the metadata table.
+    private static ImmutableArray<PublicApiTypeReference> SortConstraintTypes(List<PublicApiTypeReference> constraintTypes, bool isFirstConstraintBaseType)
+    {
+        if (constraintTypes.Count < 2)
+            return [.. constraintTypes];
+
+        var baseTypeCount = isFirstConstraintBaseType ? 1 : 0;
+        return
+        [
+            .. constraintTypes.Take(baseTypeCount),
+            .. constraintTypes.Skip(baseTypeCount).OrderBy(PublicApiOrdering.GetTypeSortText, StringComparer.Ordinal),
+        ];
+    }
+
+    // A type that cannot be found is not known to be an interface, so it is considered as a base type and it keeps its position
+    private bool IsInterfaceOrTypeParameter(EntityHandle handle)
+    {
+        switch (handle.Kind)
+        {
+            case HandleKind.TypeDefinition:
+                return (_metadataReader.GetTypeDefinition((TypeDefinitionHandle)handle).Attributes & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
+
+            case HandleKind.TypeReference:
+                return _inheritedMemberResolver.IsInterface(handle) is true;
+
+            case HandleKind.TypeSpecification:
+                var typeSpecification = _metadataReader.GetTypeSpecification((TypeSpecificationHandle)handle);
+                var blobReader = _metadataReader.GetBlobReader(typeSpecification.Signature);
+                switch (blobReader.ReadSignatureTypeCode())
+                {
+                    case SignatureTypeCode.GenericTypeParameter:
+                    case SignatureTypeCode.GenericMethodParameter:
+                        return true;
+
+                    case SignatureTypeCode.GenericTypeInstance:
+                        blobReader.ReadCompressedInteger(); // CLASS or VALUETYPE
+                        return IsInterfaceOrTypeParameter(blobReader.ReadTypeHandle());
+
+                    default:
+                        return false;
+                }
+
+            default:
+                return false;
+        }
     }
 
     private RawGenericContext BuildGenericContext(TypeDefinitionHandle declaringTypeHandle, MethodDefinitionHandle methodHandle = default)

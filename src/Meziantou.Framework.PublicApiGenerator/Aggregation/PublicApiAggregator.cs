@@ -4,6 +4,9 @@ namespace Meziantou.Framework.PublicApiGenerator;
 
 internal static class PublicApiAggregator
 {
+    private static readonly Comparer<PublicApiMember> MemberComparer = Comparer<PublicApiMember>.Create(static (x, y) => MemberSortKey.Compare(x.SortKey, y.SortKey));
+    private static readonly Comparer<PublicApiMember> EnumMemberComparer = Comparer<PublicApiMember>.Create(PublicApiOrdering.CompareEnumMembers);
+
     public static PublicApiAggregatedAssembly Aggregate(IReadOnlyList<PublicApiAssembly> assemblies)
     {
         ArgumentNullException.ThrowIfNull(assemblies);
@@ -115,7 +118,10 @@ internal static class PublicApiAggregator
         var nestedTypes = ImmutableArray<PublicApiAggregatedSymbol>.Empty;
         if (symbols[0] is PublicApiType)
         {
-            members = [.. AggregateSymbols(inputs, symbolsByAssembly.Select(static symbol => symbol is PublicApiType type ? type.Members.Cast<PublicApiSymbol>() : []).ToArray())];
+            // The members of each assembly are sorted, but the members that are not in the first assembly are after the other ones
+            var isEnum = symbols[0] is PublicApiType { TypeKind: PublicApiTypeKind.Enum };
+            members = [.. AggregateSymbols(inputs, symbolsByAssembly.Select(static symbol => symbol is PublicApiType type ? type.Members.Cast<PublicApiSymbol>() : []).ToArray())
+                .OrderBy(static member => (PublicApiMember)member.Symbols[0], isEnum ? EnumMemberComparer : MemberComparer)];
             nestedTypes = [.. AggregateSymbols(inputs, symbolsByAssembly.Select(static symbol => symbol is PublicApiType type ? type.NestedTypes.Cast<PublicApiSymbol>() : []).ToArray())
                 .OrderBy(static type => type.Symbols[0].MetadataName, StringComparer.Ordinal)];
         }

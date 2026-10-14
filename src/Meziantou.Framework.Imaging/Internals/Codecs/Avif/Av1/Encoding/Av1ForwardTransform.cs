@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 
@@ -165,25 +166,53 @@ internal static class Av1ForwardTransform
         }
         else
         {
+            // The rows of the residual in the order of the basis: from the last one when it is flipped. Every load is
+            // inside the residual (w x h samples) and every basis value inside the basis (th x h values)
             var rounding = Vector128.Create(1L << (BasisBits - IntermediateBits - 1));
+            var firstRow = flipUD ? (h - 1) * w : 0;
+            var rowStep = flipUD ? -w : w;
+            ref var samples = ref unsafe(MemoryMarshal.GetReference(residual));
             for (var k = 0; k < th; k++)
             {
-                var basis = colBasis.AsSpan(k * h, h);
-                for (var c = 0; c < w; c += 4)
+                ref var basis = ref unsafe(MemoryMarshal.GetReference(colBasis.AsSpan(k * h, h)));
+                var output = intermediate.Slice(k * w, w);
+                var c = 0;
+                for (; c + 8 <= w; c += 8)
                 {
-                    var low = rounding;
-                    var high = rounding;
-                    for (var r = 0; r < h; r++)
+                    var sum0 = rounding;
+                    var sum1 = rounding;
+                    var sum2 = rounding;
+                    var sum3 = rounding;
+                    var offset = firstRow + c;
+                    for (var r = 0; r < h; r++, offset += rowStep)
                     {
-                        var samples = Vector128.Create(residual.Slice(((flipUD ? h - 1 - r : r) * w) + c, 4));
-                        var factor = Vector64.Create(basis[r]);
-                        low = AdvSimd.MultiplyWideningLowerAndAdd(low, samples.GetLower(), factor);
-                        high = AdvSimd.MultiplyWideningLowerAndAdd(high, samples.GetUpper(), factor);
+                        var factor = Vector64.Create(unsafe(Unsafe.Add(ref basis, r)));
+                        var low = unsafe(Vector128.LoadUnsafe(ref samples, (nuint)offset));
+                        var high = unsafe(Vector128.LoadUnsafe(ref samples, (nuint)(offset + 4)));
+                        sum0 = AdvSimd.MultiplyWideningLowerAndAdd(sum0, low.GetLower(), factor);
+                        sum1 = AdvSimd.MultiplyWideningLowerAndAdd(sum1, low.GetUpper(), factor);
+                        sum2 = AdvSimd.MultiplyWideningLowerAndAdd(sum2, high.GetLower(), factor);
+                        sum3 = AdvSimd.MultiplyWideningLowerAndAdd(sum3, high.GetUpper(), factor);
                     }
 
-                    low = Vector128.ShiftRightArithmetic(low, BasisBits - IntermediateBits);
-                    high = Vector128.ShiftRightArithmetic(high, BasisBits - IntermediateBits);
-                    Vector128.Narrow(low, high).CopyTo(intermediate.Slice((k * w) + c, 4));
+                    Vector128.Narrow(Vector128.ShiftRightArithmetic(sum0, BasisBits - IntermediateBits), Vector128.ShiftRightArithmetic(sum1, BasisBits - IntermediateBits)).CopyTo(output[c..]);
+                    Vector128.Narrow(Vector128.ShiftRightArithmetic(sum2, BasisBits - IntermediateBits), Vector128.ShiftRightArithmetic(sum3, BasisBits - IntermediateBits)).CopyTo(output[(c + 4)..]);
+                }
+
+                if (c < w)
+                {
+                    var sum0 = rounding;
+                    var sum1 = rounding;
+                    var offset = firstRow + c;
+                    for (var r = 0; r < h; r++, offset += rowStep)
+                    {
+                        var factor = Vector64.Create(unsafe(Unsafe.Add(ref basis, r)));
+                        var low = unsafe(Vector128.LoadUnsafe(ref samples, (nuint)offset));
+                        sum0 = AdvSimd.MultiplyWideningLowerAndAdd(sum0, low.GetLower(), factor);
+                        sum1 = AdvSimd.MultiplyWideningLowerAndAdd(sum1, low.GetUpper(), factor);
+                    }
+
+                    Vector128.Narrow(Vector128.ShiftRightArithmetic(sum0, BasisBits - IntermediateBits), Vector128.ShiftRightArithmetic(sum1, BasisBits - IntermediateBits)).CopyTo(output[c..]);
                 }
             }
         }
@@ -200,37 +229,64 @@ internal static class Av1ForwardTransform
         var rowBasis = GetTransposedBasis(rowKind, log2W);
         var rowIdentity = GetIdentityMultiplier(log2W);
         var shift = BasisBits + IntermediateBits - 4 - rowShift;
-        Span<long> sums = unsafe(stackalloc long[4]);
+        // The basis is transposed: the values of the sample c for the coefficients l to l + 7 are consecutive. Every load
+        // is inside the basis (w x tw values) and every sample inside the line
+        Span<long> sums = unsafe(stackalloc long[8]);
         for (var k = 0; k < th; k++)
         {
             var line = intermediate.Slice(k * w, w);
             var output = coefficients.Slice(k * tw, tw);
-            for (var l = 0; l < tw; l += 4)
+            var group = Math.Min(8, tw);
+            for (var l = 0; l < tw; l += group)
             {
                 if (rowBasis is null)
                 {
-                    for (var i = 0; i < 4; i++)
+                    for (var i = 0; i < group; i++)
                     {
                         sums[i] = line[l + i] * rowIdentity;
                     }
                 }
                 else
                 {
-                    var low = Vector128<long>.Zero;
-                    var high = Vector128<long>.Zero;
-                    for (var c = 0; c < w; c++)
+                    ref var basis = ref unsafe(MemoryMarshal.GetReference(rowBasis.AsSpan()));
+                    ref var samples = ref unsafe(MemoryMarshal.GetReference(line));
+                    var sum0 = Vector128<long>.Zero;
+                    var sum1 = Vector128<long>.Zero;
+                    if (group is 8)
                     {
-                        var basis = Vector128.Create(rowBasis.AsSpan((c * tw) + l, 4));
-                        var factor = Vector64.Create(line[c]);
-                        low = AdvSimd.MultiplyWideningLowerAndAdd(low, basis.GetLower(), factor);
-                        high = AdvSimd.MultiplyWideningLowerAndAdd(high, basis.GetUpper(), factor);
+                        var sum2 = Vector128<long>.Zero;
+                        var sum3 = Vector128<long>.Zero;
+                        for (var c = 0; c < w; c++)
+                        {
+                            var offset = (c * tw) + l;
+                            var factor = Vector64.Create(unsafe(Unsafe.Add(ref samples, c)));
+                            var low = unsafe(Vector128.LoadUnsafe(ref basis, (nuint)offset));
+                            var high = unsafe(Vector128.LoadUnsafe(ref basis, (nuint)(offset + 4)));
+                            sum0 = AdvSimd.MultiplyWideningLowerAndAdd(sum0, low.GetLower(), factor);
+                            sum1 = AdvSimd.MultiplyWideningLowerAndAdd(sum1, low.GetUpper(), factor);
+                            sum2 = AdvSimd.MultiplyWideningLowerAndAdd(sum2, high.GetLower(), factor);
+                            sum3 = AdvSimd.MultiplyWideningLowerAndAdd(sum3, high.GetUpper(), factor);
+                        }
+
+                        sum2.CopyTo(sums[4..]);
+                        sum3.CopyTo(sums[6..]);
+                    }
+                    else
+                    {
+                        for (var c = 0; c < w; c++)
+                        {
+                            var factor = Vector64.Create(unsafe(Unsafe.Add(ref samples, c)));
+                            var low = unsafe(Vector128.LoadUnsafe(ref basis, (nuint)((c * tw) + l)));
+                            sum0 = AdvSimd.MultiplyWideningLowerAndAdd(sum0, low.GetLower(), factor);
+                            sum1 = AdvSimd.MultiplyWideningLowerAndAdd(sum1, low.GetUpper(), factor);
+                        }
                     }
 
-                    low.CopyTo(sums);
-                    high.CopyTo(sums[2..]);
+                    sum0.CopyTo(sums);
+                    sum1.CopyTo(sums[2..]);
                 }
 
-                for (var i = 0; i < 4; i++)
+                for (var i = 0; i < group; i++)
                 {
                     var sum = sums[i];
                     if (isRectangular2To1)

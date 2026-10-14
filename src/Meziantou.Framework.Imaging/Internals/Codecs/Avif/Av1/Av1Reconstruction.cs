@@ -1,3 +1,6 @@
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -113,6 +116,105 @@ internal static class Av1Reconstruction
     /// <param name="bitDepth">The bit depth of the samples.</param>
     /// <param name="scratch">Scratch for the subsampled luma samples (1024 entries).</param>
     public static void PredictChromaFromLuma(ReadOnlySpan<ushort> luma, int lumaStride, Span<ushort> chroma, int chromaStride, int startX, int startY, int txSz, int alpha, int subX, int subY, int maxLumaW, int maxLumaH, int bitDepth, Span<int> scratch)
+    {
+        if (AdvSimd.IsSupported)
+        {
+            PredictChromaFromLumaAdvSimd(luma, lumaStride, chroma, chromaStride, startX, startY, txSz, alpha, subX, subY, maxLumaW, maxLumaH, bitDepth, scratch);
+        }
+        else
+        {
+            PredictChromaFromLumaScalar(luma, lumaStride, chroma, chromaStride, startX, startY, txSz, alpha, subX, subY, maxLumaW, maxLumaH, bitDepth, scratch);
+        }
+    }
+
+    // PredictChromaFromLumaScalar with 4 samples at once. In a row, the luma columns of the chroma samples are not clamped
+    // up to the last one inside MaxLumaW, then they are all the clamped column: the samples up to it are subsampled 4 at a
+    // time (pairwise additions for a horizontal subsampling), the others take the value of the clamped column. The
+    // integer expressions are the scalar ones
+    private static void PredictChromaFromLumaAdvSimd(ReadOnlySpan<ushort> luma, int lumaStride, Span<ushort> chroma, int chromaStride, int startX, int startY, int txSz, int alpha, int subX, int subY, int maxLumaW, int maxLumaH, int bitDepth, Span<int> scratch)
+    {
+        var w = Av1Tables.TxWidth[txSz];
+        var h = Av1Tables.TxHeight[txSz];
+        var lastX = maxLumaW - (1 << subX);
+        var count = Math.Clamp((lastX >> subX) - startX + 1, 0, w);
+        var scale = 3 - subX - subY;
+        var total = Vector128<int>.Zero;
+        var lumaAverage = 0;
+        for (var i = 0; i < h; i++)
+        {
+            var lumaY = Math.Min((startY + i) << subY, maxLumaH - (1 << subY));
+            var row0 = luma[(lumaY * lumaStride)..];
+            var row1 = subY is 0 ? row0 : luma[((lumaY + 1) * lumaStride)..];
+            var values = scratch.Slice(i * w, w);
+            var j = 0;
+            for (; j <= count - 4; j += 4)
+            {
+                var x = (startX + j) << subX;
+                Vector128<int> sum;
+                if (subX is 0)
+                {
+                    sum = Vector128.WidenLower(Vector64.Create(row0.Slice(x, 4)).ToVector128()).AsInt32();
+                    if (subY is not 0)
+                        sum += Vector128.WidenLower(Vector64.Create(row1.Slice(x, 4)).ToVector128()).AsInt32();
+                }
+                else
+                {
+                    var samples = Vector128.Create(row0.Slice(x, 8));
+                    if (subY is not 0)
+                        samples += Vector128.Create(row1.Slice(x, 8));
+
+                    sum = AdvSimd.AddPairwiseWidening(samples).AsInt32();
+                }
+
+                var v = sum << scale;
+                v.CopyTo(values[j..]);
+                total += v;
+            }
+
+            for (; j < w; j++)
+            {
+                var lumaX = Math.Min((startX + j) << subX, lastX);
+                var t = 0;
+                for (var dy = 0; dy <= subY; dy++)
+                {
+                    for (var dx = 0; dx <= subX; dx++)
+                    {
+                        t += luma[((lumaY + dy) * lumaStride) + lumaX + dx];
+                    }
+                }
+
+                var v = t << scale;
+                values[j] = v;
+                lumaAverage += v;
+            }
+        }
+
+        lumaAverage += Vector128.Sum(total);
+        var shift = Av1Tables.TxWidthLog2[txSz] + Av1Tables.TxHeightLog2[txSz];
+        lumaAverage = (lumaAverage + (1 << (shift - 1))) >> shift;
+        var average = Vector128.Create(lumaAverage);
+        var max = Vector128.Create((1 << bitDepth) - 1);
+        var rounding = Vector128.Create(32);
+        for (var i = 0; i < h; i++)
+        {
+            var row = chroma.Slice(((startY + i) * chromaStride) + startX, w);
+            var values = scratch.Slice(i * w, w);
+            for (var j = 0; j < w; j += 4)
+            {
+                // (product + 32) >> 6 of the magnitude, with the sign of the product
+                var product = (Vector128.Create(values[j..]) - average) * alpha;
+                var sign = product >> 31;
+                var magnitude = (Vector128.Abs(product) + rounding) >> 6;
+                var scaled = (magnitude ^ sign) - sign;
+                var predicted = Vector128.WidenLower(Vector64.Create(row[j..]).ToVector128()).AsInt32();
+                var value = Vector128.Min(Vector128.Max(predicted + scaled, Vector128<int>.Zero), max);
+                Vector128.Narrow(value.AsUInt32(), value.AsUInt32()).GetLower().CopyTo(row[j..]);
+            }
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="PredictChromaFromLuma"/>.</summary>
+    internal static void PredictChromaFromLumaScalar(ReadOnlySpan<ushort> luma, int lumaStride, Span<ushort> chroma, int chromaStride, int startX, int startY, int txSz, int alpha, int subX, int subY, int maxLumaW, int maxLumaH, int bitDepth, Span<int> scratch)
     {
         var w = Av1Tables.TxWidth[txSz];
         var h = Av1Tables.TxHeight[txSz];

@@ -2587,6 +2587,60 @@ public sealed class VectorizedKernelTests
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1ChromaFromLumaMatchesTheScalarReference(int bitDepth)
+    {
+        // Every subsampling and transform size of the chroma from luma prediction, with the luma samples clamped at every
+        // distance from the block (MaxLumaW and MaxLumaH), every alpha, on random and extreme samples
+        var random = new Random(bitDepth * 17);
+        var maxSample = (1 << bitDepth) - 1;
+        const int Stride = 160;
+        var scratch = new int[1024];
+        for (var round = 0; round < 6000; round++)
+        {
+            var (subX, subY) = (round % 3) switch
+            {
+                0 => (0, 0),
+                1 => (1, 0),
+                _ => (1, 1),
+            };
+            int txSz;
+            do
+            {
+                txSz = random.Next(Av1Constants.TxSizesAll);
+            }
+            while (Av1Tables.TxWidth[txSz] > 32 || Av1Tables.TxHeight[txSz] > 32);
+
+            int w = Av1Tables.TxWidth[txSz];
+            int h = Av1Tables.TxHeight[txSz];
+            var startX = 4 * random.Next(4);
+            var startY = 4 * random.Next(4);
+            var maxLumaW = Math.Min(Stride, ((startX + random.Next(1, w + 1)) << subX) + (random.Next(2) << subX));
+            var maxLumaH = Math.Min(Stride, ((startY + random.Next(1, h + 1)) << subY) + (random.Next(2) << subY));
+            var luma = new ushort[Stride * Stride];
+            for (var i = 0; i < luma.Length; i++)
+            {
+                luma[i] = round % 2 == 0 ? (ushort)random.Next(maxSample + 1) : (ushort)(random.Next(2) * maxSample);
+            }
+
+            var expected = new ushort[Stride * Stride];
+            for (var i = 0; i < expected.Length; i++)
+            {
+                expected[i] = (ushort)random.Next(maxSample + 1);
+            }
+
+            var actual = expected.ToArray();
+            var alpha = random.Next(-16, 17);
+            Av1Reconstruction.PredictChromaFromLumaScalar(luma, Stride, expected, Stride, startX, startY, txSz, alpha, subX, subY, maxLumaW, maxLumaH, bitDepth, scratch);
+            Av1Reconstruction.PredictChromaFromLuma(luma, Stride, actual, Stride, startX, startY, txSz, alpha, subX, subY, maxLumaW, maxLumaH, bitDepth, scratch);
+            Assert.True(expected.AsSpan().SequenceEqual(actual), $"Round {round}: transform size {txSz}, subsampling {subX}/{subY}, alpha {alpha}, limits {maxLumaW}x{maxLumaH}.");
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1IntraPredictionMatchesTheScalarReference(int bitDepth)
     {
         // Every mode, angle delta, recursive filter, block size and edge availability, near the right and bottom limits of

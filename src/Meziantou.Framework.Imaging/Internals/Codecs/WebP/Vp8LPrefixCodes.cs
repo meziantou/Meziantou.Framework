@@ -212,6 +212,41 @@ internal sealed class Vp8LPrefixCodes : IDisposable
         return (int)(entry & 0xFFFF);
     }
 
+    /// <summary>Reads one symbol with the reader state of <see cref="Vp8LBitReader.Load"/>.</summary>
+    /// <param name="entries">The first entry of <see cref="GetEntries"/>: every table of <paramref name="code"/> lies in them.</param>
+    /// <param name="code">The code.</param>
+    /// <param name="data">The first byte of <see cref="Vp8LBitReader.Data"/>.</param>
+    /// <param name="end">The end of the payload.</param>
+    /// <param name="value">The buffered bits.</param>
+    /// <param name="bits">The number of buffered bits.</param>
+    /// <param name="position">The next byte to buffer.</param>
+    /// <exception cref="InvalidImageContentException">The bitstream ends inside the code.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int ReadSymbol(ref uint entries, in Vp8LPrefixCode code, ref byte data, int end, ref ulong value, ref int bits, ref int position)
+    {
+        Vp8LBitReader.Refill(ref data, end, ref value, ref bits, ref position);
+        var rootBits = code.RootBits;
+        var peek = (uint)value;
+
+        // The root table has 2^rootBits entries and each second-level table 2^subBits (Build)
+        ref var table = ref unsafe(Unsafe.Add(ref entries, code.Offset));
+        var entry = unsafe(Unsafe.Add(ref table, (int)(peek & ((1u << rootBits) - 1))));
+        var length = (int)(entry >> 16);
+        if (length > rootBits)
+        {
+            var subBits = length - rootBits;
+            entry = unsafe(Unsafe.Add(ref table, (int)(entry & 0xFFFF) + (int)((peek >> rootBits) & ((1u << subBits) - 1))));
+            length = rootBits + (int)(entry >> 16);
+        }
+
+        if (bits < length)
+            throw Vp8LBitReader.Truncated();
+
+        value >>= length;
+        bits -= length;
+        return (int)(entry & 0xFFFF);
+    }
+
     public void Dispose()
     {
         _arena?.Dispose();

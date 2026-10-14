@@ -111,7 +111,7 @@ internal ref partial struct Av1TileCoder
             if (eob > 0)
             {
                 var planeBuffer = _frame.GetPlane(plane);
-                Reconstruct(planeBuffer.Samples, planeBuffer.Stride, plane, startX, startY, txSz);
+                Reconstruct(planeBuffer.Samples, planeBuffer.Stride, plane, startX, startY, txSz, eob);
             }
         }
 
@@ -299,7 +299,9 @@ internal ref partial struct Av1TileCoder
         acQuantizer = Av1Reconstruction.GetAcQuantizer(_qIndex + delta.Item2, _bitDepth);
     }
 
-    private readonly void Reconstruct(Span<ushort> samples, int stride, int plane, int startX, int startY, int txSz)
+    // Quant holds the coefficients of the eob first positions of the scan order of the transform block; the other entries
+    // are not read
+    private readonly void Reconstruct(Span<ushort> samples, int stride, int plane, int startX, int startY, int txSz, int eob)
     {
         GetQuantizers(plane, out var dcQuantizer, out var acQuantizer);
         var quantizerMatrix = ReadOnlySpan<byte>.Empty;
@@ -316,7 +318,7 @@ internal ref partial struct Av1TileCoder
                 quantizerMatrix = Av1Tables.QuantizerMatrix[((((level * 2) + (plane > 0 ? 1 : 0)) * Av1Constants.QmTotalSize) + Av1Tables.QmOffset[txSz])..];
         }
 
-        Av1Reconstruction.Reconstruct(samples, stride, startX, startY, _scratch.Quant, _scratch.Transform, txSz, _planeTxType, _lossless, _bitDepth, dcQuantizer, acQuantizer, quantizerMatrix);
+        Av1Reconstruction.Reconstruct(samples, stride, startX, startY, _scratch.Quant, GetScan(txSz, _planeTxType), eob, _scratch.Transform, txSz, _planeTxType, _lossless, _bitDepth, dcQuantizer, acQuantizer, quantizerMatrix);
     }
 
     // Section 5.11.39 "Coefficients syntax"
@@ -328,9 +330,7 @@ internal ref partial struct Av1TileCoder
         var h4 = Av1Tables.TxHeight[txSz] >> 2;
         var txSzCtx = (Av1Tables.TxSizeSqr[txSz] + Av1Tables.TxSizeSqrUp[txSz] + 1) >> 1;
         var ptype = plane > 0 ? 1 : 0;
-        var segEob = txSz is Av1Constants.Tx16x64 or Av1Constants.Tx64x16 ? 512 : Math.Min(1024, Av1Tables.TxWidth[txSz] * Av1Tables.TxHeight[txSz]);
         var quant = _scratch.Quant;
-        quant[..segEob].Clear();
 
         var aboveLevel = _state.GetAboveLevelContext(plane);
         var aboveDc = _state.GetAboveDcContext(plane);

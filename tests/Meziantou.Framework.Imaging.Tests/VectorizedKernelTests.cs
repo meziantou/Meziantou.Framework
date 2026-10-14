@@ -2587,6 +2587,41 @@ public sealed class VectorizedKernelTests
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1ResidualAdditionMatchesTheScalarReference(int bitDepth)
+    {
+        // Rows of every transform width, residuals that clamp at both ends and any 32-bit value
+        var random = new Random(bitDepth * 19);
+        var maxSample = (1 << bitDepth) - 1;
+        foreach (var width in new[] { 4, 8, 16, 32, 64 })
+        {
+            for (var round = 0; round < 500; round++)
+            {
+                var expected = new ushort[width];
+                var residual = new int[width];
+                for (var i = 0; i < width; i++)
+                {
+                    expected[i] = (ushort)random.Next(maxSample + 1);
+                    residual[i] = (round % 3) switch
+                    {
+                        0 => random.Next(-maxSample - 2, maxSample + 2),
+                        1 => random.Next(-64, 65),
+                        _ => random.Next(int.MinValue, int.MaxValue),
+                    };
+                }
+
+                var actual = expected.ToArray();
+                Av1Reconstruction.AddResidualScalar(expected, residual, maxSample);
+                Av1Reconstruction.AddResidual(actual, residual, maxSample);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1ChromaFromLumaMatchesTheScalarReference(int bitDepth)
     {
         // Every subsampling and transform size of the chroma from luma prediction, with the luma samples clamped at every

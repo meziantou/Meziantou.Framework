@@ -656,8 +656,8 @@ internal ref partial struct Av1TileCoder
 
     /// <summary>
     /// Writes the coefficients of a transform block (section 5.11.39 "Coefficients syntax"): <paramref name="eob"/> levels
-    /// in scan order, the last one not zero. Like the decoder, leaves the coefficients in <c>Quant</c> (when there is one), the transform type in
-    /// <c>PlaneTxType</c>, and updates the level and DC contexts.
+    /// in scan order, the last one not zero. Like the decoder, leaves the coefficients of the <paramref name="eob"/> first
+    /// positions of the scan in <c>Quant</c>, the transform type in <c>PlaneTxType</c>, and updates the level and DC contexts.
     /// </summary>
     private void WriteCoeffs(int plane, int startX, int startY, int txSz, int lumaTxType, ReadOnlySpan<int> levels, int eob)
     {
@@ -668,7 +668,6 @@ internal ref partial struct Av1TileCoder
         var h4 = Av1Tables.TxHeight[txSz] >> 2;
         var txSzCtx = (Av1Tables.TxSizeSqr[txSz] + Av1Tables.TxSizeSqrUp[txSz] + 1) >> 1;
         var ptype = plane > 0 ? 1 : 0;
-        var segEob = txSz is Av1Constants.Tx16x64 or Av1Constants.Tx64x16 ? 512 : Math.Min(1024, Av1Tables.TxWidth[txSz] * Av1Tables.TxHeight[txSz]);
         var quant = _scratch.Quant;
 
         var aboveLevel = _state.GetAboveLevelContext(plane);
@@ -688,8 +687,6 @@ internal ref partial struct Av1TileCoder
         }
         else
         {
-            // Quant is only read for a transform block that has coefficients
-            quant[..segEob].Clear();
             if (plane is 0)
                 WriteTransformType(x4, y4, txSz, lumaTxType);
 
@@ -789,6 +786,7 @@ internal ref partial struct Av1TileCoder
             {
                 var pos = scan[c];
                 var value = levels[c];
+                quant[pos] = value;
                 if (value is 0)
                     continue;
 
@@ -819,7 +817,6 @@ internal ref partial struct Av1TileCoder
                     dcCategory = sign is not 0 ? 1 : 2;
 
                 culLevel += magnitude;
-                quant[pos] = value;
             }
 
             culLevel = Math.Min(63, culLevel);

@@ -1525,7 +1525,7 @@ internal ref partial struct Av1TileCoder
         if (eob > 0)
         {
             _hasCoefficients = true;
-            Reconstruct(samples, stride, plane, startX, startY, txSz);
+            Reconstruct(samples, stride, plane, startX, startY, txSz, eob);
         }
 
         if (!_lossless)

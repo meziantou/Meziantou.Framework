@@ -157,28 +157,93 @@ internal sealed class Vp8LEncoder : IDisposable
 
     private static bool TryBuildPalette(ReadOnlySpan<uint> argb, out uint[] palette)
     {
-        var colors = new HashSet<uint>();
-        foreach (var pixel in argb)
+        // The distinct colors, up to 257: a pixel equal to the previous one is skipped (runs are common)
+        var colors = new ColorTable();
+        var count = 0;
+        var previous = 0u;
+        for (var i = 0; i < argb.Length; i++)
         {
-            if (colors.Add(pixel) && colors.Count > 256)
+            var pixel = argb[i];
+            if (i > 0 && pixel == previous)
+                continue;
+
+            previous = pixel;
+            if (colors.Add(pixel, count) && ++count > 256)
             {
                 palette = [];
                 return false;
             }
         }
 
-        palette = [.. colors];
+        palette = colors.GetColors(count);
         Array.Sort(palette);
         return true;
     }
 
+    /// <summary>An open-addressing table of at most 257 colors and their values, with 1,024 slots.</summary>
+    private sealed class ColorTable
+    {
+        private const int SlotBits = 10;
+        private readonly uint[] _colors = new uint[1 << SlotBits];
+        private readonly int[] _values = new int[1 << SlotBits];
+        private readonly bool[] _used = new bool[1 << SlotBits];
+
+        /// <summary>Adds a color with its value.</summary>
+        /// <returns><see langword="true"/> when the color was not in the table.</returns>
+        public bool Add(uint color, int value)
+        {
+            var slot = Find(color);
+            if (_used[slot])
+                return false;
+
+            _used[slot] = true;
+            _colors[slot] = color;
+            _values[slot] = value;
+            return true;
+        }
+
+        /// <summary>Gets the value of a color of the table.</summary>
+        public int GetValue(uint color) => _values[Find(color)];
+
+        public uint[] GetColors(int count)
+        {
+            var colors = new uint[count];
+            var index = 0;
+            for (var slot = 0; slot < _used.Length; slot++)
+            {
+                if (_used[slot])
+                {
+                    colors[index++] = _colors[slot];
+                }
+            }
+
+            return colors;
+        }
+
+        // The slot of the color, or the free slot where it would be inserted
+        private int Find(uint color)
+        {
+            var mask = _used.Length - 1;
+            var slot = (int)((color * 0x9E3779B1u) >> (32 - SlotBits));
+            while (_used[slot] && _colors[slot] != color)
+            {
+                slot = (slot + 1) & mask;
+            }
+
+            return slot;
+        }
+    }
+
     private void PackIndexes(ReadOnlySpan<uint> argb, int width, int height, uint[] palette, int widthBits, Span<uint> packed, int packedWidth)
     {
-        var lookup = new Dictionary<uint, int>(palette.Length);
+        var lookup = new ColorTable();
         for (var i = 0; i < palette.Length; i++)
         {
-            lookup[palette[i]] = i;
+            lookup.Add(palette[i], i);
         }
+
+        var previousColor = palette[0];
+        var previousIndex = 0;
 
         var bitsPerIndex = 8 >> widthBits;
         var perPixel = 1 << widthBits;
@@ -195,7 +260,14 @@ internal sealed class Vp8LEncoder : IDisposable
                     var source = (x << widthBits) + k;
                     if (source < width)
                     {
-                        value |= (uint)lookup[row[source]] << (k * bitsPerIndex);
+                        var color = row[source];
+                        if (color != previousColor)
+                        {
+                            previousColor = color;
+                            previousIndex = lookup.GetValue(color);
+                        }
+
+                        value |= (uint)previousIndex << (k * bitsPerIndex);
                     }
                 }
 

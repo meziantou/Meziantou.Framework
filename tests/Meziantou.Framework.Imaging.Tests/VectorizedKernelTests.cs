@@ -3032,8 +3032,8 @@ public sealed class VectorizedKernelTests
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void WebPAlphaAndOutputKernelsMatchTheScalarReferences()
     {
-        // Alpha unfiltering (every filter, the first row and column, clamps of the gradient), the green extraction and the
-        // ARGB to RGBA rows, at lengths around the vector sizes
+        // Alpha filtering and unfiltering (every filter, the first row and column, clamps of the gradient), the green
+        // extraction and the ARGB to RGBA rows, at lengths around the vector sizes
         var random = new Random(4053);
         for (var round = 0; round < 600; round++)
         {
@@ -3056,6 +3056,17 @@ public sealed class VectorizedKernelTests
                 WebPAlphaDecoder.UnfilterScalar(expected, width, height, filter);
                 WebPAlphaDecoder.Unfilter(actual, width, height, filter);
                 Assert.Equal(expected, actual);
+
+                var expectedFiltered = new byte[width];
+                var actualFiltered = new byte[width];
+                for (var y = 0; y < height; y++)
+                {
+                    var x0 = random.Next(0, width);
+                    var x1 = random.Next(x0 + 1, width + 1);
+                    WebPAlphaEncoder.FilterRowScalar(values, width, y, x0, x1, filter, expectedFiltered);
+                    WebPAlphaEncoder.FilterRow(values, width, y, x0, x1, filter, actualFiltered);
+                    Assert.Equal(expectedFiltered.AsSpan(0, x1 - x0).ToArray(), actualFiltered.AsSpan(0, x1 - x0).ToArray());
+                }
             }
 
             var pixels = new uint[width * height];

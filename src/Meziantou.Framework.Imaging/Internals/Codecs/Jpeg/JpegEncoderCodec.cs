@@ -1,6 +1,8 @@
 using System.Buffers.Binary;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Formats;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -41,6 +43,228 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             JpegChromaSubsampling.Ratio422 => (false, 2, 1),
             _ => (false, 2, 2),
         };
+    }
+
+    /// <summary>
+    /// Converts 8-bit RGB pixels to level-shifted JFIF 1.02 full-range YCbCr samples (ITU-R BT.601 luma weights):
+    /// <c>Y = 0.299 R + 0.587 G + 0.114 B</c>, <c>Cb = (B - Y) / 1.772</c>, <c>Cr = (R - Y) / 1.402</c>, computed in double
+    /// precision and stored unrounded (single precision) after the level shift of 128 (<c>Y - 128</c>), so the only rounding
+    /// before the DCT is the conversion to single precision.
+    /// </summary>
+    /// <param name="source">The interleaved RGB samples, 3 bytes per pixel.</param>
+    /// <param name="luma">The level-shifted luma samples; its length is the number of pixels.</param>
+    /// <param name="blue">The Cb samples minus 128.</param>
+    /// <param name="red">The Cr samples minus 128.</param>
+    /// <remarks>
+    /// With 128-bit hardware vectors, 16 pixels are deinterleaved by byte shuffles and converted two at a time with the same
+    /// operations in the same order (separate multiplications and additions, the divisions kept), so the samples are identical.
+    /// </remarks>
+    internal static void ConvertRgbToYCbCr(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    {
+        var done = Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian ? ConvertRgbToYCbCrVector(source, luma, blue, red) : 0;
+        ConvertRgbToYCbCrScalar(source[(3 * done)..], luma[done..], blue[done..], red[done..]);
+    }
+
+    /// <summary>The scalar reference of <see cref="ConvertRgbToYCbCr"/>.</summary>
+    internal static void ConvertRgbToYCbCrScalar(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    {
+        for (var x = 0; x < luma.Length; x++)
+        {
+            double r = source[3 * x];
+            double g = source[(3 * x) + 1];
+            double b = source[(3 * x) + 2];
+            var y = (0.299 * r) + (0.587 * g) + (0.114 * b);
+            luma[x] = (float)(y - 128);
+            blue[x] = (float)((b - y) / 1.772);
+            red[x] = (float)((r - y) / 1.402);
+        }
+    }
+
+    /// <summary>Converts the pixels of whole 16-pixel groups.</summary>
+    /// <returns>The number of pixels converted.</returns>
+    private static int ConvertRgbToYCbCrVector(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    {
+        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / 3);
+        ref var sourceStart = ref unsafe(MemoryMarshal.GetReference(source));
+        ref var lumaStart = ref unsafe(MemoryMarshal.GetReference(luma));
+        ref var blueStart = ref unsafe(MemoryMarshal.GetReference(blue));
+        ref var redStart = ref unsafe(MemoryMarshal.GetReference(red));
+        var x = 0;
+        for (; x + 16 <= count; x += 16)
+        {
+            var v0 = unsafe(Vector128.LoadUnsafe(ref sourceStart, (nuint)(3 * x)));
+            var v1 = unsafe(Vector128.LoadUnsafe(ref sourceStart, (nuint)((3 * x) + 16)));
+            var v2 = unsafe(Vector128.LoadUnsafe(ref sourceStart, (nuint)((3 * x) + 32)));
+
+            // Deinterleaved samples: each byte comes from one of the three vectors (an index of 0xFF selects zero)
+            var r = Vector128.Shuffle(v0, Vector128.Create((byte)0, 3, 6, 9, 12, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
+                | Vector128.Shuffle(v1, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 2, 5, 8, 11, 14, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
+                | Vector128.Shuffle(v2, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 1, 4, 7, 10, 13));
+            var g = Vector128.Shuffle(v0, Vector128.Create((byte)1, 4, 7, 10, 13, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
+                | Vector128.Shuffle(v1, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 3, 6, 9, 12, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
+                | Vector128.Shuffle(v2, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 2, 5, 8, 11, 14));
+            var b = Vector128.Shuffle(v0, Vector128.Create((byte)2, 5, 8, 11, 14, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
+                | Vector128.Shuffle(v1, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 1, 4, 7, 10, 13, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
+                | Vector128.Shuffle(v2, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 3, 6, 9, 12, 15));
+            var (r0, r1) = Vector128.Widen(r);
+            var (g0, g1) = Vector128.Widen(g);
+            var (b0, b1) = Vector128.Widen(b);
+            Convert8(r0, g0, b0, ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
+            Convert8(r1, g1, b1, ref unsafe(Unsafe.Add(ref lumaStart, x + 8)), ref unsafe(Unsafe.Add(ref blueStart, x + 8)), ref unsafe(Unsafe.Add(ref redStart, x + 8)));
+        }
+
+        return x;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Convert8(Vector128<ushort> r, Vector128<ushort> g, Vector128<ushort> b, ref float luma, ref float blue, ref float red)
+        {
+            var (r0, r1) = Vector128.Widen(r);
+            var (g0, g1) = Vector128.Widen(g);
+            var (b0, b1) = Vector128.Widen(b);
+            Convert4(r0, g0, b0, ref luma, ref blue, ref red);
+            Convert4(r1, g1, b1, ref unsafe(Unsafe.Add(ref luma, 4)), ref unsafe(Unsafe.Add(ref blue, 4)), ref unsafe(Unsafe.Add(ref red, 4)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Convert4(Vector128<uint> r, Vector128<uint> g, Vector128<uint> b, ref float luma, ref float blue, ref float red)
+        {
+            var (r0, r1) = Vector128.Widen(r);
+            var (g0, g1) = Vector128.Widen(g);
+            var (b0, b1) = Vector128.Widen(b);
+            Convert2(Vector128.ConvertToDouble(r0), Vector128.ConvertToDouble(g0), Vector128.ConvertToDouble(b0), out var y0, out var cb0, out var cr0);
+            Convert2(Vector128.ConvertToDouble(r1), Vector128.ConvertToDouble(g1), Vector128.ConvertToDouble(b1), out var y1, out var cb1, out var cr1);
+            unsafe { Vector128.Narrow(y0, y1).StoreUnsafe(ref luma); }
+            unsafe { Vector128.Narrow(cb0, cb1).StoreUnsafe(ref blue); }
+            unsafe { Vector128.Narrow(cr0, cr1).StoreUnsafe(ref red); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Convert2(Vector128<double> r, Vector128<double> g, Vector128<double> b, out Vector128<double> luma, out Vector128<double> blue, out Vector128<double> red)
+        {
+            var y = (0.299 * r) + (0.587 * g) + (0.114 * b);
+            luma = y - Vector128.Create(128.0);
+            blue = (b - y) / Vector128.Create(1.772);
+            red = (r - y) / Vector128.Create(1.402);
+        }
+    }
+
+    /// <summary>
+    /// Copies an 8x8 block of samples starting at (<paramref name="x0"/>, <paramref name="y0"/>) of an MCU-row plane. With
+    /// subsampling factors above 1, each block sample is the mean of the <c>factorX x factorY</c> full-resolution samples
+    /// it covers (box filter: the subsampled sample sits at the center of those samples, the JFIF chroma siting), summed in
+    /// double precision from zero, row by row, then multiplied by <c>1 / (factorX factorY)</c>.
+    /// </summary>
+    /// <param name="plane">The plane.</param>
+    /// <param name="planeWidth">The distance between two rows of the plane.</param>
+    /// <param name="x0">The first column.</param>
+    /// <param name="y0">The first row.</param>
+    /// <param name="factorX">The horizontal subsampling factor.</param>
+    /// <param name="factorY">The vertical subsampling factor.</param>
+    /// <param name="block">The 64 samples of the block.</param>
+    /// <remarks>
+    /// With 128-bit hardware vectors, a horizontal factor of 2 (with a vertical factor of 1 or 2) computes two block samples
+    /// at once with the same additions in the same order, and a factor of 1 copies 4 samples at a time.
+    /// </remarks>
+    internal static void ExtractBlock(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorX, int factorY, Span<float> block)
+    {
+        if (Vector128.IsHardwareAccelerated && ((factorX == 1 && factorY == 1) || (factorX == 2 && factorY is 1 or 2)))
+        {
+            ExtractBlockVector(plane, planeWidth, x0, y0, factorX, factorY, block);
+        }
+        else
+        {
+            ExtractBlockScalar(plane, planeWidth, x0, y0, factorX, factorY, block);
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="ExtractBlock"/>.</summary>
+    internal static void ExtractBlockScalar(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorX, int factorY, Span<float> block)
+    {
+        if (factorX == 1 && factorY == 1)
+        {
+            for (var y = 0; y < 8; y++)
+            {
+                plane.Slice(((y0 + y) * planeWidth) + x0, 8).CopyTo(block.Slice(y * 8, 8));
+            }
+
+            return;
+        }
+
+        var scale = 1d / (factorX * factorY);
+        for (var y = 0; y < 8; y++)
+        {
+            for (var x = 0; x < 8; x++)
+            {
+                var sum = 0d;
+                for (var dy = 0; dy < factorY; dy++)
+                {
+                    var line = plane.Slice(((y0 + (y * factorY) + dy) * planeWidth) + x0 + (x * factorX), factorX);
+                    foreach (var sample in line)
+                    {
+                        sum += sample;
+                    }
+                }
+
+                block[(y * 8) + x] = (float)(sum * scale);
+            }
+        }
+    }
+
+    private static void ExtractBlockVector(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorX, int factorY, Span<float> block)
+    {
+        // Bounds are checked once here; the loops below use unchecked references
+        var lastRow = ((y0 + (8 * factorY) - 1) * planeWidth) + x0;
+        _ = plane.Slice(lastRow, 8 * factorX);
+        _ = plane.Slice((y0 * planeWidth) + x0, 8 * factorX);
+        ArgumentOutOfRangeException.ThrowIfLessThan(block.Length, 64);
+        ref var source = ref unsafe(MemoryMarshal.GetReference(plane));
+        ref var destination = ref unsafe(MemoryMarshal.GetReference(block));
+        if (factorX == 1)
+        {
+            for (var y = 0; y < 8; y++)
+            {
+                ref var row = ref unsafe(Unsafe.Add(ref source, ((y0 + y) * planeWidth) + x0));
+                unsafe { Vector128.LoadUnsafe(ref row).StoreUnsafe(ref destination, (nuint)(y * 8)); }
+                unsafe { Vector128.LoadUnsafe(ref row, 4).StoreUnsafe(ref destination, (nuint)((y * 8) + 4)); }
+            }
+
+            return;
+        }
+
+        var scale = Vector128.Create(1d / (factorX * factorY));
+        for (var y = 0; y < 8; y++)
+        {
+            ref var first = ref unsafe(Unsafe.Add(ref source, ((y0 + (y * factorY)) * planeWidth) + x0));
+            ref var second = ref unsafe(Unsafe.Add(ref first, factorY == 2 ? planeWidth : 0));
+            for (var x = 0; x < 8; x += 4)
+            {
+                // Block samples x to x + 3 cover the plane samples 2x to 2x + 7: two at a time, (2x, 2x + 2) then (2x + 1, 2x + 3)
+                var low = Mean(ref first, ref second, 2 * x, factorY == 2, scale);
+                var high = Mean(ref first, ref second, (2 * x) + 4, factorY == 2, scale);
+                unsafe { Vector128.Narrow(low, high).StoreUnsafe(ref destination, (nuint)((y * 8) + x)); }
+            }
+        }
+
+        // The mean of the samples (2i, 2i + 1) of one or two rows, for the block samples i and i + 1 (i = start / 2)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<double> Mean(ref float first, ref float second, int start, bool twoRows, Vector128<double> scale)
+        {
+            var samples = unsafe(Vector128.LoadUnsafe(ref first, (nuint)start));
+            var lower = Vector128.WidenLower(samples);
+            var upper = Vector128.WidenUpper(samples);
+            var sum = Vector128<double>.Zero + JpegIdct.InterleaveLower(lower, upper);
+            sum += JpegIdct.InterleaveUpper(lower, upper);
+            if (twoRows)
+            {
+                samples = unsafe(Vector128.LoadUnsafe(ref second, (nuint)start));
+                lower = Vector128.WidenLower(samples);
+                upper = Vector128.WidenUpper(samples);
+                sum += JpegIdct.InterleaveLower(lower, upper);
+                sum += JpegIdct.InterleaveUpper(lower, upper);
+            }
+
+            return sum * scale;
+        }
     }
 
     /// <summary>
@@ -703,17 +927,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         /// </summary>
         private void ConvertColorRow(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
         {
-            for (var x = 0; x < _width; x++)
-            {
-                double r = source[3 * x];
-                double g = source[(3 * x) + 1];
-                double b = source[(3 * x) + 2];
-                var y = (0.299 * r) + (0.587 * g) + (0.114 * b);
-                luma[x] = (float)(y - 128);
-                blue[x] = (float)((b - y) / 1.772);
-                red[x] = (float)((r - y) / 1.402);
-            }
-
+            ConvertRgbToYCbCr(source, luma[.._width], blue[.._width], red[.._width]);
             luma[_width..].Fill(luma[_width - 1]);
             blue[_width..].Fill(blue[_width - 1]);
             red[_width..].Fill(red[_width - 1]);
@@ -749,38 +963,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         /// subsampling factors above 1, each block sample is the mean of the <c>factorX x factorY</c> full-resolution samples
         /// it covers (box filter: the subsampled sample sits at the center of those samples, the JFIF chroma siting).
         /// </summary>
-        private void ExtractBlock(ReadOnlySpan<float> plane, int x0, int y0, int factorX, int factorY)
-        {
-            var block = _block.AsSpan();
-            if (factorX == 1 && factorY == 1)
-            {
-                for (var y = 0; y < 8; y++)
-                {
-                    plane.Slice(((y0 + y) * _planeWidth) + x0, 8).CopyTo(block.Slice(y * 8, 8));
-                }
-
-                return;
-            }
-
-            var scale = 1d / (factorX * factorY);
-            for (var y = 0; y < 8; y++)
-            {
-                for (var x = 0; x < 8; x++)
-                {
-                    var sum = 0d;
-                    for (var dy = 0; dy < factorY; dy++)
-                    {
-                        var line = plane.Slice(((y0 + (y * factorY) + dy) * _planeWidth) + x0 + (x * factorX), factorX);
-                        foreach (var sample in line)
-                        {
-                            sum += sample;
-                        }
-                    }
-
-                    block[(y * 8) + x] = (float)(sum * scale);
-                }
-            }
-        }
+        private void ExtractBlock(ReadOnlySpan<float> plane, int x0, int y0, int factorX, int factorY) => JpegEncoderCodec.ExtractBlock(plane, _planeWidth, x0, y0, factorX, factorY, _block);
 
         private void EncodeBlock(Span<byte> destination, ref int position, int component, ReadOnlySpan<ushort> quantization, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
         {

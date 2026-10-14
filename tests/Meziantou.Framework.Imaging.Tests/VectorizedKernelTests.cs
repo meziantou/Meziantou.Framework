@@ -404,6 +404,104 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegEncoderColorConversionMatchesTheScalarReference()
+    {
+        var random = new Random(601);
+        for (var length = 0; length < 100; length++)
+        {
+            for (var round = 0; round < 4; round++)
+            {
+                // Random pixels, then the extremes: black, white and saturated primaries
+                var source = new byte[3 * length];
+                random.NextBytes(source);
+                if (round > 0)
+                {
+                    for (var i = 0; i < source.Length; i++)
+                    {
+                        source[i] = (byte)(round == 1 ? 0 : round == 2 ? 255 : (i / 3 + i) % 3 == 0 ? 255 : 0);
+                    }
+                }
+
+                var expected = new float[3][];
+                var actual = new float[3][];
+                for (var c = 0; c < 3; c++)
+                {
+                    expected[c] = new float[length];
+                    actual[c] = new float[length];
+                }
+
+                JpegEncoderCodec.ConvertRgbToYCbCrScalar(source, expected[0], expected[1], expected[2]);
+                JpegEncoderCodec.ConvertRgbToYCbCr(source, actual[0], actual[1], actual[2]);
+                for (var c = 0; c < 3; c++)
+                {
+                    Assert.Equal(expected[c], actual[c]);
+                }
+            }
+        }
+
+        // Every gray level and every value of one channel with the others at both ends
+        var all = new byte[3 * 256 * 3 * 4];
+        var count = 0;
+        for (var value = 0; value < 256; value++)
+        {
+            for (var channel = 0; channel < 3; channel++)
+            {
+                foreach (var other in new byte[] { 0, 255, 128, (byte)value })
+                {
+                    all[(3 * count) + channel] = (byte)value;
+                    all[(3 * count) + ((channel + 1) % 3)] = other;
+                    all[(3 * count) + ((channel + 2) % 3)] = (byte)(255 - other);
+                    count++;
+                }
+            }
+        }
+
+        var expectedAll = new float[3][];
+        var actualAll = new float[3][];
+        for (var c = 0; c < 3; c++)
+        {
+            expectedAll[c] = new float[count];
+            actualAll[c] = new float[count];
+        }
+
+        JpegEncoderCodec.ConvertRgbToYCbCrScalar(all, expectedAll[0], expectedAll[1], expectedAll[2]);
+        JpegEncoderCodec.ConvertRgbToYCbCr(all, actualAll[0], actualAll[1], actualAll[2]);
+        for (var c = 0; c < 3; c++)
+        {
+            Assert.Equal(expectedAll[c], actualAll[c]);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegEncoderBlockExtractionMatchesTheScalarReference()
+    {
+        var random = new Random(602);
+        const int PlaneWidth = 40;
+        var plane = new float[PlaneWidth * 17];
+        foreach (var (factorX, factorY) in new[] { (1, 1), (2, 1), (2, 2), (1, 2) })
+        {
+            for (var round = 0; round < 200; round++)
+            {
+                // Level-shifted luma and chroma values (any float), including the extremes of the range
+                for (var i = 0; i < plane.Length; i++)
+                {
+                    plane[i] = round % 4 == 0 ? (random.Next(2) == 0 ? -128f : 127f) : (float)((random.NextDouble() * 256) - 128);
+                }
+
+                var x0 = random.Next(0, PlaneWidth - (8 * factorX) + 1);
+                var y0 = random.Next(0, 17 - (8 * factorY) + 1);
+                var expected = new float[64];
+                var actual = new float[64];
+                JpegEncoderCodec.ExtractBlockScalar(plane, PlaneWidth, x0, y0, factorX, factorY, expected);
+                JpegEncoderCodec.ExtractBlock(plane, PlaneWidth, x0, y0, factorX, factorY, actual);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
     public static TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace> ResizeCases()
     {
         var data = new TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace>();

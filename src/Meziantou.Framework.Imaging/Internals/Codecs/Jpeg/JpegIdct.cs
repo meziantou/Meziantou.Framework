@@ -329,7 +329,7 @@ internal static class JpegIdct
 
     /// <summary>Gets the lanes 0 of two vectors: <c>(a[0], b[0])</c>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Vector128<double> InterleaveLower(Vector128<double> a, Vector128<double> b)
+    internal static Vector128<double> InterleaveLower(Vector128<double> a, Vector128<double> b)
     {
         if (AdvSimd.Arm64.IsSupported)
             return AdvSimd.Arm64.ZipLow(a, b);
@@ -342,7 +342,7 @@ internal static class JpegIdct
 
     /// <summary>Gets the lanes 1 of two vectors: <c>(a[1], b[1])</c>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Vector128<double> InterleaveUpper(Vector128<double> a, Vector128<double> b)
+    internal static Vector128<double> InterleaveUpper(Vector128<double> a, Vector128<double> b)
     {
         if (AdvSimd.Arm64.IsSupported)
             return AdvSimd.Arm64.ZipHigh(a, b);

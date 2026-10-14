@@ -933,6 +933,85 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlEdgePreservingFilterRowsMatchTheScalarReferenceBitForBit()
+    {
+        const int Border = 3;
+        var random = new Random(183);
+
+        // The neighbors and the patches of the three steps, as (row, column) offsets
+        sbyte[] wideNeighbors = [-2, 0, -1, -1, -1, 0, -1, 1, 0, -2, 0, -1, 0, 1, 0, 2, 1, -1, 1, 0, 1, 1, 2, 0];
+        sbyte[] crossNeighbors = [-1, 0, 0, -1, 0, 1, 1, 0];
+        sbyte[] cross = [0, 0, -1, 0, 0, -1, 1, 0, 0, 1];
+        for (var round = 0; round < 1500; round++)
+        {
+            var width = round < 120 ? 1 + (round % 40) : random.Next(1, 200);
+            var step = round % 3;
+            var paddedWidth = width + (2 * Border);
+            var neighbors = step == 0 ? wideNeighbors : crossNeighbors;
+            var patch = step == 2 ? cross[..2] : cross;
+            var neighborOffsets = new int[neighbors.Length / 2];
+            for (var i = 0; i < neighborOffsets.Length; i++)
+            {
+                neighborOffsets[i] = (neighbors[i * 2] * paddedWidth) + neighbors[(i * 2) + 1];
+            }
+
+            var patchOffsets = new int[patch.Length / 2];
+            for (var i = 0; i < patchOffsets.Length; i++)
+            {
+                patchOffsets[i] = (patch[i * 2] * paddedWidth) + patch[(i * 2) + 1];
+            }
+
+            // Smooth, noisy, flat (equal samples: zero differences) and extreme planes
+            var planes = new float[3][];
+            for (var c = 0; c < 3; c++)
+            {
+                planes[c] = new float[paddedWidth * (1 + (2 * Border))];
+                for (var i = 0; i < planes[c].Length; i++)
+                {
+                    planes[c][i] = (round % 4) switch
+                    {
+                        0 => 0.25f,
+                        1 => (float)random.NextDouble() * 1e-3f,
+                        2 => (float)((random.NextDouble() - 0.5) * 1e4),
+                        _ => (float)random.NextDouble(),
+                    };
+                }
+            }
+
+            // Inverse strengths: blocks the filter leaves, and others
+            var sigmaRow = new float[(width + 7) / 8];
+            for (var i = 0; i < sigmaRow.Length; i++)
+            {
+                sigmaRow[i] = random.Next(5) == 0 ? -10 : (float)(-random.NextDouble() * 4);
+            }
+
+            var parameters = new JpegXlRestorationFilters.EdgePreservingStep(
+                SigmaScale: (float)random.NextDouble() * 2,
+                BorderScale: (float)random.NextDouble() * 3,
+                ScaleX: (float)random.NextDouble() * 40,
+                ScaleY: (float)random.NextDouble() * 2,
+                ScaleB: (float)random.NextDouble());
+            var isBorderRow = random.Next(2) == 0;
+            var initial = new float[width];
+            for (var i = 0; i < width; i++)
+            {
+                initial[i] = (float)random.NextDouble();
+            }
+
+            var expected = new[] { initial.ToArray(), initial.ToArray(), initial.ToArray() };
+            var actual = new[] { initial.ToArray(), initial.ToArray(), initial.ToArray() };
+            var rowStart = (Border * paddedWidth) + Border;
+            JpegXlRestorationFilters.FilterRowScalar(planes[0], planes[1], planes[2], rowStart, width, neighborOffsets, patchOffsets, sigmaRow, isBorderRow, parameters, expected[0], expected[1], expected[2]);
+            JpegXlRestorationFilters.FilterRow(planes[0], planes[1], planes[2], rowStart, width, neighborOffsets, patchOffsets, sigmaRow, isBorderRow, parameters, actual[0], actual[1], actual[2]);
+            for (var c = 0; c < 3; c++)
+            {
+                Assert.Equal(Array.ConvertAll(expected[c], BitConverter.SingleToInt32Bits), Array.ConvertAll(actual[c], BitConverter.SingleToInt32Bits));
+            }
+        }
+    }
+
     public static TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace> ResizeCases()
     {
         var data = new TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace>();

@@ -1,3 +1,6 @@
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -163,10 +166,7 @@ internal static class JpegXlRestorationFilters
             1 => 1.65f,
             _ => filter.EpfPass2SigmaScale * 1.65f,
         };
-        var borderScale = sigmaScale * filter.EpfBorderSadMultiplier;
-        var scaleX = filter.EpfChannelScale[0];
-        var scaleY = filter.EpfChannelScale[1];
-        var scaleB = filter.EpfChannelScale[2];
+        var parameters = new EdgePreservingStep(sigmaScale, sigmaScale * filter.EpfBorderSadMultiplier, filter.EpfChannelScale[0], filter.EpfChannelScale[1], filter.EpfChannelScale[2]);
         var outputX = planes[0].Span;
         var outputY = planes[1].Span;
         var outputB = planes[2].Span;
@@ -180,50 +180,165 @@ internal static class JpegXlRestorationFilters
             var isBorderRow = (y & 7) is 0 or 7;
             var sigmaRow = inverseSigma.Slice((y >> 3) * blocksWide, blocksWide);
             var rowStart = ((y + Border) * paddedWidth) + Border;
-            for (var x = 0; x < width; x++)
+            var target = y * stride;
+            FilterRow(paddedX, paddedY, paddedB, rowStart, width, neighborOffsets, patchOffsets, sigmaRow, isBorderRow, parameters, outputX.Slice(target, width), outputY.Slice(target, width), outputB.Slice(target, width));
+        }
+    }
+
+    /// <summary>
+    /// Filters one row of samples with one step of the edge-preserving filter, four samples at a time: each lane performs
+    /// the operations of <see cref="FilterRowScalar"/> in the same order, and a neighbor whose weight is not positive is left
+    /// out by a selection, not by a product with zero.
+    /// </summary>
+    /// <param name="paddedX">The X channel with its border.</param>
+    /// <param name="paddedY">The Y channel with its border.</param>
+    /// <param name="paddedB">The B channel with its border.</param>
+    /// <param name="rowStart">The position of the first sample of the row in the padded channels.</param>
+    /// <param name="width">The number of samples of the row.</param>
+    /// <param name="neighborOffsets">The offsets of the neighbors averaged with a sample.</param>
+    /// <param name="patchOffsets">The offsets of the samples over which a neighbor is compared with the sample.</param>
+    /// <param name="sigmaRow">The inverse strength of each block of the row.</param>
+    /// <param name="isBorderRow">Whether the row is the first or the last of its blocks.</param>
+    /// <param name="parameters">The scales of the step.</param>
+    /// <param name="outputX">Receives the X samples of the row; the samples of a block the filter leaves are not written.</param>
+    /// <param name="outputY">Receives the Y samples of the row.</param>
+    /// <param name="outputB">Receives the B samples of the row.</param>
+    internal static void FilterRow(
+        ReadOnlySpan<float> paddedX,
+        ReadOnlySpan<float> paddedY,
+        ReadOnlySpan<float> paddedB,
+        int rowStart,
+        int width,
+        ReadOnlySpan<int> neighborOffsets,
+        ReadOnlySpan<int> patchOffsets,
+        ReadOnlySpan<float> sigmaRow,
+        bool isBorderRow,
+        in EdgePreservingStep parameters,
+        Span<float> outputX,
+        Span<float> outputY,
+        Span<float> outputB)
+    {
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            var scaleX = Vector128.Create(parameters.ScaleX);
+            var scaleY = Vector128.Create(parameters.ScaleY);
+            var scaleB = Vector128.Create(parameters.ScaleB);
+            for (; x <= width - 4; x += 4)
             {
+                // The four samples are in the same block: the first one is on its left border, or the last one on its right border
                 var blockInverseSigma = sigmaRow[x >> 3];
                 if (blockInverseSigma < MinInverseSigma)
                     continue;
 
+                var inner = blockInverseSigma * parameters.SigmaScale;
+                var border = blockInverseSigma * parameters.BorderScale;
+                var scaledInverseSigma = isBorderRow ? Vector128.Create(border) : (x & 4) == 0 ? Vector128.Create(border, inner, inner, inner) : Vector128.Create(inner, inner, inner, border);
                 var position = rowStart + x;
-                var scaledInverseSigma = blockInverseSigma * (isBorderRow || (x & 7) is 0 or 7 ? borderScale : sigmaScale);
-                var weightSum = 1f;
-                var sumX = paddedX[position];
-                var sumY = paddedY[position];
-                var sumB = paddedB[position];
+                var weightSum = Vector128<float>.One;
+                var sumX = Vector128.Create(paddedX.Slice(position, 4));
+                var sumY = Vector128.Create(paddedY.Slice(position, 4));
+                var sumB = Vector128.Create(paddedB.Slice(position, 4));
                 foreach (var neighbor in neighborOffsets)
                 {
-                    var differenceX = 0f;
-                    var differenceY = 0f;
-                    var differenceB = 0f;
+                    var differenceX = Vector128<float>.Zero;
+                    var differenceY = Vector128<float>.Zero;
+                    var differenceB = Vector128<float>.Zero;
                     foreach (var offset in patchOffsets)
                     {
                         var reference = position + offset;
-                        differenceX += MathF.Abs(paddedX[reference] - paddedX[reference + neighbor]);
-                        differenceY += MathF.Abs(paddedY[reference] - paddedY[reference + neighbor]);
-                        differenceB += MathF.Abs(paddedB[reference] - paddedB[reference + neighbor]);
+                        differenceX += Vector128.Abs(Vector128.Create(paddedX.Slice(reference, 4)) - Vector128.Create(paddedX.Slice(reference + neighbor, 4)));
+                        differenceY += Vector128.Abs(Vector128.Create(paddedY.Slice(reference, 4)) - Vector128.Create(paddedY.Slice(reference + neighbor, 4)));
+                        differenceB += Vector128.Abs(Vector128.Create(paddedB.Slice(reference, 4)) - Vector128.Create(paddedB.Slice(reference + neighbor, 4)));
                     }
 
                     var difference = (differenceX * scaleX) + (differenceY * scaleY) + (differenceB * scaleB);
-                    var weight = (difference * scaledInverseSigma) + 1f;
-                    if (weight > 0)
-                    {
-                        weightSum += weight;
-                        sumX += weight * paddedX[position + neighbor];
-                        sumY += weight * paddedY[position + neighbor];
-                        sumB += weight * paddedB[position + neighbor];
-                    }
+                    var weight = (difference * scaledInverseSigma) + Vector128<float>.One;
+                    var isPositive = Vector128.GreaterThan(weight, Vector128<float>.Zero);
+                    weightSum = Vector128.ConditionalSelect(isPositive, weightSum + weight, weightSum);
+                    sumX = Vector128.ConditionalSelect(isPositive, sumX + (weight * Vector128.Create(paddedX.Slice(position + neighbor, 4))), sumX);
+                    sumY = Vector128.ConditionalSelect(isPositive, sumY + (weight * Vector128.Create(paddedY.Slice(position + neighbor, 4))), sumY);
+                    sumB = Vector128.ConditionalSelect(isPositive, sumB + (weight * Vector128.Create(paddedB.Slice(position + neighbor, 4))), sumB);
                 }
 
-                var inverseWeight = 1f / weightSum;
-                var target = (y * stride) + x;
-                outputX[target] = sumX * inverseWeight;
-                outputY[target] = sumY * inverseWeight;
-                outputB[target] = sumB * inverseWeight;
+                var inverseWeight = Vector128<float>.One / weightSum;
+                (sumX * inverseWeight).CopyTo(outputX.Slice(x, 4));
+                (sumY * inverseWeight).CopyTo(outputY.Slice(x, 4));
+                (sumB * inverseWeight).CopyTo(outputB.Slice(x, 4));
             }
         }
+
+        FilterRowScalar(paddedX, paddedY, paddedB, rowStart, width, neighborOffsets, patchOffsets, sigmaRow, isBorderRow, parameters, outputX, outputY, outputB, x);
     }
+
+    /// <summary>The scalar reference of <see cref="FilterRow"/>, from the sample <paramref name="start"/> on.</summary>
+    internal static void FilterRowScalar(
+        ReadOnlySpan<float> paddedX,
+        ReadOnlySpan<float> paddedY,
+        ReadOnlySpan<float> paddedB,
+        int rowStart,
+        int width,
+        ReadOnlySpan<int> neighborOffsets,
+        ReadOnlySpan<int> patchOffsets,
+        ReadOnlySpan<float> sigmaRow,
+        bool isBorderRow,
+        in EdgePreservingStep parameters,
+        Span<float> outputX,
+        Span<float> outputY,
+        Span<float> outputB,
+        int start = 0)
+    {
+        for (var x = start; x < width; x++)
+        {
+            var blockInverseSigma = sigmaRow[x >> 3];
+            if (blockInverseSigma < MinInverseSigma)
+                continue;
+
+            var position = rowStart + x;
+            var scaledInverseSigma = blockInverseSigma * (isBorderRow || (x & 7) is 0 or 7 ? parameters.BorderScale : parameters.SigmaScale);
+            var weightSum = 1f;
+            var sumX = paddedX[position];
+            var sumY = paddedY[position];
+            var sumB = paddedB[position];
+            foreach (var neighbor in neighborOffsets)
+            {
+                var differenceX = 0f;
+                var differenceY = 0f;
+                var differenceB = 0f;
+                foreach (var offset in patchOffsets)
+                {
+                    var reference = position + offset;
+                    differenceX += MathF.Abs(paddedX[reference] - paddedX[reference + neighbor]);
+                    differenceY += MathF.Abs(paddedY[reference] - paddedY[reference + neighbor]);
+                    differenceB += MathF.Abs(paddedB[reference] - paddedB[reference + neighbor]);
+                }
+
+                var difference = (differenceX * parameters.ScaleX) + (differenceY * parameters.ScaleY) + (differenceB * parameters.ScaleB);
+                var weight = (difference * scaledInverseSigma) + 1f;
+                if (weight > 0)
+                {
+                    weightSum += weight;
+                    sumX += weight * paddedX[position + neighbor];
+                    sumY += weight * paddedY[position + neighbor];
+                    sumB += weight * paddedB[position + neighbor];
+                }
+            }
+
+            var inverseWeight = 1f / weightSum;
+            outputX[x] = sumX * inverseWeight;
+            outputY[x] = sumY * inverseWeight;
+            outputB[x] = sumB * inverseWeight;
+        }
+    }
+
+    /// <summary>The scales of one step of the edge-preserving filter.</summary>
+    /// <param name="SigmaScale">The scale of the inverse strength inside a block.</param>
+    /// <param name="BorderScale">The scale of the inverse strength on the border of a block.</param>
+    /// <param name="ScaleX">The weight of the differences of the X channel.</param>
+    /// <param name="ScaleY">The weight of the differences of the Y channel.</param>
+    /// <param name="ScaleB">The weight of the differences of the B channel.</param>
+    [StructLayout(LayoutKind.Auto)]
+    internal readonly record struct EdgePreservingStep(float SigmaScale, float BorderScale, float ScaleX, float ScaleY, float ScaleB);
 
     /// <summary>Copies a channel with a border of mirrored samples around it.</summary>
     private static void CopyWithBorder(ReadOnlySpan<float> plane, int stride, int width, int height, Span<float> padded, int border)

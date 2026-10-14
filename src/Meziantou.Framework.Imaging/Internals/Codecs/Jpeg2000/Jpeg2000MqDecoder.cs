@@ -1,3 +1,7 @@
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -34,67 +38,86 @@ internal struct Jpeg2000MqDecoder
     /// <summary>Decodes one decision in a context (DECODE).</summary>
     /// <param name="context">The context; it is updated.</param>
     /// <returns>The decision, 0 or 1.</returns>
+    /// <remarks>
+    /// The state, its more probable symbol and their transitions are one entry of
+    /// <see cref="Jpeg2000MqTables.ContextTransitions"/>, and RENORMD shifts the registers by as many bits as the interval
+    /// needs at once, up to the bits left in the code register, instead of one bit per iteration.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Decode(ref byte context)
     {
-        var state = context >> 1;
-        var moreProbable = context & 1;
-        uint probability = Jpeg2000MqTables.Probability[state];
+        var current = context;
+        var transitions = unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Jpeg2000MqTables.ContextTransitions), current));
+        var probability = transitions & 0xFFFF;
+        var moreProbable = current & 1;
         int decision;
-        _a -= probability;
+        var a = _a - probability;
         if ((_c >> 16) < probability)
         {
             // The less probable sub-interval is the lower one: LPS_EXCHANGE
-            if (_a < probability)
+            if (a < probability)
             {
                 decision = moreProbable;
-                context = (byte)((Jpeg2000MqTables.NextMoreProbable[state] << 1) | moreProbable);
+                context = (byte)(transitions >> 16);
             }
             else
             {
-                decision = 1 - moreProbable;
-                context = Jpeg2000MqTables.Switch[state] != 0
-                    ? (byte)((Jpeg2000MqTables.NextLessProbable[state] << 1) | decision)
-                    : (byte)((Jpeg2000MqTables.NextLessProbable[state] << 1) | moreProbable);
+                decision = moreProbable ^ 1;
+                context = (byte)(transitions >> 24);
             }
 
-            _a = probability;
+            a = probability;
         }
         else
         {
             _c -= probability << 16;
-            if ((_a & 0x8000) != 0)
+            if ((a & 0x8000) != 0)
+            {
+                _a = a;
                 return moreProbable;
+            }
 
             // MPS_EXCHANGE
-            if (_a < probability)
+            if (a < probability)
             {
-                decision = 1 - moreProbable;
-                context = Jpeg2000MqTables.Switch[state] != 0
-                    ? (byte)((Jpeg2000MqTables.NextLessProbable[state] << 1) | decision)
-                    : (byte)((Jpeg2000MqTables.NextLessProbable[state] << 1) | moreProbable);
+                decision = moreProbable ^ 1;
+                context = (byte)(transitions >> 24);
             }
             else
             {
                 decision = moreProbable;
-                context = (byte)((Jpeg2000MqTables.NextMoreProbable[state] << 1) | moreProbable);
+                context = (byte)(transitions >> 16);
             }
         }
 
-        // RENORMD
-        do
+        _a = a;
+        Renormalize();
+        return decision;
+    }
+
+    // RENORMD: the interval is shifted until its most significant bit is set, a byte being read whenever the code register
+    // has no bit left. A shift of n bits equals n shifts of one bit
+    private void Renormalize()
+    {
+        var a = _a;
+        var shift = BitOperations.LeadingZeroCount(a) - 16;
+        while (true)
         {
             if (_ct == 0)
             {
                 ByteIn();
             }
 
-            _a <<= 1;
-            _c <<= 1;
-            _ct--;
+            var count = Math.Min(shift, _ct);
+            a <<= count;
+            _c <<= count;
+            _ct -= count;
+            shift -= count;
+            if (shift == 0)
+                break;
         }
-        while ((_a & 0x8000) == 0);
 
-        return decision;
+        _a = a;
     }
 
     private readonly int ByteAt(int position) => position < _end ? _data[position] : 0xFF;

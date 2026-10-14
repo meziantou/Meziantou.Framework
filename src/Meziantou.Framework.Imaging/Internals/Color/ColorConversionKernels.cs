@@ -10,6 +10,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 internal static class ColorConversionKernels
 {
+    // The direct-mapped cache of the colors converted by one call of ConvertBytesCached: 2^CacheBits entries
+    private const int CacheBits = 8;
+    private const int CacheSize = 1 << CacheBits;
+
     /// <summary>
     /// Converts every pixel of a frame from the leased source to the leased destination of the same size and pixel
     /// format: the color channels go through the conversion at the storage precision (16-bit samples never go through
@@ -73,7 +77,15 @@ internal static class ColorConversionKernels
     {
         if (typeof(T) == typeof(byte) && pipeline.ByteInputTables is { } tables)
         {
-            ConvertBytes(pipeline, tables, unsafe(MemoryMarshal.Cast<T, byte>(source)), unsafe(MemoryMarshal.Cast<T, byte>(destination)), sourceStride, destinationStride, reverseColorOrder);
+            if (pipeline.HasLookupTable)
+            {
+                ConvertBytesCached(pipeline, tables, unsafe(MemoryMarshal.Cast<T, byte>(source)), unsafe(MemoryMarshal.Cast<T, byte>(destination)), sourceStride, destinationStride, reverseColorOrder);
+            }
+            else
+            {
+                ConvertBytes(pipeline, tables, unsafe(MemoryMarshal.Cast<T, byte>(source)), unsafe(MemoryMarshal.Cast<T, byte>(destination)), sourceStride, destinationStride, reverseColorOrder);
+            }
+
             return;
         }
 
@@ -109,6 +121,74 @@ internal static class ColorConversionKernels
             for (var channel = 0; channel < destinationChannels; channel++)
             {
                 output[reverseColorOrder ? 2 - channel : channel] = IccByteSample.Store(values[channel]);
+            }
+
+            kept.CopyTo(output[destinationChannels..]);
+        }
+    }
+
+    /// <summary>
+    /// Converts interleaved 8-bit colors like <see cref="ConvertBytes"/>, for the conversions that interpolate a color lookup
+    /// table (<see cref="IccPipeline.HasLookupTable"/>, hundreds of operations per color). The conversion of a color depends
+    /// only on its samples, and photographs repeat colors within a row (flat or smooth areas): the colors of the call are
+    /// remembered in a small direct-mapped cache (<see cref="CacheSize"/> entries, keyed by the packed source samples), and
+    /// a color found there gets the samples computed for it before. Matrix-based conversions are cheaper than the cache when
+    /// colors do not repeat.
+    /// </summary>
+    private static void ConvertBytesCached(IccPipeline pipeline, double[][] tables, ReadOnlySpan<byte> source, Span<byte> destination, int sourceStride, int destinationStride, bool reverseColorOrder)
+    {
+        var sourceChannels = pipeline.SourceChannelCount;
+        var destinationChannels = pipeline.DestinationChannelCount;
+        var copied = sourceStride - sourceChannels;
+        Span<double> values = stackalloc double[IccPipeline.MaxChannels];
+        Span<byte> kept = stackalloc byte[IccPipeline.MaxChannels];
+
+        // An entry is (source samples << 1) | 1, so that the zeroed entries of the new cache match no color; the result is
+        // the destination samples packed the same way
+        Span<ulong> cachedColors = stackalloc ulong[CacheSize];
+        Span<uint> cachedResults = stackalloc uint[CacheSize];
+        kept = kept[..copied];
+        var count = source.Length / sourceStride;
+        for (var i = 0; i < count; i++)
+        {
+            // The whole source color is read before the destination is written: the spans may be the same
+            var input = source.Slice(i * sourceStride, sourceStride);
+            var color = 0u;
+            for (var channel = 0; channel < sourceChannels; channel++)
+            {
+                color |= (uint)input[reverseColorOrder ? 2 - channel : channel] << (8 * channel);
+            }
+
+            input[sourceChannels..].CopyTo(kept);
+            var slot = (int)((color * 2654435761u) >> (32 - CacheBits));
+            var entry = ((ulong)color << 1) | 1;
+            uint result;
+            if (cachedColors[slot] == entry)
+            {
+                result = cachedResults[slot];
+            }
+            else
+            {
+                for (var channel = 0; channel < sourceChannels; channel++)
+                {
+                    values[channel] = tables[channel][(byte)(color >> (8 * channel))];
+                }
+
+                pipeline.ApplyAfterInputCurves(values);
+                result = 0;
+                for (var channel = 0; channel < destinationChannels; channel++)
+                {
+                    result |= (uint)IccByteSample.Store(values[channel]) << (8 * channel);
+                }
+
+                cachedColors[slot] = entry;
+                cachedResults[slot] = result;
+            }
+
+            var output = destination.Slice(i * destinationStride, destinationStride);
+            for (var channel = 0; channel < destinationChannels; channel++)
+            {
+                output[reverseColorOrder ? 2 - channel : channel] = (byte)(result >> (8 * channel));
             }
 
             kept.CopyTo(output[destinationChannels..]);

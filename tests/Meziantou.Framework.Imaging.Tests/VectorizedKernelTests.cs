@@ -1272,6 +1272,65 @@ public sealed class VectorizedKernelTests
         Assert.Null(IccPipeline.Create(displayP3, displayP3, Metadata.IccRenderingIntent.Perceptual, blackPointCompensation: true).ByteInputTables);
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ColorConversionCacheMatchesTheScalarReference()
+    {
+        // The 8-bit conversions that interpolate a lookup table remember the colors of a call: rows of repeated colors (runs,
+        // a few alternating colors, colors that share cache slots) give the samples of the stage-by-stage reference
+        (Metadata.IccProfile Source, Metadata.IccProfile Destination)[] pairs =
+        [
+            (IccTestProfiles.RgbLabLut8(), Metadata.IccProfile.Srgb),
+            (IccTestProfiles.RgbLabLutAToB(), IccTestProfiles.RgbXyzLut16()),
+            (IccTestProfiles.CmykLabLut16(), Metadata.IccProfile.Srgb),
+            (IccTestProfiles.CmykLabLutAToB(), IccTestProfiles.CmykLabLut16()),
+            (Metadata.IccProfile.Cgats001CompatibleCmyk, Metadata.IccProfile.SrgbGray),
+        ];
+
+        var random = new Random(4242);
+        foreach (var (source, destination) in pairs)
+        {
+            var pipeline = IccPipeline.Create(source, destination, Metadata.IccRenderingIntent.RelativeColorimetric, blackPointCompensation: false);
+            Assert.True(pipeline.HasLookupTable);
+            var sourceChannels = pipeline.SourceChannelCount;
+            var destinationChannels = pipeline.DestinationChannelCount;
+            foreach (var (extra, reverse) in new[] { (0, false), (1, false), (1, true) })
+            {
+                if (reverse && (sourceChannels != 3 || destinationChannels != 3))
+                    continue;
+
+                var palette = new byte[600][];
+                for (var i = 0; i < palette.Length; i++)
+                {
+                    palette[i] = new byte[sourceChannels + extra];
+                    random.NextBytes(palette[i]);
+                }
+
+                var colors = 3000;
+                var samples = new byte[colors * (sourceChannels + extra)];
+                for (var i = 0; i < colors; i++)
+                {
+                    // Runs of one color, then a few alternating colors, then many colors (more than the cache holds)
+                    var color = i < 1000 ? palette[i / 50] : i < 2000 ? palette[600 - 1 - (i % 3)] : palette[random.Next(palette.Length)];
+                    color.CopyTo(samples, i * (sourceChannels + extra));
+                }
+
+                var expected = new byte[colors * (destinationChannels + extra)];
+                var actual = new byte[expected.Length];
+                ColorConversionKernels.ConvertScalar<byte, IccByteSample>(pipeline, samples, expected, sourceChannels + extra, destinationChannels + extra, reverse);
+                ColorConversionKernels.Convert<byte, IccByteSample>(pipeline, samples, actual, sourceChannels + extra, destinationChannels + extra, reverse);
+                Assert.Equal(expected, actual);
+
+                // In place, when the strides are equal
+                if (sourceChannels == destinationChannels)
+                {
+                    ColorConversionKernels.Convert<byte, IccByteSample>(pipeline, samples, samples, sourceChannels + extra, destinationChannels + extra, reverse);
+                    Assert.Equal(expected, samples);
+                }
+            }
+        }
+    }
+
     [Theory]
     [InlineData(0, 0)]
     [InlineData(1, 0)]

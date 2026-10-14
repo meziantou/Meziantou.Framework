@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// <summary>Seed groups of the fuzz tests: every corpus input (valid, invalid, unsupported and limit fixtures) of a codec variant.</summary>
 internal static class FuzzSeeds
 {
-    public static IReadOnlyList<string> Groups { get; } = ["png", "apng", "gif", "jpeg-baseline", "jpeg-progressive", "webp-lossless", "webp-lossy", "webp-animated", "qoi", "bmp", "tga", "pnm", "avif-still", "avif-sequence", "av1-intra", "av1-inter", "heic-still", "heic-sequence", "hevc-intra", "hevc-inter", "jxl-lossless", "jxl-lossy", "jxl-animated"];
+    public static IReadOnlyList<string> Groups { get; } = ["png", "apng", "gif", "jpeg-baseline", "jpeg-progressive", "webp-lossless", "webp-lossy", "webp-animated", "qoi", "bmp", "tga", "pnm", "avif-still", "avif-sequence", "av1-intra", "av1-inter", "heic-still", "heic-sequence", "hevc-intra", "hevc-inter", "jxl-lossless", "jxl-lossy", "jxl-animated", "jp2-reversible", "jp2-irreversible", "jp2-file", "jp2-ht"];
 
     public static IReadOnlyList<FuzzSeed> Get(string group)
     {
@@ -106,6 +106,8 @@ internal static class FuzzSeeds
         "jpeg" => id.Contains("progressive", StringComparison.Ordinal) ? "jpeg-progressive" : "jpeg-baseline",
         "webp" => id.Contains("anim", StringComparison.Ordinal) ? "webp-animated" : id.Contains("lossy", StringComparison.Ordinal) ? "webp-lossy" : "webp-lossless",
         "jxl" => id.Contains("anim", StringComparison.Ordinal) ? "jxl-animated" : id.Contains("lossy", StringComparison.Ordinal) || id.Contains("jpeg", StringComparison.Ordinal) ? "jxl-lossy" : "jxl-lossless",
+        // JPEG 2000: the high-throughput block coder, the boxes of a file, then the two wavelet transformations
+        "jp2" => id.Contains("/ht-", StringComparison.Ordinal) ? "jp2-ht" : id.Contains("/file-", StringComparison.Ordinal) ? "jp2-file" : id.Contains("lossy", StringComparison.Ordinal) ? "jp2-irreversible" : "jp2-reversible",
         _ => format,
     };
 }

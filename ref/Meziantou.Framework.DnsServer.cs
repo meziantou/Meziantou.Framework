@@ -6,8 +6,8 @@ namespace Meziantou.Framework.DnsServer.Handler
 {
     public sealed class DnsRequestContext
     {
-        public Meziantou.Framework.DnsServer.Protocol.DnsMessage Query { get => throw null; }
         public Meziantou.Framework.DnsServer.Handler.DnsServerProtocol Protocol { get => throw null; }
+        public Meziantou.Framework.DnsServer.Protocol.DnsMessage Query { get => throw null; }
         public System.Net.EndPoint RemoteEndPoint { get => throw null; }
         public Meziantou.Framework.DnsServer.Protocol.DnsMessage CreateResponse() => throw null;
     }
@@ -38,69 +38,69 @@ namespace Meziantou.Framework.DnsServer.Hosting
 
     public sealed class DnsServerOptions
     {
-        public int MaxUdpResponseSize { get => throw null; set { } }
-        public System.TimeSpan TcpIdleTimeout { get => throw null; set { } }
-        public System.TimeSpan QuicIdleTimeout { get => throw null; set { } }
         public int MaxConcurrentQueriesPerConnection { get => throw null; set { } }
-        public Meziantou.Framework.DnsServer.Hosting.DnsServerOptions AddUdpListener(int port = 53, System.Net.IPAddress? bindAddress = null) => throw null;
+        public int MaxUdpResponseSize { get => throw null; set { } }
+        public System.TimeSpan QuicIdleTimeout { get => throw null; set { } }
+        public System.TimeSpan TcpIdleTimeout { get => throw null; set { } }
+        public Meziantou.Framework.DnsServer.Hosting.DnsServerOptions AddQuicListener(int port, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Net.IPAddress? bindAddress = null) => throw null;
         public Meziantou.Framework.DnsServer.Hosting.DnsServerOptions AddTcpListener(int port = 53, System.Net.IPAddress? bindAddress = null) => throw null;
         public Meziantou.Framework.DnsServer.Hosting.DnsServerOptions AddTlsListener(int port, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Net.IPAddress? bindAddress = null) => throw null;
-        public Meziantou.Framework.DnsServer.Hosting.DnsServerOptions AddQuicListener(int port, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Net.IPAddress? bindAddress = null) => throw null;
+        public Meziantou.Framework.DnsServer.Hosting.DnsServerOptions AddUdpListener(int port = 53, System.Net.IPAddress? bindAddress = null) => throw null;
     }
 
     public sealed class QuicListenerOptions
     {
-        public int Port { get => throw null; set { } }
         public System.Net.IPAddress BindAddress { get => throw null; set { } }
         public System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate { get => throw null; set { } }
+        public int Port { get => throw null; set { } }
     }
 
     public sealed class TcpListenerOptions
     {
-        public int Port { get => throw null; set { } }
         public System.Net.IPAddress BindAddress { get => throw null; set { } }
+        public int Port { get => throw null; set { } }
     }
 
     public sealed class TlsListenerOptions
     {
-        public int Port { get => throw null; set { } }
         public System.Net.IPAddress BindAddress { get => throw null; set { } }
         public System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate { get => throw null; set { } }
+        public int Port { get => throw null; set { } }
     }
 
     public sealed class UdpListenerOptions
     {
-        public int Port { get => throw null; set { } }
         public System.Net.IPAddress BindAddress { get => throw null; set { } }
+        public int Port { get => throw null; set { } }
     }
 }
 namespace Meziantou.Framework.DnsServer.Protocol
 {
     public sealed class DnsEdnsOptions
     {
-        public ushort UdpPayloadSize { get => throw null; set { } }
-        public byte Version { get => throw null; set { } }
         public bool DnssecOk { get => throw null; set { } }
         public byte ExtendedRCode { get => throw null; set { } }
+        public ushort UdpPayloadSize { get => throw null; set { } }
+        public byte Version { get => throw null; set { } }
     }
 
     public sealed class DnsMessage
     {
-        public ushort Id { get => throw null; set { } }
-        public bool IsResponse { get => throw null; set { } }
-        public Meziantou.Framework.DnsServer.Protocol.DnsOpCode OpCode { get => throw null; set { } }
-        public bool IsAuthoritative { get => throw null; set { } }
-        public bool IsTruncated { get => throw null; set { } }
-        public bool RecursionDesired { get => throw null; set { } }
-        public bool RecursionAvailable { get => throw null; set { } }
-        public bool AuthenticatedData { get => throw null; set { } }
-        public bool CheckingDisabled { get => throw null; set { } }
-        public Meziantou.Framework.DnsServer.Protocol.DnsResponseCode ResponseCode { get => throw null; set { } }
-        public System.Collections.Generic.IList<Meziantou.Framework.DnsServer.Protocol.DnsQuestion> Questions { get => throw null; }
-        public System.Collections.Generic.IList<Meziantou.Framework.DnsServer.Protocol.DnsResourceRecord> Answers { get => throw null; }
-        public System.Collections.Generic.IList<Meziantou.Framework.DnsServer.Protocol.DnsResourceRecord> Authorities { get => throw null; }
         public System.Collections.Generic.IList<Meziantou.Framework.DnsServer.Protocol.DnsResourceRecord> AdditionalRecords { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.DnsServer.Protocol.DnsResourceRecord> Answers { get => throw null; }
+        public bool AuthenticatedData { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.DnsServer.Protocol.DnsResourceRecord> Authorities { get => throw null; }
+        public bool CheckingDisabled { get => throw null; set { } }
         public Meziantou.Framework.DnsServer.Protocol.DnsEdnsOptions? EdnsOptions { get => throw null; set { } }
+        public ushort Id { get => throw null; set { } }
+        public bool IsAuthoritative { get => throw null; set { } }
+        public bool IsResponse { get => throw null; set { } }
+        public bool IsTruncated { get => throw null; set { } }
+        public Meziantou.Framework.DnsServer.Protocol.DnsOpCode OpCode { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.DnsServer.Protocol.DnsQuestion> Questions { get => throw null; }
+        public bool RecursionAvailable { get => throw null; set { } }
+        public bool RecursionDesired { get => throw null; set { } }
+        public Meziantou.Framework.DnsServer.Protocol.DnsResponseCode ResponseCode { get => throw null; set { } }
     }
 
     public enum DnsOpCode : byte
@@ -201,18 +201,18 @@ namespace Meziantou.Framework.DnsServer.Protocol
     public sealed class DnsQuestion
     {
         public string Name { get => throw null; set { } }
-        public Meziantou.Framework.DnsServer.Protocol.DnsQueryType Type { get => throw null; set { } }
         public Meziantou.Framework.DnsServer.Protocol.DnsQueryClass QueryClass { get => throw null; set { } }
+        public Meziantou.Framework.DnsServer.Protocol.DnsQueryType Type { get => throw null; set { } }
         public DnsQuestion(string name, Meziantou.Framework.DnsServer.Protocol.DnsQueryType type, Meziantou.Framework.DnsServer.Protocol.DnsQueryClass queryClass = Meziantou.Framework.DnsServer.Protocol.DnsQueryClass.IN) { }
     }
 
     public sealed class DnsResourceRecord
     {
-        public string Name { get => throw null; set { } }
-        public Meziantou.Framework.DnsServer.Protocol.DnsQueryType Type { get => throw null; set { } }
         public Meziantou.Framework.DnsServer.Protocol.DnsQueryClass Class { get => throw null; set { } }
-        public uint TimeToLive { get => throw null; set { } }
         public Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData? Data { get => throw null; set { } }
+        public string Name { get => throw null; set { } }
+        public uint TimeToLive { get => throw null; set { } }
+        public Meziantou.Framework.DnsServer.Protocol.DnsQueryType Type { get => throw null; set { } }
     }
 
     public abstract class DnsResourceRecordData
@@ -273,18 +273,18 @@ namespace Meziantou.Framework.DnsServer.Protocol.Records
 
     public sealed class DnsDnskeyRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
     {
+        public byte Algorithm { get => throw null; set { } }
         public ushort Flags { get => throw null; set { } }
         public byte Protocol { get => throw null; set { } }
-        public byte Algorithm { get => throw null; set { } }
         public byte[] PublicKey { get => throw null; set { } }
     }
 
     public sealed class DnsDsRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
     {
-        public ushort KeyTag { get => throw null; set { } }
         public byte Algorithm { get => throw null; set { } }
-        public byte DigestType { get => throw null; set { } }
         public byte[] Digest { get => throw null; set { } }
+        public byte DigestType { get => throw null; set { } }
+        public ushort KeyTag { get => throw null; set { } }
     }
 
     public sealed class DnsEdnsOption
@@ -301,29 +301,29 @@ namespace Meziantou.Framework.DnsServer.Protocol.Records
 
     public sealed class DnsLocRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
     {
-        public byte Version { get => throw null; set { } }
-        public byte Size { get => throw null; set { } }
+        public uint Altitude { get => throw null; set { } }
         public byte HorizontalPrecision { get => throw null; set { } }
-        public byte VerticalPrecision { get => throw null; set { } }
         public uint Latitude { get => throw null; set { } }
         public uint Longitude { get => throw null; set { } }
-        public uint Altitude { get => throw null; set { } }
+        public byte Size { get => throw null; set { } }
+        public byte Version { get => throw null; set { } }
+        public byte VerticalPrecision { get => throw null; set { } }
     }
 
     public sealed class DnsMxRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
     {
-        public ushort Preference { get => throw null; set { } }
         public string Exchange { get => throw null; set { } }
+        public ushort Preference { get => throw null; set { } }
     }
 
     public sealed class DnsNaptrRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
     {
+        public string Flags { get => throw null; set { } }
         public ushort Order { get => throw null; set { } }
         public ushort Preference { get => throw null; set { } }
-        public string Flags { get => throw null; set { } }
-        public string Services { get => throw null; set { } }
         public string Regexp { get => throw null; set { } }
         public string Replacement { get => throw null; set { } }
+        public string Services { get => throw null; set { } }
     }
 
     public sealed class DnsNsRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
@@ -333,19 +333,19 @@ namespace Meziantou.Framework.DnsServer.Protocol.Records
 
     public sealed class DnsNsec3ParamRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
     {
-        public byte HashAlgorithm { get => throw null; set { } }
         public byte Flags { get => throw null; set { } }
+        public byte HashAlgorithm { get => throw null; set { } }
         public ushort Iterations { get => throw null; set { } }
         public byte[] Salt { get => throw null; set { } }
     }
 
     public sealed class DnsNsec3RecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
     {
-        public byte HashAlgorithm { get => throw null; set { } }
         public byte Flags { get => throw null; set { } }
+        public byte HashAlgorithm { get => throw null; set { } }
         public ushort Iterations { get => throw null; set { } }
-        public byte[] Salt { get => throw null; set { } }
         public byte[] NextHashedOwnerName { get => throw null; set { } }
+        public byte[] Salt { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsServer.Protocol.DnsQueryType> TypeBitMaps { get => throw null; set { } }
     }
 
@@ -373,41 +373,41 @@ namespace Meziantou.Framework.DnsServer.Protocol.Records
 
     public sealed class DnsRrsigRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
     {
-        public Meziantou.Framework.DnsServer.Protocol.DnsQueryType TypeCovered { get => throw null; set { } }
         public byte Algorithm { get => throw null; set { } }
+        public ushort KeyTag { get => throw null; set { } }
         public byte Labels { get => throw null; set { } }
         public uint OriginalTtl { get => throw null; set { } }
+        public byte[] Signature { get => throw null; set { } }
         public uint SignatureExpiration { get => throw null; set { } }
         public uint SignatureInception { get => throw null; set { } }
-        public ushort KeyTag { get => throw null; set { } }
         public string SignerName { get => throw null; set { } }
-        public byte[] Signature { get => throw null; set { } }
+        public Meziantou.Framework.DnsServer.Protocol.DnsQueryType TypeCovered { get => throw null; set { } }
     }
 
     public sealed class DnsSoaRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
     {
-        public string PrimaryNameServer { get => throw null; set { } }
-        public string ResponsibleMailbox { get => throw null; set { } }
-        public uint Serial { get => throw null; set { } }
-        public int Refresh { get => throw null; set { } }
-        public int Retry { get => throw null; set { } }
         public int Expire { get => throw null; set { } }
         public uint Minimum { get => throw null; set { } }
+        public string PrimaryNameServer { get => throw null; set { } }
+        public int Refresh { get => throw null; set { } }
+        public string ResponsibleMailbox { get => throw null; set { } }
+        public int Retry { get => throw null; set { } }
+        public uint Serial { get => throw null; set { } }
     }
 
     public sealed class DnsSrvRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
     {
-        public ushort Priority { get => throw null; set { } }
-        public ushort Weight { get => throw null; set { } }
         public ushort Port { get => throw null; set { } }
+        public ushort Priority { get => throw null; set { } }
         public string Target { get => throw null; set { } }
+        public ushort Weight { get => throw null; set { } }
     }
 
     public sealed class DnsSshfpRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
     {
         public byte Algorithm { get => throw null; set { } }
-        public byte FingerprintType { get => throw null; set { } }
         public byte[] Fingerprint { get => throw null; set { } }
+        public byte FingerprintType { get => throw null; set { } }
     }
 
     public sealed class DnsSvcParam
@@ -418,17 +418,17 @@ namespace Meziantou.Framework.DnsServer.Protocol.Records
 
     public sealed class DnsSvcbRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
     {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsServer.Protocol.Records.DnsSvcParam> Parameters { get => throw null; set { } }
         public ushort Priority { get => throw null; set { } }
         public string TargetName { get => throw null; set { } }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsServer.Protocol.Records.DnsSvcParam> Parameters { get => throw null; set { } }
     }
 
     public sealed class DnsTlsaRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
     {
-        public byte CertificateUsage { get => throw null; set { } }
-        public byte Selector { get => throw null; set { } }
-        public byte MatchingType { get => throw null; set { } }
         public byte[] CertificateAssociationData { get => throw null; set { } }
+        public byte CertificateUsage { get => throw null; set { } }
+        public byte MatchingType { get => throw null; set { } }
+        public byte Selector { get => throw null; set { } }
     }
 
     public sealed class DnsTxtRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
@@ -444,7 +444,7 @@ namespace Meziantou.Framework.DnsServer.Protocol.Records
     public sealed class DnsUriRecordData : Meziantou.Framework.DnsServer.Protocol.DnsResourceRecordData
     {
         public ushort Priority { get => throw null; set { } }
-        public ushort Weight { get => throw null; set { } }
         public string Target { get => throw null; set { } }
+        public ushort Weight { get => throw null; set { } }
     }
 }

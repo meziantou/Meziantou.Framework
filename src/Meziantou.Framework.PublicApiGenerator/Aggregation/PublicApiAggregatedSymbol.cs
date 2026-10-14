@@ -52,7 +52,7 @@ public sealed class PublicApiAggregatedSymbol
     /// <summary>Gets the parts of the declaration that differ between the variants.</summary>
     public PublicApiSymbolDifferences Differences { get; }
 
-    /// <summary>Gets the members of a type, from all the target frameworks.</summary>
+    /// <summary>Gets the members of a type, from all the target frameworks. They are sorted as <see cref="PublicApiType.Members"/>.</summary>
     public ImmutableArray<PublicApiAggregatedSymbol> Members { get; }
 
     /// <summary>Gets the nested types of a type, from all the target frameworks.</summary>

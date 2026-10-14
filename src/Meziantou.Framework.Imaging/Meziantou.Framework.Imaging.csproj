@@ -3,8 +3,8 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
     <Version>1.0.1</Version>
-    <Description>Fully managed, performance-oriented image library for .NET: PNG, APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF and HEIC decoding/encoding, JPEG XL decoding and lossless/lossy encoding, lossless JPEG recompression as JPEG XL, animation-aware processing, vector drawing, ICC color conversion, and bounded-memory streaming.</Description>
-    <PackageTags>image;imaging;png;apng;gif;jpeg;webp;qoi;bmp;tga;netpbm;tiff;ico;cur;ani;cursor;avif;av1;heic;heif;hevc;jpegxl;jxl;animation;resize;drawing;icc;color-management</PackageTags>
+    <Description>Fully managed, performance-oriented image library for .NET: PNG, APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF, HEIC and JPEG 2000 decoding/encoding, JPEG XL decoding and lossless/lossy encoding, lossless JPEG recompression as JPEG XL, animation-aware processing, vector drawing, ICC color conversion, and bounded-memory streaming.</Description>
+    <PackageTags>image;imaging;png;apng;gif;jpeg;webp;qoi;bmp;tga;netpbm;tiff;ico;cur;ani;cursor;avif;av1;heic;heif;hevc;jpegxl;jxl;jpeg2000;jp2;j2k;htj2k;animation;resize;drawing;icc;color-management</PackageTags>
 
     <!-- Every public member must be documented -->
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
@@ -27,6 +27,7 @@
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Gif.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Ico.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Jpeg.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Jpeg2000.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.JpegXl.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Png.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Pnm.Tests" />

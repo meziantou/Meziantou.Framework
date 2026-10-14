@@ -1,8 +1,8 @@
 # Meziantou.Framework.Imaging
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
-own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder) and JPEG XL (lossless and lossy,
-progressive) decoding and encoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
+own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder), JPEG XL (lossless and lossy,
+progressive) and JPEG 2000 decoding and encoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
 vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
 readers and writers.
 
@@ -350,6 +350,51 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   writes and djxl rebuilds), and any other unused table is refused. cjxl refuses a slot that is used again for other
   values between two scans, which the library writes and djxl rebuilds. The JPEG entropy coding shares `JpegBitWriter` and `JpegHuffmanEncoder` with the JPEG
   encoder: there is still one JPEG implementation of each direction of pixels, and one of coefficients.
+- **JPEG 2000** (`Internals/Codecs/Jpeg2000`). Written from Rec. ITU-T T.800 (Part 1) and T.814 (Part 15, the
+  high-throughput block coder, `Jpeg2000/Ht`); OpenJPEG, OpenJPH and FFmpeg are test oracles only. The structure parser
+  reads the boxes of a file and gives the codestream to `Jpeg2000CodestreamWalker`, which asks for whole marker
+  segments and streams the tile-part bodies into the buffer of their tile; a tile is decoded when its last tile-part
+  arrives (`Jpeg2000TileDecoder`: geometry, every packet, the planes, the code-blocks, the inverse transformations),
+  then released. A header identification stops at the first SOT marker, and the EOC marker is required: truncation is
+  never a clean end.
+  - A block decoder returns a coefficient as its sign and twice its magnitude, with the bit-planes that are not coded
+    replaced by half of their range (`Jpeg2000Tier1Decoder` and `Jpeg2000HtBlockDecoder` share this contract). The
+    reversible path halves it, the irreversible path multiplies it by half of the step size: missing coding passes are
+    ordinary content, not an error.
+  - The reversible path (5-3, RCT, region of interest, palette, depth scaling) is integer arithmetic and exact. The
+    irreversible path (9-7, ICT) is `float` with a fixed order of operations and no fused multiply-add; it is compared
+    with OpenJPEG under a tolerance pinned to the measurement, like JPEG XL.
+  - The wavelet and component transformations have `Vector<T>` paths (`Jpeg2000Dwt`, `Jpeg2000ColorTransform`). A
+    lifting step is one operation on every sample of one parity: it is applied to the two halves of a row while they
+    are separated, and to strips of `ColumnStrip` columns copied to the scratch of the tile. The filters on interleaved
+    signals (`LiftReversible`, `LiftIrreversible` and their forward versions) stay the reference, and each vector path
+    equals its `...Scalar` version bit for bit, in both directions (`VectorizedKernelTests`).
+  - The MQ decoder keeps the LPS sub-interval at the bottom of the interval, as T.800 Annex C does; software decoders
+    often use the opposite convention, and mixing the two decodes zeros. `Jpeg2000MqCoderTests` holds the test
+    sequence of T.88.
+  - The CxtVLC tables of T.814 Annex C (`Jpeg2000HtVlcTables`) are generated from the text of the Recommendation; the
+    lookup is built when the type is first used and fails if a context is not a complete prefix code. The decoder
+    follows the bit-stream procedures of clause 7 bit by bit, with their names.
+  - Where the Recommendation leaves a choice, the reference decoders decide, and where they disagree with it, the
+    Recommendation does: Zppt restarts in each tile-part header (OpenJPEG counts it per tile, FFmpeg only reads a PPT
+    marker segment in the first tile-part), an HT cleanup magnitude may use every bit-plane (FFmpeg refuses it), a
+    codestream of three components whose last two are sub-sampled alike is sYCC (both decoders read it so). The
+    fixtures record each disagreement with its reason.
+  - The encoder (`Jpeg2000EncoderCodec`) is one tile, one layer, LRCP, without rate control; a lossy output codes the
+    opacity reversibly through COC and QCC marker segments. Its quantization steps come from the gains of the synthesis
+    kernel of the library, measured, not from published tables.
+  - The lossy quality is calibrated on `JpegEncoder` (`Jpeg2000QuantizationDesign`): the base step of the luminance is
+    `0.47 * s^(3/4)` levels, `s` being the scale of the JPEG quality, and the two chrominances have twice that step (a
+    QCC marker segment each). The constants were fitted on photographs of several sizes, so that a quality has the SSIM
+    of the JPEG file of the same quality: of the five metrics measured (PSNR, SSIM, XPSNR, MS-SSIM, VMAF, from FFmpeg
+    and the `vmaf` tool), SSIM asks for the step in the middle. At the same quality, PSNR and XPSNR are then up to 2 dB
+    above JPEG, MS-SSIM about 1 dB below, VMAF 1 to 3 points below up to the quality 50 and the same from 80, and the
+    file is about two thirds of the JPEG one (half of it at the quality 20). The ratio of the chrominances is what the default 4:2:0 sub-sampling of the JPEG encoder
+    costs them; it does not grow with the quality as that cost does. The power is computed from square roots, so that
+    the output is the same on every platform. Measure again before changing a constant or the quantizer, on real
+    photographs: `TheQualityFollowsTheScaleOfTheJpegEncoder` only keeps the two scales together on a synthetic image.
+  - A TIFF strip or tile compressed with JPEG 2000 is decoded by the same code through `Jpeg2000SampleDecoder` and a
+    `Jpeg2000SampleReceiver`: the page says what the components are.
 - **TIFF** (`Internals/Codecs/Tiff`). `TiffPage` resolves and validates a directory without reading a pixel, so every
   rejection also comes from `Identify`, except the ones of the compressed data. `TiffBlockReader` turns a strip or a
   tile into rows of samples (fill order, compression, predictor, YCbCr data units) and `TiffRowExpander` turns the rows
@@ -871,7 +916,7 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 | `src/Meziantou.Framework.Imaging` | The library and the package README (`readme.md`) |
 | `tests/Meziantou.Framework.Imaging.Tests` | Tests that are not about one codec: image model, pixels, memory, metadata, readers and writers with test codecs, format detection, defaults, API surface, the corpus and harness self-tests, the documentation examples |
 | `tests/Meziantou.Framework.Imaging.Processing.Tests` | Processing, resampling, convolution, automatic cropping, drawing and color conversion, with their golden and reference suites |
-| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
+| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
 | `tests/Meziantou.Framework.Imaging.Tests.Shared` | Sources compiled into every project above (no project file): `Helpers/`, the generic suites over the corpus (`Suites/`) and `Imaging.Tests.Shared.props` |
 | `tests/Meziantou.Framework.Imaging.InteropTests` | Files produced by the encoders are decoded by pinned external tools |
 | `tests/Meziantou.Framework.Imaging.TestHarness` | Shared, test-framework-agnostic support: corpus manifest, raw-buffer comparison, independent reference readers, tool helpers |
@@ -982,8 +1027,8 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   compares the library with the reference decoders on every stream and on seeded random streams of the three encoders
   (`MEZIANTOU_FRAMEWORK_IMAGING_HEVC_DIFF_SEED`, `MEZIANTOU_FRAMEWORK_IMAGING_HEVC_DIFF_CASES`).
 - Interop tests download ffmpeg (with x265 and kvazaar), libwebp, libavif, libjxl (`cjxl`, `djxl`, `jxlinfo`,
-  `jxl_from_tree`), jxl-oxide, libde265 (`dec265`), libheif (`heif-enc`, `heif-dec`, `heif-info`) and HM (`TAppEncoder`,
-  `TAppDecoder`) from the release pinned by the `Meziantou.Prebuilt` package (same version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
+  `jxl_from_tree`), jxl-oxide, libde265 (`dec265`), libheif (`heif-enc`, `heif-dec`, `heif-info`), HM (`TAppEncoder`,
+  `TAppDecoder`), OpenJPEG (`opj_compress`, `opj_decompress`, `opj_dump`) and OpenJPH (`ojph_compress`, `ojph_expand`) from the release pinned by the `Meziantou.Prebuilt` package (same version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
   capability fails the test; it is never skipped. The Apple ImageIO cases need `swift` and only run on macOS.
 - Interop tests start every tool through `ProcessRunner` (test harness), never through `System.Diagnostics.Process`
   directly: on macOS, `Process` forks before .NET 11, which makes the thousands of tool runs of a test process wait on
@@ -1013,6 +1058,19 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   which is linked into the generator and has no dependency on the library; it does not read what is entropy coded (the
   ICC profile of a codestream, a permuted table of contents), so the ICC fixtures use profiles of the corpus and the
   conformance tests look them up by their hash.
+
+- **JPEG 2000 fixtures** (`jp2` generator, `Jp2Corpus.cs` and its partial files). A fixture of the reversible
+  transformations expects the pattern given to `opj_compress` or `ojph_compress`; a fixture of the irreversible ones
+  expects what `opj_decompress` decodes, cross-checked with the native decoder of FFmpeg (and `ojph_expand` for the
+  high-throughput block coder), under a tolerance derived from the measured error of the library
+  (`LibraryJp2Measurements`, printed by `Jpeg2000DecoderConformanceTests`). A decoder that does not read a fixture as
+  the Recommendation says is recorded with the reason and excluded; the generator fails when it starts to agree, so a
+  tool upgrade is noticed. What no pinned tool writes is made by the generator without decoding anything: files
+  assembled with `Jp2FileBuilder`, codestreams whose marker segments and packets are moved (`Jp2Corpus.Editor.cs`: PPM,
+  PPT, interleaved tile-parts, COC/QCC), and the coding passes of the high-throughput block coder that `ojph_compress`
+  does not write (`Jp2Corpus.HighThroughput.cs`: HT SigProp and HT MagRef passes, placeholder passes, layers), whose
+  expected pixels are the coefficients the generator codes. The fields of the files are read by
+  `TestHarness/Jpeg2000/ReferenceJpeg2000`.
 
   The coverage tables of the fixtures README are checked against the manifest (`FixtureCoverageMatrixTests`): update them
   when fixtures or feature tags change.

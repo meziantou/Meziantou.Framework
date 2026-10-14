@@ -37,6 +37,7 @@ internal sealed class TiffBlockReader : IDisposable
     private readonly RandomAccessSource _source;
     private readonly TiffPage _page;
     private readonly JpegBlockReceiver? _jpegReceiver;
+    private readonly Jpeg2000BlockReceiver? _jpeg2000Receiver;
     private PooledBuffer? _block;
     private PooledBuffer? _inflateScratch;
     private PooledBuffer? _units;
@@ -53,6 +54,10 @@ internal sealed class TiffBlockReader : IDisposable
         {
             _jpegReceiver = new JpegBlockReceiver(page);
         }
+        else if (page.IsJpeg2000)
+        {
+            _jpeg2000Receiver = new Jpeg2000BlockReceiver(page);
+        }
     }
 
     /// <summary>Reads and decodes one block into the buffer of the reader.</summary>
@@ -68,6 +73,12 @@ internal sealed class TiffBlockReader : IDisposable
         if (page.IsJpeg)
         {
             DecodeJpeg(index, rowCount, _block.RawBuffer, handler: null);
+            return destination;
+        }
+
+        if (page.IsJpeg2000)
+        {
+            DecodeJpeg2000(index, rowCount, _block.RawBuffer);
             return destination;
         }
 
@@ -173,7 +184,7 @@ internal sealed class TiffBlockReader : IDisposable
         // The largest expansions are far below 16 times: about 6 for fax rows of isolated pixels (6 bits per pixel, and an
         // end-of-line code per row), 1.5 for LZW and 2 for PackBits data that never repeats, about 6.5 for a JPEG block
         // whose every coefficient has the longest code. A JPEG datastream also carries tables and application segments
-        var needed = (decodedLength * MaxCompressionExpansion) + (_page.IsJpeg ? MaxJpegOverhead : MaxBlockOverhead);
+        var needed = (decodedLength * MaxCompressionExpansion) + (_page.IsJpeg || _page.IsJpeg2000 ? MaxJpegOverhead : MaxBlockOverhead);
         var compressed = _source.ReadToBuffer(offset, Math.Min(storedLength, needed));
         if (_page.IsLeastSignificantBitFirst)
         {
@@ -375,6 +386,40 @@ internal sealed class TiffBlockReader : IDisposable
     }
 
     /// <summary>
+    /// Decodes the JPEG 2000 codestream of a block into a buffer. The codestream may be alone or in a JP2 file, whose boxes
+    /// are not interpreted: the page says what the components are.
+    /// </summary>
+    private void DecodeJpeg2000(int index, int rowCount, byte[] buffer)
+    {
+        var page = _page;
+        var receiver = _jpeg2000Receiver!;
+        using var compressed = ReadCompressed(index, (long)rowCount * page.BlockRowLength);
+        receiver.Begin(index, rowCount, buffer);
+        try
+        {
+            using var decoder = new Jpeg2000SampleDecoder(_source.Context, receiver);
+            using var parser = new Jpeg2000StructureParser(_source.Context, StructureWalk.Decode, decoder, isEmbedded: true);
+            if (!parser.Parse(compressed.Span, isEndOfInput: true, out _).IsComplete)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 data of the TIFF block {index} of page {page.Index} is truncated."));
+        }
+        catch (InvalidImageContentException exception) when (exception.Format == ImageFormat.Jpeg2000)
+        {
+            throw new InvalidImageContentException(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 data of the TIFF block {index} of page {page.Index} is malformed: {exception.Message}"), ImageFormat.Tiff, exception);
+        }
+        catch (UnsupportedImageFeatureException exception) when (exception.Format == ImageFormat.Jpeg2000)
+        {
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 data of the TIFF block {index} of page {page.Index} is not supported: {exception.Message}"), string.Create(CultureInfo.InvariantCulture, $"Compression: {exception.Feature}"));
+        }
+        finally
+        {
+            receiver.End();
+        }
+
+        if (receiver.RowsReceived < rowCount)
+            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 data of the TIFF block {index} of page {page.Index} produced {receiver.RowsReceived} rows; {rowCount} are required."));
+    }
+
+    /// <summary>
     /// Gives the tables of <c>JPEGTables</c> to a decoder: an abbreviated datastream for table specifications (SOI, the
     /// quantization and Huffman tables, EOI) that the datastream of every block of the page relies on (TIFF Technical Note 2).
     /// </summary>
@@ -421,6 +466,76 @@ internal sealed class TiffBlockReader : IDisposable
 
         InvalidImageContentException InvalidTables()
             => TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEGTables tag of the TIFF page {_page.Index} is not a JPEG datastream of table specifications."));
+    }
+
+    /// <summary>Receives the samples of the JPEG 2000 codestream of one block and checks its components against the page.</summary>
+    private sealed class Jpeg2000BlockReceiver : Jpeg2000SampleReceiver
+    {
+        private readonly TiffPage _page;
+        private byte[]? _buffer;
+        private int _index;
+        private int _rowCount;
+        private long _samplesReceived;
+
+        public Jpeg2000BlockReceiver(TiffPage page)
+        {
+            _page = page;
+        }
+
+        /// <summary>Gets the number of rows of the block that were received in full.</summary>
+        public int RowsReceived => (int)(_samplesReceived / _page.BlockWidth);
+
+        public void Begin(int index, int rowCount, byte[] buffer)
+        {
+            _index = index;
+            _rowCount = rowCount;
+            _buffer = buffer;
+            _samplesReceived = 0;
+        }
+
+        public void End() => _buffer = null;
+
+        public override void OnImage(int width, int height, ReadOnlySpan<Jpeg2000ComponentSize> components)
+        {
+            var page = _page;
+            if (components.Length != page.SamplesPerPixel)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 data of the TIFF block {_index} of page {page.Index} has {components.Length} component(s); the page declares {page.SamplesPerPixel} sample(s) per pixel."));
+
+            foreach (var component in components)
+            {
+                if (component.Precision != page.BitsPerSample)
+                    throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 data of the TIFF block {_index} of page {page.Index} has samples of {component.Precision} bits; the page declares {page.BitsPerSample}."));
+            }
+
+            // A block holds at least the rows of the page it covers, and never more than the rows of a block
+            if (width != page.BlockWidth || height < _rowCount || height > page.BlockHeight)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 data of the TIFF block {_index} of page {page.Index} is a {width}x{height} image; the block is {page.BlockWidth} pixels wide, holds {_rowCount} rows and has at most {page.BlockHeight}."));
+        }
+
+        public override void OnRow(int x, int y, ReadOnlySpan<byte> samples)
+        {
+            if (y >= _rowCount)
+                return;
+
+            var page = _page;
+            var bytesPerPixel = page.BlockRowLength / page.BlockWidth;
+            var destination = _buffer.AsSpan((y * page.BlockRowLength) + (x * bytesPerPixel), samples.Length);
+            if (page.BitsPerSample == 16 && page.IsBigEndian == BitConverter.IsLittleEndian)
+            {
+                // The samples of a block are in the byte order of the file
+                for (var i = 0; i < samples.Length; i += 2)
+                {
+                    destination[i] = samples[i + 1];
+                    destination[i + 1] = samples[i];
+                }
+            }
+            else
+            {
+                samples.CopyTo(destination);
+            }
+
+            _samplesReceived += samples.Length / bytesPerPixel;
+        }
     }
 
     /// <summary>Receives the rows of the JPEG datastream of one block and checks its frame against the page.</summary>

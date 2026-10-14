@@ -44,6 +44,13 @@ internal static class CorpusVerifier
                     // Verified below from the AV1 and the HEVC payloads (AvifCorpus.VerifyContainer, HeicCorpus.VerifyContainer)
                     continue;
                 }
+                else if (format == "jp2")
+                {
+                    // The cross-checks of a JPEG 2000 fixture compare the channels FFmpeg returns in the pixel format of
+                    // the file, at its depth: the conversion to RGBA of this verification would scale samples of 4 and
+                    // 12 bits another way. The jp2 generator in check mode runs every decoder again
+                    continue;
+                }
                 else if (format == "webp")
                 {
                     errors = VerifyWebP(tools, scratch, fixture);

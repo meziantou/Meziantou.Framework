@@ -886,4 +886,178 @@ public sealed class VectorizedKernelTests
         // Identical profiles have no stage and no table: the samples are copied
         Assert.Null(IccPipeline.Create(displayP3, displayP3, Metadata.IccRenderingIntent.Perceptual, blackPointCompensation: true).ByteInputTables);
     }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 0)]
+    [InlineData(0, 1)]
+    [InlineData(5, 3)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Jpeg2000WaveletTransformsMatchTheScalarReferenceBitForBit(int originX, int originY)
+    {
+        // The vector paths filter the two halves of a row and strips of columns; the reference filters interleaved
+        // signals, one sample at a time. Sizes around the vector sizes and the width of a strip, both parities of the
+        // first sample (which change at each level with an odd origin), levels with a single row or column
+        const int Levels = 3;
+        int[] sizes = [1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 33, 63, 64, 65, 67, 129, 200];
+        var random = new Random((originX * 100) + originY);
+        var resolutions = new Jpeg2000ResolutionGeometry[Levels + 1];
+        foreach (var width in sizes)
+        {
+            foreach (var height in sizes)
+            {
+                for (var r = 0; r <= Levels; r++)
+                {
+                    var shift = Levels - r;
+                    resolutions[r] = new Jpeg2000ResolutionGeometry
+                    {
+                        X0 = Jpeg2000TileGeometry.CeilingShift(originX, shift),
+                        Y0 = Jpeg2000TileGeometry.CeilingShift(originY, shift),
+                        X1 = Jpeg2000TileGeometry.CeilingShift(originX + width, shift),
+                        Y1 = Jpeg2000TileGeometry.CeilingShift(originY + height, shift),
+                    };
+                }
+
+                // Small samples, samples of 16 bits, and values whose sums wrap around
+                var magnitude = random.Next(3) switch { 0 => 256, 1 => 1 << 16, _ => int.MaxValue };
+                var samples = new int[width * height];
+                var coefficients = new float[samples.Length];
+                for (var i = 0; i < samples.Length; i++)
+                {
+                    samples[i] = random.Next(-magnitude, magnitude);
+                    coefficients[i] = NextSingle(random);
+                }
+
+                var scratchLength = (int)Jpeg2000Dwt.GetScratchLength(width, height);
+                var label = $"{width}x{height}";
+                CheckIntegers(samples, scratchLength, (plane, scratch) => Jpeg2000Dwt.ForwardReversibleScalar(plane, width, resolutions, scratch), (plane, scratch) => Jpeg2000Dwt.ForwardReversible(plane, width, resolutions, scratch), label);
+                CheckIntegers(samples, scratchLength, (plane, scratch) => Jpeg2000Dwt.InverseReversibleScalar(plane, width, resolutions, scratch), (plane, scratch) => Jpeg2000Dwt.InverseReversible(plane, width, resolutions, scratch), label);
+                CheckSingles(coefficients, scratchLength, (plane, scratch) => Jpeg2000Dwt.ForwardIrreversibleScalar(plane, width, resolutions, scratch), (plane, scratch) => Jpeg2000Dwt.ForwardIrreversible(plane, width, resolutions, scratch), label);
+                CheckSingles(coefficients, scratchLength, (plane, scratch) => Jpeg2000Dwt.InverseIrreversibleScalar(plane, width, resolutions, scratch), (plane, scratch) => Jpeg2000Dwt.InverseIrreversible(plane, width, resolutions, scratch), label);
+            }
+        }
+
+        static void CheckIntegers(int[] source, int scratchLength, Action<int[], int[]> reference, Action<int[], int[]> transform, string label)
+        {
+            var expected = (int[])source.Clone();
+            var actual = (int[])source.Clone();
+            reference(expected, new int[scratchLength]);
+            transform(actual, new int[scratchLength]);
+            Assert.True(expected.AsSpan().SequenceEqual(actual), label);
+        }
+
+        static void CheckSingles(float[] source, int scratchLength, Action<float[], float[]> reference, Action<float[], float[]> transform, string label)
+        {
+            var expected = (float[])source.Clone();
+            var actual = (float[])source.Clone();
+            reference(expected, new float[scratchLength]);
+            transform(actual, new float[scratchLength]);
+            Assert.True(ToBits(expected).AsSpan().SequenceEqual(ToBits(actual)), label);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Jpeg2000ComponentTransformsMatchTheScalarReferenceBitForBit()
+    {
+        var random = new Random(2000);
+        int[] lengths = [0, 1, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 33, 64, 100, 257];
+        foreach (var length in lengths)
+        {
+            for (var round = 0; round < 6; round++)
+            {
+                var magnitude = round switch { 0 => 256, 1 => 1 << 16, 2 => 1 << 24, _ => int.MaxValue };
+                var integers = new int[3][];
+                var singles = new float[3][];
+                for (var component = 0; component < 3; component++)
+                {
+                    integers[component] = new int[length];
+                    singles[component] = new float[length];
+                    for (var i = 0; i < length; i++)
+                    {
+                        integers[component][i] = random.Next(-magnitude, magnitude);
+                        singles[component][i] = NextSingle(random);
+                    }
+                }
+
+                var expectedIntegers = Clone(integers);
+                var actualIntegers = Clone(integers);
+                Jpeg2000ColorTransform.InverseReversibleScalar(expectedIntegers[0], expectedIntegers[1], expectedIntegers[2]);
+                Jpeg2000ColorTransform.InverseReversible(actualIntegers[0], actualIntegers[1], actualIntegers[2]);
+                var expectedSingles = Clone(singles);
+                var actualSingles = Clone(singles);
+                Jpeg2000ColorTransform.InverseIrreversibleScalar(expectedSingles[0], expectedSingles[1], expectedSingles[2]);
+                Jpeg2000ColorTransform.InverseIrreversible(actualSingles[0], actualSingles[1], actualSingles[2]);
+                for (var component = 0; component < 3; component++)
+                {
+                    Assert.Equal(expectedIntegers[component], actualIntegers[component]);
+                    Assert.Equal(ToBits(expectedSingles[component]), ToBits(actualSingles[component]));
+
+                    var expectedForward = new int[length];
+                    var actualForward = new int[length];
+                    Jpeg2000ColorTransform.ForwardReversibleScalar(integers[0], integers[1], integers[2], component, expectedForward);
+                    Jpeg2000ColorTransform.ForwardReversible(integers[0], integers[1], integers[2], component, actualForward);
+                    Assert.Equal(expectedForward, actualForward);
+
+                    var expectedForwardSingles = new float[length];
+                    var actualForwardSingles = new float[length];
+                    Jpeg2000ColorTransform.ForwardIrreversibleScalar(integers[0], integers[1], integers[2], component, expectedForwardSingles);
+                    Jpeg2000ColorTransform.ForwardIrreversible(integers[0], integers[1], integers[2], component, actualForwardSingles);
+                    Assert.Equal(ToBits(expectedForwardSingles), ToBits(actualForwardSingles));
+                }
+
+                foreach (var precision in (int[])[1, 2, 8, 12, 16])
+                {
+                    var expectedShift = (int[])integers[0].Clone();
+                    var actualShift = (int[])integers[0].Clone();
+                    Jpeg2000ColorTransform.ShiftLevelScalar(expectedShift, precision);
+                    Jpeg2000ColorTransform.ShiftLevel(actualShift, precision);
+                    Assert.Equal(expectedShift, actualShift);
+
+                    // Values around the two ends of the range, ties, both zeros, and what finite coefficients never
+                    // produce: infinities and values that are not numbers
+                    var values = (float[])singles[0].Clone();
+                    var half = 1 << (precision - 1);
+                    for (var i = 0; i < length; i++)
+                    {
+                        values[i] = random.Next(8) switch
+                        {
+                            0 => random.Next(-half - 2, half + 2) + 0.5f,
+                            1 => random.Next(-half - 2, half + 2),
+                            2 => (float)((random.NextDouble() * 2.2 * half) - (1.1 * half)),
+                            3 => ((float[])[0f, -0f, float.NaN, float.PositiveInfinity, float.NegativeInfinity, float.MaxValue, float.MinValue, float.Epsilon])[random.Next(8)],
+                            _ => values[i],
+                        };
+                    }
+
+                    var expectedRounded = new int[length];
+                    var actualRounded = new int[length];
+                    Jpeg2000ColorTransform.ShiftLevelScalar(values, expectedRounded, precision);
+                    Jpeg2000ColorTransform.ShiftLevel(values, actualRounded, precision);
+                    Assert.Equal(expectedRounded, actualRounded);
+
+                    // The decoder writes the samples over the coefficients
+                    var shared = (float[])values.Clone();
+                    Jpeg2000ColorTransform.ShiftLevel(shared, unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<float, int>(shared.AsSpan())), precision);
+                    Assert.Equal(expectedRounded, Array.ConvertAll(shared, BitConverter.SingleToInt32Bits));
+                }
+            }
+        }
+
+        static T[][] Clone<T>(T[][] source) => Array.ConvertAll(source, values => (T[])values.Clone());
+    }
+
+    private static int[] ToBits(float[] values) => Array.ConvertAll(values, BitConverter.SingleToInt32Bits);
+
+    /// <summary>A finite single-precision number: an integer, a fraction, a large or a tiny magnitude, or a zero of either sign.</summary>
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static float NextSingle(Random random) => random.Next(8) switch
+    {
+        0 => random.Next(-32768, 32768),
+        1 => random.Next(-4096, 4096) + 0.5f,
+        2 => (float)((random.NextDouble() - 0.5) * 1e20),
+        3 => (float)((random.NextDouble() - 0.5) * 1e-30),
+        4 => random.Next(2) == 0 ? 0f : -0f,
+        _ => (float)((random.NextDouble() - 0.5) * 65536),
+    };
 }

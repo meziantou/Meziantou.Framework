@@ -1,0 +1,16 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!-- JPEG 2000 -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
+    <ImagingTestFixtureFormats>jp2</ImagingTestFixtureFormats>
+    <ImagingTestEncoders>jp2</ImagingTestEncoders>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Imaging.TestHarness\Meziantou.Framework.Imaging.TestHarness.csproj" />
+  </ItemGroup>
+
+  <Import Project="..\Meziantou.Framework.Imaging.Tests.Shared\Imaging.Tests.Shared.props" />
+</Project>

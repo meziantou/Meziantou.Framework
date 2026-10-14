@@ -24,6 +24,30 @@ internal static class ErrorFixtureStages
         "limit/jxl/height-over-limit",
         "limit/jxl/frame-pixels-over-limit",
         "limit/jxl/metadata-bytes-over-limit",
+
+        // JPEG 2000: the boxes that precede the codestream of a file, and the main header of the codestream
+        "invalid/jp2/file-box-length",
+        "invalid/jp2/file-header-size",
+        "invalid/jp2/file-no-codestream",
+        "invalid/jp2/file-no-color",
+        "invalid/jp2/file-no-header",
+        "invalid/jp2/five-components",
+        "invalid/jp2/header-no-cod",
+        "invalid/jp2/header-no-qcd",
+        "invalid/jp2/ht-mixed",
+        "invalid/jp2/motion-jpeg-2000",
+        "invalid/jp2/part-2-extensions",
+        "invalid/jp2/premultiplied-opacity",
+        "invalid/jp2/signed-samples",
+        "invalid/jp2/siz-image-offset",
+        "invalid/jp2/siz-no-component",
+        "invalid/jp2/siz-zero-tile-width",
+        "invalid/jp2/subsampled-first-component",
+        "invalid/jp2/two-opacities",
+        "limit/jp2/width-over-limit",
+        "limit/jp2/height-over-limit",
+        "limit/jp2/frame-pixels-over-limit",
+        "limit/jp2/metadata-bytes-over-limit",
         "invalid/png/apng-default-fctl-partial",
         "invalid/png/apng-fdat-before-idat",
         "invalid/png/apng-invalid-dispose-op",
@@ -203,6 +227,15 @@ internal static class ErrorFixtureStages
 
     private static readonly HashSet<string> StructureDefects = new(StringComparer.Ordinal)
     {
+        // JPEG 2000: the chain of the tile-parts, the end of the codestream and the boxes that follow it
+        "invalid/jp2/codestream-cut",
+        "invalid/jp2/codestream-no-end",
+        "invalid/jp2/file-codestream-cut",
+        "invalid/jp2/tile-index",
+        "invalid/jp2/tile-part-index",
+        "invalid/jp2/tile-part-length",
+        "invalid/jp2/two-codestreams",
+        "limit/jp2/metadata-bytes-after-codestream",
         "invalid/jxl/container-two-codestreams",
         "invalid/jxl/frame-header-corrupt",
         "limit/jxl/frames-over-limit",
@@ -325,6 +358,10 @@ internal static class ErrorFixtureStages
 
     private static readonly HashSet<string> PixelDefects = new(StringComparer.Ordinal)
     {
+        // JPEG 2000: the packets of a tile and the coding passes of a code-block
+        "invalid/jp2/ht-placeholders-alone",
+        "invalid/jp2/ht-suffix-length",
+        "invalid/jp2/ht-two-sets",
         "invalid/jxl/frame-data-corrupt",
         "limit/jxl/total-pixels-hidden-layer",
         "invalid/png/apng-fdat-extra-scanline",

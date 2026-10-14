@@ -6,9 +6,9 @@ namespace Meziantou.Framework
 {
     public sealed class BufferedProcessInstance : Meziantou.Framework.ProcessInstance
     {
-        public new System.Runtime.CompilerServices.TaskAwaiter<Meziantou.Framework.BufferedProcessResult> GetAwaiter() => throw null;
-        public new System.Runtime.CompilerServices.ConfiguredTaskAwaitable<Meziantou.Framework.BufferedProcessResult> ConfigureAwait(bool continueOnCapturedContext) => throw null;
         public new System.Runtime.CompilerServices.ConfiguredTaskAwaitable<Meziantou.Framework.BufferedProcessResult> ConfigureAwait(System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public new System.Runtime.CompilerServices.ConfiguredTaskAwaitable<Meziantou.Framework.BufferedProcessResult> ConfigureAwait(bool continueOnCapturedContext) => throw null;
+        public new System.Runtime.CompilerServices.TaskAwaiter<Meziantou.Framework.BufferedProcessResult> GetAwaiter() => throw null;
     }
 
     public sealed class BufferedProcessResult : Meziantou.Framework.ProcessResult
@@ -18,31 +18,31 @@ namespace Meziantou.Framework
 
     public sealed class FakeProcess : Meziantou.Framework.IProcessHandle, System.IDisposable
     {
-        int Meziantou.Framework.IProcessHandle.Id { get => throw null; }
-        bool Meziantou.Framework.IProcessHandle.HasExited { get => throw null; }
+        System.IO.Stream Meziantou.Framework.IProcessHandle.ErrorStream { get => throw null; }
         int Meziantou.Framework.IProcessHandle.ExitCode { get => throw null; }
+        bool Meziantou.Framework.IProcessHandle.HasExited { get => throw null; }
+        int Meziantou.Framework.IProcessHandle.Id { get => throw null; }
         System.IO.Stream Meziantou.Framework.IProcessHandle.InputStream { get => throw null; }
         System.IO.Stream Meziantou.Framework.IProcessHandle.OutputStream { get => throw null; }
-        System.IO.Stream Meziantou.Framework.IProcessHandle.ErrorStream { get => throw null; }
         Microsoft.Win32.SafeHandles.SafeProcessHandle? Meziantou.Framework.IProcessHandle.SafeProcessHandle { get => throw null; }
+        public void Complete(int? exitCode = null) { }
         public static Meziantou.Framework.FakeProcess Create(int exitCode) => throw null;
         public static Meziantou.Framework.FakeProcess Create(int exitCode, System.IO.Stream outputStream, System.IO.Stream errorStream) => throw null;
         public static Meziantou.Framework.FakeProcess Create(int exitCode, string outputText, string errorText) => throw null;
         public static Meziantou.Framework.FakeProcess CreatePending(int exitCode) => throw null;
         public static Meziantou.Framework.FakeProcess CreatePending(int exitCode, System.IO.Stream outputStream, System.IO.Stream errorStream) => throw null;
         public static Meziantou.Framework.FakeProcess CreatePending(int exitCode, string outputText, string errorText) => throw null;
-        public void Complete(int? exitCode = null) { }
+        void System.IDisposable.Dispose() { }
+        void Meziantou.Framework.IProcessHandle.Kill(bool entireProcessTree) { }
         public string ReadInputAsText(System.Text.Encoding? encoding = null) => throw null;
         bool Meziantou.Framework.IProcessHandle.Start() => throw null;
         System.Threading.Tasks.Task Meziantou.Framework.IProcessHandle.WaitForExitAsync(System.Threading.CancellationToken cancellationToken) => throw null;
-        void Meziantou.Framework.IProcessHandle.Kill(bool entireProcessTree) { }
-        void System.IDisposable.Dispose() { }
     }
 
     public sealed class FakeProcessFactory : Meziantou.Framework.IProcessFactory
     {
-        public FakeProcessFactory(System.Func<System.Diagnostics.ProcessStartInfo, Meziantou.Framework.FakeProcess> factory) { }
         public FakeProcessFactory(params Meziantou.Framework.FakeProcess[] processes) { }
+        public FakeProcessFactory(System.Func<System.Diagnostics.ProcessStartInfo, Meziantou.Framework.FakeProcess> factory) { }
         Meziantou.Framework.IProcessHandle Meziantou.Framework.IProcessFactory.Create(System.Diagnostics.ProcessStartInfo processStartInfo) => throw null;
     }
 
@@ -53,16 +53,16 @@ namespace Meziantou.Framework
 
     public interface IProcessHandle : System.IDisposable
     {
-        int Id { get; }
-        bool HasExited { get; }
+        System.IO.Stream ErrorStream { get; }
         int ExitCode { get; }
+        bool HasExited { get; }
+        int Id { get; }
         System.IO.Stream InputStream { get; }
         System.IO.Stream OutputStream { get; }
-        System.IO.Stream ErrorStream { get; }
         Microsoft.Win32.SafeHandles.SafeProcessHandle? SafeProcessHandle { get; }
+        void Kill(bool entireProcessTree = true);
         bool Start();
         System.Threading.Tasks.Task WaitForExitAsync(System.Threading.CancellationToken cancellationToken);
-        void Kill(bool entireProcessTree = true);
     }
 
     public interface IProcessStartInfoInterceptor
@@ -77,78 +77,78 @@ namespace Meziantou.Framework
 
     public abstract class InputSource
     {
-        public static Meziantou.Framework.InputSource FromStream(System.IO.Stream stream) => throw null;
-        public static Meziantou.Framework.InputSource FromText(string text) => throw null;
         public static Meziantou.Framework.InputSource FromBytes(System.ReadOnlyMemory<byte> bytes) => throw null;
-        public static Meziantou.Framework.InputSource FromTextReader(System.IO.TextReader reader) => throw null;
         public static Meziantou.Framework.InputSource FromFile(string path) => throw null;
         public static Meziantou.Framework.InputSource FromProcessPipe(Meziantou.Framework.ProcessPipe processPipe) => throw null;
-        public static implicit operator Meziantou.Framework.InputSource(System.IO.Stream stream) => throw null;
-        public static implicit operator Meziantou.Framework.InputSource(string text) => throw null;
-        public static implicit operator Meziantou.Framework.InputSource(byte[] bytes) => throw null;
-        public static implicit operator Meziantou.Framework.InputSource(System.ReadOnlyMemory<byte> bytes) => throw null;
-        public static implicit operator Meziantou.Framework.InputSource(System.IO.TextReader reader) => throw null;
+        public static Meziantou.Framework.InputSource FromStream(System.IO.Stream stream) => throw null;
+        public static Meziantou.Framework.InputSource FromText(string text) => throw null;
+        public static Meziantou.Framework.InputSource FromTextReader(System.IO.TextReader reader) => throw null;
         public abstract int Read(byte[] buffer);
+        public static implicit operator Meziantou.Framework.InputSource(System.IO.Stream stream) => throw null;
+        public static implicit operator Meziantou.Framework.InputSource(System.IO.TextReader reader) => throw null;
+        public static implicit operator Meziantou.Framework.InputSource(System.ReadOnlyMemory<byte> bytes) => throw null;
+        public static implicit operator Meziantou.Framework.InputSource(byte[] bytes) => throw null;
+        public static implicit operator Meziantou.Framework.InputSource(string text) => throw null;
     }
 
     public abstract class OutputTarget
     {
+        public virtual void NotifyProcessCompleted() { }
+        public static Meziantou.Framework.OutputTarget ToBytesDelegate(System.Action<byte[]> handler) => throw null;
+        public static Meziantou.Framework.OutputTarget ToProcessOutputCollection(Meziantou.Framework.ProcessOutputCollection collection) => throw null;
+        public static Meziantou.Framework.OutputTarget ToProcessPipe(Meziantou.Framework.ProcessPipe pipe) => throw null;
         public static Meziantou.Framework.OutputTarget ToStream(System.IO.Stream stream) => throw null;
         public static Meziantou.Framework.OutputTarget ToStringBuilder(System.Text.StringBuilder stringBuilder) => throw null;
         public static Meziantou.Framework.OutputTarget ToTextDelegate(System.Action<string> handler) => throw null;
         public static Meziantou.Framework.OutputTarget ToTextWriter(System.IO.TextWriter writer) => throw null;
-        public static Meziantou.Framework.OutputTarget ToBytesDelegate(System.Action<byte[]> handler) => throw null;
-        public static Meziantou.Framework.OutputTarget ToProcessOutputCollection(Meziantou.Framework.ProcessOutputCollection collection) => throw null;
-        public static Meziantou.Framework.OutputTarget ToProcessPipe(Meziantou.Framework.ProcessPipe pipe) => throw null;
-        public static implicit operator Meziantou.Framework.OutputTarget(System.IO.Stream stream) => throw null;
-        public static implicit operator Meziantou.Framework.OutputTarget(System.Text.StringBuilder stringBuilder) => throw null;
-        public static implicit operator Meziantou.Framework.OutputTarget(System.Action<string> handler) => throw null;
-        public static implicit operator Meziantou.Framework.OutputTarget(System.IO.TextWriter writer) => throw null;
-        public static implicit operator Meziantou.Framework.OutputTarget(Meziantou.Framework.ProcessOutputCollection collection) => throw null;
         public abstract void Write(System.ReadOnlySpan<byte> write);
-        public virtual void NotifyProcessCompleted() { }
+        public static implicit operator Meziantou.Framework.OutputTarget(Meziantou.Framework.ProcessOutputCollection collection) => throw null;
+        public static implicit operator Meziantou.Framework.OutputTarget(System.Action<string> handler) => throw null;
+        public static implicit operator Meziantou.Framework.OutputTarget(System.IO.Stream stream) => throw null;
+        public static implicit operator Meziantou.Framework.OutputTarget(System.IO.TextWriter writer) => throw null;
+        public static implicit operator Meziantou.Framework.OutputTarget(System.Text.StringBuilder stringBuilder) => throw null;
     }
 
     public sealed class ProcessExecutionException : System.Exception
     {
         public Meziantou.Framework.ProcessExitCode ExitCode { get => throw null; }
-        public ProcessExecutionException(string message) { }
-        public ProcessExecutionException(string message, System.Exception innerException) { }
         public ProcessExecutionException(Meziantou.Framework.ProcessExitCode exitCode) { }
+        public ProcessExecutionException(string message) { }
         public ProcessExecutionException(Meziantou.Framework.ProcessExitCode exitCode, string message) { }
+        public ProcessExecutionException(string message, System.Exception innerException) { }
     }
 
     public readonly struct ProcessExitCode : System.IEquatable<Meziantou.Framework.ProcessExitCode>
     {
-        public int Value { get => throw null; }
         public bool IsSuccess { get => throw null; }
+        public int Value { get => throw null; }
         public ProcessExitCode(int value) { }
-        public bool IsAnyOf(params System.ReadOnlySpan<int> expectedValues) => throw null;
         public bool Equals(Meziantou.Framework.ProcessExitCode other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
+        public bool IsAnyOf(params System.ReadOnlySpan<int> expectedValues) => throw null;
         public override string ToString() => throw null;
-        public static explicit operator Meziantou.Framework.ProcessExitCode(int value) => throw null;
-        public static implicit operator int(Meziantou.Framework.ProcessExitCode exitCode) => throw null;
         public static bool operator ==(Meziantou.Framework.ProcessExitCode left, Meziantou.Framework.ProcessExitCode right) => throw null;
         public static bool operator !=(Meziantou.Framework.ProcessExitCode left, Meziantou.Framework.ProcessExitCode right) => throw null;
+        public static explicit operator Meziantou.Framework.ProcessExitCode(int value) => throw null;
+        public static implicit operator int(Meziantou.Framework.ProcessExitCode exitCode) => throw null;
     }
 
     public class ProcessInstance
     {
         public int ProcessId { get => throw null; }
         public System.DateTimeOffset StartDate { get => throw null; }
-        public Microsoft.Win32.SafeHandles.SafeProcessHandle? UnsafeGetProcessHandle() => throw null;
-        public System.Runtime.CompilerServices.TaskAwaiter<Meziantou.Framework.ProcessResult> GetAwaiter() => throw null;
-        public System.Runtime.CompilerServices.ConfiguredTaskAwaitable<Meziantou.Framework.ProcessResult> ConfigureAwait(bool continueOnCapturedContext) => throw null;
         public System.Runtime.CompilerServices.ConfiguredTaskAwaitable<Meziantou.Framework.ProcessResult> ConfigureAwait(System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public System.Runtime.CompilerServices.ConfiguredTaskAwaitable<Meziantou.Framework.ProcessResult> ConfigureAwait(bool continueOnCapturedContext) => throw null;
+        public System.Runtime.CompilerServices.TaskAwaiter<Meziantou.Framework.ProcessResult> GetAwaiter() => throw null;
         public void Kill(bool entireProcessTree = true) { }
         #if NET11_0
+        [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
-        [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
         public bool Signal(System.Runtime.InteropServices.PosixSignal signal) => throw null;
         #endif
+        public Microsoft.Win32.SafeHandles.SafeProcessHandle? UnsafeGetProcessHandle() => throw null;
     }
 
     public sealed class ProcessLimits
@@ -168,9 +168,9 @@ namespace Meziantou.Framework
 
     public sealed class ProcessOutput
     {
-        public Meziantou.Framework.ProcessOutputType Type { get => throw null; }
         public string Text { get => throw null; }
         public System.DateTime TimestampUtc { get => throw null; }
+        public Meziantou.Framework.ProcessOutputType Type { get => throw null; }
         public void Deconstruct(out Meziantou.Framework.ProcessOutputType type, out string text) => throw null;
         public void Deconstruct(out Meziantou.Framework.ProcessOutputType type, out string text, out System.DateTime timestampUtc) => throw null;
         public override string ToString() => throw null;
@@ -180,8 +180,8 @@ namespace Meziantou.Framework
     {
         public int Count { get => throw null; }
         public Meziantou.Framework.ProcessOutput this[int index] { get => throw null; }
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.ProcessOutput> StandardOutput { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.ProcessOutput> StandardError { get => throw null; }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.ProcessOutput> StandardOutput { get => throw null; }
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.ProcessOutput> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public override string ToString() => throw null;
@@ -202,18 +202,18 @@ namespace Meziantou.Framework
 
     public sealed class ProcessPipeline
     {
-        public static Meziantou.Framework.ProcessPipeline operator |(Meziantou.Framework.ProcessPipeline left, Meziantou.Framework.ProcessWrapper right) => throw null;
-        public static Meziantou.Framework.ProcessPipeline operator |(Meziantou.Framework.ProcessWrapper left, Meziantou.Framework.ProcessPipeline right) => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> ExecuteAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.BufferedProcessResult> ExecuteBufferedAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.ProcessPipeline operator |(Meziantou.Framework.ProcessPipeline left, Meziantou.Framework.ProcessWrapper right) => throw null;
+        public static Meziantou.Framework.ProcessPipeline operator |(Meziantou.Framework.ProcessWrapper left, Meziantou.Framework.ProcessPipeline right) => throw null;
     }
 
     public class ProcessResult
     {
-        public int ProcessId { get => throw null; }
         public Meziantou.Framework.ProcessExitCode ExitCode { get => throw null; }
-        public System.DateTimeOffset StartDate { get => throw null; }
         public System.DateTimeOffset ExitDate { get => throw null; }
+        public int ProcessId { get => throw null; }
+        public System.DateTimeOffset StartDate { get => throw null; }
         public override string ToString() => throw null;
     }
 
@@ -227,67 +227,69 @@ namespace Meziantou.Framework
 
     public sealed class ProcessWrapper
     {
-        public static Meziantou.Framework.IProcessFactory DefaultProcessFactory { get => throw null; set { } }
         public static Meziantou.Framework.ProcessLogVerbosity DefaultLogVerbosity { get => throw null; set { } }
-        public static System.IDisposable AddInterceptor(Meziantou.Framework.IProcessWrapperInterceptor interceptor) => throw null;
-        public static System.IDisposable AddInterceptor(Meziantou.Framework.IProcessStartInfoInterceptor interceptor) => throw null;
-        public static Meziantou.Framework.ProcessWrapper Create(string fileName) => throw null;
-        public static Meziantou.Framework.ProcessPipeline operator |(Meziantou.Framework.ProcessWrapper left, Meziantou.Framework.ProcessWrapper right) => throw null;
-        public override string ToString() => throw null;
-        public Meziantou.Framework.ProcessWrapper WithArguments(params string[] arguments) => throw null;
-        [System.Runtime.CompilerServices.OverloadResolutionPriority(-1)]
-        public Meziantou.Framework.ProcessWrapper WithArguments(params System.ReadOnlySpan<string> arguments) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithArguments(System.Collections.Generic.IEnumerable<string> arguments) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithWorkingDirectory(string workingDirectory) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithSearchWorkingDirectory(bool searchWorkingDirectory = true) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-        public Meziantou.Framework.ProcessWrapper WithCredentials(string userName, string passwordInClearText, string? domain = null) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-        public Meziantou.Framework.ProcessWrapper WithCredentials(string userName, System.Security.SecureString password, string? domain = null) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-        public Meziantou.Framework.ProcessWrapper WithUseCredentialsForNetworkingOnly(bool useCredentialsForNetworkingOnly = true) => throw null;
-        #if NET11_0
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-        [System.Runtime.Versioning.SupportedOSPlatform("linux")]
-        [System.Runtime.Versioning.SupportedOSPlatform("android")]
-        public Meziantou.Framework.ProcessWrapper WithKillOnParentExit(bool killOnParentExit = true) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithStartDetached(bool startDetached = true) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-        [System.Runtime.Versioning.SupportedOSPlatform("macos")]
-        public Meziantou.Framework.ProcessWrapper WithStartSuspended(bool startSuspended = true) => throw null;
-        #endif
-        public Meziantou.Framework.ProcessWrapper WithEnvironmentVariables(System.Action<Meziantou.Framework.ProcessWrapperEnvironmentVariables> configure) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithEnvironmentVariables(System.Collections.Generic.IReadOnlyDictionary<string, string?> variables) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithValidation(Meziantou.Framework.ProcessValidationMode mode) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithLogVerbosity(Meziantou.Framework.ProcessLogVerbosity verbosity) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithProcessFactory(Meziantou.Framework.IProcessFactory processFactory) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithInterceptor(Meziantou.Framework.IProcessWrapperInterceptor interceptor) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithInterceptor(Meziantou.Framework.IProcessStartInfoInterceptor interceptor) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithOutputEncoding(System.Text.Encoding encoding) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithErrorEncoding(System.Text.Encoding encoding) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithLimits(Meziantou.Framework.ProcessLimits limits) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithLimits(System.Action<Meziantou.Framework.ProcessLimits> configure) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithWindowsJobObject(System.Action<Meziantou.Framework.Win32.JobObject> configure) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithLinuxControlGroup(System.Action<Meziantou.Framework.Unix.ControlGroups.CGroup2> configure) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithOutputStream(params System.ReadOnlySpan<Meziantou.Framework.OutputTarget> targets) => throw null;
-        public Meziantou.Framework.ProcessWrapper AddOutputStream(params System.ReadOnlySpan<Meziantou.Framework.OutputTarget> targets) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithErrorStream(params System.ReadOnlySpan<Meziantou.Framework.OutputTarget> targets) => throw null;
+        public static Meziantou.Framework.IProcessFactory DefaultProcessFactory { get => throw null; set { } }
         public Meziantou.Framework.ProcessWrapper AddErrorStream(params System.ReadOnlySpan<Meziantou.Framework.OutputTarget> targets) => throw null;
-        public Meziantou.Framework.ProcessWrapper WithInputStream(Meziantou.Framework.InputSource source) => throw null;
+        public static System.IDisposable AddInterceptor(Meziantou.Framework.IProcessStartInfoInterceptor interceptor) => throw null;
+        public static System.IDisposable AddInterceptor(Meziantou.Framework.IProcessWrapperInterceptor interceptor) => throw null;
+        public Meziantou.Framework.ProcessWrapper AddOutputStream(params System.ReadOnlySpan<Meziantou.Framework.OutputTarget> targets) => throw null;
+        public static Meziantou.Framework.ProcessWrapper Create(string fileName) => throw null;
         public Meziantou.Framework.ProcessInstance ExecuteAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public Meziantou.Framework.BufferedProcessInstance ExecuteBufferedAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         #if NET11_0
+        [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
-        [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
         public int StartAndForget() => throw null;
         #endif
+        public override string ToString() => throw null;
+        public Meziantou.Framework.ProcessWrapper WithArguments(System.Collections.Generic.IEnumerable<string> arguments) => throw null;
+        [System.Runtime.CompilerServices.OverloadResolutionPriority(-1)]
+        public Meziantou.Framework.ProcessWrapper WithArguments(params System.ReadOnlySpan<string> arguments) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithArguments(params string[] arguments) => throw null;
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public Meziantou.Framework.ProcessWrapper WithCredentials(string userName, System.Security.SecureString password, string? domain = null) => throw null;
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public Meziantou.Framework.ProcessWrapper WithCredentials(string userName, string passwordInClearText, string? domain = null) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithEnvironmentVariables(System.Action<Meziantou.Framework.ProcessWrapperEnvironmentVariables> configure) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithEnvironmentVariables(System.Collections.Generic.IReadOnlyDictionary<string, string?> variables) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithErrorEncoding(System.Text.Encoding encoding) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithErrorStream(params System.ReadOnlySpan<Meziantou.Framework.OutputTarget> targets) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithInputStream(Meziantou.Framework.InputSource source) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithInterceptor(Meziantou.Framework.IProcessStartInfoInterceptor interceptor) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithInterceptor(Meziantou.Framework.IProcessWrapperInterceptor interceptor) => throw null;
+        #if NET11_0
+        [System.Runtime.Versioning.SupportedOSPlatform("android")]
+        [System.Runtime.Versioning.SupportedOSPlatform("linux")]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public Meziantou.Framework.ProcessWrapper WithKillOnParentExit(bool killOnParentExit = true) => throw null;
+        #endif
+        public Meziantou.Framework.ProcessWrapper WithLimits(Meziantou.Framework.ProcessLimits limits) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithLimits(System.Action<Meziantou.Framework.ProcessLimits> configure) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithLinuxControlGroup(System.Action<Meziantou.Framework.Unix.ControlGroups.CGroup2> configure) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithLogVerbosity(Meziantou.Framework.ProcessLogVerbosity verbosity) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithOutputEncoding(System.Text.Encoding encoding) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithOutputStream(params System.ReadOnlySpan<Meziantou.Framework.OutputTarget> targets) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithProcessFactory(Meziantou.Framework.IProcessFactory processFactory) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithSearchWorkingDirectory(bool searchWorkingDirectory = true) => throw null;
+        #if NET11_0
+        public Meziantou.Framework.ProcessWrapper WithStartDetached(bool startDetached = true) => throw null;
+        [System.Runtime.Versioning.SupportedOSPlatform("macos")]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public Meziantou.Framework.ProcessWrapper WithStartSuspended(bool startSuspended = true) => throw null;
+        #endif
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public Meziantou.Framework.ProcessWrapper WithUseCredentialsForNetworkingOnly(bool useCredentialsForNetworkingOnly = true) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithValidation(Meziantou.Framework.ProcessValidationMode mode) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithWindowsJobObject(System.Action<Meziantou.Framework.Win32.JobObject> configure) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithWorkingDirectory(string workingDirectory) => throw null;
+        public static Meziantou.Framework.ProcessPipeline operator |(Meziantou.Framework.ProcessWrapper left, Meziantou.Framework.ProcessWrapper right) => throw null;
     }
 
     public sealed class ProcessWrapperEnvironmentVariables
     {
-        public Meziantou.Framework.ProcessWrapperEnvironmentVariables Set(string name, string? value) => throw null;
         public Meziantou.Framework.ProcessWrapperEnvironmentVariables Remove(string name) => throw null;
+        public Meziantou.Framework.ProcessWrapperEnvironmentVariables Set(string name, string? value) => throw null;
     }
 
     public sealed class SystemProcessFactory : Meziantou.Framework.IProcessFactory

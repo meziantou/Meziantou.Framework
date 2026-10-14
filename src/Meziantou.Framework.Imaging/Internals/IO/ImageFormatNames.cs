@@ -20,6 +20,7 @@ internal static class ImageFormatNames
         ImageFormat.Avif => "AVIF",
         ImageFormat.JpegXl => "JPEG XL",
         ImageFormat.Heic => "HEIC",
+        ImageFormat.Jpeg2000 => "JPEG 2000",
         _ => "image",
     };
 }

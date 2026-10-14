@@ -17,18 +17,18 @@ namespace Meziantou.AspNetCore.Components
 
     public class LogEntry
     {
-        public System.DateTimeOffset Timestamp { get => throw null; set { } }
-        public Meziantou.AspNetCore.Components.LogLevel LogLevel { get => throw null; set { } }
-        public object? Message { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.AspNetCore.Components.LogEntry>? Children { get => throw null; set { } }
         public bool Expanded { get => throw null; set { } }
+        public Meziantou.AspNetCore.Components.LogLevel LogLevel { get => throw null; set { } }
+        public object? Message { get => throw null; set { } }
+        public System.DateTimeOffset Timestamp { get => throw null; set { } }
     }
 
     public class LogEntryDetails : Microsoft.AspNetCore.Components.ComponentBase
     {
+        public bool CanChangeDisplayFormat { get => throw null; set { } }
         public object? Data { get => throw null; set { } }
         public Meziantou.AspNetCore.Components.LogDetailsDisplayFormat Format { get => throw null; set { } }
-        public bool CanChangeDisplayFormat { get => throw null; set { } }
         public int MaxDepth { get => throw null; set { } }
         protected override void OnParametersSet() { }
         #nullable disable
@@ -41,20 +41,20 @@ namespace Meziantou.AspNetCore.Components
         protected virtual System.Type EqualityContract { get => throw null; }
         public int Index { get => throw null; init { } }
         public int Length { get => throw null; init { } }
-        public int Priority { get => throw null; init { } }
         public string? Link { get => throw null; init { } }
+        public int Priority { get => throw null; init { } }
         public string? ReplacementText { get => throw null; init { } }
         public string? Title { get => throw null; init { } }
-        public LogHighlighterResult(int Index, int Length, int Priority) { }
-        public override string ToString() => throw null;
-        protected virtual bool PrintMembers(System.Text.StringBuilder builder) => throw null;
-        public static bool operator !=(Meziantou.AspNetCore.Components.LogHighlighterResult? left, Meziantou.AspNetCore.Components.LogHighlighterResult? right) => throw null;
-        public static bool operator ==(Meziantou.AspNetCore.Components.LogHighlighterResult? left, Meziantou.AspNetCore.Components.LogHighlighterResult? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public virtual bool Equals(Meziantou.AspNetCore.Components.LogHighlighterResult? other) => throw null;
         protected LogHighlighterResult(Meziantou.AspNetCore.Components.LogHighlighterResult original) { }
+        public LogHighlighterResult(int Index, int Length, int Priority) { }
         public void Deconstruct(out int Index, out int Length, out int Priority) => throw null;
+        public virtual bool Equals(Meziantou.AspNetCore.Components.LogHighlighterResult? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        protected virtual bool PrintMembers(System.Text.StringBuilder builder) => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.AspNetCore.Components.LogHighlighterResult? left, Meziantou.AspNetCore.Components.LogHighlighterResult? right) => throw null;
+        public static bool operator !=(Meziantou.AspNetCore.Components.LogHighlighterResult? left, Meziantou.AspNetCore.Components.LogHighlighterResult? right) => throw null;
     }
 
     public enum LogLevel
@@ -69,12 +69,12 @@ namespace Meziantou.AspNetCore.Components
 
     public class LogViewer : Microsoft.AspNetCore.Components.ComponentBase
     {
-        public System.Collections.Generic.IEnumerable<Meziantou.AspNetCore.Components.LogEntry>? Entries { get => throw null; set { } }
-        public Meziantou.AspNetCore.Components.TimestampDisplayFormat TimestampDisplayFormat { get => throw null; set { } }
-        public string? TimeSpanStringFormat { get => throw null; set { } }
         public string? DateTimeStringFormat { get => throw null; set { } }
-        public bool ShowLineNumbers { get => throw null; set { } }
+        public System.Collections.Generic.IEnumerable<Meziantou.AspNetCore.Components.LogEntry>? Entries { get => throw null; set { } }
         public System.Collections.Generic.IEnumerable<Meziantou.AspNetCore.Components.ILogHighlighter> LogHighlighters { get => throw null; set { } }
+        public bool ShowLineNumbers { get => throw null; set { } }
+        public string? TimeSpanStringFormat { get => throw null; set { } }
+        public Meziantou.AspNetCore.Components.TimestampDisplayFormat TimestampDisplayFormat { get => throw null; set { } }
         #nullable disable
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
         #nullable restore

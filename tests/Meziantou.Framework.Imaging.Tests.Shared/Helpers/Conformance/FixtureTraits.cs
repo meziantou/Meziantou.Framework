@@ -41,13 +41,14 @@ internal static class FixtureTraits
     /// plain (ASCII) Netpbm raster cut inside its last sample is a complete raster with a smaller last sample.
     /// </summary>
     /// <summary>
-    /// Gets a value indicating whether boxes follow the codestream of a JPEG XL container: the file that ends before any of
-    /// them is a complete file too (<c>JpegXlDecoderConformanceTests</c> checks every other prefix).
+    /// Gets a value indicating whether boxes follow the codestream of a JPEG XL container or of a JP2 file: the file that
+    /// ends before any of them is a complete file too (<c>JpegXlDecoderConformanceTests</c> and
+    /// <c>Jpeg2000DecoderConformanceTests</c> check every other prefix).
     /// </summary>
     public static bool HasBoxesAfterTheCodestream(GoldenFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
-        return fixture.Entry.HasFeature("jxl.boxesAfterCodestream");
+        return fixture.Entry.HasFeature("jxl.boxesAfterCodestream") || fixture.Entry.HasFeature("jp2.boxesAfterCodestream");
     }
 
     public static bool ProperPrefixMayBeValid(GoldenFixture fixture) => IsDelimitedByEndOfInput(fixture) || HasUnreadTrailingBytes(fixture) || HasBoxesAfterTheCodestream(fixture) || IsFragmentedSequence(fixture);
@@ -87,7 +88,7 @@ internal static class FixtureTraits
     public static bool MetadataFollowsTheImages(GoldenFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
-        return fixture.Entry.HasFeature("avif.seq.metadataAfterSamples") || fixture.Entry.HasFeature("heic.seq.metadataAfterSamples") || fixture.Entry.HasFeature("jxl.metadataAfterCodestream");
+        return fixture.Entry.HasFeature("avif.seq.metadataAfterSamples") || fixture.Entry.HasFeature("heic.seq.metadataAfterSamples") || fixture.Entry.HasFeature("jxl.metadataAfterCodestream") || fixture.Entry.HasFeature("jp2.metadataAfterCodestream");
     }
 
     /// <summary>

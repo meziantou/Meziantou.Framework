@@ -94,6 +94,9 @@ internal static class TiffFormat
     public const int CompressionLzw = 5;
     public const int CompressionOldJpeg = 6;
     public const int CompressionJpeg = 7;
+
+    /// <summary>JPEG 2000 (Adobe): each strip or tile holds a codestream of ISO/IEC 15444-1.</summary>
+    public const int CompressionJpeg2000 = 34712;
     public const int CompressionAdobeDeflate = 8;
     public const int CompressionPackBits = 32773;
     public const int CompressionDeflate = 32946;
@@ -155,6 +158,7 @@ internal static class TiffFormat
         CompressionLzw => "LZW",
         CompressionOldJpeg => "old-style JPEG",
         CompressionJpeg => "JPEG",
+        CompressionJpeg2000 => "JPEG 2000",
         CompressionAdobeDeflate => "Adobe Deflate",
         CompressionPackBits => "PackBits",
         CompressionDeflate => "Deflate",

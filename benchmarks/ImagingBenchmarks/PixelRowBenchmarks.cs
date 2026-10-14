@@ -17,6 +17,8 @@ public class PixelRowBenchmarks
     private Image<Rgba32> _image = null!;
     private Image<Rgba64> _rgba64 = null!;
     private Image<Rgb24> _rgb24 = null!;
+    private Image<Rgba32> _framed = null!;
+    private Image<Rgba64> _framed64 = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -24,6 +26,22 @@ public class PixelRowBenchmarks
         _image = Image.ImportPixelData<Rgba32>(BenchmarkInputs.ResizeRgba32Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight);
         _rgba64 = Image.ImportPixelData<Rgba64>(BenchmarkInputs.ResizeRgba64Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight);
         _rgb24 = _image.CloneAs<Rgb24>(Flatten);
+
+        // The content inside a uniform white frame of 100 pixels: the automatic crop finds a border and weighs the content
+        var framed = BenchmarkInputs.ResizeRgba32Source;
+        for (var y = 0; y < BenchmarkInputs.ResizeHeight; y++)
+        {
+            for (var x = 0; x < BenchmarkInputs.ResizeWidth; x++)
+            {
+                if (x < 100 || y < 100 || x >= BenchmarkInputs.ResizeWidth - 100 || y >= BenchmarkInputs.ResizeHeight - 100)
+                {
+                    framed[(y * BenchmarkInputs.ResizeWidth) + x] = new Rgba32(255, 255, 255);
+                }
+            }
+        }
+
+        _framed = Image.ImportPixelData<Rgba32>(framed, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight);
+        _framed64 = _framed.CloneAs<Rgba64>();
     }
 
     [GlobalCleanup]
@@ -32,6 +50,8 @@ public class PixelRowBenchmarks
         _image?.Dispose();
         _rgba64?.Dispose();
         _rgb24?.Dispose();
+        _framed?.Dispose();
+        _framed64?.Dispose();
     }
 
     [Benchmark]
@@ -105,6 +125,14 @@ public class PixelRowBenchmarks
         copy.Rotate(RotateMode.Rotate270);
         return copy.Width;
     }
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 in a white frame: automatic crop analysis with content weights")]
+    public double AnalyzeAutoCropWeights() => _framed.AnalyzeAutoCrop(new AutoCropOptions { AnalyzeWeights = true }).WeightX;
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba64 in a white frame: automatic crop analysis with content weights")]
+    public double AnalyzeAutoCropWeights16() => _framed64.AnalyzeAutoCrop(new AutoCropOptions { AnalyzeWeights = true }).WeightX;
 
     private static int Convert<TSource, TDestination>(Image<TSource> image, PixelConversionOptions? options)
         where TSource : unmanaged

@@ -1,8 +1,8 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The glyphs each lookup of a GSUB or GPOS table may apply at, as a digest: a lookup is tried at a glyph only when the
-/// digest of its first coverage tables may contain it.
+/// The glyphs each lookup of a GSUB or GPOS table, and each subtable of a lookup, may apply at, as a digest: a lookup
+/// or a subtable is tried at a glyph only when the digest of its first coverage tables may contain it.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -31,6 +31,7 @@ internal sealed class LookupDigests
     private readonly ReadOnlyMemory<byte> _data;
     private readonly bool _isPositioning;
     private GlyphDigest[]? _digests;
+    private GlyphDigest[]?[]? _subtableDigests;
     private bool[]? _isComputed;
 
     public LookupDigests(LayoutTable table, ReadOnlyMemory<byte> data, bool isPositioning)
@@ -41,46 +42,65 @@ internal sealed class LookupDigests
     }
 
     /// <summary>Gets the digest of a lookup, which <see cref="LayoutTable.GetLookup"/> has read.</summary>
-    public GlyphDigest Get(int index)
+    /// <param name="index">The index of the lookup in the lookup list.</param>
+    /// <param name="subtables">The digest of each subtable of the lookup, or <see langword="null"/> when the lookup has one subtable or cannot be read.</param>
+    public GlyphDigest Get(int index, out GlyphDigest[]? subtables)
     {
         if (_digests is null)
         {
             var count = _table.GetLookupCount(_data.Span);
             _digests = new GlyphDigest[count];
+            _subtableDigests = new GlyphDigest[count][];
             _isComputed = new bool[count];
         }
 
         if ((uint)index >= (uint)_digests.Length)
+        {
+            subtables = null;
             return GlyphDigest.All;
+        }
 
         if (!_isComputed![index])
         {
-            _digests[index] = Compute(index);
+            _digests[index] = Compute(index, out _subtableDigests![index]);
             _isComputed[index] = true;
         }
 
+        subtables = _subtableDigests![index];
         return _digests[index];
     }
 
-    private GlyphDigest Compute(int index)
+    private GlyphDigest Compute(int index, out GlyphDigest[]? subtables)
     {
         var data = _data.Span;
         var lookup = _table.GetLookup(data, index);
-        var digest = default(GlyphDigest);
+        subtables = null;
         if (!TryUInt16(data, lookup.Offset + 6L + ((long)lookup.SubtableCount * 2) - 2, out _) && lookup.SubtableCount > 0)
             return GlyphDigest.All;
 
+        var digest = default(GlyphDigest);
+        subtables = lookup.SubtableCount > 1 ? new GlyphDigest[lookup.SubtableCount] : null;
         for (var i = 0; i < lookup.SubtableCount; i++)
         {
-            if (!AddSubtable(data, lookup.Type, LayoutTable.GetSubtable(data, lookup, i), ref digest))
-                return GlyphDigest.All;
+            var subtable = default(GlyphDigest);
+            if (!AddSubtable(data, lookup.Type, LayoutTable.GetSubtable(data, lookup, i), ref subtable))
+            {
+                subtable = GlyphDigest.All;
+            }
+
+            if (subtables is not null)
+            {
+                subtables[i] = subtable;
+            }
+
+            digest.Add(subtable);
         }
 
         return digest;
     }
 
     /// <summary>Adds the glyphs a subtable may apply at.</summary>
-    /// <returns><see langword="false"/> when the subtable cannot be read: the lookup is tried at every glyph.</returns>
+    /// <returns><see langword="false"/> when the subtable cannot be read: it is tried at every glyph.</returns>
     private bool AddSubtable(ReadOnlySpan<byte> data, int type, long subtable, ref GlyphDigest digest)
     {
         var extension = _isPositioning ? PositioningExtension : SubstitutionExtension;

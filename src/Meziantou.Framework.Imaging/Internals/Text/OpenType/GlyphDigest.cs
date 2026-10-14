@@ -30,6 +30,14 @@ internal struct GlyphDigest
         _mask2 |= 1UL << ((glyph >> Shift2) & 63);
     }
 
+    /// <summary>Adds the glyphs of another digest.</summary>
+    public void Add(in GlyphDigest other)
+    {
+        _mask0 |= other._mask0;
+        _mask1 |= other._mask1;
+        _mask2 |= other._mask2;
+    }
+
     /// <summary>Adds the glyphs from one glyph to another, both included; nothing when the range is empty.</summary>
     public void AddRange(int first, int last)
     {

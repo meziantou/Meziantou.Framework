@@ -133,7 +133,8 @@ internal sealed partial class LayoutApplier
 
         // A glyph none of the first coverage tables of the subtables has is passed over: every subtable would look it
         // up and do nothing else. The checks of the glyph that can read the GDEF table come first, as they did.
-        var digest = _digests?.Get(index) ?? GlyphDigest.All;
+        GlyphDigest[]? subtableDigests = null;
+        var digest = _digests?.Get(index, out subtableDigests) ?? GlyphDigest.All;
 
         if (!_isPositioning && GetEffectiveType(data, lookup) == SubstitutionReverseChain)
         {
@@ -145,7 +146,7 @@ internal sealed partial class LayoutApplier
                 {
                     var position = i;
                     _syllable = isPerSyllable ? info.Syllable : -1;
-                    ApplySubtables(lookup, ref position);
+                    ApplySubtables(lookup, ref position, subtableDigests);
                 }
             }
 
@@ -157,7 +158,7 @@ internal sealed partial class LayoutApplier
         {
             ref var info = ref _buffer.Info[current];
             _syllable = isPerSyllable ? info.Syllable : -1;
-            if ((info.Mask & mask) == 0 || IsSkipped(info) || !digest.MayContain(info.Glyph) || !ApplySubtables(lookup, ref current))
+            if ((info.Mask & mask) == 0 || IsSkipped(info) || !digest.MayContain(info.Glyph) || !ApplySubtables(lookup, ref current, subtableDigests))
             {
                 current++;
             }
@@ -215,11 +216,18 @@ internal sealed partial class LayoutApplier
     /// <summary>Tries the subtables of a lookup at a glyph, in order; the first one that applies ends the lookup there.</summary>
     /// <param name="lookup">The lookup.</param>
     /// <param name="index">The glyph; when a subtable applies, the glyph the lookup continues at.</param>
-    private bool ApplySubtables(in LayoutLookup lookup, ref int index)
+    /// <param name="digests">The glyphs each subtable may apply at, or <see langword="null"/> to try each one.</param>
+    private bool ApplySubtables(in LayoutLookup lookup, ref int index, GlyphDigest[]? digests = null)
     {
         var data = _data.Span;
+
+        // A subtable that does not cover the glyph would look it up and do nothing else.
+        var glyph = digests is not null && (uint)index < (uint)_buffer.Length ? _buffer.Info[index].Glyph : -1;
         for (var i = 0; i < lookup.SubtableCount; i++)
         {
+            if (glyph >= 0 && !digests![i].MayContain(glyph))
+                continue;
+
             var start = index;
             if (Apply(lookup.Type, LayoutTable.GetSubtable(data, lookup, i), ref index))
             {
@@ -299,7 +307,8 @@ internal sealed partial class LayoutApplier
         // A lookup a rule applies is work the text did not ask for: it is what the budget bounds. A lookup with a
         // great number of subtables costs more than one.
         _buffer.Charge(1 + (lookup.SubtableCount >> 6));
-        if (_digests is not null && (uint)position < (uint)_buffer.Length && !_digests.Get(lookupIndex).MayContain(_buffer.Info[position].Glyph))
+        GlyphDigest[]? subtableDigests = null;
+        if (_digests is not null && (uint)position < (uint)_buffer.Length && !_digests.Get(lookupIndex, out subtableDigests).MayContain(_buffer.Info[position].Glyph))
             return;
 
         var (flag, markSet) = (_flag, _markSet);
@@ -308,7 +317,7 @@ internal sealed partial class LayoutApplier
         _nesting++;
         try
         {
-            ApplySubtables(lookup, ref position);
+            ApplySubtables(lookup, ref position, subtableDigests);
         }
         finally
         {

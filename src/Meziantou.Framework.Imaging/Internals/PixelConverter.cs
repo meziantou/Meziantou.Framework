@@ -31,7 +31,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <see cref="ConvertRowScalar{TSource, TDestination}(ReadOnlySpan{TSource}, Span{TDestination}, Rgba64?, ImageFormat)"/> is the numerical
 /// reference: vectorized kernels must produce bit-identical results and are tested against it. With 128-bit hardware
 /// vectors, the conversions that only move bytes (channel order, alpha added or dropped, gray replicated, 8-bit samples
-/// to 16 bits) and the search for a non-opaque pixel process 16 bytes at a time.
+/// to 16 bits), the reduction of 16-bit samples to 8 bits and the search for a non-opaque pixel process 16 bytes at a
+/// time.
 /// Source and destination rows must not overlap, unless they start at the same address and the two formats have the same
 /// size (in-place conversion, for example <see cref="Rgba32"/> to <see cref="Bgra32"/>).
 /// </para>
@@ -396,7 +397,8 @@ internal static class PixelConverter
 
     /// <summary>
     /// Converts the leading pixels of a row for the pairs of formats whose conversion only moves bytes (channel order, added
-    /// opaque alpha, dropped alpha, replicated gray, 8-bit samples repeated into 16 bits), 16 bytes at a time.
+    /// opaque alpha, dropped alpha, replicated gray, 8-bit samples repeated into 16 bits) or reduces 16-bit samples to 8
+    /// bits (<see cref="To8BitVector"/>), 16 bytes at a time.
     /// </summary>
     /// <returns>The number of pixels converted; the scalar reference converts the others.</returns>
     /// <remarks>
@@ -446,34 +448,46 @@ internal static class PixelConverter
                 unsafe { Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)(4 * i)), order).StoreUnsafe(ref output, (nuint)(3 * i)); }
             }
         }
-        else if (typeof(TSource) == typeof(Gray8) && typeof(TDestination) == typeof(Rgb24))
+        else if (IsGray<TSource>() && (typeof(TDestination) == typeof(Rgb24) || destinationIs32))
         {
-            // 16 gray samples, each three times
-            var first = Vector128.Create((byte)0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5);
-            var second = Vector128.Create((byte)5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10);
-            var third = Vector128.Create((byte)10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 15);
+            // 16 gray samples (reduced to 8 bits first), each three times, with an opaque alpha for 4-byte pixels
             for (; i + 16 <= length; i += 16)
             {
-                var gray = unsafe(Vector128.LoadUnsafe(ref input, (nuint)i));
-                unsafe { Vector128.Shuffle(gray, first).StoreUnsafe(ref output, (nuint)(3 * i)); }
-                unsafe { Vector128.Shuffle(gray, second).StoreUnsafe(ref output, (nuint)((3 * i) + 16)); }
-                unsafe { Vector128.Shuffle(gray, third).StoreUnsafe(ref output, (nuint)((3 * i) + 32)); }
+                var gray = typeof(TSource) == typeof(Gray8)
+                    ? unsafe(Vector128.LoadUnsafe(ref input, (nuint)i))
+                    : Narrow8Bit(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(2 * i))).AsUInt16(), unsafe(Vector128.LoadUnsafe(ref input, (nuint)((2 * i) + 16))).AsUInt16());
+                StoreGray(gray, ref output, i, rgb24: typeof(TDestination) == typeof(Rgb24));
             }
         }
-        else if (typeof(TSource) == typeof(Gray8) && destinationIs32)
+        else if (typeof(TSource) == typeof(Gray16) && typeof(TDestination) == typeof(Gray8))
         {
-            // 16 gray samples, each three times and an opaque alpha (the same bytes for both channel orders)
-            var first = Vector128.Create((byte)0, 0, 0, 0xFF, 1, 1, 1, 0xFF, 2, 2, 2, 0xFF, 3, 3, 3, 0xFF);
-            var second = Vector128.Create((byte)4, 4, 4, 0xFF, 5, 5, 5, 0xFF, 6, 6, 6, 0xFF, 7, 7, 7, 0xFF);
-            var third = Vector128.Create((byte)8, 8, 8, 0xFF, 9, 9, 9, 0xFF, 10, 10, 10, 0xFF, 11, 11, 11, 0xFF);
-            var fourth = Vector128.Create((byte)12, 12, 12, 0xFF, 13, 13, 13, 0xFF, 14, 14, 14, 0xFF, 15, 15, 15, 0xFF);
             for (; i + 16 <= length; i += 16)
             {
-                var gray = unsafe(Vector128.LoadUnsafe(ref input, (nuint)i));
-                unsafe { (Vector128.Shuffle(gray, first) | opaque).StoreUnsafe(ref output, (nuint)(4 * i)); }
-                unsafe { (Vector128.Shuffle(gray, second) | opaque).StoreUnsafe(ref output, (nuint)((4 * i) + 16)); }
-                unsafe { (Vector128.Shuffle(gray, third) | opaque).StoreUnsafe(ref output, (nuint)((4 * i) + 32)); }
-                unsafe { (Vector128.Shuffle(gray, fourth) | opaque).StoreUnsafe(ref output, (nuint)((4 * i) + 48)); }
+                var gray = Narrow8Bit(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(2 * i))).AsUInt16(), unsafe(Vector128.LoadUnsafe(ref input, (nuint)((2 * i) + 16))).AsUInt16());
+                unsafe { gray.StoreUnsafe(ref output, (nuint)i); }
+            }
+        }
+        else if (typeof(TSource) == typeof(Rgba64) && destinationIs32)
+        {
+            // 4 pixels of 4 samples reduced to 8 bits; only the channel order may change
+            var order = Vector128.Create((byte)2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15);
+            for (; i + 4 <= length; i += 4)
+            {
+                var pixels = Narrow8Bit(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(8 * i))).AsUInt16(), unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 16))).AsUInt16());
+                if (swaps)
+                    pixels = Vector128.Shuffle(pixels, order);
+
+                unsafe { pixels.StoreUnsafe(ref output, (nuint)(4 * i)); }
+            }
+        }
+        else if (typeof(TSource) == typeof(Rgba64) && typeof(TDestination) == typeof(Rgb24))
+        {
+            // 4 pixels reduced to 8 bits, alpha dropped (16 bytes are written, the last 4 are overwritten by the next pixels)
+            var order = Vector128.Create((byte)0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 0xFF, 0xFF, 0xFF, 0xFF);
+            for (; i + 6 <= length; i += 4)
+            {
+                var pixels = Narrow8Bit(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(8 * i))).AsUInt16(), unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 16))).AsUInt16());
+                unsafe { Vector128.Shuffle(pixels, order).StoreUnsafe(ref output, (nuint)(3 * i)); }
             }
         }
         else if (typeof(TSource) == typeof(Rgba32) && typeof(TDestination) == typeof(Rgba64))
@@ -490,6 +504,60 @@ internal static class PixelConverter
         }
 
         return i;
+    }
+
+    /// <summary>
+    /// Converts 16-bit samples to 8 bits on every lane, with the result of <see cref="To8Bit(uint)"/>: <c>(v * 255 + 32767) /
+    /// 65535</c> is the nearest integer to <c>v / 257</c>.
+    /// </summary>
+    /// <param name="value">The 16-bit samples.</param>
+    /// <returns>The 8-bit samples, one per 16-bit lane.</returns>
+    /// <remarks>
+    /// With <c>v = 256 h + l</c>, <c>v = 257 h + (l - h)</c>, so <c>v / 257</c> rounds to <c>h</c> plus the rounding of
+    /// <c>(l - h) / 257</c>, where <c>-255 &lt;= l - h &lt;= 255</c>: one more when <c>l - h &gt; 128</c>, one less when
+    /// <c>l - h &lt; -128</c> (no ties: 257 is odd).
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector128<ushort> To8BitVector(Vector128<ushort> value)
+    {
+        var high = Vector128.ShiftRightLogical(value, 8);
+        var difference = (value & Vector128.Create((ushort)0xFF)).AsInt16() - high.AsInt16();
+        var up = Vector128.GreaterThan(difference, Vector128.Create((short)128)).AsUInt16();
+        var down = Vector128.LessThan(difference, Vector128.Create((short)-128)).AsUInt16();
+
+        // A lane mask is all ones (-1): subtracting it adds one
+        return high - up + down;
+    }
+
+    /// <summary>Converts sixteen 16-bit samples to 8 bits (<see cref="To8Bit(uint)"/>) and packs them in order.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<byte> Narrow8Bit(Vector128<ushort> lower, Vector128<ushort> upper) => Vector128.Narrow(To8BitVector(lower), To8BitVector(upper));
+
+    /// <summary>Stores 16 gray samples as 16 <see cref="Rgb24"/> pixels (48 bytes) or as 16 opaque 4-byte pixels (64 bytes, the same bytes for both channel orders).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreGray(Vector128<byte> gray, ref byte output, int index, bool rgb24)
+    {
+        if (rgb24)
+        {
+            var first = Vector128.Create((byte)0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5);
+            var second = Vector128.Create((byte)5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10);
+            var third = Vector128.Create((byte)10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 15);
+            unsafe { Vector128.Shuffle(gray, first).StoreUnsafe(ref output, (nuint)(3 * index)); }
+            unsafe { Vector128.Shuffle(gray, second).StoreUnsafe(ref output, (nuint)((3 * index) + 16)); }
+            unsafe { Vector128.Shuffle(gray, third).StoreUnsafe(ref output, (nuint)((3 * index) + 32)); }
+        }
+        else
+        {
+            var opaque = Vector128.Create(0xFF000000u).AsByte();
+            var first = Vector128.Create((byte)0, 0, 0, 0xFF, 1, 1, 1, 0xFF, 2, 2, 2, 0xFF, 3, 3, 3, 0xFF);
+            var second = Vector128.Create((byte)4, 4, 4, 0xFF, 5, 5, 5, 0xFF, 6, 6, 6, 0xFF, 7, 7, 7, 0xFF);
+            var third = Vector128.Create((byte)8, 8, 8, 0xFF, 9, 9, 9, 0xFF, 10, 10, 10, 0xFF, 11, 11, 11, 0xFF);
+            var fourth = Vector128.Create((byte)12, 12, 12, 0xFF, 13, 13, 13, 0xFF, 14, 14, 14, 0xFF, 15, 15, 15, 0xFF);
+            unsafe { (Vector128.Shuffle(gray, first) | opaque).StoreUnsafe(ref output, (nuint)(4 * index)); }
+            unsafe { (Vector128.Shuffle(gray, second) | opaque).StoreUnsafe(ref output, (nuint)((4 * index) + 16)); }
+            unsafe { (Vector128.Shuffle(gray, third) | opaque).StoreUnsafe(ref output, (nuint)((4 * index) + 32)); }
+            unsafe { (Vector128.Shuffle(gray, fourth) | opaque).StoreUnsafe(ref output, (nuint)((4 * index) + 48)); }
+        }
     }
 
     private static void ConvertCore<TSource, TDestination>(ReadOnlySpan<TSource> source, Span<TDestination> destination, Rgba64? background)

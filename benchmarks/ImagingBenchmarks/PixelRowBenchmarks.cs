@@ -4,18 +4,35 @@ using Meziantou.Framework.Imaging.Benchmarks.Workloads;
 
 namespace Meziantou.Framework.Imaging.Benchmarks;
 
-/// <summary>Typed row loops with static callbacks on a 1920x1080 Rgba32 frame: steady state must not allocate per row.</summary>
+/// <summary>
+/// Typed row loops with static callbacks on a 1920x1080 Rgba32 frame: steady state must not allocate per row. The
+/// <c>Convert*</c> workloads convert 1920x1080 frames between pixel formats (<see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>).
+/// </summary>
 [Config(typeof(WorkloadConfig))]
 public class PixelRowBenchmarks
 {
+    private static readonly PixelConversionOptions Flatten = new() { BackgroundColor = new Rgba64(0x1234, 0xABCD, 0x7F7F, ushort.MaxValue) };
+
     private readonly ImageWorkloads.SumState _state = new();
     private Image<Rgba32> _image = null!;
+    private Image<Rgba64> _rgba64 = null!;
+    private Image<Rgb24> _rgb24 = null!;
 
     [GlobalSetup]
-    public void Setup() => _image = Image.ImportPixelData<Rgba32>(BenchmarkInputs.ResizeRgba32Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight);
+    public void Setup()
+    {
+        _image = Image.ImportPixelData<Rgba32>(BenchmarkInputs.ResizeRgba32Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight);
+        _rgba64 = Image.ImportPixelData<Rgba64>(BenchmarkInputs.ResizeRgba64Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight);
+        _rgb24 = _image.CloneAs<Rgb24>(Flatten);
+    }
 
     [GlobalCleanup]
-    public void Cleanup() => _image?.Dispose();
+    public void Cleanup()
+    {
+        _image?.Dispose();
+        _rgba64?.Dispose();
+        _rgb24?.Dispose();
+    }
 
     [Benchmark]
     [Workload("1920x1080 Rgba32: invert colors, static ProcessPixelRows callback")]
@@ -24,4 +41,40 @@ public class PixelRowBenchmarks
     [Benchmark]
     [Workload("1920x1080 Rgba32: sum green, static callback with state")]
     public long SumGreen() => ImageWorkloads.SumGreen(_image.Frames[0], _state);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba64 -> Rgba32 (16 to 8 bits)")]
+    public int ConvertRgba64ToRgba32() => Convert<Rgba64, Rgba32>(_rgba64, options: null);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgb24 -> Rgba64 (8 to 16 bits)")]
+    public int ConvertRgb24ToRgba64() => Convert<Rgb24, Rgba64>(_rgb24, options: null);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgb24 -> Gray8 (luma)")]
+    public int ConvertRgb24ToGray8() => Convert<Rgb24, Gray8>(_rgb24, options: null);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 with transparency -> Rgb24 (flattened onto a background)")]
+    public int ConvertRgba32ToRgb24() => Convert<Rgba32, Rgb24>(_image, Flatten);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 with transparency -> Gray8 (flattened onto a background, luma)")]
+    public int ConvertRgba32ToGray8() => Convert<Rgba32, Gray8>(_image, Flatten);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba64 with transparency -> Rgb24 (flattened onto a background, 16 to 8 bits)")]
+    public int ConvertRgba64ToRgb24() => Convert<Rgba64, Rgb24>(_rgba64, Flatten);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba64 with transparency -> Gray16 (flattened onto a background, luma)")]
+    public int ConvertRgba64ToGray16() => Convert<Rgba64, Gray16>(_rgba64, Flatten);
+
+    private static int Convert<TSource, TDestination>(Image<TSource> image, PixelConversionOptions? options)
+        where TSource : unmanaged
+        where TDestination : unmanaged
+    {
+        using var result = image.CloneAs<TDestination>(options);
+        return result.Width;
+    }
 }

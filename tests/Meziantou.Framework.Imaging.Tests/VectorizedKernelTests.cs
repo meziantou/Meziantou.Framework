@@ -1,3 +1,4 @@
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -484,6 +485,26 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    public void PixelConversionArithmeticMatchesTheScalarFormulasExhaustively()
+    {
+        // Every 16-bit sample reduced to 8 bits
+        var samples = new ushort[Vector128<ushort>.Count];
+        for (var value = 0; value <= ushort.MaxValue; value += samples.Length)
+        {
+            for (var lane = 0; lane < samples.Length; lane++)
+            {
+                samples[lane] = (ushort)(value + lane);
+            }
+
+            var reduced = PixelConverter.To8BitVector(Vector128.Create(samples));
+            for (var lane = 0; lane < samples.Length; lane++)
+            {
+                Assert.Equal(PixelConverter.To8Bit(samples[lane]), reduced[lane]);
+            }
+        }
+    }
+
+    [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void RedBlueExchangeMatchesTheScalarReference()
     {
@@ -517,14 +538,28 @@ public sealed class VectorizedKernelTests
         var sourceSize = unsafe(System.Runtime.CompilerServices.Unsafe.SizeOf<TSource>());
         var sourceFormat = PixelFormats.GetPixelFormat<TSource>();
         Rgba64? opaqueBackground = new Rgba64(0x1234, 0xABCD, 0x00FF, ushort.MaxValue);
-        for (var length = 0; length <= 40; length++)
+        Rgba64?[] backgrounds = [null, opaqueBackground, new Rgba64(0, 0, 0, ushort.MaxValue), new Rgba64(ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue), new Rgba64(0x8000, 0x7F7F, 0x0101, ushort.MaxValue)];
+        for (var length = 0; length <= 70; length++)
         {
-            for (var round = 0; round < 6; round++)
+            for (var round = 0; round < 7; round++)
             {
                 var source = new TSource[length];
                 var bytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(source.AsSpan()));
                 random.NextBytes(bytes);
-                if (round >= 2 && PixelFormats.HasAlpha(sourceFormat))
+                if (round == 6 && PixelFormats.HasAlpha(sourceFormat))
+                {
+                    // Extreme samples: every component is 0, the maximum or random, and alpha is 0, the maximum or random
+                    var alphaSize = sourceSize / 4;
+                    for (var i = 0; i < bytes.Length; i += alphaSize)
+                    {
+                        var kind = random.Next(3);
+                        if (kind < 2)
+                        {
+                            bytes.Slice(i, alphaSize).Fill(kind == 0 ? (byte)0 : (byte)0xFF);
+                        }
+                    }
+                }
+                else if (round >= 2 && PixelFormats.HasAlpha(sourceFormat))
                 {
                     // Opaque rows (the only ones that convert without a background), with at most one other pixel
                     var alphaSize = sourceSize / 4;
@@ -541,7 +576,7 @@ public sealed class VectorizedKernelTests
                     Assert.Equal(PixelConverter.IndexOfNonOpaqueScalar<TSource>(source), PixelConverter.IndexOfNonOpaque<TSource>(source));
                 }
 
-                foreach (var background in new[] { null, opaqueBackground })
+                foreach (var background in backgrounds)
                 {
                     // A longer destination: only the pixels of the source are written
                     var expected = new TDestination[length + 2];

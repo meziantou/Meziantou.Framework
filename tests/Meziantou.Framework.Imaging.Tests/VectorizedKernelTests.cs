@@ -3030,6 +3030,60 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPLosslessPredictionCostsMatchTheScalarReferences()
+    {
+        // Every predictor mode on images of every small width (first row and column, the last column whose top-right pixel
+        // is the first one of the row) and on 64x64 tiles, with random, extreme and nearly flat pixels (clamps, select ties)
+        var random = new Random(4052);
+        for (var round = 0; round < 300; round++)
+        {
+            var width = round < 70 ? 1 + round : random.Next(1, 150);
+            var height = random.Next(1, round < 70 ? 6 : 70);
+            var pixels = new uint[width * height];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                pixels[i] = (round % 4) switch
+                {
+                    0 => (uint)random.Next() ^ ((uint)random.Next() << 16),
+                    1 => random.Next(2) == 0 ? 0u : 0xFFFFFFFFu,
+                    2 => 0x80808080u + (uint)random.Next(-2, 3),
+                    _ => (uint)(random.Next(0x100) * 0x01010101) ^ (uint)random.Next(0, 4),
+                };
+            }
+
+            var expected = new uint[width];
+            var actual = new uint[width];
+            for (var mode = 0; mode < 16; mode++)
+            {
+                for (var y = 0; y < height; y++)
+                {
+                    var x0 = random.Next(0, width);
+                    var x1 = random.Next(x0 + 1, width + 1);
+                    Vp8LEncoder.PredictionResidualsScalar(pixels, width, y, x0, x1, mode, expected);
+                    Vp8LEncoder.PredictionResiduals(pixels, width, y, x0, x1, mode, actual);
+                    Assert.Equal(expected.AsSpan(0, x1 - x0).ToArray(), actual.AsSpan(0, x1 - x0).ToArray());
+                }
+
+                if (mode < 14)
+                {
+                    var tilesX = (width + 63) >> 6;
+                    var tilesY = (height + 63) >> 6;
+                    var histogram = new int[4 * 256];
+                    for (var ty = 0; ty < tilesY; ty++)
+                    {
+                        for (var tx = 0; tx < tilesX; tx++)
+                        {
+                            Assert.Equal(Vp8LEncoder.TileCostScalar(pixels, width, height, tx, ty, 6, mode, default), Vp8LEncoder.TileCost(pixels, width, height, tx, ty, 6, mode, default));
+                            Assert.Equal(Vp8LEncoder.TileCostScalar(pixels, width, height, tx, ty, 6, mode, histogram), Vp8LEncoder.TileCost(pixels, width, height, tx, ty, 6, mode, histogram));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void ChecksumsMatchTheByteAtATimeReferences()
     {
         // Published check values: CRC-32 of "123456789" is 0xCBF43926, Adler-32 of "Wikipedia" is 0x11E60398

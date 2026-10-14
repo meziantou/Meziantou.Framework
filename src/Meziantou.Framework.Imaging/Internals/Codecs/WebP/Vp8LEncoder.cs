@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -248,14 +249,20 @@ internal sealed class Vp8LEncoder : IDisposable
         _writer.WriteBits((uint)(bits - 2), 3);
         EncodeSpatialImage(modes, tilesX, tilesY, isMainImage: false);
 
-        // Residuals in reverse scan order, so that every prediction reads original pixels
+        // Residuals from the last row to the first, so that every prediction reads original pixels: a row is computed whole
+        // (from its original pixels and the original row above) before it is replaced
+        Span<uint> residuals = stackalloc uint[1 << TransformTileBits];
         for (var y = height - 1; y >= 0; y--)
         {
             var row = y * width;
-            for (var x = width - 1; x >= 0; x--)
+            for (var tx = tilesX - 1; tx >= 0; tx--)
             {
-                var mode = (int)((modes[((y >> bits) * tilesX) + (x >> bits)] >> 8) & 0xF);
-                argb[row + x] = SubtractPixels(argb[row + x], Predict(argb, width, x, y, mode));
+                var x0 = tx << bits;
+                var x1 = Math.Min(width, x0 + (1 << bits));
+                var mode = (int)((modes[((y >> bits) * tilesX) + tx] >> 8) & 0xF);
+                var segment = residuals[..(x1 - x0)];
+                PredictionResiduals(argb, width, y, x0, x1, mode, segment);
+                segment.CopyTo(argb.Slice(row + x0, x1 - x0));
             }
         }
     }
@@ -272,7 +279,210 @@ internal sealed class Vp8LEncoder : IDisposable
         return Vp8LTransforms.Predict(mode, argb[index - 1], argb[index - width], argb[index - width + 1], argb[index - width - 1]);
     }
 
-    private static double TileCost(ReadOnlySpan<uint> argb, int width, int height, int tx, int ty, int bits, int mode, Span<int> histogram)
+    /// <summary>
+    /// The cost of predicting a tile with a mode: the entropy of the residual components when <paramref name="histogram"/> is
+    /// given (4 x 256 entries), otherwise the sum of their magnitudes. The residuals of each row are computed 4 at a time.
+    /// </summary>
+    internal static double TileCost(ReadOnlySpan<uint> argb, int width, int height, int tx, int ty, int bits, int mode, Span<int> histogram)
+    {
+        var x0 = tx << bits;
+        var y0 = ty << bits;
+        var x1 = Math.Min(width, x0 + (1 << bits));
+        var y1 = Math.Min(height, y0 + (1 << bits));
+        if (!histogram.IsEmpty)
+        {
+            histogram.Clear();
+        }
+
+        Span<uint> residuals = stackalloc uint[1 << TransformTileBits];
+        residuals = residuals[..(x1 - x0)];
+        long sum = 0;
+        for (var y = y0; y < y1; y++)
+        {
+            PredictionResiduals(argb, width, y, x0, x1, mode, residuals);
+            if (histogram.IsEmpty)
+            {
+                sum += MagnitudeSum(residuals);
+            }
+            else
+            {
+                foreach (var residual in residuals)
+                {
+                    histogram[(int)(residual & 0xFF)]++;
+                    histogram[256 + (int)((residual >> 8) & 0xFF)]++;
+                    histogram[512 + (int)((residual >> 16) & 0xFF)]++;
+                    histogram[768 + (int)(residual >> 24)]++;
+                }
+            }
+        }
+
+        if (histogram.IsEmpty)
+            return sum;
+
+        var count = (x1 - x0) * (y1 - y0);
+        return Entropy(histogram[..256], count) + Entropy(histogram.Slice(256, 256), count) + Entropy(histogram.Slice(512, 256), count) + Entropy(histogram.Slice(768, 256), count);
+    }
+
+    /// <summary>The sum of the magnitudes of the signed components of residuals.</summary>
+    private static long MagnitudeSum(ReadOnlySpan<uint> residuals)
+    {
+        long sum = 0;
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            // Byte magnitudes (|-128| is 128 as a byte), then the 4 bytes of each lane added: at most 1020 per lane
+            var total = Vector128<uint>.Zero;
+            var lowBytes = Vector128.Create(0x00FF00FFu);
+            for (; i <= residuals.Length - Vector128<uint>.Count; i += Vector128<uint>.Count)
+            {
+                var magnitudes = Vector128.Abs(Vector128.Create(residuals.Slice(i, Vector128<uint>.Count)).AsSByte()).AsUInt32();
+                var pairs = (magnitudes & lowBytes) + (Vector128.ShiftRightLogical(magnitudes, 8) & lowBytes);
+                total += (pairs & Vector128.Create(0xFFFFu)) + Vector128.ShiftRightLogical(pairs, 16);
+            }
+
+            sum = Vector128.Sum(total);
+        }
+
+        for (; i < residuals.Length; i++)
+        {
+            var residual = residuals[i];
+            sum += Math.Abs((int)(sbyte)residual) + Math.Abs((int)(sbyte)(residual >> 8)) + Math.Abs((int)(sbyte)(residual >> 16)) + Math.Abs((int)(sbyte)(residual >> 24));
+        }
+
+        return sum;
+    }
+
+    /// <summary>
+    /// Computes the residuals of the pixels <paramref name="x0"/> to <paramref name="x1"/> of row <paramref name="y"/> predicted
+    /// with a mode from the (original) pixels: the first row predicts from the left (black for the first pixel), the first
+    /// column from the top. Pixels that are not on the first row or column are computed 4 at a time.
+    /// </summary>
+    internal static void PredictionResiduals(ReadOnlySpan<uint> argb, int width, int y, int x0, int x1, int mode, Span<uint> residuals)
+    {
+        var row = y * width;
+        var x = x0;
+        if (y > 0 && Vector128.IsHardwareAccelerated)
+        {
+            if (x == 0)
+            {
+                residuals[0] = SubtractPixels(argb[row], argb[row - width]);
+                x = 1;
+            }
+
+            for (; x <= x1 - Vector128<uint>.Count; x += Vector128<uint>.Count)
+            {
+                var index = row + x;
+                var current = Vector128.Create(argb.Slice(index, Vector128<uint>.Count));
+                var left = Vector128.Create(argb.Slice(index - 1, Vector128<uint>.Count));
+                var top = Vector128.Create(argb.Slice(index - width, Vector128<uint>.Count));
+                var topRight = Vector128.Create(argb.Slice(index - width + 1, Vector128<uint>.Count));
+                var topLeft = Vector128.Create(argb.Slice(index - width - 1, Vector128<uint>.Count));
+                var prediction = PredictVector(mode, left, top, topRight, topLeft);
+                (current.AsByte() - prediction.AsByte()).AsUInt32().CopyTo(residuals.Slice(x - x0, Vector128<uint>.Count));
+            }
+        }
+
+        for (; x < x1; x++)
+        {
+            residuals[x - x0] = SubtractPixels(argb[row + x], Predict(argb, width, x, y, mode));
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="PredictionResiduals"/>.</summary>
+    internal static void PredictionResidualsScalar(ReadOnlySpan<uint> argb, int width, int y, int x0, int x1, int mode, Span<uint> residuals)
+    {
+        for (var x = x0; x < x1; x++)
+        {
+            residuals[x - x0] = SubtractPixels(argb[(y * width) + x], Predict(argb, width, x, y, mode));
+        }
+    }
+
+    // Vp8LTransforms.Predict for 4 pixels: the same formulas in 32-bit lanes (averages), bytes (select distances) and 16-bit
+    // lanes (clamped sums)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<uint> PredictVector(int mode, Vector128<uint> left, Vector128<uint> top, Vector128<uint> topRight, Vector128<uint> topLeft)
+    {
+        switch (mode)
+        {
+            case 1:
+                return left;
+            case 2:
+                return top;
+            case 3:
+                return topRight;
+            case 4:
+                return topLeft;
+            case 5:
+                return Average2(Average2(left, topRight), top);
+            case 6:
+                return Average2(left, topLeft);
+            case 7:
+                return Average2(left, top);
+            case 8:
+                return Average2(topLeft, top);
+            case 9:
+                return Average2(top, topRight);
+            case 10:
+                return Average2(Average2(left, topLeft), Average2(top, topRight));
+            case 11:
+            {
+                // Select: left when the distance sum |T - TL| is below |L - TL|, otherwise top
+                var distanceToLeft = ComponentDistance(top, topLeft);
+                var distanceToTop = ComponentDistance(left, topLeft);
+                return Vector128.ConditionalSelect(Vector128.LessThan(distanceToLeft, distanceToTop), left, top);
+            }
+
+            case 12:
+                return ClampedSum(left, top, topLeft);
+            case 13:
+                return ClampedHalfSum(Average2(left, top), topLeft);
+            default:
+                return Vector128.Create(Vp8LTransforms.Black);
+        }
+
+        static Vector128<uint> Average2(Vector128<uint> a, Vector128<uint> b) => Vector128.ShiftRightLogical((a ^ b) & Vector128.Create(0xFEFEFEFEu), 1) + (a & b);
+
+        static Vector128<uint> ComponentDistance(Vector128<uint> a, Vector128<uint> b)
+        {
+            var differences = Vector128.Max(a.AsByte(), b.AsByte()) - Vector128.Min(a.AsByte(), b.AsByte());
+            var lowBytes = Vector128.Create(0x00FF00FFu);
+            var pairs = (differences.AsUInt32() & lowBytes) + (Vector128.ShiftRightLogical(differences.AsUInt32(), 8) & lowBytes);
+            return (pairs & Vector128.Create(0xFFFFu)) + Vector128.ShiftRightLogical(pairs, 16);
+        }
+
+        // a + b - c per component, clamped to 0-255
+        static Vector128<uint> ClampedSum(Vector128<uint> a, Vector128<uint> b, Vector128<uint> c)
+        {
+            var low = (Widen(a, upper: false) + Widen(b, upper: false)) - Widen(c, upper: false);
+            var high = (Widen(a, upper: true) + Widen(b, upper: true)) - Widen(c, upper: true);
+            return Narrow(low, high);
+        }
+
+        // a + (a - b) / 2 per component (the division truncates toward zero), clamped to 0-255
+        static Vector128<uint> ClampedHalfSum(Vector128<uint> a, Vector128<uint> b)
+        {
+            return Narrow(Half(Widen(a, upper: false), Widen(b, upper: false)), Half(Widen(a, upper: true), Widen(b, upper: true)));
+
+            static Vector128<short> Half(Vector128<short> a, Vector128<short> b)
+            {
+                var difference = a - b;
+                var quotient = Vector128.ShiftRightArithmetic(difference + (Vector128.ShiftRightLogical(difference.AsUInt16(), 15).AsInt16()), 1);
+                return a + quotient;
+            }
+        }
+
+        static Vector128<short> Widen(Vector128<uint> value, bool upper) => (upper ? Vector128.WidenUpper(value.AsByte()) : Vector128.WidenLower(value.AsByte())).AsInt16();
+
+        static Vector128<uint> Narrow(Vector128<short> low, Vector128<short> high)
+        {
+            var zero = Vector128<short>.Zero;
+            var max = Vector128.Create((short)255);
+            return Vector128.Narrow(Vector128.Min(Vector128.Max(low, zero), max).AsUInt16(), Vector128.Min(Vector128.Max(high, zero), max).AsUInt16()).AsUInt32();
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="TileCost"/>.</summary>
+    internal static double TileCostScalar(ReadOnlySpan<uint> argb, int width, int height, int tx, int ty, int bits, int mode, Span<int> histogram)
     {
         var x0 = tx << bits;
         var y0 = ty << bits;

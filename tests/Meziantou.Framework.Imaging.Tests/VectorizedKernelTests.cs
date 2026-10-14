@@ -2143,6 +2143,125 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPBoolDecoderMatchesTheByteAtATimeReference()
+    {
+        // Partitions of every short length (refills near and past the end, buffers shorter than 8 bytes), at the start, in
+        // the middle and at the end of their buffer, read far past their end with skewed and uniform probabilities
+        var random = new Random(605);
+        for (var length = 0; length <= 40; length++)
+        {
+            for (var round = 0; round < 40; round++)
+            {
+                var before = round % 3 == 0 ? 0 : random.Next(1, 12);
+                var after = round % 4 == 0 ? 0 : random.Next(1, 12);
+                var data = new byte[before + length + after];
+                random.NextBytes(data);
+                if (round % 5 == 1)
+                {
+                    data.AsSpan(before, length).Fill(0xFF);
+                }
+                else if (round % 5 == 2 && length > 0)
+                {
+                    data[before] = 0xFF; // invalid: the window starts at the range
+                }
+
+                var reference = new ReferenceBoolDecoder(data, before, length);
+                var actual = new Vp8BoolDecoder(data, before, length);
+                var useLocals = round % 2 == 0;
+                for (var i = 0; i < (length * 12) + 100; i++)
+                {
+                    var probability = (i % 3) switch
+                    {
+                        0 => random.Next(1, 256),
+                        1 => 128,
+                        _ => random.Next(2) == 0 ? 1 : 255,
+                    };
+                    var expected = reference.ReadBool(probability);
+                    bool value;
+                    if (useLocals)
+                    {
+                        actual.Load(out var window, out var range, out var bits);
+                        value = Vp8BoolDecoder.ReadBool(ref actual, ref window, ref range, ref bits, probability);
+                        actual.Store(window, range, bits);
+                    }
+                    else
+                    {
+                        value = actual.ReadBool(probability);
+                    }
+
+                    Assert.Equal(expected, value);
+                    Assert.Equal(reference.OverrunBytes, actual.OverrunBytes);
+                }
+            }
+        }
+    }
+
+    /// <summary>The VP8 boolean decoder of RFC 6386 section 7: a two-byte window in a 32-bit register that reads one byte per 8 shifts.</summary>
+    private sealed class ReferenceBoolDecoder
+    {
+        private readonly byte[] _data;
+        private readonly int _end;
+        private int _position;
+        private uint _value;
+        private uint _range = 255;
+        private int _bitCount;
+
+        public ReferenceBoolDecoder(byte[] data, int offset, int length)
+        {
+            _data = data;
+            _position = offset;
+            _end = offset + length;
+            _value = ((uint)NextByte() << 8) | NextByte();
+        }
+
+        public int OverrunBytes { get; private set; }
+
+        public bool ReadBool(int probability)
+        {
+            var split = 1 + (((_range - 1) * (uint)probability) >> 8);
+            var bigSplit = split << 8;
+            bool result;
+            if (_value >= bigSplit)
+            {
+                result = true;
+                _range -= split;
+                _value -= bigSplit;
+            }
+            else
+            {
+                result = false;
+                _range = split;
+            }
+
+            if (_range < 128)
+            {
+                // The excess bits of an invalid partition (one that starts with 0xFF) leave the 32-bit register 16 bits above the window
+                var shift = System.Numerics.BitOperations.LeadingZeroCount(_range) - 24;
+                _range <<= shift;
+                _value <<= shift;
+                _bitCount += shift;
+                if (_bitCount >= 8)
+                {
+                    _bitCount -= 8;
+                    _value |= (uint)NextByte() << _bitCount;
+                }
+            }
+
+            return result;
+        }
+
+        private byte NextByte()
+        {
+            if (_position < _end)
+                return _data[_position++];
+
+            OverrunBytes++;
+            return 0;
+        }
+    }
+
     [Theory]
     [InlineData(8, 8, 8)]
     [InlineData(8, 8, 10)]

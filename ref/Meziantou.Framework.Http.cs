@@ -6,14 +6,14 @@ namespace Meziantou.Framework.Http
 {
     public sealed class LinkHeaderValue
     {
-        public string Url { get => throw null; }
-        public string Rel { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string>> Parameters { get => throw null; }
+        public string Rel { get => throw null; }
+        public string Url { get => throw null; }
         public string? GetParameterValue(string parameterName) => throw null;
-        public static System.Collections.Generic.IEnumerable<Meziantou.Framework.Http.LinkHeaderValue> Parse(System.Net.Http.HttpResponseMessage httpResponse) => throw null;
         public static System.Collections.Generic.IEnumerable<Meziantou.Framework.Http.LinkHeaderValue> Parse(System.Net.Http.Headers.HttpHeaders headers) => throw null;
-        public static System.Collections.Generic.IEnumerable<Meziantou.Framework.Http.LinkHeaderValue> Parse(string value) => throw null;
+        public static System.Collections.Generic.IEnumerable<Meziantou.Framework.Http.LinkHeaderValue> Parse(System.Net.Http.HttpResponseMessage httpResponse) => throw null;
         public static System.Collections.Generic.IEnumerable<Meziantou.Framework.Http.LinkHeaderValue> Parse(System.ReadOnlySpan<char> value) => throw null;
+        public static System.Collections.Generic.IEnumerable<Meziantou.Framework.Http.LinkHeaderValue> Parse(string value) => throw null;
     }
 
     public static class LinkHeaderValueExtensions

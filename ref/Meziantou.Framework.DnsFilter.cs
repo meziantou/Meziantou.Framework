@@ -22,8 +22,8 @@ namespace Meziantou.Framework.DnsFilter
     public sealed class DnsFilterEngine
     {
         public DnsFilterEngine(Meziantou.Framework.DnsFilter.DnsFilterRuleSet ruleSet) { }
-        public void Reload(Meziantou.Framework.DnsFilter.DnsFilterRuleSet ruleSet) { }
         public Meziantou.Framework.DnsFilter.DnsFilterResult Evaluate(string domain, Meziantou.Framework.DnsFilter.DnsFilterQueryType queryType = Meziantou.Framework.DnsFilter.DnsFilterQueryType.A, Meziantou.Framework.DnsFilter.DnsClientInfo client = default) => throw null;
+        public void Reload(Meziantou.Framework.DnsFilter.DnsFilterRuleSet ruleSet) { }
     }
 
     public enum DnsFilterListFormat
@@ -44,10 +44,10 @@ namespace Meziantou.Framework.DnsFilter
 
     public sealed class DnsFilterParseDiagnostic
     {
-        public int LineNumber { get => throw null; }
-        public string Line { get => throw null; }
-        public Meziantou.Framework.DnsFilter.DnsFilterParseError Error { get => throw null; }
         public string? Detail { get => throw null; }
+        public Meziantou.Framework.DnsFilter.DnsFilterParseError Error { get => throw null; }
+        public string Line { get => throw null; }
+        public int LineNumber { get => throw null; }
         public override string ToString() => throw null;
     }
 
@@ -61,9 +61,9 @@ namespace Meziantou.Framework.DnsFilter
 
     public sealed class DnsFilterParseResult
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsFilter.DnsFilterRule> Rules { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsFilter.DnsFilterParseDiagnostic> Diagnostics { get => throw null; }
         public Meziantou.Framework.DnsFilter.DnsFilterListFormat Format { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsFilter.DnsFilterRule> Rules { get => throw null; }
     }
 
     public enum DnsFilterQueryType : ushort
@@ -99,10 +99,10 @@ namespace Meziantou.Framework.DnsFilter
 
     public sealed class DnsFilterResult
     {
-        public static Meziantou.Framework.DnsFilter.DnsFilterResult NotMatched { get => throw null; }
-        public bool IsMatched { get => throw null; }
         public Meziantou.Framework.DnsFilter.DnsFilterAction Action { get => throw null; }
+        public bool IsMatched { get => throw null; }
         public Meziantou.Framework.DnsFilter.DnsFilterRule? MatchingRule { get => throw null; }
+        public static Meziantou.Framework.DnsFilter.DnsFilterResult NotMatched { get => throw null; }
         public Meziantou.Framework.DnsFilter.DnsFilterRewriteRule? Rewrite { get => throw null; }
     }
 
@@ -116,36 +116,36 @@ namespace Meziantou.Framework.DnsFilter
 
     public sealed class DnsFilterRewriteRule
     {
-        public Meziantou.Framework.DnsFilter.DnsFilterRewriteResponseCode ResponseCode { get => throw null; init { } }
         public Meziantou.Framework.DnsFilter.DnsFilterQueryType? RecordType { get => throw null; init { } }
+        public Meziantou.Framework.DnsFilter.DnsFilterRewriteResponseCode ResponseCode { get => throw null; init { } }
         public string? Value { get => throw null; init { } }
     }
 
     public sealed class DnsFilterRule
     {
-        public required string OriginalText { get => throw null; init { } }
         public required Meziantou.Framework.DnsFilter.DnsFilterAction Action { get => throw null; init { } }
-        public bool IsImportant { get => throw null; init { } }
-        public bool IsBadFilter { get => throw null; init { } }
-        public string? ExactDomain { get => throw null; init { } }
-        public string? DomainSuffix { get => throw null; init { } }
-        public string? PatternText { get => throw null; }
         public System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DnsFilter.DnsFilterQueryType>? AllowedDnsTypes { get => throw null; init { } }
-        public System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DnsFilter.DnsFilterQueryType>? ExcludedDnsTypes { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyCollection<string>? DenyAllowDomains { get => throw null; init { } }
+        public string? DomainSuffix { get => throw null; init { } }
+        public string? ExactDomain { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DnsFilter.DnsFilterQueryType>? ExcludedDnsTypes { get => throw null; init { } }
+        public bool IsBadFilter { get => throw null; init { } }
+        public bool IsImportant { get => throw null; init { } }
+        public required string OriginalText { get => throw null; init { } }
+        public string? PatternText { get => throw null; }
         public Meziantou.Framework.DnsFilter.DnsFilterRewriteRule? Rewrite { get => throw null; init { } }
-        public static Meziantou.Framework.DnsFilter.DnsFilterRule CreateBlock(string domain, bool includeSubdomains = false) => throw null;
         public static Meziantou.Framework.DnsFilter.DnsFilterRule CreateAllow(string domain, bool includeSubdomains = false) => throw null;
+        public static Meziantou.Framework.DnsFilter.DnsFilterRule CreateBlock(string domain, bool includeSubdomains = false) => throw null;
     }
 
     public sealed class DnsFilterRuleSet
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsFilter.DnsFilterRule> Rules { get => throw null; }
         public int Count { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsFilter.DnsFilterRule> Rules { get => throw null; }
         public void Add(Meziantou.Framework.DnsFilter.DnsFilterRule rule) { }
-        public void AddRange(System.Collections.Generic.IEnumerable<Meziantou.Framework.DnsFilter.DnsFilterRule> rules) { }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsFilter.DnsFilterParseDiagnostic> AddFromList(System.IO.TextReader reader, Meziantou.Framework.DnsFilter.DnsFilterListFormat format = Meziantou.Framework.DnsFilter.DnsFilterListFormat.AutoDetect) => throw null;
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsFilter.DnsFilterParseDiagnostic> AddFromList(string text, Meziantou.Framework.DnsFilter.DnsFilterListFormat format = Meziantou.Framework.DnsFilter.DnsFilterListFormat.AutoDetect) => throw null;
+        public void AddRange(System.Collections.Generic.IEnumerable<Meziantou.Framework.DnsFilter.DnsFilterRule> rules) { }
         public void Clear() { }
     }
 }

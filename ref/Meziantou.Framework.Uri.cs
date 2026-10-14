@@ -7,34 +7,34 @@ namespace Meziantou.Framework
     public readonly struct DomainInfo : System.IEquatable<Meziantou.Framework.DomainInfo>
     {
         public string Domain { get => throw null; }
+        public bool IsKnownPublicSuffix { get => throw null; }
         public string PublicSuffix { get => throw null; }
         public string? RegistrableDomain { get => throw null; }
-        public string? Subdomain { get => throw null; }
         public Meziantou.Framework.PublicSuffixRuleSources Source { get => throw null; }
-        public bool IsKnownPublicSuffix { get => throw null; }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.DomainInfo left, Meziantou.Framework.DomainInfo right) => throw null;
-        public static bool operator ==(Meziantou.Framework.DomainInfo left, Meziantou.Framework.DomainInfo right) => throw null;
-        public override int GetHashCode() => throw null;
+        public string? Subdomain { get => throw null; }
+        public bool Equals(Meziantou.Framework.DomainInfo other) => throw null;
         #nullable disable
         public override bool Equals(object obj) => throw null;
         #nullable restore
-        public bool Equals(Meziantou.Framework.DomainInfo other) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.DomainInfo left, Meziantou.Framework.DomainInfo right) => throw null;
+        public static bool operator !=(Meziantou.Framework.DomainInfo left, Meziantou.Framework.DomainInfo right) => throw null;
     }
 
     public static class PublicSuffixList
     {
-        public static int RuleCount { get => throw null; }
         public static System.DateTimeOffset LastUpdated { get => throw null; }
-        public static bool IsPublicSuffix(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
-        public static bool IsPublicSuffix(System.ReadOnlySpan<char> domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
-        public static string? GetPublicSuffix(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static int RuleCount { get => throw null; }
         public static string? GetPublicSuffix(System.ReadOnlySpan<char> domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
-        public static string? GetRegistrableDomain(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static string? GetPublicSuffix(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
         public static string? GetRegistrableDomain(System.ReadOnlySpan<char> domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
-        public static bool TryGetDomainInfo(string? domain, out Meziantou.Framework.DomainInfo domainInfo, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
-        public static bool TryGetDomainInfo(System.Uri uri, out Meziantou.Framework.DomainInfo domainInfo, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static string? GetRegistrableDomain(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static bool IsPublicSuffix(System.ReadOnlySpan<char> domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static bool IsPublicSuffix(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
         public static bool TryGetDomainInfo(System.ReadOnlySpan<char> domain, out Meziantou.Framework.DomainInfo domainInfo, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static bool TryGetDomainInfo(System.Uri uri, out Meziantou.Framework.DomainInfo domainInfo, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static bool TryGetDomainInfo(string? domain, out Meziantou.Framework.DomainInfo domainInfo, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
     }
 
     [System.Flags]
@@ -48,64 +48,64 @@ namespace Meziantou.Framework
 
     public sealed class QueryStringParameterCollection : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>>, System.Collections.IEnumerable
     {
-        public Microsoft.Extensions.Primitives.StringValues this[string name] { get => throw null; set { } }
         public int Count { get => throw null; }
         public bool IsEmpty { get => throw null; }
-        public Microsoft.Extensions.Primitives.StringValues Get(string name) => throw null;
+        public Microsoft.Extensions.Primitives.StringValues this[string name] { get => throw null; set { } }
         public void Append(string name, Microsoft.Extensions.Primitives.StringValues values) { }
         public void Append(string name, string? value) { }
-        public bool Remove(string name) => throw null;
-        public void Set(string name, Microsoft.Extensions.Primitives.StringValues values) { }
         public void Clear() { }
+        public Microsoft.Extensions.Primitives.StringValues Get(string name) => throw null;
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Remove(string name) => throw null;
+        public void Set(string name, Microsoft.Extensions.Primitives.StringValues values) { }
     }
 
     public static class QueryStringUtilities
     {
-        public static string AddQueryString(string uri, string name, string? value) => throw null;
+        public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, Microsoft.Extensions.Primitives.StringValues Value)> queryString) => throw null;
+        public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, string? Value)> queryString) => throw null;
+        public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
+        public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString) => throw null;
+        public static string AddOrReplaceQueryString(string uri, string name, string? value) => throw null;
         public static string AddQueryString(string uri, System.Collections.Generic.IDictionary<string, string?> queryString) => throw null;
-        public static string AddQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, string? Value)>? queryString) => throw null;
         public static string AddQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, Microsoft.Extensions.Primitives.StringValues Value)> queryString) => throw null;
+        public static string AddQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, string? Value)>? queryString) => throw null;
         public static string AddQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
         public static string AddQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString) => throw null;
+        public static string AddQueryString(string uri, string name, string? value) => throw null;
+        public static Meziantou.Framework.QueryStringParameterCollection? ParseNullableQuery(string? queryString) => throw null;
+        public static Meziantou.Framework.QueryStringParameterCollection ParseQuery(string? queryString) => throw null;
+        public static string RemoveQueryString(string uri, string name) => throw null;
         public static string SetQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
         public static string SetQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString) => throw null;
-        public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, string? Value)> queryString) => throw null;
-        public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, Microsoft.Extensions.Primitives.StringValues Value)> queryString) => throw null;
-        public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
-        public static string AddOrReplaceQueryString(string uri, string name, string? value) => throw null;
-        public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString) => throw null;
-        public static string RemoveQueryString(string uri, string name) => throw null;
-        public static Meziantou.Framework.QueryStringParameterCollection ParseQuery(string? queryString) => throw null;
-        public static Meziantou.Framework.QueryStringParameterCollection? ParseNullableQuery(string? queryString) => throw null;
     }
 
     public sealed class UrlPattern
     {
-        public string Protocol { get => throw null; }
-        public string Username { get => throw null; }
-        public string Password { get => throw null; }
-        public string Hostname { get => throw null; }
-        public string Port { get => throw null; }
-        public string Pathname { get => throw null; }
-        public string Search { get => throw null; }
-        public string Hash { get => throw null; }
         public bool HasRegExpGroups { get => throw null; }
+        public string Hash { get => throw null; }
+        public string Hostname { get => throw null; }
+        public string Password { get => throw null; }
+        public string Pathname { get => throw null; }
+        public string Port { get => throw null; }
+        public string Protocol { get => throw null; }
+        public string Search { get => throw null; }
+        public string Username { get => throw null; }
+        public static Meziantou.Framework.UrlPattern Create(Meziantou.Framework.UrlPatternInit init) => throw null;
         public static Meziantou.Framework.UrlPattern Create(string pattern) => throw null;
+        public static Meziantou.Framework.UrlPattern Create(Meziantou.Framework.UrlPatternInit init, Meziantou.Framework.UrlPatternOptions? options) => throw null;
         public static Meziantou.Framework.UrlPattern Create(string pattern, Meziantou.Framework.UrlPatternOptions? options) => throw null;
         public static Meziantou.Framework.UrlPattern Create(string pattern, string? baseUrl) => throw null;
         public static Meziantou.Framework.UrlPattern Create(string pattern, string? baseUrl, Meziantou.Framework.UrlPatternOptions? options) => throw null;
-        public static Meziantou.Framework.UrlPattern Create(Meziantou.Framework.UrlPatternInit init) => throw null;
-        public static Meziantou.Framework.UrlPattern Create(Meziantou.Framework.UrlPatternInit init, Meziantou.Framework.UrlPatternOptions? options) => throw null;
+        public bool IsMatch(Meziantou.Framework.UrlPatternInit input) => throw null;
+        public bool IsMatch(System.Uri url) => throw null;
         public bool IsMatch(string url) => throw null;
         public bool IsMatch(string url, string? baseUrl) => throw null;
-        public bool IsMatch(System.Uri url) => throw null;
-        public bool IsMatch(Meziantou.Framework.UrlPatternInit input) => throw null;
+        public Meziantou.Framework.UrlPatternResult? Match(Meziantou.Framework.UrlPatternInit input) => throw null;
+        public Meziantou.Framework.UrlPatternResult? Match(System.Uri url) => throw null;
         public Meziantou.Framework.UrlPatternResult? Match(string url) => throw null;
         public Meziantou.Framework.UrlPatternResult? Match(string url, string? baseUrl) => throw null;
-        public Meziantou.Framework.UrlPatternResult? Match(System.Uri url) => throw null;
-        public Meziantou.Framework.UrlPatternResult? Match(Meziantou.Framework.UrlPatternInit input) => throw null;
     }
 
     public sealed class UrlPatternCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.UrlPattern>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.UrlPattern>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.UrlPattern>, System.Collections.IEnumerable
@@ -114,31 +114,31 @@ namespace Meziantou.Framework
         public Meziantou.Framework.UrlPattern this[int index] { get => throw null; }
         public UrlPatternCollection(System.Collections.Generic.IEnumerable<Meziantou.Framework.UrlPattern> patterns) { }
         public void Add(Meziantou.Framework.UrlPattern pattern) { }
+        public Meziantou.Framework.UrlPattern Add(Meziantou.Framework.UrlPatternInit init) => throw null;
         public Meziantou.Framework.UrlPattern Add(string pattern) => throw null;
         public Meziantou.Framework.UrlPattern Add(string pattern, string? baseUrl) => throw null;
-        public Meziantou.Framework.UrlPattern Add(Meziantou.Framework.UrlPatternInit init) => throw null;
-        public bool Remove(Meziantou.Framework.UrlPattern pattern) => throw null;
         public void Clear() { }
         public bool Contains(Meziantou.Framework.UrlPattern pattern) => throw null;
-        public bool IsMatch(string url) => throw null;
-        public bool IsMatch(string url, string? baseUrl) => throw null;
-        public bool IsMatch(System.Uri url) => throw null;
-        public bool IsMatch(Meziantou.Framework.UrlPatternInit input) => throw null;
+        public Meziantou.Framework.UrlPattern? FindPattern(System.Uri url) => throw null;
         public Meziantou.Framework.UrlPattern? FindPattern(string url) => throw null;
         public Meziantou.Framework.UrlPattern? FindPattern(string url, string? baseUrl) => throw null;
-        public Meziantou.Framework.UrlPattern? FindPattern(System.Uri url) => throw null;
-        public Meziantou.Framework.UrlPatternResult? Match(string url) => throw null;
-        public Meziantou.Framework.UrlPatternResult? Match(string url, string? baseUrl) => throw null;
-        public Meziantou.Framework.UrlPatternResult? Match(System.Uri url) => throw null;
-        public Meziantou.Framework.UrlPatternResult? Match(Meziantou.Framework.UrlPatternInit input) => throw null;
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.UrlPattern> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool IsMatch(Meziantou.Framework.UrlPatternInit input) => throw null;
+        public bool IsMatch(System.Uri url) => throw null;
+        public bool IsMatch(string url) => throw null;
+        public bool IsMatch(string url, string? baseUrl) => throw null;
+        public Meziantou.Framework.UrlPatternResult? Match(Meziantou.Framework.UrlPatternInit input) => throw null;
+        public Meziantou.Framework.UrlPatternResult? Match(System.Uri url) => throw null;
+        public Meziantou.Framework.UrlPatternResult? Match(string url) => throw null;
+        public Meziantou.Framework.UrlPatternResult? Match(string url, string? baseUrl) => throw null;
+        public bool Remove(Meziantou.Framework.UrlPattern pattern) => throw null;
     }
 
     public sealed class UrlPatternComponentResult
     {
-        public string Input { get => throw null; }
         public System.Collections.Generic.IReadOnlyDictionary<string, string?> Groups { get => throw null; }
+        public string Input { get => throw null; }
     }
 
     public sealed class UrlPatternException : System.Exception
@@ -149,21 +149,21 @@ namespace Meziantou.Framework
 
     public sealed class UrlPatternInit
     {
-        public string? Protocol { get => throw null; set { } }
-        public string? Username { get => throw null; set { } }
-        public string? Password { get => throw null; set { } }
-        public string? Hostname { get => throw null; set { } }
-        public string? Port { get => throw null; set { } }
-        public string? Pathname { get => throw null; set { } }
-        public string? Search { get => throw null; set { } }
-        public string? Hash { get => throw null; set { } }
         public string? BaseUrl { get => throw null; set { } }
+        public string? Hash { get => throw null; set { } }
+        public string? Hostname { get => throw null; set { } }
+        public string? Password { get => throw null; set { } }
+        public string? Pathname { get => throw null; set { } }
+        public string? Port { get => throw null; set { } }
+        public string? Protocol { get => throw null; set { } }
+        public string? Search { get => throw null; set { } }
+        public string? Username { get => throw null; set { } }
     }
 
     public sealed class UrlPatternInput
     {
-        public string? Url { get => throw null; }
         public Meziantou.Framework.UrlPatternInit? Init { get => throw null; }
+        public string? Url { get => throw null; }
     }
 
     public sealed class UrlPatternOptions
@@ -173,14 +173,14 @@ namespace Meziantou.Framework
 
     public sealed class UrlPatternResult
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.UrlPatternInput> Inputs { get => throw null; }
-        public Meziantou.Framework.UrlPatternComponentResult Protocol { get => throw null; }
-        public Meziantou.Framework.UrlPatternComponentResult Username { get => throw null; }
-        public Meziantou.Framework.UrlPatternComponentResult Password { get => throw null; }
-        public Meziantou.Framework.UrlPatternComponentResult Hostname { get => throw null; }
-        public Meziantou.Framework.UrlPatternComponentResult Port { get => throw null; }
-        public Meziantou.Framework.UrlPatternComponentResult Pathname { get => throw null; }
-        public Meziantou.Framework.UrlPatternComponentResult Search { get => throw null; }
         public Meziantou.Framework.UrlPatternComponentResult Hash { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Hostname { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.UrlPatternInput> Inputs { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Password { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Pathname { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Port { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Protocol { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Search { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Username { get => throw null; }
     }
 }

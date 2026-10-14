@@ -4,7 +4,8 @@ namespace Meziantou.Framework.PublicApiGenerator;
 
 /// <summary>
 /// Formats symbols as the compilable stubs written by <see cref="PublicApi.Generate(string, PublicApiOptions?)"/>.
-/// The output must stay identical to the one of the previous versions of the generator, as it is used to track API changes.
+/// The output is used to track API changes, so it must only depend on the API: the symbols of the model are sorted when it is read
+/// (see <see cref="PublicApiOrdering"/>), and the formatter writes them in that order.
 /// </summary>
 /// <remarks>
 /// Multi-line members are written relative to the indentation of the member. Nested types are referenced through their containing types,
@@ -195,6 +196,7 @@ internal sealed class CSharpCompilableFormatter
 
         var extensionPropertyBlocks = GetExtensionPropertyBlocks(type);
         var extensionPropertyAccessors = extensionPropertyBlocks.SelectMany(static block => block.Accessors).ToHashSet();
+        var members = new List<(PublicApiMember Member, DeclarationWriter Writer)>();
         foreach (var member in type.Members)
         {
             if (member is PublicApiMethod method && extensionPropertyAccessors.Contains(method))
@@ -204,11 +206,23 @@ internal sealed class CSharpCompilableFormatter
             if (!TryWriteTypeMember(memberWriter, type, member))
                 continue;
 
+            members.Add((member, memberWriter));
+        }
+
+        // The members of the model are sorted. The members that the model cannot tell apart (e.g. methods that only differ by a custom modifier) are sorted by text.
+        members.Sort(static (x, y) =>
+        {
+            var result = MemberSortKey.Compare(x.Member.SortKey, y.Member.SortKey);
+            return result != 0 ? result : string.CompareOrdinal(x.Writer.GetText(), y.Writer.GetText());
+        });
+
+        foreach (var (_, memberWriter) in members)
+        {
             writer.Write(memberWriter);
             writer.WriteLine();
         }
 
-        foreach (var block in extensionPropertyBlocks.OrderBy(static block => block.Order))
+        foreach (var block in extensionPropertyBlocks)
         {
             WriteExtensionPropertyBlock(writer, block);
             writer.WriteLine();
@@ -1061,6 +1075,7 @@ internal sealed class CSharpCompilableFormatter
             return;
         }
 
+        // The selected constructor must not depend on the order of the declarations
         PublicApiMethod? selectedConstructor = null;
         foreach (var member in baseTypeDefinition.Members)
         {
@@ -1070,7 +1085,7 @@ internal sealed class CSharpCompilableFormatter
             if (constructor.Parameters.IsEmpty)
                 return;
 
-            if (selectedConstructor is null || constructor.Origin!.MetadataToken < selectedConstructor.Origin!.MetadataToken)
+            if (selectedConstructor is null || PublicApiOrdering.CompareBaseConstructors(GetBaseConstructorSortKey(constructor), GetBaseConstructorSortKey(selectedConstructor)) < 0)
             {
                 selectedConstructor = constructor;
             }
@@ -1099,6 +1114,12 @@ internal sealed class CSharpCompilableFormatter
         }
 
         writer.Punctuation(")");
+    }
+
+    private static (bool RequiresVariable, int ParameterCount, string Signature) GetBaseConstructorSortKey(PublicApiMethod constructor)
+    {
+        var requiresVariable = constructor.Parameters.Any(static parameter => PublicApiOrdering.RequiresVariable(PublicApiOrdering.GetRefKindSortText(parameter.RefKind)));
+        return (requiresVariable, constructor.Parameters.Length, PublicApiOrdering.GetSignatureSortText(constructor.Parameters));
     }
 
     private static void WriteDeclarationWithParameters(DeclarationWriter writer, DeclarationWriter prefix, ImmutableArray<ParameterText> parameters, DeclarationWriter suffix, bool wrapWithNullableDisableDirective)
@@ -1435,7 +1456,7 @@ internal sealed class CSharpCompilableFormatter
         writer.Punctuation("]");
     }
 
-    private static void WriteAttributeContent(DeclarationWriter writer, PublicApiAttribute attribute)
+    public static void WriteAttributeContent(DeclarationWriter writer, PublicApiAttribute attribute)
     {
         var name = attribute.AttributeType.FullName;
         if (name.EndsWith("Attribute", StringComparison.Ordinal))
@@ -1888,7 +1909,6 @@ internal sealed class CSharpCompilableFormatter
             return [];
 
         var blocks = new Dictionary<(string ReceiverType, string PropertyName), ExtensionPropertyBlock>();
-        var order = new List<(string ReceiverType, string PropertyName)>();
         foreach (var member in type.Members)
         {
             if (member is not PublicApiMethod { IsStatic: true, MethodKind: PublicApiMethodKind.Ordinary, IsExtensionMethod: false } method)
@@ -1908,36 +1928,28 @@ internal sealed class CSharpCompilableFormatter
                 continue;
             }
 
-            var key = (DeclarationKey(method.Parameters[0].Type), method.Name[4..]);
+            var key = (PublicApiOrdering.GetTypeSortText(method.Parameters[0].Type), method.Name[4..]);
             if (!blocks.TryGetValue(key, out var block))
             {
                 block = new ExtensionPropertyBlock(method.Parameters[0], key.Item2);
                 blocks.Add(key, block);
-                order.Add(key);
             }
 
+            // The receiver and the type of the property are the ones of the getter when there is one
             if (isGetter)
             {
                 block.Getter = method;
+                block.Receiver = method.Parameters[0];
                 block.PropertyType = method.ReturnType;
             }
             else
             {
                 block.Setter = method;
-                block.PropertyType = method.Parameters[1].Type;
+                block.PropertyType ??= method.Parameters[1].Type;
             }
-
-            block.Order = Math.Min(block.Order, method.Origin!.MetadataToken);
         }
 
-        return [.. order.Select(key => blocks[key])];
-
-        static string DeclarationKey(PublicApiTypeReference receiverType)
-        {
-            var writer = new DeclarationWriter("\n");
-            WriteTypeReference(writer, receiverType, includeNullableAnnotations: true);
-            return writer.GetText();
-        }
+        return [.. blocks.OrderBy(static block => block.Key.ReceiverType, StringComparer.Ordinal).ThenBy(static block => block.Key.PropertyName, StringComparer.Ordinal).Select(static block => block.Value)];
     }
 
     private static void WriteExtensionPropertyBlock(DeclarationWriter writer, ExtensionPropertyBlock block)
@@ -1991,7 +2003,7 @@ internal sealed class CSharpCompilableFormatter
 
     private sealed class ExtensionPropertyBlock(PublicApiParameter receiver, string propertyName)
     {
-        public PublicApiParameter Receiver { get; } = receiver;
+        public PublicApiParameter Receiver { get; set; } = receiver;
 
         public string PropertyName { get; } = propertyName;
 
@@ -2000,8 +2012,6 @@ internal sealed class CSharpCompilableFormatter
         public PublicApiMethod? Getter { get; set; }
 
         public PublicApiMethod? Setter { get; set; }
-
-        public int Order { get; set; } = int.MaxValue;
 
         public IEnumerable<PublicApiMethod> Accessors
         {

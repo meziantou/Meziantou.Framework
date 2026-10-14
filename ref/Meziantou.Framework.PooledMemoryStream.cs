@@ -9,44 +9,44 @@ namespace Meziantou.Framework
         public override bool CanRead { get => throw null; }
         public override bool CanSeek { get => throw null; }
         public override bool CanWrite { get => throw null; }
+        public override int Capacity { get => throw null; set { } }
         public override long Length { get => throw null; }
         public override long Position { get => throw null; set { } }
-        public override int Capacity { get => throw null; set { } }
-        public PooledMemoryStream(int initialCapacity) { }
         public PooledMemoryStream(Meziantou.Framework.PooledMemoryStreamOptions options) { }
+        public PooledMemoryStream(int initialCapacity) { }
         public PooledMemoryStream(Meziantou.Framework.PooledMemoryStreamOptions options, int initialCapacity) { }
-        public override void Flush() { }
-        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) => throw null;
-        public override long Seek(long offset, System.IO.SeekOrigin loc) => throw null;
-        public override void SetLength(long value) { }
-        public override int ReadByte() => throw null;
-        public override int Read(byte[] buffer, int offset, int count) => throw null;
-        public override int Read(System.Span<byte> buffer) => throw null;
-        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) => throw null;
-        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public override void WriteByte(byte value) { }
-        public override void Write(byte[] buffer, int offset, int count) { }
-        public override void Write(System.ReadOnlySpan<byte> buffer) { }
-        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) => throw null;
-        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        void System.Buffers.IBufferWriter<System.Byte>.Advance(int count) { }
         public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
         public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) => throw null;
-        public override void WriteTo(System.IO.Stream stream) { }
-        public override byte[] ToArray() => throw null;
+        protected override void Dispose(bool disposing) { }
+        public override void Flush() { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) => throw null;
         public override byte[] GetBuffer() => throw null;
-        public override bool TryGetBuffer(out System.ArraySegment<byte> buffer) => throw null;
-        void System.Buffers.IBufferWriter<System.Byte>.Advance(int count) { }
         System.Memory<byte> System.Buffers.IBufferWriter<System.Byte>.GetMemory(int sizeHint) => throw null;
         System.Span<byte> System.Buffers.IBufferWriter<System.Byte>.GetSpan(int sizeHint) => throw null;
-        protected override void Dispose(bool disposing) { }
+        public override int Read(System.Span<byte> buffer) => throw null;
+        public override int Read(byte[] buffer, int offset, int count) => throw null;
+        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) => throw null;
+        public override int ReadByte() => throw null;
+        public override long Seek(long offset, System.IO.SeekOrigin loc) => throw null;
+        public override void SetLength(long value) { }
+        public override byte[] ToArray() => throw null;
+        public override bool TryGetBuffer(out System.ArraySegment<byte> buffer) => throw null;
+        public override void Write(System.ReadOnlySpan<byte> buffer) { }
+        public override void Write(byte[] buffer, int offset, int count) { }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) => throw null;
+        public override void WriteByte(byte value) { }
+        public override void WriteTo(System.IO.Stream stream) { }
     }
 
     public sealed class PooledMemoryStreamOptions
     {
+        public System.Collections.Immutable.ImmutableArray<int> BufferSizes { get => throw null; set { } }
+        public bool ClearOnReturn { get => throw null; set { } }
         public static Meziantou.Framework.PooledMemoryStreamOptions Default { get => throw null; }
         public bool IsFrozen { get => throw null; }
-        public System.Collections.Immutable.ImmutableArray<int> BufferSizes { get => throw null; set { } }
         public long MaxRetainedBytesPerBucket { get => throw null; set { } }
-        public bool ClearOnReturn { get => throw null; set { } }
     }
 }

@@ -35,7 +35,18 @@ internal sealed partial class PublicApiMetadataReader
             }
         }
 
-        return result.ToImmutable();
+        if (result.Count < 2)
+            return result.ToImmutable();
+
+        // Sorted so that the model does not depend on the order of the metadata table, which is the order of the declarations
+        return [.. result.OrderBy(GetAttributeSortText, PublicApiOrdering.AttributeComparer)];
+    }
+
+    private static string GetAttributeSortText(PublicApiAttribute attribute)
+    {
+        var writer = new DeclarationWriter("\n");
+        CSharpCompilableFormatter.WriteAttributeContent(writer, attribute);
+        return writer.GetText();
     }
 
     private PublicApiNamedTypeReference? GetAttributeType(CustomAttribute attribute)
@@ -73,10 +84,12 @@ internal sealed partial class PublicApiMetadataReader
         }
 
         constructorArguments = [.. value.FixedArguments.Select(ConvertAttributeArgument)];
-        namedArguments = [.. value.NamedArguments.Select(argument => new PublicApiAttributeNamedArgument(
-            argument.Name ?? string.Empty,
-            argument.Kind == CustomAttributeNamedArgumentKind.Field ? PublicApiAttributeNamedArgumentKind.Field : PublicApiAttributeNamedArgumentKind.Property,
-            ConvertAttributeArgument(new CustomAttributeTypedArgument<RawType>(argument.Type, argument.Value))))];
+        namedArguments = [.. value.NamedArguments
+            .Select(argument => new PublicApiAttributeNamedArgument(
+                argument.Name ?? string.Empty,
+                argument.Kind == CustomAttributeNamedArgumentKind.Field ? PublicApiAttributeNamedArgumentKind.Field : PublicApiAttributeNamedArgumentKind.Property,
+                ConvertAttributeArgument(new CustomAttributeTypedArgument<RawType>(argument.Type, argument.Value))))
+            .OrderBy(static argument => argument.Name, StringComparer.Ordinal)];
         return true;
     }
 

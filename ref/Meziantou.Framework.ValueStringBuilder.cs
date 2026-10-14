@@ -6,49 +6,49 @@ namespace Meziantou.Framework
 {
     public ref struct ValueStringBuilder
     {
-        public int Length { readonly get => throw null; set { } }
         public readonly int Capacity { get => throw null; }
         public ref char this[int index] { get => throw null; }
+        public int Length { readonly get => throw null; set { } }
         public readonly System.Span<char> RawChars { get => throw null; }
-        public void Append([System.Runtime.CompilerServices.InterpolatedStringHandlerArgument("")] ref Meziantou.Framework.ValueStringBuilder.AppendInterpolatedStringHandler handler) { }
-        public void Append(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgument(new string[] { "", "provider" })] ref Meziantou.Framework.ValueStringBuilder.AppendInterpolatedStringHandler handler) { }
-        public void AppendSpanFormattable<T>(T value, string? format = null, System.IFormatProvider? provider = null) where T : System.ISpanFormattable { }
         public ValueStringBuilder(System.Span<char> initialBuffer) { }
         public ValueStringBuilder(int initialCapacity) { }
-        public void EnsureCapacity(int capacity) { }
-        public void Clear() { }
-        public void NullTerminate() { }
-        public ref char GetPinnableReference() => throw null;
-        public override string ToString() => throw null;
+        public void Append(System.ReadOnlySpan<char> value) { }
+        public void Append(System.Text.Rune rune) { }
+        public void Append(char c) { }
+        public void Append([System.Runtime.CompilerServices.InterpolatedStringHandlerArgument("")] ref Meziantou.Framework.ValueStringBuilder.AppendInterpolatedStringHandler handler) { }
+        public void Append(string? s) { }
+        public void Append(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgument(new string[] { "", "provider" })] ref Meziantou.Framework.ValueStringBuilder.AppendInterpolatedStringHandler handler) { }
+        public void Append(char c, int count) { }
+        public System.Span<char> AppendSpan(int length) => throw null;
+        public void AppendSpanFormattable<T>(T value, string? format = null, System.IFormatProvider? provider = null) where T : System.ISpanFormattable { }
         public readonly System.ReadOnlySpan<char> AsSpan() => throw null;
         public readonly System.ReadOnlySpan<char> AsSpan(int start) => throw null;
         public readonly System.ReadOnlySpan<char> AsSpan(int start, int length) => throw null;
-        public void Insert(int index, char value, int count) { }
-        public void Insert(int index, string? s) { }
-        public void Append(char c) { }
-        public void Append(string? s) { }
-        public void Append(char c, int count) { }
-        public void Append(System.ReadOnlySpan<char> value) { }
-        public System.Span<char> AppendSpan(int length) => throw null;
+        public void Clear() { }
         public void Dispose() { }
-        public void Append(System.Text.Rune rune) { }
+        public void EnsureCapacity(int capacity) { }
+        public ref char GetPinnableReference() => throw null;
+        public void Insert(int index, string? s) { }
+        public void Insert(int index, char value, int count) { }
+        public void NullTerminate() { }
+        public override string ToString() => throw null;
         [System.Runtime.CompilerServices.InterpolatedStringHandler]
         public ref struct AppendInterpolatedStringHandler
         {
             public AppendInterpolatedStringHandler(int literalLength, int formattedCount, Meziantou.Framework.ValueStringBuilder valueStringBuilder) { }
-            public AppendInterpolatedStringHandler(int literalLength, int formattedCount, Meziantou.Framework.ValueStringBuilder valueStringBuilder, out bool shouldAppend) { }
             public AppendInterpolatedStringHandler(int literalLength, int formattedCount, Meziantou.Framework.ValueStringBuilder valueStringBuilder, System.IFormatProvider? provider) { }
+            public AppendInterpolatedStringHandler(int literalLength, int formattedCount, Meziantou.Framework.ValueStringBuilder valueStringBuilder, out bool shouldAppend) { }
             public AppendInterpolatedStringHandler(int literalLength, int formattedCount, Meziantou.Framework.ValueStringBuilder valueStringBuilder, System.IFormatProvider? provider, out bool shouldAppend) { }
-            public void AppendLiteral(string value) { }
-            public void AppendFormatted<T>(T value) { }
-            public void AppendFormatted<T>(T value, string? format) { }
-            public void AppendFormatted<T>(T value, int alignment) { }
-            public void AppendFormatted<T>(T value, int alignment, string? format) { }
             public void AppendFormatted(System.ReadOnlySpan<char> value) { }
-            public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
             public void AppendFormatted(string? value) { }
-            public void AppendFormatted(string? value, int alignment = 0, string? format = null) { }
+            public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
             public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
+            public void AppendFormatted(string? value, int alignment = 0, string? format = null) { }
+            public void AppendFormatted<T>(T value) { }
+            public void AppendFormatted<T>(T value, int alignment) { }
+            public void AppendFormatted<T>(T value, string? format) { }
+            public void AppendFormatted<T>(T value, int alignment, string? format) { }
+            public void AppendLiteral(string value) { }
         }
     }
 }

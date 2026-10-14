@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -286,6 +287,12 @@ internal sealed class PngSampleFormat
 
     private void ExpandRgb16(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
     {
+        if (!_hasKey)
+        {
+            ExpandRgb16Opaque(scanline, width, destination);
+            return;
+        }
+
         var pixels = unsafe(MemoryMarshal.Cast<byte, ushort>(destination[..(width * 8)]));
         for (var x = 0; x < width; x++)
         {
@@ -296,7 +303,44 @@ internal sealed class PngSampleFormat
             pixels[x * 4] = red;
             pixels[(x * 4) + 1] = green;
             pixels[(x * 4) + 2] = blue;
-            pixels[(x * 4) + 3] = _hasKey && red == _keyRed && green == _keyGreen && blue == _keyBlue ? (ushort)0 : ushort.MaxValue;
+            pixels[(x * 4) + 3] = red == _keyRed && green == _keyGreen && blue == _keyBlue ? (ushort)0 : ushort.MaxValue;
+        }
+    }
+
+    /// <summary>
+    /// Expands big-endian 16-bit RGB samples to opaque native-endian <see cref="PixelFormat.Rgba64"/> pixels. With 128-bit
+    /// hardware vectors on a little-endian machine, two pixels are shuffled at a time; the result equals
+    /// <see cref="ExpandRgb16OpaqueScalar"/>.
+    /// </summary>
+    internal static void ExpandRgb16Opaque(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
+    {
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+        {
+            var shuffle = Vector128.Create((byte)1, 0, 3, 2, 5, 4, 0xFF, 0xFF, 7, 6, 9, 8, 11, 10, 0xFF, 0xFF);
+            var alpha = Vector128.Create(0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0, 0, 0, 0, 0, 0, 0xFF, (byte)0xFF);
+
+            // 16 bytes are loaded for the 12 of two pixels
+            for (; (x * 6) + Vector128<byte>.Count <= width * 6; x += 2)
+            {
+                (Vector128.Shuffle(Vector128.Create(scanline[(x * 6)..]), shuffle) | alpha).CopyTo(destination[(x * 8)..]);
+            }
+        }
+
+        ExpandRgb16OpaqueScalar(scanline[(x * 6)..(width * 6)], width - x, destination[(x * 8)..]);
+    }
+
+    /// <summary>The pixel-at-a-time reference of <see cref="ExpandRgb16Opaque"/>.</summary>
+    internal static void ExpandRgb16OpaqueScalar(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
+    {
+        var pixels = unsafe(MemoryMarshal.Cast<byte, ushort>(destination[..(width * 8)]));
+        for (var x = 0; x < width; x++)
+        {
+            var source = scanline.Slice(x * 6, 6);
+            pixels[x * 4] = BinaryPrimitives.ReadUInt16BigEndian(source);
+            pixels[(x * 4) + 1] = BinaryPrimitives.ReadUInt16BigEndian(source[2..]);
+            pixels[(x * 4) + 2] = BinaryPrimitives.ReadUInt16BigEndian(source[4..]);
+            pixels[(x * 4) + 3] = ushort.MaxValue;
         }
     }
 
@@ -311,7 +355,30 @@ internal sealed class PngSampleFormat
         IndexedPixels.Expand(scanline, depth, width, unsafe(MemoryMarshal.Cast<byte, uint>(_palette.AsSpan())), destination, rgba: SourceBytesPerPixel == 4);
     }
 
-    private static void ExpandGrayAlpha8(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
+    /// <summary>
+    /// Expands 8-bit gray+alpha samples to <see cref="PixelFormat.Rgba32"/> (the gray replicated). With 128-bit hardware
+    /// vectors, eight pixels are shuffled at a time; the result equals <see cref="ExpandGrayAlpha8Scalar"/>.
+    /// </summary>
+    internal static void ExpandGrayAlpha8(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
+    {
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            var low = Vector128.Create((byte)0, 0, 0, 1, 2, 2, 2, 3, 4, 4, 4, 5, 6, 6, 6, 7);
+            var high = Vector128.Create((byte)8, 8, 8, 9, 10, 10, 10, 11, 12, 12, 12, 13, 14, 14, 14, 15);
+            for (; x + 8 <= width; x += 8)
+            {
+                var samples = Vector128.Create(scanline[(x * 2)..]);
+                Vector128.Shuffle(samples, low).CopyTo(destination[(x * 4)..]);
+                Vector128.Shuffle(samples, high).CopyTo(destination[((x * 4) + 16)..]);
+            }
+        }
+
+        ExpandGrayAlpha8Scalar(scanline[(x * 2)..(width * 2)], width - x, destination[(x * 4)..]);
+    }
+
+    /// <summary>The pixel-at-a-time reference of <see cref="ExpandGrayAlpha8"/>.</summary>
+    internal static void ExpandGrayAlpha8Scalar(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
     {
         for (var x = 0; x < width; x++)
         {
@@ -324,7 +391,31 @@ internal sealed class PngSampleFormat
         }
     }
 
-    private static void ExpandGrayAlpha16(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
+    /// <summary>
+    /// Expands big-endian 16-bit gray+alpha samples to native-endian <see cref="PixelFormat.Rgba64"/> pixels. With 128-bit
+    /// hardware vectors on a little-endian machine, four pixels are shuffled at a time; the result equals
+    /// <see cref="ExpandGrayAlpha16Scalar"/>.
+    /// </summary>
+    internal static void ExpandGrayAlpha16(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
+    {
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+        {
+            var low = Vector128.Create((byte)1, 0, 1, 0, 1, 0, 3, 2, 5, 4, 5, 4, 5, 4, 7, 6);
+            var high = Vector128.Create((byte)9, 8, 9, 8, 9, 8, 11, 10, 13, 12, 13, 12, 13, 12, 15, 14);
+            for (; x + 4 <= width; x += 4)
+            {
+                var samples = Vector128.Create(scanline[(x * 4)..]);
+                Vector128.Shuffle(samples, low).CopyTo(destination[(x * 8)..]);
+                Vector128.Shuffle(samples, high).CopyTo(destination[((x * 8) + 16)..]);
+            }
+        }
+
+        ExpandGrayAlpha16Scalar(scanline[(x * 4)..(width * 4)], width - x, destination[(x * 8)..]);
+    }
+
+    /// <summary>The pixel-at-a-time reference of <see cref="ExpandGrayAlpha16"/>.</summary>
+    internal static void ExpandGrayAlpha16Scalar(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
     {
         var pixels = unsafe(MemoryMarshal.Cast<byte, ushort>(destination[..(width * 8)]));
         for (var x = 0; x < width; x++)

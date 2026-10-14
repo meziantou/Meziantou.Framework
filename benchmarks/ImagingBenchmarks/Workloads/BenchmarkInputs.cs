@@ -16,6 +16,8 @@ internal static class BenchmarkInputs
     private static readonly Lazy<byte[]> LargeRgb24Bytes = new(() => BenchmarkPixels.Rgb24(LargeWidth, LargeHeight, seed: 1));
     private static readonly Lazy<byte[]> SmallPngData = new(() => EncodeRgba32(SmallPngSource, 64, 64, new PngEncoder()));
     private static readonly Lazy<byte[]> LargePng8Data = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new PngEncoder()));
+    private static readonly Lazy<byte[]> PngGrayAlpha8Data = new(() => PngLayoutInput.Encode(GrayAlpha8Samples(ServiceRgba32Source), ServiceWidth, ServiceHeight, colorType: 4, bitDepth: 8));
+    private static readonly Lazy<byte[]> PngRgb16Data = new(() => PngLayoutInput.Encode(Rgb16Samples(LargeRgba64Source), Large16Width, Large16Height, colorType: 2, bitDepth: 16));
     private static readonly Lazy<byte[]> LargePng16Data = new(() => EncodeRgba64(LargeRgba64Source, Large16Width, Large16Height, new PngEncoder()));
     private static readonly Lazy<byte[]> BaselineJpegData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, JpegEncoder));
     private static readonly Lazy<byte[]> ProgressiveJpegData = new(() => ProgressiveJpegInput.Encode(LargeRgb24Bytes.Value, LargeWidth, LargeHeight, JpegQuality));
@@ -86,6 +88,18 @@ internal static class BenchmarkInputs
 
     /// <summary>Gets a 2048x1536 RGB 8-bit PNG (default <see cref="PngEncoder"/>).</summary>
     public static byte[] LargePng8 => LargePng8Data.Value;
+
+    /// <summary>Gets the 1024x768 RGBA source as a gray+alpha 8-bit PNG (gray <c>(r + 2g + b) / 4</c>), written by <see cref="PngLayoutInput"/>.</summary>
+    public static byte[] PngGrayAlpha8 => PngGrayAlpha8Data.Value;
+
+    /// <summary>Gets the pixels <see cref="PngGrayAlpha8"/> decodes to.</summary>
+    public static Rgba32[] GrayAlpha8Pixels => [.. ServiceRgba32Source.Select(static p => new Rgba32(Luma(p), Luma(p), Luma(p), p.A))];
+
+    /// <summary>Gets the 1024x768 RGBA 16-bit source without its alpha as an RGB 16-bit PNG, written by <see cref="PngLayoutInput"/>.</summary>
+    public static byte[] PngRgb16 => PngRgb16Data.Value;
+
+    /// <summary>Gets the pixels <see cref="PngRgb16"/> decodes to.</summary>
+    public static Rgba64[] Rgb16Pixels => [.. LargeRgba64Source.Select(static p => new Rgba64(p.R, p.G, p.B))];
 
     /// <summary>Gets a 1024x768 RGBA 16-bit PNG (default <see cref="PngEncoder"/>).</summary>
     public static byte[] LargePng16 => LargePng16Data.Value;
@@ -248,6 +262,33 @@ internal static class BenchmarkInputs
         }
 
         return Save(image, encoder);
+    }
+
+    private static byte Luma(Rgba32 pixel) => (byte)((pixel.R + (2 * pixel.G) + pixel.B) / 4);
+
+    private static byte[] GrayAlpha8Samples(Rgba32[] pixels)
+    {
+        var samples = new byte[pixels.Length * 2];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            samples[i * 2] = Luma(pixels[i]);
+            samples[(i * 2) + 1] = pixels[i].A;
+        }
+
+        return samples;
+    }
+
+    private static byte[] Rgb16Samples(Rgba64[] pixels)
+    {
+        var samples = new byte[pixels.Length * 6];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(samples.AsSpan(i * 6), pixels[i].R);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(samples.AsSpan((i * 6) + 2), pixels[i].G);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(samples.AsSpan((i * 6) + 4), pixels[i].B);
+        }
+
+        return samples;
     }
 
     private static byte[] EncodeAnimation(ImageEncoder encoder)

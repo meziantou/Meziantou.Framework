@@ -75,6 +75,21 @@ public sealed class BenchmarkWorkloadTests
     }
 
     [Fact]
+    public void PngLayoutInputsDecodeToTheirSources()
+    {
+        // Layouts PngEncoder never writes: gray with alpha, 16-bit RGB without alpha. The reference reader parses them
+        // (chunk CRCs; the zlib datastream of the layouts it decodes) and the library decodes them to the pixels they were made from
+        Assert.Equal(new Size(BenchmarkInputs.ServiceWidth, BenchmarkInputs.ServiceHeight), Image.Identify(BenchmarkInputs.PngGrayAlpha8).Size);
+        Assert.Equal(ImageColorModel.GrayscaleAlpha, Image.Identify(BenchmarkInputs.PngGrayAlpha8).ColorModel);
+        Assert.Equal(ImageColorModel.Rgb, Image.Identify(BenchmarkInputs.PngRgb16).ColorModel);
+        Assert.Equal(16, Image.Identify(BenchmarkInputs.PngRgb16).BitsPerComponent);
+        _ = ReferencePng.Parse(BenchmarkInputs.PngGrayAlpha8).DecodePixels();
+        _ = ReferencePng.Parse(BenchmarkInputs.PngRgb16);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.PngGrayAlpha8, BenchmarkInputs.GrayAlpha8Pixels);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.PngRgb16, BenchmarkInputs.Rgb16Pixels);
+    }
+
+    [Fact]
     public void TheBaselineJpegInputMatchesTheEncoderModel()
     {
         // The baseline input is the output of the encode workload (2048x1536 Rgb24, quality 85, 4:2:0)

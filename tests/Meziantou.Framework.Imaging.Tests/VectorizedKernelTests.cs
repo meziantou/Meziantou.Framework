@@ -88,6 +88,33 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PngSampleExpansionsMatchTheScalarReferences()
+    {
+        var random = new Random(59);
+        for (var width = 0; width <= 37; width++)
+        {
+            var scanline = new byte[width * 6];
+            random.NextBytes(scanline);
+            Check(PngSampleFormat.ExpandGrayAlpha8Scalar, PngSampleFormat.ExpandGrayAlpha8, scanline.AsSpan(0, width * 2).ToArray(), width, width * 4);
+            Check(PngSampleFormat.ExpandGrayAlpha16Scalar, PngSampleFormat.ExpandGrayAlpha16, scanline.AsSpan(0, width * 4).ToArray(), width, width * 8);
+            Check(PngSampleFormat.ExpandRgb16OpaqueScalar, PngSampleFormat.ExpandRgb16Opaque, scanline, width, width * 8);
+        }
+
+        static void Check(Expansion reference, Expansion expansion, byte[] scanline, int width, int length)
+        {
+            // The bytes after the row must not be written
+            var expected = new byte[length + 9];
+            var actual = new byte[length + 9];
+            reference(scanline, width, expected);
+            expansion(scanline, width, actual);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    private delegate void Expansion(ReadOnlySpan<byte> scanline, int width, Span<byte> destination);
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void PngAdaptiveCostsOfEveryFilterMatchTheScalarReference()
     {
         var random = new Random(53);

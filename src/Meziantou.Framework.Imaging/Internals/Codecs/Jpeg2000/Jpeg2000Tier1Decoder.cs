@@ -14,9 +14,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// decoded, the word shifted right by one is the magnitude.
 /// </para>
 /// <para>
-/// Each coefficient has a word of flags, in an array with a border of one coefficient: the significance of its eight
-/// neighbors, the sign of the four nearest ones, and its own state. A coefficient that becomes significant updates the
-/// flags of its neighbors, so that a context is one table lookup.
+/// Each coefficient has a word of flags (<see cref="Jpeg2000Tier1Tables"/>): the significance of its eight neighbors, the
+/// sign of the four nearest ones, and its own state. A coefficient that becomes significant updates the flags of its
+/// neighbors, so that a context is one table lookup. The flags are stored in the order of the passes: stripe by stripe,
+/// with the four words of a column of a stripe next to each other, and a border of one column on each side and of one
+/// stripe above and below. A pass tests the four words of a column at once and skips the columns that it does not code.
 /// </para>
 /// </remarks>
 internal sealed class Jpeg2000Tier1Decoder : IDisposable
@@ -40,12 +42,12 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
     private int _rawByte;
     private int _width;
     private int _height;
-    private int _stride;
+    private int _stripeStride;
     private bool _isVerticallyCausal;
 
     public Jpeg2000Tier1Decoder(AllocationScope scope)
     {
-        _flagBuffer = Av1PooledArray<uint>.Rent(scope, Jpeg2000Tier1Tables.MaxFlags, clear: false);
+        _flagBuffer = Av1PooledArray<uint>.Rent(scope, Jpeg2000Tier1Tables.MaxStripeFlags, clear: false);
     }
 
     /// <summary>Decodes the coding passes of a code-block.</summary>
@@ -62,11 +64,11 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
     {
         _width = width;
         _height = height;
-        _stride = width + 2;
+        _stripeStride = Jpeg2000Tier1Tables.GetStripeStride(width);
         _isVerticallyCausal = (style & Jpeg2000CodingStyle.StyleVerticallyCausal) != 0;
         samples = samples[..(width * height)];
         samples.Clear();
-        var flags = _flagBuffer.Span[..(_stride * (height + 2))];
+        var flags = _flagBuffer.Span[..Jpeg2000Tier1Tables.GetStripeFlagCount(width, height)];
         flags.Clear();
         ResetContexts();
 
@@ -155,15 +157,21 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
     {
         var width = _width;
         var height = _height;
-        var stride = _stride;
-        for (var stripe = 0; stripe < height; stripe += 4)
+        var stripeStride = _stripeStride;
+        for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
         {
-            var stripeEnd = Math.Min(stripe + 4, height);
+            var rows = Math.Min(4, height - stripe);
             for (var x = 0; x < width; x++)
             {
-                for (var y = stripe; y < stripeEnd; y++)
+                // A column without an insignificant coefficient that has a significant neighbor is not coded: coding a
+                // coefficient of the column only changes the neighbors of the others
+                var column = first + (x * 4);
+                if (!Jpeg2000Tier1Tables.HasSignificanceCandidate(flags, column))
+                    continue;
+
+                for (var row = 0; row < rows; row++)
                 {
-                    var index = ((y + 1) * stride) + x + 1;
+                    var index = column + row;
                     var flag = flags[index];
 
                     // An insignificant coefficient with a significant neighbor
@@ -174,7 +182,7 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
                     if (bit != 0)
                     {
                         var negative = isRaw ? ReadRawBit() != 0 : DecodeSign(flag);
-                        SetSignificant(samples, flags, x, y, negative, plane);
+                        SetSignificant(samples, flags, x, stripe, row, index, negative, plane);
                     }
 
                     flags[index] |= Visited;
@@ -187,16 +195,20 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
     {
         var width = _width;
         var height = _height;
-        var stride = _stride;
+        var stripeStride = _stripeStride;
         var step = 1 << plane;
-        for (var stripe = 0; stripe < height; stripe += 4)
+        for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
         {
-            var stripeEnd = Math.Min(stripe + 4, height);
+            var rows = Math.Min(4, height - stripe);
             for (var x = 0; x < width; x++)
             {
-                for (var y = stripe; y < stripeEnd; y++)
+                var column = first + (x * 4);
+                if (!Jpeg2000Tier1Tables.HasRefinementCandidate(flags, column))
+                    continue;
+
+                for (var row = 0; row < rows; row++)
                 {
-                    var index = ((y + 1) * stride) + x + 1;
+                    var index = column + row;
                     var flag = flags[index];
 
                     // A coefficient that was significant before this bit-plane
@@ -215,7 +227,7 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
                         bit = _mq.Decode(ref _contexts[context]);
                     }
 
-                    ref var sample = ref samples[(y * width) + x];
+                    ref var sample = ref samples[((stripe + row) * width) + x];
                     sample += bit != 0 ? step : -step;
                     flags[index] = flag | Refined;
                 }
@@ -227,37 +239,42 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
     {
         var width = _width;
         var height = _height;
-        var stride = _stride;
-        for (var stripe = 0; stripe < height; stripe += 4)
+        var stripeStride = _stripeStride;
+        for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
         {
-            var stripeEnd = Math.Min(stripe + 4, height);
+            var rows = Math.Min(4, height - stripe);
             for (var x = 0; x < width; x++)
             {
-                var y = stripe;
-                var first = ((stripe + 1) * stride) + x + 1;
-                if (stripeEnd - stripe == 4 && ((flags[first] | flags[first + stride] | flags[first + (2 * stride)] | flags[first + (3 * stride)]) & (Significant | Visited | NeighborMask)) == 0)
+                var column = first + (x * 4);
+                var row = 0;
+                if (rows == 4 && Jpeg2000Tier1Tables.IsRunLengthColumn(flags, column))
                 {
                     // D.3.4: the four coefficients of the column are insignificant and have no significant neighbor
                     if (_mq.Decode(ref _contexts[ContextRunLength]) == 0)
                         continue;
 
                     ref var uniform = ref _contexts[ContextUniform];
-                    var run = _mq.Decode(ref uniform) << 1;
-                    run |= _mq.Decode(ref uniform);
-                    y = stripe + run;
-                    SetSignificant(samples, flags, x, y, DecodeSign(flags[((y + 1) * stride) + x + 1]), plane);
-                    y++;
+                    row = _mq.Decode(ref uniform) << 1;
+                    row |= _mq.Decode(ref uniform);
+                    SetSignificant(samples, flags, x, stripe, row, column + row, DecodeSign(flags[column + row]), plane);
+                    row++;
+                }
+                else if (!Jpeg2000Tier1Tables.HasCleanupCandidate(flags, column))
+                {
+                    // Every coefficient of the column is significant or was coded by the significance propagation pass
+                    Jpeg2000Tier1Tables.ClearVisited(flags, column);
+                    continue;
                 }
 
-                for (; y < stripeEnd; y++)
+                for (; row < rows; row++)
                 {
-                    var index = ((y + 1) * stride) + x + 1;
+                    var index = column + row;
                     var flag = flags[index];
                     if ((flag & (Significant | Visited)) == 0)
                     {
                         if (_mq.Decode(ref _contexts[zeroCoding[(int)(flag & NeighborMask)]]) != 0)
                         {
-                            SetSignificant(samples, flags, x, y, DecodeSign(flag), plane);
+                            SetSignificant(samples, flags, x, stripe, row, index, DecodeSign(flag), plane);
                         }
                     }
 
@@ -274,10 +291,10 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
         return (bit ^ (entry >> 7)) != 0;
     }
 
-    private void SetSignificant(Span<int> samples, Span<uint> flags, int x, int y, bool negative, int plane)
+    private void SetSignificant(Span<int> samples, Span<uint> flags, int x, int stripe, int row, int index, bool negative, int plane)
     {
         var value = 3u << plane;
-        samples[(y * _width) + x] = (int)(negative ? value | SignBit : value);
-        Jpeg2000Tier1Tables.SetSignificant(flags, ((y + 1) * _stride) + x + 1, _stride, negative, updateNorth: !(_isVerticallyCausal && (y & 3) == 0));
+        samples[((stripe + row) * _width) + x] = (int)(negative ? value | SignBit : value);
+        Jpeg2000Tier1Tables.SetSignificantInStripes(flags, index, row, _stripeStride, negative, updateNorth: !(_isVerticallyCausal && row == 0));
     }
 }

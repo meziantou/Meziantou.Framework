@@ -640,11 +640,9 @@ internal sealed class TextLayoutEngine
         var previous = from;
         var lastFit = -1;
         var lastFitIsHyphenated = false;
-        foreach (var candidate in paragraph.Breaks)
+        var breaks = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(paragraph.Breaks);
+        foreach (var candidate in breaks[FindFirstBreakAfter(breaks, from)..])
         {
-            if (candidate <= from)
-                continue;
-
             // A soft hyphen is a place to break only when words are hyphenated, and the line then ends with a hyphen.
             var isSoftHyphen = candidate < paragraph.End && _text[candidate - 1] == SoftHyphen;
             if (isSoftHyphen && !withHyphens)
@@ -892,13 +890,9 @@ internal sealed class TextLayoutEngine
 
         static int NextBreak(Paragraph paragraph, int position, int to)
         {
-            foreach (var candidate in paragraph.Breaks)
-            {
-                if (candidate > position)
-                    return Math.Min(candidate, to);
-            }
-
-            return to;
+            var breaks = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(paragraph.Breaks);
+            var index = FindFirstBreakAfter(breaks, position);
+            return index < breaks.Length ? Math.Min(breaks[index], to) : to;
         }
     }
 
@@ -938,7 +932,9 @@ internal sealed class TextLayoutEngine
 
         // The text after the line is shaped from its start, for the next line to be found; a part of the line that
         // was shaped for an earlier line, or not yet, is shaped with the rest of its run: a line is shaped as a whole.
-        for (var i = 0; i < paragraph.Items.Count; i++)
+        // The items before the line are not looked at.
+        var first = FindFirstItemFrom(paragraph, from);
+        for (var i = first; i < paragraph.Items.Count; i++)
         {
             var item = paragraph.Items[i];
             if (item.Start == to && item.IsPending)
@@ -965,8 +961,9 @@ internal sealed class TextLayoutEngine
         }
 
         var items = new List<Item>();
-        foreach (var item in paragraph.Items)
+        for (var i = first; i < paragraph.Items.Count && paragraph.Items[i].Start < to; i++)
         {
+            var item = paragraph.Items[i];
             if (item.Start >= from && item.End <= to && item.Start < item.End)
             {
                 items.Add(item);
@@ -1145,7 +1142,7 @@ internal sealed class TextLayoutEngine
     /// </param>
     private void SplitAt(Paragraph paragraph, int position, int lineStart)
     {
-        for (var i = 0; i < paragraph.Items.Count; i++)
+        for (var i = FindFirstItemEndingAfter(paragraph, position); i < paragraph.Items.Count && paragraph.Items[i].Start < position; i++)
         {
             var item = paragraph.Items[i];
             if (position <= item.Start || position >= item.End)
@@ -1263,13 +1260,81 @@ internal sealed class TextLayoutEngine
 
     private static Item? FindItem(Paragraph paragraph, int position)
     {
-        foreach (var item in paragraph.Items)
+        for (var i = FindFirstItemEndingAfter(paragraph, position); i < paragraph.Items.Count && paragraph.Items[i].Start <= position; i++)
         {
+            var item = paragraph.Items[i];
             if (position >= item.Start && position < item.End)
                 return item;
         }
 
         return null;
+    }
+
+    // The items of a paragraph follow each other in the text: their starts and their ends never decrease.
+
+    /// <summary>Finds the first item of a paragraph that ends after a position, or the number of items.</summary>
+    private static int FindFirstItemEndingAfter(Paragraph paragraph, int position)
+    {
+        var items = paragraph.Items;
+        var low = 0;
+        var high = items.Count;
+        while (low < high)
+        {
+            var middle = (low + high) >>> 1;
+            if (items[middle].End <= position)
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        return low;
+    }
+
+    /// <summary>Finds the first item of a paragraph that starts at or after a position, or the number of items.</summary>
+    private static int FindFirstItemFrom(Paragraph paragraph, int position)
+    {
+        var items = paragraph.Items;
+        var low = 0;
+        var high = items.Count;
+        while (low < high)
+        {
+            var middle = (low + high) >>> 1;
+            if (items[middle].Start < position)
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        return low;
+    }
+
+    /// <summary>Finds the first place a line can end at that is after a position, or the number of places.</summary>
+    private static int FindFirstBreakAfter(ReadOnlySpan<int> breaks, int position)
+    {
+        var low = 0;
+        var high = breaks.Length;
+        while (low < high)
+        {
+            var middle = (low + high) >>> 1;
+            if (breaks[middle] <= position)
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        return low;
     }
 
     /// <summary>Finds the span of a character.</summary>

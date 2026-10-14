@@ -873,6 +873,66 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlDequantizationMatchesTheScalarReferenceBitForBit()
+    {
+        var random = new Random(182);
+        for (var round = 0; round < 3000; round++)
+        {
+            // Every length up to two blocks (remainders included); quantized values around the bias cases and extremes
+            var size = round < 200 ? round % 131 : 64 << (round % 4);
+            int Quantized() => (round % 7) switch
+            {
+                0 => random.Next(-3, 4),
+                1 => random.Next(2) == 0 ? int.MaxValue - random.Next(3) : int.MinValue + random.Next(3),
+                _ => random.Next(-300, 301),
+            };
+
+            var quantized = new int[3][];
+            var matrices = new float[3][];
+            for (var c = 0; c < 3; c++)
+            {
+                quantized[c] = new int[size];
+                matrices[c] = new float[size];
+                for (var k = 0; k < size; k++)
+                {
+                    quantized[c][k] = Quantized();
+                    matrices[c][k] = (float)(random.NextDouble() * (round % 5 == 0 ? 1e-6 : 4)) * (round % 11 == 0 ? -1 : 1);
+                }
+            }
+
+            var steps = new JpegXlVarDctDecoder.DequantizationSteps(
+                StepY: (float)random.NextDouble() * 3,
+                StepX: (float)random.NextDouble(),
+                StepB: (float)random.NextDouble() * 2,
+                CorrelationX: (float)(random.NextDouble() - 0.5),
+                CorrelationB: round % 3 == 0 ? 0 : (float)random.NextDouble(),
+                BiasX: (float)random.NextDouble(),
+                BiasY: (float)random.NextDouble(),
+                BiasB: round % 13 == 0 ? 0 : (float)random.NextDouble(),
+                BiasNumerator: (float)random.NextDouble());
+            var expected = new float[3][];
+            var actual = new float[3][];
+            for (var c = 0; c < 3; c++)
+            {
+                expected[c] = new float[size];
+                actual[c] = new float[size];
+            }
+
+            JpegXlVarDctDecoder.DequantizeScalar(quantized[0], quantized[1], quantized[2], matrices[0], matrices[1], matrices[2], steps, expected[0], expected[1], expected[2]);
+            JpegXlVarDctDecoder.Dequantize(quantized[0], quantized[1], quantized[2], matrices[0], matrices[1], matrices[2], steps, actual[0], actual[1], actual[2]);
+            for (var c = 0; c < 3; c++)
+            {
+                Assert.Equal(Array.ConvertAll(expected[c], BitConverter.SingleToInt32Bits), Array.ConvertAll(actual[c], BitConverter.SingleToInt32Bits));
+            }
+
+            JpegXlVarDctDecoder.DequantizeScalar(quantized[2], matrices[2], steps.StepB, steps.BiasB, steps.BiasNumerator, expected[2]);
+            JpegXlVarDctDecoder.Dequantize(quantized[2], matrices[2], steps.StepB, steps.BiasB, steps.BiasNumerator, actual[2]);
+            Assert.Equal(Array.ConvertAll(expected[2], BitConverter.SingleToInt32Bits), Array.ConvertAll(actual[2], BitConverter.SingleToInt32Bits));
+        }
+    }
+
     public static TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace> ResizeCases()
     {
         var data = new TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace>();

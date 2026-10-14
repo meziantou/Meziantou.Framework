@@ -302,6 +302,10 @@ internal static class Resampler
         {
             ResampleHorizontal3Vector256(working, output, xWeights);
         }
+        else if (channels == 3 && Vector128.IsHardwareAccelerated)
+        {
+            ResampleHorizontal3Vector128(working, output, xWeights);
+        }
         else
         {
             ResampleHorizontalScalar(working, output, xWeights, channels);
@@ -412,6 +416,36 @@ internal static class Resampler
 
             unsafe { low.StoreUnsafe(ref outputStart, (nuint)(4 * dx)); }
             unsafe { high.StoreUnsafe(ref outputStart, (nuint)((4 * dx) + 2)); }
+        }
+    }
+
+    /// <summary>
+    /// 3-sample pixels in two 128-bit vectors: the first two samples, then the third and the first sample of the next pixel
+    /// (the working row has one extra element, see <see cref="ResizePlan"/>), whose lane is ignored, so the three samples
+    /// are those of the scalar loop.
+    /// </summary>
+    private static void ResampleHorizontal3Vector128(ReadOnlySpan<double> working, Span<double> output, ResampleWeights xWeights)
+    {
+        var first = xWeights.First;
+        var outputLength = xWeights.OutputLength;
+        for (var dx = 0; dx < outputLength; dx++)
+        {
+            var weights = xWeights.GetWeights(dx);
+            var input = working.Slice((xWeights.GetStart(dx) - first) * 3, (weights.Length * 3) + 1);
+            ref var inputStart = ref unsafe(MemoryMarshal.GetReference(input));
+            var low = Vector128<double>.Zero;
+            var high = Vector128<double>.Zero;
+            for (var k = 0; k < weights.Length; k++)
+            {
+                var w = Vector128.Create(weights[k]);
+                low += w * unsafe(Vector128.LoadUnsafe(ref inputStart, (nuint)(3 * k)));
+                high += w * unsafe(Vector128.LoadUnsafe(ref inputStart, (nuint)((3 * k) + 2)));
+            }
+
+            var o = output.Slice(dx * 3, 3);
+            o[0] = low.GetElement(0);
+            o[1] = low.GetElement(1);
+            o[2] = high.GetElement(0);
         }
     }
 

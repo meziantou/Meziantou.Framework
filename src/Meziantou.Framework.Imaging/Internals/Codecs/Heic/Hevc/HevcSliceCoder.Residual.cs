@@ -3,6 +3,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 // The transform coefficient levels of a transform block
 internal ref partial struct HevcSliceCoder
 {
+    // sigCtx of sig_coeff_flag (GetSigCtx) for each scan position n of a sub-block, 16 values per block size, colour
+    // component, scan order, sub-block (the first one or another one) and prevCsbf: see GetSigCtxIndex
+    private static readonly byte[] SigCtxTable = CreateSigCtxTable();
+
     /// <summary>
     /// Reads the transform coefficient levels of a transform block (clause 7.3.8.11 "Residual coding syntax" and clause
     /// 7.4.9.11 "Residual coding semantics") of a coding unit coded in intra prediction mode.
@@ -128,6 +132,7 @@ internal ref partial struct HevcSliceCoder
 
             // sig_coeff_flag (clause 9.3.4.2.5): the scan positions of the significant coefficients, the last one first
             var prevCsbf = rightCsbf + (belowCsbf << 1);
+            ReadOnlySpan<byte> sigCtxs = SigCtxTable.AsSpan(GetSigCtxIndex(log2TrafoSize, cIdx, scanIdx, (xS | yS) is not 0, prevCsbf), 16);
             var numSig = 0;
             var n = 15;
             if (i == lastSubBlock)
@@ -145,8 +150,6 @@ internal ref partial struct HevcSliceCoder
                     break;
                 }
 
-                var xP = HevcScanOrder.X(positionScan[n]);
-                var yP = HevcScanOrder.Y(positionScan[n]);
                 int sigCtx;
                 if (transformSkipContext)
                 {
@@ -154,7 +157,7 @@ internal ref partial struct HevcSliceCoder
                 }
                 else
                 {
-                    sigCtx = GetSigCtx(log2TrafoSize, cIdx, scanIdx, xS, yS, xP, yP, prevCsbf);
+                    sigCtx = sigCtxs[n];
                 }
 
                 if (_cabac.DecodeDecision(HevcContextLayout.SigCoeffFlag + (cIdx is 0 ? sigCtx : 27 + sigCtx)) is not 0)
@@ -305,8 +308,46 @@ internal ref partial struct HevcSliceCoder
         return HevcScanOrder.Diagonal;
     }
 
+    // The index in SigCtxTable of the 16 values of sigCtx of a sub-block
+    private static int GetSigCtxIndex(int log2TrafoSize, int cIdx, int scanIdx, bool isNotFirstSubBlock, int prevCsbf)
+        => (((((((((log2TrafoSize - 2) * 2) + (cIdx is 0 ? 0 : 1)) * 3) + scanIdx) * 2) + (isNotFirstSubBlock ? 1 : 0)) * 4) + prevCsbf) * 16;
+
+    private static byte[] CreateSigCtxTable()
+    {
+        var table = new byte[GetSigCtxIndex(6, 0, 0, isNotFirstSubBlock: false, 0)];
+        for (var log2TrafoSize = 2; log2TrafoSize <= 5; log2TrafoSize++)
+        {
+            for (var cIdx = 0; cIdx < 2; cIdx++)
+            {
+                for (var scanIdx = 0; scanIdx < 3; scanIdx++)
+                {
+                    var positionScan = HevcScanOrder.Get(2, scanIdx);
+                    for (var subBlock = 0; subBlock < 2; subBlock++)
+                    {
+                        for (var prevCsbf = 0; prevCsbf < 4; prevCsbf++)
+                        {
+                            var index = GetSigCtxIndex(log2TrafoSize, cIdx, scanIdx, subBlock is not 0, prevCsbf);
+                            for (var n = 0; n < 16; n++)
+                            {
+                                // GetSigCtx only depends on whether xS and yS are both zero. The last position of a 4x4 block
+                                // is never read: it is the last significant coefficient when it is significant
+                                var xP = HevcScanOrder.X(positionScan[n]);
+                                var yP = HevcScanOrder.Y(positionScan[n]);
+                                if (log2TrafoSize is 2 && (yP << 2) + xP >= HevcCabacTables.CtxIdxMap.Length)
+                                    continue;
+
+                                table[index + n] = (byte)GetSigCtx(log2TrafoSize, cIdx, scanIdx, subBlock, 0, xP, yP, prevCsbf);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return table;
+    }
+
     // sigCtx of sig_coeff_flag (clause 9.3.4.2.5) for a block without the context of the blocks that have no transform
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     private static int GetSigCtx(int log2TrafoSize, int cIdx, int scanIdx, int xS, int yS, int xP, int yP, int prevCsbf)
     {
         if (log2TrafoSize is 2)

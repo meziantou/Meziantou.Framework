@@ -935,6 +935,48 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlModularResidualsMatchTheScalarReference()
+    {
+        var random = new Random(186);
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(JpegXlModularResidualsMatchTheScalarReference));
+        for (var round = 0; round < 600; round++)
+        {
+            // Pixel values, signed values near the limit of the 32-bit sums, and any value (the scalar 64-bit path)
+            var width = round < 60 ? 1 + (round % 20) : random.Next(1, 70);
+            var height = random.Next(1, 8);
+            using var channel = new JpegXlModularChannel(width, height, 0, 0);
+            channel.Allocate(scope);
+            var samples = channel.Samples;
+            for (var i = 0; i < samples.Length; i++)
+            {
+                samples[i] = (round % 4) switch
+                {
+                    0 => random.Next(256),
+                    1 => random.Next(-(1 << 26) + 1, 1 << 26),
+                    2 => random.Next(2) == 0 ? int.MaxValue - random.Next(4) : int.MinValue + random.Next(4),
+                    _ => random.Next(-70000, 70000),
+                };
+            }
+
+            if (round % 4 == 1 && samples.Length > 1)
+            {
+                samples[random.Next(samples.Length)] = (1 << 26) - 1;
+                samples[random.Next(samples.Length)] = -(1 << 26) + 1;
+            }
+
+            for (var predictor = 0; predictor < JpegXlMaTree.PredictorCount; predictor++)
+            {
+                var expected = new uint[samples.Length];
+                var actual = new uint[samples.Length];
+                JpegXlModularEncoder.ComputeResidualsScalar(channel, predictor, expected, scope);
+                JpegXlModularEncoder.ComputeResiduals(channel, predictor, actual, scope);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegXlColorMatricesMatchTheScalarReferenceBitForBit()
     {
         var random = new Random(185);

@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -432,8 +433,143 @@ internal static class JpegXlModularEncoder
         return cost;
     }
 
-    /// <summary>Computes the residual of every sample of a channel, as the unsigned value that is coded, in the order of the samples.</summary>
-    private static void ComputeResiduals(JpegXlModularChannel channel, int predictor, Span<uint> residuals, AllocationScope scope)
+    /// <summary>
+    /// Computes the residual of every sample of a channel, as the unsigned value that is coded, in the order of the samples.
+    /// Away from the edges, the predictors that only read the original samples are computed four samples at a time: the
+    /// predictions are those of <see cref="ComputeResidualsScalar"/>, in 32-bit arithmetic where the scalar code adds
+    /// 64-bit values only when every sample is small enough for the sums to be exact.
+    /// </summary>
+    internal static void ComputeResiduals(JpegXlModularChannel channel, int predictor, Span<uint> residuals, AllocationScope scope)
+    {
+        var samples = channel.Samples;
+        if (!Vector128.IsHardwareAccelerated || predictor is not (0 or 1 or 2 or 3 or 4 or GradientPredictor or 13) || (predictor is 3 or 4 or 13 && !HasSmallSamples(samples)))
+        {
+            ComputeResidualsScalar(channel, predictor, residuals, scope);
+            return;
+        }
+
+        var width = channel.Width;
+        var height = channel.Height;
+        for (var y = 0; y < height; y++)
+        {
+            var row = samples.Slice(y * width, width);
+            var above = y > 0 ? samples.Slice((y - 1) * width, width) : default;
+            var twoAbove = y > 1 ? samples.Slice((y - 2) * width, width) : default;
+            var output = residuals.Slice(y * width, width);
+
+            // The samples whose neighbors are all inside the channel
+            var start = predictor switch
+            {
+                0 => 0,
+                13 => 2,
+                _ => 1,
+            };
+            var end = predictor == 13 ? width - 2 : width;
+            if (y == 0 || (predictor == 13 && y == 1) || end - start < Vector128<int>.Count)
+            {
+                ComputeRowResidualsScalar(row, above, twoAbove, y, predictor, output, 0, width);
+                continue;
+            }
+
+            ComputeRowResidualsScalar(row, above, twoAbove, y, predictor, output, 0, start);
+            var x = start;
+            for (; x <= end - Vector128<int>.Count; x += Vector128<int>.Count)
+            {
+                var prediction = predictor switch
+                {
+                    0 => Vector128<int>.Zero,
+                    1 => Vector128.Create(row.Slice(x - 1, 4)),
+                    2 => Vector128.Create(above.Slice(x, 4)),
+                    3 => Average(Vector128.Create(row.Slice(x - 1, 4)), Vector128.Create(above.Slice(x, 4))),
+                    4 => Select(Vector128.Create(row.Slice(x - 1, 4)), Vector128.Create(above.Slice(x, 4)), Vector128.Create(above.Slice(x - 1, 4))),
+                    GradientPredictor => ClampedGradient(Vector128.Create(row.Slice(x - 1, 4)), Vector128.Create(above.Slice(x, 4)), Vector128.Create(above.Slice(x - 1, 4))),
+                    _ => Weighted(row, above, twoAbove, x),
+                };
+                var residual = Vector128.Create(row.Slice(x, 4)) - prediction;
+                ((residual << 1) ^ Vector128.ShiftRightArithmetic(residual, 31)).AsUInt32().CopyTo(output.Slice(x, 4));
+            }
+
+            ComputeRowResidualsScalar(row, above, twoAbove, y, predictor, output, x, width);
+        }
+
+        // (left + top) / 2, rounded toward zero
+        static Vector128<int> Average(Vector128<int> left, Vector128<int> top)
+        {
+            var sum = left + top;
+            return Vector128.ShiftRightArithmetic(sum + Vector128.ShiftRightLogical(sum, 31), 1);
+        }
+
+        // The neighbor whose difference with the top-left one is the larger, the top one on a tie
+        static Vector128<int> Select(Vector128<int> left, Vector128<int> top, Vector128<int> topLeft)
+        {
+            var useLeft = Vector128.LessThan(Vector128.Abs(top - topLeft), Vector128.Abs(left - topLeft));
+            return Vector128.ConditionalSelect(useLeft, left, top);
+        }
+
+        static Vector128<int> ClampedGradient(Vector128<int> left, Vector128<int> top, Vector128<int> topLeft)
+        {
+            var min = Vector128.Min(left, top);
+            var max = Vector128.Max(left, top);
+            var gradient = left + top - topLeft;
+            var result = Vector128.ConditionalSelect(Vector128.LessThan(topLeft, min), max, gradient);
+            return Vector128.ConditionalSelect(Vector128.GreaterThan(topLeft, max), min, result);
+        }
+
+        // (6 top - 2 topTop + 7 left + leftLeft + topRightRight + 3 topRight + 8) / 16, rounded toward zero
+        static Vector128<int> Weighted(ReadOnlySpan<int> row, ReadOnlySpan<int> above, ReadOnlySpan<int> twoAbove, int x)
+        {
+            var top = Vector128.Create(above.Slice(x, 4));
+            var left = Vector128.Create(row.Slice(x - 1, 4));
+            var sum = (top * 6) - (Vector128.Create(twoAbove.Slice(x, 4)) * 2) + (left * 7) + Vector128.Create(row.Slice(x - 2, 4)) + Vector128.Create(above.Slice(x + 2, 4)) + (Vector128.Create(above.Slice(x + 1, 4)) * 3) + Vector128.Create(8);
+            return Vector128.ShiftRightArithmetic(sum + (Vector128.ShiftRightArithmetic(sum, 31) & Vector128.Create(15)), 4);
+        }
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether every sample is below 2^26 in magnitude: the sums of the predictors then fit in 32 bits.
+    /// </summary>
+    private static bool HasSmallSamples(ReadOnlySpan<int> samples)
+    {
+        const int Limit = 1 << 26;
+        foreach (var sample in samples)
+        {
+            if (sample is >= Limit or <= -Limit)
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>The residuals of the samples <paramref name="start"/> to <paramref name="end"/> of a row, without the weighted predictor.</summary>
+    private static void ComputeRowResidualsScalar(ReadOnlySpan<int> row, ReadOnlySpan<int> above, ReadOnlySpan<int> twoAbove, int y, int predictor, Span<uint> output, int start, int end)
+    {
+        var width = row.Length;
+        for (var x = start; x < end; x++)
+        {
+            long left = x > 0 ? row[x - 1] : y > 0 ? above[x] : 0;
+            long top = y > 0 ? above[x] : left;
+            long topLeft = x > 0 && y > 0 ? above[x - 1] : left;
+            long prediction;
+            if (predictor == GradientPredictor)
+            {
+                prediction = JpegXlModularTransform.ClampedGradient((int)left, (int)top, (int)topLeft);
+            }
+            else
+            {
+                long topRight = x + 1 < width && y > 0 ? above[x + 1] : top;
+                long leftLeft = x > 1 ? row[x - 2] : left;
+                long topTop = y > 1 ? twoAbove[x] : top;
+                long topRightRight = x + 2 < width && y > 0 ? above[x + 2] : topRight;
+                prediction = JpegXlModularTransform.Predict(predictor, left, top, topTop, topLeft, topRight, leftLeft, topRightRight, 0);
+            }
+
+            var residual = unchecked(row[x] - (int)prediction);
+            output[x] = (uint)((residual << 1) ^ (residual >> 31));
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="ComputeResiduals"/>, and the computation of the weighted predictor.</summary>
+    internal static void ComputeResidualsScalar(JpegXlModularChannel channel, int predictor, Span<uint> residuals, AllocationScope scope)
     {
         var width = channel.Width;
         var height = channel.Height;

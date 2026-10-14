@@ -2412,6 +2412,44 @@ public sealed class VectorizedKernelTests
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1CdefDirectionMatchesTheScalarReference(int bitDepth)
+    {
+        // Blocks of random, extreme, flat and directional samples (lines of every direction), at every column of a row
+        var random = new Random(bitDepth * 3);
+        var maxSample = (1 << bitDepth) - 1;
+        const int Stride = 40;
+        for (var round = 0; round < 20000; round++)
+        {
+            var source = new ushort[Av1Cdef.SourceRows * Stride];
+            var slopeX = random.Next(-4, 5);
+            var slopeY = random.Next(-4, 5);
+            for (var y = 0; y < Av1Cdef.SourceRows; y++)
+            {
+                for (var x = 0; x < Stride; x++)
+                {
+                    source[(y * Stride) + x] = (ushort)Math.Clamp((round % 5) switch
+                    {
+                        0 => random.Next(maxSample + 1),
+                        1 => random.Next(2) * maxSample,
+                        2 => (maxSample / 2) + random.Next(-2, 3),
+                        3 => (((x * slopeX) + (y * slopeY)) & 1) * maxSample,
+                        _ => ((x * slopeX) + (y * slopeY)) * (maxSample / 16),
+                    }, 0, maxSample);
+                }
+            }
+
+            var x0 = random.Next(Stride - 8 + 1);
+            Av1Cdef.FindDirectionScalar(source, Stride, x0, bitDepth, out var expectedDirection, out var expectedVariance);
+            Av1Cdef.FindDirection(source, Stride, x0, bitDepth, out var actualDirection, out var actualVariance);
+            Assert.Equal((expectedDirection, expectedVariance), (actualDirection, actualVariance));
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1CdefEdgeBlocksMatchTheScalarReference(int bitDepth)
     {
         // Blocks of every plane size and subsampling at every position of small frames (the edges, the corners, and frames of

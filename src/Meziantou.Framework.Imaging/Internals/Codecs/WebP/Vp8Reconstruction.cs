@@ -201,6 +201,26 @@ internal static class Vp8Reconstruction
     public static void GetSubBlockEdge(ReadOnlySpan<byte> plane, int stride, int offset, int px, int py, ReadOnlySpan<byte> macroblockAboveRight, Span<byte> e)
     {
         // Edge: E[0..3] = L3..L0, E[4] = P (above-left), E[5..8] = A0..A3, E[9..12] = above-right
+        if (px > 0 && py > 0)
+        {
+            // Inside the frame: the above-left, above and above-right pixels are contiguous on the row above
+            e[3] = plane[offset - 1];
+            e[2] = plane[offset + stride - 1];
+            e[1] = plane[offset + (2 * stride) - 1];
+            e[0] = plane[offset + (3 * stride) - 1];
+            if (macroblockAboveRight.IsEmpty)
+            {
+                plane.Slice(offset - stride - 1, 9).CopyTo(e[4..]);
+            }
+            else
+            {
+                plane.Slice(offset - stride - 1, 5).CopyTo(e[4..]);
+                macroblockAboveRight.CopyTo(e[9..]);
+            }
+
+            return;
+        }
+
         for (var i = 0; i < 4; i++)
         {
             e[3 - i] = px > 0 ? plane[offset + (i * stride) - 1] : (byte)129;

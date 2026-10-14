@@ -490,16 +490,60 @@ internal static class PixelConverter
                 unsafe { Vector128.Shuffle(pixels, order).StoreUnsafe(ref output, (nuint)(3 * i)); }
             }
         }
-        else if (typeof(TSource) == typeof(Rgba32) && typeof(TDestination) == typeof(Rgba64))
+        else if (sourceIs32 && typeof(TDestination) == typeof(Rgba64))
         {
-            // v * 257: the byte, twice
-            var low = Vector128.Create((byte)0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7);
-            var high = Vector128.Create((byte)8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15);
+            // v * 257: the byte, twice (red and blue exchanged for Bgra32)
+            var low = swaps
+                ? Vector128.Create((byte)2, 2, 1, 1, 0, 0, 3, 3, 6, 6, 5, 5, 4, 4, 7, 7)
+                : Vector128.Create((byte)0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7);
+            var high = swaps
+                ? Vector128.Create((byte)10, 10, 9, 9, 8, 8, 11, 11, 14, 14, 13, 13, 12, 12, 15, 15)
+                : Vector128.Create((byte)8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15);
             for (; i + 4 <= length; i += 4)
             {
                 var pixels = unsafe(Vector128.LoadUnsafe(ref input, (nuint)(4 * i)));
                 unsafe { Vector128.Shuffle(pixels, low).StoreUnsafe(ref output, (nuint)(8 * i)); }
                 unsafe { Vector128.Shuffle(pixels, high).StoreUnsafe(ref output, (nuint)((8 * i) + 16)); }
+            }
+        }
+        else if (typeof(TSource) == typeof(Rgb24) && typeof(TDestination) == typeof(Rgba64))
+        {
+            // 4 pixels of 3 bytes (16 bytes are read), each byte twice, and an opaque alpha
+            var opaque16 = Vector128.Create(0xFFFF000000000000ul).AsByte();
+            var low = Vector128.Create((byte)0, 0, 1, 1, 2, 2, 0xFF, 0xFF, 3, 3, 4, 4, 5, 5, 0xFF, 0xFF);
+            var high = Vector128.Create((byte)6, 6, 7, 7, 8, 8, 0xFF, 0xFF, 9, 9, 10, 10, 11, 11, 0xFF, 0xFF);
+            for (; i + 6 <= length; i += 4)
+            {
+                var pixels = unsafe(Vector128.LoadUnsafe(ref input, (nuint)(3 * i)));
+                unsafe { (Vector128.Shuffle(pixels, low) | opaque16).StoreUnsafe(ref output, (nuint)(8 * i)); }
+                unsafe { (Vector128.Shuffle(pixels, high) | opaque16).StoreUnsafe(ref output, (nuint)((8 * i) + 16)); }
+            }
+        }
+        else if (typeof(TSource) == typeof(Gray8) && Is16Bit<TDestination>())
+        {
+            // v * 257: each byte twice, then for Rgba64 each 16-bit sample three times and an opaque alpha
+            var low = Vector128.Create((byte)0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7);
+            var high = Vector128.Create((byte)8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15);
+            for (; i + 16 <= length; i += 16)
+            {
+                var gray = unsafe(Vector128.LoadUnsafe(ref input, (nuint)i));
+                if (typeof(TDestination) == typeof(Gray16))
+                {
+                    unsafe { Vector128.Shuffle(gray, low).StoreUnsafe(ref output, (nuint)(2 * i)); }
+                    unsafe { Vector128.Shuffle(gray, high).StoreUnsafe(ref output, (nuint)((2 * i) + 16)); }
+                }
+                else
+                {
+                    StoreGray16AsRgba64(Vector128.Shuffle(gray, low), ref output, i);
+                    StoreGray16AsRgba64(Vector128.Shuffle(gray, high), ref output, i + 8);
+                }
+            }
+        }
+        else if (typeof(TSource) == typeof(Gray16) && typeof(TDestination) == typeof(Rgba64))
+        {
+            for (; i + 8 <= length; i += 8)
+            {
+                StoreGray16AsRgba64(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(2 * i))), ref output, i);
             }
         }
 
@@ -558,6 +602,21 @@ internal static class PixelConverter
             unsafe { (Vector128.Shuffle(gray, third) | opaque).StoreUnsafe(ref output, (nuint)((4 * index) + 32)); }
             unsafe { (Vector128.Shuffle(gray, fourth) | opaque).StoreUnsafe(ref output, (nuint)((4 * index) + 48)); }
         }
+    }
+
+    /// <summary>Stores 8 gray 16-bit samples as 8 opaque <see cref="Rgba64"/> pixels (64 bytes).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreGray16AsRgba64(Vector128<byte> gray, ref byte output, int index)
+    {
+        var opaque16 = Vector128.Create(0xFFFF000000000000ul).AsByte();
+        var first = Vector128.Create((byte)0, 1, 0, 1, 0, 1, 0xFF, 0xFF, 2, 3, 2, 3, 2, 3, 0xFF, 0xFF);
+        var second = Vector128.Create((byte)4, 5, 4, 5, 4, 5, 0xFF, 0xFF, 6, 7, 6, 7, 6, 7, 0xFF, 0xFF);
+        var third = Vector128.Create((byte)8, 9, 8, 9, 8, 9, 0xFF, 0xFF, 10, 11, 10, 11, 10, 11, 0xFF, 0xFF);
+        var fourth = Vector128.Create((byte)12, 13, 12, 13, 12, 13, 0xFF, 0xFF, 14, 15, 14, 15, 14, 15, 0xFF, 0xFF);
+        unsafe { (Vector128.Shuffle(gray, first) | opaque16).StoreUnsafe(ref output, (nuint)(8 * index)); }
+        unsafe { (Vector128.Shuffle(gray, second) | opaque16).StoreUnsafe(ref output, (nuint)((8 * index) + 16)); }
+        unsafe { (Vector128.Shuffle(gray, third) | opaque16).StoreUnsafe(ref output, (nuint)((8 * index) + 32)); }
+        unsafe { (Vector128.Shuffle(gray, fourth) | opaque16).StoreUnsafe(ref output, (nuint)((8 * index) + 48)); }
     }
 
     private static void ConvertCore<TSource, TDestination>(ReadOnlySpan<TSource> source, Span<TDestination> destination, Rgba64? background)

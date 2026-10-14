@@ -10,7 +10,8 @@ public sealed class TextLayoutOptions
     /// <summary>
     /// Gets the width lines are wrapped at and aligned in, in pixels; <see cref="double.PositiveInfinity"/> (the
     /// default) for no limit: lines are then only broken at the line breaks of the text, and aligned in the width of the
-    /// widest one.
+    /// widest one. In a vertical layout (<see cref="WritingMode"/>), it is the width the lines must fit, as
+    /// <see cref="MaxHeight"/> is in a horizontal one.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is negative or is not a number.</exception>
     public double MaxWidth
@@ -25,7 +26,9 @@ public sealed class TextLayoutOptions
 
     /// <summary>
     /// Gets the height the lines must fit, in pixels; <see cref="double.PositiveInfinity"/> (the default) for no limit.
-    /// The lines that do not fit are not part of the layout, except the first one.
+    /// The lines that do not fit are not part of the layout, except the first one. In a vertical layout
+    /// (<see cref="WritingMode"/>), it is the height lines are wrapped at and aligned in, as <see cref="MaxWidth"/> is
+    /// in a horizontal one.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is negative or is not a number.</exception>
     public double MaxHeight
@@ -152,6 +155,57 @@ public sealed class TextLayoutOptions
         init
         {
             ValidateEnum((int)value, (int)TextDirection.RightToLeft, nameof(value));
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the direction of the lines: horizontal (the default), or vertical with lines that follow each other to
+    /// the left or to the right.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// In a vertical layout, what is said of the width of a line is said of its height, and the other way around:
+    /// <see cref="MaxHeight"/> is the length lines are wrapped at and aligned in, <see cref="MaxWidth"/> is the room
+    /// the lines must fit, <see cref="LineHeight"/> is the width of a line, <see cref="Alignment"/> places a line
+    /// from its top, and <see cref="FirstLineIndent"/> moves the first line of a paragraph down.
+    /// <see cref="Orientation"/> says which characters are upright.
+    /// </para>
+    /// <para>
+    /// A vertical line has a central baseline, in the middle of its width: upright characters are centered on it
+    /// (with the vertical metrics of their font: <c>vhea</c>, <c>vmtx</c>, <c>VORG</c>, and the vertical forms of the
+    /// <c>vert</c> feature), and the text that is on its side has the middle of its ascent and its descent on it.
+    /// With <see cref="TextOrientation.Sideways"/>, the line is a horizontal line turned a quarter of a turn
+    /// clockwise, and its baseline is the one of its text.
+    /// </para>
+    /// </remarks>
+    public TextWritingMode WritingMode
+    {
+        get;
+        init
+        {
+            ValidateEnum((int)value, (int)TextWritingMode.VerticalLeftToRight, nameof(value));
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets how the characters of a vertical line are set: each one as the Unicode Standard says (the default), all
+    /// upright, or all on their side. It is not used in a horizontal layout.
+    /// </summary>
+    /// <remarks>
+    /// With <see cref="TextOrientation.Mixed"/>, a character the standard sets upright with another glyph than in a
+    /// horizontal line (a small kana, an ideographic comma) is upright, and one it sets on its side unless the font
+    /// has a vertical form for it (a bracket, a long vowel mark) is upright when the font has that form, and on its
+    /// side otherwise. Upright text is laid out from the top, whatever its script: among right-to-left text, it
+    /// keeps the order of the text.
+    /// </remarks>
+    public TextOrientation Orientation
+    {
+        get;
+        init
+        {
+            ValidateEnum((int)value, (int)TextOrientation.Sideways, nameof(value));
             field = value;
         }
     }

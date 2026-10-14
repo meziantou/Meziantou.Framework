@@ -3,6 +3,11 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.Imaging.Typography;
 
 /// <summary>A line of a <see cref="TextLayout"/>: the part of the text it holds and where it is.</summary>
+/// <remarks>
+/// The line of a vertical layout (<see cref="TextLayoutOptions.WritingMode"/>) is a column: <see cref="X"/>,
+/// <see cref="Y"/>, <see cref="Width"/> and <see cref="Height"/> are still the rectangle of its text on the image, so
+/// its height is the length of its text and its width is its thickness.
+/// </remarks>
 [StructLayout(LayoutKind.Auto)]
 public readonly struct TextLine : IEquatable<TextLine>
 {
@@ -27,19 +32,34 @@ public readonly struct TextLine : IEquatable<TextLine>
     /// </summary>
     public int Length { get; }
 
-    /// <summary>Gets the distance from the left of the layout to the left of the text of the line, in pixels: where the alignment puts it.</summary>
+    /// <summary>
+    /// Gets the distance from the left of the layout to the left of the text of the line, in pixels: where the
+    /// alignment puts it. In a vertical layout, it is the left of the column.
+    /// </summary>
     public double X { get; }
 
-    /// <summary>Gets the distance from the top of the layout to the top of the line, in pixels.</summary>
+    /// <summary>
+    /// Gets the distance from the top of the layout to the top of the line, in pixels. In a vertical layout, it is
+    /// where the text of the column starts: where the alignment puts it.
+    /// </summary>
     public double Y { get; }
 
-    /// <summary>Gets the width of the text of the line, in pixels, without the spaces that end it.</summary>
+    /// <summary>
+    /// Gets the width of the text of the line, in pixels, without the spaces that end it. In a vertical layout, it is
+    /// the width of the column.
+    /// </summary>
     public double Width { get; }
 
-    /// <summary>Gets the height of the line, in pixels.</summary>
+    /// <summary>
+    /// Gets the height of the line, in pixels. In a vertical layout, it is the length of the text of the column,
+    /// without the spaces that end it.
+    /// </summary>
     public double Height { get; }
 
-    /// <summary>Gets the distance from the top of the line to its baseline, in pixels.</summary>
+    /// <summary>
+    /// Gets the distance from the top of the line to its baseline, in pixels. In a vertical layout, it is the distance
+    /// from the left of the column to its central baseline.
+    /// </summary>
     public double Baseline { get; }
 
     /// <summary>Gets a value indicating whether the paragraph of the line is laid out from right to left.</summary>

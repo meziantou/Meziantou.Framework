@@ -190,6 +190,12 @@ public abstract class ImageFrame
     /// </summary>
     internal abstract void CompositePixels(PixelStorage storage, int y, int x, ReadOnlySpan<uint> coverage, scoped in DrawingSource source);
 
+    /// <summary>Computes the colors a color matrix gives to pixels of a row, as paint colors (see <see cref="ColorMatrixKernel"/>). The caller holds the lease of the storage.</summary>
+    internal abstract void ApplyColorMatrix(PixelStorage storage, int y, int x, ColorMatrix matrix, Span<ushort> destination);
+
+    /// <summary>Stores the colors <see cref="ApplyColorMatrix"/> gave to pixels of a row. The caller holds the lease of the storage.</summary>
+    internal abstract void WriteColorMatrixResult(PixelStorage storage, int y, int x, ReadOnlySpan<ushort> colors);
+
     /// <summary>Mirrors the leased pixels in place with the kernel of the frame pixel type.</summary>
     internal abstract void FlipPixels(scoped in PixelLease lease, FlipMode mode, CancellationToken cancellationToken);
 

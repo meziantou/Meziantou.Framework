@@ -49,6 +49,18 @@ internal sealed class FontFace
     private readonly int _mvarOffset;
     private readonly int _mvarLength;
 
+    // The vertical metrics: the advances and the top side bearings, the vertical origins, and their variations
+    private readonly int _verticalMetricCount;
+    private readonly int _vmtxOffset;
+    private readonly int _vmtxLength;
+    private readonly int _vorgOffset;
+    private readonly int _vorgLength;
+    private readonly int _vvarOffset;
+    private readonly int _vvarLength;
+    private readonly int _vvarStore;
+    private readonly int _vvarAdvanceMap;
+    private readonly int _vvarOriginMap;
+
     private readonly ColrTable? _colr;
     private readonly int _colrOffset;
     private readonly int _colrLength;
@@ -113,6 +125,28 @@ internal sealed class FontFace
 
         if (!_directory.TryFind(FontTags.Hmtx, out _hmtxOffset, out _hmtxLength) || _hmtxLength < (long)_horizontalMetricCount * 4)
             throw FontErrors.InvalidTable(FontTags.Hmtx, "is missing or shorter than the number of horizontal metrics.");
+
+        // vhea, vmtx and VORG: the vertical metrics, which a font made for horizontal text only does not have. Tables
+        // that do not agree with each other are left out: the glyphs then have the vertical metrics of such a font.
+        if (TryGetTable(FontTags.Vhea, out var vheaMemory) && vheaMemory.Length >= 36
+            && _directory.TryFind(FontTags.Vmtx, out var vmtxOffset, out var vmtxLength))
+        {
+            var count = FontBinary.UInt16(vheaMemory.Span, 34);
+            if (count != 0 && count <= GlyphCount && vmtxLength >= (long)count * 4)
+            {
+                _verticalMetricCount = count;
+                _vmtxOffset = vmtxOffset;
+                _vmtxLength = vmtxLength;
+            }
+        }
+
+        if (_directory.TryFind(FontTags.Vorg, out var vorgOffset, out var vorgLength) && vorgLength >= 8
+            && FontBinary.UInt16(file.Slice(vorgOffset, vorgLength), 0) == 1
+            && vorgLength >= 8 + ((long)FontBinary.UInt16(file.Slice(vorgOffset, vorgLength), 6) * 4))
+        {
+            _vorgOffset = vorgOffset;
+            _vorgLength = vorgLength;
+        }
 
         // OS/2: optional in old fonts. Its fields were added by versions; a field beyond the table is absent.
         if (TryGetTable(FontTags.Os2, out var os2Memory) && os2Memory.Length >= 78)
@@ -273,6 +307,22 @@ internal sealed class FontFace
                     _hvarAdvanceMap = (int)map;
                 }
             }
+
+            // VVAR: OpenType specification, "VVAR - Vertical Metrics Variations Table". The same form as HVAR, with a
+            // mapping for the vertical origins after the three mappings of the metrics.
+            if (_directory.TryFind(FontTags.Vvar, out _vvarOffset, out _vvarLength) && _vvarLength >= 24)
+            {
+                var vvar = file.Slice(_vvarOffset, _vvarLength);
+                var store = FontBinary.UInt32(vvar, 4);
+                var map = FontBinary.UInt32(vvar, 8);
+                var originMap = FontBinary.UInt32(vvar, 20);
+                if (FontBinary.UInt16(vvar, 0) == 1 && store != 0 && store <= vvar.Length - 8 && map <= vvar.Length - 4 && originMap <= vvar.Length - 4 && FontBinary.UInt16(vvar, (int)store) == 1)
+                {
+                    _vvarStore = (int)store;
+                    _vvarAdvanceMap = (int)map;
+                    _vvarOriginMap = (int)originMap;
+                }
+            }
         }
     }
 
@@ -407,6 +457,167 @@ internal sealed class FontFace
         return advance;
     }
 
+    /// <summary>Gets a value indicating whether the font has vertical metrics of its own (<c>vhea</c> and <c>vmtx</c>).</summary>
+    public bool HasVerticalMetrics => _verticalMetricCount != 0;
+
+    /// <summary>
+    /// Gets the ascender and the descender a line of horizontal text has, as two heights from the baseline: those of
+    /// the OS/2 table when it asks for them, those of the hhea table otherwise.
+    /// </summary>
+    private void GetLineExtents(out int ascender, out int descender)
+    {
+        var useTypo = HasOs2 && UseTypoMetrics;
+        ascender = Math.Abs(useTypo ? TypoAscender : HorizontalAscender);
+        descender = Math.Abs(useTypo ? TypoDescender : HorizontalDescender);
+    }
+
+    /// <summary>Gets the advance height of a glyph, in font units: how far the pen moves down after it in a vertical line.</summary>
+    /// <remarks>
+    /// The advance is the one of the <c>vmtx</c> table, varied by the delta of the <c>VVAR</c> table in an instance
+    /// of a variable font. A font without vertical metrics gives every glyph the height of a line of its horizontal
+    /// text, from its ascender to its descender.
+    /// </remarks>
+    public int GetAdvanceHeight(int glyphId)
+    {
+        if ((uint)glyphId >= (uint)GlyphCount)
+            return 0;
+
+        if (_verticalMetricCount == 0)
+        {
+            GetLineExtents(out var ascender, out var descender);
+            return ascender + descender;
+        }
+
+        // The glyphs after the last metric share its advance.
+        var index = Math.Min(glyphId, _verticalMetricCount - 1);
+        var advance = FontBinary.UInt16(Data.Bytes.AsSpan(_vmtxOffset, _vmtxLength), index * 4);
+        if (_instance is null || _vvarStore == 0)
+            return advance;
+
+        var vvar = Data.Bytes.AsSpan(_vvarOffset, _vvarLength);
+        var outer = 0;
+        var inner = glyphId;
+        if (_vvarAdvanceMap != 0)
+        {
+            ItemVariationStore.ReadIndexMap(vvar, _vvarAdvanceMap, glyphId, out outer, out inner);
+        }
+
+        return advance + ItemVariationStore.Round(ItemVariationStore.GetDelta(vvar, _vvarStore, outer, inner, _instance.VerticalScalars));
+    }
+
+    /// <summary>
+    /// Gets the vertical origin of a glyph, in font units from its horizontal origin: the point of the glyph that is
+    /// on the pen in a vertical line, at the top of its advance height and in the middle of its width.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Horizontally, the origin is the middle of the advance width. Vertically, it is the one the <c>VORG</c> table
+    /// gives (with the delta of the <c>VVAR</c> table in an instance); without that table, the top of the outline
+    /// plus the top side bearing of the <c>vmtx</c> table; without vertical metrics, the top of the outline plus half
+    /// of what the advance height has more than the outline is tall, which centers the glyph in its advance. A glyph
+    /// without outline, such as a space, has an outline without height at the baseline.
+    /// </para>
+    /// <para>These are the rules of the reference shaper, which the positions of a vertical text are compared with.</para>
+    /// </remarks>
+    public void GetVerticalOrigin(int glyphId, GlyphScratch? scratch, out int x, out int y)
+    {
+        x = GetAdvanceWidth(glyphId) / 2;
+        var bytes = Data.Bytes.AsSpan();
+        if (_vorgLength != 0)
+        {
+            var vorg = bytes.Slice(_vorgOffset, _vorgLength);
+            y = FontBinary.Int16(vorg, 4);
+
+            // The glyphs that have another origin than the default one, sorted by glyph
+            var low = 0;
+            var high = FontBinary.UInt16(vorg, 6) - 1;
+            while (low <= high)
+            {
+                var middle = (low + high) >>> 1;
+                var glyph = FontBinary.UInt16(vorg, 8 + (middle * 4));
+                if (glyph == glyphId)
+                {
+                    y = FontBinary.Int16(vorg, 10 + (middle * 4));
+                    break;
+                }
+
+                if (glyph < glyphId)
+                {
+                    low = middle + 1;
+                }
+                else
+                {
+                    high = middle - 1;
+                }
+            }
+
+            if (_instance is not null && _vvarStore != 0 && _vvarOriginMap != 0)
+            {
+                var vvar = bytes.Slice(_vvarOffset, _vvarLength);
+                ItemVariationStore.ReadIndexMap(vvar, _vvarOriginMap, glyphId, out var outer, out var inner);
+                y = ItemVariationStore.Round(y + ItemVariationStore.GetDelta(vvar, _vvarStore, outer, inner, _instance.VerticalScalars));
+            }
+
+            return;
+        }
+
+        // A glyph without outline is measured as an outline without height at the baseline
+        GetVerticalExtents(glyphId, scratch, out var top, out var height);
+        if (_verticalMetricCount != 0)
+        {
+            // The top side bearing: with the advance of the glyphs that have one, then alone for the others
+            var vmtx = bytes.Slice(_vmtxOffset, _vmtxLength);
+            var offset = glyphId < _verticalMetricCount ? (glyphId * 4) + 2 : (_verticalMetricCount * 4) + ((glyphId - _verticalMetricCount) * 2);
+            if (offset + 2 <= vmtx.Length)
+            {
+                y = top + FontBinary.Int16(vmtx, offset);
+                return;
+            }
+        }
+
+        GetLineExtents(out var ascender, out var descender);
+        y = top + ((ascender + descender - height) >> 1);
+    }
+
+    /// <summary>Gets the top of the outline of a glyph and its height, in font units: both 0 for a glyph without outline.</summary>
+    private void GetVerticalExtents(int glyphId, GlyphScratch? scratch, out int top, out int height)
+    {
+        top = 0;
+        height = 0;
+        if ((uint)glyphId >= (uint)GlyphCount)
+            return;
+
+        var bytes = Data.Bytes.AsSpan();
+        if (Outlines == FontOutlineKind.TrueType && (_instance is null || _gvar is null))
+        {
+            // The box the font declares for the glyph, at the start of its description
+            var loca = bytes.Slice(_locaOffset, _locaLength);
+            long start = _hasLongLocations ? FontBinary.UInt32(loca, glyphId * 4) : FontBinary.UInt16(loca, glyphId * 2) * 2;
+            long end = _hasLongLocations ? FontBinary.UInt32(loca, (glyphId + 1) * 4) : FontBinary.UInt16(loca, (glyphId + 1) * 2) * 2;
+            if (end - start < 10 || end > _glyfLength)
+                return;
+
+            var glyph = bytes.Slice(_glyfOffset + (int)start, 10);
+            var yMin = FontBinary.Int16(glyph, 4);
+            top = FontBinary.Int16(glyph, 8);
+            height = top - yMin;
+            return;
+        }
+
+        if (Outlines == FontOutlineKind.None || scratch is null)
+            return;
+
+        // The box of the points of the outline, which is the box of an outline that has a point at each extremum
+        var sink = new GlyphBoundsSink();
+        var budget = new GlyphBudget(Data.Limits);
+        DecodeOutline(glyphId, sink, scratch, ref budget);
+        if (sink.IsEmpty)
+            return;
+
+        top = (int)Math.Ceiling(sink.MaxY);
+        height = top - (int)Math.Floor(sink.MinY);
+    }
+
     /// <summary>Gets a value indicating whether the font has glyphs that are drawn with their own colors.</summary>
     public bool HasColorGlyphs => _colr is not null || _sbix is not null || _cblc is not null;
 
@@ -538,6 +749,11 @@ internal sealed class FontFace
         if (root._hvarStore != 0)
         {
             instance.AdvanceScalars = ItemVariationStore.ComputeScalars(bytes.Slice(root._hvarOffset, root._hvarLength), root._hvarStore, coordinates);
+        }
+
+        if (root._vvarStore != 0)
+        {
+            instance.VerticalScalars = ItemVariationStore.ComputeScalars(bytes.Slice(root._vvarOffset, root._vvarLength), root._vvarStore, coordinates);
         }
 
         if (root.Gdef is { VariationStore: not 0 } gdef)

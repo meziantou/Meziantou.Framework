@@ -148,6 +148,53 @@ internal sealed class IccPipeline
         return new IccPipeline(stages.ToArray(), source.ChannelCount, destinationModel.ChannelCount, isIdentity: false);
     }
 
+    /// <summary>Creates the conversion from a profile to a CICP color space.</summary>
+    /// <remarks>
+    /// The destination is treated as a display, as a CICP source is: the white of the connection space is its white once
+    /// adapted (the inverse of the matrix of <see cref="CicpColorSpace.TryGetToConnectionSpace"/>), and its black is no
+    /// light, which is what black point compensation maps the black of the source to. A color outside the color space
+    /// is clipped component by component, by the function that encodes it.
+    /// </remarks>
+    /// <param name="source">The profile describing the source samples.</param>
+    /// <param name="destination">The color space of the converted samples, of a standard dynamic range.</param>
+    /// <param name="intent">The rendering intent, which selects the conversion of the source.</param>
+    /// <param name="blackPointCompensation">Whether the black of the source is mapped to the black of the destination.</param>
+    /// <exception cref="InvalidImageContentException">The profile is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The profile is valid but not supported, or the primaries do not define a color space.</exception>
+    public static IccPipeline Create(IccProfile source, CicpColorSpace destination, IccRenderingIntent intent, bool blackPointCompensation)
+    {
+        var sourceModel = IccProfileModel.Create(source, "source");
+        var stages = new IccStageList();
+        sourceModel.AppendToConnectionSpace(stages, intent);
+        if (intent == IccRenderingIntent.AbsoluteColorimetric)
+        {
+            var sourceWhite = sourceModel.GetMediaWhitePoint();
+            stages.Add(IccMatrixStage.CreateScale(sourceWhite.X / IccColorimetry.D50X, sourceWhite.Y / IccColorimetry.D50Y, sourceWhite.Z / IccColorimetry.D50Z));
+        }
+        else if (blackPointCompensation && IccBlackPoint.CreateCompensationToBlack(sourceModel, intent) is { } compensation)
+        {
+            stages.Add(compensation);
+        }
+
+        if (destination.IsGray)
+        {
+            // The gray level is the fraction of the white: Y of the connection space
+            stages.Add(new IccGrayReduceStage(index: 1, scale: 1));
+        }
+        else
+        {
+            Span<double> matrix = stackalloc double[9];
+            Span<double> inverse = stackalloc double[9];
+            if (!destination.TryGetToConnectionSpace(matrix) || !IccMatrixStage.TryInvert(matrix, inverse))
+                throw new UnsupportedImageFeatureException($"The color primaries {destination.Primaries} of the CICP color description do not define a color space.", ImageFormat.Unknown, "CICP color primaries without a color space");
+
+            stages.Add(new IccMatrixStage(inverse));
+        }
+
+        stages.Add(new CicpEncodeStage(destination.Transfer, destination.ChannelCount));
+        return new IccPipeline(stages.ToArray(), sourceModel.ChannelCount, destination.ChannelCount, isIdentity: false);
+    }
+
     /// <summary>Converts one color in place.</summary>
     /// <param name="values">
     /// At least <see cref="MaxChannels"/> elements: the normalized source device values on input (clipped to [0, 1] by

@@ -7,7 +7,9 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// that is not, and a <see cref="PatternBrush"/> to a callback that draws). The type cannot be derived outside the library.
 /// </para>
 /// <para>
-/// Brush colors are sample values in the color space of the image they are drawn on: no color profile is applied. Before
+/// Brush colors are sample values in the color space of the image they are drawn on: no color profile is applied,
+/// unless the brush is used inside <see cref="DrawingCanvas.PaintProfile(Metadata.IccProfile, DrawingAction, IccColorTransformOptions)"/>,
+/// which says what profile the colors of the paints are colors of, and converts them. Before
 /// painting, a color is converted to the pixel format of the frame with the rules of <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>
 /// (Rec. 709 luma on grayscale frames, rounding to 8 bits on 8-bit frames); its alpha stays the opacity of the paint, also
 /// on frames without alpha.

@@ -44,6 +44,9 @@ internal sealed partial class LayoutApplier
     private bool _isPositioning;
     private bool _isRightToLeft;
 
+    // The run is a vertical line: a value record gives its vertical advance, and not its horizontal one
+    private bool _isVertical;
+
     // The lookup being applied: its flag, its mark filtering set, and the value of the feature that enables it.
     private int _flag;
     private int _markSet;
@@ -67,12 +70,13 @@ internal sealed partial class LayoutApplier
     }
 
     /// <summary>Starts applying the lookups of a table.</summary>
-    public void Begin(LayoutTable table, ReadOnlyMemory<byte> data, bool isPositioning, bool isRightToLeft)
+    public void Begin(LayoutTable table, ReadOnlyMemory<byte> data, bool isPositioning, bool isRightToLeft, bool isVertical = false)
     {
         _table = table;
         _data = data;
         _isPositioning = isPositioning;
         _isRightToLeft = isRightToLeft;
+        _isVertical = isVertical;
         _nesting = 0;
     }
 

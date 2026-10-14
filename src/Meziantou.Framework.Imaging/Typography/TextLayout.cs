@@ -60,6 +60,8 @@ public sealed class TextLayout
     private readonly double[] _positions;
     private readonly double[] _anchors;
     private readonly DecorationRectangle[] _decorations;
+    private readonly DecorationRectangle[] _backgrounds;
+    private readonly Pen[] _outlines;
     private readonly TextLine[] _lines;
 
     // The display list of each distinct color glyph, and the one of each glyph: -1 for a glyph that is drawn with its
@@ -73,6 +75,10 @@ public sealed class TextLayout
     private readonly int[] _characterBoundaries;
     private readonly int _textLength;
 
+    // A vertical layout as it was laid out, each line as a horizontal one: what the positions of the text are found
+    // on, and what follows a path. No value for a horizontal layout, which is that already.
+    private readonly VerticalLayoutData? _vertical;
+
     private TextLayout(TextLayoutData data)
     {
         _fonts = data.Fonts;
@@ -82,6 +88,10 @@ public sealed class TextLayout
         _positions = data.Positions;
         _anchors = data.Anchors;
         _decorations = data.Decorations;
+        _backgrounds = data.Backgrounds;
+        _outlines = data.Outlines;
+        Placeholders = new ReadOnlyCollection<RectangleD>(data.Placeholders);
+        Scale = data.Scale;
         _lines = data.Lines;
         Lines = new ReadOnlyCollection<TextLine>(_lines);
         Width = data.Width;
@@ -92,6 +102,7 @@ public sealed class TextLayout
         _hitBoxStarts = data.HitBoxStarts;
         _characterBoundaries = data.CharacterBoundaries;
         _textLength = data.TextLength;
+        _vertical = data.Vertical;
         foreach (var run in _runs)
         {
             HasEmboldenedGlyphs |= run.EmboldenWidth > 0;
@@ -103,20 +114,28 @@ public sealed class TextLayout
     /// <summary>Gets the width of the text, in pixels: the width of its widest line, with the indent of a first line.</summary>
     /// <remarks>
     /// The white space that ends a wrapped line hangs and does not count; the spaces that end a paragraph do. Lines are
-    /// aligned in <see cref="TextLayoutOptions.MaxWidth"/> when it is set, which can be wider than the text.
+    /// aligned in <see cref="TextLayoutOptions.MaxWidth"/> when it is set, which can be wider than the text. In a
+    /// vertical layout (<see cref="TextLayoutOptions.WritingMode"/>), it is the sum of the widths of the lines.
     /// </remarks>
     public double Width { get; }
 
-    /// <summary>Gets the height of the layout, in pixels: the sum of the heights of its lines.</summary>
+    /// <summary>Gets the height of the layout, in pixels: the sum of the heights of its lines, or the height of the tallest line of a vertical layout.</summary>
     public double Height { get; }
 
-    /// <summary>Gets the distance from the top of the layout to the baseline of its first line, in pixels.</summary>
-    public double Baseline => _lines[0].Baseline;
+    /// <summary>
+    /// Gets the distance from the top of the layout to the baseline of its first line, in pixels. In a vertical
+    /// layout, it is the distance from the left of the layout to the central baseline of its first line, which is
+    /// its rightmost or its leftmost one.
+    /// </summary>
+    public double Baseline => _vertical is null ? _lines[0].Baseline : _lines[0].X + _lines[0].Baseline;
 
     /// <summary>Gets the number of lines.</summary>
     public int LineCount => _lines.Length;
 
-    /// <summary>Gets the lines, from the top: the part of the text each one holds and where it is.</summary>
+    /// <summary>
+    /// Gets the lines, from the top: the part of the text each one holds and where it is. The lines of a vertical
+    /// layout are its columns, from the first one: the rightmost one or the leftmost one.
+    /// </summary>
     public IReadOnlyList<TextLine> Lines { get; }
 
     /// <summary>
@@ -124,7 +143,8 @@ public sealed class TextLayout
     /// empty when the layout draws nothing.
     /// </summary>
     /// <remarks>
-    /// The rectangle contains the control points of the outlines and the decorations. It is the exact bounding box of
+    /// The rectangle contains the control points of the outlines, the decorations and the backgrounds of the styles
+    /// (not the strokes of their outlines, which reach half the width of a pen further). It is the exact bounding box of
     /// the glyphs of a font that has a point at each extremum of its curves, as fonts do. It can extend beyond the box
     /// of the layout: glyphs overhang their advance, and marks rise above the ascent.
     /// </remarks>
@@ -140,15 +160,45 @@ public sealed class TextLayout
     /// </summary>
     public bool IsTruncated { get; }
 
+    /// <summary>
+    /// Gets what the sizes of the styles were multiplied by to lay out the text: 1, unless the layout was created by
+    /// <see cref="CreateToFit(string, TextStyle, double, double, TextLayoutOptions?, double)"/>, which then gives the
+    /// factor that makes the text fit its box.
+    /// </summary>
+    public double Scale { get; }
+
+    /// <summary>
+    /// Gets the rectangle of each placeholder of the text
+    /// (<see cref="RichTextBuilder.AppendPlaceholder(double, double, double, TextStyle)"/>), in the order of the text,
+    /// from the top-left corner of the layout: where the caller draws what the placeholder makes room for, once the
+    /// origin the layout is drawn at is added.
+    /// </summary>
+    /// <remarks>
+    /// The rectangle has the width and the height of the placeholder (multiplied by <see cref="Scale"/>), on its
+    /// line: its top is the baseline of the line less the baseline of the placeholder. A placeholder that is not in
+    /// the layout, because the text was cut before it, has an empty rectangle. The rectangles are those of a layout
+    /// drawn at a point, not along a path.
+    /// </remarks>
+    public IReadOnlyList<RectangleD> Placeholders { get; }
+
     internal int BrushCount => _brushes.Length;
+
+    /// <summary>Gets a value indicating whether a style of the layout has a background, painted before the text.</summary>
+    internal bool HasBackgrounds => _backgrounds.Length != 0;
+
+    /// <summary>Gets the number of pens that stroke glyphs of the layout once it is filled.</summary>
+    internal int OutlineCount => _outlines.Length;
+
+    /// <summary>Gets a pen that strokes glyphs of the layout once it is filled.</summary>
+    internal Pen GetOutline(int index) => _outlines[index];
 
     /// <summary>Gets a value indicating whether a glyph of the layout is drawn with its own colors.</summary>
     internal bool HasColorGlyphs => _colorIndexes is not null;
 
     internal int RunCount => _runs.Length;
 
-    /// <summary>Gets a run of glyphs of one font, one size and one paint.</summary>
-    internal void GetRun(int index, out FontFace face, out double scale, out int start, out int count, out int brush)
+    /// <summary>Gets a run of glyphs of one font, one size, one paint and one orientation.</summary>
+    internal void GetRun(int index, out FontFace face, out double scale, out int start, out int count, out int brush, out bool isSideways)
     {
         var run = _runs[index];
         face = _fonts[run.Font].Face;
@@ -156,14 +206,17 @@ public sealed class TextLayout
         start = run.Start;
         count = run.Count;
         brush = run.Brush;
+        isSideways = run.IsSideways;
     }
 
     /// <summary>Gets the display list of a glyph that is drawn with its own colors, or <see langword="null"/> for a glyph that is drawn with its outline.</summary>
     internal ColorGlyph? GetColorGlyph(int glyph) => _colorIndexes is null || _colorIndexes[glyph] < 0 ? null : _colorGlyphs[_colorIndexes[glyph]];
 
-    /// <summary>Gets the transformation from the units of a glyph to the pixels of a canvas the layout is drawn on at a point.</summary>
-    internal Affine2D GetGlyphTransform(int glyph, double scale, double originX, double originY)
-        => Affine2D.ForGlyph(scale, originX + _positions[glyph * 2], originY + _positions[(glyph * 2) + 1]);
+    /// <summary>Gets the transformation from the units of a glyph to the pixels of a canvas the layout is drawn on at a point, for a glyph that is not slanted.</summary>
+    internal Affine2D GetGlyphTransform(int glyph, double scale, bool isSideways, double originX, double originY)
+        => isSideways
+            ? Affine2D.ForSidewaysGlyph(scale, originX + _positions[glyph * 2], originY + _positions[(glyph * 2) + 1], shear: 0)
+            : Affine2D.ForGlyph(scale, originX + _positions[glyph * 2], originY + _positions[(glyph * 2) + 1]);
 
     /// <summary>Lays out a text with one font, on one line per paragraph.</summary>
     /// <param name="text">The text.</param>
@@ -228,6 +281,124 @@ public sealed class TextLayout
         return new TextLayout(TextLayoutEngine.Create(text.Text, text.SpanList.ToArray(), options ?? TextLayoutOptions.Default));
     }
 
+    /// <summary>Lays out a text with one style at the largest size, up to the size of the style, at which it fits a box.</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="style">The fonts, the size and the other settings of the text. Its size is the largest one the text is given.</param>
+    /// <param name="width">The width of the box, in pixels: lines are wrapped and aligned at it. Positive, or <see cref="double.PositiveInfinity"/> for a text that is only fitted to a height.</param>
+    /// <param name="height">The height of the box, in pixels. Positive, or <see cref="double.PositiveInfinity"/> for a text that is only fitted to a width.</param>
+    /// <param name="options">How the text is wrapped and aligned, or <see langword="null"/> for <see cref="TextLayoutOptions.Default"/>. Its <see cref="TextLayoutOptions.MaxWidth"/> and <see cref="TextLayoutOptions.MaxHeight"/> are replaced by the box.</param>
+    /// <param name="minimumScale">The smallest fraction of its size the text is given, more than 0 and up to 1: a text that does not fit at that size is laid out at it, and cut as the options say.</param>
+    /// <returns>The layout; <see cref="Scale"/> is the fraction of its size the text has.</returns>
+    /// <remarks>See <see cref="CreateToFit(RichText, double, double, TextLayoutOptions?, double)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> or <paramref name="style"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> or <paramref name="height"/> is not positive, or <paramref name="minimumScale"/> is not more than 0 and up to 1.</exception>
+    /// <exception cref="InvalidImageContentException">The data of a glyph of the text, or a layout table of a font, is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The outlines of a font use a feature that is not supported.</exception>
+    /// <exception cref="ImageResourceLimitException">The text, its glyphs, its lines or one of its glyphs exceed a limit.</exception>
+    public static TextLayout CreateToFit(string text, TextStyle style, double width, double height, TextLayoutOptions? options = null, double minimumScale = 0.1)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(style);
+        return CreateToFit(text, [new TextSpan(0, text.Length, style)], width, height, options, minimumScale);
+    }
+
+    /// <summary>Lays out a text whose parts have their own style at the largest sizes, up to those of its styles, at which it fits a box: a title that fills a card, a label that never overflows its button.</summary>
+    /// <remarks>
+    /// <para>
+    /// Every length of the styles is multiplied by one factor, <see cref="Scale"/>: the sizes of the fonts, the letter
+    /// and word spacings, and with them the indent of the first lines, a fixed line height and the placeholders. The
+    /// widths of the pens of <see cref="TextStyle.Outline"/> are not. The factor is 1 when the text fits its box at
+    /// the sizes of its styles: a text is made smaller, never larger.
+    /// </para>
+    /// <para>
+    /// A text fits when none of it is cut (<see cref="IsTruncated"/>), no line is wider than
+    /// <paramref name="width"/> (a word that cannot be broken can be) and its lines are not taller than
+    /// <paramref name="height"/>. Lines are wrapped at <paramref name="width"/> as <paramref name="options"/> say:
+    /// with <see cref="TextWrapping.NoWrap"/> or <see cref="TextLayoutOptions.MaxLines"/>, the text is fitted on the
+    /// lines it is allowed. The factor is found by trying the one the box is to the text as it is laid out at its
+    /// sizes (the exact factor of a text whose lines stay the same), then by halving twelve times the range between
+    /// a factor that fits and one that does not, each time with a whole layout: it is the largest one of those that
+    /// were tried and fit, within 1/4096 of the range from <paramref name="minimumScale"/> to 1. A text that does not
+    /// fit at <paramref name="minimumScale"/> is laid out at that factor in the box, and cut as the options say.
+    /// </para>
+    /// </remarks>
+    /// <param name="text">The text and its spans.</param>
+    /// <param name="width">The width of the box, in pixels: lines are wrapped and aligned at it. Positive, or <see cref="double.PositiveInfinity"/>.</param>
+    /// <param name="height">The height of the box, in pixels. Positive, or <see cref="double.PositiveInfinity"/>.</param>
+    /// <param name="options">How the text is wrapped and aligned, or <see langword="null"/> for <see cref="TextLayoutOptions.Default"/>. Its <see cref="TextLayoutOptions.MaxWidth"/> and <see cref="TextLayoutOptions.MaxHeight"/> are replaced by the box.</param>
+    /// <param name="minimumScale">The smallest fraction of their sizes the styles are given, more than 0 and up to 1.</param>
+    /// <returns>The layout.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="text"/> has no span.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> or <paramref name="height"/> is not positive, or <paramref name="minimumScale"/> is not more than 0 and up to 1.</exception>
+    /// <exception cref="InvalidImageContentException">The data of a glyph of the text, or a layout table of a font, is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The outlines of a font use a feature that is not supported.</exception>
+    /// <exception cref="ImageResourceLimitException">The text, its glyphs, its lines or one of its glyphs exceed a limit.</exception>
+    public static TextLayout CreateToFit(RichText text, double width, double height, TextLayoutOptions? options = null, double minimumScale = 0.1)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (text.SpanList.IsEmpty)
+            throw new ArgumentException("The text has no span.", nameof(text));
+
+        return CreateToFit(text.Text, text.SpanList.ToArray(), width, height, options, minimumScale);
+    }
+
+    private static TextLayout CreateToFit(string text, TextSpan[] spans, double width, double height, TextLayoutOptions? options, double minimumScale)
+    {
+        // Written so that a value that is not a number is rejected too
+        if (!(width > 0))
+            throw new ArgumentOutOfRangeException(nameof(width), width, "The width of the box must be positive.");
+
+        if (!(height > 0))
+            throw new ArgumentOutOfRangeException(nameof(height), height, "The height of the box must be positive.");
+
+        if (!(minimumScale > 0 && minimumScale <= 1))
+            throw new ArgumentOutOfRangeException(nameof(minimumScale), minimumScale, "The smallest scale must be more than 0 and up to 1.");
+
+        options ??= TextLayoutOptions.Default;
+
+        // The whole text, at a scale: it fits when none of it is cut and its lines stay in the box
+        if (TryFit(scale: 1, out var data))
+            return new TextLayout(data);
+
+        // What the box is to the text as it is: the scale of a text whose lines do not change, which is tried first
+        // so that such a text gets it exactly
+        var proportional = Math.Min(width / data.Width, height / data.Height);
+        if (!TryFit(minimumScale, out var best))
+            return new TextLayout(TextLayoutEngine.Create(text, spans, options, minimumScale, width, height));
+
+        // The largest scale that fits is between one that fits and one that does not
+        var low = minimumScale;
+        var high = 1.0;
+        if (proportional > low && proportional < high && TryFit(proportional, out data))
+        {
+            low = proportional;
+            best = data;
+        }
+
+        for (var i = 0; i < 12; i++)
+        {
+            var middle = (low + high) / 2;
+            if (TryFit(middle, out data))
+            {
+                low = middle;
+                best = data;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        return new TextLayout(best);
+
+        bool TryFit(double scale, out TextLayoutData result)
+        {
+            result = TextLayoutEngine.Create(text, spans, options, scale, width, double.PositiveInfinity);
+            return !result.IsTruncated && result.Width <= width && result.Height <= height;
+        }
+    }
+
     /// <summary>Creates a path with the outlines of the glyphs and of the decorations: what filling the layout at a point draws.</summary>
     /// <param name="origin">The position of the top-left corner of the layout.</param>
     /// <returns>
@@ -249,7 +420,7 @@ public sealed class TextLayout
             using var scratch = new GlyphScratch(AllocationScope.Create(face.Data.Configuration, "TextLayout"));
             for (var i = run.Start; i < run.Start + run.Count; i++)
             {
-                sink.Begin(Affine2D.ForGlyph(scale, origin.X + _positions[i * 2], origin.Y + _positions[(i * 2) + 1], run.Shear));
+                sink.Begin(run.GetTransform(scale, origin.X + _positions[i * 2], origin.Y + _positions[(i * 2) + 1]));
                 var budget = new GlyphBudget(face.Data.Limits);
                 face.DecodeOutline(_glyphs[i], run.Size, sink, scratch, ref budget);
             }
@@ -267,7 +438,8 @@ public sealed class TextLayout
     /// <remarks>
     /// <para>
     /// The line is the one whose rows contain the point; above the first line it is the first one, and below the last
-    /// line the last one. On that line, the character is the one whose advance contains the point (the space from
+    /// line the last one. In a vertical layout, the line is the one whose columns contain the point, and a character
+    /// is found down its line. On that line, the character is the one whose advance contains the point (the space from
     /// where the pen is before it to where it is after it, not its ink); beside the text, it is the first or the last
     /// one of the line as it is displayed. <see cref="TextHit.IsInside"/> tells the two apart.
     /// </para>
@@ -287,30 +459,48 @@ public sealed class TextLayout
 
         // The line whose rows contain the point; the nearest one above the first line and below the last one
         var lineIndex = 0;
-        while (lineIndex < _lines.Length - 1 && point.Y >= _lines[lineIndex].Y + _lines[lineIndex].Height)
+        var along = point.X;
+        bool isInLine;
+        if (_vertical is null)
         {
-            lineIndex++;
+            while (lineIndex < _lines.Length - 1 && point.Y >= _lines[lineIndex].Y + _lines[lineIndex].Height)
+            {
+                lineIndex++;
+            }
+
+            isInLine = point.Y >= _lines[lineIndex].Y && point.Y < _lines[lineIndex].Y + _lines[lineIndex].Height;
+        }
+        else
+        {
+            // The line whose columns contain the point, from the first one: the rightmost one or the leftmost one. A
+            // character is then found down the line, as it was laid out.
+            along = point.Y;
+            while (lineIndex < _lines.Length - 1 && (_vertical.IsLeftToRight ? point.X >= _lines[lineIndex].X + _lines[lineIndex].Width : point.X < _lines[lineIndex].X))
+            {
+                lineIndex++;
+            }
+
+            isInLine = point.X >= _lines[lineIndex].X && point.X < _lines[lineIndex].X + _lines[lineIndex].Width;
         }
 
-        var line = _lines[lineIndex];
-        var isInLine = point.Y >= line.Y && point.Y < line.Y + line.Height;
+        var line = (_vertical?.Lines ?? _lines)[lineIndex];
         var boxes = _hitBoxes.AsSpan(_hitBoxStarts[lineIndex], _hitBoxStarts[lineIndex + 1] - _hitBoxStarts[lineIndex]);
         if (boxes.IsEmpty)
             return new TextHit(lineIndex, line.Start, 0, isTrailing: false, isInside: false);
 
         // The cluster whose advance contains the point; the nearest one beside the text
         var index = 0;
-        while (index < boxes.Length - 1 && point.X >= boxes[index].Right)
+        while (index < boxes.Length - 1 && along >= boxes[index].Right)
         {
             index++;
         }
 
         ref readonly var box = ref boxes[index];
         var width = box.Right - box.Left;
-        var isInside = isInLine && point.X >= box.Left && point.X < box.Right;
+        var isInside = isInLine && along >= box.Left && along < box.Right;
 
         // How far the point is in the cluster, in the direction of its text: from 0 at its leading edge to 1
-        var position = width > 0 ? Math.Clamp((point.X - box.Left) / width, 0, 1) : point.X < box.Left ? 0 : 1;
+        var position = width > 0 ? Math.Clamp((along - box.Left) / width, 0, 1) : along < box.Left ? 0 : 1;
         if (box.IsRightToLeft)
         {
             position = 1 - position;
@@ -333,6 +523,10 @@ public sealed class TextLayout
     /// paragraph is the start of the second one.
     /// </para>
     /// <para>An index inside a character (between a letter and its mark, inside a surrogate pair) gives the caret of that character.</para>
+    /// <para>
+    /// In a vertical layout, the caret lies across its line: the rectangle is as wide as the line and has no height,
+    /// and its top is the position of the caret.
+    /// </para>
     /// </remarks>
     /// <param name="textIndex">The index in the text of the character the caret is before, in UTF-16 code units: from 0 to the length of the text, which is after its last character.</param>
     /// <returns>The rectangle, from the top-left corner of the layout: its left is the position of the caret, and its width is 0.</returns>
@@ -343,13 +537,14 @@ public sealed class TextLayout
         ArgumentOutOfRangeException.ThrowIfGreaterThan(textIndex, _textLength);
 
         // The line that holds the character; the last one for the end of the text
+        var lines = _vertical?.Lines ?? _lines;
         var lineIndex = 0;
-        while (lineIndex < _lines.Length - 1 && textIndex >= _lines[lineIndex].Start + _lines[lineIndex].Length)
+        while (lineIndex < lines.Length - 1 && textIndex >= lines[lineIndex].Start + lines[lineIndex].Length)
         {
             lineIndex++;
         }
 
-        var line = _lines[lineIndex];
+        var line = lines[lineIndex];
         var boxes = _hitBoxes.AsSpan(_hitBoxStarts[lineIndex], _hitBoxStarts[lineIndex + 1] - _hitBoxStarts[lineIndex]);
 
         // The cluster that holds the character, or the last one before it in the text: the caret is then after it
@@ -374,7 +569,7 @@ public sealed class TextLayout
             x = GetEdge(box, textIndex >= box.Start + box.Length ? 1 : (double)GetCharacterIndex(box, textIndex - box.Start) / box.CharacterCount);
         }
 
-        return new RectangleD(x, line.Y, 0, line.Height);
+        return GetLineRectangle(lineIndex, line, x, x);
 
         static int GetFirst(ReadOnlySpan<TextHitBox> boxes)
         {
@@ -396,11 +591,12 @@ public sealed class TextLayout
     /// Each rectangle is as tall as its line and covers the advances of characters that follow each other on it. A
     /// range that spans several lines has at least one rectangle per line; in a text that mixes directions, a range
     /// can be several rectangles on one line. Line breaks and the characters that have no glyph take no space, and a
-    /// part of a ligature takes its share of the width of the ligature.
+    /// part of a ligature takes its share of the width of the ligature. In a vertical layout, each rectangle is as wide
+    /// as its line and covers the characters that follow each other down it.
     /// </remarks>
     /// <param name="start">The index in the text of the first character of the range, in UTF-16 code units.</param>
     /// <param name="length">The number of UTF-16 code units of the range.</param>
-    /// <returns>The rectangles, from the top-left corner of the layout, line by line and from left to right on each line; none for an empty range.</returns>
+    /// <returns>The rectangles, from the top-left corner of the layout, line by line and from left to right on each line (from top to bottom on the lines of a vertical layout); none for an empty range.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="start"/> or <paramref name="length"/> is negative, or the range goes beyond the end of the text.</exception>
     public IReadOnlyList<RectangleD> GetSelectionRectangles(int start, int length)
     {
@@ -409,13 +605,17 @@ public sealed class TextLayout
         ArgumentOutOfRangeException.ThrowIfGreaterThan(length, _textLength - start);
         var end = start + length;
         var rectangles = new List<RectangleD>();
-        for (var lineIndex = 0; lineIndex < _lines.Length && length > 0; lineIndex++)
+        var lines = _vertical?.Lines ?? _lines;
+        for (var lineIndex = 0; lineIndex < lines.Length && length > 0; lineIndex++)
         {
-            var line = _lines[lineIndex];
+            var line = lines[lineIndex];
             if (line.Start >= end || line.Start + line.Length <= start)
                 continue;
 
-            var first = rectangles.Count;
+            // Where the rectangle before this one starts and ends along the line, when there is one on the line
+            var hasPrevious = false;
+            var previousLeft = 0d;
+            var previousRight = 0d;
             foreach (ref readonly var box in _hitBoxes.AsSpan(_hitBoxStarts[lineIndex], _hitBoxStarts[lineIndex + 1] - _hitBoxStarts[lineIndex]))
             {
                 var from = Math.Max(start, box.Start);
@@ -428,19 +628,38 @@ public sealed class TextLayout
                 var trailing = GetEdge(box, to == box.Start + box.Length ? 1 : (double)GetCharacterIndex(box, to - box.Start) / box.CharacterCount);
                 var left = Math.Min(leading, trailing);
                 var right = Math.Max(leading, trailing);
-                if (rectangles.Count > first && Math.Abs(rectangles[^1].Right - left) <= 1e-9)
+                if (hasPrevious && Math.Abs(previousRight - left) <= 1e-9)
                 {
                     // It continues the rectangle before it
-                    rectangles[^1] = RectangleD.FromLTRB(rectangles[^1].Left, line.Y, right, line.Y + line.Height);
+                    previousRight = right;
+                    rectangles[^1] = GetLineRectangle(lineIndex, line, previousLeft, previousRight);
                 }
                 else
                 {
-                    rectangles.Add(RectangleD.FromLTRB(left, line.Y, right, line.Y + line.Height));
+                    hasPrevious = true;
+                    previousLeft = left;
+                    previousRight = right;
+                    rectangles.Add(GetLineRectangle(lineIndex, line, left, right));
                 }
             }
         }
 
         return rectangles;
+    }
+
+    /// <summary>Gets the rectangle that covers a line from a position along it to another one, on the image.</summary>
+    /// <param name="lineIndex">The index of the line.</param>
+    /// <param name="line">The line as it was laid out: the one of a vertical layout is not turned.</param>
+    /// <param name="start">Where the rectangle starts along the line.</param>
+    /// <param name="end">Where the rectangle ends along the line.</param>
+    private RectangleD GetLineRectangle(int lineIndex, TextLine line, double start, double end)
+    {
+        if (_vertical is null)
+            return RectangleD.FromLTRB(start, line.Y, end, line.Y + line.Height);
+
+        // A vertical line is a column: what is along it is down the image
+        var right = _vertical.LineRights[lineIndex];
+        return RectangleD.FromLTRB(right - line.Height, start, right, end);
     }
 
     /// <summary>Gets the position of a fraction of a cluster, from its leading edge (0) to its trailing edge (1).</summary>
@@ -486,12 +705,13 @@ public sealed class TextLayout
     /// of a synthetic bold the stroke of their outline.
     /// </param>
     /// <returns><see langword="true"/> when the stroke of a synthetic bold covers the whole frame: the edges are then meaningless.</returns>
-    internal bool Emit(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, double originX, double originY, EdgeBuilder? edges, int brush, bool skipColorGlyphs = false, Stroker? emboldener = null)
+    /// <param name="outline">The pen of <see cref="TextStyle.Outline"/> whose glyphs are sent, without the decorations, or -1 for the glyphs of every run.</param>
+    internal bool Emit(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, double originX, double originY, EdgeBuilder? edges, int brush, bool skipColorGlyphs = false, Stroker? emboldener = null, int outline = -1)
     {
         var coversFrame = false;
         foreach (var run in _runs)
         {
-            if (brush >= 0 && run.Brush != brush)
+            if ((brush >= 0 && run.Brush != brush) || (outline >= 0 && run.Outline != outline))
                 continue;
 
             var face = _fonts[run.Font].Face;
@@ -511,7 +731,7 @@ public sealed class TextLayout
                     continue;
 
                 var first = edges?.Count ?? 0;
-                var transform = Affine2D.ForGlyph(scale, originX + _positions[i * 2], originY + _positions[(i * 2) + 1], run.Shear);
+                var transform = run.GetTransform(scale, originX + _positions[i * 2], originY + _positions[(i * 2) + 1]);
                 glyphSink.Begin(target, transform);
                 var budget = new GlyphBudget(limits);
                 face.DecodeOutline(_glyphs[i], run.Size, glyphSink, scratch, ref budget);
@@ -532,23 +752,49 @@ public sealed class TextLayout
             }
         }
 
-        // The decorations, in the orientation the glyphs are given.
-        foreach (var decoration in _decorations)
+        // The decorations, in the orientation the glyphs are given; the pen of a style strokes its glyphs only.
+        if (outline < 0)
         {
-            if (brush >= 0 && decoration.Brush != brush)
-                continue;
-
-            var left = originX + decoration.X;
-            var top = originY + decoration.Y;
-            target.MoveTo(left, top);
-            target.LineTo(left + decoration.Width, top, smooth: false);
-            target.LineTo(left + decoration.Width, top + decoration.Height, smooth: false);
-            target.LineTo(left, top + decoration.Height, smooth: false);
-            target.Close(smooth: false);
+            EmitRectangles(target, _decorations, originX, originY, brush);
         }
 
         target.End();
         return coversFrame;
+    }
+
+    /// <summary>Sends the rectangles of the backgrounds of one paint, placed on the canvas, to the sink of a fill.</summary>
+    internal void EmitBackgrounds(PathSink target, double originX, double originY, int brush)
+    {
+        EmitRectangles(target, _backgrounds, originX, originY, brush);
+        target.End();
+    }
+
+    /// <summary>Sends the rectangles of the backgrounds of one paint, placed along a path as the decorations are, to the sink of a fill.</summary>
+    internal void EmitBackgroundsOnPath(PathSink target, PathMeasure measure, TextPathOptions options, int brush)
+    {
+        if (measure.Length > 0)
+        {
+            EmitRectanglesOnPath(target, _vertical?.Backgrounds ?? _backgrounds, measure, options, brush);
+        }
+
+        target.End();
+    }
+
+    private static void EmitRectangles(PathSink target, ReadOnlySpan<DecorationRectangle> rectangles, double originX, double originY, int brush)
+    {
+        foreach (ref readonly var rectangle in rectangles)
+        {
+            if (brush >= 0 && rectangle.Brush != brush)
+                continue;
+
+            var left = originX + rectangle.X;
+            var top = originY + rectangle.Y;
+            target.MoveTo(left, top);
+            target.LineTo(left + rectangle.Width, top, smooth: false);
+            target.LineTo(left + rectangle.Width, top + rectangle.Height, smooth: false);
+            target.LineTo(left, top + rectangle.Height, smooth: false);
+            target.Close(smooth: false);
+        }
     }
 
     /// <summary>
@@ -577,11 +823,15 @@ public sealed class TextLayout
     /// each part is turned as the clusters are.
     /// </para>
     /// <para>
+    /// A vertical layout follows the path in the coordinates of its lines (<see cref="VerticalLayoutData"/>): what is
+    /// along a line is along the path, and an upright glyph stands across it.
+    /// </para>
+    /// <para>
     /// The rotation is the unit vector of a chord of the path: no trigonometric function is involved, and a text on a
     /// horizontal path has the points of the same text drawn at a point.
     /// </para>
     /// </remarks>
-    internal bool EmitOnPath(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, PathMeasure measure, TextPathOptions options, EdgeBuilder? edges, int brush, bool skipColorGlyphs = false, Stroker? emboldener = null)
+    internal bool EmitOnPath(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, PathMeasure measure, TextPathOptions options, EdgeBuilder? edges, int brush, bool skipColorGlyphs = false, Stroker? emboldener = null, int outline = -1)
     {
         var coversFrame = false;
         var length = measure.Length;
@@ -591,18 +841,9 @@ public sealed class TextLayout
             return false;
         }
 
-        var shift = options.StartOffset + options.Alignment switch
-        {
-            TextPathAlignment.Center => (length - Width) / 2,
-            TextPathAlignment.End => length - Width,
-            _ => 0,
-        };
-        var baseline = _lines[0].Y + _lines[0].Baseline + options.BaselineOffset;
-        var isReversed = options.Side == TextPathSide.Right;
-        var isClipped = options.Overflow == TextPathOverflow.Clip;
         foreach (var run in _runs)
         {
-            if (brush >= 0 && run.Brush != brush)
+            if ((brush >= 0 && run.Brush != brush) || (outline >= 0 && run.Outline != outline))
                 continue;
 
             var face = _fonts[run.Font].Face;
@@ -620,7 +861,7 @@ public sealed class TextLayout
                 if (isColorGlyph && skipColorGlyphs)
                     continue;
 
-                if (!TryGetGlyphTransformOnPath(i, scale, measure, options, out var transform))
+                if (!TryGetGlyphTransformOnPath(i, scale, run.IsSideways, measure, options, out var transform))
                     continue;
 
                 // A slanted glyph is slanted before it is placed and turned.
@@ -647,7 +888,24 @@ public sealed class TextLayout
             }
         }
 
-        foreach (var decoration in _decorations)
+        if (outline < 0)
+        {
+            EmitRectanglesOnPath(target, _vertical?.Decorations ?? _decorations, measure, options, brush);
+        }
+
+        target.End();
+        return coversFrame;
+    }
+
+    /// <summary>Sends rectangles of the layout, placed along a path: one quadrilateral per chord of the path each one runs along, turned as the clusters are.</summary>
+    private void EmitRectanglesOnPath(PathSink target, ReadOnlySpan<DecorationRectangle> rectangles, PathMeasure measure, TextPathOptions options, int brush)
+    {
+        var length = measure.Length;
+        var shift = GetPathShift(length, options);
+        var baseline = GetPathBaseline(options);
+        var isReversed = options.Side == TextPathSide.Right;
+        var isClipped = options.Overflow == TextPathOverflow.Clip;
+        foreach (ref readonly var decoration in rectangles)
         {
             if (brush >= 0 && decoration.Brush != brush)
                 continue;
@@ -717,9 +975,6 @@ public sealed class TextLayout
             }
         }
 
-        target.End();
-        return coversFrame;
-
         static void AddCorner(PathSink target, double x, double y, double directionX, double directionY, double along, double across, bool isFirst)
         {
             var cornerX = (x + (along * directionX)) - (across * directionY);
@@ -741,31 +996,52 @@ public sealed class TextLayout
     /// to the direction of the path there.
     /// </summary>
     /// <returns><see langword="false"/> when the glyph is not drawn: it is beyond an end of a path that clips.</returns>
-    internal bool TryGetGlyphTransformOnPath(int glyph, double scale, PathMeasure measure, TextPathOptions options, out Affine2D transform)
+    internal bool TryGetGlyphTransformOnPath(int glyph, double scale, bool isSideways, PathMeasure measure, TextPathOptions options, out Affine2D transform)
     {
         var length = measure.Length;
         transform = default;
         if (!(length > 0))
             return false;
 
-        var shift = options.StartOffset + options.Alignment switch
-        {
-            TextPathAlignment.Center => (length - Width) / 2,
-            TextPathAlignment.End => length - Width,
-            _ => 0,
-        };
-        var baseline = _lines[0].Y + _lines[0].Baseline + options.BaselineOffset;
+        var shift = GetPathShift(length, options);
+        var baseline = GetPathBaseline(options);
         if (!TryLocate(measure, shift + _anchors[glyph], options.Side == TextPathSide.Right, options.Overflow == TextPathOverflow.Clip, out var x, out var y, out var directionX, out var directionY))
             return false;
 
         // The origin of the glyph from the point of its cluster: along the path, then across it. The side the
-        // layout grows down to is on the right of the direction of the path.
-        var along = _positions[glyph * 2] - _anchors[glyph];
-        var across = _positions[(glyph * 2) + 1] - baseline;
+        // layout grows down to is on the right of the direction of the path. A vertical layout follows the path as
+        // it was laid out: each line as a horizontal one, read from its top.
+        var positions = _vertical?.Positions ?? _positions;
+        var along = positions[glyph * 2] - _anchors[glyph];
+        var across = positions[(glyph * 2) + 1] - baseline;
         var originX = (x + (along * directionX)) - (across * directionY);
         var originY = (y + (along * directionY)) + (across * directionX);
-        transform = new Affine2D(scale * directionX, scale * directionY, scale * directionY, -(scale * directionX), originX, originY);
+
+        // An upright glyph of a vertical line stands across the line: its top is where the line comes from
+        transform = _vertical is not null && !isSideways
+            ? new Affine2D(scale * directionY, -(scale * directionX), -(scale * directionX), -(scale * directionY), originX, originY)
+            : new Affine2D(scale * directionX, scale * directionY, scale * directionY, -(scale * directionX), originX, originY);
         return true;
+    }
+
+    /// <summary>Gets how far along a path the text starts.</summary>
+    private double GetPathShift(double length, TextPathOptions options)
+    {
+        // The length of the text along its lines: its width, or the height of a vertical layout
+        var size = _vertical?.InlineSize ?? Width;
+        return options.StartOffset + options.Alignment switch
+        {
+            TextPathAlignment.Center => (length - size) / 2,
+            TextPathAlignment.End => length - size,
+            _ => 0,
+        };
+    }
+
+    /// <summary>Gets where the baseline of the first line is across the lines, as it follows a path.</summary>
+    private double GetPathBaseline(TextPathOptions options)
+    {
+        var line = (_vertical?.Lines ?? _lines)[0];
+        return line.Y + line.Baseline + options.BaselineOffset;
     }
 
     /// <summary>Finds the point of a path at a distance, on the side and with the overflow the options ask for.</summary>
@@ -879,8 +1155,18 @@ public sealed class TextLayout
                 // its slanted box; the stroke of a thickened glyph stays within its width of the outline, at the tip of
                 // the sharpest corner it keeps.
                 var isOutline = colorIndexes is null || colorIndexes[i] < 0;
-                var transform = Affine2D.ForGlyph(scale, _positions[i * 2], _positions[(i * 2) + 1], isOutline ? run.Shear : 0);
+                var transform = run.GetTransform(scale, _positions[i * 2], _positions[(i * 2) + 1], isSlanted: isOutline);
                 var margin = isOutline ? run.EmboldenWidth * (GlyphRun.BoldMiterLimit / 2) : 0;
+                if (run.IsSideways)
+                {
+                    // On its side, the top of the glyph is on its right, and its left at its top
+                    left = Math.Min(left, transform.TransformX(box.MinX, box.MinY) - margin);
+                    right = Math.Max(right, transform.TransformX(box.MinX, box.MaxY) + margin);
+                    top = Math.Min(top, Math.Min(transform.TransformY(box.MinX, box.MinY), transform.TransformY(box.MinX, box.MaxY)) - margin);
+                    bottom = Math.Max(bottom, Math.Max(transform.TransformY(box.MaxX, box.MinY), transform.TransformY(box.MaxX, box.MaxY)) + margin);
+                    continue;
+                }
+
                 left = Math.Min(left, Math.Min(transform.TransformX(box.MinX, box.MinY), transform.TransformX(box.MinX, box.MaxY)) - margin);
                 right = Math.Max(right, Math.Max(transform.TransformX(box.MaxX, box.MinY), transform.TransformX(box.MaxX, box.MaxY)) + margin);
                 top = Math.Min(top, transform.TransformY(box.MinX, box.MaxY) - margin);
@@ -894,6 +1180,14 @@ public sealed class TextLayout
             top = Math.Min(top, decoration.Y);
             right = Math.Max(right, decoration.X + decoration.Width);
             bottom = Math.Max(bottom, decoration.Y + decoration.Height);
+        }
+
+        foreach (var background in _backgrounds)
+        {
+            left = Math.Min(left, background.X);
+            top = Math.Min(top, background.Y);
+            right = Math.Max(right, background.X + background.Width);
+            bottom = Math.Max(bottom, background.Y + background.Height);
         }
 
         colorGlyphs = [.. colors];

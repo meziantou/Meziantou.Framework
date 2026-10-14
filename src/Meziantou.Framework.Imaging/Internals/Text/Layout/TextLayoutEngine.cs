@@ -46,32 +46,75 @@ internal sealed class TextLayoutEngine
     private readonly ImageResourceLimits _limits;
     private readonly GlyphBuffer _buffer;
     private readonly bool _wraps;
+
+    // What every length of the styles is multiplied by: 1, or the factor a text is fitted to a box with
+    private readonly double _scale;
+    // The length lines are wrapped at and aligned in, and the room the lines must fit: the width and the height of
+    // a horizontal layout, the height and the width of a vertical one
+    private readonly double _maxWidth;
+    private readonly double _maxHeight;
+
+    // A vertical layout is laid out as a horizontal one, each line read from its top, then turned (see
+    // VerticalLayoutData). Its upright glyphs are shaped for a vertical line; the others are on their side.
+    private readonly bool _isVertical;
+    private readonly TextOrientation _orientation;
+
+    // A vertical line has a central baseline, in its middle, unless all of its text is on its side: it is then a
+    // horizontal line turned, with the baseline of one.
+    private readonly bool _hasCentralBaseline;
+    private readonly Dictionary<(FontFace Face, int CodePoint), bool> _verticalForms = [];
+    private GlyphBuffer? _probeBuffer;
+    private GlyphScratch? _scratch;
     private readonly List<Font> _fonts = [];
     private readonly List<Line> _lines = [];
     private long _glyphCount;
     private bool _isTruncated;
     private bool _hasMissingGlyphs;
 
-    private TextLayoutEngine(string text, TextSpan[] spans, TextLayoutOptions options)
+    private TextLayoutEngine(string text, TextSpan[] spans, TextLayoutOptions options, double scale, double maxWidth, double maxHeight)
     {
         _text = text;
         _spans = spans;
         _options = options;
+        _scale = scale;
+        _isVertical = options.WritingMode != TextWritingMode.Horizontal;
+        _orientation = options.Orientation;
+        _hasCentralBaseline = _isVertical && _orientation != TextOrientation.Sideways;
+        _maxWidth = _isVertical ? maxHeight : maxWidth;
+        _maxHeight = _isVertical ? maxWidth : maxHeight;
         _limits = spans[0].Style.Fonts.Primary.Face.Data.Limits;
         _buffer = new GlyphBuffer(_limits);
-        _wraps = options.Wrapping == TextWrapping.Wrap && !double.IsPositiveInfinity(options.MaxWidth);
+        _wraps = options.Wrapping == TextWrapping.Wrap && !double.IsPositiveInfinity(_maxWidth);
     }
 
     /// <summary>Lays out a text whose spans follow each other and cover it; an empty text has one span of length 0.</summary>
     /// <exception cref="ImageResourceLimitException">The text, its glyphs or its lines exceed a limit of the configuration of the first font.</exception>
     public static TextLayoutData Create(string text, TextSpan[] spans, TextLayoutOptions options)
+        => Create(text, spans, options, scale: 1, options.MaxWidth, options.MaxHeight);
+
+    /// <summary>Lays out a text at a fraction of the sizes of its styles, in a box that is not the one of the options.</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="spans">The spans of the text.</param>
+    /// <param name="options">The options; their box is not used.</param>
+    /// <param name="scale">What the sizes, the spacings, the indent and the line height are multiplied by.</param>
+    /// <param name="maxWidth">The width of the box: what lines are wrapped and aligned at in a horizontal layout, the room of the lines of a vertical one.</param>
+    /// <param name="maxHeight">The height of the box: the room of the lines of a horizontal layout, what lines are wrapped and aligned at in a vertical one.</param>
+    /// <exception cref="ImageResourceLimitException">The text, its glyphs or its lines exceed a limit of the configuration of the first font.</exception>
+    public static TextLayoutData Create(string text, TextSpan[] spans, TextLayoutOptions options, double scale, double maxWidth, double maxHeight)
     {
-        var engine = new TextLayoutEngine(text, spans, options);
+        var engine = new TextLayoutEngine(text, spans, options, scale, maxWidth, maxHeight);
         if (text.Length > engine._limits.MaxTextLength)
             throw new ImageResourceLimitException(ImageResourceLimitKind.TextLength, engine._limits.MaxTextLength, text.Length);
 
-        engine.Run();
-        return engine.Finish();
+        try
+        {
+            engine.Run();
+            return engine.Finish();
+        }
+        finally
+        {
+            engine._scratch?.Dispose();
+        }
     }
 
     private void Run()
@@ -149,6 +192,13 @@ internal sealed class TextLayoutEngine
         };
         paragraph.Levels = new byte[content.Length];
         paragraph.Level = (byte)UnicodeBidi.ResolveLevels(content, direction, paragraph.Levels);
+        if (_isVertical && _orientation == TextOrientation.Upright)
+        {
+            // Upright text is laid out from the top, whatever its script
+            paragraph.Level = 0;
+            paragraph.Levels.AsSpan().Clear();
+        }
+
         paragraph.Advances = new double[content.Length];
         Itemize(paragraph);
         foreach (var item in paragraph.Items)
@@ -160,12 +210,12 @@ internal sealed class TextLayoutEngine
         var isFirst = true;
         do
         {
-            var indent = isFirst ? _options.FirstLineIndent : 0;
+            var indent = isFirst ? _options.FirstLineIndent * _scale : 0;
             var to = paragraph.End;
             var isHyphenated = false;
             if (_wraps && from < paragraph.End)
             {
-                to = FindBreak(paragraph, from, _options.MaxWidth - indent, out isHyphenated);
+                to = FindBreak(paragraph, from, _maxWidth - indent, out isHyphenated);
             }
 
             if (!AddLine(paragraph, from, to, indent, isHyphenated))
@@ -192,7 +242,9 @@ internal sealed class TextLayoutEngine
             scripts.AsSpan(run.Index, run.Length).Fill(run.Script);
         }
 
-        // The font of each character: the one chosen for its grapheme cluster.
+        // The font of each character: the one chosen for its grapheme cluster. In a vertical line, whether the
+        // cluster is upright.
+        var upright = _isVertical ? new bool[content.Length] : [];
         var fonts = new int[content.Length];
         for (var i = 0; i < content.Length;)
         {
@@ -201,6 +253,17 @@ internal sealed class TextLayoutEngine
             var span = _spans[FindSpan(paragraph.Start + i)];
             length = Math.Min(length, span.Start + span.Length - (paragraph.Start + i));
             fonts.AsSpan(i, length).Fill(SelectFont(span.Style.Fonts, content.Slice(i, length)));
+            if (_isVertical && !span.IsPlaceholder && IsUpright(span.Style.Fonts.FontSpan[fonts[i]], content.Slice(i, length)))
+            {
+                // Upright text goes down the line whatever is around it: among right-to-left text, which goes
+                // up, it keeps the order of the text, as a number does
+                upright.AsSpan(i, length).Fill(value: true);
+                foreach (ref var level in paragraph.Levels.AsSpan(i, length))
+                {
+                    level += (byte)(level & 1);
+                }
+            }
+
             i += length;
         }
 
@@ -225,7 +288,8 @@ internal sealed class TextLayoutEngine
                 || paragraph.Levels[i] != paragraph.Levels[start]
                 || scripts[i] != scripts[start]
                 || fonts[i] != fonts[start]
-                || (nextSpan != span && !AreShapedTogether(_spans[span].Style, _spans[nextSpan].Style)))
+                || (_isVertical && upright[i] != upright[start])
+                || (nextSpan != span && (_spans[span].IsPlaceholder || _spans[nextSpan].IsPlaceholder || !AreShapedTogether(_spans[span].Style, _spans[nextSpan].Style))))
             {
                 var style = _spans[span].Style;
                 paragraph.Items.Add(new Item
@@ -237,6 +301,8 @@ internal sealed class TextLayoutEngine
                     Level = paragraph.Levels[start],
                     Script = scripts[start],
                     IsTabulation = content[start] == '\t',
+                    Placeholder = _spans[span].IsPlaceholder ? span : -1,
+                    IsUpright = _isVertical && upright[start],
                 });
                 start = i;
             }
@@ -244,6 +310,57 @@ internal sealed class TextLayoutEngine
             current = nextSpan;
         }
     }
+
+    /// <summary>
+    /// Determines whether a grapheme cluster is upright in a vertical line: by the orientation of the layout, or by
+    /// the Vertical_Orientation property of its first character (UAX #50).
+    /// </summary>
+    /// <remarks>
+    /// A character the standard sets on its side unless the font has a vertical form for it (<c>Tr</c>: brackets, the
+    /// long vowel mark) is upright when the vertical forms of the font replace its glyph, and on its side otherwise:
+    /// its horizontal glyph, turned, is then the form a vertical line needs.
+    /// </remarks>
+    private bool IsUpright(Font font, ReadOnlySpan<char> cluster)
+    {
+        if (_orientation != TextOrientation.Mixed)
+            return _orientation == TextOrientation.Upright;
+
+        if (Rune.DecodeFromUtf16(cluster, out var rune, out _) != System.Buffers.OperationStatus.Done)
+            return false;
+
+        switch (UnicodeProperties.GetVerticalOrientation(rune.Value))
+        {
+            case UnicodeVerticalOrientation.Upright or UnicodeVerticalOrientation.TransformedUpright:
+                return true;
+
+            case UnicodeVerticalOrientation.TransformedRotated:
+                break;
+
+            default:
+                return false;
+        }
+
+        var face = font.Face;
+        if (_verticalForms.TryGetValue((face, rune.Value), out var hasVerticalForm))
+            return hasVerticalForm;
+
+        // The character alone, shaped for a vertical line: its glyph is another one when the font has a form for it
+        var glyph = face.MapCodePoint(rune.Value);
+        if (glyph != 0 && face.Gsub is not null)
+        {
+            var buffer = _probeBuffer ??= new GlyphBuffer(_limits);
+            buffer.Clear();
+            buffer.Add(rune.Value, 0);
+            TextShaper.Shape(buffer, face, UnicodeScripts.GetScript(rune.Value), [], isRightToLeft: false, [], isVertical: true, GetScratch(face));
+            hasVerticalForm = buffer.Length == 1 && buffer.Info[0].Glyph != glyph;
+        }
+
+        _verticalForms.Add((face, rune.Value), hasVerticalForm);
+        return hasVerticalForm;
+    }
+
+    /// <summary>Gets the working storage that measures the outlines of a font without vertical origins.</summary>
+    private GlyphScratch GetScratch(FontFace face) => _scratch ??= new GlyphScratch(AllocationScope.Create(face.Data.Configuration, "TextLayout"));
 
     /// <summary>Determines whether the texts of two styles can be shaped as one: they only differ by what is painted.</summary>
     private static bool AreShapedTogether(TextStyle first, TextStyle second)
@@ -373,6 +490,14 @@ internal sealed class TextLayoutEngine
         if (item.IsTabulation)
             return;
 
+        if (item.Placeholder >= 0)
+        {
+            // What the caller draws there has no glyph: it takes its width, or its height in a vertical line
+            var placeholder = _spans[item.Placeholder];
+            paragraph.Advances[item.Start - paragraph.Start] = (_hasCentralBaseline ? placeholder.PlaceholderHeight : placeholder.PlaceholderWidth) * _scale;
+            return;
+        }
+
         _buffer.Clear();
         var text = _text.AsSpan(item.Start, item.End - item.Start);
         var lastCluster = item.Start;
@@ -408,19 +533,22 @@ internal sealed class TextLayoutEngine
             features[i] = new ShapingFeature(style.Features[i].TagValue, style.Features[i].Value);
         }
 
-        TextShaper.Shape(_buffer, item.Font.Face, item.Script, style.LanguageTags, isRightToLeft, features);
-        var scale = style.Size / item.Font.UnitsPerEm;
+        TextShaper.Shape(_buffer, item.Font.Face, item.Script, style.LanguageTags, isRightToLeft, features, item.IsUpright, item.IsUpright ? GetScratch(item.Font.Face) : null);
+        var scale = GetSize(style) / item.Font.UnitsPerEm;
         var info = _buffer.Info;
         var positions = _buffer.Positions;
         for (var i = 0; i < info.Length; i++)
         {
+            // An upright glyph of a vertical line advances down the line, and is drawn from its vertical origin: in
+            // the coordinates of the line, what the font gives along its y axis is along the line, backward, and
+            // what it gives along its x axis is across the line, toward the side the top of the line is on.
             paragraph.Glyphs.Add(new ShapedGlyph
             {
                 Glyph = info[i].Glyph,
                 Cluster = info[i].Cluster,
-                Advance = positions[i].XAdvance * scale,
-                XOffset = positions[i].XOffset * scale,
-                YOffset = positions[i].YOffset * scale,
+                Advance = (item.IsUpright ? -positions[i].YAdvance : positions[i].XAdvance) * scale,
+                XOffset = (item.IsUpright ? -positions[i].YOffset : positions[i].XOffset) * scale,
+                YOffset = (item.IsUpright ? positions[i].XOffset : positions[i].YOffset) * scale,
                 IsInvisible = info[i].IsIgnorable,
             });
         }
@@ -429,7 +557,7 @@ internal sealed class TextLayoutEngine
         var glyphs = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(paragraph.Glyphs).Slice(item.GlyphStart, item.GlyphCount);
         if ((style.Synthesis & FontSynthesis.Bold) != FontSynthesis.None)
         {
-            Embolden(glyphs, style.Size * GlyphRun.BoldWidth, isRightToLeft);
+            Embolden(glyphs, GetSize(style) * GlyphRun.BoldWidth, isRightToLeft);
         }
 
         if (style.LetterSpacing != 0 || style.WordSpacing != 0)
@@ -486,7 +614,7 @@ internal sealed class TextLayoutEngine
 
             // An ellipsis on an empty line at the end of the text has the cluster of a character that is not there.
             var character = glyphs[start].Cluster < _text.Length ? _text[glyphs[start].Cluster] : '\0';
-            var space = style.LetterSpacing + (character is ' ' or '\u00A0' ? style.WordSpacing : 0);
+            var space = (style.LetterSpacing + (character is ' ' or '\u00A0' ? style.WordSpacing : 0)) * _scale;
             if (isRightToLeft)
             {
                 glyphs[start].Advance += space;
@@ -587,7 +715,7 @@ internal sealed class TextLayoutEngine
     {
         var font = style.Fonts.Primary;
         var space = font.Face.MapCodePoint(' ');
-        var tabulation = _options.TabSize * (space == 0 ? font.UnitsPerEm / 4.0 : font.Face.GetAdvanceWidth(space)) * (style.Size / font.UnitsPerEm);
+        var tabulation = _options.TabSize * (space == 0 ? font.UnitsPerEm / 4.0 : font.Face.GetAdvanceWidth(space)) * (GetSize(style) / font.UnitsPerEm);
         return tabulation > 0 ? ((Math.Floor(position / tabulation) + 1) * tabulation) - position : 0;
     }
 
@@ -599,18 +727,24 @@ internal sealed class TextLayoutEngine
             return 0;
 
         var face = item.Font.Face;
-        var scale = item.Style.Size / item.Font.UnitsPerEm;
+        var scale = GetSize(item.Style) / item.Font.UnitsPerEm;
         var width = 0.0;
         foreach (var rune in GetHyphen(item).EnumerateRunes())
         {
-            width += (face.GetAdvanceWidth(face.MapCodePoint(rune.Value)) * scale) + GetEmboldenWidth(item.Style);
+            width += (GetAdvance(item, face.MapCodePoint(rune.Value)) * scale) + GetEmboldenWidth(item.Style);
         }
 
         return width;
     }
 
     /// <summary>Gets what a synthetic bold adds to the advance of a glyph of a style.</summary>
-    private static double GetEmboldenWidth(TextStyle style) => (style.Synthesis & FontSynthesis.Bold) != FontSynthesis.None ? style.Size * GlyphRun.BoldWidth : 0;
+    private double GetEmboldenWidth(TextStyle style) => (style.Synthesis & FontSynthesis.Bold) != FontSynthesis.None ? GetSize(style) * GlyphRun.BoldWidth : 0;
+
+    /// <summary>Gets the advance of a glyph along the line of an item, in font units: its height when the item is upright in a vertical line.</summary>
+    private static int GetAdvance(Item item, int glyph) => item.IsUpright ? item.Font.Face.GetAdvanceHeight(glyph) : item.Font.Face.GetAdvanceWidth(glyph);
+
+    /// <summary>Gets the size the fonts of a style have in the layout.</summary>
+    private double GetSize(TextStyle style) => style.Size * _scale;
 
     private string GetHyphen(Item item) => _options.HyphenCharacter ?? (item.Font.Face.MapCodePoint(0x2010) != 0 ? "\u2010" : "-");
 
@@ -679,7 +813,7 @@ internal sealed class TextLayoutEngine
         var isWrapped = to < paragraph.End;
         var line = BuildLine(paragraph, from, to, indent, isHyphenated ? LineEnd.Hyphen : LineEnd.None, isWrapped);
         var maxLines = Math.Min(_options.MaxLines, _limits.MaxTextLines);
-        var isOverflowing = _lines.Count > 0 && GetHeight() + line.Height > _options.MaxHeight;
+        var isOverflowing = _lines.Count > 0 && GetHeight() + line.Height > _maxHeight;
         if (_lines.Count >= maxLines || isOverflowing)
         {
             // The line does not fit. A count of lines the caller asks for and a height cut the text; the limit of the
@@ -699,7 +833,7 @@ internal sealed class TextLayoutEngine
         }
 
         // A line that is wider than the layout, because lines are not wrapped or a word does not fit, is trimmed too.
-        if (_options.Trimming != TextTrimming.None && line.Width + indent > _options.MaxWidth)
+        if (_options.Trimming != TextTrimming.None && line.Width + indent > _maxWidth)
         {
             _isTruncated = true;
             line = Trim(paragraph, from, to, indent, GetHeight());
@@ -715,7 +849,7 @@ internal sealed class TextLayoutEngine
     /// <summary>Builds a line that ends with the ellipsis after the last character, or the last word, that leaves room for it.</summary>
     private Line Trim(Paragraph paragraph, int from, int to, double indent, double y)
     {
-        var available = _options.MaxWidth - indent;
+        var available = _maxWidth - indent;
         var best = from;
         if (double.IsPositiveInfinity(available))
         {
@@ -766,14 +900,14 @@ internal sealed class TextLayoutEngine
         }
     }
 
-    private static double MeasureText(Item item, string text)
+    private double MeasureText(Item item, string text)
     {
         var face = item.Font.Face;
-        var scale = item.Style.Size / item.Font.UnitsPerEm;
+        var scale = GetSize(item.Style) / item.Font.UnitsPerEm;
         var width = 0.0;
         foreach (var rune in text.EnumerateRunes())
         {
-            width += (face.GetAdvanceWidth(face.MapCodePoint(rune.Value)) * scale) + GetEmboldenWidth(item.Style);
+            width += (GetAdvance(item, face.MapCodePoint(rune.Value)) * scale) + GetEmboldenWidth(item.Style);
         }
 
         return width;
@@ -889,12 +1023,34 @@ internal sealed class TextLayoutEngine
             var item = items[order[i]];
             var font = GetFontIndex(item.Font);
             var isHanging = item.Start >= contentEnd && item.Start < item.End;
-            IncludeMetrics(line, item.Font, item.Style.Size);
+            var baselineShift = IncludeMetrics(line, item.Font, GetSize(item.Style), item.IsUpright);
             if (item.IsTabulation)
             {
-                line.Glyphs.Add(new PlacedGlyph { Glyph = -1, Cluster = item.Start, PenX = pen, Advance = tabulations[order[i]], Font = font, Size = item.Style.Size, Span = FindSpan(item.Start), IsInvisible = true, IsHanging = isHanging, IsRightToLeft = (levels[order[i]] & 1) != 0 });
+                line.Glyphs.Add(new PlacedGlyph { Glyph = -1, Cluster = item.Start, PenX = pen, Advance = tabulations[order[i]], Font = font, Size = GetSize(item.Style), Span = FindSpan(item.Start), IsInvisible = true, IsHanging = isHanging, IsRightToLeft = (levels[order[i]] & 1) != 0 });
                 pen += tabulations[order[i]];
                 hanging += isHanging ? tabulations[order[i]] : 0;
+                continue;
+            }
+
+            if (item.Placeholder >= 0)
+            {
+                // The line is as tall as what stands on its baseline, and as deep as what goes below it
+                var placeholder = _spans[item.Placeholder];
+                var advance = (_hasCentralBaseline ? placeholder.PlaceholderHeight : placeholder.PlaceholderWidth) * _scale;
+                if (_hasCentralBaseline)
+                {
+                    // Centered on the line, which is as wide as it needs
+                    line.Ascent = Math.Max(line.Ascent, placeholder.PlaceholderWidth * _scale / 2);
+                    line.Descent = Math.Max(line.Descent, placeholder.PlaceholderWidth * _scale / 2);
+                }
+                else
+                {
+                    line.Ascent = Math.Max(line.Ascent, placeholder.PlaceholderBaseline * _scale);
+                    line.Descent = Math.Max(line.Descent, (placeholder.PlaceholderHeight - placeholder.PlaceholderBaseline) * _scale);
+                }
+
+                line.Glyphs.Add(new PlacedGlyph { Glyph = -1, Cluster = item.Start, PenX = pen, Advance = advance, Font = font, Size = GetSize(item.Style), Span = item.Placeholder, IsInvisible = true, IsPlaceholder = true, IsRightToLeft = (levels[order[i]] & 1) != 0 });
+                pen += advance;
                 continue;
             }
 
@@ -911,12 +1067,14 @@ internal sealed class TextLayoutEngine
                     YOffset = glyph.YOffset,
                     Advance = glyph.Advance,
                     Font = font,
-                    Size = item.Style.Size,
+                    Size = GetSize(item.Style),
                     Span = FindSpan(Math.Min(glyph.Cluster, Math.Max(_text.Length - 1, 0))),
                     IsInvisible = glyph.IsInvisible,
                     IsExpandable = !isHanging && character is ' ' or '\u00A0',
                     IsHanging = isHanging,
                     IsRightToLeft = (levels[order[i]] & 1) != 0,
+                    IsUpright = item.IsUpright,
+                    BaselineShift = baselineShift,
                 });
                 pen += glyph.Advance;
                 hanging += isHanging ? glyph.Advance : 0;
@@ -927,7 +1085,7 @@ internal sealed class TextLayoutEngine
         {
             // An empty line is as tall as the font of the place it is at.
             var style = _spans[FindSpan(Math.Min(from, Math.Max(_text.Length - 1, 0)))].Style;
-            IncludeMetrics(line, style.Fonts.Primary, style.Size);
+            IncludeMetrics(line, style.Fonts.Primary, GetSize(style), isUpright: false);
         }
 
         // The hanging white space of a right-to-left paragraph is on the left of the line: the text starts after it.
@@ -941,7 +1099,7 @@ internal sealed class TextLayoutEngine
         }
 
         var natural = line.Ascent + line.Descent;
-        line.Height = _options.LineHeight ?? natural;
+        line.Height = _options.LineHeight * _scale ?? natural;
         line.Baseline = line.Ascent + ((line.Height - natural) / 2);
         _glyphCount += line.Glyphs.Count;
         return line;
@@ -951,11 +1109,28 @@ internal sealed class TextLayoutEngine
     /// Adds the font of an item to the metrics of a line: a line is as tall as the tallest of its fonts above the
     /// baseline plus the deepest below, each with half of its line gap.
     /// </summary>
-    private static void IncludeMetrics(Line line, Font font, double size)
+    /// <remarks>
+    /// A vertical line has a central baseline: it is as wide as the widest of its fonts is tall, half on each side
+    /// of that baseline. Upright glyphs are centered on it by their vertical origins; the text that is on its side
+    /// has the middle of its ascent and its descent on it, so that its own baseline is further from the top of the
+    /// line by half of what its ascent has more than its descent. A vertical line whose text is all on its side is
+    /// a horizontal line turned: its baseline is the one of its text.
+    /// </remarks>
+    /// <returns>How far from the baseline of the line, on the side of its bottom, the glyphs of the item have their baseline.</returns>
+    private double IncludeMetrics(Line line, Font font, double size, bool isUpright)
     {
         var metrics = font.GetMetrics(size);
+        if (_hasCentralBaseline)
+        {
+            var half = (metrics.Ascent + metrics.Descent + metrics.LineGap) / 2;
+            line.Ascent = Math.Max(line.Ascent, half);
+            line.Descent = Math.Max(line.Descent, half);
+            return isUpright ? 0 : (metrics.Ascent - metrics.Descent) / 2;
+        }
+
         line.Ascent = Math.Max(line.Ascent, metrics.Ascent + (metrics.LineGap / 2));
         line.Descent = Math.Max(line.Descent, metrics.Descent + (metrics.LineGap / 2));
+        return 0;
     }
 
     /// <summary>Cuts the item that contains a position in two, and shapes each part again.</summary>
@@ -967,7 +1142,7 @@ internal sealed class TextLayoutEngine
             if (position <= item.Start || position >= item.End)
                 continue;
 
-            var second = new Item { Start = position, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsTabulation = item.IsTabulation };
+            var second = new Item { Start = position, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsTabulation = item.IsTabulation, Placeholder = item.Placeholder, IsUpright = item.IsUpright };
             item.End = position;
             paragraph.Items.Insert(i + 1, second);
             Shape(paragraph, item);
@@ -998,7 +1173,7 @@ internal sealed class TextLayoutEngine
         var end = FindShapingEnd(paragraph, item);
         if (end < item.End)
         {
-            paragraph.Items.Insert(index + 1, new Item { Start = end, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsPending = true });
+            paragraph.Items.Insert(index + 1, new Item { Start = end, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsPending = true, IsUpright = item.IsUpright });
             item.End = end;
         }
 
@@ -1008,7 +1183,7 @@ internal sealed class TextLayoutEngine
     private static bool IsSameRun(Item first, Item second)
     {
         return ReferenceEquals(first.Style, second.Style) && ReferenceEquals(first.Font, second.Font) && first.Level == second.Level && first.Script == second.Script
-            && !first.IsTabulation && !second.IsTabulation;
+            && !first.IsTabulation && !second.IsTabulation && first.Placeholder < 0 && second.Placeholder < 0 && first.IsUpright == second.IsUpright;
     }
 
     /// <summary>
@@ -1021,7 +1196,7 @@ internal sealed class TextLayoutEngine
             return item.End;
 
         // The advances are the ones of the last time these characters were shaped, in a longer text.
-        var target = 2 * Math.Max(_options.MaxWidth, 0);
+        var target = 2 * Math.Max(_maxWidth, 0);
         var width = 0.0;
         var position = item.Start;
         for (; position < item.End && (width < target || position - item.Start < MinShapingLength); position++)
@@ -1101,23 +1276,47 @@ internal sealed class TextLayoutEngine
         }
 
         // Lines are aligned in the width they are wrapped at, or in the width of the widest one.
-        var box = double.IsPositiveInfinity(_options.MaxWidth) ? naturalWidth : _options.MaxWidth;
+        var box = double.IsPositiveInfinity(_maxWidth) ? naturalWidth : _maxWidth;
         var glyphs = new List<int>();
         var positions = new List<double>();
         var anchors = new List<double>();
         var runs = new List<GlyphRun>();
         var brushes = new List<Brush?>();
         var decorations = new List<DecorationRectangle>();
+        var backgrounds = new List<DecorationRectangle>();
+        var outlines = new List<Pen>();
+        var placeholderCount = 0;
+        foreach (var span in _spans)
+        {
+            placeholderCount += span.IsPlaceholder ? 1 : 0;
+        }
+
+        // The rectangle of each placeholder, in the order of the text; empty for one the layout does not hold
+        var placeholders = placeholderCount == 0 ? [] : new RectangleD[placeholderCount];
         var hitBoxes = new List<TextHitBox>();
         var hitBoxStarts = new int[_lines.Count + 1];
         var boundaries = new List<int>();
         var clusters = new List<int>();
         var textLines = new TextLine[_lines.Count];
+
+        // A vertical layout is laid out here as a horizontal one, then turned line by line: what is at (u, v) of a
+        // line, along it and across the lines, is drawn at (right - (v - top), u), where right is the right edge
+        // the line has on the image. The first line is the rightmost one, or the leftmost one.
+        var isLeftToRight = _options.WritingMode == TextWritingMode.VerticalLeftToRight;
+        var blockSize = GetHeight();
+        var lines = _isVertical ? new TextLine[_lines.Count] : textLines;
+        var lineRights = new double[_isVertical ? _lines.Count : 0];
+        var linePositions = new List<double>();
+        var lineDecorations = new List<DecorationRectangle>();
+        var lineBackgrounds = new List<DecorationRectangle>();
         for (var lineIndex = 0; lineIndex < _lines.Count; lineIndex++)
         {
             var line = _lines[lineIndex];
             var placed = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(line.Glyphs);
             hitBoxStarts[lineIndex] = hitBoxes.Count;
+            var lineRight = isLeftToRight ? line.Y + line.Height : blockSize - line.Y;
+            var firstDecoration = decorations.Count;
+            var firstBackground = backgrounds.Count;
 
             // Justification widens the spaces of a line so that it fills the width; not the last line of a paragraph,
             // which ends where its text ends.
@@ -1160,11 +1359,18 @@ internal sealed class TextLayoutEngine
 
             var baseline = line.Y + line.Baseline;
             var fullEnd = line.IsLastOfParagraph ? line.Paragraph.FullEnd : line.To;
-            textLines[lineIndex] = new TextLine(line.From, fullEnd - line.From, x, line.Y, line.Width, line.Height, line.Baseline, line.IsRightToLeft);
+            lines[lineIndex] = new TextLine(line.From, fullEnd - line.From, x, line.Y, line.Width, line.Height, line.Baseline, line.IsRightToLeft);
+            if (_isVertical)
+            {
+                // The line on the image: its box, and its baseline from its left
+                lineRights[lineIndex] = lineRight;
+                textLines[lineIndex] = new TextLine(line.From, fullEnd - line.From, lineRight - line.Height, x, line.Height, line.Width, line.Height - line.Baseline, line.IsRightToLeft);
+            }
 
             // The glyphs, in display order, and the decorations of the spans they belong to. The glyphs of a cluster
             // follow each other: the middle of their advances is where the cluster is placed when a text follows a path.
             var decoration = default(DecorationSegment);
+            var background = default(DecorationSegment);
             var clusterEnd = 0;
             var anchor = 0.0;
             for (var placedIndex = 0; placedIndex < placed.Length; placedIndex++)
@@ -1185,35 +1391,83 @@ internal sealed class TextLayoutEngine
                 if (glyph.Glyph >= 0 && !glyph.IsInvisible)
                 {
                     var brush = GetBrushIndex(brushes, style.Brush);
-                    if (runs.Count == 0 || runs[^1].Font != glyph.Font || runs[^1].Size != glyph.Size || runs[^1].Brush != brush || runs[^1].Palette != style.ColorPaletteIndex || runs[^1].Synthesis != style.Synthesis)
+                    var outline = style.Outline is null ? -1 : GetOutlineIndex(outlines, style.Outline);
+                    var isSideways = _isVertical && !glyph.IsUpright;
+                    if (runs.Count == 0 || runs[^1].Font != glyph.Font || runs[^1].Size != glyph.Size || runs[^1].Brush != brush || runs[^1].Palette != style.ColorPaletteIndex || runs[^1].Synthesis != style.Synthesis || runs[^1].Outline != outline || runs[^1].IsSideways != isSideways)
                     {
-                        runs.Add(new GlyphRun(glyph.Font, glyph.Size, brush, glyphs.Count, 0, style.ColorPaletteIndex, style.Synthesis));
+                        runs.Add(new GlyphRun(glyph.Font, glyph.Size, brush, glyphs.Count, 0, style.ColorPaletteIndex, style.Synthesis, outline, isSideways));
                     }
 
                     runs[^1] = runs[^1] with { Count = runs[^1].Count + 1 };
                     glyphs.Add(glyph.Glyph);
 
                     // A slanted glyph that is drawn above or below the baseline, such as a mark on its letter, moves
-                    // with the slant of the line.
-                    positions.Add(x + glyph.PenX + glyph.XOffset + (runs[^1].Shear * glyph.YOffset));
-                    positions.Add(baseline - glyph.YOffset);
+                    // with the slant of the line. The offsets of an upright glyph of a vertical line are not those
+                    // of a baseline: they are kept as they are.
+                    var along = x + glyph.PenX + glyph.XOffset + (glyph.IsUpright ? 0 : runs[^1].Shear * glyph.YOffset);
+                    var across = baseline + glyph.BaselineShift - glyph.YOffset;
+                    if (_isVertical)
+                    {
+                        linePositions.Add(along);
+                        linePositions.Add(across);
+                        positions.Add(lineRight - (across - line.Y));
+                        positions.Add(along);
+                    }
+                    else
+                    {
+                        positions.Add(along);
+                        positions.Add(across);
+                    }
+
                     anchors.Add(anchor);
                 }
 
+                var start = x + glyph.PenX;
+                if (glyph.IsPlaceholder)
+                {
+                    // In a vertical line, the placeholder is centered on the line and takes its height of it. In one
+                    // whose text is all on its side, it is turned with the line it is on.
+                    var placeholder = _spans[glyph.Span];
+                    var width = placeholder.PlaceholderWidth * _scale;
+                    var height = placeholder.PlaceholderHeight * _scale;
+                    var top = baseline - (placeholder.PlaceholderBaseline * _scale);
+                    placeholders[GetPlaceholderIndex(glyph.Span)] = _hasCentralBaseline
+                        ? new RectangleD(lineRight - (baseline - line.Y) - (width / 2), start, width, glyph.Advance)
+                        : _isVertical
+                            ? new RectangleD(lineRight - (top - line.Y) - height, start, height, glyph.Advance)
+                            : new RectangleD(start, top, glyph.Advance, height);
+                }
+
+                // The background of a style is one rectangle as long as the style continues on the line, behind the
+                // white space between its words but not behind the one that hangs
+                var hasBackground = !glyph.IsHanging && style.BackgroundBrush is not null;
+                if (!hasBackground || !ReferenceEquals(style, background.Style) || start != background.End)
+                {
+                    AddBackground(backgrounds, brushes, background, baseline);
+                    background = new DecorationSegment { Style = hasBackground ? style : null, Start = start, End = start };
+                }
+
+                background.End = start + glyph.Advance;
+
                 // A decoration is one rectangle as long as the same style continues on the line.
                 var kind = glyph.IsHanging ? TextDecorations.None : style.Decorations;
-                var start = x + glyph.PenX;
-                if (kind == TextDecorations.None || kind != decoration.Kind || !ReferenceEquals(style, decoration.Style) || glyph.Font != decoration.Font || start != decoration.End)
+                if (kind == TextDecorations.None || kind != decoration.Kind || !ReferenceEquals(style, decoration.Style) || glyph.Font != decoration.Font || glyph.IsUpright != decoration.IsUpright || start != decoration.End)
                 {
                     AddDecorations(decorations, brushes, decoration, baseline);
-                    decoration = new DecorationSegment { Kind = kind, Style = style, Font = glyph.Font, Start = start, End = start };
+                    decoration = new DecorationSegment { Kind = kind, Style = style, Font = glyph.Font, IsUpright = glyph.IsUpright, Start = start, End = start };
                 }
 
                 decoration.End = start + glyph.Advance;
             }
 
             AddDecorations(decorations, brushes, decoration, baseline);
+            AddBackground(backgrounds, brushes, background, baseline);
             AddHitBoxes(line, placed, x, hitBoxes, boundaries, clusters);
+            if (_isVertical)
+            {
+                Turn(decorations, firstDecoration, lineDecorations, lineRight, line.Y);
+                Turn(backgrounds, firstBackground, lineBackgrounds, lineRight, line.Y);
+            }
         }
 
         hitBoxStarts[^1] = hitBoxes.Count;
@@ -1229,9 +1483,23 @@ internal sealed class TextLayoutEngine
             Positions = [.. positions],
             Anchors = [.. anchors],
             Decorations = [.. decorations],
+            Backgrounds = [.. backgrounds],
+            Outlines = [.. outlines],
+            Placeholders = placeholders,
+            Scale = _scale,
             Lines = textLines,
-            Width = naturalWidth,
-            Height = GetHeight(),
+            Width = _isVertical ? blockSize : naturalWidth,
+            Height = _isVertical ? naturalWidth : blockSize,
+            Vertical = !_isVertical ? null : new VerticalLayoutData
+            {
+                Lines = lines,
+                LineRights = lineRights,
+                Positions = [.. linePositions],
+                Decorations = [.. lineDecorations],
+                Backgrounds = [.. lineBackgrounds],
+                IsLeftToRight = isLeftToRight,
+                InlineSize = naturalWidth,
+            },
             IsTruncated = _isTruncated,
             HasMissingGlyphs = _hasMissingGlyphs,
             TextLength = _text.Length,
@@ -1239,6 +1507,20 @@ internal sealed class TextLayoutEngine
             HitBoxStarts = hitBoxStarts,
             CharacterBoundaries = [.. boundaries],
         };
+    }
+
+    /// <summary>
+    /// Turns the rectangles of a vertical line that were added in the coordinates of the line: they are kept as they
+    /// are for what follows the line, and replaced by what they are on the image.
+    /// </summary>
+    private static void Turn(List<DecorationRectangle> rectangles, int first, List<DecorationRectangle> lineRectangles, double lineRight, double lineTop)
+    {
+        for (var i = first; i < rectangles.Count; i++)
+        {
+            var rectangle = rectangles[i];
+            lineRectangles.Add(rectangle);
+            rectangles[i] = new DecorationRectangle(lineRight - (rectangle.Y - lineTop) - rectangle.Height, rectangle.X, rectangle.Height, rectangle.Width, rectangle.Brush);
+        }
     }
 
     /// <summary>
@@ -1314,15 +1596,29 @@ internal sealed class TextLayoutEngine
             return;
 
         // The font gives the top of each line from the baseline and its thickness; the line over the text is at the ascent.
-        var metrics = _fonts[segment.Font].GetMetrics(segment.Style.Size);
+        var metrics = _fonts[segment.Font].GetMetrics(GetSize(segment.Style));
         var brush = GetBrushIndex(brushes, segment.Style.DecorationBrush ?? segment.Style.Brush);
         var width = segment.End - segment.Start;
+        if (_hasCentralBaseline)
+        {
+            // The baseline of a vertical line is its central one: the baseline the font has when it is on its side
+            // is half of what its ascent has more than its descent further from the top of the line. The lines of
+            // upright text are at the same places, beside its glyphs, but the line through them, which is in the
+            // middle of the line.
+            var central = baseline;
+            baseline += (metrics.Ascent - metrics.Descent) / 2;
+            if (segment.IsUpright && (segment.Kind & TextDecorations.Strikethrough) != TextDecorations.None && metrics.StrikethroughThickness > 0)
+            {
+                decorations.Add(new DecorationRectangle(segment.Start, central - (metrics.StrikethroughThickness / 2), width, metrics.StrikethroughThickness, brush));
+            }
+        }
+
         if ((segment.Kind & TextDecorations.Underline) != TextDecorations.None && metrics.UnderlineThickness > 0)
         {
             decorations.Add(new DecorationRectangle(segment.Start, baseline + metrics.UnderlinePosition, width, metrics.UnderlineThickness, brush));
         }
 
-        if ((segment.Kind & TextDecorations.Strikethrough) != TextDecorations.None && metrics.StrikethroughThickness > 0)
+        if ((segment.Kind & TextDecorations.Strikethrough) != TextDecorations.None && metrics.StrikethroughThickness > 0 && !segment.IsUpright)
         {
             decorations.Add(new DecorationRectangle(segment.Start, baseline - metrics.StrikethroughPosition, width, metrics.StrikethroughThickness, brush));
         }
@@ -1331,6 +1627,42 @@ internal sealed class TextLayoutEngine
         {
             decorations.Add(new DecorationRectangle(segment.Start, baseline - metrics.Ascent, width, metrics.UnderlineThickness, brush));
         }
+    }
+
+    /// <summary>Adds the rectangle of the background of a part of a line: as tall as the primary font of its style, from its ascent to its descent.</summary>
+    private void AddBackground(List<DecorationRectangle> backgrounds, List<Brush?> brushes, in DecorationSegment segment, double baseline)
+    {
+        if (segment.Style?.BackgroundBrush is not { } paint || !(segment.End > segment.Start))
+            return;
+
+        // Around the central baseline of a vertical line, which the middle of the font is on
+        var metrics = segment.Style.Fonts.Primary.GetMetrics(GetSize(segment.Style));
+        var top = _hasCentralBaseline ? baseline - ((metrics.Ascent + metrics.Descent) / 2) : baseline - metrics.Ascent;
+        backgrounds.Add(new DecorationRectangle(segment.Start, top, segment.End - segment.Start, metrics.Ascent + metrics.Descent, GetBrushIndex(brushes, paint)));
+    }
+
+    /// <summary>Gets the rank of a placeholder among the placeholders of the text, from the index of its span.</summary>
+    private int GetPlaceholderIndex(int span)
+    {
+        var index = 0;
+        for (var i = 0; i < span; i++)
+        {
+            index += _spans[i].IsPlaceholder ? 1 : 0;
+        }
+
+        return index;
+    }
+
+    private static int GetOutlineIndex(List<Pen> outlines, Pen outline)
+    {
+        for (var i = 0; i < outlines.Count; i++)
+        {
+            if (ReferenceEquals(outlines[i], outline))
+                return i;
+        }
+
+        outlines.Add(outline);
+        return outlines.Count - 1;
     }
 
     private static int GetBrushIndex(List<Brush?> brushes, Brush? brush)
@@ -1381,6 +1713,7 @@ internal sealed class TextLayoutEngine
         public TextDecorations Kind;
         public TextStyle? Style;
         public int Font;
+        public bool IsUpright;
         public double Start;
         public double End;
     }
@@ -1394,6 +1727,12 @@ internal sealed class TextLayoutEngine
         public byte Level;
         public UnicodeScript Script;
         public bool IsTabulation;
+
+        /// <summary>The span of the placeholder the item is, or -1: one character that takes the room of what the caller draws there.</summary>
+        public int Placeholder = -1;
+
+        /// <summary>The glyphs of the item are upright in a vertical line, and shaped for it; the others are on their side, shaped as in a horizontal line.</summary>
+        public bool IsUpright;
 
         /// <summary>
         /// The item is text of lines to come that was not shaped again when the line before it was made: it has no

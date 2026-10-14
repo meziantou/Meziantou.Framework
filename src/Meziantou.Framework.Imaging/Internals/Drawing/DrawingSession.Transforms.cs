@@ -7,8 +7,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// <b>Contract.</b> While a transformation lasts, a draw call draws what it would draw without it, transformed: the
 /// shape, the stroke of a pen (stroked as the path is given, then transformed, so that the pen is transformed with the
-/// path), the gradient or the image of a brush, each glyph of a text with its paints, an image, the path of a clip,
-/// and the offset and the blur of a shadow. A transformation that starts inside another one applies first. What has no
+/// path; a pen whose <see cref="Pen.ScalesWithTransform"/> is off strokes the transformed path instead), the gradient
+/// or the image of a brush, each glyph of a text with its paints, an image, the path of a clip, and the offset and the blur of a shadow. A transformation that starts inside another one applies first. What has no
 /// shape of its own is not transformed: filling or clearing the whole canvas, and drawing a layer when it ends.
 /// </para>
 /// <para>

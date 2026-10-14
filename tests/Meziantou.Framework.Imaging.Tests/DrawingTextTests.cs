@@ -1102,15 +1102,43 @@ public sealed class DrawingTextTests
         var quarterTurn = AffineTransform.CreateRotation(90).Then(AffineTransform.CreateTranslation(Height, 0));
         var turned = Render(PixelFormat.Rgba32, Height, Width, canvas => canvas.Transform(quarterTurn, inner => inner.FillText(black, rich, new PointD(4.5, 3.25))));
         Assert.HasCountGreaterThan(20, upright.Chunk(4).Select(pixel => (pixel[0], pixel[1], pixel[2])).Distinct().ToArray());
-        for (var y = 0; y < Height; y++)
+        AssertTurned(upright, turned);
+
+        // A vertical layout whose text is all on its side is that drawing too: the paints of the text are the ones of
+        // the canvas, which are not turned, so that the text has plain ones here
+        var styles = new[]
         {
-            for (var x = 0; x < Width; x++)
+            new TextStyle(Boxes, 13) { Brush = new SolidBrush(new Rgba32(200, 0, 0, 180)), Decorations = TextDecorations.Underline, Synthesis = FontSynthesis.Bold },
+            new TextStyle(curves, 12) { Decorations = TextDecorations.Strikethrough },
+            new TextStyle(colors, 14) { ColorPaletteIndex = 1 },
+            new TextStyle(new FontStack(curves, Boxes), 11) { Synthesis = FontSynthesis.Oblique, Outline = new Pen(new SolidBrush(new Rgba32(0, 90, 0)), 1.5) },
+        };
+        var text = new RichTextBuilder().Append("AB ", styles[0]).Append("OP ", styles[1]).Append("DE", styles[2]).Append(" QA", styles[3]).Build();
+        var horizontal = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = 70 });
+        var vertical = TextLayout.Create(text, new TextLayoutOptions { MaxHeight = 70, WritingMode = TextWritingMode.VerticalRightToLeft, Orientation = TextOrientation.Sideways });
+        Assert.True(vertical.HasColorGlyphs);
+        Assert.Equal(horizontal.Height, vertical.Width, 1e-9);
+        upright = Render(PixelFormat.Rgba32, Width, Height, canvas => canvas.FillText(black, horizontal, new PointD(4.5, 3.25)));
+        Assert.HasCountGreaterThan(20, upright.Chunk(4).Select(pixel => (pixel[0], pixel[1], pixel[2])).Distinct().ToArray());
+        AssertTurned(upright, Render(PixelFormat.Rgba32, Height, Width, canvas => canvas.FillText(black, vertical, new PointD(Height - 3.25 - vertical.Width, 4.5))));
+
+        // And its path is the path of the horizontal layout, turned
+        Assert.Equal(
+            Render(PixelFormat.Rgba32, Height, Width, canvas => canvas.Fill(black, horizontal.ToPath(new PointD(4.5, 3.25)).Transform(quarterTurn))),
+            Render(PixelFormat.Rgba32, Height, Width, canvas => canvas.Fill(black, vertical.ToPath(new PointD(Height - 3.25 - vertical.Width, 4.5)))));
+
+        static void AssertTurned(int[] upright, int[] turned)
+        {
+            for (var y = 0; y < Height; y++)
             {
-                var expected = upright.AsSpan(((y * Width) + x) * 4, 4);
-                var actual = turned.AsSpan(((x * Height) + (Height - 1 - y)) * 4, 4);
-                for (var c = 0; c < 4; c++)
+                for (var x = 0; x < Width; x++)
                 {
-                    Assert.InRange(actual[c], expected[c] - 2, expected[c] + 2, message: $"pixel ({x}, {y}), sample {c}");
+                    var expected = upright.AsSpan(((y * Width) + x) * 4, 4);
+                    var actual = turned.AsSpan(((x * Height) + (Height - 1 - y)) * 4, 4);
+                    for (var c = 0; c < 4; c++)
+                    {
+                        Assert.InRange(actual[c], expected[c] - 2, expected[c] + 2, message: $"pixel ({x}, {y}), sample {c}");
+                    }
                 }
             }
         }
@@ -1120,6 +1148,345 @@ public sealed class DrawingTextTests
         Assert.Equal(
             Render(PixelFormat.Rgba32, 120, 90, canvas => canvas.FillText(brush, layout, route.Transform(AffineTransform.CreateTranslation(12, 20)))),
             Render(PixelFormat.Rgba32, 120, 90, canvas => canvas.Transform(AffineTransform.CreateTranslation(12, 20), inner => inner.FillText(brush, layout, route))));
+    }
+
+    [Fact]
+    public void TheBackgroundOfAStyleIsPaintedBehindItsTextOnEachLine()
+    {
+        // A advances by 16 and B by 8, 2 closer after A (the spans only differ by what is painted: they are shaped
+        // together), a space by 8. The kerning of a kern table is shared between the advance of the first glyph and
+        // the position of the second one: the pen is at 15 before B, which is drawn 1 before it, 22 before the space,
+        // 30 before the second A, and 46 after it. The background of the middle span goes from 15 to 46, the
+        // advances of its glyphs, and from the ascent to the descent of the font.
+        var plain = new TextStyle(Boxes, 16);
+        var red = new SolidBrush(new Rgba32(255, 0, 0));
+        var marked = new TextStyle(Boxes, 16) { BackgroundBrush = red };
+        var layout = TextLayout.Create(new RichTextBuilder().Append("A", plain).Append("B A", marked).Append("A", plain).Build());
+        Assert.Equal(62, layout.Width);
+        Assert.Equal(RectangleD.FromLTRB(2, 0, 60, 16), layout.InkBounds);
+        var expected = Render(PixelFormat.Rgb24, 80, 24, canvas =>
+        {
+            canvas.FillRectangle(red, new RectangleD(18, 4, 31, 16));
+            canvas.FillRectangle(White, new RectangleD(5, 5, 12, 12));
+            canvas.FillRectangle(White, new RectangleD(18, 9, 6, 8));
+            canvas.FillRectangle(White, new RectangleD(35, 5, 12, 12));
+            canvas.FillRectangle(White, new RectangleD(51, 5, 12, 12));
+        });
+        Assert.Equal(expected, Render(PixelFormat.Rgb24, 80, 24, canvas => canvas.FillText(White, layout, new PointD(3, 4))));
+
+        // The background is under the whole text: a glyph of another span that reaches over it is not hidden
+        var over = TextLayout.Create(new RichTextBuilder().Append("A", new TextStyle(Boxes, 16) { LetterSpacing = -8 }).Append("B", marked).Build());
+        Assert.Equal(
+            Render(PixelFormat.Rgb24, 40, 24, canvas =>
+            {
+                canvas.FillRectangle(red, new RectangleD(11, 4, 8, 16));
+                canvas.FillRectangle(White, new RectangleD(5, 5, 12, 12));
+                canvas.FillRectangle(White, new RectangleD(12, 9, 6, 8));
+            }),
+            Render(PixelFormat.Rgb24, 40, 24, canvas => canvas.FillText(White, over, new PointD(3, 4))));
+
+        // It is not an outline of the text: a stroke and the path of the layout leave it out
+        var pen = new Pen(White, 1);
+        Assert.Equal(
+            Render(PixelFormat.Rgb24, 80, 24, canvas => canvas.StrokeText(pen, TextLayout.Create("AB AA", Boxes, 16), new PointD(3, 4))),
+            Render(PixelFormat.Rgb24, 80, 24, canvas => canvas.StrokeText(pen, layout, new PointD(3, 4))));
+        Assert.Equal(TextLayout.Create("AB AA", Boxes, 16).ToPath(default).ToSvgPathData(), layout.ToPath(default).ToSvgPathData());
+
+        // One rectangle per line, without the white space that hangs at the end of a wrapped line; the text of the
+        // style is painted with its own brush over it
+        var blue = new SolidBrush(new Rgba32(0, 0, 255));
+        var both = new TextStyle(Boxes, 16) { BackgroundBrush = red, Brush = blue };
+        var wrapped = TextLayout.Create("A A", both, new TextLayoutOptions { MaxWidth = 20 });
+        Assert.Equal(2, wrapped.LineCount);
+        Assert.Equal(
+            Render(PixelFormat.Rgb24, 40, 40, canvas =>
+            {
+                canvas.FillRectangle(red, new RectangleD(1, 2, 16, 16));
+                canvas.FillRectangle(red, new RectangleD(1, 18, 16, 16));
+                canvas.FillRectangle(blue, new RectangleD(3, 3, 12, 12));
+                canvas.FillRectangle(blue, new RectangleD(3, 19, 12, 12));
+            }),
+            Render(PixelFormat.Rgb24, 40, 40, canvas => canvas.FillText(White, wrapped, new PointD(1, 2))));
+
+        // A line taller than its font does not make the background taller, and a background alone draws: a space
+        var tall = TextLayout.Create(" ", marked, new TextLayoutOptions { LineHeight = 30 });
+        Assert.Equal(new RectangleD(0, 7, 8, 16), tall.InkBounds);
+        Assert.Equal(
+            Render(PixelFormat.Rgb24, 20, 40, canvas => canvas.FillRectangle(red, new RectangleD(2, 9, 8, 16))),
+            Render(PixelFormat.Rgb24, 20, 40, canvas => canvas.FillText(White, tall, new PointD(2, 2))));
+
+        // Along a straight path, it is the background of the text drawn at a point
+        var baseline = new VectorPathBuilder().MoveTo(3, 17).LineTo(79, 17).Build();
+        Assert.Equal(expected, Render(PixelFormat.Rgb24, 80, 24, canvas => canvas.FillText(White, layout, baseline)));
+    }
+
+    [Fact]
+    public void ThePenOfAStyleStrokesItsGlyphsOnceTheTextIsFilled()
+    {
+        // The first A has a pen: its outline, the rectangle from (2, 1) to (14, 13), is stroked over the filled text
+        var red = new SolidBrush(new Rgba32(255, 0, 0));
+        var pen = new Pen(red, 2);
+        var outlined = new TextStyle(Boxes, 16) { Outline = pen };
+        var plain = new TextStyle(Boxes, 16);
+        var layout = TextLayout.Create(new RichTextBuilder().Append("A", outlined).Append("A", plain).Build());
+        var origin = new PointD(4, 4);
+        var actual = Render(PixelFormat.Rgb24, 48, 24, canvas => canvas.FillText(White, layout, origin));
+        Assert.Equal(
+            Render(PixelFormat.Rgb24, 48, 24, canvas =>
+            {
+                canvas.FillRectangle(White, new RectangleD(6, 5, 12, 12));
+                canvas.FillRectangle(White, new RectangleD(22, 5, 12, 12));
+                canvas.StrokeRectangle(pen, new RectangleD(6, 5, 12, 12));
+            }),
+            actual);
+
+        // Half of the pen is over the edge of the glyph, half around it; the other glyph has no stroke
+        Assert.Equal([255, 0, 0], actual.AsSpan(((10 * 48) + 5) * 3, 3).ToArray());
+        Assert.Equal([255, 0, 0], actual.AsSpan(((10 * 48) + 6) * 3, 3).ToArray());
+        Assert.Equal([255, 255, 255], actual.AsSpan(((10 * 48) + 7) * 3, 3).ToArray());
+        Assert.Equal([0, 0, 0], actual.AsSpan(((10 * 48) + 21) * 3, 3).ToArray());
+
+        // A pen around the glyphs leaves them as they are filled; the stroke is the one of the outline of the glyph
+        var around = new Pen(red, 2) { Alignment = PenAlignment.Outside };
+        var contour = TextLayout.Create("A", new TextStyle(Boxes, 16) { Outline = around });
+        actual = Render(PixelFormat.Rgb24, 48, 24, canvas => canvas.FillText(White, contour, origin));
+        Assert.Equal(
+            Render(PixelFormat.Rgb24, 48, 24, canvas =>
+            {
+                canvas.FillRectangle(White, new RectangleD(6, 5, 12, 12));
+                canvas.StrokeRectangle(around, new RectangleD(6, 5, 12, 12));
+            }),
+            actual);
+        Assert.Equal([255, 0, 0], actual.AsSpan(((10 * 48) + 4) * 3, 3).ToArray());
+        Assert.Equal([255, 255, 255], actual.AsSpan(((10 * 48) + 6) * 3, 3).ToArray());
+
+        // Several pens, a background and brushes of the spans: the backgrounds, the fills, then the strokes
+        var blue = new SolidBrush(new Rgba32(0, 0, 255));
+        var green = new SolidBrush(new Rgba32(0, 255, 0));
+        var thin = new Pen(green, 1);
+        var rich = TextLayout.Create(new RichTextBuilder()
+            .Append("A", new TextStyle(Boxes, 16) { Outline = pen, BackgroundBrush = blue })
+            .Append("C", new TextStyle(Boxes, 16) { Outline = thin, Brush = red })
+            .Build());
+        Assert.Equal(
+            Render(PixelFormat.Rgb24, 48, 24, canvas =>
+            {
+                canvas.FillRectangle(blue, new RectangleD(4, 4, 16, 16));
+                canvas.FillRectangle(White, new RectangleD(6, 5, 12, 12));
+                canvas.FillRectangle(red, new RectangleD(20, 4, 12, 16));
+                canvas.StrokeRectangle(pen, new RectangleD(6, 5, 12, 12));
+                canvas.StrokeRectangle(thin, new RectangleD(20, 4, 12, 16));
+            }),
+            Render(PixelFormat.Rgb24, 48, 24, canvas => canvas.FillText(White, rich, origin)));
+
+        // The pen of a call strokes every outline, whatever the pens of the styles
+        Assert.Equal(
+            Render(PixelFormat.Rgb24, 48, 24, canvas => canvas.StrokeText(thin, TextLayout.Create("AA", Boxes, 16), origin)),
+            Render(PixelFormat.Rgb24, 48, 24, canvas => canvas.StrokeText(thin, layout, origin)));
+
+        // Along a straight path, and under a transformation, as at a point
+        var baseline = new VectorPathBuilder().MoveTo(4, 17).LineTo(47, 17).Build();
+        Assert.Equal(
+            Render(PixelFormat.Rgb24, 48, 24, canvas => canvas.FillText(White, rich, origin)),
+            Render(PixelFormat.Rgb24, 48, 24, canvas => canvas.FillText(White, rich, baseline)));
+        Assert.Equal(
+            Render(PixelFormat.Rgb24, 48, 24, canvas => canvas.FillText(White, rich, origin)),
+            Render(PixelFormat.Rgb24, 48, 24, canvas => canvas.Transform(AffineTransform.CreateTranslation(4, 4), inner => inner.FillText(White, rich, default))));
+
+        // A text whose parts exceed the limit of the image changes no pixel: every part is prepared before the
+        // first one is painted
+        using var probe = new Image<Rgb24>(48, 24, new Rgb24(0, 0, 0));
+        long session = 0;
+        probe.Draw(_ => session = probe.Owner.Scope.LiveBytes, Ct);
+        using var tight = new Image<Rgb24>(48, 24, new Rgb24(0, 0, 0), new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = session + 2048 } });
+        var thrown = false;
+        tight.Draw(
+            canvas =>
+            {
+                try
+                {
+                    canvas.FillText(White, TextLayout.Create(new RichTextBuilder().Append("A", new TextStyle(Boxes, 16) { BackgroundBrush = blue }).Append("C", new TextStyle(Boxes, 16) { Outline = around }).Build()), origin);
+                }
+                catch (ImageResourceLimitException)
+                {
+                    thrown = true;
+                }
+            },
+            Ct);
+        Assert.True(thrown);
+        Assert.All(DrawingTestSupport.ReadSamples(tight.Frames[0]), sample => Assert.Equal(0, sample));
+    }
+
+    [Fact]
+    public void ATextIsFittedToABoxByTheLargestScaleThatFits()
+    {
+        var style = new TextStyle(Boxes, 16);
+
+        // A text that fits is not changed: it is never made larger
+        var fits = TextLayout.CreateToFit("AAAA", style, 100, 100);
+        Assert.Equal(1, fits.Scale);
+        Assert.Equal(64, fits.Width);
+        Assert.Equal(16, fits.Height);
+        Assert.Equal(1, TextLayout.Create("AAAA", style).Scale);
+
+        // One word of 64 pixels in a box of 32: half its size, exactly
+        var half = TextLayout.CreateToFit("AAAA", style, 32, 100);
+        Assert.Equal(0.5, half.Scale);
+        Assert.Equal(32, half.Width);
+        Assert.Equal(8, half.Height);
+        Assert.Equal(6.5, half.Baseline);
+        Assert.False(half.IsTruncated);
+        Assert.Equal(
+            Render(PixelFormat.Gray8, 40, 12, canvas => canvas.FillText(White, TextLayout.Create("AAAA", Boxes, 8), new PointD(1, 1))),
+            Render(PixelFormat.Gray8, 40, 12, canvas => canvas.FillText(White, half, new PointD(1, 1))));
+
+        // The height limits a text too
+        var low = TextLayout.CreateToFit("AAAA", style, double.PositiveInfinity, 4);
+        Assert.Equal(0.25, low.Scale);
+        Assert.Equal(16, low.Width);
+
+        // Lines are wrapped at the width of the box. Four words of 16 and three spaces of 8, in a box of 40 by 20:
+        // two lines fit at 5/8 of the size (the first one is three words, 64 * 5 / 8 = 40 wide, and the two are
+        // 32 * 5 / 8 = 20 tall), where one line would need 40 / 88
+        var wrapped = TextLayout.CreateToFit("A A A A", style, 40, 20);
+        Assert.Equal(0.625, wrapped.Scale);
+        Assert.Equal(2, wrapped.LineCount);
+        Assert.Equal(40, wrapped.Width);
+        Assert.Equal(20, wrapped.Height);
+        Assert.Equal(1, TextLayout.CreateToFit("A A A A", style, 40, 32).Scale);
+
+        // Without wrapping, or on one line, the text is fitted on the lines it is allowed: 88 pixels in 44
+        var single = TextLayout.CreateToFit("A A A A", style, 44, 100, new TextLayoutOptions { Wrapping = TextWrapping.NoWrap });
+        Assert.Equal(0.5, single.Scale);
+        Assert.Equal(1, single.LineCount);
+        var oneLine = TextLayout.CreateToFit("A A A A", style, 44, 100, new TextLayoutOptions { MaxLines = 1 });
+        Assert.InRange(oneLine.Scale, 0.5 - (1.0 / 4096), 0.5);
+        Assert.Equal(1, oneLine.LineCount);
+        Assert.False(oneLine.IsTruncated);
+        Assert.InRange(oneLine.Width, 43.9, 44);
+
+        // Every length of the styles has the scale: the sizes of every span, the spacings, the indent, the height
+        // of the lines; the box is the box
+        var spaced = TextLayout.CreateToFit("AA", new TextStyle(Boxes, 16) { LetterSpacing = 4 }, 20, 100, new TextLayoutOptions { LineHeight = 30, FirstLineIndent = 0 });
+        Assert.Equal(0.5, spaced.Scale);
+        Assert.Equal(20, spaced.Width);
+        Assert.Equal(15, spaced.Height);
+        var rich = new RichTextBuilder().Append("A", new TextStyle(Boxes, 16)).Append("A", new TextStyle(Boxes, 32)).Build();
+        var richFit = TextLayout.CreateToFit(rich, 24, 100);
+        Assert.Equal(0.5, richFit.Scale);
+        Assert.Equal(24, richFit.Width);
+        Assert.Equal(16, richFit.Height);
+
+        // A text that does not fit at its smallest scale is laid out at it, in the box, and cut as the options say
+        var small = TextLayout.CreateToFit("AAAA", style, 4, 4, minimumScale: 0.25);
+        Assert.Equal(0.25, small.Scale);
+        Assert.Equal(16, small.Width);
+        var cut = TextLayout.CreateToFit("A A A A A A", style, 20, 9, new TextLayoutOptions { Trimming = TextTrimming.Character }, minimumScale: 0.5);
+        Assert.Equal(0.5, cut.Scale);
+        Assert.Equal(1, cut.LineCount);
+        Assert.True(cut.IsTruncated);
+
+        // An empty text fits any box
+        Assert.Equal(1, TextLayout.CreateToFit("", style, 1, 16).Scale);
+        Assert.Equal(0.5, TextLayout.CreateToFit("", style, 1, 8).Scale);
+
+        Assert.Throws<ArgumentNullException>("text", () => TextLayout.CreateToFit(null!, style, 10, 10));
+        Assert.Throws<ArgumentNullException>("style", () => TextLayout.CreateToFit("A", null!, 10, 10));
+        Assert.Throws<ArgumentNullException>("text", () => TextLayout.CreateToFit((RichText)null!, 10, 10));
+        Assert.Throws<ArgumentException>("text", () => TextLayout.CreateToFit(new RichTextBuilder().Build(), 10, 10));
+        foreach (var size in (double[])[0, -1, double.NaN, double.NegativeInfinity])
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("width", () => TextLayout.CreateToFit("A", style, size, 10));
+            Assert.Throws<ArgumentOutOfRangeException>("height", () => TextLayout.CreateToFit("A", style, 10, size));
+        }
+
+        foreach (var scale in (double[])[0, -0.5, 1.5, double.NaN])
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("minimumScale", () => TextLayout.CreateToFit("A", style, 10, 10, minimumScale: scale));
+        }
+    }
+
+    [Fact]
+    public void APlaceholderTakesItsRoomInTheLineAndGivesItsRectangle()
+    {
+        // Between A and B, something 10 wide and 8 tall that stands on the baseline: B is 10 further, without the
+        // kerning it has after A, and the line is as tall as the font
+        var style = new TextStyle(Boxes, 16);
+        var text = new RichTextBuilder().Append("A", style).AppendPlaceholder(10, 8, 8, style).Append("B", style).Build();
+        Assert.Equal("A\uFFFCB", text.Text);
+        Assert.Equal(3, text.Spans.Count);
+        Assert.False(text.Spans[0].IsPlaceholder);
+        Assert.True(text.Spans[1].IsPlaceholder);
+        Assert.Equal(1, text.Spans[1].Start);
+        Assert.Equal(1, text.Spans[1].Length);
+        Assert.NotEqual(text.Spans[1], new RichTextBuilder().Append("A", style).AppendPlaceholder(10, 9, 8, style).Build().Spans[1]);
+        var layout = TextLayout.Create(text);
+        Assert.Equal(34, layout.Width);
+        Assert.Equal(16, layout.Height);
+        Assert.False(layout.HasMissingGlyphs);
+        Assert.Equal([new RectangleD(16, 5, 10, 8)], layout.Placeholders);
+
+        // Nothing is drawn there: the caller does
+        Assert.Equal(
+            Render(PixelFormat.Gray8, 48, 20, canvas =>
+            {
+                canvas.FillRectangle(White, new RectangleD(3, 3, 12, 12));
+                canvas.FillRectangle(White, new RectangleD(28, 7, 6, 8));
+            }),
+            Render(PixelFormat.Gray8, 48, 20, canvas => canvas.FillText(White, layout, new PointD(1, 2))));
+
+        // It is a character of the text: a place of a caret, a part of a selection, and what a click finds
+        Assert.Equal(new RectangleD(16, 0, 0, 16), layout.GetCaretRectangle(1));
+        Assert.Equal(new RectangleD(26, 0, 0, 16), layout.GetCaretRectangle(2));
+        Assert.Equal([new RectangleD(16, 0, 10, 16)], layout.GetSelectionRectangles(1, 1));
+        Assert.Equal(1, layout.HitTest(new PointD(18, 8)).TextIndex);
+
+        // The line is as tall as what stands on its baseline and as deep as what goes below it: 20 above, 10 below
+        var tall = TextLayout.Create(new RichTextBuilder().Append("A", style).AppendPlaceholder(10, 30, 20, style).Build());
+        Assert.Equal(30, tall.Height);
+        Assert.Equal(20, tall.Baseline);
+        Assert.Equal([new RectangleD(16, 0, 10, 30)], tall.Placeholders);
+        Assert.Equal(
+            Render(PixelFormat.Gray8, 48, 34, canvas => canvas.FillRectangle(White, new RectangleD(3, 10, 12, 12))),
+            Render(PixelFormat.Gray8, 48, 34, canvas => canvas.FillText(White, tall, new PointD(1, 2))));
+
+        // A line can end before and after a placeholder, and two that follow each other are two, in the order of the text
+        var two = new RichTextBuilder().Append("A", style).AppendPlaceholder(10, 8, 8, style).AppendPlaceholder(12, 4, 4, style).Append("A", style).Build();
+        Assert.Equal(4, two.Spans.Count);
+        var wrapped = TextLayout.Create(two, new TextLayoutOptions { MaxWidth = 24 });
+        Assert.Equal(3, wrapped.LineCount);
+        Assert.Equal([new RectangleD(0, 16 + 5, 10, 8), new RectangleD(10, 16 + 9, 12, 4)], wrapped.Placeholders);
+
+        // A placeholder the layout does not hold has no rectangle
+        var cutLayout = TextLayout.Create(two, new TextLayoutOptions { MaxWidth = 24, MaxLines = 1 });
+        Assert.True(cutLayout.IsTruncated);
+        Assert.Equal([RectangleD.Empty, RectangleD.Empty], cutLayout.Placeholders);
+        Assert.Empty(TextLayout.Create("A", style).Placeholders);
+
+        // The background and the decorations of its style go behind and under it, and it is centered and scaled
+        // with the text
+        var red = new SolidBrush(new Rgba32(255, 0, 0));
+        var marked = new TextStyle(Boxes, 16) { BackgroundBrush = red };
+        var badge = TextLayout.Create(new RichTextBuilder().AppendPlaceholder(10, 8, 8, marked).Build(), new TextLayoutOptions { MaxWidth = 30, Alignment = TextAlignment.Center });
+        Assert.Equal([new RectangleD(10, 5, 10, 8)], badge.Placeholders);
+        Assert.Equal(new RectangleD(10, 0, 10, 16), badge.InkBounds);
+        var fitted = TextLayout.CreateToFit(text, 17, 100, new TextLayoutOptions { Wrapping = TextWrapping.NoWrap });
+        Assert.Equal(0.5, fitted.Scale);
+        Assert.Equal([new RectangleD(8, 2.5, 5, 4)], fitted.Placeholders);
+
+        // A text that follows a placeholder with the same style is another span
+        var after = new RichTextBuilder().AppendPlaceholder(1, 1, 1, style).Append("A", style).Append("A", style).Build();
+        Assert.Equal(2, after.Spans.Count);
+        Assert.Equal(2, after.Spans[1].Length);
+
+        var builder = new RichTextBuilder();
+        Assert.Throws<ArgumentNullException>("style", () => builder.AppendPlaceholder(1, 1, 1, null!));
+        Assert.Throws<ArgumentOutOfRangeException>("width", () => builder.AppendPlaceholder(-1, 1, 1, style));
+        Assert.Throws<ArgumentOutOfRangeException>("width", () => builder.AppendPlaceholder(double.NaN, 1, 1, style));
+        Assert.Throws<ArgumentOutOfRangeException>("height", () => builder.AppendPlaceholder(1, 65537, 1, style));
+        Assert.Throws<ArgumentOutOfRangeException>("baseline", () => builder.AppendPlaceholder(1, 1, double.PositiveInfinity, style));
+        Assert.Throws<ArgumentOutOfRangeException>("baseline", () => builder.AppendPlaceholder(1, 1, -65537, style));
+        Assert.Empty(builder.Build().Spans);
     }
 
     private static int[] Render(PixelFormat format, int width, int height, DrawingAction action)

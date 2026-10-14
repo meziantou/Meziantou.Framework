@@ -176,7 +176,7 @@ internal sealed partial class DrawingSession
             if (isInner)
             {
                 // On the drawing itself, where it is: the clip applies when the layer is drawn
-                level.Frames![0].CompositePixels(storage, top + y, left, coverage, new DrawingSource(color, CompositeMode.SourceAtop, transfer: _transfer));
+                level.Frames![0].CompositePixels(storage, top + y, left, coverage, new DrawingSource(color, CompositeMode.SourceAtop, transfer: _transfer, curves: _curves));
                 continue;
             }
 
@@ -185,7 +185,7 @@ internal sealed partial class DrawingSession
             if (_clipDepth != 0 && !ApplyClip(top + y, ref column, ref run, out _))
                 continue;
 
-            var paint = new DrawingSource(color, transfer: _transfer);
+            var paint = new DrawingSource(color, transfer: _transfer, curves: _curves);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], top + y, column, run, paint);

@@ -17,6 +17,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// whose blur reads transparent pixels only is not written.
 /// </para>
 /// <para>
+/// <b>Linear light.</b> When the paints are combined in linear light (<see cref="DrawingCanvas.Compositing(CompositingSpace, DrawingAction)"/>),
+/// what is blurred is light: with <c>l</c> the light the 16-bit color <c>c</c> decodes to (the function of the
+/// transfer characteristics of the image, or the tone curve of its channel in the ICC profile), <c>p = l a</c>, and
+/// the colors of the result are <c>floor(65535 encode(P / A) + 1/2 + 2^-20)</c>. The alpha is blurred as it is.
+/// </para>
+/// <para>
 /// <b>Method.</b> The pixels are blurred in place, from the first row to the last one. The blurred rows a row needs
 /// (as many as the blur has weights) are kept in a ring: each row of the pixels is read once, before the rows that are
 /// written reach it. The working storage is rented before a pixel changes, from the allocation scope of the image,
@@ -128,16 +134,21 @@ internal sealed partial class DrawingSession
         _blurScratch ??= ResampleWeights.Rent<double>(scope, 8L * Width);
         _blurPixels ??= ResampleWeights.Rent<Rgba64>(scope, 2L * Width);
         _blurColors ??= ResampleWeights.Rent<ushort>(scope, 4L * Width);
-        if (_blurCoverage is null)
-        {
-            _blurCoverage = ResampleWeights.Rent<uint>(scope, Width);
-            var coverage = unsafe(MemoryMarshal.Cast<byte, uint>(_blurCoverage.Span))[..Width];
-            coverage.Fill(CoverageRasterizer.FullCoverage);
-        }
-
+        EnsureFullCoverageRow();
         if (_clipDepth != 0)
         {
             EnsureCoverageRow();
+        }
+    }
+
+    /// <summary>Rents the row of full coverages that pixels are replaced with, when the session has none yet.</summary>
+    private void EnsureFullCoverageRow()
+    {
+        if (_blurCoverage is null)
+        {
+            _blurCoverage = ResampleWeights.Rent<uint>(_image.Owner.Scope, Width);
+            var coverage = unsafe(MemoryMarshal.Cast<byte, uint>(_blurCoverage.Span))[..Width];
+            coverage.Fill(CoverageRasterizer.FullCoverage);
         }
     }
 
@@ -168,6 +179,25 @@ internal sealed partial class DrawingSession
         var colors = unsafe(MemoryMarshal.Cast<byte, ushort>(_blurColors!.Span))[..(4 * width)];
         ReadOnlySpan<uint> full = unsafe(MemoryMarshal.Cast<byte, uint>(_blurCoverage!.Span))[..width];
         var firstColumn = area.Left - radius - bounds.Left;
+
+        // In linear light, the light of every 16-bit sample of each channel; none on the stored values
+        var transfer = _transfer;
+        var curves = _curves;
+        var isLinear = transfer != 0 || curves is not null;
+        ReadOnlySpan<double> decodeRed = default;
+        ReadOnlySpan<double> decodeGreen = default;
+        ReadOnlySpan<double> decodeBlue = default;
+        if (curves is not null)
+        {
+            decodeRed = curves.GetDecode16(0);
+            decodeGreen = curves.GetDecode16(1);
+            decodeBlue = curves.GetDecode16(2);
+        }
+        else if (isLinear)
+        {
+            decodeRed = decodeGreen = decodeBlue = CicpTransfer.GetDecode16(transfer);
+        }
+
         for (var y = area.Top; y < area.Bottom; y++)
         {
             if ((y & 15) == 0)
@@ -189,7 +219,7 @@ internal sealed partial class DrawingSession
                 if (ringIndexes[slot] != row && ringIndexes[slot] != ~row)
                 {
                     frame.ReadRgba64(storage, row, bounds.Left, source);
-                    ringIndexes[slot] = BlurRow(source, premultiplied, weights, firstColumn, blurred) ? row : ~row;
+                    ringIndexes[slot] = BlurRow(source, premultiplied, weights, firstColumn, blurred, decodeRed, decodeGreen, decodeBlue) ? row : ~row;
                 }
 
                 // A row without any opacity adds nothing
@@ -211,7 +241,22 @@ internal sealed partial class DrawingSession
             {
                 var sum = sums.Slice(x * 4, 4);
                 var alpha = RoundBlur(sum[3]);
-                samples[x] = alpha == 0 ? default : new Rgba64(RoundBlur(sum[0] * ushort.MaxValue / sum[3]), RoundBlur(sum[1] * ushort.MaxValue / sum[3]), RoundBlur(sum[2] * ushort.MaxValue / sum[3]), alpha);
+                if (alpha == 0)
+                {
+                    samples[x] = default;
+                }
+                else if (isLinear)
+                {
+                    samples[x] = new Rgba64(
+                        RoundBlur(EncodeLight(transfer, curves, 0, sum[0] / sum[3]) * ushort.MaxValue),
+                        RoundBlur(EncodeLight(transfer, curves, 1, sum[1] / sum[3]) * ushort.MaxValue),
+                        RoundBlur(EncodeLight(transfer, curves, 2, sum[2] / sum[3]) * ushort.MaxValue),
+                        alpha);
+                }
+                else
+                {
+                    samples[x] = new Rgba64(RoundBlur(sum[0] * ushort.MaxValue / sum[3]), RoundBlur(sum[1] * ushort.MaxValue / sum[3]), RoundBlur(sum[2] * ushort.MaxValue / sum[3]), alpha);
+                }
             }
 
             frame.ConvertDrawingColors(samples, colors);
@@ -236,9 +281,13 @@ internal sealed partial class DrawingSession
     /// <param name="weights">The weights of the blur.</param>
     /// <param name="firstColumn">The pixel of the row the first weight of the first pixel of the area applies to.</param>
     /// <param name="blurred">The result: four values per pixel of the area.</param>
+    /// <param name="decodeRed">The light of every 16-bit red sample when the blur adds light, or an empty span when it adds the stored values.</param>
+    /// <param name="decodeGreen">The light of every 16-bit green sample.</param>
+    /// <param name="decodeBlue">The light of every 16-bit blue sample.</param>
     /// <returns><see langword="false"/> when every pixel of the row is transparent: the result is not written.</returns>
-    private static bool BlurRow(ReadOnlySpan<Rgba64> source, Span<double> premultiplied, ReadOnlySpan<double> weights, int firstColumn, Span<float> blurred)
+    private static bool BlurRow(ReadOnlySpan<Rgba64> source, Span<double> premultiplied, ReadOnlySpan<double> weights, int firstColumn, Span<float> blurred, ReadOnlySpan<double> decodeRed, ReadOnlySpan<double> decodeGreen, ReadOnlySpan<double> decodeBlue)
     {
+        var isLinear = !decodeRed.IsEmpty;
         var any = false;
         for (var i = 0; i < source.Length; i++)
         {
@@ -246,9 +295,19 @@ internal sealed partial class DrawingSession
             var entry = premultiplied.Slice(i * 4, 4);
             double alpha = pixel.A;
             any |= pixel.A != 0;
-            entry[0] = pixel.R * alpha / ushort.MaxValue;
-            entry[1] = pixel.G * alpha / ushort.MaxValue;
-            entry[2] = pixel.B * alpha / ushort.MaxValue;
+            if (isLinear)
+            {
+                entry[0] = decodeRed[pixel.R] * alpha;
+                entry[1] = decodeGreen[pixel.G] * alpha;
+                entry[2] = decodeBlue[pixel.B] * alpha;
+            }
+            else
+            {
+                entry[0] = pixel.R * alpha / ushort.MaxValue;
+                entry[1] = pixel.G * alpha / ushort.MaxValue;
+                entry[2] = pixel.B * alpha / ushort.MaxValue;
+            }
+
             entry[3] = alpha;
         }
 
@@ -280,6 +339,10 @@ internal sealed partial class DrawingSession
 
         return true;
     }
+
+    /// <summary>Encodes light to a fraction of the largest sample, with the function of the image or the tone curve of a channel of its profile.</summary>
+    private static double EncodeLight(byte transfer, LinearLightCurves? curves, int channel, double light)
+        => curves is null ? CicpTransfer.Encode(transfer, light) : curves.Encode(channel, light);
 
     // Written so that a value that is not a number is zero
     private static ushort RoundBlur(double value)

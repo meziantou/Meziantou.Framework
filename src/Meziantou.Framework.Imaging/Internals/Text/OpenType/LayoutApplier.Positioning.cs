@@ -11,9 +11,11 @@ internal sealed partial class LayoutApplier
     private const int XPlacement = 0x0001;
     private const int YPlacement = 0x0002;
     private const int XAdvance = 0x0004;
+    private const int YAdvance = 0x0008;
     private const int XPlacementDevice = 0x0010;
     private const int YPlacementDevice = 0x0020;
     private const int XAdvanceDevice = 0x0040;
+    private const int YAdvanceDevice = 0x0080;
     private const int VariationIndexFormat = 0x8000;
 
     private static int GetValueRecordLength(int format) => BitOperations.PopCount((uint)(format & 0xFF)) * 2;
@@ -26,7 +28,7 @@ internal sealed partial class LayoutApplier
     /// <param name="position">The position of the glyph.</param>
     private void ApplyValue(ReadOnlySpan<byte> data, int parent, int record, int format, ref GlyphPosition position)
     {
-        if (_hasVariations && (format & (XPlacementDevice | YPlacementDevice | XAdvanceDevice)) != 0)
+        if (_hasVariations && (format & (XPlacementDevice | YPlacementDevice | XAdvanceDevice | YAdvanceDevice)) != 0)
         {
             var device = record + (BitOperations.PopCount((uint)(format & 0x0F)) * 2);
             if ((format & XPlacementDevice) != 0)
@@ -43,7 +45,17 @@ internal sealed partial class LayoutApplier
 
             if ((format & XAdvanceDevice) != 0)
             {
-                position.XAdvance += GetVariationDelta(data, parent, FontBinary.UInt16(data, device));
+                if (!_isVertical)
+                {
+                    position.XAdvance += GetVariationDelta(data, parent, FontBinary.UInt16(data, device));
+                }
+
+                device += 2;
+            }
+
+            if ((format & YAdvanceDevice) != 0 && _isVertical)
+            {
+                position.YAdvance -= GetVariationDelta(data, parent, FontBinary.UInt16(data, device));
             }
         }
 
@@ -59,10 +71,21 @@ internal sealed partial class LayoutApplier
             record += 2;
         }
 
-        // Text is laid out horizontally: the vertical advance, the fourth field, is for vertical text.
+        // The advance of the direction of the text: the third field in a horizontal line, the fourth one in a
+        // vertical line, where the pen moves down as the advance grows and the y axis of the font goes up.
         if ((format & XAdvance) != 0)
         {
-            position.XAdvance += FontBinary.Int16(data, record);
+            if (!_isVertical)
+            {
+                position.XAdvance += FontBinary.Int16(data, record);
+            }
+
+            record += 2;
+        }
+
+        if ((format & YAdvance) != 0 && _isVertical)
+        {
+            position.YAdvance -= FontBinary.Int16(data, record);
         }
     }
 

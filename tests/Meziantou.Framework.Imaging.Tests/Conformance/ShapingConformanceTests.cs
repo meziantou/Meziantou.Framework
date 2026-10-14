@@ -41,7 +41,7 @@ public sealed class ShapingConformanceTests
         foreach (var testCase in vectors.Cases)
         {
             var text = testCase.Characters;
-            var key = id + ";" + testCase.Text + ";" + testCase.Features + (testCase.Variations is null ? "" : ";" + testCase.Variations) + (testCase.Language is null ? "" : ";" + testCase.Language);
+            var key = id + ";" + testCase.Text + ";" + testCase.Features + (testCase.Variations is null ? "" : ";" + testCase.Variations) + (testCase.Language is null ? "" : ";" + testCase.Language) + (testCase.Direction is null ? "" : ";" + testCase.Direction);
             var face = (testCase.Variations is null ? font : FontTestSupport.WithVariations(font, testCase.Variations)).Face;
             var expected = Format(testCase.Glyphs.Select(glyph => (glyph[0], glyph[1], glyph[2], glyph[3], glyph[4], glyph[5])));
 
@@ -57,9 +57,13 @@ public sealed class ShapingConformanceTests
             TextShaper.AddText(buffer, text);
             var script = GetScript(text);
 
-            // The reference shaper lays a text out in the direction of its script, and gives the glyphs from left to right.
-            var isRightToLeft = script is UnicodeScript.Arabic or UnicodeScript.Hebrew or UnicodeScript.Syriac or UnicodeScript.Nko or UnicodeScript.Adlam;
-            TextShaper.Shape(buffer, face, script, testCase.Language is null ? [] : OpenTypeLanguage.GetTags(testCase.Language), isRightToLeft, ParseFeatures(testCase.Features));
+            // The reference shaper lays a text out in the direction of its script, and gives the glyphs from left to
+            // right; a vertical line goes from top to bottom whatever the script.
+            Assert.True(testCase.Direction is null or "ttb", $"Unknown direction '{testCase.Direction}'");
+            var isVertical = testCase.Direction is not null;
+            var isRightToLeft = !isVertical && script is UnicodeScript.Arabic or UnicodeScript.Hebrew or UnicodeScript.Syriac or UnicodeScript.Nko or UnicodeScript.Adlam;
+            using var scratch = new GlyphScratch(AllocationScope.Create(ImageConfiguration.Default, "ShapingConformanceTests"));
+            TextShaper.Shape(buffer, face, script, testCase.Language is null ? [] : OpenTypeLanguage.GetTags(testCase.Language), isRightToLeft, ParseFeatures(testCase.Features), isVertical, scratch);
             var glyphs = new List<(int, int, int, int, int, int)>();
             for (var i = 0; i < buffer.Length; i++)
             {
@@ -71,7 +75,7 @@ public sealed class ShapingConformanceTests
             var isKnown = KnownDivergences.ContainsKey(key);
             if (!string.Equals(expected, actual, StringComparison.Ordinal) && !isKnown)
             {
-                failures.Add($"{testCase.Text} [{testCase.Features}] [{testCase.Variations}] [{testCase.Language}] \"{text}\"\n    expected {expected}\n    actual   {actual}");
+                failures.Add($"{testCase.Text} [{testCase.Features}] [{testCase.Variations}] [{testCase.Language}] [{testCase.Direction}] \"{text}\"\n    expected {expected}\n    actual   {actual}");
             }
             else if (string.Equals(expected, actual, StringComparison.Ordinal) && isKnown)
             {
@@ -130,7 +134,7 @@ public sealed class ShapingConformanceTests
             // The texts of one run: letters of the script with their marks, and spaces between words.
             var text = testCase.Characters;
             var runes = text.EnumerateRunes().ToArray();
-            if (testCase.Features is not null || testCase.Variations is not null
+            if (testCase.Features is not null || testCase.Variations is not null || testCase.Direction is not null
                 || UnicodeScripts.GetScript(runes[0].Value) != script || UnicodeScripts.GetScript(runes[^1].Value) is var last && last != script && last != UnicodeScript.Inherited
                 || runes.Any(rune => rune.Value != ' ' && UnicodeScripts.GetScript(rune.Value) is var runeScript && runeScript != script && runeScript != UnicodeScript.Inherited))
             {

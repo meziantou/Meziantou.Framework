@@ -748,6 +748,11 @@ internal static partial class FontCorpus
         ("T\u0308o V\u0301A A\u0327V", null),
         ("ffi", "liga=0,kern=0"),
         ("H\u2060e\u034Fl\u061Clo", null),
+
+        // A vertical line with a font that has no vertical metrics: the height of a line is the advance of every
+        // glyph, and the marks are placed on their letters
+        new("Hello, World!", null, Direction: "ttb"),
+        new("e\u0301 a\u0308\u0304 o\u0327\u0301 A\u030A \u00E9 \u00C5", null, Direction: "ttb"),
     ];
 
     private static readonly ShapingText[] CjkShapingCases =
@@ -758,6 +763,17 @@ internal static partial class FontCorpus
         ("\u300C\u65E5\u672C\u300D\u3001\u6771\u4EAC\u3002\uFF21\uFF22\uFF11", null),
         ("\u4E00\uFE00\u4E01\U000E0100", null),
         ("ABC abc 123 To AV", "-kern,palt"),
+
+        // A vertical line of upright glyphs: the vertical forms of the punctuation and of the small letters, the
+        // advance heights and the vertical origins of the font, and the features that change them on request.
+        new("\u65E5\u672C\u8A9E\u306E\u30C6\u30AD\u30B9\u30C8\u3002", null, Direction: "ttb"),
+        new("\u300C\u65E5\u672C\u300D\u3001\u6771\u4EAC\u3002\uFF21\uFF22\uFF11", null, Direction: "ttb"),
+        new("\u30FC\u3041\u3083\u3063\uFF08\uFF09\u2026\u2014 \u3000", null, Direction: "ttb"),
+        new("\u304B\u3099\u304D\u309A \u30AB\u3099\u30CF\u309A \u304C\u3071", null, Direction: "ttb"),
+        new("ABC abc 123 To AV", null, Direction: "ttb"),
+        new("\u300C\u65E5\u672C\u300D\u3001\u6771\u4EAC\u3002\u30FC", "-vert", Direction: "ttb"),
+        new("\u300C\u65E5\u672C\u300D\u3001\u6771\u4EAC\u3002\u30C6\u30AD\u30B9\u30C8", "vpal,vkrn", Direction: "ttb"),
+        new("\u3042\u3044\u3046\u30A2\u30A4\u30A6\u3001\u3002", "vhal,valt", Direction: "ttb"),
     ];
 
     private static readonly ShapingText[] BoxesShapingCases =
@@ -768,6 +784,10 @@ internal static partial class FontCorpus
         ("A\u00A0B\u2003C\u2009D", null),
         ("\u00C1 H-\u2010\u2011", null),
         ("AZB", null),
+
+        // A vertical line with a font that has no vertical metrics
+        new("ABA BA \u00C1 H", null, Direction: "ttb"),
+        new("A\u00A0B\u2003C\u2009D", null, Direction: "ttb"),
     ];
 
     // Texts shaped with instances of the variable fonts: the advances, the kerning and the marks of the positioning
@@ -789,6 +809,11 @@ internal static partial class FontCorpus
         new("\u65E5\u672C\u8A9E\u306E\u30C6\u30AD\u30B9\u30C8\u3002 ABC To AV", null, "wght=900"),
         new("\u65E5\u672C\u8A9E\u306E\u30C6\u30AD\u30B9\u30C8\u3002 ABC To AV", null, "wght=555"),
         new("ABC abc 123 To AV", "-kern,palt", "wght=700"),
+
+        // A vertical line: the advance heights and the vertical origins vary too
+        new("\u65E5\u672C\u8A9E\u306E\u30C6\u30AD\u30B9\u30C8\u3002 ABC", null, Direction: "ttb"),
+        new("\u65E5\u672C\u8A9E\u306E\u30C6\u30AD\u30B9\u30C8\u3002 ABC", null, "wght=900", Direction: "ttb"),
+        new("\u65E5\u672C\u8A9E\u306E\u30C6\u30AD\u30B9\u30C8\u3002 ABC", null, "wght=555", Direction: "ttb"),
     ];
 
     private static readonly ShapingText[] VariableBoxesShapingCases =
@@ -859,6 +884,9 @@ internal static partial class FontCorpus
         ("\u0622\u0655 \u0623\u064E \u0624\u0651\u064F \u0626\u0650 \u0644\u0622\u064E", null),
         ("\u06AF\u0654\u064F \u062E\u0654\u0658", null),
         ("\u0628\u0654\u064F \u0628\u064E\u034F\u0651 \u0628\u0651\u034F\u064E", null),
+
+        // Upright in a vertical line, the letters do not join
+        new("\u0633\u0644\u0627\u0645 \u0628\u064E", null, Direction: "ttb"),
     ];
 
     // Urdu in the hanging style: words whose letters are attached one to the next and go down to the baseline, marks
@@ -927,6 +955,10 @@ internal static partial class FontCorpus
         ("\u1113\u1161\u11A8 \u1100\u1160\u11A8 \uAC00\u11C3", "-vjmo,-tjmo"),
         ("\u1113\u1161\u11A8 \u1103\u11A5 \u1110", "-calt"),
         ("\u1100\u1161 \uAC00\u11A8 \uD55C\uAE00", "-ccmp,-liga"),
+
+        // A vertical line: syllables and letters, upright
+        new("\uD55C\uAE00 \uAC00\uAC01\uAC04 \uB098\uB2E4", null, Direction: "ttb"),
+        new("\u1112\u1161\u11AB\u1100\u1173\u11AF \u1100\u1161 \uAC00\u11A8 \u1100 \u1161 \u11A8", null, Direction: "ttb"),
     ];
 
     // The Indic scripts. Each one has the same cases, written with the letters the scripts have in common at the same
@@ -1331,6 +1363,9 @@ internal static partial class FontCorpus
         ("\u182E\u1823\u1829\u182D\u1823\u182F \u182D\u180B\u1820 \u1833\u1820\u180E\u1820 \u1820", "-calt"),
         ("\u182E\u1823\u1829\u182D\u1823\u182F \u182D\u180B\u1820 \u1833\u1820\u180E\u1820 \u1820", "-rlig,-ccmp"),
         ("\u182E\u1823\u1829\u182D\u1823\u182F \u182D\u180B\u1820 \u1833\u1820\u180E\u1820 \u1820", "-mark,-abvm"),
+
+        // The letters upright in a vertical line, with the vertical metrics of a font of TrueType outlines
+        new("\u182E\u1823\u1829\u182D\u1823\u182F \u182A\u1822\u1834\u1822\u182D \u1820", null, Direction: "ttb"),
     ];
 
     // Adlam: capital and small letters in each of their forms, the marks above a letter (lengtheners, the gemination
@@ -1528,6 +1563,9 @@ internal static partial class FontCorpus
 
         // Keycaps, with and without the selector, and a digit alone.
         ("1\uFE0F\u20E3 #\uFE0F\u20E3 *\u20E3 12 \u20E3", null),
+
+        // A vertical line
+        new("\U0001F600 \U0001F642\U0001F680 \u2764\uFE0F", null, Direction: "ttb"),
     ];
 
     // A font without positioning table: where the reference shaper places a mark of each kind of combining class, on a
@@ -2209,7 +2247,7 @@ internal static partial class FontCorpus
         var fontFile = work / "shaping.font";
         File.WriteAllBytes(fontFile, font);
         var results = new List<object?>();
-        foreach (var (text, features, variations, language) in cases)
+        foreach (var (text, features, variations, language, direction) in cases)
         {
             var codePoints = text.EnumerateRunes().Select(rune => rune.Value.ToString("X4", CultureInfo.InvariantCulture)).ToList();
             List<string> arguments = ["--shapers=ot", "--font-funcs=ot", "--output-format=json", "--no-glyph-names"];
@@ -2226,6 +2264,11 @@ internal static partial class FontCorpus
             if (language is not null)
             {
                 arguments.Add("--language=" + language);
+            }
+
+            if (direction is not null)
+            {
+                arguments.Add("--direction=" + direction);
             }
 
             arguments.Add("--unicodes=" + string.Join(',', codePoints.Select(codePoint => "U+" + codePoint)));
@@ -2253,6 +2296,11 @@ internal static partial class FontCorpus
             if (language is not null)
             {
                 result["language"] = language;
+            }
+
+            if (direction is not null)
+            {
+                result["direction"] = direction;
             }
 
             result["glyphs"] = glyphs;
@@ -2420,8 +2468,11 @@ internal static partial class FontCorpus
     [GeneratedRegex(@"\(HarfBuzz\) (?<version>\S+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10_000)]
     private static partial Regex HarfBuzzVersionRegex();
 
-    /// <summary>A text to shape, with the features, the instance of a variable font and the language it is shaped with.</summary>
-    private sealed record ShapingText(string Text, string? Features, string? Variations = null, string? Language = null)
+    /// <summary>
+    /// A text to shape, with the features, the instance of a variable font and the language it is shaped with, and the
+    /// direction of its line when it is not the one of its script: <c>ttb</c> for a vertical line of upright glyphs.
+    /// </summary>
+    private sealed record ShapingText(string Text, string? Features, string? Variations = null, string? Language = null, string? Direction = null)
     {
         public static implicit operator ShapingText((string Text, string? Features) value) => new(value.Text, value.Features);
     }

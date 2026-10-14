@@ -46,6 +46,13 @@ internal readonly struct Affine2D
     /// </summary>
     public static Affine2D ForGlyph(double scale, double originX, double originY, double shear) => new(scale, 0, shear * scale, -scale, originX, originY);
 
+    /// <summary>
+    /// Creates the transformation of a glyph that is on its side in a vertical line: the glyph of a horizontal line,
+    /// slanted or not, turned a quarter of a turn clockwise around its origin. Its baseline goes down from the origin,
+    /// and what is above the baseline is on its right.
+    /// </summary>
+    public static Affine2D ForSidewaysGlyph(double scale, double originX, double originY, double shear) => new(0, scale, scale, shear * scale, originX, originY);
+
     /// <summary>Gets the transformation that applies six numbers (xx, yx, xy, yy, dx, dy) first, then this one.</summary>
     public Affine2D Then(ReadOnlySpan<double> inner) => new(
         (A * inner[0]) + (C * inner[1]),

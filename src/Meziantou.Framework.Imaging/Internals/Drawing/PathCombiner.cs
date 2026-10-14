@@ -75,6 +75,9 @@ internal static class PathCombiner
         return builder.Build();
     }
 
+    /// <summary>Moves a coordinate to the grid: the nearest unit, halves upward.</summary>
+    public static long ToGrid(double value) => (long)Math.Floor((value * GridScale) + 0.5);
+
     /// <summary>Cuts the segments until two of them only meet at their ends.</summary>
     private static List<Segment> Planarize(List<Segment> segments, CancellationToken cancellationToken)
     {
@@ -664,6 +667,5 @@ internal static class PathCombiner
             }
         }
 
-        private static long ToGrid(double value) => (long)Math.Floor((value * GridScale) + 0.5);
     }
 }

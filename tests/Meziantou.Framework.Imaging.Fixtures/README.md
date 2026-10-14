@@ -296,7 +296,9 @@ glyph is six numbers: the glyph identifier, the cluster (an index of character),
 in font units. The texts are listed in `FontCorpus.cs`, chosen for what shaping does to them: kerning, ligatures, marks
 that compose or are attached, invisible characters, spaces and hyphens a font lacks, fractions, features turned on
 and off. `ShapingConformanceTests` compares the glyphs, the clusters, the place each glyph is drawn at and the
-advance of the text; how an adjustment is split between an advance and an offset is not compared.
+advance of the text; how an adjustment is split between an advance and an offset is not compared. A case with a
+`direction` (`ttb`) is a vertical line of upright glyphs (`--direction=ttb`): the vertical forms of a font, its advance
+heights and its vertical origins, in fonts that have the tables of vertical text and in fonts that do not.
 
 The reference shaper guesses the script of a text from its first letter and lays it out in the direction of that
 script; the test does the same, so a right-to-left text is compared in the order its glyphs are drawn in. The texts of

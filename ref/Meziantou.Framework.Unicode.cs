@@ -884,6 +884,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeJoiningGroup GetJoiningGroup(int codePoint) => throw null;
         public static Meziantou.Framework.UnicodeJoiningType GetJoiningType(int codePoint) => throw null;
         public static Meziantou.Framework.UnicodeLineBreakClass GetLineBreakClass(int codePoint) => throw null;
+        public static Meziantou.Framework.UnicodeVerticalOrientation GetVerticalOrientation(int codePoint) => throw null;
         public static Meziantou.Framework.UnicodeWordBreak GetWordBreak(int codePoint) => throw null;
         public static bool IsBidiMirrored(int codePoint) => throw null;
         public static bool IsDefaultIgnorable(int codePoint) => throw null;
@@ -1119,6 +1120,14 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeScript GetScript(int codePoint) => throw null;
         public static int GetScriptExtensions(int codePoint, System.Span<Meziantou.Framework.UnicodeScript> destination) => throw null;
         public static bool HasScriptExtension(int codePoint, Meziantou.Framework.UnicodeScript script) => throw null;
+    }
+
+    public enum UnicodeVerticalOrientation : byte
+    {
+        Rotated = 0,
+        TransformedRotated = 1,
+        TransformedUpright = 2,
+        Upright = 3,
     }
 
     public enum UnicodeWordBreak : byte

@@ -1625,6 +1625,133 @@ public sealed class DrawingSessionTests
         Assert.Equal([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255], DrawingTestSupport.ReadSamples(gray.Frames[0]));
     }
 
+    [Theory]
+    [MemberData(nameof(Transforms))]
+    public void APenThatDoesNotScaleStrokesThePathAsItIsOnTheCanvas(double m11, double m12, double m21, double m22, double dx, double dy)
+    {
+        var transform = new AffineTransform(m11, m12, m21, m22, dx, dy);
+        var polygon = new VectorPathBuilder().AddPolygon([new PointD(2, 1), new PointD(13.5, 3), new PointD(9, 12.25), new PointD(1.5, 8)]).MoveTo(3, 4).LineTo(8, 5).LineTo(6, 9).Build();
+        var curve = new VectorPathBuilder().MoveTo(2, 9).CubicBezierTo(3, -4, 9, 16, 13, 2).AddEllipse(new PointD(7, 7), 5, 3, 25).Build();
+        Pen[] pens =
+        [
+            new(White, 2.5) { LineJoin = LineJoin.Miter, LineCap = LineCap.Square, ScalesWithTransform = false },
+            new(White, 1.5) { LineJoin = LineJoin.Bevel, DashPattern = [3, 2, 1, 2], DashOffset = 1.25, ScalesWithTransform = false },
+            new(White, 2) { StartMarker = LineMarker.Arrow, EndMarker = LineMarker.Diamond, ScalesWithTransform = false },
+            new(White, 2) { Alignment = PenAlignment.Inside, ScalesWithTransform = false },
+            new(White, 2) { Alignment = PenAlignment.Outside, DashPattern = [4, 1], ScalesWithTransform = false },
+        ];
+
+        // The path is transformed, then stroked: the width, the dashes and the markers are those of the pen. With
+        // straight sides, the vertices are those of the transformed path, and the pixels are the same, bit for bit.
+        foreach (var pen in pens)
+        {
+            AssertClose(canvas => canvas.Stroke(pen, polygon.Transform(transform)), canvas => canvas.Transform(transform, inner => inner.Stroke(pen, polygon)), 0);
+        }
+
+        AssertClose(
+            canvas => canvas.StrokeLine(pens[0], transform.Transform(new PointD(2, 3)), transform.Transform(new PointD(11, 9))),
+            canvas => canvas.Transform(transform, inner => inner.StrokeLine(pens[0], new PointD(2, 3), new PointD(11, 9))),
+            0);
+        AssertClose(
+            canvas => canvas.StrokePolygon(pens[1], [transform.Transform(new PointD(1, 1)), transform.Transform(new PointD(9, 2)), transform.Transform(new PointD(4, 11))]),
+            canvas => canvas.Transform(transform, 3, (inner, _) => inner.StrokePolygon(pens[1], [new PointD(1, 1), new PointD(9, 2), new PointD(4, 11)])),
+            0);
+
+        // Curves are flattened for the size the transformation gives them, before their vertices are transformed:
+        // the chords are not those of the transformed path, and both stay within 1/16 of a pixel of the curve
+        var round = new Pen(White, 2) { LineJoin = LineJoin.Round, LineCap = LineCap.Round, ScalesWithTransform = false };
+        AssertClose(canvas => canvas.Stroke(round, curve.Transform(transform)), canvas => canvas.Transform(transform, inner => inner.Stroke(round, curve)), 46);
+
+        // Inside a transformation that is inside another one, the path goes through both
+        var first = AffineTransform.CreateRotation(15, new PointD(6, 6)).Then(AffineTransform.CreateScale(0.9, 1.1));
+        AssertClose(
+            canvas => canvas.Stroke(pens[1], polygon.Transform(first.Then(transform))),
+            canvas => canvas.Transform(transform, outer => outer.Transform(first, nested => nested.Stroke(pens[1], polygon))),
+            0);
+
+        static void AssertClose(DrawingAction expected, DrawingAction actual, int tolerance)
+        {
+            using var first = new Image<Rgba32>(32, 28, new Rgba32(10, 20, 30, 200));
+            using var second = new Image<Rgba32>(32, 28, new Rgba32(10, 20, 30, 200));
+            first.Draw(expected, Ct);
+            second.Draw(actual, Ct);
+            var left = DrawingTestSupport.ReadSamples(first.Frames[0]);
+            var right = DrawingTestSupport.ReadSamples(second.Frames[0]);
+            if (tolerance == 0)
+            {
+                Assert.Equal(left, right);
+                return;
+            }
+
+            for (var i = 0; i < left.Length; i++)
+            {
+                Assert.InRange(right[i], left[i] - tolerance, left[i] + tolerance, message: $"sample {i}");
+            }
+        }
+    }
+
+    [Fact]
+    public void APenThatDoesNotScaleKeepsItsWidthAtEveryScale()
+    {
+        // Enlarged 40 times, a circle of radius 1 stroked with a pen of 4 pixels is a ring 4 pixels wide: the pen a
+        // transformation applies to draws it 160 pixels wide, which covers the whole circle
+        var enlarge = AffineTransform.CreateScale(40, 40).Then(AffineTransform.CreateTranslation(10, 10));
+        var pen = new Pen(White, 4) { ScalesWithTransform = false };
+        using var scaled = new Image<Gray8>(100, 100, new Gray8(0));
+        using var direct = new Image<Gray8>(100, 100, new Gray8(0));
+        scaled.Draw(canvas => canvas.Transform(enlarge, inner => inner.StrokeCircle(pen, new PointD(1, 1), 1)), Ct);
+        direct.Draw(canvas => canvas.StrokeCircle(pen, new PointD(50, 50), 40), Ct);
+        Assert.Equal(new Gray8(255), scaled.Frames[0][50, 9]);
+        Assert.Equal(new Gray8(255), scaled.Frames[0][50, 10]);
+        Assert.Equal(new Gray8(0), scaled.Frames[0][50, 13]);
+        Assert.Equal(new Gray8(0), scaled.Frames[0][50, 6]);
+        Assert.Equal(2 * Math.PI * 40 * 4, DrawingTestSupport.ReadSamples(scaled.Frames[0]).Sum() / 255.0, 3.0);
+        var expected = DrawingTestSupport.ReadSamples(direct.Frames[0]);
+        var actual = DrawingTestSupport.ReadSamples(scaled.Frames[0]);
+        for (var i = 0; i < expected.Length; i++)
+        {
+            Assert.InRange(actual[i], expected[i] - 2, expected[i] + 2, message: $"pixel {i}");
+        }
+
+        // A scaling along one axis makes the stroke of a pen that scales wider in that direction only; the other pen
+        // draws the two sides of a square as wide as each other
+        using var stretched = new Image<Gray8>(40, 12, new Gray8(0));
+        stretched.Draw(canvas => canvas.Transform(AffineTransform.CreateScale(4, 1), inner => inner.StrokeRectangle(new Pen(White, 2) { ScalesWithTransform = false }, new RectangleD(1, 3, 8, 6))), Ct);
+        var samples = DrawingTestSupport.ReadSamples(stretched.Frames[0]);
+
+        // The rectangle is from 4 to 36 and from 3 to 9: its left side covers the columns 3 and 4, its top side the rows 2 and 3
+        Assert.Equal([0, 0, 0, 255, 255, 0, 0], samples.AsSpan(6 * 40, 7).ToArray());
+        Assert.Equal([0, 0, 255, 255, 0, 0], Enumerable.Range(0, 6).Select(y => samples[(y * 40) + 20]).ToArray());
+
+        // Without transformation the value changes nothing, and the pieces of a widened path do not depend on it
+        var path = new VectorPathBuilder().MoveTo(2, 9).CubicBezierTo(3, -4, 9, 16, 13, 2).Build();
+        var plain = new Pen(White, 3) { DashPattern = [2, 1.5], EndMarker = LineMarker.Arrow };
+        var same = new Pen(White, 3) { DashPattern = [2, 1.5], EndMarker = LineMarker.Arrow, ScalesWithTransform = false };
+        Assert.True(plain.ScalesWithTransform);
+        Assert.False(same.ScalesWithTransform);
+        using var one = new Image<Gray8>(16, 16, new Gray8(0));
+        using var other = new Image<Gray8>(16, 16, new Gray8(0));
+        one.Draw(canvas => canvas.Stroke(plain, path), Ct);
+        other.Draw(canvas => canvas.Stroke(same, path), Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(one.Frames[0]), DrawingTestSupport.ReadSamples(other.Frames[0]));
+        Assert.Equal(path.Widen(plain).ToSvgPathData(), path.Widen(same).ToSvgPathData());
+
+        // A transformation that flattens the plane leaves a line, which the pen strokes; one that sends the path too
+        // far is rejected before a pixel changes
+        using var flat = new Image<Gray8>(8, 8, new Gray8(0));
+        flat.Draw(
+            canvas =>
+            {
+                canvas.Transform(AffineTransform.CreateScale(1, 0).Then(AffineTransform.CreateTranslation(0, 4)), inner => inner.StrokeLine(new Pen(White, 2) { ScalesWithTransform = false }, new PointD(2, 1), new PointD(6, 7)));
+                canvas.Transform(AffineTransform.CreateScale(1, 0).Then(AffineTransform.CreateTranslation(0, 4)), inner => inner.StrokeRectangle(new Pen(White, 2) { ScalesWithTransform = false, Alignment = PenAlignment.Outside }, new RectangleD(2, 1, 4, 5)));
+                canvas.Transform(AffineTransform.CreateScale(1e6, 1e6), inner => AssertThrows<ArgumentOutOfRangeException>(inner, static canvas => canvas.StrokeLine(new Pen(White, 1) { ScalesWithTransform = false }, new PointD(0, 0), new PointD(100, 100))));
+            },
+            Ct);
+        var line = DrawingTestSupport.ReadSamples(flat.Frames[0]);
+        Assert.Equal([0, 0, 255, 255, 255, 255, 0, 0], line.AsSpan(3 * 8, 8).ToArray());
+        Assert.Equal([0, 0, 255, 255, 255, 255, 0, 0], line.AsSpan(4 * 8, 8).ToArray());
+    }
+
     [Fact]
     public void ATransformationCombinesWithLayersAndShadows()
     {
@@ -2230,8 +2357,9 @@ public sealed class DrawingSessionTests
     [Fact]
     public void LinearLightIsTheLightOfTheTransferFunctionOfTheImage()
     {
+        // A profile that only has lookup tables has no function of one channel: no light to combine
         using var image = new Image<Rgb24>(1, 1, new Rgb24(0, 0, 0));
-        image.Metadata.IccProfile = ResizeTests.IccProfiles.Rgb(ResizeTests.IccProfiles.DisplayP3Colorants, ResizeTests.IccProfiles.SrgbParametricCurve());
+        image.Metadata.IccProfile = IccTestProfiles.RgbLabLut8();
         image.Draw(
             canvas =>
             {
@@ -2281,6 +2409,754 @@ public sealed class DrawingSessionTests
             Ct);
         Assert.Equal(new Rgb24(0, 0, 0), layered.Frames[0][0, 0]);
         Assert.Equal(new Rgb24(188, 188, 188), layered.Frames[0][1, 0]);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Color filters
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void AColorMatrixGivesEachSampleASumOfTheSamplesOfItsPixel()
+    {
+        // R' = 0.5 R + 0.25 G + 0.1 A, G' = B, B' = 1 - R, A' = 0.5 A + 0.2, on 8-bit samples:
+        //   (200, 100, 40, 255): 100 + 25 + 25.5 = 150.5 -> 151 (halves upward); 40; 255 - 200 = 55; 127.5 + 51 = 178.5 -> 179
+        //   (10, 255, 0, 0): 5 + 63.75 = 68.75 -> 69; 0; 245; 51
+        var matrix = new ColorMatrix(
+        [
+            0.5, 0.25, 0, 0.1, 0,
+            0, 0, 1, 0, 0,
+            -1, 0, 0, 0, 1,
+            0, 0, 0, 0.5, 0.2,
+        ]);
+        Assert.Equal(0.25, matrix[0, 1]);
+        Assert.Equal(0.2, matrix[3, 4]);
+        Assert.False(matrix.IsIdentity);
+        using (var image = new Image<Rgba32>(2, 1))
+        {
+            image.Frames[0][0, 0] = new Rgba32(200, 100, 40, 255);
+            image.Frames[0][1, 0] = new Rgba32(10, 255, 0, 0);
+            image.ApplyColorMatrix(matrix, Ct);
+            Assert.Equal(new Rgba32(151, 40, 55, 179), image.Frames[0][0, 0]);
+            Assert.Equal(new Rgba32(69, 0, 245, 51), image.Frames[0][1, 0]);
+        }
+
+        // The same pixel in the other formats: blue first, 16-bit samples (25700 + 6425 + 6553.5 = 38678.5 -> 38679,
+        // 10280, 65535 - 51400 = 14135, 32767.5 + 13107 = 45874.5 -> 45875), and without alpha (an alpha of 255, and the result over black:
+        // 151 * 179 / 255 = 106, 40 * 179 / 255 = 28.08, 55 * 179 / 255 = 38.6)
+        using (var bgra = new Image<Bgra32>(1, 1, new Bgra32(200, 100, 40, 255)))
+        using (var wide = new Image<Rgba64>(1, 1, new Rgba64(51400, 25700, 10280, 65535)))
+        using (var opaque = new Image<Rgb24>(1, 1, new Rgb24(200, 100, 40)))
+        {
+            bgra.ApplyColorMatrix(matrix, Ct);
+            wide.ApplyColorMatrix(matrix, Ct);
+            opaque.Frames[0].ApplyColorMatrix(matrix, Ct);
+            Assert.Equal(new Bgra32(151, 40, 55, 179), bgra.Frames[0][0, 0]);
+            Assert.Equal(new Rgba64(38679, 10280, 14135, 45875), wide.Frames[0][0, 0]);
+            Assert.Equal(new Rgb24(106, 28, 39), opaque.Frames[0][0, 0]);
+        }
+
+        // A gray level is red, green and blue, with an alpha of 255, and gets the luma of the result over black:
+        // (100, 100, 100, 255) gives (101, 100, 155, 179), whose luma is (2126 * 101 + 7152 * 100 + 722 * 155 + 5000) / 10000 = 104,
+        // and 104 * 179 / 255 = 73
+        using (var gray = new Image<Gray8>(1, 1, new Gray8(100)))
+        using (var gray16 = new Image<Gray16>(1, 1, new Gray16(25700)))
+        {
+            gray.ApplyColorMatrix(matrix, Ct);
+            gray16.ApplyColorMatrix(matrix, Ct);
+            Assert.Equal(new Gray8(73), gray.Frames[0][0, 0]);
+            Assert.InRange(gray16.Frames[0][0, 0].Value, (73 * 257) - 200, (73 * 257) + 200);
+        }
+
+        // The samples are kept between 0 and the largest one, and every pixel gets its samples: the color of a
+        // pixel that is, or becomes, fully transparent too
+        using (var image = new Image<Rgba32>(3, 1))
+        {
+            image.Frames[0][0, 0] = new Rgba32(200, 100, 40, 255);
+            image.Frames[0][1, 0] = new Rgba32(100, 100, 40, 0);
+            image.Frames[0][2, 0] = new Rgba32(3, 100, 250, 128);
+            image.ApplyColorMatrix(new ColorMatrix([2, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0.5, 0, 0, 0, 0, 0]), Ct);
+            Assert.Equal(new Rgba32(255, 0, 168, 0), image.Frames[0][0, 0]);
+            Assert.Equal(new Rgba32(200, 0, 168, 0), image.Frames[0][1, 0]);
+            Assert.Equal(new Rgba32(6, 0, 255, 0), image.Frames[0][2, 0]);
+            image.ApplyColorMatrix(new ColorMatrix([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0.25]), Ct);
+            Assert.Equal(new Rgba32(6, 0, 255, 64), image.Frames[0][2, 0]);
+            image.ApplyColorMatrix(new ColorMatrix([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 30, 0]), Ct);
+            Assert.Equal(new Rgba32(6, 0, 255, 255), image.Frames[0][2, 0]);
+        }
+
+        // The identity changes nothing, in any format, bit for bit
+        var random = new Random(11);
+        foreach (var format in PixelFormats.All)
+        {
+            using var image = DrawingTestSupport.CreateRandom(format, 9, 5, random.Next);
+            var before = DrawingTestSupport.ReadSamples(image.Frames[0]);
+            image.ApplyColorMatrix(ColorMatrix.Identity, Ct);
+            image.ApplyColorMatrix(new ColorMatrix([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]), Ct);
+            image.Draw(static canvas => canvas.Filter(ColorMatrix.Identity, static layer => layer.FilterBackdrop(ColorMatrix.Identity)), Ct);
+            Assert.Equal(before, DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        Assert.True(ColorMatrix.Identity.IsIdentity);
+        Assert.True(new ColorMatrix([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]).IsIdentity);
+        Assert.Throws<ArgumentException>(() => new ColorMatrix(new double[19]));
+        Assert.Throws<ArgumentException>(() => new ColorMatrix(new double[21]));
+        Assert.Throws<ArgumentException>(() => new ColorMatrix([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, double.NaN, 0]));
+        Assert.Throws<ArgumentException>(() => new ColorMatrix([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, double.PositiveInfinity, 0]));
+        Assert.Throws<ArgumentOutOfRangeException>(() => matrix[4, 0]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => matrix[-1, 0]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => matrix[0, 5]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => matrix[0, -1]);
+    }
+
+    [Fact]
+    public void TheReadyMadeColorMatricesAreTheFilterFunctionsOfCss()
+    {
+        // grayscale(): the luma of the library, with its rounding. The other functions keep the gray levels gray.
+        var random = new Random(5);
+        foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Bgra32, PixelFormat.Rgb24, PixelFormat.Rgba64 })
+        {
+            using var expected = DrawingTestSupport.CreateRandom(format, 64, 64, random.Next);
+            using var actual = expected.Clone();
+            expected.Grayscale(Ct);
+            actual.ApplyColorMatrix(ColorMatrix.CreateGrayscale(), Ct);
+            Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(actual.Frames[0]));
+        }
+
+        // Every sum of the luma coefficients that is half way between two samples goes up, as the integers do
+        using (var ties = new Image<Rgb24>(256, 256))
+        using (var reference = new Image<Rgb24>(256, 256))
+        {
+            for (var y = 0; y < 256; y++)
+            {
+                for (var x = 0; x < 256; x++)
+                {
+                    ties.Frames[0][x, y] = reference.Frames[0][x, y] = new Rgb24((byte)x, (byte)y, (byte)((x * 7) + (y * 13)));
+                }
+            }
+
+            reference.Grayscale(Ct);
+            ties.ApplyColorMatrix(ColorMatrix.CreateGrayscale(), Ct);
+            Assert.Equal(DrawingTestSupport.ReadSamples(reference.Frames[0]), DrawingTestSupport.ReadSamples(ties.Frames[0]));
+        }
+
+        // The luma of (200, 100, 40) is 42.52 + 71.52 + 2.888 = 116.93, and half way to it is 158.46, 108.46, 78.46
+        var pixel = new Rgba32(200, 100, 40, 128);
+        Assert.Equal(new Rgba32(117, 117, 117, 128), Apply(ColorMatrix.CreateGrayscale(), pixel));
+        Assert.Equal(new Rgba32(158, 108, 78, 128), Apply(ColorMatrix.CreateGrayscale(0.5), pixel));
+        Assert.Equal(pixel, Apply(ColorMatrix.CreateGrayscale(0), pixel));
+
+        // brightness(1.5): 300 is kept at 255, 150, 60. contrast(2): 2 c - 127.5 = 272.5, 72.5 -> 73, -47.5 -> 0
+        Assert.Equal(new Rgba32(255, 150, 60, 128), Apply(ColorMatrix.CreateBrightness(1.5), pixel));
+        Assert.Equal(new Rgba32(0, 0, 0, 128), Apply(ColorMatrix.CreateBrightness(0), pixel));
+        Assert.Equal(new Rgba32(255, 73, 0, 128), Apply(ColorMatrix.CreateContrast(2), pixel));
+        Assert.Equal(new Rgba32(128, 128, 128, 128), Apply(ColorMatrix.CreateContrast(0), pixel));
+
+        // invert(): 255 - c; invert(0.25): 0.5 c + 63.75 = 163.75, 113.75, 83.75
+        Assert.Equal(new Rgba32(55, 155, 215, 128), Apply(ColorMatrix.CreateInvert(), pixel));
+        Assert.Equal(new Rgba32(164, 114, 84, 128), Apply(ColorMatrix.CreateInvert(0.25), pixel));
+        Assert.Equal(new Rgba32(128, 128, 128, 128), Apply(ColorMatrix.CreateInvert(0.5), pixel));
+
+        // opacity(0.5): 64; a tint keeps the alpha, multiplied by the one of its color: 128 * 128 / 255 = 64.25
+        Assert.Equal(new Rgba32(200, 100, 40, 64), Apply(ColorMatrix.CreateOpacity(0.5), pixel));
+        Assert.Equal(new Rgba32(1, 2, 3, 128), Apply(ColorMatrix.CreateTint(new Rgba32(1, 2, 3)), pixel));
+        Assert.Equal(new Rgba32(1, 2, 3, 64), Apply(ColorMatrix.CreateTint(new Rgba32(1, 2, 3, 128)), pixel));
+
+        // saturate(0) is the gray level of the coefficients of feColorMatrix: 0.213 * 200 + 0.715 * 100 + 0.072 * 40 = 116.98;
+        // saturate(2) moves each color twice as far from it: 2 * 200 - 116.98 = 283, 83.02, -36.98
+        Assert.Equal(new Rgba32(117, 117, 117, 128), Apply(ColorMatrix.CreateSaturation(0), pixel));
+        Assert.Equal(new Rgba32(255, 83, 0, 128), Apply(ColorMatrix.CreateSaturation(2), pixel));
+        Assert.True(ColorMatrix.CreateSaturation(1).IsIdentity);
+
+        // sepia(): 0.393 * 200 + 0.769 * 100 + 0.189 * 40 = 163.06, 0.349 * 200 + 0.686 * 100 + 0.168 * 40 = 145.12,
+        // 0.272 * 200 + 0.534 * 100 + 0.131 * 40 = 113.04
+        Assert.Equal(new Rgba32(163, 145, 113, 128), Apply(ColorMatrix.CreateSepia(), pixel));
+        Assert.Equal(pixel, Apply(ColorMatrix.CreateSepia(0), pixel));
+
+        // hue-rotate(): a turn changes nothing, half a turn is 2 L - c for a luminance L that a gray level keeps, and
+        // a third of a turn nearly sends red to green and green to blue (the matrix of the specification is not a
+        // rotation of the colors, but of their hues around the gray axis)
+        Assert.True(ColorMatrix.CreateHueRotation(0).IsIdentity);
+        Assert.True(ColorMatrix.CreateHueRotation(360).IsIdentity);
+        Assert.True(ColorMatrix.CreateHueRotation(-720).IsIdentity);
+        Assert.Equal(new Rgba32(34, 134, 194, 128), Apply(ColorMatrix.CreateHueRotation(180), pixel));
+        Assert.Equal(new Rgba32(90, 90, 90, 255), Apply(ColorMatrix.CreateHueRotation(77), new Rgba32(90, 90, 90)));
+        var turned = Apply(ColorMatrix.CreateHueRotation(120), new Rgba32(255, 0, 0));
+        Assert.True(turned.G > turned.R && turned.G > turned.B);
+        Assert.Equal(Apply(ColorMatrix.CreateHueRotation(90), pixel), Apply(ColorMatrix.CreateHueRotation(450), pixel));
+
+        // Two inks: black is the dark one, white the light one, and a gray is that far between them
+        var duotone = ColorMatrix.CreateDuotone(new Rgba32(20, 40, 100), new Rgba32(250, 240, 200, 7));
+        Assert.Equal(new Rgba32(20, 40, 100, 255), Apply(duotone, new Rgba32(0, 0, 0)));
+        Assert.Equal(new Rgba32(250, 240, 200, 255), Apply(duotone, new Rgba32(255, 255, 255)));
+        Assert.Equal(new Rgba32(135, 140, 150, 77), Apply(duotone, new Rgba32(128, 128, 128, 77)), new SampleComparer(1));
+        Assert.Equal(Apply(duotone, new Rgba32(0, 255, 0)).R, (byte)Math.Round(20 + (230 * 0.7152), MidpointRounding.AwayFromZero));
+
+        // One matrix made of two is both of them, without the rounding and the clamping in between
+        var both = ColorMatrix.CreateBrightness(2).Then(ColorMatrix.CreateInvert());
+        Assert.Equal(new Rgba32(0, 55, 175, 128), Apply(both, pixel));
+        Assert.Equal(Apply(ColorMatrix.CreateInvert(), Apply(ColorMatrix.CreateBrightness(2), pixel)), Apply(both, pixel));
+        Assert.Equal(new Rgba32(110, 255, 255, 128), Apply(ColorMatrix.CreateInvert().Then(ColorMatrix.CreateBrightness(2)), pixel));
+        Assert.Same(both, both.Then(ColorMatrix.Identity));
+        Assert.Same(both, ColorMatrix.Identity.Then(both));
+
+        // Brighter then darker comes back where clamping in between would not
+        Assert.Equal(pixel, Apply(ColorMatrix.CreateBrightness(4).Then(ColorMatrix.CreateBrightness(0.25)), pixel));
+        Assert.Equal(new Rgba32(64, 64, 40, 128), Apply(ColorMatrix.CreateBrightness(0.25), Apply(ColorMatrix.CreateBrightness(4), pixel)));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateBrightness(-0.1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateBrightness(double.PositiveInfinity));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateContrast(double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateSaturation(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateGrayscale(1.5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateSepia(-0.5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateInvert(2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateOpacity(1.01));
+        Assert.Throws<ArgumentException>(() => ColorMatrix.CreateHueRotation(double.NaN));
+        Assert.Throws<ArgumentNullException>(() => both.Then(null!));
+
+        static Rgba32 Apply(ColorMatrix matrix, Rgba32 color)
+        {
+            using var image = new Image<Rgba32>(1, 1, color);
+            image.ApplyColorMatrix(matrix, Ct);
+            return image.Frames[0][0, 0];
+        }
+    }
+
+    [Fact]
+    public void AColorFilterAppliesToADrawingAsAWholeOrToWhatIsAlreadyDrawn()
+    {
+        // A layer whose pixels get a color: the drawing of the callback, with its antialiasing and its alpha, in
+        // another color. The tint is the one of a solid paint of that color wherever the drawing is opaque.
+        var circle = new VectorPathBuilder().AddCircle(new PointD(8, 8), 6).Build();
+        var tint = ColorMatrix.CreateTint(new Rgba32(30, 90, 200));
+        using (var tinted = new Image<Rgba32>(16, 16, new Rgba32(250, 250, 250)))
+        using (var painted = new Image<Rgba32>(16, 16, new Rgba32(250, 250, 250)))
+        {
+            tinted.Draw(canvas => canvas.Filter(tint, layer => layer.Fill(new Rgba32(0, 0, 0), circle)), Ct);
+            painted.Draw(canvas => canvas.Layer(1, layer => layer.Fill(new Rgba32(30, 90, 200), circle)), Ct);
+            Assert.Equal(DrawingTestSupport.ReadSamples(painted.Frames[0]), DrawingTestSupport.ReadSamples(tinted.Frames[0]));
+            Assert.Equal(new Rgba32(30, 90, 200), tinted.Frames[0][8, 8]);
+            Assert.Equal(new Rgba32(250, 250, 250), tinted.Frames[0][0, 0]);
+        }
+
+        // The matrix applies to the pixels of the layer, drawn or not: one that gives an alpha to transparent pixels
+        // paints all of them, inside the clip
+        using (var image = new Image<Rgb24>(4, 2, new Rgb24(0, 0, 0)))
+        {
+            var opaque = new ColorMatrix([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0.5, 0, 0, 0, 0, 1]);
+            image.Draw(canvas => canvas.Clip(new Rectangle(1, 0, 2, 2), clipped => clipped.Filter(opaque, layer => layer.FillRectangle(new Rgba32(255, 0, 0), new Rectangle(0, 0, 2, 1)))), Ct);
+            Assert.Equal([0, 0, 0, 255, 0, 128, 0, 0, 128, 0, 0, 0, 0, 0, 0, 0, 0, 128, 0, 0, 128, 0, 0, 0], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // What is already drawn: every pixel without a clip, the inside of the clip with one, and a pixel on its edge
+        // in proportion to what the clip covers of it
+        using (var image = new Image<Gray8>(4, 1, new Gray8(200)))
+        {
+            image.Draw(
+                canvas =>
+                {
+                    canvas.Clip(new RectangleD(1, 0, 1.5, 1), clipped => clipped.FilterBackdrop(ColorMatrix.CreateInvert()));
+                },
+                Ct);
+
+            // 255 - 200 = 55 where the clip is, and half way from 200 to 55 where it covers half of the pixel
+            Assert.Equal([200, 55, 128, 200], DrawingTestSupport.ReadSamples(image.Frames[0]));
+            image.Draw(canvas => canvas.FilterBackdrop(ColorMatrix.CreateBrightness(0.5)), Ct);
+            Assert.Equal([100, 28, 64, 100], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // Inside a layer, the pixels of the layer; with clips and layers of any depth, on every frame and the poster
+        using (var image = NewAnimation())
+        {
+            var before = image.Frames[1][2, 1];
+            var poster = image.PosterFrame![2, 1];
+            image.Draw(
+                canvas =>
+                {
+                    canvas.Layer(1, layer =>
+                    {
+                        layer.FillRectangle(new Rgba32(10, 20, 30), new Rectangle(0, 0, 4, 3));
+                        layer.Clip(new Rectangle(0, 0, 2, 3), left => left.FilterBackdrop(ColorMatrix.CreateInvert()));
+                    });
+                    canvas.Clip(new Rectangle(2, 1, 1, 1), one => one.FilterBackdrop(ColorMatrix.CreateOpacity(0)));
+                },
+                Ct);
+            Assert.Equal(new Rgba32(245, 235, 225), image.Frames[0][0, 0]);
+            Assert.Equal(new Rgba32(245, 235, 225), image.Frames[1][1, 2]);
+            Assert.Equal(new Rgba32(10, 20, 30), image.Frames[0][3, 0]);
+            Assert.Equal(new Rgba32(10, 20, 30, 0), image.Frames[0][2, 1]);
+            Assert.Equal(new Rgba32(10, 20, 30, 0), image.Frames[1][2, 1]);
+            Assert.Equal(new Rgba32(10, 20, 30, 0), image.PosterFrame![2, 1]);
+            Assert.NotEqual(before, image.Frames[1][2, 1]);
+            Assert.NotEqual(poster, image.PosterFrame![2, 1]);
+            Assert.False(ExifTiff.HasThumbnail(image.Metadata.ExifProfile!.Data.Span));
+        }
+
+        // A filter whose callback throws draws nothing, and the canvas can still be drawn on
+        using (var image = new Image<Gray8>(2, 1, new Gray8(0)))
+        {
+            image.Draw(
+                canvas =>
+                {
+                    try
+                    {
+                        canvas.Filter(ColorMatrix.CreateInvert(), layer =>
+                        {
+                            layer.Fill(White);
+                            throw new FormatException("stop");
+                        });
+                    }
+                    catch (FormatException)
+                    {
+                    }
+
+                    canvas.Filter(ColorMatrix.CreateInvert(), 1, static (layer, _) => layer.FillRectangle(new Rgba32(55, 55, 55), new Rectangle(1, 0, 1, 1)));
+                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Filter(null!, static _ => { }));
+                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Filter(ColorMatrix.Identity, null!));
+                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Filter(null!, 1, static (_, _) => { }));
+                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Filter(ColorMatrix.Identity, 1, null!));
+                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.FilterBackdrop(null!));
+                },
+                Ct);
+            Assert.Equal([0, 200], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // The working storage is charged to the image: with room for the pixels and for the scratch of a session
+        // only, a filter is rejected before a pixel changes
+        using var probe = new Image<Rgba32>(40, 40);
+        long session = 0;
+        probe.Draw(_ => session = probe.Owner.Scope.LiveBytes, Ct);
+        using var small = new Image<Rgba32>(40, 40, new Rgba32(255, 255, 255), new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = session } });
+        small.Draw(
+            static canvas =>
+            {
+                AssertThrows<ImageResourceLimitException>(canvas, static canvas => canvas.Filter(ColorMatrix.CreateInvert(), static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ImageResourceLimitException>(canvas, static canvas => canvas.FilterBackdrop(ColorMatrix.CreateInvert()));
+            },
+            Ct);
+        Assert.Throws<ImageResourceLimitException>(() => small.ApplyColorMatrix(ColorMatrix.CreateInvert(), Ct));
+        Assert.All(DrawingTestSupport.ReadSamples(small.Frames[0]), sample => Assert.Equal(255, sample));
+        Assert.Equal(0, small.Owner.ActiveLeaseCount);
+
+        Assert.Throws<ArgumentNullException>(() => small.ApplyColorMatrix(null!, Ct));
+        Assert.Throws<ArgumentNullException>(() => small.Frames[0].ApplyColorMatrix(null!, Ct));
+        Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).ApplyColorMatrix(ColorMatrix.Identity, Ct));
+        Assert.Throws<ArgumentNullException>("frame", () => ((ImageFrame)null!).ApplyColorMatrix(ColorMatrix.Identity, Ct));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => probe.ApplyColorMatrix(ColorMatrix.CreateInvert(), canceled.Token));
+        Assert.Equal(default, probe.Frames[0][5, 5]);
+    }
+
+    /// <summary>Compares two colors to a number of levels per sample.</summary>
+    private sealed class SampleComparer(int tolerance) : IEqualityComparer<Rgba32>
+    {
+        public bool Equals(Rgba32 x, Rgba32 y)
+            => Math.Abs(x.R - y.R) <= tolerance && Math.Abs(x.G - y.G) <= tolerance && Math.Abs(x.B - y.B) <= tolerance && Math.Abs(x.A - y.A) <= tolerance;
+
+        public int GetHashCode(Rgba32 obj) => 0;
+    }
+
+    [Fact]
+    public void LinearLightIsTheLightOfTheToneCurvesOfAProfileThatIsNotSrgb()
+    {
+        // The curves of the profile decode the samples: with the curve of sRGB, half of the light of white is 188,
+        // as without profile; with a gamma of 2, it is sqrt(0.5) = 0.7071 -> 180.3
+        foreach (var (curve, expected) in new[] { (IccTestProfiles.SrgbCurve(), 188), (IccTestProfiles.Gamma(0x0200), 180), (IccTestProfiles.Gamma(0x0100), 128) })
+        {
+            using var image = new Image<Rgb24>(1, 1, new Rgb24(0, 0, 0));
+            image.Metadata.IccProfile = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, curve);
+            image.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static inner => inner.FillRectangle(White, new RectangleD(0, 0, 0.5, 1))), Ct);
+            Assert.Equal(new Rgb24((byte)expected, (byte)expected, (byte)expected), image.Frames[0][0, 0]);
+        }
+
+        // Each channel has its curve, whatever the order of the samples: gammas of 1, 2 and 3 give 127.5 -> 128,
+        // 180.3 and 0.5^(1 / 3) = 0.7937 -> 202.4; the alpha is not a color
+        var perChannel = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.Gamma(0x0100), IccTestProfiles.Gamma(0x0200), IccTestProfiles.Gamma(0x0300));
+        using (var rgba = new Image<Rgba32>(2, 1, new Rgba32(0, 0, 0)))
+        using (var bgra = new Image<Bgra32>(1, 1, new Bgra32(0, 0, 0)))
+        using (var wide = new Image<Rgba64>(1, 1, new Rgba64(0, 0, 0)))
+        {
+            rgba.Metadata.IccProfile = bgra.Metadata.IccProfile = wide.Metadata.IccProfile = perChannel;
+            rgba.Frames[0][1, 0] = default;
+            rgba.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static inner => inner.FillRectangle(White, new RectangleD(0, 0, 1.5, 1))), Ct);
+            bgra.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static inner => inner.FillRectangle(White, new RectangleD(0, 0, 0.5, 1))), Ct);
+            wide.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static inner => inner.FillRectangle(White, new RectangleD(0, 0, 0.5, 1))), Ct);
+            Assert.Equal(new Rgba32(255, 255, 255), rgba.Frames[0][0, 0]);
+            Assert.Equal(new Rgba32(255, 255, 255, 128), rgba.Frames[0][1, 0]);
+            Assert.Equal(new Bgra32(128, 180, 202), bgra.Frames[0][0, 0]);
+            Assert.Equal(new Rgba64(32768, (ushort)Math.Floor((Math.Sqrt(0.5) * 65535) + 0.5), (ushort)Math.Floor((Math.Cbrt(0.5) * 65535) + 0.5)), wide.Frames[0][0, 0]);
+        }
+
+        // A monochrome profile has one curve
+        using (var gray = new Image<Gray8>(1, 1, new Gray8(0)))
+        {
+            gray.Metadata.IccProfile = IccTestProfiles.Gray(IccTestProfiles.Gamma(0x0200));
+            gray.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static inner => inner.FillRectangle(White, new RectangleD(0, 0, 0.5, 1))), Ct);
+            Assert.Equal(new Gray8(180), gray.Frames[0][0, 0]);
+        }
+
+        // Layers, shadows and the tiles of the patterns hold samples of the image: they are combined with its curves
+        using (var layered = new Image<Rgb24>(3, 1, new Rgb24(0, 0, 0)))
+        {
+            layered.Metadata.IccProfile = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.Gamma(0x0200));
+            var tile = new PatternBrush(new Rectangle(0, 0, 1, 1), static canvas =>
+            {
+                canvas.Fill(new Rgba32(0, 0, 0));
+                canvas.FillRectangle(White, new RectangleD(0, 0, 0.5, 1));
+            });
+            layered.Draw(
+                canvas => canvas.Compositing(CompositingSpace.LinearSrgb, inner =>
+                {
+                    inner.Layer(32768 / 65536.0, static layer => layer.FillRectangle(White, new Rectangle(0, 0, 1, 1)));
+                    inner.Shadow(new Rgba32(255, 255, 255, 128), new PointD(1, 0), 0, static layer => layer.FillRectangle(new Rgba32(0, 0, 0), new Rectangle(0, 0, 1, 1)));
+                    inner.FillRectangle(tile, new Rectangle(2, 0, 1, 1));
+                }),
+                Ct);
+            // The shadow is white at 128 / 255 of its opacity: sqrt(0.50196) = 0.7085 -> 180.7
+            Assert.Equal(new Rgb24(0, 0, 0), layered.Frames[0][0, 0]);
+            Assert.Equal(new Rgb24(181, 181, 181), layered.Frames[0][1, 0]);
+
+            // Half of the tile is white over black: its pixel is half the light of white, with the curve of the image
+            // and not the function of sRGB, which would give 188
+            Assert.Equal(new Rgb24(180, 180, 180), layered.Frames[0][2, 0]);
+        }
+
+        // The tables of the curves are charged to the image
+        using var probe = new Image<Rgb24>(4, 4, new Rgb24(0, 0, 0));
+        probe.Metadata.IccProfile = perChannel;
+        long before = 0;
+        long inside = 0;
+        probe.Draw(
+            canvas =>
+            {
+                before = probe.Owner.Scope.LiveBytes;
+                canvas.Compositing(CompositingSpace.LinearSrgb, _ => inside = probe.Owner.Scope.LiveBytes);
+            },
+            Ct);
+        Assert.True(inside >= before + (3 * 65792 * sizeof(double)));
+        Assert.Equal(0, probe.Owner.ActiveLeaseCount);
+        using var tight = new Image<Rgb24>(4, 4, new Rgb24(0, 0, 0), new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = before + 1024 } });
+        tight.Metadata.IccProfile = perChannel;
+        tight.Draw(static canvas => AssertThrows<ImageResourceLimitException>(canvas, static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static _ => Assert.Fail("The callback ran."))), Ct);
+    }
+
+    [Fact]
+    public void ABlurAddsLightWhenPaintsAreCombinedInLinearLight()
+    {
+        // Red next to green, blurred so much that every pixel is half of each: on the stored values, half way is the
+        // dark olive (128, 128, 0); in linear light, it is the yellow that half of the light of each color makes, 188
+        using var encoded = new Image<Rgb24>(4, 1);
+        using var linear = new Image<Rgb24>(4, 1);
+        foreach (var image in new[] { encoded, linear })
+        {
+            image.Draw(
+                static canvas =>
+                {
+                    canvas.FillRectangle(new Rgba32(255, 0, 0), new Rectangle(0, 0, 2, 1));
+                    canvas.FillRectangle(new Rgba32(0, 255, 0), new Rectangle(2, 0, 2, 1));
+                },
+                Ct);
+        }
+
+        encoded.Draw(static canvas => canvas.BlurBackdrop(60), Ct);
+        linear.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static inner => inner.BlurBackdrop(60)), Ct);
+        for (var x = 0; x < 4; x++)
+        {
+            Assert.InRange(encoded.Frames[0][x, 0].R, 124, 132);
+            Assert.InRange(encoded.Frames[0][x, 0].G, 124, 132);
+            Assert.InRange(linear.Frames[0][x, 0].R, 185, 191);
+            Assert.InRange(linear.Frames[0][x, 0].G, 185, 191);
+            Assert.Equal(0, linear.Frames[0][x, 0].B);
+        }
+
+        // The red side keeps a little more red, as on the stored values
+        Assert.True(linear.Frames[0][0, 0].R > linear.Frames[0][3, 0].R);
+        Assert.Equal(linear.Frames[0][0, 0].R, linear.Frames[0][3, 0].G);
+
+        // The same for a drawing that is blurred as a whole, in every format: the light of each pixel is what the
+        // blur of the stored values would give of white, w, decoded: with 16-bit samples, encode(w) to a few units
+        using var white = new Image<Rgba64>(9, 1, new Rgba64(0, 0, 0));
+        using var light = new Image<Rgba64>(9, 1, new Rgba64(0, 0, 0));
+        white.Draw(static canvas => canvas.Blur(1.5, static layer => layer.Clear(Colors.Black)), Ct);
+        white.Draw(static canvas => canvas.FillRectangle(White, new Rectangle(4, 0, 1, 1)), Ct);
+        light.Draw(static canvas => canvas.FillRectangle(White, new Rectangle(4, 0, 1, 1)), Ct);
+        white.Draw(static canvas => canvas.BlurBackdrop(1.5), Ct);
+        light.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static inner => inner.BlurBackdrop(1.5)), Ct);
+        for (var x = 0; x < 9; x++)
+        {
+            var weight = white.Frames[0][x, 0].R / 65535.0;
+            var expected = (weight <= 0.0031308 ? 12.92 * weight : (1.055 * Math.Pow(weight, 1 / 2.4)) - 0.055) * 65535;
+            Assert.InRange(light.Frames[0][x, 0].R, expected - 40, expected + 40);
+            Assert.Equal(light.Frames[0][x, 0].R, light.Frames[0][x, 0].G);
+            Assert.Equal(65535, light.Frames[0][x, 0].A);
+        }
+
+        Assert.True(light.Frames[0][3, 0].R > white.Frames[0][3, 0].R + 10000);
+
+        // With the tone curves of a profile, and on a gray image: gamma 2, so half the light is 180
+        using var gray = new Image<Gray8>(4, 1, new Gray8(0));
+        gray.Metadata.IccProfile = IccTestProfiles.Gray(IccTestProfiles.Gamma(0x0200));
+        gray.Draw(
+            static canvas =>
+            {
+                canvas.FillRectangle(White, new Rectangle(0, 0, 2, 1));
+                canvas.Compositing(CompositingSpace.LinearSrgb, static inner => inner.BlurBackdrop(60));
+            },
+            Ct);
+        Assert.All(DrawingTestSupport.ReadSamples(gray.Frames[0]), sample => Assert.InRange(sample, 177, 183));
+
+        // A blurred layer of one color keeps that color: only its alpha is spread, and it is combined in linear light
+        using var layer = new Image<Rgb24>(5, 1, new Rgb24(0, 0, 0));
+        layer.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static inner => inner.Blur(60, static blurred => blurred.FillRectangle(White, new Rectangle(0, 0, 5, 1)))), Ct);
+        Assert.All(DrawingTestSupport.ReadSamples(layer.Frames[0]), sample => Assert.Equal(255, sample));
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Paint colors of a profile
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void PaintsOfAProfileAreConvertedToTheColorSpaceOfTheImage()
+    {
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        var red = new Rgba64(65535, 0, 0);
+
+        // The red of sRGB, on an image whose profile is Display P3: (0.9175, 0.2003, 0.1386) of its samples, where
+        // the red (65535, 0, 0) of the image is a color sRGB does not have
+        using (var image = new Image<Rgba64>(2, 1))
+        {
+            image.Metadata.IccProfile = displayP3;
+            image.Draw(
+                canvas =>
+                {
+                    canvas.FillRectangle(red, new Rectangle(0, 0, 1, 1));
+                    canvas.PaintProfile(IccProfile.Srgb, inner => inner.FillRectangle(red, new Rectangle(1, 0, 1, 1)));
+                },
+                Ct);
+            Assert.Equal(red, image.Frames[0][0, 0]);
+            var converted = image.Frames[0][1, 0];
+            Assert.InRange(converted.R, (0.9175 * 65535) - 80, (0.9175 * 65535) + 80);
+            Assert.InRange(converted.G, (0.2003 * 65535) - 80, (0.2003 * 65535) + 80);
+            Assert.InRange(converted.B, (0.1386 * 65535) - 80, (0.1386 * 65535) + 80);
+            Assert.Equal(65535, converted.A);
+
+            // It is the conversion of an ICC transform between the two profiles
+            ushort[] expected = [65535, 0, 0];
+            IccColorTransform.Create(IccProfile.Srgb, displayP3).Convert(expected, expected);
+            Assert.Equal(new Rgba64(expected[0], expected[1], expected[2]), converted);
+        }
+
+        // The same image described by a CICP color description instead (the primaries of Display P3, the function
+        // of sRGB): the same color, from the chromaticities of the primaries instead of the colorants of a profile
+        using (var described = new Image<Rgba64>(1, 1))
+        {
+            described.Metadata.Cicp = new CicpColorDescription(12, 13, 0, fullRange: true);
+            described.Draw(canvas => canvas.PaintProfile(IccProfile.Srgb, inner => inner.Fill(red)), Ct);
+            var converted = described.Frames[0][0, 0];
+            Assert.InRange(converted.R, (0.9175 * 65535) - 80, (0.9175 * 65535) + 80);
+            Assert.InRange(converted.G, (0.2003 * 65535) - 80, (0.2003 * 65535) + 80);
+            Assert.InRange(converted.B, (0.1386 * 65535) - 80, (0.1386 * 65535) + 80);
+        }
+
+        // On the wider primaries of BT.2020 with the function of BT.709: the light (0.6274, 0.0691, 0.0164), encoded
+        // as 1.099 l^0.45 - 0.099, or 4.5 l under 0.018
+        using (var wide = new Image<Rgba64>(1, 1))
+        {
+            wide.Metadata.Cicp = new CicpColorDescription(9, 1, 0, fullRange: true);
+            wide.Draw(canvas => canvas.PaintProfile(IccProfile.Srgb, inner => inner.Fill(red)), Ct);
+            var converted = wide.Frames[0][0, 0];
+            Assert.InRange(converted.R, (((1.099 * Math.Pow(0.6274, 0.45)) - 0.099) * 65535) - 100, (((1.099 * Math.Pow(0.6274, 0.45)) - 0.099) * 65535) + 100);
+            Assert.InRange(converted.G, (((1.099 * Math.Pow(0.0691, 0.45)) - 0.099) * 65535) - 100, (((1.099 * Math.Pow(0.0691, 0.45)) - 0.099) * 65535) + 100);
+            Assert.InRange(converted.B, (4.5 * 0.0164 * 65535) - 100, (4.5 * 0.0164 * 65535) + 100);
+        }
+
+        // On an sRGB image, the colors of sRGB are not changed, bit for bit; those of Display P3 that sRGB does not
+        // have are clipped, component by component, and its grays are the same grays
+        using (var plain = new Image<Rgba32>(4, 1))
+        {
+            plain.Draw(
+                canvas =>
+                {
+                    canvas.PaintProfile(IccProfile.Srgb, inner => inner.FillRectangle(new Rgba32(200, 100, 40, 128), new Rectangle(0, 0, 1, 1)));
+                    canvas.PaintProfile(displayP3, inner =>
+                    {
+                        inner.FillRectangle(new Rgba32(255, 0, 0), new Rectangle(1, 0, 1, 1));
+                        inner.FillRectangle(new Rgba32(128, 128, 128), new Rectangle(2, 0, 1, 1));
+                        inner.FillRectangle(new Rgba32(200, 100, 40), new Rectangle(3, 0, 1, 1));
+                    });
+                },
+                Ct);
+            Assert.Equal(new Rgba32(200, 100, 40, 128), plain.Frames[0][0, 0]);
+            Assert.Equal(new Rgba32(255, 0, 0), plain.Frames[0][1, 0]);
+            Assert.Equal(new Rgba32(128, 128, 128), plain.Frames[0][2, 0], new SampleComparer(1));
+
+            // A color of Display P3 is more saturated than the same samples in sRGB: more red, less green and blue
+            var orange = plain.Frames[0][3, 0];
+            Assert.True(orange.R > 200 && orange.G < 100 && orange.B < 40);
+        }
+
+        // On a grayscale image, a color is the gray that has its luminance in the connection space of the profiles,
+        // as a conversion to a gray profile gives it (0.2225 of the light of white for the red of sRGB once adapted
+        // to D50, which the function of sRGB encodes as 0.5090), not the luma of its samples (0.2126 of white)
+        using (var gray = new Image<Gray16>(2, 1))
+        {
+            gray.Draw(
+                canvas =>
+                {
+                    canvas.FillRectangle(red, new Rectangle(0, 0, 1, 1));
+                    canvas.PaintProfile(IccProfile.Srgb, inner => inner.FillRectangle(red, new Rectangle(1, 0, 1, 1)));
+                },
+                Ct);
+            Assert.Equal(new Gray16(13933), gray.Frames[0][0, 0]);
+            Assert.InRange(gray.Frames[0][1, 0].Value, (0.5090 * 65535) - 100, (0.5090 * 65535) + 100);
+            ushort[] expected = [65535, 0, 0];
+            var luminance = new ushort[1];
+            IccColorTransform.Create(IccProfile.Srgb, IccProfile.SrgbGray).Convert(expected, luminance);
+            Assert.Equal(new Gray16(luminance[0]), gray.Frames[0][1, 0]);
+        }
+    }
+
+    [Fact]
+    public void EveryColorThatIsGivenIsAColorOfTheProfileOfThePaints()
+    {
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        var red = new Rgba64(65535, 0, 0);
+        var blue = new Rgba64(0, 0, 65535);
+        using var image = new Image<Rgba64>(8, 4);
+        image.Metadata.IccProfile = displayP3;
+        using var texture = new Image<Rgba64>(1, 1, red);
+        Rgba64 convertedRed = default;
+        Rgba64 convertedBlue = default;
+        image.Draw(
+            canvas =>
+            {
+                canvas.PaintProfile(IccProfile.Srgb, inner =>
+                {
+                    inner.FillRectangle(red, new Rectangle(0, 0, 1, 1));
+                    inner.FillRectangle(blue, new Rectangle(1, 0, 1, 1));
+                });
+            },
+            Ct);
+        convertedRed = image.Frames[0][0, 0];
+        convertedBlue = image.Frames[0][1, 0];
+        Assert.NotEqual(red, convertedRed);
+        Assert.NotEqual(blue, convertedBlue);
+
+        GradientStop[] stops = [new(0, red), new(1, blue)];
+        image.Draw(
+            canvas =>
+            {
+                canvas.Clear(Colors.Transparent);
+                canvas.PaintProfile(IccProfile.Srgb, inner =>
+                {
+                    // The stops of a gradient, in the three spaces their colors are mixed in: at a stop, the color
+                    // of the stop
+                    inner.FillRectangle(new LinearGradientBrush(new PointD(0.5, 0), new PointD(7.5, 0), stops), new Rectangle(0, 0, 8, 1));
+                    inner.FillRectangle(new LinearGradientBrush(new PointD(0.5, 0), new PointD(7.5, 0), stops) { ColorSpace = GradientColorSpace.LinearSrgb }, new Rectangle(0, 1, 8, 1));
+                    inner.FillRectangle(new LinearGradientBrush(new PointD(0.5, 0), new PointD(7.5, 0), stops) { ColorSpace = GradientColorSpace.Oklab }, new Rectangle(0, 2, 8, 1));
+
+                    // A layer and the tile of a pattern hold samples of the image: their paints are converted once
+                    inner.Layer(1, layer => layer.FillRectangle(red, new Rectangle(0, 3, 1, 1)));
+                    inner.FillRectangle(new PatternBrush(new Rectangle(0, 0, 1, 1), tile => tile.Fill(red)), new Rectangle(1, 3, 1, 1));
+
+                    // The color of a shadow, whose drawing is erased here
+                    inner.Shadow(red, new PointD(1, 0), 0, shadowed => shadowed.FillRectangle(blue, new Rectangle(2, 3, 1, 1)));
+
+                    // An image that is drawn, or that a brush paints, is samples already: not converted
+                    inner.DrawImage(texture.Frames[0], new PointD(4, 3));
+                    inner.FillRectangle(new ImageBrush(texture.Frames[0]) { WrapMode = ImageWrapMode.Repeat }, new Rectangle(5, 3, 1, 1));
+
+                    // A scope inside another one: the profile of the image changes nothing
+                    inner.PaintProfile(displayP3, same => same.FillRectangle(red, new Rectangle(6, 3, 1, 1)));
+                });
+
+                // After the callback, the colors are samples of the image again, also when the callback throws
+                try
+                {
+                    canvas.PaintProfile(IccProfile.Srgb, 1, static (_, _) => throw new FormatException("stop"));
+                }
+                catch (FormatException)
+                {
+                }
+
+                canvas.FillRectangle(red, new Rectangle(7, 3, 1, 1));
+            },
+            Ct);
+        var frame = image.Frames[0];
+        for (var row = 0; row < 3; row++)
+        {
+            Assert.Equal(convertedRed, frame[0, row]);
+            Assert.Equal(convertedBlue, frame[7, row]);
+        }
+
+        // In the middle, the gradient that mixes light is lighter than the one that mixes the stored values
+        Assert.True(frame[3, 1].R > frame[3, 0].R);
+        Assert.NotEqual(frame[3, 1], frame[3, 2]);
+        Assert.Equal(convertedRed, frame[0, 3]);
+        Assert.Equal(convertedRed, frame[1, 3]);
+        Assert.Equal(convertedBlue, frame[2, 3]);
+        Assert.Equal(convertedRed, frame[3, 3]);
+        Assert.Equal(red, frame[4, 3]);
+        Assert.Equal(red, frame[5, 3]);
+        Assert.Equal(red, frame[6, 3]);
+        Assert.Equal(red, frame[7, 3]);
+
+        // Clearing the canvas with a color of the profile, and 8-bit samples: the converted color, rounded
+        using var narrow = new Image<Rgb24>(1, 1);
+        narrow.Metadata.IccProfile = displayP3;
+        narrow.Draw(static canvas => canvas.PaintProfile(IccProfile.Srgb, static inner => inner.Clear(new Rgba32(255, 0, 0))), Ct);
+        Assert.Equal(new Rgb24((byte)((convertedRed.R + 128) / 257), (byte)((convertedRed.G + 128) / 257), (byte)((convertedRed.B + 128) / 257)), narrow.Frames[0][0, 0]);
+    }
+
+    [Fact]
+    public void TheProfileOfThePaintsAndTheColorSpaceOfTheImageAreValidated()
+    {
+        using var image = new Image<Rgba32>(1, 1, new Rgba32(1, 2, 3));
+        image.Draw(
+            static canvas =>
+            {
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.PaintProfile(null!, static _ => { }));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.PaintProfile(IccProfile.Srgb, null!));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.PaintProfile(null!, 1, static (_, _) => { }));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.PaintProfile(IccProfile.Srgb, 1, null!));
+
+                // The colors of the paints are red, green and blue values
+                AssertThrows<UnsupportedImageFeatureException>(canvas, static canvas => canvas.PaintProfile(IccProfile.SrgbGray, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<UnsupportedImageFeatureException>(canvas, static canvas => canvas.PaintProfile(IccProfile.Cgats001CompatibleCmyk, 1, static (_, _) => Assert.Fail("The callback ran.")));
+
+                // The options are those of a color conversion
+                canvas.PaintProfile(IccProfile.Srgb, static inner => inner.Fill(new Rgba32(9, 8, 7)), new IccColorTransformOptions { Intent = IccRenderingIntent.RelativeColorimetric, BlackPointCompensation = false });
+            },
+            Ct);
+        Assert.Equal(new Rgba32(9, 8, 7), image.Frames[0][0, 0]);
+
+        // High dynamic range samples: the light of the white of a paint among them is not chosen implicitly
+        foreach (var transfer in new byte[] { 16, 18 })
+        {
+            using var hdr = new Image<Rgba64>(1, 1);
+            hdr.Metadata.Cicp = new CicpColorDescription(9, transfer, 0, fullRange: true);
+            hdr.Draw(static canvas => AssertThrows<UnsupportedImageFeatureException>(canvas, static canvas => canvas.PaintProfile(IccProfile.Srgb, static _ => Assert.Fail("The callback ran."))), Ct);
+            Assert.Equal(default, hdr.Frames[0][0, 0]);
+        }
+
+        // A profile that cannot label the pixels of the image, and one that cannot be a destination
+        using var mislabeled = new Image<Rgba32>(1, 1);
+        mislabeled.Metadata.IccProfile = IccProfile.SrgbGray;
+        mislabeled.Draw(static canvas => AssertThrows<UnsupportedImageFeatureException>(canvas, static canvas => canvas.PaintProfile(IccProfile.Srgb, static _ => Assert.Fail("The callback ran."))), Ct);
+
+        // A profile and the linear light label: the color space of the image is ambiguous
+        using var ambiguous = new Image<Rgba32>(1, 1);
+        ambiguous.Metadata.IccProfile = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        ambiguous.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        ambiguous.Draw(static canvas => AssertThrows<UnsupportedImageFeatureException>(canvas, static canvas => canvas.PaintProfile(IccProfile.Srgb, static _ => Assert.Fail("The callback ran."))), Ct);
+
+        // Samples labeled as linear sRGB: the red of sRGB at half its value is 0.2140 of the light of red
+        using var linear = new Image<Rgba64>(1, 1);
+        linear.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        linear.Draw(static canvas => canvas.PaintProfile(IccProfile.Srgb, static inner => inner.Fill(new Rgba64(32768, 0, 0))), Ct);
+        Assert.InRange(linear.Frames[0][0, 0].R, (0.2140 * 65535) - 30, (0.2140 * 65535) + 30);
+        Assert.Equal(0, linear.Frames[0][0, 0].G);
     }
 
     private delegate void CanvasAction(DrawingCanvas canvas);

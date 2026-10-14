@@ -91,6 +91,25 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.IccColorTransformOptions Transform { get => throw null; init { } }
     }
 
+    public sealed class ColorMatrix
+    {
+        public static Meziantou.Framework.Imaging.ColorMatrix Identity { get => throw null; }
+        public bool IsIdentity { get => throw null; }
+        public double this[int row, int column] { get => throw null; }
+        public ColorMatrix(System.ReadOnlySpan<double> values) { }
+        public static Meziantou.Framework.Imaging.ColorMatrix CreateBrightness(double amount) => throw null;
+        public static Meziantou.Framework.Imaging.ColorMatrix CreateContrast(double amount) => throw null;
+        public static Meziantou.Framework.Imaging.ColorMatrix CreateDuotone(Meziantou.Framework.Imaging.Rgba64 dark, Meziantou.Framework.Imaging.Rgba64 light) => throw null;
+        public static Meziantou.Framework.Imaging.ColorMatrix CreateGrayscale(double amount = 1d) => throw null;
+        public static Meziantou.Framework.Imaging.ColorMatrix CreateHueRotation(double degrees) => throw null;
+        public static Meziantou.Framework.Imaging.ColorMatrix CreateInvert(double amount = 1d) => throw null;
+        public static Meziantou.Framework.Imaging.ColorMatrix CreateOpacity(double amount) => throw null;
+        public static Meziantou.Framework.Imaging.ColorMatrix CreateSaturation(double amount) => throw null;
+        public static Meziantou.Framework.Imaging.ColorMatrix CreateSepia(double amount = 1d) => throw null;
+        public static Meziantou.Framework.Imaging.ColorMatrix CreateTint(Meziantou.Framework.Imaging.Rgba64 color) => throw null;
+        public Meziantou.Framework.Imaging.ColorMatrix Then(Meziantou.Framework.Imaging.ColorMatrix next) => throw null;
+    }
+
     public static class Colors
     {
         public static Meziantou.Framework.Imaging.Rgba32 AliceBlue { get => throw null; }
@@ -617,6 +636,8 @@ namespace Meziantou.Framework.Imaging
     {
         public static Meziantou.Framework.Imaging.AutoCropAnalysis AnalyzeAutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static Meziantou.Framework.Imaging.AutoCropAnalysis<TPixel> AnalyzeAutoCrop<TPixel>(this Meziantou.Framework.Imaging.Image<TPixel> image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged => throw null;
+        public static void ApplyColorMatrix(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ColorMatrix matrix, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void ApplyColorMatrix(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ColorMatrix matrix, System.Threading.CancellationToken cancellationToken = default) { }
         public static bool AutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static bool AutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropAnalysis analysis, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static void AutoOrient(this Meziantou.Framework.Imaging.Image image, System.Threading.CancellationToken cancellationToken = default) { }
@@ -1209,12 +1230,17 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.PointD origin) { }
         public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.TextPathOptions? options = null) { }
         public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, string text, Meziantou.Framework.Imaging.Typography.Font font, double size, Meziantou.Framework.Imaging.PointD origin) { }
+        public void Filter(Meziantou.Framework.Imaging.ColorMatrix matrix, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
+        public void Filter<TState>(Meziantou.Framework.Imaging.ColorMatrix matrix, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
+        public void FilterBackdrop(Meziantou.Framework.Imaging.ColorMatrix matrix) { }
         public void InnerShadow(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void InnerShadow<TState>(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void Layer(double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) { }
         public void Layer<TState>(double opacity, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) where TState : allows ref struct { }
         public void Mask(Meziantou.Framework.Imaging.Drawing.DrawingAction mask, Meziantou.Framework.Imaging.Drawing.DrawingAction content, Meziantou.Framework.Imaging.Drawing.MaskMode mode = Meziantou.Framework.Imaging.Drawing.MaskMode.Alpha) { }
         public void Mask<TState>(TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> mask, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> content, Meziantou.Framework.Imaging.Drawing.MaskMode mode = Meziantou.Framework.Imaging.Drawing.MaskMode.Alpha) where TState : allows ref struct { }
+        public void PaintProfile(Meziantou.Framework.Imaging.Metadata.IccProfile profile, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.IccColorTransformOptions? options = null) { }
+        public void PaintProfile<TState>(Meziantou.Framework.Imaging.Metadata.IccProfile profile, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, Meziantou.Framework.Imaging.IccColorTransformOptions? options = null) where TState : allows ref struct { }
         public void Shadow(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void Shadow<TState>(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void Stroke(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Drawing.VectorPath path) { }
@@ -1409,6 +1435,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Drawing.LineCap LineCap { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.LineJoin LineJoin { get => throw null; init { } }
         public double MiterLimit { get => throw null; init { } }
+        public bool ScalesWithTransform { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.LineMarker? StartMarker { get => throw null; init { } }
         public double Width { get => throw null; }
         public Pen(Meziantou.Framework.Imaging.Drawing.Brush brush, double width) { }
@@ -1483,13 +1510,16 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Drawing.PathSegmentEnumerator EnumerateSegments() => throw null;
         public double GetLength() => throw null;
         public Meziantou.Framework.Imaging.RectangleD GetTightBounds() => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPath Offset(double distance, Meziantou.Framework.Imaging.Drawing.LineJoin join = Meziantou.Framework.Imaging.Drawing.LineJoin.Miter, double miterLimit = 4d, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static Meziantou.Framework.Imaging.Drawing.VectorPath ParseSvgPathData(System.ReadOnlySpan<char> svgPathData) => throw null;
         public static Meziantou.Framework.Imaging.Drawing.VectorPath ParseSvgPathData(string svgPathData) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Reverse() => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPath RoundCorners(double radius) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Simplify(Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public string ToSvgPathData() => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Transform(Meziantou.Framework.Imaging.AffineTransform transform) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Trim(double start, double end) => throw null;
+        public bool TryGetClosestPoint(Meziantou.Framework.Imaging.PointD point, out Meziantou.Framework.Imaging.PointD closest, out double distanceAlongPath) => throw null;
         public bool TryGetPointAtDistance(double distance, out Meziantou.Framework.Imaging.PointD point, out Meziantou.Framework.Imaging.PointD tangent) => throw null;
         public static bool TryParseSvgPathData(System.ReadOnlySpan<char> svgPathData, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Imaging.Drawing.VectorPath? path) => throw null;
         public static bool TryParseSvgPathData([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? svgPathData, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Imaging.Drawing.VectorPath? path) => throw null;
@@ -2234,6 +2264,7 @@ namespace Meziantou.Framework.Imaging.Typography
     public sealed class RichTextBuilder
     {
         public Meziantou.Framework.Imaging.Typography.RichTextBuilder Append(string text, Meziantou.Framework.Imaging.Typography.TextStyle style) => throw null;
+        public Meziantou.Framework.Imaging.Typography.RichTextBuilder AppendPlaceholder(double width, double height, double baseline, Meziantou.Framework.Imaging.Typography.TextStyle style) => throw null;
         public Meziantou.Framework.Imaging.Typography.RichText Build() => throw null;
         public void Clear() { }
     }
@@ -2294,10 +2325,14 @@ namespace Meziantou.Framework.Imaging.Typography
         public bool IsTruncated { get => throw null; }
         public int LineCount { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.TextLine> Lines { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.RectangleD> Placeholders { get => throw null; }
+        public double Scale { get => throw null; }
         public double Width { get => throw null; }
         public static Meziantou.Framework.Imaging.Typography.TextLayout Create(Meziantou.Framework.Imaging.Typography.RichText text, Meziantou.Framework.Imaging.Typography.TextLayoutOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Typography.TextLayout Create(string text, Meziantou.Framework.Imaging.Typography.Font font, double size) => throw null;
         public static Meziantou.Framework.Imaging.Typography.TextLayout Create(string text, Meziantou.Framework.Imaging.Typography.TextStyle style, Meziantou.Framework.Imaging.Typography.TextLayoutOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.TextLayout CreateToFit(Meziantou.Framework.Imaging.Typography.RichText text, double width, double height, Meziantou.Framework.Imaging.Typography.TextLayoutOptions? options = null, double minimumScale = 0.1d) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.TextLayout CreateToFit(string text, Meziantou.Framework.Imaging.Typography.TextStyle style, double width, double height, Meziantou.Framework.Imaging.Typography.TextLayoutOptions? options = null, double minimumScale = 0.1d) => throw null;
         public Meziantou.Framework.Imaging.RectangleD GetCaretRectangle(int textIndex) => throw null;
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.RectangleD> GetSelectionRectangles(int start, int length) => throw null;
         public Meziantou.Framework.Imaging.Typography.TextHit HitTest(Meziantou.Framework.Imaging.PointD point) => throw null;
@@ -2319,11 +2354,13 @@ namespace Meziantou.Framework.Imaging.Typography
         public double MaxHeight { get => throw null; init { } }
         public int MaxLines { get => throw null; init { } }
         public double MaxWidth { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextOrientation Orientation { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextOverflowWrap OverflowWrap { get => throw null; init { } }
         public int TabSize { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextTrimming Trimming { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextWordBreak WordBreak { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextWrapping Wrapping { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextWritingMode WritingMode { get => throw null; init { } }
     }
 
     public readonly struct TextLine : System.IEquatable<Meziantou.Framework.Imaging.Typography.TextLine>
@@ -2350,6 +2387,13 @@ namespace Meziantou.Framework.Imaging.Typography
         Anywhere = 2,
     }
 
+    public enum TextOrientation
+    {
+        Mixed = 0,
+        Upright = 1,
+        Sideways = 2,
+    }
+
     public enum TextOverflowWrap
     {
         Normal = 0,
@@ -2358,6 +2402,7 @@ namespace Meziantou.Framework.Imaging.Typography
 
     public readonly struct TextSpan : System.IEquatable<Meziantou.Framework.Imaging.Typography.TextSpan>
     {
+        public bool IsPlaceholder { get => throw null; }
         public int Length { get => throw null; }
         public int Start { get => throw null; }
         public Meziantou.Framework.Imaging.Typography.TextStyle Style { get => throw null; }
@@ -2370,6 +2415,7 @@ namespace Meziantou.Framework.Imaging.Typography
 
     public sealed class TextStyle
     {
+        public Meziantou.Framework.Imaging.Drawing.Brush? BackgroundBrush { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.Brush? Brush { get => throw null; init { } }
         public int ColorPaletteIndex { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.Brush? DecorationBrush { get => throw null; init { } }
@@ -2379,6 +2425,7 @@ namespace Meziantou.Framework.Imaging.Typography
         public Meziantou.Framework.Hyphenator? Hyphenator { get => throw null; init { } }
         public string? Language { get => throw null; init { } }
         public double LetterSpacing { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.Pen? Outline { get => throw null; init { } }
         public double Size { get => throw null; }
         public Meziantou.Framework.Imaging.Typography.FontSynthesis Synthesis { get => throw null; init { } }
         public double WordSpacing { get => throw null; init { } }
@@ -2403,5 +2450,12 @@ namespace Meziantou.Framework.Imaging.Typography
     {
         Wrap = 0,
         NoWrap = 1,
+    }
+
+    public enum TextWritingMode
+    {
+        Horizontal = 0,
+        VerticalRightToLeft = 1,
+        VerticalLeftToRight = 2,
     }
 }

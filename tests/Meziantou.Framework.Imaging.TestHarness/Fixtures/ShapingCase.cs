@@ -25,6 +25,10 @@ public sealed class ShapingCase
     [JsonPropertyName("language")]
     public string? Language { get; init; }
 
+    /// <summary>Gets the direction the text is shaped in, in the syntax of the reference shaper (<c>ttb</c> for a vertical line of upright glyphs); <see langword="null"/> for the direction of the script, in a horizontal line.</summary>
+    [JsonPropertyName("direction")]
+    public string? Direction { get; init; }
+
     [JsonPropertyName("glyphs")]
     public required IReadOnlyList<IReadOnlyList<int>> Glyphs { get; init; }
 

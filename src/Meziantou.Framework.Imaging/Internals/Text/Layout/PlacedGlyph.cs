@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 [StructLayout(LayoutKind.Auto)]
 internal struct PlacedGlyph
 {
-    /// <summary>The identifier of the glyph; -1 for a tabulation, which only takes space.</summary>
+    /// <summary>The identifier of the glyph; -1 for a tabulation or a placeholder, which only take space.</summary>
     public int Glyph;
 
     /// <summary>The index in the text of the first character of the cluster of the glyph.</summary>
@@ -40,6 +40,15 @@ internal struct PlacedGlyph
 
     /// <summary>The glyph is white space that hangs at the end of a wrapped line: it is not decorated.</summary>
     public bool IsHanging;
+
+    /// <summary>The glyph is upright in a vertical line: its offsets are those of its vertical origin, along the line then across it.</summary>
+    public bool IsUpright;
+
+    /// <summary>How far below the baseline of its line the glyph has its own: in a vertical line, the text that is on its side has the middle of its font on the central baseline.</summary>
+    public double BaselineShift;
+
+    /// <summary>The glyph is the room of what the caller draws in the line: it has no outline.</summary>
+    public bool IsPlaceholder;
 
     /// <summary>The text the glyph belongs to goes from right to left: its first character is on its right.</summary>
     public bool IsRightToLeft;

@@ -480,6 +480,123 @@ public sealed class VectorPath
         return PathCombiner.Combine(this, second: null, PathCombineMode.Union, fillRule, cancellationToken);
     }
 
+    /// <summary>Finds the point of the path that is the nearest to a position: what a pointer snaps to, or the place of a path a click is at.</summary>
+    /// <remarks>
+    /// The path is the one that is drawn: its curves are their chords, within 1/16 of a pixel of the curve, a closed
+    /// contour includes its closing segment, and the gap between two contours is no part of it. The distance along
+    /// the path is the one <see cref="TryGetPointAtDistance"/> and <see cref="Trim"/> take. When several points are as
+    /// near, the first one along the path is given. Each call walks the whole path.
+    /// </remarks>
+    /// <param name="point">The position.</param>
+    /// <param name="closest">The nearest point of the path.</param>
+    /// <param name="distanceAlongPath">The distance from the start of the path to that point, along the path, in pixels.</param>
+    /// <returns><see langword="false"/> when the path has no length: there is no point to find.</returns>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="point"/> is not a finite number.</exception>
+    public bool TryGetClosestPoint(PointD point, out PointD closest, out double distanceAlongPath)
+    {
+        if (!double.IsFinite(point.X) || !double.IsFinite(point.Y))
+            throw new ArgumentException("The coordinates must be finite numbers.", nameof(point));
+
+        if (!IsEmpty)
+        {
+            var sink = new ClosestPointSink(point.X, point.Y);
+            PathFlattener.Flatten(this, sink);
+            if (sink.IsFound)
+            {
+                closest = new PointD(sink.PointX, sink.PointY);
+                distanceAlongPath = sink.Distance;
+                return true;
+            }
+        }
+
+        closest = default;
+        distanceAlongPath = 0;
+        return false;
+    }
+
+    /// <summary>Creates the path whose corners between two straight segments are replaced by arcs of a circle: a polygon, a star or an arrow with soft corners.</summary>
+    /// <remarks>
+    /// <para>
+    /// A corner is a vertex between two straight segments of a contour: the vertices of an open contour between its
+    /// ends, and every vertex of a closed contour, the one it starts at included. It becomes the arc of the circle of
+    /// radius <paramref name="radius"/> that touches both segments. Where a segment is too short for the circle to
+    /// touch it before its middle, the circle is the smaller one that touches both segments at half the length of the
+    /// shorter one: two corners never meet on a segment, and a rectangle gets the corners of
+    /// <see cref="VectorPathBuilder.AddRoundedRectangle(RectangleD, double)"/>.
+    /// </para>
+    /// <para>
+    /// The other vertices are kept: those where a curve or an arc starts or ends, and those where a contour goes
+    /// back on itself. The result has arcs where the path had corners: it stays smooth when it is enlarged.
+    /// </para>
+    /// </remarks>
+    /// <param name="radius">The radius of the corners, in pixels: 0 keeps the path as it is.</param>
+    /// <returns>The path with round corners; this instance when the radius is 0 or the path is empty.</returns>
+    /// <exception cref="ArgumentException"><paramref name="radius"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="radius"/> is negative or exceeds 16777216.</exception>
+    public VectorPath RoundCorners(double radius)
+    {
+        DrawingGuard.Length(radius, nameof(radius));
+        if (radius == 0 || IsEmpty)
+            return this;
+
+        return PathCornerRounder.Round(this, radius);
+    }
+
+    /// <summary>Creates the outline of what this path fills, moved outward or inward by a distance: a shape made larger or smaller by the same margin all around.</summary>
+    /// <remarks>
+    /// <para>
+    /// A positive distance gives the outline of what the path fills together with what a pen twice as wide as the
+    /// distance strokes along its boundary: every side moves outward by the distance, and a hole gets smaller. A
+    /// negative distance gives what the path fills less that stroke: every side moves inward, a hole gets larger, and
+    /// a part of the shape that is narrower than twice the distance disappears. <paramref name="join"/> is the shape
+    /// of the corners that the sides move away from: the corners of a shape that grows, the corners of a hole, and
+    /// the notches of a shape that shrinks; with <see cref="LineJoin.Round"/>, the result is what is within the
+    /// distance of the shape. A curve of the path stays round whatever the join.
+    /// </para>
+    /// <para>
+    /// What moves is the boundary of the area, not each contour: contours that overlap are moved as the one shape they
+    /// fill, and an open contour is closed by a straight segment, as when it is filled. A path that fills nothing (a
+    /// line) has no outline to move: <see cref="Widen"/> gives the outline of its stroke.
+    /// </para>
+    /// <para>
+    /// The result is made as <see cref="Combine"/> makes it: closed contours of straight segments that do not cross,
+    /// on a grid of 1/1024 of a pixel, for the size the path has. Transform a path before moving its outline, not
+    /// after. Pass a <paramref name="cancellationToken"/> when the path comes from untrusted input.
+    /// </para>
+    /// </remarks>
+    /// <param name="distance">The distance, in pixels: positive to make the shape larger, negative to make it smaller, 0 for its outline (see <see cref="Simplify"/>).</param>
+    /// <param name="join">The shape of the corners the sides move away from.</param>
+    /// <param name="miterLimit">The limit of <see cref="LineJoin.Miter"/> corners, as <see cref="Pen.MiterLimit"/>: the largest ratio between the length of a miter and twice the distance, beyond which a corner is beveled.</param>
+    /// <param name="fillRule">The rule deciding what this path fills.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The outline; an empty path when nothing is left.</returns>
+    /// <exception cref="ArgumentException"><paramref name="distance"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// The magnitude of <paramref name="distance"/> exceeds 16777216, <paramref name="join"/> or
+    /// <paramref name="fillRule"/> is not defined, <paramref name="miterLimit"/> is not between 1 and 1048576, or the
+    /// result goes beyond the largest coordinate (16777216).
+    /// </exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public VectorPath Offset(double distance, LineJoin join = LineJoin.Miter, double miterLimit = 4, FillRule fillRule = FillRule.NonZero, CancellationToken cancellationToken = default)
+    {
+        if (!double.IsFinite(distance))
+            throw new ArgumentException("The distance must be a finite number.", nameof(distance));
+
+        if (Math.Abs(distance) > DrawingGuard.MaxCoordinate)
+            throw new ArgumentOutOfRangeException(nameof(distance), distance, "The magnitude of the distance must not exceed 16777216.");
+
+        if (join is not (LineJoin.Miter or LineJoin.Round or LineJoin.Bevel))
+            throw new ArgumentOutOfRangeException(nameof(join), join, "The line join is not valid.");
+
+        if (!(miterLimit >= 1 && miterLimit <= 1048576))
+            throw new ArgumentOutOfRangeException(nameof(miterLimit), miterLimit, "The miter limit must be between 1 and 1048576.");
+
+        if (fillRule is not (FillRule.NonZero or FillRule.EvenOdd))
+            throw new ArgumentOutOfRangeException(nameof(fillRule), fillRule, "The fill rule is not valid.");
+
+        return PathOffsetter.Offset(this, distance, join, miterLimit, fillRule, cancellationToken);
+    }
+
     /// <summary>Gets the smallest rectangle containing every point and control point of a list of elements.</summary>
     internal static RectangleD ComputeBounds(ReadOnlySpan<PathCommand> commands, ReadOnlySpan<double> points)
     {

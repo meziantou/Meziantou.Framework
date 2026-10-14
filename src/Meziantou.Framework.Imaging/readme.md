@@ -530,8 +530,9 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 In-place extension methods (`ImageProcessingExtensions`), applied to every frame and the poster:
 `Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `Rotate` (exact 90/180/270
 permutations), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
-alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage) and `Convolve` (a convolution
-matrix). `Flip`, `Grayscale` and `Convolve` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
+alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
+color for each pixel from its own one: brightness, contrast, saturation, a tint) and `Convolve` (a convolution
+matrix). `Flip`, `Grayscale`, `ApplyColorMatrix` and `Convolve` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
 (see [Color management](#color-management)).
 
@@ -680,6 +681,54 @@ public static void SharpenAndDetectEdges(string inputPath, string sharpenedPath,
 }
 ```
 
+**Color matrices**. `ApplyColorMatrix` gives each pixel a color computed from its own one, by a `ColorMatrix`: four
+rows, for the red, the green, the blue and the alpha of the result, of five coefficients, for the red, the green, the
+blue and the alpha of the pixel and for a constant (`R' = m00 R + m01 G + m02 B + m03 A + m04`, with the samples as
+fractions of one and straight alpha). This is the matrix of the `feColorMatrix` filter of SVG. The ready-made ones are
+the filter functions of CSS, with the matrices of the W3C: `CreateBrightness`, `CreateContrast`, `CreateSaturation`,
+`CreateHueRotation`, `CreateGrayscale`, `CreateSepia`, `CreateInvert` and `CreateOpacity`; `CreateTint` gives every
+pixel one color and keeps its alpha (an icon drawn in another color), and `CreateDuotone` the color between two inks
+that its gray level says. `Then` makes one matrix of two: the colors are computed once, and are not rounded or clamped
+in between.
+
+The matrix is applied to the stored sample values, at their precision: a sample of the result is
+`floor(m0 R + m1 G + m2 B + m3 A + m4 M + 1/2 + 2^-20)` with `M` the largest sample value, the terms added in that
+order in double precision, kept between 0 and `M`. Only multiplications and additions are involved, so the result is
+the same on every platform, and `CreateGrayscale()` gives the pixels of `Grayscale`, bit for bit. A pixel format
+without alpha has an alpha of `M` and gets the color of the result over black; a grayscale format has its gray level
+as red, green and blue and gets the Rec. 709 luma of the result. No color profile is applied. In a drawing,
+`canvas.Filter` applies a matrix to what a callback draws and `canvas.FilterBackdrop` to a part of what is already
+drawn (see [Drawing](#drawing)).
+
+<!-- snippet: color-matrix -->
+```csharp
+public static void ApplyColorFilters(string photoPath, string iconPath, string outputPath)
+{
+    using var photo = Image.Load(photoPath);
+    using var icon = Image.Load(iconPath);
+
+    // Matrices are immutable: create them once. Two matrices become one, which is applied once per pixel
+    var warm = ColorMatrix.CreateSaturation(0.6).Then(ColorMatrix.CreateSepia(0.4)).Then(ColorMatrix.CreateContrast(1.1));
+    var dim = ColorMatrix.CreateBrightness(0.5);
+    var accent = ColorMatrix.CreateTint(Colors.Gold);
+
+    // The whole image, every frame of it
+    photo.ApplyColorMatrix(warm);
+
+    photo.Draw(canvas =>
+    {
+        // What is already drawn, inside a clip: the lower third of the photo is darker
+        var band = new Rectangle(0, canvas.Height * 2 / 3, canvas.Width, canvas.Height - (canvas.Height * 2 / 3));
+        canvas.Clip(band, clipped => clipped.FilterBackdrop(dim));
+
+        // What a callback draws: the icon keeps its shape and its transparency, and gets one color
+        canvas.Filter(accent, tinted => tinted.DrawImage(icon.Frames[0], new PointD(8, band.Y + 8)));
+    });
+
+    photo.Save(outputPath);
+}
+```
+
 There is no HDR processing or custom processor.
 
 ### Drawing
@@ -796,7 +845,8 @@ angle turns clockwise on the image (Y grows downward); sines and cosines do not 
 by a multiple of 90 degrees is exact.
 
 `canvas.Transform(transform, callback)` transforms everything a callback draws: shapes, strokes (the pen is
-transformed with the path it strokes, so a scaling makes it wider), the gradients and the images of the brushes,
+transformed with the path it strokes, so a scaling makes it wider, unless `Pen.ScalesWithTransform` is off: see Pens
+below), the gradients and the images of the brushes,
 images, texts with the paints of their spans and the glyphs a font draws with its own colors, clips, and the offset
 and the blur of a shadow. A drawing is flattened for the size the transformation gives it: curves stay smooth however
 they are enlarged, and straight sides are placed exactly where `VectorPath.Transform` places them. Transformations
@@ -837,7 +887,9 @@ per pixel of its bounds, rented when it starts.
 **Measuring a path**. A `VectorPath` answers the questions a drawing asks about a shape: `Contains` tells whether a
 point is inside (what a fill paints, with either fill rule), `GetLength` gives its length and `TryGetPointAtDistance`
 the point at a distance along it with the direction of the path there (to place a marker, an arrow head or a label),
-`Bounds` is the box of its points and control points, and `GetTightBounds` the box it really reaches. `Widen` returns
+`TryGetClosestPoint` gives the point of the path that is the nearest to a position, with its distance along the path
+(what a pointer snaps to, or where a click falls on a line), `Bounds` is the box of its points and control points, and
+`GetTightBounds` the box it really reaches. `Widen` returns
 the path a pen draws when it strokes the path, so that all of these also answer for a stroke: the bounds of a stroke
 are the tight bounds of the widened path, and a click is on a line when the widened path contains it. A widened path
 is the pieces the library fills (one per segment, join and cap, overlapping): fill it with the non-zero rule; it is
@@ -863,6 +915,55 @@ pixels. It is made of straight segments (the chords the paths are drawn with, th
 1/1024 of a pixel, where every decision is exact): combine paths at the size they are drawn at. The time grows with the
 number of segments and of their crossings, and with the square of the number of segments for shapes stacked on each
 other: pass a `CancellationToken` for untrusted paths.
+
+**Growing, shrinking and rounding a shape**. `Offset(distance)` returns the outline of what a path fills, moved
+outward by a distance or, when it is negative, inward: a margin around a shape, an outline at a distance of a text,
+a shape that fits inside another one. Every side moves by the distance, a hole gets smaller when the shape grows, and
+what is narrower than twice the distance disappears when it shrinks. The `LineJoin` is the shape of the corners the
+sides move away from (`Miter` by default, with a limit as for a pen; with `Round`, the result is what is within the
+distance of the shape), and a curve stays round whatever the join. What moves is the boundary of the area, as
+`Simplify` gives it: contours that overlap are moved as the one shape they fill. The result is made as `Combine`
+makes it, of straight segments, for the size the path has.
+
+`RoundCorners(radius)` replaces each corner between two straight segments of a path by the arc of the circle of that
+radius that touches both: a polygon, a star or an arrow with soft corners. The circle touches each segment before its
+middle, or else is the smaller one that touches both at half the length of the shorter one, so a rectangle gets the
+corners of `AddRoundedRectangle`. The corners where a curve or an arc starts or ends are kept. The result has arcs:
+it stays smooth when it is enlarged.
+
+<!-- snippet: draw-sticker -->
+```csharp
+public static void DrawSticker(string outputPath)
+{
+    // A star: a point above the center, at the radius of a tip or of a notch, turned by a tenth of a turn each time
+    var center = new PointD(60, 62);
+    var points = new PointD[10];
+    for (var i = 0; i < points.Length; i++)
+    {
+        points[i] = AffineTransform.CreateRotation(i * 36, center).Transform(new PointD(center.X, center.Y - (i % 2 == 0 ? 44 : 20)));
+    }
+
+    // Its corners become arcs of a circle of radius 4
+    var star = new VectorPathBuilder().AddPolygon(points).Build().RoundCorners(4);
+
+    // The outline of the star 6 pixels further out, with round corners: the white border of a sticker
+    var border = star.Offset(6, LineJoin.Round);
+
+    // And 5 pixels further in: a line that follows the shape, inside it
+    var seam = new Pen(new Rgba32(255, 255, 255, 170), 1.5) { DashPattern = [4, 3] };
+    var inner = star.Offset(-5, LineJoin.Round);
+
+    using var image = new Image<Rgba32>(120, 120);
+    image.Draw(canvas =>
+    {
+        canvas.Shadow(new Rgba32(0, 0, 0, 90), new PointD(0, 2), 3, shadowed => shadowed.Fill(Colors.White, border));
+        canvas.Fill(Colors.Goldenrod, star);
+        canvas.Stroke(seam, inner);
+    });
+
+    image.Save(outputPath);
+}
+```
 
 **SVG path data**. `VectorPath.ParseSvgPathData` reads the `d` attribute of an SVG `path` element, the format icons
 come in: every command (`M L H V C S Q T A Z`, absolute and relative) with the grammar of SVG, in the coordinates of
@@ -1081,6 +1182,14 @@ instead, where the clip lets a drawing through: inside `Clip`, it is the frosted
 antialiased edge of the clip. Both read what is around the pixels they change, and take a drawing that reaches an
 edge of the canvas to continue beyond it.
 
+**Color filters**. `canvas.Filter(matrix, callback)` gives new colors to what the callback draws, as a whole: the
+drawings are made on a layer, each pixel of the layer gets the color a `ColorMatrix` makes of its own one (see
+[Processing](#processing): gray levels, a tint, brightness, contrast, a negative), then the layer is drawn. A
+photograph drawn in gray levels, an icon drawn in the color of a theme and a disabled button are one call each.
+`canvas.FilterBackdrop(matrix)` gives new colors to what is already drawn instead, where the clip lets a drawing
+through: the page behind a dialog that is dimmed, a region shown in gray levels, with the antialiased edge of the
+clip.
+
 **Masks**. `canvas.Mask(mask, content, mode)` keeps what one callback draws only where another one draws: the content
 is drawn on a layer, the mask on a layer of its own, and each pixel of the content is kept in proportion to the mask
 there. With `MaskMode.Alpha` (the default), the mask is the alpha of its drawings, whatever their colors: a shape, a
@@ -1192,6 +1301,12 @@ that end, and painted with the stroke as one shape; its `Inset` shortens the str
 marker that narrows to a point. Closed contours have no marker; with dashes, the markers are at the ends of the
 contour.
 
+`Pen.ScalesWithTransform = false` keeps a pen as it is under a transformation of the canvas: the path is transformed,
+then stroked, so the width, the dashes and the markers of the pen stay in pixels. A chart, a map or an icon that is
+drawn in coordinates of its own, inside `canvas.Transform`, then has lines of the same width at every scale, where
+the default pen is enlarged with the drawing (and is wider in one direction when the scaling is not the same along
+both axes).
+
 **Dashes**. `Pen.DashPattern` cuts a stroke into dashes: a list of lengths in pixels, alternately of a dash and of a
 gap, repeated along each contour (`[6, 3]` is dashes of 6 and gaps of 3; a pattern of an odd number of lengths is used
 twice, so `[4]` is dashes of 4 and gaps of 4). `DashOffset` is where a contour starts in the pattern. Each dash is
@@ -1207,8 +1322,52 @@ and nothing else, which pixel art, masks of whole pixels and images that keep th
 instead of on the stored sample values: the samples are decoded with the transfer function of the image, combined
 and encoded again. The edge of a shape, a translucent paint and a shadow then mix light as light mixes: with sRGB
 samples, half of white over black is the gray 188 instead of 128, and a thin light line on a dark background keeps
-its weight. The function is the one of `ResizeWorkingSpace.LinearSrgb`: sRGB for an untagged image or a profile
-recognized as sRGB, the transfer characteristics of a CICP description otherwise; another profile is rejected.
+its weight. The function is sRGB for an untagged image or a profile recognized as sRGB, and the transfer
+characteristics of a CICP description otherwise, as for `ResizeWorkingSpace.LinearSrgb`. With another ICC profile,
+each channel is decoded and encoded by its tone curve in the profile (Display P3, Adobe RGB and the other
+matrix-based profiles, and monochrome ones); a profile that only has lookup tables is rejected. `Blur` and
+`BlurBackdrop` then blur light too: red next to green blurs to a yellow, not to a dark olive.
+
+**Colors of a profile**. The color of a paint is sample values of the image, whatever its color space: the red
+(255, 0, 0) is the most saturated red an image can hold, which is not the same color on an sRGB image and on a
+Display P3 one. `canvas.PaintProfile(profile, callback)` says what the colors of the paints are instead: inside the
+callback, a color is a color of an ICC profile (`IccProfile.Srgb` for the colors of CSS, of a design tool or of
+`Colors`), and it is converted to the color space of the image, the one of its ICC profile, else of its CICP color
+description, else sRGB. The red of sRGB then is (234, 51, 35) on a Display P3 image, and looks the same on both. The
+colors that are converted are those the caller gives: solid brushes, the stops of gradients (a gradient that mixes
+light or Oklab values mixes the colors as given, then converts each color it obtains), the color of a shadow and of
+`Clear`, the brushes of a text. What is samples already is not: images that are drawn (convert them with
+`ConvertColorProfile` first), the glyphs a font draws with its own colors, the constants of a color matrix. On a
+grayscale image, a color becomes the gray that has its luminance. A color the image cannot hold is clipped,
+component by component, and an image of PQ or HLG samples is rejected, since the light of the white of a paint among
+them is a choice.
+
+<!-- snippet: draw-color-managed -->
+```csharp
+public static void DrawBrandColors(string inputPath, string outputPath)
+{
+    // A photograph whose ICC profile is not the one of sRGB (Display P3, Adobe RGB): its samples are not sRGB colors
+    using var image = Image.Load(inputPath);
+    var brand = Rgba32.ParseHex("#E63946");
+    var label = new RectangleD(8, 8, 96, 24);
+    var outline = new Pen(Colors.White, 2);
+
+    image.Draw(canvas =>
+    {
+        // The colors of the callback are colors of sRGB: they are converted to the color space of the image, so
+        // that the banner has the color its hexadecimal value means, whatever the profile of the photograph
+        canvas.PaintProfile(IccProfile.Srgb, managed =>
+        {
+            managed.FillRoundedRectangle(brand, label, 6);
+            managed.StrokeRoundedRectangle(outline, label, 6);
+        });
+    });
+
+    // The profile of the photograph is kept: the file still says what its samples are
+    image.Save(outputPath);
+}
+```
+
 
 <!-- snippet: draw-rendering -->
 ```csharp
@@ -1263,8 +1422,13 @@ public static void MarkAnimation(string inputPath, string outputPath)
   untouched, bit for bit.
 - **Curves.** Curves, ellipses, arcs, round joins and round caps are replaced by chords that stay within 1/16 of a pixel of
   them. The vertices of the chords are not part of the contract.
-- **Colors.** Brush colors are sample values in the color space of the image: no color profile is applied. A color is
-  first converted to the pixel format of the frame with the rules of `CloneAs` (Rec. 709 luma on grayscale frames,
+- **Colors.** Brush colors are sample values in the color space of the image: no color profile is applied, unless
+  `PaintProfile` gives one. A color of a profile is its 16-bit red, green and blue values converted as
+  `IccColorTransform` converts them, from the profile to the ICC profile of the image, or to its CICP color space (the
+  connection space, the inverse of the matrix of the primaries adapted to D50 by the linear Bradford transform, then
+  the function of the transfer characteristics, which clips), and rounded to 16-bit samples; a grayscale image gets
+  the one sample of the conversion as red, green and blue. A color is
+  then converted to the pixel format of the frame with the rules of `CloneAs` (Rec. 709 luma on grayscale frames,
   rounding to 8 bits on 8-bit frames); its alpha stays the opacity of the paint, also on frames without alpha.
 - **Compositing.** The paint is composited over the pixels (source-over) on the stored sample values, with straight
   alpha and exact integer arithmetic, rounded to nearest with ties upward. A full coverage with an opaque color writes
@@ -1301,7 +1465,8 @@ public static void MarkAnimation(string inputPath, string outputPath)
 - **Transformations.** Under a transformation of the canvas, a shape is flattened as it is given, by chords that
   stay within 1/16 of a pixel of its curves divided by the largest factor the transformation enlarges a length by,
   then its vertices are transformed: on the canvas the chords stay within 1/16 of a pixel. A stroke is the stroke of
-  the path as it is given, transformed the same way. A brush is placed by its own transformation, then by the one of
+  the path as it is given, transformed the same way; with a pen that does not scale with the transformation, it is
+  the stroke of the path flattened that way, its vertices transformed first. A brush is placed by its own transformation, then by the one of
   the canvas. A shape with straight sides is, bit for bit, the transformed path.
 - **Clips.** The coverage of a pixel under a clip is the product of the coverage of the shape and of the coverage of
   the clip, rounded to the nearest 1/65536 (ties upward). It is the area of what the shape and the clip have in common
@@ -1322,7 +1487,13 @@ public static void MarkAnimation(string inputPath, string outputPath)
   the weights of a Gaussian blur (see `GaussianBlur`), rows then columns, the pixels beyond those of the canvas being
   the nearest ones; the result is the alpha `floor(A + 1/2 + 2^-20)` and the colors `floor(65535 P / A + 1/2 + 2^-20)`,
   converted to the pixel format like brush colors. Intermediate values are kept in single precision. The blur of the
-  backdrop replaces a pixel in proportion to the coverage of the clip.
+  backdrop replaces a pixel in proportion to the coverage of the clip. In linear light, each color is decoded
+  before it is multiplied by its alpha, and the colors of the result are `floor(65535 encode(P / A) + 1/2 + 2^-20)`.
+- **Color filters.** The matrix is applied to the stored samples of the pixels of the layer, or of the canvas, with
+  the arithmetic of `ApplyColorMatrix` (see **Color matrices**): 8-bit samples on a layer of an 8-bit color canvas,
+  16-bit samples otherwise. A pixel the clip covers entirely gets the samples of the result; a pixel on the edge of
+  the clip is replaced in proportion to the coverage of the clip, as a paint of that color drawn with
+  `CompositeMode.Source` replaces it.
 - **Inner shadows.** The shadow is the one of **Shadows** computed from one minus the alpha of the layer; its color
   is combined with the pixels of the layer by `SourceAtop`, with the coverage of the shadow.
 - **Aligned strokes and markers.** A stroke on one side of its path is the stroke of a pen twice as wide under a clip
@@ -1333,7 +1504,8 @@ public static void MarkAnimation(string inputPath, string outputPath)
 - **Hard edges.** Without antialiasing, a coverage of at least 32768/65536, after its usual rounding, becomes a full
   coverage, and any other becomes none, before the clip and the opacity of a paint apply.
 - **Linear light.** Every color sample of the paint and of the pixel is decoded by the transfer function of the
-  image (sRGB when it declares none), the blend mode and the
+  image (sRGB when it declares none), or by the tone curve of its channel in an ICC profile that is not the one of
+  sRGB (evaluated as a color conversion evaluates it, and inverted the same way), the blend mode and the
   operator are applied with the formulas of the stored values in double precision, and the result is encoded and
   rounded as `floor(M v + 1/2 + 2^-20)`; the alpha is combined as it is. A pixel that would not be written on the
   stored values is not written, and an opaque paint that replaces a pixel entirely writes its color exactly. The
@@ -1382,7 +1554,7 @@ public static string DescribeFont(string path)
 | Bitmaps without colors | On request (`FontLoadOptions.UseEmbeddedBitmaps`): the strikes of one bit per pixel of the `EBLC` and `EBDT` tables (index subtables of formats 1 to 5, images of formats 1, 2, 5, 6 and 7), drawn at the size they are made for |
 | Character maps | Unicode subtables of formats 0, 4, 6, 12 and 13, variation sequences (format 14), and the Macintosh Roman subtable for ASCII when a font has no Unicode one |
 | Names | The typographic family and subfamily when the font has them, the legacy ones otherwise; Windows and Unicode platform names, then Macintosh Roman |
-| Metrics | In font units (`Font.Metrics`) or scaled to a size in pixels (`Font.GetMetrics`): ascent, descent, line gap, cap height, x-height, underline and strikethrough. The ascent, descent and line gap come from the table the font designates (`hhea`, or the typographic values of `OS/2` when the font sets `USE_TYPO_METRICS` or has an empty `hhea`) |
+| Metrics | In font units (`Font.Metrics`) or scaled to a size in pixels (`Font.GetMetrics`): ascent, descent, line gap, cap height, x-height, underline and strikethrough. The ascent, descent and line gap come from the table the font designates (`hhea`, or the typographic values of `OS/2` when the font sets `USE_TYPO_METRICS` or has an empty `hhea`). For vertical lines, the advance height and the vertical origin of each glyph (`vhea`, `vmtx`, `VORG`, and their variation in `VVAR`), or, in a font without them, an advance of the ascent and the descent with the glyph centered in it |
 
 A variable font is one file for a whole family: its axes (`Font.VariationAxes`) say what varies, such as the weight or
 the width, and `Font.WithVariations` gives the font of an instance.
@@ -1478,8 +1650,7 @@ public static void DrawWeights(string variableFontPath, string outputPath)
   position has exactly the pixels of its bitmap. At another size, and for a glyph the strike does not have, the
   outline is drawn. The advances stay those of the outlines. Strikes of several bits per pixel, and glyphs made of
   other glyphs (image formats 8 and 9), are not used.
-- **Not supported**: the variation of the vertical
-  metrics and of the hinting values (`VVAR`, `cvar`), glyphs in SVG (`SVG `: their outlines are drawn), fonts
+- **Not supported**: the variation of the hinting values (`cvar`), glyphs in SVG (`SVG `: their outlines are drawn), fonts
   without outlines (bitmap-only fonts), PostScript Type 1 fonts, Type 1
   charstrings and the deprecated `seac` form of `endchar` in a CFF table, the font matrix of a CFF table (the units of
   the `head` table are used), and hinting: instructions and hints are skipped. A WOFF or WOFF2 file is expanded in
@@ -1546,6 +1717,75 @@ public static void DrawParagraph(string fontPath, string outputPath)
 }
 ```
 
+A text can be made to fit a box, have a background and a contour on some of its words, and leave room in its lines
+for what is not text:
+
+<!-- snippet: draw-fitted-text -->
+```csharp
+public static double DrawTitleCard(string fontPath, string iconPath, string outputPath)
+{
+    var font = Font.Load(fontPath);
+    using var icon = Image.Load(iconPath);
+    using var image = new Image<Rgba32>(320, 120, Rgba32.ParseHex("#14213D"));
+
+    // The styles: a word on a background, a word with a contour around its letters, and the rest
+    var title = new TextStyle(font, 64) { Brush = new SolidBrush(Colors.White) };
+    var highlight = new TextStyle(font, 64) { Brush = new SolidBrush(Rgba32.ParseHex("#14213D")), BackgroundBrush = new SolidBrush(Rgba32.ParseHex("#FCA311")) };
+    var contour = new TextStyle(font, 64) { Brush = new SolidBrush(Colors.White), Outline = new Pen(Rgba32.ParseHex("#FCA311"), 2) { Alignment = PenAlignment.Outside, LineJoin = LineJoin.Round } };
+
+    // Room for the icon in the line, as tall as a capital letter and standing on the baseline
+    var capHeight = font.GetMetrics(64).CapHeight;
+    var text = new RichTextBuilder()
+        .AppendPlaceholder(capHeight, capHeight, capHeight, title)
+        .Append(" Draw ", title)
+        .Append("more", highlight)
+        .Append(" with ", title)
+        .Append("less", contour)
+        .Build();
+
+    // The largest size at which the text fits the card, less its margins: every length of the styles has it
+    var box = new RectangleD(16, 12, image.Width - 32, image.Height - 24);
+    var layout = TextLayout.CreateToFit(text, box.Width, box.Height, new TextLayoutOptions { Alignment = TextAlignment.Center });
+    var origin = new PointD(box.X, box.Y + ((box.Height - layout.Height) / 2));
+
+    image.Draw(canvas =>
+    {
+        canvas.FillText(Colors.White, layout, origin);
+
+        // What the placeholder made room for, where the layout put it
+        var place = layout.Placeholders[0];
+        canvas.DrawImage(icon.Frames[0], new RectangleD(origin.X + place.X, origin.Y + place.Y, place.Width, place.Height), ImageSampling.Smooth);
+    });
+
+    image.Save(outputPath);
+    return layout.Scale;
+}
+```
+
+A text can be set in vertical lines, as Chinese, Japanese and Korean often are: `TextLayoutOptions.WritingMode` turns
+the lines, and each character is upright or on its side as its script asks:
+
+<!-- snippet: draw-vertical-text -->
+```csharp
+public static void DrawVerticalText(string fontPath, string outputPath)
+{
+    var style = new TextStyle(Font.Load(fontPath), 24);
+
+    // Lines go down and follow each other to the left, and are wrapped at the height of the layout. The ideographs
+    // and the kana are upright, with the vertical forms the font has for the brackets and the punctuation; the
+    // Latin letters are on their side.
+    var layout = TextLayout.Create(
+        "「日本語」のテキスト。ABC 東京、日本。",
+        style,
+        new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, MaxHeight = 160 });
+
+    // The layout is as wide as its columns: the first one is on its right
+    using var image = new Image<Rgba32>((int)Math.Ceiling(layout.Width) + 20, 180, new Rgba32(255, 255, 255));
+    image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(10, 10)));
+    image.Save(outputPath);
+}
+```
+
 A layout can also follow a path: `FillText` and `StrokeText` take a `VectorPath` and `TextPathOptions` instead of an
 origin.
 
@@ -1574,6 +1814,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 | | Supported |
 | --- | --- |
 | Text analysis | Paragraphs, grapheme clusters, the places a line can end at (UAX #14), bidirectional text (UAX #9), script runs (UAX #24), soft hyphens and hyphenation patterns given by the caller: the algorithms of `Meziantou.Framework.Unicode` |
+| Vertical text | Lines set from the top to the bottom that follow each other to the left or to the right (`TextLayoutOptions.WritingMode`), with each character upright or on its side as the Unicode Standard says (UAX #50) or as `TextLayoutOptions.Orientation` says; the vertical forms (`vert`), the advance heights and the vertical origins of the font |
 | OpenType Layout | The `GDEF` table, every type and format of `GSUB` lookup (1 to 8) and of `GPOS` lookup (1 to 9), feature variations, the `kern` table |
 | Scripts whose fonts do all the work | Latin, Greek, Cyrillic, Armenian, Georgian, Han, Hiragana, Katakana, Bopomofo, Ethiopic, Thaana, Cherokee and the other scripts that need no analysis of the text: the default features of the font are applied |
 | Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
@@ -1611,6 +1852,36 @@ of their characters and were not compared with a font.
   right-to-left text can be mixed, mirrored characters are mirrored, and each line is put in display order.
   `Direction` imposes the base direction of the paragraphs; by default it is the one of their first strong character.
   `Alignment` is relative to it: `Start` is the left of a left-to-right paragraph and the right of a right-to-left one.
+- **Vertical text.** With `WritingMode = VerticalRightToLeft`, lines go from the top to the bottom and follow each
+  other to the left, as Chinese, Japanese and Korean are set; with `VerticalLeftToRight` they follow each other to the
+  right, as Mongolian is. Everything that is said of the width of a horizontal line is then said of the height of a
+  vertical one: `MaxHeight` is where lines are wrapped and what they are aligned in, `MaxWidth` is the room the lines
+  must fit, `LineHeight` is the width of a line, `Alignment` places a line from its top, and `FirstLineIndent` moves
+  the first line of a paragraph down. `Width` and `Height` stay the size of the layout on the image.
+  - `Orientation` says which characters are upright. By default (`Mixed`), each character is set as the Unicode
+    Standard says (the Vertical_Orientation property, UAX #50): ideographs, kana, Hangul syllables, emoji and most
+    symbols are upright, one under the other; the letters of the scripts that are written in horizontal lines
+    (Latin, Cyrillic, Greek, Arabic, Hebrew, Devanagari) are on their side, turned a quarter of a turn clockwise,
+    as a horizontal line read from the top. A character the standard sets upright only with a glyph of its own (a
+    bracket, a long vowel mark) is upright when the font has a vertical form for it (`vert`), and on its side
+    otherwise. `Upright` sets every character upright, and `Sideways` every character on its side.
+  - An upright glyph advances by its advance height and is placed by its vertical origin, with the `vhea`, `vmtx`
+    and `VORG` tables of the font (and `VVAR` for an instance of a variable font). A font without these tables,
+    which is every font that was not made for vertical text, advances by its ascent and its descent, and each glyph
+    is centered in that advance and on the line.
+  - A line has a central baseline, in the middle of its width: upright glyphs are centered on it, and the text that
+    is on its side has the middle of its ascent and its descent on it. The line is as wide as its fonts are tall
+    (ascent, descent and line gap). With `Sideways`, the line is a horizontal line turned a quarter of a turn
+    clockwise, with its baseline, its alignment of fonts of several sizes, and its placeholders turned with it.
+  - Upright runs are shaped from the top to the bottom with the vertical forms of the font (`vert`) and with the
+    features that do not depend on the direction (`ccmp`, `locl`, `rlig`, `mark`, `mkmk`, `abvm`, `blwm`): the
+    ligatures, the kerning and the contextual forms a font has for horizontal text are not applied, and Arabic or
+    Syriac letters set upright do not join. `TextStyle.Features` asks for the other vertical features of a font
+    (`vkrn`, `vpal`, `vhal`, `valt`). Right-to-left text that is on its side reads from the bottom of the line, as
+    the bidirectional algorithm orders it; upright, it reads from the top.
+  - An underline is on the left of the line, where it is under the text that is on its side, and an overline on its
+    right; the strikethrough of upright text is in the middle of the line. A placeholder takes its height down the
+    line and is centered on it.
 - **Alignment.** Lines are aligned in `MaxWidth`, or in the width of the widest line without it. `Justify` stretches
   each line to that width by widening its spaces, except the last line of a paragraph. `FirstLineIndent` indents the
   first line of each paragraph, and `TabSize` sets the tabulation stops.
@@ -1622,6 +1893,27 @@ of their characters and were not compared with a font.
   (`new FontFeature("liga", 0)`, `new FontFeature("smcp")`), letter and word spacing, decorations (underline,
   strikethrough, overline, drawn with the metrics of the font), a language, a synthesis and hyphenation patterns.
   Spans that only differ by what is painted are shaped together: letters of two colors still kern and join.
+- **Backgrounds and contours.** `TextStyle.BackgroundBrush` paints behind the text of a style: a highlight, the
+  background of a label. On each line it is one rectangle, as wide as the advances of the text of the style (the
+  white space between its words included, not the one that hangs at the end of a wrapped line) and as tall as the
+  primary font of the style, from its ascent to its descent. `TextStyle.Outline` is a pen that strokes the outlines
+  of the glyphs of a style: centered on the outline, or around the glyphs with `PenAlignment.Outside`, which leaves
+  them as they are filled. `FillText` paints the backgrounds of the whole layout, then its text, then the strokes:
+  a background never hides a glyph, and a stroke is over the text. They are not outlines of the text: `StrokeText`
+  and `ToPath` leave the backgrounds out, and the pen of `StrokeText` strokes every glyph.
+- **Fitting a box.** `TextLayout.CreateToFit(text, style, width, height)` lays out a text at the largest size, up to
+  the size of its style, at which it fits a box: a title that fills a card, a label that never overflows its button.
+  Every length of the styles is multiplied by one factor, which `TextLayout.Scale` gives (the sizes of every span, the
+  spacings, the indent, a fixed line height, the placeholders). Lines are wrapped at the width of the box as the
+  options say, and the text fits when none of it is cut, no line is wider than the box and its lines are not taller.
+  The factor is the one the box is to the text when its lines stay the same, or else the largest of those found by
+  halving the range twelve times, each with a whole layout: creating such a layout costs up to fifteen. A text that
+  does not fit at `minimumScale` (0.1 by default) is laid out at it, and cut as the options say.
+- **Placeholders.** `RichTextBuilder.AppendPlaceholder(width, height, baseline, style)` leaves room in a line for what
+  the text does not draw: an icon, a badge, an image. The placeholder is one character of the text (U+FFFC): it
+  moves with the words around it when lines are wrapped and aligned, a line can end before or after it, and its line
+  is at least as tall as it needs (`baseline` above the baseline of the line, the rest of `height` below).
+  `TextLayout.Placeholders` gives the rectangle of each one, in the order of the text, for the caller to draw in.
 - **Fonts of a character.** A character and the marks and selectors that follow it are drawn with the first font of
   the stack that has all of them. An emoji is first looked for in the fonts of its presentation (Unicode Technical
   Standard #51): the fonts that have color glyphs for a character that is an emoji by default (U+1F600), that is
@@ -1774,9 +2066,15 @@ of their characters and were not compared with a font.
   without the gap between them, and a path without any segment draws nothing. A path is measured along the same
   segments that are drawn for it, and the direction is the one of the segment: no trigonometric function is involved,
   so the pixels are the same on every platform. A decoration is cut where the direction of the path changes. On a
-  tight curve, neighboring characters overlap or part; give letter spacing to the style when that matters.
+  tight curve, neighboring characters overlap or part; give letter spacing to the style when that matters. A
+  vertical layout follows a path as it follows its lines: from the top of the line, with the central baseline of the
+  first line on the path, so that down a vertical path the text is the one drawn at a point, and along a path that
+  goes to the right it is that text turned a quarter of a turn. The lines that follow are on the right of the
+  direction of the path, whatever side the lines of the layout go to.
 - **Measuring.** `Width` and `Height` are the size of the text, `Lines` gives each line (its part of the text, its
-  position, its width, its baseline), and `InkBounds` contains everything that is drawn.
+  position, its width, its baseline), and `InkBounds` contains everything that is drawn. The line of a vertical
+  layout is a column: its rectangle is the one it has on the image, its `Baseline` is the distance from its left to
+  its central baseline, and the `Baseline` of the layout is the one of its first column, from the left of the layout.
 - **Positions of the text.** `HitTest(point)` gives the character at a point of the layout (the point of the canvas
   less the origin the layout is drawn at), or the nearest one, and which half of it the point is on: its `CaretIndex`
   is where a click puts a caret. `GetCaretRectangle(index)` is where that caret is drawn, and
@@ -1784,7 +2082,8 @@ of their characters and were not compared with a font.
   character is a grapheme cluster (a letter with its marks, an emoji sequence), and takes the space of its advance, not
   of its ink; the characters a font draws as one glyph share its width. A right-to-left character starts on its
   right: in a text that mixes directions, a caret jumps where the direction changes, and a range of the text can be
-  several rectangles on one line.
+  several rectangles on one line. In a vertical layout, a character is found down its column, a caret lies across
+  its column (a rectangle without height), and a selection covers the characters that follow each other down it.
 - **Cost.** Creating a layout allocates (its glyphs and positions) and decodes each distinct glyph once, which validates
   the font data the text uses: drawing a layout then only fails on a limit of the image or on cancellation, and
   allocates nothing. The time to create a layout grows with the length of the text and with the number of lookups
@@ -1799,8 +2098,12 @@ of their characters and were not compared with a font.
 What text layout does not do yet: letter spacing is added between the letters of
 every script, including those that join. Justification does not lengthen Arabic words (kashida). The advances of a
 bitmap strike are not used. Lines are broken one after the other, each as full as
-possible, not by optimizing the whole paragraph. Text is horizontal. Along a path, the glyphs are placed and turned,
-not bent to the curve, and the length of a path is not exposed.
+possible, not by optimizing the whole paragraph. In vertical lines, a short run of digits or letters is not set
+upright across the line (horizontal-in-vertical, tate-chu-yoko), there is no ruby, the punctuation is not compressed
+nor hung, the side of an underline is not a choice, a line cannot be read from the bottom, and the marks of a font
+that has no positioning table are not placed on upright letters. Along a path, the glyphs are placed and turned,
+not bent to the curve, and the rectangles of the placeholders are those of a text drawn at a point. A placeholder is
+room, not a drawing: the layout holds no image.
 
 The glyphs and positions are checked against the Annotated OpenType Specification tests of Adobe for every format of
 the lookups, and against the OpenType shaper of HarfBuzz for texts set in the fonts of the test corpus; line breaking
@@ -3055,7 +3358,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | PNG/APNG | Palette output is opt-in and exact only (`PngPixelLayout.Indexed`: no color reduction or dithering, and a sequential writer cannot declare colors beyond its first image), no grayscale output below 8 bits, no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
-| Drawing | Sequential; affine transformations of the canvas only (perspective is for an image drawn on a quadrilateral); no mesh gradient, and a radial gradient between two circles needs the first one strictly inside the second one; a marker has no hole, and a stroke on one side of its path costs a clip; blurs and shadows are computed on the encoded sample values, also when paints are combined in linear light, which decodes the samples with the transfer function the image declares (sRGB when it declares none); without antialiasing, a pixel is painted when at least half of it is covered (not when its center is), and the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 |
+| Drawing | Sequential; affine transformations of the canvas only (perspective is for an image drawn on a quadrilateral); no mesh gradient, and a radial gradient between two circles needs the first one strictly inside the second one; a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, a pixel is painted when at least half of it is covered (not when its center is), and the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 |
 | Processing | No floating-point or scene-referred pixel format (HDR samples are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping), no custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, or temporal motion vector prediction. Three tools were implemented, measured with the `avif-quality` report and left out because they did not make its sequences smaller: key frames at scene changes (the key frame of an image that follows a cut is 0.3 to 1.7% larger than the inter frame whose blocks are all intra, since it gives up the probabilities that the previous images adapted; `KeyFrameInterval` is how a sequence gets seek points), the split of the transform blocks of an inter block (0.01% in total: it keeps the largest transform of its size) and an interpolation filter per block (the same size at equal quality, for several times the encoding time). Intra block copy is for lossless images only (a frame that copies blocks has no in-loop filter), and its delay of five superblocks leaves small images out. The loop restoration is the Wiener filter, in units of 256x256 samples, at the efforts 0 to 2 only (it recovered nothing above them in the report), and never the self-guided filter. Not used: quantizer deltas, quantization matrices, CDEF strengths per block (one pair per frame), super-resolution and film grain. No layered (progressive) output, and no grid for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: more than eight nested derivations, an image built from images of several color descriptions, an overlay whose sRGB fill color shows on an image that is not an sRGB one, an alpha plane of an overlay or of a grid of derived images, a derived image with more than 1,024 input images, an alpha plane that is not presented as its derived color image, movie fragments that do not follow each other, have composition time offsets, precede their `moov` box or follow their samples, an edit list that selects a part of a fragmented sequence, edit lists that do not play the media forward at its rate (empty edits, a media rate other than 1, edits out of order or overlapping), an alpha track with another edit list than its color track, image sequences whose images change size, clean apertures that do not select whole samples, grid tiles that declare other transformations than their grid, large scale tile streams, reserved matrix coefficients, and matrix coefficients without the transfer characteristics or the primaries they are defined with (constant luminance without a transfer function, ICtCp with other transfer characteristics than PQ and HLG, chromaticity-derived coefficients without chromaticities). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, a `tkhd` matrix that is not a quarter turn or a mirror (the images are returned as stored), the content color volume (`cclv`) and the light levels and the mastering display of AV1 metadata units. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: tone mapping is an explicit `ConvertColorProfile` with `ToneMapping` options |
@@ -3064,6 +3367,6 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: `Image.Load` decodes a recompressed JPEG file to pixels, `JpegXlTranscoder` rebuilds the JPEG file), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Progressive reading: whole stages only (the data of a section that is not complete are not shown), none for a frame of one section, for a Modular frame that is not squeezed, or for the frames that are not shown; an alpha channel that is not squeezed is opaque until it is decoded; the pixels of an intermediate rendering are not part of the contract. Encoding: full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header. Lossy encoding: DCTs of 8x8 to 64x64 samples only (no smaller transform, no identity or AFV transform), a quantization factor per block that is computed from the image once (the encoder does not decode its output to refine it), no patches, splines or noise; an ICC profile that is not sRGB, and the PQ and HLG transfer functions, are rejected (use lossless output, or convert the image) |
 | JPEG recompression | `JpegXlTranscoder.RecompressJpeg` rejects with `UnsupportedImageFeatureException` what a JPEG XL frame cannot hold: four components (CMYK, YCCK), a sampling factor other than 1 or 2 (4:1:1), subsampled RGB components, arithmetic, lossless, hierarchical and 12-bit files, restart intervals of several lengths (the description of the file has one), a quantization table that no component uses unless it repeats the table defined before it, a Huffman table that uses the code of all ones, more than 65,535 bytes between two markers or 4,260,096 bytes after the end of image, and entropy-coded data that would not be rebuilt byte for byte (the output is always checked). The whole file is held in memory, with two bytes per coefficient. The reconstruction data (`jbrd`) are read wherever the container has them: every encoder writes them before the codestream; when they follow it, the frame is held as it is coded until they are read, and `HasJpegReconstructionData` reads the file to its end |
 | JPEG 2000 | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the headers tell): signed samples and samples of more than 16 bits, components of different depths, a sub-sampled first component and sub-sampled components that are not the chrominances of an image of three components, more than four components without color specification, a premultiplied opacity, several opacity channels, an opacity of one color, channels that are not defined, the extensions of ISO/IEC 15444-2 (other wavelet filters, other component transformations, other regions of interest), files of the `jpm ` and `mjp2` brands, files of several codestreams or of a fragmented codestream, more than 30 bit-planes in a sub-band; for the high-throughput block coder: tile-components that mix both block coders, a code-block with several HT sets, and placeholder passes in another packet than the HT cleanup pass. CMYK is loaded only with `CmykConversion`. Not read: the intellectual property and XML boxes, the comments of the codestream. Not available: decoding a lower resolution, a region or fewer layers. Encoding: no rate control (a quality, not a size), one tile and one layer (the whole image is transformed at once, in memory), no HTJ2K, no palette, no sub-sampling, no CMYK, no animation; a codestream stores no metadata |
-| Text | Horizontal text only; a synthetic bold is not in the path of a layout nor in a stroked text; no word list is provided for the scripts that need a dictionary to break their lines; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
+| Text | In vertical lines, no horizontal-in-vertical run (tate-chu-yoko), no ruby and no compression of punctuation; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; no word list is provided for the scripts that need a dictionary to break their lines; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
 | Fonts | No system font, no SVG glyph, no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hinting; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

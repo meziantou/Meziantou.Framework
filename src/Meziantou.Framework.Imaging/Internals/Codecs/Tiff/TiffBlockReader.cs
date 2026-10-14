@@ -17,7 +17,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// A block compressed with JPEG is a JPEG datastream of its own, decoded by the JPEG decoder of the library with the
 /// tables of <c>JPEGTables</c>. The photometric interpretation of the page says what its components are: YCbCr components
-/// are converted to RGB as in a JFIF file, the others are the stored samples.
+/// are converted to RGB as in a JFIF file, the others are the stored samples. The frame of the datastream has the
+/// precision the page declares; its samples of more than 8 bits are received scaled to 16 bits and kept, like the other
+/// 16-bit samples of a block, in the byte order of the file.
 /// </para>
 /// </remarks>
 internal sealed class TiffBlockReader : IDisposable
@@ -42,6 +44,7 @@ internal sealed class TiffBlockReader : IDisposable
     private PooledBuffer? _inflateScratch;
     private PooledBuffer? _units;
     private PooledBuffer? _changes;
+    private PooledBuffer? _jpegRow;
     private TiffLzwDecoder? _lzw;
 
     public TiffBlockReader(RandomAccessSource source, TiffPage page)
@@ -121,6 +124,8 @@ internal sealed class TiffBlockReader : IDisposable
         _units = null;
         _changes?.Dispose();
         _changes = null;
+        _jpegRow?.Dispose();
+        _jpegRow = null;
         _lzw?.Dispose();
         _lzw = null;
     }
@@ -355,7 +360,13 @@ internal sealed class TiffBlockReader : IDisposable
         var page = _page;
         var receiver = _jpegReceiver!;
         using var compressed = ReadCompressed(index, (long)rowCount * page.BlockRowLength);
-        receiver.Begin(index, rowCount, buffer, handler);
+        if (handler is not null && page.DecodedBitsPerSample == 16)
+        {
+            // The rows of 16-bit samples are handed over in the byte order of the file, like the ones of a buffer
+            _jpegRow ??= _source.Scope.Rent(page.BlockRowLength, AllocationKind.DecoderState, clear: false);
+        }
+
+        receiver.Begin(index, rowCount, buffer, handler, _jpegRow?.RawBuffer);
         try
         {
             using var decoder = new JpegDecoder(_source.Context, receiver, page.IsYCbCr ? ImageColorModel.YCbCr : ImageColorModel.Rgb);
@@ -545,6 +556,7 @@ internal sealed class TiffBlockReader : IDisposable
         private readonly int _componentCount;
         private byte[]? _buffer;
         private TiffBlockRowHandler? _handler;
+        private byte[]? _row;
         private int _index;
         private int _rowCount;
 
@@ -556,12 +568,18 @@ internal sealed class TiffBlockReader : IDisposable
 
         public int RowsReceived { get; private set; }
 
-        public void Begin(int index, int rowCount, byte[]? buffer, TiffBlockRowHandler? handler)
+        /// <param name="index">The index of the block.</param>
+        /// <param name="rowCount">The number of rows of the block that belong to the page.</param>
+        /// <param name="buffer">The destination of the rows, or <see langword="null"/> when a handler receives them.</param>
+        /// <param name="handler">The destination of the rows, or <see langword="null"/> when a buffer receives them.</param>
+        /// <param name="row">The row a handler is given 16-bit samples in, or <see langword="null"/>.</param>
+        public void Begin(int index, int rowCount, byte[]? buffer, TiffBlockRowHandler? handler, byte[]? row)
         {
             _index = index;
             _rowCount = rowCount;
             _buffer = buffer;
             _handler = handler;
+            _row = row;
             RowsReceived = 0;
         }
 
@@ -569,12 +587,16 @@ internal sealed class TiffBlockReader : IDisposable
         {
             _buffer = null;
             _handler = null;
+            _row = null;
         }
 
-        public override void OnFrame(int width, int height, int componentCount)
+        public override void OnFrame(int width, int height, int componentCount, int precision)
         {
             if (componentCount != _componentCount)
                 throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG data of the TIFF block {_index} of page {_page.Index} has {componentCount} component(s); the page declares {_componentCount} sample(s) per pixel."));
+
+            if (precision != _page.BitsPerSample)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG data of the TIFF block {_index} of page {_page.Index} has samples of {precision} bits; the page declares {_page.BitsPerSample}."));
 
             // A block holds at least the rows of the page it covers, and never more than the rows of a block: some writers
             // give the last strip the height of the others, and a taller frame would be decoded to be thrown away
@@ -596,6 +618,26 @@ internal sealed class TiffBlockReader : IDisposable
                 samples.CopyTo(_buffer.AsSpan(y * _page.BlockRowLength));
             }
 
+            RowsReceived++;
+        }
+
+        public override void OnDeepRow(int y, ReadOnlySpan<ushort> samples)
+        {
+            if (y >= _rowCount)
+                return;
+
+            // The samples of a block are in the byte order of the file
+            var destination = _handler is not null ? _row.AsSpan(0, samples.Length * sizeof(ushort)) : _buffer.AsSpan(y * _page.BlockRowLength, samples.Length * sizeof(ushort));
+            if (_page.IsBigEndian)
+            {
+                SampleEndianness.WriteBigEndian(samples, destination);
+            }
+            else
+            {
+                SampleEndianness.WriteLittleEndian(samples, destination);
+            }
+
+            _handler?.OnRow(y, destination);
             RowsReceived++;
         }
     }

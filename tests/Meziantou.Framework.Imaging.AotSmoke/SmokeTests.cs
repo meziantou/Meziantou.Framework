@@ -116,6 +116,25 @@ internal static class SmokeTests
         "/LD4H/V7in/n5hv/AAOl/wDKCT/hL/EP/PWb/vxJ/wDHK//S9F8Sf8lNsP8Adj/9J9Tr8p46/wB2wX/YLD/0/QPxjw6/5NtxP/jl/wCnsEfGfw8/5KHb/wDY" +
         "NX+b1//T6X4ff8nS+N/+uOi/+k1vX5xT/wCTdZz6z/8AT2JP5nzP4uGv8UP/AEmmfMHwY/5Cfxd/6/LX/wBGXFf/1PtWv8zDxzyyv//Z";
 
+    // A 3x2 lossless JPEG file (SOF3) of 8-bit grayscale samples written by hand, predictor 7: the samples 100, 101, 99
+    // and 98, 100, 102 (the unit tests explain its codes). The library has no lossless JPEG encoder.
+    private static ReadOnlySpan<byte> LosslessJpegFile =>
+    [
+        0xFF, 0xD8, 0xFF, 0xC3, 0x00, 0x0B, 0x08, 0x00, 0x02, 0x00, 0x03, 0x01, 0x01, 0x11, 0x00, 0xFF, 0xC4, 0x00, 0x17, 0x00, 0x00, 0x03, 0x01, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x05, 0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x07, 0x00, 0x00, 0xC3, 0x73,
+        0x2E, 0xFF, 0x00, 0xFF, 0xD9,
+    ];
+
+    public static void LosslessJpeg()
+    {
+        var info = Image.Identify(LosslessJpegFile);
+        Check(info is { Format: ImageFormat.Jpeg, Width: 3, Height: 2, BitsPerComponent: 8, PixelFormat: PixelFormat.Gray8 }, "Lossless JPEG identification");
+        using var image = Image.Load<Gray8>(LosslessJpegFile);
+        var frame = image.Frames[0];
+        Check(frame[0, 0] == new Gray8(100) && frame[1, 0] == new Gray8(101) && frame[2, 0] == new Gray8(99), "Lossless JPEG first line");
+        Check(frame[0, 1] == new Gray8(98) && frame[1, 1] == new Gray8(100) && frame[2, 1] == new Gray8(102), "Lossless JPEG second line");
+    }
+
     public static void CmykJpegConversion()
     {
         var data = Convert.FromBase64String(CmykJpeg);

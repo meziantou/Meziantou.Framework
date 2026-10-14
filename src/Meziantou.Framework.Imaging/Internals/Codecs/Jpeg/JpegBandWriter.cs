@@ -10,17 +10,17 @@ internal abstract class JpegBandWriter : IDisposable
     private readonly int _bandRows;
 
     /// <param name="height">The height of the frame.</param>
-    /// <param name="maxVertical">The largest vertical sampling factor of the frame.</param>
-    protected JpegBandWriter(int height, int maxVertical)
+    /// <param name="bandRows">The number of rows of an MCU row: <c>8 * Vmax</c>, or <c>Vmax</c> for a lossless frame.</param>
+    protected JpegBandWriter(int height, int bandRows)
     {
         _height = height;
-        _bandRows = 8 * maxVertical;
+        _bandRows = bandRows;
     }
 
     /// <summary>Gets the number of bands written so far.</summary>
     public int BandsWritten { get; private set; }
 
-    /// <summary>Writes the output rows of the next band (<c>8 * Vmax</c> rows, fewer for the last band).</summary>
+    /// <summary>Writes the output rows of the next band (the rows of an MCU row, fewer for the last band).</summary>
     /// <remarks>The planes must hold the band's rows and their context rows (the last row of the previous band and the first row of the next one, when they exist).</remarks>
     public void WriteNextBand(CancellationToken cancellationToken)
     {

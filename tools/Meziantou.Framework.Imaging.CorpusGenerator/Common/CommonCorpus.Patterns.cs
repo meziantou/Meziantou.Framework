@@ -158,6 +158,23 @@ internal static partial class CommonCorpus
         return Named(new Img(img.Width, img.Height, img.Model, 16, pixels), img.PatternName + " 12-bit");
     }
 
+    /// <summary>A pattern for lossless JPEG fixtures of any precision from 2 to 16 bits. Below 8 bits, the high bits of the
+    /// 8-bit samples; above, the 8-bit samples shifted with low bits that differ from pixel to pixel and from channel to
+    /// channel (for 12 bits, the samples of <see cref="Deepen"/>). The samples are 0 to 2^precision - 1, in an image whose
+    /// depth is the one of a portable anymap with that maximum value.</summary>
+    public static Img ToPrecision(Img img, int precision)
+    {
+        Py.Assert(img.Depth == 8 && precision is >= 2 and <= 16);
+        if (precision == 8)
+            return img;
+
+        var extra = precision - 8;
+        var pixels = img.Pixels.Select((p, i) => Px.From(p.ToArray().Select((v, channel) => extra < 0
+            ? v >> -extra
+            : (v << extra) + (((i % img.Width) * 5 + (i / img.Width) * 3 + channel * 7) % (1 << extra))))).ToList();
+        return Named(new Img(img.Width, img.Height, img.Model, precision > 8 ? 16 : 8, pixels), $"{img.PatternName} {Str(precision)}-bit");
+    }
+
     public static int Clamp8(long value) => (int)Math.Min(255, Math.Max(0, value));
 
     /// <summary>Row-major pixels of a w x h grid (y outer, x inner).</summary>

@@ -21,7 +21,8 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// The compressed strips never come from the encoders of the library: LZW and PackBits data is written by the reference
 /// encoders of the tests (<see cref="TiffReferenceCodecs"/>) and by the examples of the specifications, CCITT data is
 /// spelled out code by code from the tables of ITU-T T.4 and T.6 or was written by libtiff, and JPEG datastreams come
-/// from the test-side JPEG encoder (<see cref="JpegTestImage"/>), whose pixels are computed from the specification. The
+/// from the test-side JPEG encoders (<see cref="JpegTestImage"/>, and <see cref="JpegLosslessTestImage"/> for the
+/// lossless ones), whose pixels are computed from the specification. The
 /// colors of CMYK pages are checked against the decimal ICC reference of the test harness.
 /// </remarks>
 public sealed class TiffCodecTests
@@ -1201,6 +1202,186 @@ public sealed class TiffCodecTests
         Assert.Equal("Predictor: 2 with this sample layout or compression", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(predicted)).Feature);
     }
 
+    [Theory]
+    [InlineData(1, 1, false)]
+    [InlineData(2, 1, true)]
+    [InlineData(2, 2, false)]
+    [InlineData(2, 2, true)]
+    public void TwelveBitJpegStripsDecodeLikeATwelveBitJpegFile(int horizontal, int vertical, bool bigEndian)
+    {
+        // The datastreams of a page of 12-bit samples have 12-bit samples: they are decoded like a JPEG file of that
+        // precision, each sample scaled to 16 bits. The expected pixels are those of the test-side encoder
+        (int H, int V)[] sampling = [(horizontal, vertical), (1, 1), (1, 1)];
+        var strips = new[] { JpegTestImage.CreateRandom(21, 16, sampling, seed: 81, precision: 12), JpegTestImage.CreateRandom(21, 16, sampling, seed: 82, precision: 12), JpegTestImage.CreateRandom(21, 5, sampling, seed: 83, precision: 12) };
+        byte[] Build(TiffFieldSpec? referenceBlackWhite)
+        {
+            var page = new TiffPageSpec { Width = 21, Height = 37, SamplesPerPixel = 3, BitsPerSample = 12, Photometric = 6, Compression = 7, RowsPerStrip = 16, EncodedBlocks = [.. strips.Select(static strip => strip.Encode())], Samples = [] };
+            page.ExtraFields.Add(TiffFieldSpec.Shorts(530, [(ushort)horizontal, (ushort)vertical]));
+            if (referenceBlackWhite is not null)
+            {
+                page.ExtraFields.Add(referenceBlackWhite);
+            }
+
+            return new TiffFileBuilder { BigEndian = bigEndian }.AddPage(page).Build();
+        }
+
+        var data = Build(referenceBlackWhite: null);
+        var info = Image.Identify(data);
+        Assert.Equal(ImageColorModel.YCbCr, info.ColorModel);
+        Assert.Equal(PixelFormat.Rgba64, info.PixelFormat);
+        Assert.Equal(12, info.BitsPerComponent);
+        byte[] expected = [.. strips.SelectMany(static strip => strip.GetExpectedPixels())];
+        using (var image = Image.Load(data))
+        {
+            Assert.Equal(PixelFormat.Rgba64, image.PixelFormat);
+            Assert.Equal(expected, GetBytes(image));
+        }
+
+        // The full range of 12-bit samples, which libtiff writes: black at 0, white at 4095, chroma centered on 2048
+        using (var image = Image.Load(Build(new TiffFieldSpec(532, 5, [0, 1, 4095, 1, 2048, 1, 4095, 1, 2048, 1, 4095, 1]))))
+        {
+            Assert.Equal(expected, GetBytes(image));
+        }
+
+        // The full range of 8-bit samples is another conversion for 12-bit ones
+        Assert.Equal("Compression: JPEG with other YCbCr coefficients", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Build(new TiffFieldSpec(532, 5, [0, 1, 255, 1, 128, 1, 255, 1, 128, 1, 255, 1])))).Feature);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TwelveBitJpegTilesAreDecodedOneDatastreamEach(bool bigEndian)
+    {
+        // 40x24 pixels in 16x16 tiles of 12-bit grayscale samples: the samples of a tile are kept in the byte order of the
+        // file until the rows of the page are assembled
+        var tiles = Enumerable.Range(0, 6).Select(index => JpegTestImage.CreateRandom(16, 16, [(1, 1)], seed: 90 + index, precision: 12)).ToArray();
+        var expected = tiles.Select(static tile => unsafe(MemoryMarshal.Cast<byte, ushort>(tile.GetExpectedPixels().AsSpan())).ToArray()).ToArray();
+        foreach (var photometric in new[] { 1, 0 })
+        {
+            var page = new TiffPageSpec { Width = 40, Height = 24, BitsPerSample = 12, Photometric = photometric, Compression = 7, TileWidth = 16, TileLength = 16, EncodedBlocks = [.. tiles.Select(static tile => tile.Encode())], Samples = [] };
+            using var image = Image.Load(new TiffFileBuilder { BigEndian = bigEndian }.AddPage(page).Build());
+            Assert.Equal(PixelFormat.Gray16, image.PixelFormat);
+            var actual = unsafe(MemoryMarshal.Cast<byte, ushort>(GetBytes(image).AsSpan()));
+            for (var y = 0; y < 24; y++)
+            {
+                for (var x = 0; x < 40; x++)
+                {
+                    // 0 is white: the scaled samples are inverted
+                    var sample = expected[((y / 16) * 3) + (x / 16)][((y % 16) * 16) + (x % 16)];
+                    if (actual[(y * 40) + x] != (photometric == 0 ? ushort.MaxValue - sample : sample))
+                        Assert.Fail($"The pixel ({x}, {y}) differs from the pixel of its tile.");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void ThePhotometricInterpretationSaysWhatTheComponentsOfATwelveBitJpegStripAre()
+    {
+        // RGB: the three components are the samples, scaled to 16 bits (this datastream has no Adobe segment and no R, G,
+        // B component identifiers: a JPEG file would convert it from YCbCr)
+        (int H, int V)[] full = [(1, 1), (1, 1), (1, 1)];
+        var color = JpegTestImage.CreateRandom(13, 9, full, seed: 6, precision: 12);
+        var stored = Enumerable.Range(0, 3).Select(color.GetComponentValues).ToArray();
+        using (var image = Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 13, Height = 9, SamplesPerPixel = 3, BitsPerSample = 12, Photometric = 2, Compression = 7, EncodedBlocks = [color.Encode()], Samples = [] }).Build()))
+        {
+            Assert.Equal(PixelFormat.Rgba64, image.PixelFormat);
+            var actual = unsafe(MemoryMarshal.Cast<byte, ushort>(GetBytes(image).AsSpan()));
+            for (var i = 0; i < 13 * 9; i++)
+            {
+                Assert.Equal((Scale(stored[0][i]), Scale(stored[1][i]), Scale(stored[2][i]), ushort.MaxValue), (actual[i * 4], actual[(i * 4) + 1], actual[(i * 4) + 2], actual[(i * 4) + 3]));
+            }
+        }
+
+        // CMYK: the four components are ink amounts as TIFF stores them (0 is no ink), not the complements of a JPEG file
+        var inks = JpegTestImage.CreateRandom(13, 9, [(1, 1), (1, 1), (1, 1), (1, 1)], seed: 7, inks: JpegTestInkCoding.CmykWithoutAdobe, precision: 12);
+        var amounts = inks.GetExpectedDeepInks().Select(static value => (ushort)(ushort.MaxValue - value)).ToArray();
+        var cmyk = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 13, Height = 9, SamplesPerPixel = 4, BitsPerSample = 12, Photometric = 5, Compression = 7, EncodedBlocks = [inks.Encode()], Samples = [] }).Build();
+        Assert.Equal(12, Image.Identify(cmyk).BitsPerComponent);
+        using (var image = Image.Load(cmyk, InkOptions))
+        {
+            Assert.Equal(PixelFormat.Rgba64, image.PixelFormat);
+            var pixels = unsafe(MemoryMarshal.Cast<byte, ushort>(GetBytes(image).AsSpan()));
+            var colors = new ushort[13 * 9 * 3];
+            for (var pixel = 0; pixel < 13 * 9; pixel++)
+            {
+                pixels.Slice(4 * pixel, 3).CopyTo(colors.AsSpan(3 * pixel));
+                Assert.Equal(ushort.MaxValue, pixels[(4 * pixel) + 3]);
+            }
+
+            Assert.Empty(InkReference.Compare(amounts, colors));
+        }
+
+        // The nearest 16-bit value of the same fraction of the range
+        static ushort Scale(int sample) => (ushort)(((sample * 65535) + 2047) / 4095);
+    }
+
+    [Theory]
+    [InlineData(8, false)]
+    [InlineData(10, false)]
+    [InlineData(12, true)]
+    [InlineData(16, false)]
+    [InlineData(16, true)]
+    public void LosslessJpegStripsDecodeToTheirSamples(int bitsPerSample, bool bigEndian)
+    {
+        // The datastreams of a page may be lossless ones (T.81 Annex H), of any precision from 8 to 16 bits: the samples of
+        // the page are the ones given to the test-side encoder, scaled to 16 bits when they have more than 8
+        ushort[] Words(Image image) => bitsPerSample == 8 ? [.. GetBytes(image).Select(static value => (ushort)value)] : unsafe(MemoryMarshal.Cast<byte, ushort>(GetBytes(image).AsSpan())).ToArray();
+        var deep = bitsPerSample != 8;
+
+        // Three strips of grayscale samples; 0 is white on the second page
+        var strips = new[] { JpegLosslessTestImage.CreateRandom(21, 8, [(1, 1)], bitsPerSample, seed: 31), JpegLosslessTestImage.CreateRandom(21, 8, [(1, 1)], bitsPerSample, seed: 32), JpegLosslessTestImage.CreateRandom(21, 3, [(1, 1)], bitsPerSample, seed: 33) };
+        ushort[] graySamples = [.. strips.SelectMany(strip => strip.GetStoredSamples().Select(sample => deep ? strip.ScaleToSixteenBits(sample) : (ushort)sample))];
+        foreach (var photometric in new[] { 1, 0 })
+        {
+            var page = new TiffPageSpec { Width = 21, Height = 19, BitsPerSample = bitsPerSample, Photometric = photometric, Compression = 7, RowsPerStrip = 8, EncodedBlocks = [.. strips.Select((strip, index) => strip.Encode(new JpegLosslessTestOptions { Predictor = 1 + index, RestartRows = index }))], Samples = [] };
+            var data = new TiffFileBuilder { BigEndian = bigEndian }.AddPage(page).Build();
+            Assert.Equal(bitsPerSample, Image.Identify(data).BitsPerComponent);
+            using var image = Image.Load(data);
+            Assert.Equal(deep ? PixelFormat.Gray16 : PixelFormat.Gray8, image.PixelFormat);
+            var white = deep ? ushort.MaxValue : byte.MaxValue;
+            Assert.Equal(photometric == 0 ? [.. graySamples.Select(sample => (ushort)(white - sample))] : graySamples, Words(image));
+        }
+
+        // RGB tiles: the three components are the samples (the datastream is the one of a YCbCr JPEG file)
+        var tiles = Enumerable.Range(0, 4).Select(index => JpegLosslessTestImage.CreateRandom(16, 16, [(1, 1), (1, 1), (1, 1)], bitsPerSample, seed: 40 + index)).ToArray();
+        var tiled = new TiffPageSpec { Width = 30, Height = 20, SamplesPerPixel = 3, BitsPerSample = bitsPerSample, Photometric = 2, Compression = 7, TileWidth = 16, TileLength = 16, EncodedBlocks = [.. tiles.Select(static tile => tile.Encode(new JpegLosslessTestOptions { Predictor = 4 }))], Samples = [] };
+        using (var image = Image.Load(new TiffFileBuilder { BigEndian = bigEndian }.AddPage(tiled).Build()))
+        {
+            Assert.Equal(deep ? PixelFormat.Rgba64 : PixelFormat.Rgb24, image.PixelFormat);
+            var actual = Words(image);
+            var channels = deep ? 4 : 3;
+            var stored = tiles.Select(static tile => tile.GetStoredSamples()).ToArray();
+            for (var y = 0; y < 20; y++)
+            {
+                for (var x = 0; x < 30; x++)
+                {
+                    var tile = ((y / 16) * 2) + (x / 16);
+                    for (var c = 0; c < 3; c++)
+                    {
+                        var sample = stored[tile][((((y % 16) * 16) + (x % 16)) * 3) + c];
+                        if (actual[(((y * 30) + x) * channels) + c] != (deep ? tiles[tile].ScaleToSixteenBits(sample) : sample))
+                            Assert.Fail($"The sample {c} of the pixel ({x}, {y}) differs from the sample of its tile.");
+                    }
+                }
+            }
+        }
+
+        // YCbCr with subsampled chroma: converted like the components of a JPEG file, at the precision of the samples
+        var color = JpegLosslessTestImage.CreateRandom(17, 11, [(2, 2), (1, 1), (1, 1)], bitsPerSample, seed: 50);
+        var ycbcr = new TiffPageSpec { Width = 17, Height = 11, SamplesPerPixel = 3, BitsPerSample = bitsPerSample, Photometric = 6, Compression = 7, EncodedBlocks = [color.Encode(new JpegLosslessTestOptions { Predictor = 7, PaddingSeed = 1 })], Samples = [] };
+        ycbcr.ExtraFields.Add(TiffFieldSpec.Shorts(530, [2, 2]));
+        using (var image = Image.Load(new TiffFileBuilder { BigEndian = bigEndian }.AddPage(ycbcr).Build()))
+        {
+            Assert.Equal(color.GetExpectedPixels(), GetBytes(image));
+        }
+
+        // A datastream of another precision is not the one of the page
+        var other = JpegLosslessTestImage.CreateRandom(21, 19, [(1, 1)], bitsPerSample == 16 ? 15 : bitsPerSample + 1, seed: 34);
+        var mismatch = new TiffPageSpec { Width = 21, Height = 19, BitsPerSample = bitsPerSample, Photometric = 1, Compression = 7, EncodedBlocks = [other.Encode()], Samples = [] };
+        Assert.Contains($"the page declares {bitsPerSample}", Assert.Throws<InvalidImageContentException>(() => Image.Load(new TiffFileBuilder().AddPage(mismatch).Build())).Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void AJpegStripMustMatchThePageItBelongsTo()
     {
@@ -1237,12 +1418,12 @@ public sealed class TiffCodecTests
         Assert.Equal(ImageFormat.Tiff, truncated.Format);
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(16, 8, 3, 6, [1, 2, 3, 4])));
 
-        // What a JPEG file cannot be either is reported for the page: here a lossless frame (SOF3)
-        var lossless = (byte[])strip.Clone();
-        lossless[lossless.AsSpan().IndexOf((ReadOnlySpan<byte>)[0xFF, 0xC0]) + 1] = 0xC3;
-        var unsupported = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 6, lossless)));
+        // What a JPEG file cannot be either is reported for the page: here a hierarchical frame (SOF5)
+        var hierarchical = (byte[])strip.Clone();
+        hierarchical[hierarchical.AsSpan().IndexOf((ReadOnlySpan<byte>)[0xFF, 0xC0]) + 1] = 0xC5;
+        var unsupported = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 6, hierarchical)));
         Assert.Equal(ImageFormat.Tiff, unsupported.Format);
-        Assert.Equal("Compression: JPEG lossless", unsupported.Feature);
+        Assert.Equal("Compression: JPEG hierarchical", unsupported.Feature);
 
         // And what a JPEG file can be is decoded: an arithmetic-coded datastream has the samples of the Huffman-coded one
         var image = JpegTestImage.CreateRandom(16, 8, sampling, seed: 9);
@@ -1252,12 +1433,17 @@ public sealed class TiffCodecTests
             Assert.Equal(GetBytes(huffman), GetBytes(arithmetic));
         }
 
-        // A datastream of 12-bit samples is a JPEG file the library reads, but not a strip: the samples of a page are bytes
+        // The samples of a datastream have the precision the page declares: the page is described without its strips
         var deep = JpegTestImage.CreateRandom(16, 8, sampling, seed: 9, precision: 12).Encode();
-        Assert.Equal("Compression: JPEG 12-bit precision", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 6, deep))).Feature);
+        Image.Load(Page(16, 8, 3, 6, deep, bitsPerSample: 12)).Dispose();
+        Assert.Contains("samples of 12 bits; the page declares 8", Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(16, 8, 3, 6, deep))).Message, StringComparison.Ordinal);
+        Assert.Contains("samples of 8 bits; the page declares 12", Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(16, 8, 3, 6, strip, bitsPerSample: 12))).Message, StringComparison.Ordinal);
+        Assert.Contains("samples of 8 bits; the page declares 16", Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(16, 8, 3, 2, strip, bitsPerSample: 16))).Message, StringComparison.Ordinal);
+        Assert.Equal(16, Image.Identify(Page(16, 8, 3, 2, strip, bitsPerSample: 16)).BitsPerComponent);
 
-        // JPEG stores 8-bit samples without alpha, no palette indexes, and YCbCr samples as JFIF defines them
-        Assert.Equal("Compression: JPEG with 16-bit samples", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 2, strip, bitsPerSample: 16))).Feature);
+        // JPEG stores samples of 8 to 16 bits without alpha, no palette indexes, and YCbCr samples as JFIF defines them
+        Assert.Equal("Compression: JPEG with 4-bit samples", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(16, 8, 1, 1, strip, bitsPerSample: 4))).Feature);
+        Assert.Equal("BitsPerSample: 3", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(16, 8, 1, 1, strip, bitsPerSample: 3))).Feature);
         Assert.Equal("Compression: JPEG with this sample layout", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 4, 2, strip, configure: static page => page.ExtraFields.Add(TiffFieldSpec.Short(338, 2))))).Feature);
         Assert.Equal("Compression: JPEG with other YCbCr coefficients", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 6, strip, configure: static page => page.ExtraFields.Add(new TiffFieldSpec(529, 5, [2126, 10000, 7152, 10000, 722, 10000]))))).Feature);
         Assert.Equal("Compression: JPEG with other YCbCr coefficients", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 6, strip, configure: static page => page.ExtraFields.Add(new TiffFieldSpec(532, 5, [16, 1, 235, 1, 128, 1, 240, 1, 128, 1, 240, 1]))))).Feature);
@@ -1731,6 +1917,8 @@ public sealed class TiffCodecTests
             new() { Width = 53, Height = 12, BitsPerSample = 1, Photometric = 1, Compression = 3, EncodedBlocks = [Convert.FromHexString(LibTiffFaxStripCases[3].Strip)], Samples = [] },
             new() { Width = 53, Height = 12, BitsPerSample = 1, Photometric = 1, Compression = 4, EncodedBlocks = [Convert.FromHexString(LibTiffFaxStripCases[4].Strip)], Samples = [] },
             new() { Width = 16, Height = 16, SamplesPerPixel = 3, Photometric = 6, Compression = 7, EncodedBlocks = [jpegStrip], Samples = [] },
+            new() { Width = 16, Height = 16, SamplesPerPixel = 3, BitsPerSample = 12, Photometric = 6, Compression = 7, EncodedBlocks = [JpegTestImage.CreateRandom(16, 16, sampling, seed: 72, precision: 12).Encode()], Samples = [] },
+            new() { Width = 16, Height = 16, SamplesPerPixel = 3, BitsPerSample = 16, Photometric = 2, Compression = 7, TileWidth = 16, TileLength = 16, EncodedBlocks = [JpegLosslessTestImage.CreateRandom(16, 16, [(1, 1), (1, 1), (1, 1)], 16, seed: 73).Encode(new JpegLosslessTestOptions { Predictor = 4, RestartRows = 4 })], Samples = [] },
         };
 
         pages[5].ExtraFields.Add(TiffFieldSpec.Shorts(320, colorMap));

@@ -617,8 +617,8 @@ public static partial class FixtureManifestValidator
         }
 
         // AV1 and HEVC samples are 8, 10 or 12 bits wide; JPEG XL and JPEG 2000 samples have any width, the fixtures use
-        // the same ones; JPEG samples are 8 or 12 bits wide
-        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format is "avif" or "heic" or "jxl" or "jp2" && expected.BitsPerComponent is 10 or 12) && !(entry.Format is "jpeg" && expected.BitsPerComponent is 12))
+        // the same ones; JPEG samples are 8 or 12 bits wide, and those of a lossless JPEG file 2 to 16 bits wide
+        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format is "avif" or "heic" or "jxl" or "jp2" && expected.BitsPerComponent is 10 or 12) && !(entry.Format is "jpeg" && expected.BitsPerComponent is >= 2 and <= 16))
         {
             errors.Add($"{name}: invalid bitsPerComponent {expected.BitsPerComponent}.");
         }

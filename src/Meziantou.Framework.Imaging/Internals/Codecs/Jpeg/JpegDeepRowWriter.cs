@@ -3,10 +3,11 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Turns decoded component planes of 12-bit samples into output rows: chroma upsampling to the frame size, color
-/// conversion at the precision of the samples, then the scaling of every sample to 16 bits, in the source layout of the
-/// sink (<see cref="PixelFormat.Gray16"/>, or opaque <see cref="PixelFormat.Rgba64"/> for the other frames, as there is
-/// no 16-bit RGB format). When the sink's plan is an identity, rows are produced directly in the frame storage.
+/// Turns decoded component planes of samples that do not have 8 bits (12 bits, or the 2 to 16 bits of a lossless frame)
+/// into output rows: chroma upsampling to the frame size, color conversion at the precision of the samples, then the
+/// scaling of every sample to 16 bits, in the source layout of the sink (<see cref="PixelFormat.Gray16"/>, or opaque
+/// <see cref="PixelFormat.Rgba64"/> for the other frames, as there is no 16-bit RGB format). When the sink's plan is an
+/// identity, rows are produced directly in the frame storage.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -16,18 +17,26 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// A sample <c>s</c> becomes <c>(s * 65535 + (2^P - 1) / 2) / (2^P - 1)</c> (integer division): the nearest 16-bit value of
-/// the same fraction of the range, so that black and white are exact.
+/// the same fraction of the range, so that black and white are exact. No two samples become the same value, whatever the
+/// precision, and a 16-bit sample is unchanged.
 /// </para>
 /// <para>
 /// Four components are inks: the amounts (the complement of the stored samples, see <see cref="JpegRowWriter"/>) are
 /// scaled to 16 bits, then converted to RGB by the 16-bit ICC conversion.
+/// </para>
+/// <para>
+/// The container of an embedded datastream is handed the scaled samples instead (<see cref="JpegSampleReceiver.OnDeepRow"/>):
+/// one, three (converted from YCbCr when the container says so) or the four stored ones per pixel.
 /// </para>
 /// <para>The kernels are scalar.</para>
 /// </remarks>
 internal sealed class JpegDeepRowWriter : JpegBandWriter
 {
     private readonly JpegFrameComponent[] _components;
-    private readonly DecodedFrameSink _sink;
+    private readonly DecodedFrameSink? _sink;
+
+    // The container of an embedded datastream, which receives the samples instead of an image; null for an image
+    private readonly JpegSampleReceiver? _receiver;
     private readonly ImageColorModel _colorModel;
 
     // The conversion of the inks of a four-component frame to RGB; null for the other frames
@@ -37,7 +46,7 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
     private readonly int _max;
     private readonly PooledBuffer?[] _upsampled;
 
-    // A row of the source layout, when the sink converts it
+    // A row of the source layout, when the sink converts it, or the row handed to the container
     private PooledBuffer? _sourceRow;
 
     // Three samples per pixel at the precision of the frame: converted colors, or cyan, magenta and yellow amounts
@@ -46,14 +55,25 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
     // Five 16-bit samples per pixel: the ink amounts and an opaque alpha sample, which the conversion copies
     private PooledBuffer? _inkRow;
 
-    public JpegDeepRowWriter(JpegFrameComponent[] components, DecodedFrameSink sink, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int maxVertical, int precision, AllocationScope scope)
-        : base(height, maxVertical)
+    public JpegDeepRowWriter(JpegFrameComponent[] components, DecodedFrameSink sink, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int bandRows, int precision, AllocationScope scope)
+        : this(components, sink, receiver: null, colorModel, inkConversion, width, height, bandRows, precision, scope)
     {
         if ((components.Length == 4) != (inkConversion is not null))
             throw new ArgumentException("A four-component frame, and only it, needs the conversion of its inks.", nameof(inkConversion));
+    }
 
+    /// <summary>Creates a writer that hands the rows to the container of an embedded datastream instead of an image.</summary>
+    public JpegDeepRowWriter(JpegFrameComponent[] components, JpegSampleReceiver receiver, ImageColorModel colorModel, int width, int height, int bandRows, int precision, AllocationScope scope)
+        : this(components, sink: null, receiver, colorModel, inkConversion: null, width, height, bandRows, precision, scope)
+    {
+    }
+
+    private JpegDeepRowWriter(JpegFrameComponent[] components, DecodedFrameSink? sink, JpegSampleReceiver? receiver, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int bandRows, int precision, AllocationScope scope)
+        : base(height, bandRows)
+    {
         _components = components;
         _sink = sink;
+        _receiver = receiver;
         _colorModel = colorModel;
         _inkConversion = inkConversion;
         _width = width;
@@ -70,17 +90,21 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
                 }
             }
 
-            if (!sink.Plan.IsIdentity)
+            if (sink is null)
+            {
+                _sourceRow = scope.Rent(checked(width * components.Length * sizeof(ushort)), AllocationKind.DecoderState, clear: false);
+            }
+            else if (!sink.Plan.IsIdentity)
             {
                 _sourceRow = scope.Rent(checked(width * PixelFormats.GetBytesPerPixel(sink.SourcePixelFormat)), AllocationKind.DecoderState, clear: false);
             }
 
-            if (components.Length > 1)
+            if (components.Length == 3 || inkConversion is not null)
             {
                 _colorRow = scope.Rent(checked(width * 3 * sizeof(ushort)), AllocationKind.DecoderState, clear: false);
             }
 
-            if (components.Length == 4)
+            if (inkConversion is not null)
             {
                 _inkRow = scope.Rent(checked(width * 5 * sizeof(ushort)), AllocationKind.DecoderState, clear: false);
             }
@@ -94,7 +118,17 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
 
     protected override void WriteRows(int first, int last)
     {
-        using var lease = _sink.LeaseCurrentFrame();
+        if (_receiver is not null)
+        {
+            for (var y = first; y < last; y++)
+            {
+                WriteSampleRow(_receiver, y);
+            }
+
+            return;
+        }
+
+        using var lease = _sink!.LeaseCurrentFrame();
         for (var y = first; y < last; y++)
         {
             WriteRow(lease, y);
@@ -134,9 +168,10 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
         var max = (1 << precision) - 1;
         for (var x = 0; x < luma.Length; x++)
         {
-            int yValue = luma[x];
-            var cb = blue[x] - center;
-            var cr = red[x] - center;
+            // The products of 16-bit samples need more than 32 bits
+            long yValue = luma[x];
+            long cb = blue[x] - center;
+            long cr = red[x] - center;
             destination[3 * x] = (ushort)Math.Clamp(yValue + (((91881 * cr) + 32768) >> 16), 0, max);
             destination[(3 * x) + 1] = (ushort)Math.Clamp(yValue + (((-22554 * cb) - (46802 * cr) + 32768) >> 16), 0, max);
             destination[(3 * x) + 2] = (ushort)Math.Clamp(yValue + (((116130 * cb) + 32768) >> 16), 0, max);
@@ -189,7 +224,7 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
         }
     }
 
-    private static ushort Scale(int sample, int max) => (ushort)(((sample * 65535) + (max >> 1)) / max);
+    private static ushort Scale(int sample, int max) => (ushort)((((uint)sample * 65535) + (uint)(max >> 1)) / (uint)max);
 
     private static void Replicate(ReadOnlySpan<ushort> samples, int factor, Span<ushort> output)
     {
@@ -199,10 +234,58 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
         }
     }
 
+    /// <summary>Hands one row of an embedded datastream to its container: the scaled samples of the components, interleaved.</summary>
+    private void WriteSampleRow(JpegSampleReceiver receiver, int y)
+    {
+        var channels = _components.Length;
+        var row = unsafe(MemoryMarshal.Cast<byte, ushort>(_sourceRow!.RawBuffer.AsSpan(0, _width * channels * sizeof(ushort))));
+        var max = _max;
+        if (channels == 1)
+        {
+            Scale(_components[0].GetDeepRow(y)[.._width], row, max);
+        }
+        else if (channels == 4)
+        {
+            // The container says what the four samples are: they are handed over as they are stored
+            for (var c = 0; c < channels; c++)
+            {
+                var samples = GetSamples(_components[c], y);
+                for (var x = 0; x < samples.Length; x++)
+                {
+                    row[(4 * x) + c] = Scale(samples[x], max);
+                }
+            }
+        }
+        else
+        {
+            var c0 = GetSamples(_components[0], y);
+            var c1 = GetSamples(_components[1], y);
+            var c2 = GetSamples(_components[2], y);
+            if (_colorModel == ImageColorModel.YCbCr)
+            {
+                var color = unsafe(MemoryMarshal.Cast<byte, ushort>(_colorRow!.RawBuffer.AsSpan(0, _width * 3 * sizeof(ushort))));
+                ConvertYCbCr(c0, c1, c2, color, _precision);
+                Scale(color, row, max);
+            }
+            else
+            {
+                for (var x = 0; x < c0.Length; x++)
+                {
+                    row[3 * x] = Scale(c0[x], max);
+                    row[(3 * x) + 1] = Scale(c1[x], max);
+                    row[(3 * x) + 2] = Scale(c2[x], max);
+                }
+            }
+        }
+
+        receiver.OnDeepRow(y, row);
+    }
+
     private void WriteRow(scoped in PixelLease lease, int y)
     {
-        var identity = _sink.Plan.IsIdentity;
-        var length = _width * PixelFormats.GetBytesPerPixel(_sink.SourcePixelFormat);
+        var sink = _sink!;
+        var identity = sink.Plan.IsIdentity;
+        var length = _width * PixelFormats.GetBytesPerPixel(sink.SourcePixelFormat);
         var rowBytes = identity ? lease.GetRowBytes(y)[..length] : _sourceRow!.RawBuffer.AsSpan(0, length);
         var row = unsafe(MemoryMarshal.Cast<byte, ushort>(rowBytes));
         var max = _max;
@@ -277,7 +360,7 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
 
         if (!identity)
         {
-            _sink.WriteRow(lease, y, rowBytes);
+            sink.WriteRow(lease, y, rowBytes);
         }
     }
 

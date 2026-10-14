@@ -56829,12 +56829,12 @@
       ]
     },
     {
-      "id": "invalid/jpeg/lossless",
+      "id": "invalid/jpeg/lossless-arithmetic",
       "kind": "unsupported",
       "format": "jpeg",
       "input": {
-        "path": "invalid/jpeg/lossless.jpg",
-        "sha256": "69567ee9915ab6b72e5b6d3416c6094a2b0695cda6f02f9858a526129a8de3d0",
+        "path": "invalid/jpeg/lossless-arithmetic.jpg",
+        "sha256": "59c8559359ac1d813ecfb955c19466c4e518908f865b0145fb4315e3a5197c54",
         "role": "encoded"
       },
       "provenance": {
@@ -56851,22 +56851,194 @@
           "height": 8
         },
         "commands": [
-          "cjpeg -dct int -lossless 1 -outfile {input} {source}.pnm"
+          "cjpeg -dct int -lossless 1 -outfile {input} {source}.pnm",
+          "replace the frame marker SOF3 by SOF11"
         ]
       },
       "expectedError": {
         "exception": "UnsupportedImageFeatureException",
         "format": "Jpeg",
-        "feature": "JPEG lossless"
+        "feature": "JPEG lossless with arithmetic coding"
       },
       "features": [
         "jpeg.app14=Adobe",
         "jpeg.components=3",
+        "jpeg.predictor=1",
+        "jpeg.process=lossless-arithmetic",
+        "jpeg.sampling=4:4:4",
+        "jpeg.scans=1"
+      ],
+      "notes": "The lossless process with arithmetic coding (SOF11, T.81 H.1.2.3) is not decoded; the Huffman-coded one (SOF3) is."
+    },
+    {
+      "id": "invalid/jpeg/lossless-point-transform-8",
+      "kind": "invalid",
+      "format": "jpeg",
+      "input": {
+        "path": "invalid/jpeg/lossless-point-transform-8.jpg",
+        "sha256": "cb93d53fc1089db83b4c5b32e3c9a2d0cb819f673fe6e3cf9ddff6d4df7eacb9",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildInvalidLosslessJpeg PatternDetailColor)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 20,
+          "height": 12,
+          "defect": "set the point transform of the scan header (Al) to 8"
+        },
+        "commands": [
+          "cjpeg -dct int -lossless 4 -outfile {input} {source}.pnm",
+          "set the point transform of the scan header (Al) to 8"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Jpeg"
+      },
+      "features": [
+        "jpeg.app14=Adobe",
+        "jpeg.components=3",
+        "jpeg.pointTransform=8",
+        "jpeg.predictor=4",
         "jpeg.process=lossless",
         "jpeg.sampling=4:4:4",
         "jpeg.scans=1"
       ],
-      "notes": "Lossless JPEG (SOF3) is out of scope."
+      "notes": "A point transform of 8 leaves no bit of the 8-bit samples."
+    },
+    {
+      "id": "invalid/jpeg/lossless-predictor-0",
+      "kind": "invalid",
+      "format": "jpeg",
+      "input": {
+        "path": "invalid/jpeg/lossless-predictor-0.jpg",
+        "sha256": "119e40f709994eff7f9ede3f4cfd37906141030c09e40aa7c128b89605777f7b",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildInvalidLosslessJpeg PatternDetailColor)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 20,
+          "height": 12,
+          "defect": "set the predictor selection of the scan header (Ss) to 0"
+        },
+        "commands": [
+          "cjpeg -dct int -lossless 4 -outfile {input} {source}.pnm",
+          "set the predictor selection of the scan header (Ss) to 0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Jpeg"
+      },
+      "features": [
+        "jpeg.app14=Adobe",
+        "jpeg.components=3",
+        "jpeg.predictor=0",
+        "jpeg.process=lossless",
+        "jpeg.sampling=4:4:4",
+        "jpeg.scans=1"
+      ],
+      "notes": "The predictor 0 (no prediction) is for the differential frames of the hierarchical mode: a lossless scan selects a predictor from 1 to 7 (T.81 table H.1)."
+    },
+    {
+      "id": "invalid/jpeg/lossless-restart-interval-partial-line",
+      "kind": "invalid",
+      "format": "jpeg",
+      "input": {
+        "path": "invalid/jpeg/lossless-restart-interval-partial-line.jpg",
+        "sha256": "81dc14620bb9e52d12f82c11badcf93d2430efff51e2465cf4637ca067f7498a",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildInvalidLosslessJpeg PatternDetailColor)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 20,
+          "height": 12,
+          "defect": "set the restart interval (DRI) to 19 MCUs, one less than a line"
+        },
+        "commands": [
+          "cjpeg -dct int -lossless 4 -restart 1 -outfile {input} {source}.pnm",
+          "set the restart interval (DRI) to 19 MCUs, one less than a line"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Jpeg"
+      },
+      "features": [
+        "jpeg.app14=Adobe",
+        "jpeg.components=3",
+        "jpeg.predictor=4",
+        "jpeg.process=lossless",
+        "jpeg.restartInterval=19",
+        "jpeg.sampling=4:4:4",
+        "jpeg.scans=1"
+      ],
+      "notes": "The restart interval of a lossless scan is a whole number of MCU rows (T.81 H.1.1): the prediction of a line that a restart marker cuts is not defined."
+    },
+    {
+      "id": "invalid/jpeg/lossless-truncated-scan",
+      "kind": "invalid",
+      "format": "jpeg",
+      "input": {
+        "path": "invalid/jpeg/lossless-truncated-scan.jpg",
+        "sha256": "56083f1039cc4052173d6d2aa87aa4805b013adeea109b769124c08b6eed9619",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildInvalidLosslessJpeg PatternDetailColor)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 20,
+          "height": 12,
+          "defect": "cut the entropy-coded data of the scan in the middle (EOI kept)"
+        },
+        "commands": [
+          "cjpeg -dct int -lossless 4 -outfile {input} {source}.pnm",
+          "cut the entropy-coded data of the scan in the middle (EOI kept)"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Jpeg"
+      },
+      "features": [
+        "jpeg.app14=Adobe",
+        "jpeg.components=3",
+        "jpeg.predictor=4",
+        "jpeg.process=lossless",
+        "jpeg.sampling=4:4:4",
+        "jpeg.scans=1"
+      ],
+      "notes": "The scan ends before its last sample: never decoded as a partial image."
     },
     {
       "id": "invalid/jpeg/missing-component-scan",
@@ -73820,6 +73992,1408 @@
         "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling). The library decoder (double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding (one unit on some component samples, amplified by the color conversion); measured: max 1, mean 0.0153. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 1, mean 0.0281, which would justify max 2 / mean 0.50). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
       },
       "notes": "Grayscale with a restart interval of 3 blocks (intervals cross block rows), optimized tables and a gray ICC profile in one APP2 segment."
+    },
+    {
+      "id": "jpeg/lossless-ffmpeg-ycbcr-420-odd",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/lossless-ffmpeg-ycbcr-420-odd.jpg",
+        "sha256": "a683e67a5b9c3ed040066367408c913bf5b0efb880eb77c18da128d44402e998",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildLosslessYCbCrJpeg PatternDetailColor)",
+        "tools": [
+          "ffmpeg 9.0.2",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 37,
+          "height": 23
+        },
+        "commands": [
+          "ffmpeg -hide_banner -nostdin -loglevel error -y -f rawvideo -pixel_format rgb24 -video_size 37x23 -i {source}.raw -frames:v 1 -c:v ljpeg -pred 2 -fflags +bitexact -flags:v +bitexact -pix_fmt yuvj420p {input}"
+        ]
+      },
+      "features": [
+        "jpeg.components=3",
+        "jpeg.predictor=2",
+        "jpeg.process=lossless",
+        "jpeg.sampling=4:2:0",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "The Y, Cb and Cr planes decoded from the same encoded input by FFmpeg, which are the samples the file stores, then converted by the generator like the planes of the frames of the other processes: the chroma planes upsampled with the triangle filters, the edge replication and the rounding biases of libjpeg-turbo's fancy upsampling, and the JFIF full-range YCbCr->RGB conversion in 16-bit fixed point. libjpeg-turbo djpeg decodes the planes but refuses to convert the colors of a lossless file.",
+        "decoder": "ffmpeg 9.0.2",
+        "backend": "libavcodec mjpeg decoder (lossless process) for the planes; chroma upsampling and YCbCr->RGB conversion computed by the generator (CommonCorpus.JpegUpsample, CommonCorpus.JpegYCbCrToRgb)",
+        "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -f rawvideo -pix_fmt yuvj420p -",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, lossless process; swscale yuvj->rgba)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "maxAbsoluteError": 44,
+            "meanAbsoluteError": 7.9659,
+            "excludedFromTolerance": true,
+            "notes": "The planes are the ones of the reference (the same decoder). swscale interpolates the subsampled chroma planes bilinearly, where the reference applies the triangle filters and the edge replication of libjpeg-turbo: an upsampling difference that the detailed chroma of this pattern makes large, and that does not justify a tolerance for a lossless file."
+          }
+        ]
+      },
+      "expected": {
+        "width": 37,
+        "height": 23,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/lossless-ffmpeg-ycbcr-420-odd.frame-0.rgba8.raw",
+                "sha256": "49012bf3cda63b79b99a5be5f887da62487a49a0dcd13b4e72f1fa70ea9bd28b",
+                "layout": "rgba8",
+                "width": 37,
+                "height": 23,
+                "rowBytes": 148,
+                "byteLength": 3404,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/lossless-ffmpeg-ycbcr-420-odd.frame-0.rgb8.raw",
+                "sha256": "7256fe87028a60a376bc44072ab45877deb4baa9f0ff7d6e92d048b8a14f42f8",
+                "layout": "rgb8",
+                "width": 37,
+                "height": 23,
+                "rowBytes": 111,
+                "byteLength": 2553,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "4:2:0 with an odd width and an odd height: an MCU holds 2x2 luma samples and one sample of each chroma plane, and the samples that complete the last MCUs are coded and removed. Predicted from the sample above."
+    },
+    {
+      "id": "jpeg/lossless-ffmpeg-ycbcr-422",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/lossless-ffmpeg-ycbcr-422.jpg",
+        "sha256": "dc4ce3b90a482332c0ed21cfe686c2c0a84bab80e31161dbd28dc7411d5aa5d0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildLosslessYCbCrJpeg PatternDetailColor)",
+        "tools": [
+          "ffmpeg 9.0.2",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 29,
+          "height": 13
+        },
+        "commands": [
+          "ffmpeg -hide_banner -nostdin -loglevel error -y -f rawvideo -pixel_format rgb24 -video_size 29x13 -i {source}.raw -frames:v 1 -c:v ljpeg -pred 3 -fflags +bitexact -flags:v +bitexact -pix_fmt yuvj422p {input}"
+        ]
+      },
+      "features": [
+        "jpeg.components=3",
+        "jpeg.predictor=3",
+        "jpeg.process=lossless",
+        "jpeg.sampling=2x2,1x2,1x2",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "The Y, Cb and Cr planes decoded from the same encoded input by FFmpeg, which are the samples the file stores, then converted by the generator like the planes of the frames of the other processes: the chroma planes upsampled with the triangle filters, the edge replication and the rounding biases of libjpeg-turbo's fancy upsampling, and the JFIF full-range YCbCr->RGB conversion in 16-bit fixed point. libjpeg-turbo djpeg decodes the planes but refuses to convert the colors of a lossless file.",
+        "decoder": "ffmpeg 9.0.2",
+        "backend": "libavcodec mjpeg decoder (lossless process) for the planes; chroma upsampling and YCbCr->RGB conversion computed by the generator (CommonCorpus.JpegUpsample, CommonCorpus.JpegYCbCrToRgb)",
+        "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -f rawvideo -pix_fmt yuvj422p -",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, lossless process; swscale yuvj->rgba)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "maxAbsoluteError": 45,
+            "meanAbsoluteError": 7.7471,
+            "excludedFromTolerance": true,
+            "notes": "The planes are the ones of the reference (the same decoder). swscale interpolates the subsampled chroma planes bilinearly, where the reference applies the triangle filters and the edge replication of libjpeg-turbo: an upsampling difference that the detailed chroma of this pattern makes large, and that does not justify a tolerance for a lossless file."
+          }
+        ]
+      },
+      "expected": {
+        "width": 29,
+        "height": 13,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/lossless-ffmpeg-ycbcr-422.frame-0.rgba8.raw",
+                "sha256": "e343e4702ffdec0fb852b9573a86de7263f16ffdda415af63d89db8b64e9640a",
+                "layout": "rgba8",
+                "width": 29,
+                "height": 13,
+                "rowBytes": 116,
+                "byteLength": 1508,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/lossless-ffmpeg-ycbcr-422.frame-0.rgb8.raw",
+                "sha256": "c8bdc49c74929a140e8a3b71613299c88590bfc8ff083f84e1070b4c9ee9dc9a",
+                "layout": "rgb8",
+                "width": 29,
+                "height": 13,
+                "rowBytes": 87,
+                "byteLength": 1131,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "4:2:2 with an odd width and an odd height, predicted from the sample above on the left. The encoder declares the sampling factors 2x2 for the luma and 1x2 for the chroma: an MCU holds two lines of each component."
+    },
+    {
+      "id": "jpeg/lossless-ffmpeg-ycbcr-444",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/lossless-ffmpeg-ycbcr-444.jpg",
+        "sha256": "de31f4db15651bd7fcf39ec32322d21229866c88afd049f47a738765097ec754",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildLosslessYCbCrJpeg PatternDetailColor)",
+        "tools": [
+          "ffmpeg 9.0.2",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 24,
+          "height": 16
+        },
+        "commands": [
+          "ffmpeg -hide_banner -nostdin -loglevel error -y -f rawvideo -pixel_format rgb24 -video_size 24x16 -i {source}.raw -frames:v 1 -c:v ljpeg -pred 1 -fflags +bitexact -flags:v +bitexact -pix_fmt yuvj444p {input}"
+        ]
+      },
+      "features": [
+        "jpeg.components=3",
+        "jpeg.predictor=1",
+        "jpeg.process=lossless",
+        "jpeg.sampling=1x2,1x2,1x2",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "The Y, Cb and Cr planes decoded from the same encoded input by FFmpeg, which are the samples the file stores, then converted by the generator like the planes of the frames of the other processes: the JFIF full-range YCbCr->RGB conversion in 16-bit fixed point. libjpeg-turbo djpeg decodes the planes but refuses to convert the colors of a lossless file.",
+        "decoder": "ffmpeg 9.0.2",
+        "backend": "libavcodec mjpeg decoder (lossless process) for the planes; chroma upsampling and YCbCr->RGB conversion computed by the generator (CommonCorpus.JpegUpsample, CommonCorpus.JpegYCbCrToRgb)",
+        "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -f rawvideo -pix_fmt yuvj444p -",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, lossless process; swscale yuvj->rgba)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0009,
+            "excludedFromTolerance": true,
+            "notes": "The planes are the ones of the reference (the same decoder): the conversion of swscale rounds some colors by one unit differently from the 16-bit fixed-point JFIF conversion of the reference, which does not justify a tolerance for a lossless file."
+          }
+        ]
+      },
+      "expected": {
+        "width": 24,
+        "height": 16,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/lossless-ffmpeg-ycbcr-444.frame-0.rgba8.raw",
+                "sha256": "1c48978748bbcb33c1f1945dc59581d6cbf6053f0aa4dedff4c99f01659d400a",
+                "layout": "rgba8",
+                "width": 24,
+                "height": 16,
+                "rowBytes": 96,
+                "byteLength": 1536,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/lossless-ffmpeg-ycbcr-444.frame-0.rgb8.raw",
+                "sha256": "c9f21f0bb6a11201b4ca06d9b7c16841587ffe7d12c64e1606ca0705fbfe3822",
+                "layout": "rgb8",
+                "width": 24,
+                "height": 16,
+                "rowBytes": 72,
+                "byteLength": 1152,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "YCbCr samples without chroma subsampling, predicted from the sample on the left: only the color conversion stands between the samples and the pixels. The encoder declares the sampling factors 1x2 for the three components: nothing is subsampled, and an MCU holds two lines of each component."
+    },
+    {
+      "id": "jpeg/lossless-gray-predictor1",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/lossless-gray-predictor1.jpg",
+        "sha256": "29ac157d0f8f165df8df0c8d52d8e52844e24e58c0804d0e635ef0d61a85ba2f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildLosslessJpeg PatternDetailGray)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 23,
+          "height": 17,
+          "precision": 8
+        },
+        "commands": [
+          "cjpeg -dct int -lossless 1 -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=1",
+        "jpeg.predictor=1",
+        "jpeg.process=lossless",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to cjpeg: a lossless file stores its samples.",
+        "crossChecks": [
+          {
+            "decoder": "libjpeg-turbo 3.2.0 djpeg",
+            "command": "djpeg -pnm {input} (a portable anymap of the samples, maximum value 255)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, lossless process)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -f rawvideo -pix_fmt gray - (the samples as they are stored)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 23,
+        "height": 17,
+        "pixelFormat": "Gray8",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/lossless-gray-predictor1.frame-0.rgba8.raw",
+                "sha256": "d626080dde37ad3b6cd3f56944056027381852690c37bb6a31ad252c38546c75",
+                "layout": "rgba8",
+                "width": 23,
+                "height": 17,
+                "rowBytes": 92,
+                "byteLength": 1564,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/lossless-gray-predictor1.frame-0.gray8.raw",
+                "sha256": "1524a8197a2f5a48fba32ea132acfd6db9cf779f2a7ebab142be0ff13ac9bada",
+                "layout": "gray8",
+                "width": 23,
+                "height": 17,
+                "rowBytes": 23,
+                "byteLength": 391,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Grayscale samples predicted from the sample on the left."
+    },
+    {
+      "id": "jpeg/lossless-gray12-predictor2",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/lossless-gray12-predictor2.jpg",
+        "sha256": "8dfcf96f947a1b0ece6eaeeb4ec18428d40450d58aba70b20f577017f7c41a48",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildLosslessJpeg PatternDetailGray 12-bit)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 21,
+          "height": 15,
+          "precision": 12
+        },
+        "commands": [
+          "cjpeg -dct int -precision 12 -lossless 2 -restart 4 -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=1",
+        "jpeg.precision=12",
+        "jpeg.predictor=2",
+        "jpeg.process=lossless",
+        "jpeg.restartInterval=84",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to cjpeg: a lossless file stores its samples; each 12-bit sample s scaled to 16 bits as (s * 65535 + 2047) / 4095.",
+        "crossChecks": [
+          {
+            "decoder": "libjpeg-turbo 3.2.0 djpeg",
+            "command": "djpeg -pnm {input} (a portable anymap of the samples, maximum value 4095)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, lossless process)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -f rawvideo -pix_fmt gray16le - (the samples shifted left by 4 bits)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 21,
+        "height": 15,
+        "pixelFormat": "Gray16",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 12,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/lossless-gray12-predictor2.frame-0.rgba16le.raw",
+                "sha256": "efe24c896d5ef45a8f0dd2c031030d4d5f41f6952bdc459653d1e8f4a638e143",
+                "layout": "rgba16le",
+                "width": 21,
+                "height": 15,
+                "rowBytes": 168,
+                "byteLength": 2520,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/lossless-gray12-predictor2.frame-0.gray16le.raw",
+                "sha256": "b7ad7a119619e63ef34688e34840ed3193aaca3b268721d21ae1eb03b777e09d",
+                "layout": "gray16le",
+                "width": 21,
+                "height": 15,
+                "rowBytes": 42,
+                "byteLength": 630,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "12-bit grayscale samples predicted from the sample above, a restart interval of 4 lines."
+    },
+    {
+      "id": "jpeg/lossless-gray16-largest-difference",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/lossless-gray16-largest-difference.jpg",
+        "sha256": "8ba1f70fd6d40c60e75aacdcda09d8c6b1754e6b0fda2d4ec2f31699543a7280",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildLosslessJpeg PatternDetailGray 16-bit first sample 0)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 19,
+          "height": 11,
+          "precision": 16
+        },
+        "commands": [
+          "cjpeg -dct int -precision 16 -lossless 1 -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=1",
+        "jpeg.precision=16",
+        "jpeg.predictor=1",
+        "jpeg.process=lossless",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to cjpeg: a lossless file stores its samples.",
+        "crossChecks": [
+          {
+            "decoder": "libjpeg-turbo 3.2.0 djpeg",
+            "command": "djpeg -pnm {input} (a portable anymap of the samples, maximum value 65535)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, lossless process)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -f rawvideo -pix_fmt gray16le -",
+            "result": "differs",
+            "maxAbsoluteError": 234,
+            "meanAbsoluteError": 80.431,
+            "excludedFromTolerance": true,
+            "notes": "A defect of the decoder, not a reading of the file: the libavcodec decoder reads additional bits after the category 16 (the difference 32,768), which has none (T.81 table H.2): every sample after the first one is wrong. It decodes exactly the 16-bit files that do not code this difference."
+          }
+        ]
+      },
+      "expected": {
+        "width": 19,
+        "height": 11,
+        "pixelFormat": "Gray16",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/lossless-gray16-largest-difference.frame-0.rgba16le.raw",
+                "sha256": "c9b41b99a1c9d49b421a0a82f38a8c167d65751e0feb12462f67f8b65eb583db",
+                "layout": "rgba16le",
+                "width": 19,
+                "height": 11,
+                "rowBytes": 152,
+                "byteLength": 1672,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/lossless-gray16-largest-difference.frame-0.gray16le.raw",
+                "sha256": "5e96b36594723dde82547f8b0cae35fa5567035d4afdf6d2cebb879d67325abb",
+                "layout": "gray16le",
+                "width": 19,
+                "height": 11,
+                "rowBytes": 38,
+                "byteLength": 418,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The first sample is 0: its difference from the prediction 32,768 is coded as the category 16, which has no additional bit."
+    },
+    {
+      "id": "jpeg/lossless-gray16-predictor5",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/lossless-gray16-predictor5.jpg",
+        "sha256": "6cad34033d656a30db7baeb4ae3228c505fb7f8343c96eb8d8cb4bf094ad9eb9",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildLosslessJpeg PatternDetailGray 16-bit)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 21,
+          "height": 15,
+          "precision": 16
+        },
+        "commands": [
+          "cjpeg -dct int -precision 16 -lossless 5 -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=1",
+        "jpeg.precision=16",
+        "jpeg.predictor=5",
+        "jpeg.process=lossless",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to cjpeg: a lossless file stores its samples.",
+        "crossChecks": [
+          {
+            "decoder": "libjpeg-turbo 3.2.0 djpeg",
+            "command": "djpeg -pnm {input} (a portable anymap of the samples, maximum value 65535)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, lossless process)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -f rawvideo -pix_fmt gray16le - (the samples as they are stored)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 21,
+        "height": 15,
+        "pixelFormat": "Gray16",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/lossless-gray16-predictor5.frame-0.rgba16le.raw",
+                "sha256": "8397f02a5e5b0f0f53cd3697f12109d38208c1168d5850db47ad67a916dca017",
+                "layout": "rgba16le",
+                "width": 21,
+                "height": 15,
+                "rowBytes": 168,
+                "byteLength": 2520,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/lossless-gray16-predictor5.frame-0.gray16le.raw",
+                "sha256": "b2b4550a993d41efe20152d6c3456b4406dce59e52db72840b7e402db4997f4a",
+                "layout": "gray16le",
+                "width": 21,
+                "height": 15,
+                "rowBytes": 42,
+                "byteLength": 630,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "16-bit grayscale samples, predictor Ra + ((Rb - Rc) >> 1): every bit of a 16-bit sample is stored."
+    },
+    {
+      "id": "jpeg/lossless-gray5-predictor1",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/lossless-gray5-predictor1.jpg",
+        "sha256": "cc47f436de87e3784dc2defae9a354ec3573d956228bf01b998b573607307bcb",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildLosslessJpeg PatternDetailGray 5-bit)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 15,
+          "height": 9,
+          "precision": 5
+        },
+        "commands": [
+          "cjpeg -dct int -precision 5 -lossless 1 -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=1",
+        "jpeg.precision=5",
+        "jpeg.predictor=1",
+        "jpeg.process=lossless",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to cjpeg: a lossless file stores its samples; each 5-bit sample s scaled to 16 bits as (s * 65535 + 15) / 31.",
+        "crossChecks": [
+          {
+            "decoder": "libjpeg-turbo 3.2.0 djpeg",
+            "command": "djpeg -pnm {input} (a portable anymap of the samples, maximum value 31)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, lossless process)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -f rawvideo -pix_fmt gray - (the samples shifted left by 3 bits)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 15,
+        "height": 9,
+        "pixelFormat": "Gray16",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 5,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/lossless-gray5-predictor1.frame-0.rgba16le.raw",
+                "sha256": "8f590ef681c70a495a05bd14e37c2d55d4a461376c7049824702359bddb7bbe7",
+                "layout": "rgba16le",
+                "width": 15,
+                "height": 9,
+                "rowBytes": 120,
+                "byteLength": 1080,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/lossless-gray5-predictor1.frame-0.gray16le.raw",
+                "sha256": "10831b30e3149021ccad55b8d2cbde946fccc1b5e2956f80a9fff160a802bc82",
+                "layout": "gray16le",
+                "width": 15,
+                "height": 9,
+                "rowBytes": 30,
+                "byteLength": 270,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "5-bit samples: a precision below 8 bits is scaled to 16 bits like the ones above 8 bits."
+    },
+    {
+      "id": "jpeg/lossless-rgb-predictor4-restart-rows",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/lossless-rgb-predictor4-restart-rows.jpg",
+        "sha256": "60c28e954cdd0e60308fc1c8c8dcb1a3e70da703906c6cc906ddd84a18754243",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildLosslessJpeg PatternDetailColor)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 24,
+          "height": 16,
+          "precision": 8
+        },
+        "commands": [
+          "cjpeg -dct int -lossless 4 -restart 2 -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app14=Adobe",
+        "jpeg.components=3",
+        "jpeg.predictor=4",
+        "jpeg.process=lossless",
+        "jpeg.restartInterval=48",
+        "jpeg.sampling=4:4:4",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to cjpeg: a lossless file stores its samples.",
+        "crossChecks": [
+          {
+            "decoder": "libjpeg-turbo 3.2.0 djpeg",
+            "command": "djpeg -pnm {input} (a portable anymap of the samples, maximum value 255)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, lossless process)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -f rawvideo -pix_fmt rgb24 - (the samples as they are stored)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 24,
+        "height": 16,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/lossless-rgb-predictor4-restart-rows.frame-0.rgba8.raw",
+                "sha256": "221ef8d1579753a4b1f923ac02a60ba2d0791861ed0e3ba678bc7693e0e2c715",
+                "layout": "rgba8",
+                "width": 24,
+                "height": 16,
+                "rowBytes": 96,
+                "byteLength": 1536,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/lossless-rgb-predictor4-restart-rows.frame-0.rgb8.raw",
+                "sha256": "749e3bcb0a23be37d264f47cc47185b4c725dc57b45948ee39e323f1d7453bd6",
+                "layout": "rgb8",
+                "width": 24,
+                "height": 16,
+                "rowBytes": 72,
+                "byteLength": 1152,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "RGB samples (Adobe APP14 transform 0) in one interleaved scan, predictor Ra + Rb - Rc, a restart interval of 2 lines: the line after a restart marker is predicted like the first one."
+    },
+    {
+      "id": "jpeg/lossless-rgb-predictor7-point-transform",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/lossless-rgb-predictor7-point-transform.jpg",
+        "sha256": "3347fb60922b5d05170eb37a1df718d42c5a2649f3967956e4695fb5bdebbb7b",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildLosslessJpeg PatternDetailColor)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 19,
+          "height": 13,
+          "precision": 8
+        },
+        "commands": [
+          "cjpeg -dct int -lossless 7,2 -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app14=Adobe",
+        "jpeg.components=3",
+        "jpeg.pointTransform=2",
+        "jpeg.predictor=7",
+        "jpeg.process=lossless",
+        "jpeg.sampling=4:4:4",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to cjpeg: a lossless file stores its samples, without the 2 low bit(s) the point transform drops (each sample s is (s >> 2) << 2).",
+        "crossChecks": [
+          {
+            "decoder": "libjpeg-turbo 3.2.0 djpeg",
+            "command": "djpeg -pnm {input} (a portable anymap of the samples, maximum value 255)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, lossless process)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -f rawvideo -pix_fmt rgb24 - (the samples as they are stored)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 19,
+        "height": 13,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/lossless-rgb-predictor7-point-transform.frame-0.rgba8.raw",
+                "sha256": "61ea9b81e1d9fec0a2063faab9fc4655bfe1ed4c532a2c4a55dec6a70827c8e7",
+                "layout": "rgba8",
+                "width": 19,
+                "height": 13,
+                "rowBytes": 76,
+                "byteLength": 988,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/lossless-rgb-predictor7-point-transform.frame-0.rgb8.raw",
+                "sha256": "68f224d35f9d77a9aab6d16feb0b928dcf1a8f8438a0fc392b6db95da5cb5140",
+                "layout": "rgb8",
+                "width": 19,
+                "height": 13,
+                "rowBytes": 57,
+                "byteLength": 741,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Point transform 2: the samples are coded divided by 4 and the decoder multiplies them back, so the two low bits of every sample are zero. Predictor (Ra + Rb) / 2."
+    },
+    {
+      "id": "jpeg/lossless-rgb10-predictor4-point-transform",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/lossless-rgb10-predictor4-point-transform.jpg",
+        "sha256": "d14c57b0e31060fe0aeda9fbe8f81ced05ec4c810ca4cf042319ef0ca6283321",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildLosslessJpeg PatternDetailColor 10-bit)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 10,
+          "precision": 10
+        },
+        "commands": [
+          "cjpeg -dct int -precision 10 -lossless 4,1 -restart 3 -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app14=Adobe",
+        "jpeg.components=3",
+        "jpeg.pointTransform=1",
+        "jpeg.precision=10",
+        "jpeg.predictor=4",
+        "jpeg.process=lossless",
+        "jpeg.restartInterval=39",
+        "jpeg.sampling=4:4:4",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to cjpeg: a lossless file stores its samples, without the 1 low bit(s) the point transform drops (each sample s is (s >> 1) << 1); each 10-bit sample s scaled to 16 bits as (s * 65535 + 511) / 1023.",
+        "crossChecks": [
+          {
+            "decoder": "libjpeg-turbo 3.2.0 djpeg",
+            "command": "djpeg -pnm {input} (a portable anymap of the samples, maximum value 1023)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, lossless process)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -f rawvideo -pix_fmt rgb48le - (the samples as they are stored)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 10,
+        "pixelFormat": "Rgba64",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 10,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/lossless-rgb10-predictor4-point-transform.frame-0.rgba16le.raw",
+                "sha256": "d7c848be8baf92b17c45db45184591a43213b2b3a53eb834af591b8af5880977",
+                "layout": "rgba16le",
+                "width": 13,
+                "height": 10,
+                "rowBytes": 104,
+                "byteLength": 1040,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "10-bit RGB samples with a point transform of 1 and a restart interval of 3 lines: the first prediction of each interval is 2^(P - Pt - 1)."
+    },
+    {
+      "id": "jpeg/lossless-rgb12-predictor3",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/lossless-rgb12-predictor3.jpg",
+        "sha256": "edddf2a842ec774e0fe6273f254a514138bb8a314af774d5aee63dc6425370bc",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildLosslessJpeg PatternDetailColor 12-bit)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 17,
+          "height": 11,
+          "precision": 12
+        },
+        "commands": [
+          "cjpeg -dct int -precision 12 -lossless 3 -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app14=Adobe",
+        "jpeg.components=3",
+        "jpeg.precision=12",
+        "jpeg.predictor=3",
+        "jpeg.process=lossless",
+        "jpeg.sampling=4:4:4",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to cjpeg: a lossless file stores its samples; each 12-bit sample s scaled to 16 bits as (s * 65535 + 2047) / 4095.",
+        "crossChecks": [
+          {
+            "decoder": "libjpeg-turbo 3.2.0 djpeg",
+            "command": "djpeg -pnm {input} (a portable anymap of the samples, maximum value 4095)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, lossless process)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -f rawvideo -pix_fmt rgb48le - (the samples as they are stored)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 17,
+        "height": 11,
+        "pixelFormat": "Rgba64",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 12,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/lossless-rgb12-predictor3.frame-0.rgba16le.raw",
+                "sha256": "b7d14a962e48969ece3ab5e68c233da1d4464bb98bc44da27befb496b2405c2d",
+                "layout": "rgba16le",
+                "width": 17,
+                "height": 11,
+                "rowBytes": 136,
+                "byteLength": 1496,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "12-bit RGB samples predicted from the sample above on the left."
+    },
+    {
+      "id": "jpeg/lossless-rgb16-predictor6-restart-rows",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/lossless-rgb16-predictor6-restart-rows.jpg",
+        "sha256": "084e9ff076d4ed214d82e15b5840b03a75021d89d0e9bb05e657884081f29aac",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildLosslessJpeg PatternDetailColor 16-bit)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 17,
+          "height": 11,
+          "precision": 16
+        },
+        "commands": [
+          "cjpeg -dct int -precision 16 -lossless 6 -restart 1 -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app14=Adobe",
+        "jpeg.components=3",
+        "jpeg.precision=16",
+        "jpeg.predictor=6",
+        "jpeg.process=lossless",
+        "jpeg.restartInterval=17",
+        "jpeg.sampling=4:4:4",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to cjpeg: a lossless file stores its samples.",
+        "crossChecks": [
+          {
+            "decoder": "libjpeg-turbo 3.2.0 djpeg",
+            "command": "djpeg -pnm {input} (a portable anymap of the samples, maximum value 65535)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, lossless process)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -f rawvideo -pix_fmt rgb48le - (the samples as they are stored)",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 17,
+        "height": 11,
+        "pixelFormat": "Rgba64",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/lossless-rgb16-predictor6-restart-rows.frame-0.rgba16le.raw",
+                "sha256": "ddee532d8843d9513c0d0936b7293a17cec0f197b1ec9e88e09d17a4b2a7fb42",
+                "layout": "rgba16le",
+                "width": 17,
+                "height": 11,
+                "rowBytes": 136,
+                "byteLength": 1496,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "16-bit RGB samples, predictor Rb + ((Ra - Rc) >> 1), a restart marker after every line."
     },
     {
       "id": "jpeg/metadata-density-xmp-comment",

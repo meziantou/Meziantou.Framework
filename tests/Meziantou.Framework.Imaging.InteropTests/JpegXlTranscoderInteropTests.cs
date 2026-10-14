@@ -20,12 +20,12 @@ public sealed class JpegXlTranscoderInteropTests
     public static TheoryData<string> JpegFixtures => [.. GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Valid)];
 
     /// <summary>
-    /// A sampling factor of 4, a restart interval that changes between scans, arithmetic coding or samples of 12 bits: a
-    /// JPEG XL file cannot describe them.
+    /// A sampling factor of 4, a restart interval that changes between scans, arithmetic coding, samples of 12 bits or a
+    /// lossless frame, which has no coefficient: a JPEG XL file cannot describe them.
     /// </summary>
     private static bool IsRefusedByTheLibrary(string id)
         => id is "jpeg/baseline-411-odd" or "jpeg/progressive-411-separate-dc" or "jpeg/progressive-420-odd-restart-rows-deep"
-            || id.Contains("arithmetic", StringComparison.Ordinal) || id.Contains("precision12", StringComparison.Ordinal);
+            || id.Contains("arithmetic", StringComparison.Ordinal) || id.Contains("precision12", StringComparison.Ordinal) || id.Contains("lossless", StringComparison.Ordinal);
 
     /// <summary>cjxl 0.12.0 also refuses a file whose metadata it cannot place in the reconstruction data; the library recompresses it.</summary>
     private static bool IsRefusedByCjxl(string id) => IsRefusedByTheLibrary(id) || id is "jpeg/metadata-icc-exif-dpcm";

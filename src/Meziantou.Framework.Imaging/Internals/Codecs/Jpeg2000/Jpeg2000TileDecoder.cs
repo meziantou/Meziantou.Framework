@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -342,26 +343,12 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
         var stride = component.Width;
         var origin = ((band.PlaneY + block.Y) * stride) + band.PlaneX + block.X;
         var regionShift = component.RegionShift;
-        var regionThreshold = regionShift == 0 ? int.MaxValue : 1 << (regionShift + 1);
         if (component.Style.IsReversible)
         {
             var plane = component.Samples;
             for (var y = 0; y < height; y++)
             {
-                var source = samples.Slice(y * width, width);
-                var destination = plane.Slice(origin + (y * stride), width);
-                for (var x = 0; x < width; x++)
-                {
-                    var value = source[x];
-                    var magnitude = value & int.MaxValue;
-                    if (magnitude >= regionThreshold)
-                    {
-                        magnitude >>= regionShift;
-                    }
-
-                    magnitude >>= 1;
-                    destination[x] = value < 0 ? -magnitude : magnitude;
-                }
+                StoreReversible(samples.Slice(y * width, width), plane.Slice(origin + (y * stride), width), regionShift);
             }
         }
         else
@@ -370,21 +357,107 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
             var halfStep = band.HalfStepSize;
             for (var y = 0; y < height; y++)
             {
-                var source = samples.Slice(y * width, width);
-                var destination = plane.Slice(origin + (y * stride), width);
-                for (var x = 0; x < width; x++)
-                {
-                    var value = source[x];
-                    var magnitude = value & int.MaxValue;
-                    if (magnitude >= regionThreshold)
-                    {
-                        magnitude >>= regionShift;
-                    }
-
-                    var coefficient = magnitude * halfStep;
-                    destination[x] = value < 0 ? -coefficient : coefficient;
-                }
+                StoreIrreversible(samples.Slice(y * width, width), plane.Slice(origin + (y * stride), width), regionShift, halfStep);
             }
+        }
+    }
+
+    /// <summary>
+    /// Dequantizes coefficients of the reversible path: the magnitude (twice the magnitude, from the block decoders) is
+    /// divided by 2^s when it is at least 2^(s+1), s being the shift of the region of interest, then halved, and the sign
+    /// is applied.
+    /// </summary>
+    /// <param name="source">The coefficients of the block decoder: the sign in the most significant bit.</param>
+    /// <param name="destination">Receives the coefficients; as long as <paramref name="source"/>.</param>
+    /// <param name="regionShift">The shift of the region of interest; 0 when there is none.</param>
+    internal static void StoreReversible(ReadOnlySpan<int> source, Span<int> destination, int regionShift)
+    {
+        destination = destination[..source.Length];
+        var regionThreshold = regionShift == 0 ? int.MaxValue : 1 << (regionShift + 1);
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated && regionShift <= 30)
+        {
+            // The sign mask is 0 or -1: (m ^ mask) - mask is m or -m
+            var thresholds = Vector128.Create(regionThreshold);
+            for (; i <= source.Length - Vector128<int>.Count; i += Vector128<int>.Count)
+            {
+                var value = Vector128.Create(source[i..]);
+                var magnitude = value & Vector128.Create(int.MaxValue);
+                magnitude = Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(magnitude, thresholds), Vector128.ShiftRightArithmetic(magnitude, regionShift), magnitude);
+                magnitude = Vector128.ShiftRightArithmetic(magnitude, 1);
+                var sign = Vector128.ShiftRightArithmetic(value, 31);
+                ((magnitude ^ sign) - sign).CopyTo(destination[i..]);
+            }
+        }
+
+        StoreReversibleScalar(source[i..], destination[i..], regionShift);
+    }
+
+    /// <summary>The scalar reference of <see cref="StoreReversible"/>.</summary>
+    internal static void StoreReversibleScalar(ReadOnlySpan<int> source, Span<int> destination, int regionShift)
+    {
+        var regionThreshold = regionShift == 0 ? int.MaxValue : 1 << (regionShift + 1);
+        for (var x = 0; x < source.Length; x++)
+        {
+            var value = source[x];
+            var magnitude = value & int.MaxValue;
+            if (magnitude >= regionThreshold)
+            {
+                magnitude >>= regionShift;
+            }
+
+            magnitude >>= 1;
+            destination[x] = value < 0 ? -magnitude : magnitude;
+        }
+    }
+
+    /// <summary>
+    /// Dequantizes coefficients of the irreversible path: the magnitude is divided by 2^s when it is at least 2^(s+1), s
+    /// being the shift of the region of interest, then multiplied by half of the step size, and the sign is applied.
+    /// </summary>
+    /// <param name="source">The coefficients of the block decoder: the sign in the most significant bit.</param>
+    /// <param name="destination">Receives the coefficients; as long as <paramref name="source"/>.</param>
+    /// <param name="regionShift">The shift of the region of interest; 0 when there is none.</param>
+    /// <param name="halfStep">Half of the step size of the sub-band.</param>
+    internal static void StoreIrreversible(ReadOnlySpan<int> source, Span<float> destination, int regionShift, float halfStep)
+    {
+        destination = destination[..source.Length];
+        var regionThreshold = regionShift == 0 ? int.MaxValue : 1 << (regionShift + 1);
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated && regionShift <= 30)
+        {
+            // The conversion to single precision rounds as the scalar one does, and the negation of the product is the
+            // exchange of its sign bit
+            var thresholds = Vector128.Create(regionThreshold);
+            var steps = Vector128.Create(halfStep);
+            for (; i <= source.Length - Vector128<int>.Count; i += Vector128<int>.Count)
+            {
+                var value = Vector128.Create(source[i..]);
+                var magnitude = value & Vector128.Create(int.MaxValue);
+                magnitude = Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(magnitude, thresholds), Vector128.ShiftRightArithmetic(magnitude, regionShift), magnitude);
+                var coefficient = Vector128.ConvertToSingle(magnitude) * steps;
+                (coefficient.AsInt32() ^ (value & Vector128.Create(int.MinValue))).AsSingle().CopyTo(destination[i..]);
+            }
+        }
+
+        StoreIrreversibleScalar(source[i..], destination[i..], regionShift, halfStep);
+    }
+
+    /// <summary>The scalar reference of <see cref="StoreIrreversible"/>.</summary>
+    internal static void StoreIrreversibleScalar(ReadOnlySpan<int> source, Span<float> destination, int regionShift, float halfStep)
+    {
+        var regionThreshold = regionShift == 0 ? int.MaxValue : 1 << (regionShift + 1);
+        for (var x = 0; x < source.Length; x++)
+        {
+            var value = source[x];
+            var magnitude = value & int.MaxValue;
+            if (magnitude >= regionThreshold)
+            {
+                magnitude >>= regionShift;
+            }
+
+            var coefficient = magnitude * halfStep;
+            destination[x] = value < 0 ? -coefficient : coefficient;
         }
     }
 }

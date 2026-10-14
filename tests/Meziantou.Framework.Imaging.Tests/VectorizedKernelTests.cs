@@ -2433,6 +2433,49 @@ public sealed class VectorizedKernelTests
         static T[][] Clone<T>(T[][] source) => Array.ConvertAll(source, values => (T[])values.Clone());
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Jpeg2000CodeBlockStoresMatchTheScalarReferenceBitForBit()
+    {
+        // Coefficients of the block decoders (the sign in the most significant bit), small and large, both signs with a
+        // zero magnitude, every shift of the region of interest and step sizes from tiny to huge
+        var random = new Random(15444);
+        int[] lengths = [0, 1, 3, 4, 5, 7, 8, 9, 16, 17, 64, 1024];
+        int[] specials = [0, 1, 2, 3, int.MaxValue, int.MinValue, int.MinValue | 1, int.MinValue | 3, 1 << 30, int.MinValue | (1 << 30)];
+        float[] steps = [0.5f, 1f, 0.0078125f, 3.3e-5f, 1.7e20f, 2.5e38f, float.Epsilon];
+        foreach (var length in lengths)
+        {
+            foreach (var regionShift in (int[])[0, 1, 2, 5, 15, 29, 30, 31, 37])
+            {
+                var source = new int[length];
+                for (var i = 0; i < length; i++)
+                {
+                    source[i] = random.Next(4) switch
+                    {
+                        0 => specials[random.Next(specials.Length)],
+                        1 => random.Next(1 << 12) | (random.Next(2) << 31),
+                        _ => random.Next(int.MinValue, int.MaxValue),
+                    };
+                }
+
+                var expected = new int[length];
+                var actual = new int[length];
+                Jpeg2000TileDecoder.StoreReversibleScalar(source, expected, regionShift);
+                Jpeg2000TileDecoder.StoreReversible(source, actual, regionShift);
+                Assert.Equal(expected, actual);
+
+                foreach (var step in steps)
+                {
+                    var expectedSingles = new float[length];
+                    var actualSingles = new float[length];
+                    Jpeg2000TileDecoder.StoreIrreversibleScalar(source, expectedSingles, regionShift, step);
+                    Jpeg2000TileDecoder.StoreIrreversible(source, actualSingles, regionShift, step);
+                    Assert.Equal(ToBits(expectedSingles), ToBits(actualSingles));
+                }
+            }
+        }
+    }
+
     private static int[] ToBits(float[] values) => Array.ConvertAll(values, BitConverter.SingleToInt32Bits);
 
     /// <summary>A finite single-precision number: an integer, a fraction, a large or a tiny magnitude, or a zero of either sign.</summary>

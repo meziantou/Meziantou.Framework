@@ -1324,6 +1324,121 @@ public sealed class VectorizedKernelTests
     }
 
     [Theory]
+    [InlineData(PixelFormat.Rgb24, false, false)]
+    [InlineData(PixelFormat.Rgba32, false, false)]
+    [InlineData(PixelFormat.Rgba32, false, true)]
+    [InlineData(PixelFormat.Rgba32, true, false)]
+    [InlineData(PixelFormat.Rgba32, true, true)]
+    [InlineData(PixelFormat.Gray8, true, false)]
+    [InlineData(PixelFormat.Rgba64, false, false)]
+    [InlineData(PixelFormat.Rgba64, false, true)]
+    [InlineData(PixelFormat.Rgba64, true, false)]
+    [InlineData(PixelFormat.Gray16, true, false)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HeifYuvConversionMatchesTheScalarReference(PixelFormat layout, bool monochrome, bool limitedRangeAlpha)
+    {
+        // Every matrix that has no transfer characteristics, both ranges, the alpha planes of both ranges, and widths around
+        // the vector sizes, with random samples and the extremes of the range
+        var bitDepths = layout is PixelFormat.Rgba64 or PixelFormat.Gray16 ? new[] { 10, 12 } : [8];
+        int[] matrices = monochrome ? [Av1Constants.McBt601] : [Av1Constants.McIdentity, Av1Constants.McBt709, Av1Constants.McUnspecified, Av1Constants.McFcc, Av1Constants.McBt470BG, Av1Constants.McBt601, Av1Constants.McSmpte240, Av1Constants.McSmpteYcgco, Av1Constants.McBt2020Ncl, Av1Constants.McSmpte2085, Av1Constants.McChromatNcl];
+        var random = new Random((int)layout + (monochrome ? 10 : 0) + (limitedRangeAlpha ? 100 : 0));
+        foreach (var bitDepth in bitDepths)
+        {
+            var max = (1 << bitDepth) - 1;
+            foreach (var matrix in matrices)
+            {
+                foreach (var fullRange in new[] { false, true })
+                {
+                    foreach (var withAlpha in layout is PixelFormat.Rgba32 or PixelFormat.Rgba64 ? new[] { false, true } : [false])
+                    {
+                        if (limitedRangeAlpha && !withAlpha)
+                            continue;
+
+                        var format = new HeifBitstreamFormat(bitDepth, monochrome, 0, 0, Av1Constants.CspUnknown, matrix, fullRange, ColorDescriptionPresent: true, ColorPrimaries: 1, TransferCharacteristics: 1);
+                        HeifBitstreamFormat? alphaFormat = withAlpha ? new HeifBitstreamFormat(bitDepth, IsMonochrome: true, 0, 0, Av1Constants.CspUnknown, Av1Constants.McIdentity, !limitedRangeAlpha, ColorDescriptionPresent: false, 2, 2) : null;
+                        var converter = new HeifYuvConverter(AvifBinding.Instance, format, matrix, fullRange, alphaFormat, layout, isPremultiplied: false, colorPrimaries: 1, transferCharacteristics: 1);
+                        foreach (var width in new[] { 1, 7, 8, 9, 10, 11, 15, 16, 17, 18, 19, 31, 33, 64, 101 })
+                        {
+                            var y = new ushort[width];
+                            var u = new ushort[width];
+                            var v = new ushort[width];
+                            var a = new ushort[width];
+                            for (var round = 0; round < 20; round++)
+                            {
+                                for (var x = 0; x < width; x++)
+                                {
+                                    y[x] = Sample(random, round, max);
+                                    u[x] = Sample(random, round, max);
+                                    v[x] = Sample(random, round, max);
+                                    a[x] = Sample(random, round, max);
+                                }
+
+                                var expected = new byte[width * converter.BytesPerPixel];
+                                var actual = new byte[width * converter.BytesPerPixel];
+                                Array.Fill(actual, (byte)0xA5);
+                                ReadOnlySpan<ushort> alpha = withAlpha ? a : [];
+                                converter.ConvertRowScalar(y, u, v, alpha, expected);
+                                converter.ConvertRow(y, u, v, alpha, actual);
+                                Assert.Equal(expected, actual);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        static ushort Sample(Random random, int round, int max) => (round % 4) switch
+        {
+            0 => (ushort)(random.Next(2) is 0 ? 0 : max),
+            1 => (ushort)random.Next(Math.Min(max, 20)),
+            2 => (ushort)(max - random.Next(Math.Min(max, 20))),
+            _ => (ushort)random.Next(max + 1),
+        };
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(1, 0)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HeifChromaUpsamplingMatchesTheScalarReference(int subsamplingX, int subsamplingY)
+    {
+        // Every chroma sample position of horizontally subsampled chroma, the bit depths of the codecs, and widths around
+        // the vector sizes
+        var random = new Random((subsamplingX * 2) + subsamplingY);
+        foreach (var bitDepth in new[] { 8, 10, 12 })
+        {
+            var max = (1 << bitDepth) - 1;
+            foreach (var position in new[] { Av1Constants.CspUnknown, Av1Constants.CspVertical, Av1Constants.CspColocated })
+            {
+                var format = new HeifBitstreamFormat(bitDepth, false, subsamplingX, subsamplingY, position, Av1Constants.McBt709, false, ColorDescriptionPresent: true, 1, 1);
+                var converter = new HeifYuvConverter(AvifBinding.Instance, format, Av1Constants.McBt709, fullRange: false, alpha: null, bitDepth is 8 ? PixelFormat.Rgb24 : PixelFormat.Rgba64);
+                foreach (var width in new[] { 1, 2, 3, 4, 17, 18, 19, 20, 21, 33, 34, 35, 36, 37, 38, 39, 40, 64, 65, 101, 128 })
+                {
+                    var chromaWidth = (width + subsamplingX) >> subsamplingX;
+                    var near = new ushort[chromaWidth + 3];
+                    var other = new ushort[chromaWidth + 3];
+                    for (var round = 0; round < 20; round++)
+                    {
+                        for (var i = 0; i < near.Length; i++)
+                        {
+                            near[i] = (ushort)(round % 3 is 0 ? (random.Next(2) is 0 ? 0 : max) : random.Next(max + 1));
+                            other[i] = (ushort)(round % 3 is 0 ? (random.Next(2) is 0 ? 0 : max) : random.Next(max + 1));
+                        }
+
+                        var parity = round & 1;
+                        var expected = new ushort[width];
+                        var actual = new ushort[width];
+                        Array.Fill(actual, (ushort)0xA5A5);
+                        converter.UpsampleRowScalar(near, subsamplingY is 0 ? near : other, parity, expected, 0, width);
+                        converter.UpsampleRow(near, subsamplingY is 0 ? near : other, parity, actual);
+                        Assert.Equal(expected, actual);
+                    }
+                }
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(2, 0)]
     [InlineData(2, 1)]
     [InlineData(3, 0)]

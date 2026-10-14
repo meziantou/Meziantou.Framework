@@ -2543,6 +2543,62 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1InverseTransformMatchesTheScalarReference(int bitDepth)
+    {
+        // Every transform size and every transform type that applies to it, on coefficients of the dequantized range (small,
+        // sparse, a DC alone, the extremes) and on any 32-bit values, which saturate the intermediate clamps
+        var random = new Random(bitDepth * 7);
+        var limit = 1 << (7 + bitDepth);
+        var expected = new int[64 * 64];
+        var actual = new int[64 * 64];
+        for (var txSz = 0; txSz < Av1Constants.TxSizesAll; txSz++)
+        {
+            var log2W = Av1Tables.TxWidthLog2[txSz];
+            var log2H = Av1Tables.TxHeightLog2[txSz];
+            var dequant = new int[Math.Min(32, 1 << log2W) * Math.Min(32, 1 << log2H)];
+            var length = (1 << log2W) << log2H;
+            for (var txType = 0; txType < Av1Constants.TxTypes; txType++)
+            {
+                if (!IsApplicable(Av1InverseTransform.GetRowKind(txType), log2W) || !IsApplicable(Av1InverseTransform.GetColumnKind(txType), log2H))
+                    continue;
+
+                for (var round = 0; round < 16; round++)
+                {
+                    Array.Clear(dequant);
+                    for (var i = 0; i < dequant.Length; i++)
+                    {
+                        dequant[i] = (round % 6) switch
+                        {
+                            0 => random.Next(-300, 301),
+                            1 => random.Next(6) == 0 ? random.Next(-limit, limit) : 0,
+                            2 => i is 0 ? random.Next(-limit, limit) : 0,
+                            3 => random.Next(2) == 0 ? -limit : limit - 1,
+                            4 => random.Next(int.MinValue, int.MaxValue),
+                            _ => i < 8 ? random.Next(-limit, limit) : 0,
+                        };
+                    }
+
+                    Av1InverseTransform.TransformScalar(dequant, expected.AsSpan(0, length), txSz, txType, lossless: false, bitDepth);
+                    actual.AsSpan().Fill(12345);
+                    Av1InverseTransform.Transform(dequant, actual.AsSpan(0, length), txSz, txType, lossless: false, bitDepth);
+                    Assert.True(expected.AsSpan(0, length).SequenceEqual(actual.AsSpan(0, length)), $"Transform size {txSz}, type {txType}, round {round}.");
+                }
+            }
+        }
+
+        static bool IsApplicable(Av1InverseTransform.Kind kind, int log2Size) => kind switch
+        {
+            Av1InverseTransform.Kind.Adst => log2Size <= 4,
+            Av1InverseTransform.Kind.Identity => log2Size <= 5,
+            _ => true,
+        };
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1ForwardTransformMatchesTheScalarReference()

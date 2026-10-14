@@ -1,3 +1,5 @@
+using System.Runtime.Intrinsics.Arm;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -7,7 +9,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// and clamping, which every conforming decoder reproduces bit for bit. Products are computed with 64 bits so that coefficients
 /// outside the conformance range give a deterministic result instead of an overflow.
 /// </summary>
-internal static class Av1InverseTransform
+internal static partial class Av1InverseTransform
 {
     // cos128( angle ) of section 7.13.2.1 for the angles 0 to 255, the values of angle & 255
     private static readonly int[] Cos128Values = CreateCos128Values();
@@ -33,6 +35,19 @@ internal static class Av1InverseTransform
     /// <param name="lossless">Whether the block is lossless: the Walsh-Hadamard transform is used.</param>
     /// <param name="bitDepth">The bit depth of the samples.</param>
     public static void Transform(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, bool lossless, int bitDepth)
+    {
+        if (AdvSimd.Arm64.IsSupported && !lossless)
+        {
+            TransformAdvSimd(dequant, residual, txSz, txType, bitDepth);
+        }
+        else
+        {
+            TransformScalar(dequant, residual, txSz, txType, lossless, bitDepth);
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="Transform"/>.</summary>
+    internal static void TransformScalar(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, bool lossless, int bitDepth)
     {
         var log2W = Av1Tables.TxWidthLog2[txSz];
         var log2H = Av1Tables.TxHeightLog2[txSz];
@@ -95,25 +110,7 @@ internal static class Av1InverseTransform
 
         if (lastRow is 0 && !residual[..w].ContainsAnyExcept(residual[0]))
         {
-            // Only the first row is not zero and its samples are equal (the DC coefficient of a DCT row): every column has the
-            // same input, so every row of the result is one value
-            var column = t[..h];
-            column.Clear();
-            column[0] = residual[0];
-            if (lossless)
-            {
-                InverseWalshHadamard(column, 0);
-            }
-            else
-            {
-                Apply(colKind, column, log2H, colClampRange);
-            }
-
-            for (var i = 0; i < h; i++)
-            {
-                residual.Slice(i * w, w).Fill(Round2(column[i], colShift));
-            }
-
+            TransformConstantRows(residual, w, h, log2H, colKind, colClampRange, lossless, colShift);
             return;
         }
 
@@ -138,6 +135,27 @@ internal static class Av1InverseTransform
             {
                 residual[(i * w) + j] = Round2(column[i], colShift);
             }
+        }
+    }
+
+    // The column transforms when only the first row is not zero and its samples are equal (the DC coefficient of a DCT row):
+    // every column has the same input, so every row of the result is one value
+    private static void TransformConstantRows(Span<int> residual, int w, int h, int log2H, Kind colKind, int colClampRange, bool lossless, int colShift)
+    {
+        Span<int> column = stackalloc int[h];
+        column[0] = residual[0];
+        if (lossless)
+        {
+            InverseWalshHadamard(column, 0);
+        }
+        else
+        {
+            Apply(colKind, column, log2H, colClampRange);
+        }
+
+        for (var i = 0; i < h; i++)
+        {
+            residual.Slice(i * w, w).Fill(Round2(column[i], colShift));
         }
     }
 

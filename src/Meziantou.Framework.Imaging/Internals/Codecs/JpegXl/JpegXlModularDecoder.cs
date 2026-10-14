@@ -10,6 +10,7 @@ internal static class JpegXlModularDecoder
     private const int StaticPropertyCount = 2;
     private const int FirstReferenceProperty = 16;
     private const int PropertiesPerReference = 4;
+    private const int MaxPropertyCount = 256;
 
     /// <summary>Reads a sub-bitstream into the channels of <paramref name="image"/>.</summary>
     /// <param name="reader">The reader.</param>
@@ -171,12 +172,19 @@ internal static class JpegXlModularDecoder
         }
 
         references = references[..found];
-        Span<int> properties = stackalloc int[FirstReferenceProperty + (referenceCount * PropertiesPerReference)];
+
+        // Every property index is below 256: with a constant length, the writes of the properties are not checked
+        Span<int> properties = stackalloc int[MaxPropertyCount];
         properties.Clear();
         properties[0] = channelIndex;
         properties[1] = streamIndex;
         using var weighted = usesWeighted ? new JpegXlWeightedPredictor(image.WeightedPredictor, width, scope) : null;
         var isSingleLeaf = nodes[0].IsLeaf;
+
+        // The properties of the previous channels are computed a row at a time, all the references of a column together
+        var referenceStride = found * PropertiesPerReference;
+        using var referenceProperties = found > 0 && !isSingleLeaf ? Av1PooledArray<int>.Rent(scope, (long)width * referenceStride, clear: false) : null;
+        var samples = channel.Samples;
         for (var y = 0; y < height; y++)
         {
             if ((y & 63) == 0)
@@ -185,20 +193,52 @@ internal static class JpegXlModularDecoder
                 reader.EnsureNotOverrun();
             }
 
-            var row = channel.GetRow(y);
-            var above = y > 0 ? channel.GetRow(y - 1) : default;
-            var twoAbove = y > 1 ? channel.GetRow(y - 2) : default;
+            var row = samples.Slice(y * width, width);
+            var above = y > 0 ? samples.Slice((y - 1) * width, width) : default;
+
+            // The row two above the first row is the row above: the sample two above is then the sample above, as at the edge
+            var twoAbove = y > 1 ? samples.Slice((y - 2) * width, width) : above;
             properties[2] = y;
             properties[9] = 0;
+            Span<int> rowReferences = default;
+            if (referenceProperties is not null)
+            {
+                rowReferences = referenceProperties.Span;
+                for (var i = 0; i < references.Length; i++)
+                {
+                    ComputeReferenceProperties(image.Channels[references[i]], y, rowReferences[(i * PropertiesPerReference)..], referenceStride);
+                }
+            }
+
             for (var x = 0; x < width; x++)
             {
-                long left = x > 0 ? row[x - 1] : y > 0 ? above[x] : 0;
-                long top = y > 0 ? above[x] : left;
-                long topLeft = x > 0 && y > 0 ? above[x - 1] : left;
-                long topRight = x + 1 < width && y > 0 ? above[x + 1] : top;
-                long leftLeft = x > 1 ? row[x - 2] : left;
-                long topTop = y > 1 ? twoAbove[x] : top;
-                long topRightRight = x + 2 < width && y > 0 ? above[x + 2] : topRight;
+                long left;
+                long top;
+                long topLeft;
+                long topRight;
+                long leftLeft;
+                long topTop;
+                long topRightRight;
+                if (y > 0 && x > 1 && x + 2 < width)
+                {
+                    left = row[x - 1];
+                    top = above[x];
+                    topLeft = above[x - 1];
+                    topRight = above[x + 1];
+                    leftLeft = row[x - 2];
+                    topTop = twoAbove[x];
+                    topRightRight = above[x + 2];
+                }
+                else
+                {
+                    left = x > 0 ? row[x - 1] : y > 0 ? above[x] : 0;
+                    top = y > 0 ? above[x] : left;
+                    topLeft = x > 0 && y > 0 ? above[x - 1] : left;
+                    topRight = x + 1 < width && y > 0 ? above[x + 1] : top;
+                    leftLeft = x > 1 ? row[x - 2] : left;
+                    topTop = y > 1 ? twoAbove[x] : top;
+                    topRightRight = x + 2 < width && y > 0 ? above[x + 2] : topRight;
+                }
 
                 long weightedPrediction = 0;
                 var weightedProperty = 0;
@@ -223,20 +263,9 @@ internal static class JpegXlModularDecoder
                     properties[13] = (int)(top - topTop);
                     properties[14] = (int)(left - leftLeft);
                     properties[15] = weightedProperty;
-                    for (var i = 0; i < references.Length; i++)
+                    if (referenceStride != 0)
                     {
-                        var other = image.Channels[references[i]];
-                        var otherRow = other.GetRow(y);
-                        long value = otherRow[x];
-                        long otherLeft = x > 0 ? otherRow[x - 1] : 0;
-                        long otherTop = y > 0 ? other.GetRow(y - 1)[x] : otherLeft;
-                        long otherTopLeft = x > 0 && y > 0 ? other.GetRow(y - 1)[x - 1] : otherLeft;
-                        long predicted = JpegXlModularTransform.ClampedGradient((int)otherLeft, (int)otherTop, (int)otherTopLeft);
-                        var offset = FirstReferenceProperty + (i * PropertiesPerReference);
-                        properties[offset] = (int)Math.Abs(value);
-                        properties[offset + 1] = (int)value;
-                        properties[offset + 2] = (int)Math.Abs(value - predicted);
-                        properties[offset + 3] = (int)(value - predicted);
+                        rowReferences.Slice(x * referenceStride, referenceStride).CopyTo(properties[FirstReferenceProperty..]);
                     }
 
                     while (!nodes[leafIndex].IsLeaf)
@@ -248,11 +277,35 @@ internal static class JpegXlModularDecoder
 
                 ref readonly var leaf = ref nodes[leafIndex];
                 var guess = leaf.ValueOrOffset + JpegXlModularTransform.Predict(leaf.RightOrPredictor, left, top, topTop, topLeft, topRight, leftLeft, topRightRight, weightedPrediction);
-                var token = decoder.Read(reader, leaf.LeftOrContext, distanceMultiplier);
-                var sample = (int)(((long)JpegXlBitReader.UnpackSigned(token) * leaf.Multiplier) + guess);
+                var sample = Sample(decoder.Read(reader, leaf.LeftOrContext, distanceMultiplier), leaf.Multiplier, guess);
                 row[x] = sample;
                 weighted?.Update(sample, x, y);
             }
+        }
+    }
+
+    /// <summary>
+    /// Computes the four properties that a previous channel gives each sample of a row: its value, and its difference with
+    /// the gradient of its own neighbors, each with its magnitude. They are written every <paramref name="stride"/> values.
+    /// </summary>
+    private static void ComputeReferenceProperties(JpegXlModularChannel other, int y, Span<int> destination, int stride)
+    {
+        var width = other.Width;
+        var samples = other.Samples;
+        var row = samples.Slice(y * width, width);
+        var above = y > 0 ? samples.Slice((y - 1) * width, width) : default;
+        for (var x = 0; x < width; x++)
+        {
+            long value = row[x];
+            long otherLeft = x > 0 ? row[x - 1] : 0;
+            long otherTop = y > 0 ? above[x] : otherLeft;
+            long otherTopLeft = x > 0 && y > 0 ? above[x - 1] : otherLeft;
+            long predicted = JpegXlModularTransform.ClampedGradient((int)otherLeft, (int)otherTop, (int)otherTopLeft);
+            var offset = x * stride;
+            destination[offset] = (int)Math.Abs(value);
+            destination[offset + 1] = (int)value;
+            destination[offset + 2] = (int)Math.Abs(value - predicted);
+            destination[offset + 3] = (int)(value - predicted);
         }
     }
 

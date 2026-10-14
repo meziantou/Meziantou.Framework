@@ -358,6 +358,25 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void BgrxToRgbMatchesTheScalarReference()
+    {
+        var random = new Random(47);
+        for (var pixels = 0; pixels <= 40; pixels++)
+        {
+            var source = new byte[pixels * 4];
+            random.NextBytes(source);
+
+            // The bytes after the row must not be written
+            var expected = new byte[(pixels * 3) + 7];
+            var actual = new byte[(pixels * 3) + 7];
+            PackedPixels.Bgrx32ToRgb24Scalar(source, expected);
+            PackedPixels.Bgrx32ToRgb24(source, actual);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void TiffSixteenBitDifferencingMatchesTheScalarReference()
     {
         var random = new Random(41);

@@ -167,6 +167,21 @@ internal sealed class BmpDibLayout
             default:
             {
                 var hasAlpha = HasAlpha;
+                if (_red.Mask == 0x00FF_0000 && _green.Mask == 0x0000_FF00 && _blue.Mask == 0x0000_00FF && (!hasAlpha || _alpha.Mask == 0xFF00_0000))
+                {
+                    // Byte-aligned 8-bit channels (BGRA or BGRX bytes): their expansion to 8 bits is the identity
+                    if (hasAlpha)
+                    {
+                        PixelConverter.ConvertRow(PixelFormat.Bgra32, source[..(width * 4)], PixelFormat.Rgba32, destination[..(width * 4)]);
+                    }
+                    else
+                    {
+                        PackedPixels.Bgrx32ToRgb24(source[..(width * 4)], destination);
+                    }
+
+                    break;
+                }
+
                 var step = hasAlpha ? 4 : 3;
                 for (var x = 0; x < width; x++)
                 {

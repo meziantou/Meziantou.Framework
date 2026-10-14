@@ -29,7 +29,12 @@ internal static class Av1Cdef
     /// <param name="state">The block-level state of the frame.</param>
     /// <param name="source">Scratch for the unfiltered rows: <see cref="SourceRows"/> rows of the stride of the luma plane, for each plane.</param>
     /// <param name="cancellationToken">The cancellation token of the operation.</param>
-    public static void Apply(Av1FrameBuffer frame, Av1FrameState state, Span<ushort> source, CancellationToken cancellationToken)
+    /// <param name="directions">
+    /// Empty, or the directions and variances of the 8x8 blocks of a frame that is filtered several times from the same
+    /// deblocked samples (an encoder that searches the strengths): <see cref="GetDirectionCacheLength"/> entries, -1 for a
+    /// block whose direction is not known yet, which receives it.
+    /// </param>
+    public static void Apply(Av1FrameBuffer frame, Av1FrameState state, Span<ushort> source, CancellationToken cancellationToken, Span<int> directions = default)
     {
         var header = frame.Header;
         var sequence = frame.Sequence;
@@ -74,7 +79,33 @@ internal static class Av1Cdef
                     continue;
 
                 var luma = frame.GetPlane(0);
-                FindDirection(source[..sourceLength], luma.Stride, c * Av1Constants.MiSize, bitDepth, out var yDir, out var variance);
+                int yDir;
+                int variance;
+                if (header.CdefYPriStrength[idx] is 0 && (planeCount is 1 || header.CdefUvPriStrength[idx] is 0))
+                {
+                    // Without primary strength, the direction is 0 and the variance is not used
+                    yDir = 0;
+                    variance = 0;
+                }
+                else if (directions.IsEmpty)
+                {
+                    FindDirection(source[..sourceLength], luma.Stride, c * Av1Constants.MiSize, bitDepth, out yDir, out variance);
+                }
+                else
+                {
+                    ref var cached = ref directions[((r >> 1) * ((miCols + 1) >> 1)) + (c >> 1)];
+                    if (cached < 0)
+                    {
+                        FindDirection(source[..sourceLength], luma.Stride, c * Av1Constants.MiSize, bitDepth, out yDir, out variance);
+                        cached = (variance << 3) | yDir;
+                    }
+                    else
+                    {
+                        yDir = cached & 7;
+                        variance = cached >> 3;
+                    }
+                }
+
                 var priStr = header.CdefYPriStrength[idx] << coeffShift;
                 var secStr = header.CdefYSecStrength[idx] << coeffShift;
                 var dir = priStr is 0 ? 0 : yDir;
@@ -96,6 +127,9 @@ internal static class Av1Cdef
             }
         }
     }
+
+    /// <summary>Returns the number of entries of the direction cache of <see cref="Apply"/> for a frame.</summary>
+    public static int GetDirectionCacheLength(Av1FrameHeader header) => ((header.MiRows + 1) >> 1) * ((header.MiCols + 1) >> 1);
 
     // Section 7.15.2 "CDEF direction process": the 8x8 luma block starts at row 2 of the source
     private static void FindDirection(ReadOnlySpan<ushort> source, int stride, int x0, int bitDepth, out int yDir, out int variance)

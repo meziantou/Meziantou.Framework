@@ -1626,32 +1626,54 @@ public sealed class VectorizedKernelTests
         }
     }
 
-    [Fact]
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [InlineData(16)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
-    public void HevcSumOfAbsoluteDifferencesMatchesTheScalarReference()
+    public void HevcEncoderDistortionsMatchTheScalarReferences(int bitDepth)
     {
-        // Every block size, with strides larger than the blocks, random samples and the extremes of 16-bit samples
-        var random = new Random(9);
-        foreach (var size in new[] { 4, 8, 16, 32 })
+        // The block sizes of the encoder and others, with strides larger than the blocks, random samples, residuals that
+        // clip, and the extremes of the range
+        var random = new Random(bitDepth);
+        var max = (1 << bitDepth) - 1;
+        foreach (var (width, height) in new[] { (4, 4), (8, 8), (16, 16), (32, 32), (64, 64), (4, 16), (12, 16), (16, 4), (24, 32), (48, 64), (64, 16), (8, 32) })
         {
-            for (var round = 0; round < 100; round++)
+            for (var round = 0; round < 40; round++)
             {
-                var max = round % 3 is 0 ? ushort.MaxValue : (1 << (8 + (round % 5))) - 1;
-                var first = new ushort[(size + 3) * size];
-                var second = new ushort[(size + 7) * size];
+                var first = new ushort[(width + 3) * height];
+                var second = new ushort[(width + 7) * height];
+                var residual = new int[width * width];
                 for (var i = 0; i < first.Length; i++)
                 {
-                    first[i] = (ushort)(round % 4 is 0 ? (random.Next(2) is 0 ? 0 : max) : random.Next(max + 1));
+                    first[i] = Sample(random, round, max);
                 }
 
                 for (var i = 0; i < second.Length; i++)
                 {
-                    second[i] = (ushort)(round % 4 is 0 ? (random.Next(2) is 0 ? 0 : max) : random.Next(max + 1));
+                    second[i] = Sample(random, round, max);
                 }
 
-                Assert.Equal(HevcSliceCoder.GetSadScalar(first, size + 3, second, size + 7, size), HevcSliceCoder.GetSad(first, size + 3, second, size + 7, size));
+                for (var i = 0; i < residual.Length; i++)
+                {
+                    residual[i] = random.Next(-2 * max, (2 * max) + 1);
+                }
+
+                Assert.Equal(HevcSliceCoder.GetSadScalar(first, width + 3, second, width + 7, width, height), HevcSliceCoder.GetSad(first, width + 3, second, width + 7, width, height));
+                Assert.Equal(HevcSliceCoder.GetSseScalar(first, width + 3, second, width + 7, width, height), HevcSliceCoder.GetSse(first, width + 3, second, width + 7, width, height, bitDepth));
+                if (width != height || width > 32)
+                    continue;
+
+                Assert.Equal(HevcSliceCoder.GetReconstructionSseScalar(first, width + 3, second, width + 7, residual, width, bitDepth), HevcSliceCoder.GetReconstructionSse(first, width + 3, second, width + 7, residual, width, bitDepth));
+                var expected = new int[width * width];
+                var actual = new int[width * width];
+                Assert.Equal(HevcSliceCoder.GetResidualScalar(first, width + 3, second, width + 7, expected, width), HevcSliceCoder.GetResidual(first, width + 3, second, width + 7, actual, width, bitDepth));
+                Assert.Equal(expected, actual);
             }
         }
+
+        static ushort Sample(Random random, int round, int max) => (ushort)(round % 4 is 0 ? (random.Next(2) is 0 ? 0 : max) : random.Next(max + 1));
     }
 
     [Theory]

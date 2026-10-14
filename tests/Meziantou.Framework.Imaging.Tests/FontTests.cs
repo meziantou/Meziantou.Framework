@@ -1,6 +1,8 @@
 using System.Buffers.Binary;
+using System.Text;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -1247,6 +1249,77 @@ public sealed class FontTests
 
         // The tables are written in the order of their tags, and the last one, post, is optional beyond its header.
         Assert.True(rejected > data.Length - 64, $"Only {rejected} of {data.Length} prefixes were rejected");
+    }
+
+    [Theory]
+    [InlineData("noto-sans-cjk/NotoSansCJKjp-Regular.subset.otf", null)]
+    [InlineData("noto-sans-cjk-variable/NotoSansCJKjp-Variable.subset.otf", "wght=650")]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DamagedTablesOfVerticalTextAreRejectedOrGiveAUsableFont(string path, string? variations)
+    {
+        // The tables of vertical text are optional, and are read when a vertical line is set: whatever their bytes,
+        // loading the font, reading the vertical metrics of every glyph and setting a line throw nothing else than
+        // the documented exceptions.
+        var data = File.ReadAllBytes(FixtureRoot.GetDirectory() / "fonts" / path);
+        var random = new Random(20261013);
+        var options = new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, MaxHeight = 60 };
+        var tableCount = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(4));
+        var damaged = 0;
+        var usable = 0;
+        for (var table = 0; table < tableCount; table++)
+        {
+            var record = 12 + (table * 16);
+            var tag = Encoding.ASCII.GetString(data, record, 4);
+            if (tag is not ("vhea" or "vmtx" or "VORG" or "VVAR"))
+                continue;
+
+            var offset = (int)BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(record + 8));
+            var length = (int)BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(record + 12));
+            for (var iteration = 0; iteration < 150; iteration++)
+            {
+                // A few bytes of the table, most often of its header, or a table that ends early
+                var copy = (byte[])data.Clone();
+                if (iteration % 5 == 4)
+                {
+                    BinaryPrimitives.WriteUInt32BigEndian(copy.AsSpan(record + 12), (uint)random.Next(length));
+                }
+                else
+                {
+                    for (var i = random.Next(1, 4); i > 0; i--)
+                    {
+                        copy[offset + random.Next(iteration % 2 == 0 ? Math.Min(length, 40) : length)] = (byte)random.Next(256);
+                    }
+                }
+
+                damaged++;
+                try
+                {
+                    var font = Font.Load(copy);
+                    if (variations is not null)
+                    {
+                        font = FontTestSupport.WithVariations(font, variations);
+                    }
+
+                    for (var glyph = 0; glyph < font.GlyphCount; glyph++)
+                    {
+                        font.Face.GetAdvanceHeight(glyph);
+                        font.Face.GetVerticalOrigin(glyph, scratch: null, out _, out _);
+                    }
+
+                    var layout = TextLayout.Create("\u300C\u65E5\u672C\u300D\u3001\u30FC ABC \u6771\u4EAC\u3002", new TextStyle(font, 20), options);
+                    Assert.True(layout.LineCount >= 1);
+                    Assert.True(double.IsFinite(layout.Width) && double.IsFinite(layout.Height));
+                    usable++;
+                }
+                catch (Exception exception) when (exception is ImageException)
+                {
+                }
+            }
+        }
+
+        // Every table of vertical text the font has was damaged, and a font is still a font without them
+        Assert.True(damaged >= 450, $"Only {damaged} fonts were damaged");
+        Assert.True(usable > damaged / 2, $"Only {usable} of {damaged} damaged fonts could be used");
     }
 
     [Theory]

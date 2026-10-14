@@ -34,6 +34,34 @@ public sealed class TextStyle
     public Brush? Brush { get; init; }
 
     /// <summary>
+    /// Gets the paint behind the text of the style, or <see langword="null"/> (the default) for none: a highlight, the
+    /// background of a label.
+    /// </summary>
+    /// <remarks>
+    /// The background is painted by <see cref="DrawingCanvas.FillText(Brush, TextLayout, PointD)"/> before the text of
+    /// the whole layout. On each line, it is one rectangle as wide as the advances of the text of the style, the
+    /// white space between its words included (not the white space that hangs at the end of a wrapped line), and as
+    /// tall as the primary font of the style: from its ascent to its descent, whatever the height of the line. It is
+    /// not part of the outlines of the text: <see cref="DrawingCanvas.StrokeText(Pen, TextLayout, PointD)"/> and
+    /// <see cref="TextLayout.ToPath"/> leave it out.
+    /// </remarks>
+    public Brush? BackgroundBrush { get; init; }
+
+    /// <summary>
+    /// Gets the pen that strokes the outlines of the glyphs of the style once the text is filled, or
+    /// <see langword="null"/> (the default) for none: a text with a contour.
+    /// </summary>
+    /// <remarks>
+    /// The stroke is drawn by <see cref="DrawingCanvas.FillText(Brush, TextLayout, PointD)"/> after the text of the
+    /// whole layout is filled, over it. A centered pen covers the edge of the glyphs by half its width; with
+    /// <see cref="PenAlignment.Outside"/>, the stroke is around the glyphs and leaves them as they are filled. The
+    /// glyphs of one pen are stroked as one shape; the decorations, the glyphs a font draws with its own colors and
+    /// what a synthetic bold adds to a glyph are not stroked. The width of the pen is in pixels, whatever the size of
+    /// the text.
+    /// </remarks>
+    public Pen? Outline { get; init; }
+
+    /// <summary>
     /// Gets the features of the OpenType Layout tables to turn on or off, besides the ones that are applied by default.
     /// The last setting of a feature wins. Empty by default.
     /// </summary>

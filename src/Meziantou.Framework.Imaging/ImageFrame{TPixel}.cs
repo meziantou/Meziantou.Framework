@@ -103,6 +103,12 @@ public sealed class ImageFrame<TPixel> : ImageFrame
     internal override void CompositePixels(PixelStorage storage, int y, int x, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
         => DrawingKernels.Composite<TPixel>(storage, y, x, coverage, source);
 
+    internal override void ApplyColorMatrix(PixelStorage storage, int y, int x, ColorMatrix matrix, Span<ushort> destination)
+        => ColorMatrixKernel.Apply<TPixel>(storage, y, x, matrix, destination);
+
+    internal override void WriteColorMatrixResult(PixelStorage storage, int y, int x, ReadOnlySpan<ushort> colors)
+        => ColorMatrixKernel.Write<TPixel>(storage, y, x, colors);
+
     internal override void FlipPixels(scoped in PixelLease lease, FlipMode mode, CancellationToken cancellationToken)
         => ProcessingKernels.Flip<TPixel>(lease, mode, cancellationToken);
 

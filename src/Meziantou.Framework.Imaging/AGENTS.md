@@ -434,6 +434,18 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     `GradientColorSpace` other than `Encoded`, the stops stay 16-bit sRGB colors, are mixed in linear light or in
     Oklab (`SrgbTransfer`, `Math.Cbrt`: the one place of the drawing code that uses functions of the platform), and
     the 16-bit result is converted like a brush color; the color of a stop is always written as it is.
+- `PaintProfile` is the one way a color profile reaches a drawing: the colors the caller gives go through
+  `PaintColorConverter` (the pipeline of `Image.CreatePaintPipeline`, whose destination is the profile of the image,
+  or its CICP color space through `IccPipeline.Create(IccProfile, CicpColorSpace, ...)`) before `ConvertDrawingColor`.
+  What is samples of an image already is never converted (drawn images, layers, tiles, color glyphs). Linear light
+  with an ICC profile that is not sRGB uses the tone curves of the profile (`LinearLightCurves`, tables charged to
+  the scope, carried by `DrawingSource.Curves`). The session that draws the tile of a pattern has another image:
+  it takes the color space, the curves and the pipeline of the session it comes from (`_colorImage`), never those
+  of the tile.
+- A color matrix (`ColorMatrixKernel`) is applied to stored samples at their precision, with additions and
+  multiplications only; a pixel that is covered entirely is stored as computed (`Write`), so that
+  `CreateGrayscale()` is `Grayscale()` bit for bit, and only a pixel on the edge of a clip goes through the
+  `Source` operator.
 - Only `+ - * /` and `Math.Sqrt` in the geometry (no trigonometry, no fused multiply-add), and every order that
   influences a sum is total (events and crossings are sorted with a tie-break): results must not depend on the
   platform, the framework version or a sorting algorithm.
@@ -461,6 +473,15 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   the grid moves apart, and would leave cracks in the outline; that cut must shorten the segment, or three close
   vertices cut each other without end (the pass and growth limits are only a safety net). The result is canonical
   (contours from their top-left vertex, in the order of their first edge): tests compare path data.
+- `Offset` (`PathOffsetter`) is two runs of the combiner around a stroke: the outline of the area, the stroke of that
+  outline by a pen twice as wide as the distance, and their union or their difference. The outline is what is
+  stroked, never the path: a contour inside the area is no part of its boundary, and its stroke would cut a band in
+  a shape that shrinks. The outline has lost the `smooth` flags of the flattening, so the vertices a curve was cut
+  at are found again by their position on the grid (`VertexCollector`) and joined round, or a small circle that
+  grows a lot becomes the polygon of its chords with a miter at each vertex. `RoundCorners` (`PathCornerRounder`)
+  works on the elements, exactly, and only between two straight segments: the point two corners share on a segment
+  (its middle) is computed once, since two points a few units of the last place apart would be a segment the stroker
+  turns into a spike. `TryGetClosestPoint` (`ClosestPointSink`) walks the chords like the other queries.
 - `SvgPathData` reads and writes the path data of SVG. Reading goes through the builder (an arc is `ArcTo`), writing
   through `EnumerateSegments`; numbers are parsed and formatted by the runtime with the invariant culture (correctly
   rounded on every platform). The reader rejects the whole text on an error, with its position.
@@ -498,7 +519,9 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   weights are those of `GaussianKernel`, shared with `GaussianBlur`: computed without `Math.Exp`.
 - The transformation of the canvas (`DrawingSession.Transforms.cs`) is applied where a shape becomes edges, not where
   it is described: `BeginFill` wraps the fill sink in a `TransformSink`, the `Stroker` transforms the vertices of its
-  pieces (`SetOutput`: the path is stroked in the coordinates of the drawing, so the pen is transformed with it), and
+  pieces (`SetOutput`: the path is stroked in the coordinates of the drawing, so the pen is transformed with it; a pen
+  whose `ScalesWithTransform` is off gets a `TransformSink` before its dasher and its markers instead, and strokes in
+  pixels as it does without transformation), and
   the evaluators of the brushes get the transformation of the brush followed by the one of the canvas (`ToCanvas`).
   The flatteners read `PathSink.Scale` of the sink they emit to, and cut curves that much finer; it is 1 without
   transformation, where nothing may change (every product by it is exact). What is given in pixels must use
@@ -635,8 +658,49 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   sweep, so overlaps are painted once. TrueType and CFF outlines turn in opposite directions: `Emit` reverses the
   edges of a glyph whose signed area is negative (`EdgeBuilder.NegateDirections`), otherwise overlapping glyphs of two
   conventions would cancel under the nonzero rule; decorations are emitted in the same orientation. A layout of several
-  paints prepares every shape before painting the first one (`DrawingSession.Prepare`), which keeps "every rental
-  happens before the first pixel write".
+  parts (paints, backgrounds, pens of the styles, color glyphs) is drawn twice by `DrawingSession.FillTextParts`: a
+  first time with `_isPreparing`, where `Render` rents everything and paints nothing, then for real, which keeps
+  "every rental happens before the first pixel write". Add a part to `DrawTextParts`, never a second prepare path.
+- **What a style adds around its glyphs.** A background (`TextStyle.BackgroundBrush`) is a `DecorationRectangle` per
+  line and per style, as tall as the primary font of the style, painted before every glyph of the layout; the pen
+  of a style (`TextStyle.Outline`) is an index in `GlyphRun.Outline`, and `Emit` with that index sends its glyphs
+  only, to a stroke, after every fill. Neither is an outline of the text (`ToPath`, `StrokeText`).
+- **A placeholder is a tabulation with a size**: one item of one character (U+FFFC, which the Unicode algorithms
+  already treat as an object: a line can end on both sides of it), no glyph, an advance, and a line that is as tall
+  as it needs. Its rectangle is recorded by `Finish` where the glyphs are placed. The layout holds no image: a
+  layout is immutable and outlives any image.
+- **A fitted text is laid out at a scale** (`TextLayout.CreateToFit`): the engine multiplies every length of the
+  styles by `_scale` (`GetSize`), and takes its box as arguments instead of the options. Read a size through
+  `GetSize`, never `style.Size`, or a fitted text mixes two sizes.
+- **A vertical layout is a horizontal layout, turned at the very end** (`TextLayoutOptions.WritingMode`,
+  `VerticalLayoutData`). The engine works in the coordinates of a line for every writing mode: `u` along the line
+  from its top and `v` across the lines, from the side the ascent of text on its side points to. Itemizing, line
+  breaking, alignment, justification, trimming, decorations and hit boxes do not know about the writing mode; the
+  engine only swaps the two limits of the box (`_maxWidth` is the inline limit) and, in `Finish`, turns each line:
+  the point `(u, v)` of a line is drawn at `(lineRight - (v - line.Y), u)`. Do not add a second code path for vertical
+  lines in a step of the engine: express it in the coordinates of the line.
+  - What is drawn at a point is stored turned (`Positions`, `Decorations`, `Backgrounds`, `Placeholders`, `Lines`,
+    `Width`, `Height`). What works along a line keeps the coordinates of the line in `TextLayoutData.Vertical`: the
+    lines, the positions, the decorations and the backgrounds that a text on a path follows, and the lines that the
+    hit boxes are relative to. `HitTest`, `GetCaretRectangle` and `GetSelectionRectangles` work on those and map
+    their result per line (`GetLineRectangle`).
+  - **Upright or on its side** is decided per grapheme cluster in `Itemize` (`IsUpright`: UAX #50 through
+    `UnicodeProperties.GetVerticalOrientation`; a `Tr` character is upright when the `vert` feature of the font
+    changes its glyph, which is probed once per glyph and cached). The orientation is part of an item: an upright
+    item is shaped vertically (`TextShaper.Shape(..., isVertical: true)`), an item on its side horizontally. An
+    upright cluster at an odd bidirectional level gets the next even level, so that upright text always reads from
+    the top; `TextOrientation.Upright` clears every level.
+  - **A sideways run only differs by the transformation of its glyphs** (`GlyphRun.IsSideways`,
+    `Affine2D.ForSidewaysGlyph`, always through `GlyphRun.GetTransform`): its advances, offsets, kerning and shear
+    are those of horizontal text. An upright glyph uses the transformation of a horizontal glyph, at the position
+    its vertical origin gives.
+  - **The baseline.** With `Mixed` and `Upright`, the line has a central baseline (`_hasCentralBaseline`): it is
+    symmetric around it, upright glyphs are centered on it by their vertical origins, and an item on its side is
+    shifted by `(ascent - descent) / 2` (`PlacedGlyph.BaselineShift`). With `Sideways`, the line keeps the
+    alphabetic baseline and the metrics of a horizontal line: the layout is exactly the horizontal one turned a
+    quarter of a turn clockwise, which is what `AVerticalLineOfTextOnItsSideIsAHorizontalLineTurned` asserts for
+    the pixels, the lines, the carets, the selections and the hit tests. Keep that property: it is the cheapest
+    test of everything that is turned.
 - **Text on a path** (`TextLayout.EmitOnPath`, `PathMeasure`). The path is flattened by `PathFlattener` into chords;
   `PathMeasure` keeps each chord with its unit direction and the distance of its start. A glyph is placed rigidly at the
   anchor of its cluster (`TextLayoutData.Anchors`: the middle of the advance of the cluster, so a base and its marks,
@@ -773,6 +837,17 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 - **Variation sequences.** A selector after a character whose sequence the font has (format 14 of `cmap`, with a
   glyph of its own or with the default one) leaves the buffer in `MapGlyphs`: emoji fonts list every emoji with
   U+FE0F, and a selector that stayed would be a glyph the reference shaper does not have.
+- **Vertical shaping** (`isVertical`) is what the reference shaper does for the direction `ttb`, and is checked
+  against it by the vectors that have a `direction` in the corpus. The initial positions are an advance of minus the
+  advance height and an offset of minus the vertical origin (`FontFace.GetAdvanceHeight`, `GetVerticalOrigin`); the
+  engine turns them into an advance down the line. Rules no specification states, found by comparing: the origin is
+  half of the advance width, and `VORG`, or the top of the glyph plus the top side bearing of `vmtx`, or the top of
+  the glyph plus half of what the ascent and the descent have more than its height (an arithmetic shift, so it
+  rounds down); a glyph without outline is an empty box at the origin; a font without `vmtx` advances by the ascent
+  plus the descent of the horizontal line. Only `vert` is added to the features that do not depend on the direction,
+  and it is looked for in every script of the table; the joining of Arabic and Syriac, the `kern` table and the
+  marks placed from the shapes of the glyphs are for horizontal text only. In `GPOS`, the advance of a value record
+  is `YAdvance`, subtracted.
 - **Fonts without layout tables.** Three fallbacks, each for a font that has no table (or no script) for what it
   replaces, each compared with the reference shaper on synthetic fonts of the corpus and on random texts:
   - `ArabicShaper.ApplyPresentationForms`: the forms and the lam-alef ligatures from the characters of the Arabic

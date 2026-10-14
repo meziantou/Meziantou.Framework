@@ -37,12 +37,16 @@ internal sealed partial class DrawingSession : IDisposable
     private Dasher? _dasher;
     private MarkerSink? _markers;
     private PathRecorder? _strokeRecorder;
+    private TransformSink? _strokeTransformSink;
     private GradientEvaluator? _gradient;
     private ImageEvaluator? _imagePaint;
     private GlyphPathSink? _glyphSink;
     private GlyphScratch? _glyphScratch;
     private PathMeasure? _pathMeasure;
     private bool _thumbnailRemoved;
+
+    // The draw calls prepare their shapes without painting them: the first pass of a text of several parts
+    private bool _isPreparing;
 
     private DrawingSession(Image image, ImageFrame[] frames, PixelStorage[] storages, CancellationToken cancellationToken)
     {
@@ -106,7 +110,7 @@ internal sealed partial class DrawingSession : IDisposable
     public void Clear(Rgba64 color)
     {
         AddFrame(BeginCall());
-        var converted = _frames[0].ConvertDrawingColor(color);
+        var converted = _frames[0].ConvertDrawingColor(ToImageColor(color));
         if (_rasterizer!.Begin(_edges!, FillRule.NonZero, _cancellationToken))
         {
             Paint(converted, evaluator: null, CompositeMode.Source, BlendMode.Normal);
@@ -619,34 +623,92 @@ internal sealed partial class DrawingSession : IDisposable
         ArgumentNullException.ThrowIfNull(brush);
         ArgumentNullException.ThrowIfNull(layout);
         DrawingGuard.Point(origin, nameof(origin));
-        var glyphSink = _glyphSink ??= new GlyphPathSink();
-        var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
-        var emboldener = GetEmboldener(layout);
-        if (layout.BrushCount <= 1 && !layout.HasColorGlyphs)
+        if (layout.BrushCount <= 1 && !layout.HasColorGlyphs && !layout.HasBackgrounds && layout.OutlineCount == 0)
         {
-            FillFrameWhenCovered(layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, brush: -1, emboldener: emboldener));
+            var glyphSink = _glyphSink ??= new GlyphPathSink();
+            var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
+            FillFrameWhenCovered(layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, brush: -1, emboldener: GetEmboldener(layout)));
             Render(layout.BrushCount == 0 ? brush : layout.GetBrush(0) ?? brush, FillRule.NonZero);
             return;
         }
 
-        // A text of several paints is one shape per paint, and each color glyph is drawn on its own. Every rental of
-        // a call happens before its first pixel write: each shape is prepared once without being painted, so that the
-        // working storage has grown to the largest of them, then the shapes are painted in the order of the paints,
-        // and the color glyphs after them.
-        for (var i = 0; i < layout.BrushCount; i++)
+        FillTextParts(brush, layout, origin.X, origin.Y, measure: null, options: null);
+    }
+
+    /// <summary>
+    /// Draws a text that is more than one shape of one paint: the backgrounds of its styles, one shape per paint, the
+    /// glyphs a font draws with its own colors, then the strokes of the pens of its styles.
+    /// </summary>
+    /// <remarks>
+    /// Every rental of a call happens before its first pixel write: everything is drawn a first time without being
+    /// painted, so that the working storage has grown to the largest of the shapes, of the clips of the pens that
+    /// stroke one side of their path and of the color glyphs, then a second time, painted.
+    /// </remarks>
+    private void FillTextParts(Brush brush, TextLayout layout, double originX, double originY, PathMeasure? measure, TextPathOptions? options)
+    {
+        _isPreparing = true;
+        try
         {
-            FillFrameWhenCovered(layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, i, skipColorGlyphs: true, emboldener));
-            Prepare(layout.GetBrush(i) ?? brush, FillRule.NonZero, out _, out _);
+            DrawTextParts(brush, layout, originX, originY, measure, options);
+        }
+        finally
+        {
+            _isPreparing = false;
         }
 
-        DrawColorGlyphs(brush, layout, origin.X, origin.Y, measure: null, options: null, paint: false);
+        DrawTextParts(brush, layout, originX, originY, measure, options);
+    }
+
+    private void DrawTextParts(Brush brush, TextLayout layout, double originX, double originY, PathMeasure? measure, TextPathOptions? options)
+    {
+        var glyphSink = _glyphSink ??= new GlyphPathSink();
+        var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
+        var emboldener = GetEmboldener(layout);
+        if (layout.HasBackgrounds)
+        {
+            // Under the whole text: the background of a style never hides the glyphs of another one
+            for (var i = 0; i < layout.BrushCount; i++)
+            {
+                if (layout.GetBrush(i) is not { } background)
+                    continue;
+
+                if (measure is null)
+                {
+                    layout.EmitBackgrounds(BeginFill(), originX, originY, i);
+                }
+                else
+                {
+                    layout.EmitBackgroundsOnPath(BeginFill(), measure, options!, i);
+                }
+
+                Render(background, FillRule.NonZero);
+            }
+        }
+
         for (var i = 0; i < layout.BrushCount; i++)
         {
-            FillFrameWhenCovered(layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, i, skipColorGlyphs: true, emboldener));
+            FillFrameWhenCovered(measure is null
+                ? layout.Emit(BeginFill(), glyphSink, scratch, originX, originY, _edges, i, skipColorGlyphs: true, emboldener)
+                : layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options!, _edges, i, skipColorGlyphs: true, emboldener));
             Render(layout.GetBrush(i) ?? brush, FillRule.NonZero);
         }
 
-        DrawColorGlyphs(brush, layout, origin.X, origin.Y, measure: null, options: null, paint: true);
+        DrawColorGlyphs(brush, layout, originX, originY, measure, options, paint: !_isPreparing);
+        for (var i = 0; i < layout.OutlineCount; i++)
+        {
+            var pen = layout.GetOutline(i);
+            var sink = BeginStroke(pen);
+            if (measure is null)
+            {
+                layout.Emit(sink, glyphSink, scratch, originX, originY, edges: null, brush: -1, skipColorGlyphs: true, outline: i);
+            }
+            else
+            {
+                layout.EmitOnPath(sink, glyphSink, scratch, measure, options!, edges: null, brush: -1, skipColorGlyphs: true, outline: i);
+            }
+
+            RenderStroke(pen);
+        }
     }
 
     public void StrokeText(Pen pen, TextLayout layout, PointD origin)
@@ -666,31 +728,16 @@ internal sealed partial class DrawingSession : IDisposable
         ArgumentNullException.ThrowIfNull(path);
         options ??= TextPathOptions.Default;
         var measure = Measure(path);
-        var glyphSink = _glyphSink ??= new GlyphPathSink();
-        var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
-        var emboldener = GetEmboldener(layout);
-        if (layout.BrushCount <= 1 && !layout.HasColorGlyphs)
+        if (layout.BrushCount <= 1 && !layout.HasColorGlyphs && !layout.HasBackgrounds && layout.OutlineCount == 0)
         {
-            FillFrameWhenCovered(layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, brush: -1, emboldener: emboldener));
+            var glyphSink = _glyphSink ??= new GlyphPathSink();
+            var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
+            FillFrameWhenCovered(layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, brush: -1, emboldener: GetEmboldener(layout)));
             Render(layout.BrushCount == 0 ? brush : layout.GetBrush(0) ?? brush, FillRule.NonZero);
             return;
         }
 
-        // As for a text at a point: every shape is prepared before the first one is painted.
-        for (var i = 0; i < layout.BrushCount; i++)
-        {
-            FillFrameWhenCovered(layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, i, skipColorGlyphs: true, emboldener));
-            Prepare(layout.GetBrush(i) ?? brush, FillRule.NonZero, out _, out _);
-        }
-
-        DrawColorGlyphs(brush, layout, 0, 0, measure, options, paint: false);
-        for (var i = 0; i < layout.BrushCount; i++)
-        {
-            FillFrameWhenCovered(layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, i, skipColorGlyphs: true, emboldener));
-            Render(layout.GetBrush(i) ?? brush, FillRule.NonZero);
-        }
-
-        DrawColorGlyphs(brush, layout, 0, 0, measure, options, paint: true);
+        FillTextParts(brush, layout, 0, 0, measure, options);
     }
 
     public void StrokeText(Pen pen, TextLayout layout, VectorPath path, TextPathOptions? options)
@@ -742,6 +789,7 @@ internal sealed partial class DrawingSession : IDisposable
     public void Dispose()
     {
         IsActive = false;
+        DisposeRendering();
         DisposeLayers();
         DisposeClips();
         DisposePatterns();
@@ -826,14 +874,20 @@ internal sealed partial class DrawingSession : IDisposable
     {
         var edges = BeginCall();
         var stroker = _stroker ??= new Stroker(edges);
-        stroker.SetOutput(_hasTransform, _transformMatrix, _transformScale);
+
+        // A pen the transformation does not apply to strokes the path as it is on the canvas: the vertices of the
+        // path are transformed before they reach the pen, and nothing after it
+        var isPlacedFirst = IsPlacedBeforeStroke(pen);
+        var hasOutputTransform = _hasTransform && !isPlacedFirst;
+        var scale = hasOutputTransform ? _transformScale : 1;
+        stroker.SetOutput(hasOutputTransform, _transformMatrix, _transformScale);
         stroker.Configure(pen, widthFactor);
         PathSink sink = stroker;
         if (pen.IsDashed)
         {
             var dasher = _dasher ??= new Dasher(_image.Owner.Scope);
-            dasher.Scale = _transformScale;
-            if (_hasTransform)
+            dasher.Scale = scale;
+            if (hasOutputTransform)
             {
                 // The dashes are cut in the coordinates of the drawing, where the canvas is not a rectangle: all of them
                 dasher.Configure(pen, stroker, _cancellationToken);
@@ -849,13 +903,23 @@ internal sealed partial class DrawingSession : IDisposable
         if (pen.HasMarkers)
         {
             var markers = _markers ??= new MarkerSink(_image.Owner.Scope);
-            markers.Scale = _transformScale;
+            markers.Scale = scale;
             markers.Configure(pen, stroker, sink);
             sink = markers;
         }
 
+        if (isPlacedFirst)
+        {
+            var placed = _strokeTransformSink ??= new TransformSink();
+            placed.Configure(sink, _transformMatrix, _transformScale);
+            sink = placed;
+        }
+
         return sink;
     }
+
+    /// <summary>Gets a value indicating whether the path of a stroke is placed on the canvas before the pen strokes it: the pen is then not transformed with the path.</summary>
+    private bool IsPlacedBeforeStroke(Pen pen) => _hasTransform && !pen.ScalesWithTransform;
 
     /// <summary>Renders the pieces the stroker emitted, or the whole frame when one of them contains it.</summary>
     private void RenderStroke(Pen pen)
@@ -876,6 +940,15 @@ internal sealed partial class DrawingSession : IDisposable
         {
             // What a stroke reaches around its path: its joins and its caps, and its markers anywhere
             var reach = pen.HasMarkers ? DrawingGuard.MaxCoordinate : pen.Width * Math.Max(pen.MiterLimit, 2);
+            if (IsPlacedBeforeStroke(pen))
+            {
+                // The reach is a distance of the canvas, and the bounds are those of the drawing: the distance of
+                // the drawing that the transformation shortens the most to it. Written so that a transformation
+                // that flattens the plane gives the largest one.
+                var shortest = Math.Abs(_transform.Determinant) / _transformScale;
+                reach = shortest > 0 && reach / shortest <= DrawingGuard.MaxCoordinate ? reach / shortest : DrawingGuard.MaxCoordinate;
+            }
+
             bounds = RectangleD.FromLTRB(
                 Math.Max(bounds.Left - reach, -DrawingGuard.MaxCoordinate),
                 Math.Max(bounds.Top - reach, -DrawingGuard.MaxCoordinate),
@@ -910,7 +983,8 @@ internal sealed partial class DrawingSession : IDisposable
     /// <summary>Rasterizes the edges of the call and composites every row onto every frame.</summary>
     private void Render(Brush brush, FillRule fillRule)
     {
-        if (Prepare(brush, fillRule, out var color, out var evaluator))
+        // A shape that is only prepared rents what it needs, and changes no pixel
+        if (Prepare(brush, fillRule, out var color, out var evaluator) && !_isPreparing)
         {
             Paint(color, evaluator, brush.CompositeMode, brush.BlendMode, brush is ImageBrush image ? image.OpacityCoverage : CoverageRasterizer.FullCoverage);
         }
@@ -962,7 +1036,7 @@ internal sealed partial class DrawingSession : IDisposable
                 coverage = ApplyOpacity(coverage, opacity);
             }
 
-            var source = evaluator is null ? new DrawingSource(color, mode, blend, _transfer) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend, _transfer);
+            var source = evaluator is null ? new DrawingSource(color, mode, blend, _transfer, _curves) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend, _transfer, _curves);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], y, x, coverage, source);
@@ -984,7 +1058,7 @@ internal sealed partial class DrawingSession : IDisposable
         var isInert = DrawingKernels.IsTransparentPaintInert(brush.CompositeMode);
         if (brush is SolidBrush solid)
         {
-            color = _frames[0].ConvertDrawingColor(solid.Color);
+            color = _frames[0].ConvertDrawingColor(ToImageColor(solid.Color));
             if (color.Alpha == 0 && isInert)
                 return false;
         }
@@ -1016,7 +1090,7 @@ internal sealed partial class DrawingSession : IDisposable
         {
             var gradient = _gradient ??= new GradientEvaluator(_image.Owner.Scope);
             var gradientBrush = (GradientBrush)brush;
-            gradient.Prepare(gradientBrush, ToCanvas(gradientBrush.Transform), _frames[0], Width);
+            gradient.Prepare(gradientBrush, ToCanvas(gradientBrush.Transform), _frames[0], Width, _paintPipeline);
             if (gradient.IsTransparent && isInert)
                 return false;
 

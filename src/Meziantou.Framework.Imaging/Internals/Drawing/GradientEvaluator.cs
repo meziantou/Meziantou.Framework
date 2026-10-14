@@ -59,6 +59,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     private PooledBuffer? _samples;
     private GradientBrush? _brush;
     private ImageFrame? _frame;
+    private IccPipeline? _paintPipeline;
     private GradientColorSpace _colorSpace;
     private int _stopCount;
     private bool _isTransparent;
@@ -92,15 +93,23 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     /// <param name="transform">The transformation that places the gradient on the canvas: the one of the brush, then the one of the canvas.</param>
     /// <param name="frame">A frame that is drawn on.</param>
     /// <param name="width">The width of the canvas.</param>
-    public void Prepare(GradientBrush brush, AffineTransform transform, ImageFrame frame, int width)
-        => Prepare(brush, transform, frame, width, (1 << PixelFormats.GetBitsPerComponent(frame.PixelFormat)) - 1);
+    /// <param name="paintPipeline">The conversion that brings the colors of the stops to the color space of the image, or <see langword="null"/> when they are colors of the image.</param>
+    public void Prepare(GradientBrush brush, AffineTransform transform, ImageFrame frame, int width, IccPipeline? paintPipeline = null)
+    {
+        _paintPipeline = paintPipeline;
+        Prepare(brush, transform, frame, width, (1 << PixelFormats.GetBitsPerComponent(frame.PixelFormat)) - 1);
+    }
 
     /// <summary>
     /// Prepares the evaluation of a gradient whose colors are not converted to the samples of a frame: 16-bit red,
     /// green, blue and alpha values, for what composes colors before it writes them to a frame.
     /// </summary>
     /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
-    public void PrepareColors(GradientBrush brush, AffineTransform transform, int width) => Prepare(brush, transform, frame: null, width, ushort.MaxValue);
+    public void PrepareColors(GradientBrush brush, AffineTransform transform, int width)
+    {
+        _paintPipeline = null;
+        Prepare(brush, transform, frame: null, width, ushort.MaxValue);
+    }
 
     private void Prepare(GradientBrush brush, AffineTransform transform, ImageFrame? frame, int width, int max)
     {
@@ -131,7 +140,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         var transparent = true;
         for (var i = 0; i < stops.Length; i++)
         {
-            var color = frame is null ? new DrawingColor(stops[i].Color.R, stops[i].Color.G, stops[i].Color.B, stops[i].Color.A) : frame.ConvertDrawingColor(stops[i].Color);
+            var color = frame is null ? new DrawingColor(stops[i].Color.R, stops[i].Color.G, stops[i].Color.B, stops[i].Color.A) : frame.ConvertDrawingColor(PaintColorConverter.Convert(_paintPipeline, stops[i].Color));
             var entry = values.Slice(i * ValuesPerStop, ValuesPerStop);
             entry[0] = stops[i].Offset;
             entry[1] = color.Alpha;
@@ -418,6 +427,18 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             }
 
             return;
+        }
+
+        if (_paintPipeline is { } pipeline)
+        {
+            // The colors that were mixed are colors of the profile of the paints: each one is brought to the image
+            foreach (ref var sample in samples)
+            {
+                if (sample.A != 0)
+                {
+                    sample = PaintColorConverter.Convert(pipeline, sample);
+                }
+            }
         }
 
         _frame.ConvertDrawingColors(samples, colors);

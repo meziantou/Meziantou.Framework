@@ -838,6 +838,35 @@ public sealed class UnicodeTests
     }
 
     [Theory]
+    [InlineData(0x0041, UnicodeVerticalOrientation.Rotated)]
+    [InlineData(0x0020, UnicodeVerticalOrientation.Rotated)]
+    [InlineData(0x05D0, UnicodeVerticalOrientation.Rotated)]
+    [InlineData(0x1820, UnicodeVerticalOrientation.Rotated)]
+    [InlineData(0x2014, UnicodeVerticalOrientation.Rotated)]
+    [InlineData(0x4E00, UnicodeVerticalOrientation.Upright)]
+    [InlineData(0x3042, UnicodeVerticalOrientation.Upright)]
+    [InlineData(0xAC00, UnicodeVerticalOrientation.Upright)]
+    [InlineData(0xFF10, UnicodeVerticalOrientation.Upright)]
+    [InlineData(0x3000, UnicodeVerticalOrientation.Upright)]
+    [InlineData(0x00A9, UnicodeVerticalOrientation.Upright)]
+    [InlineData(0x1F600, UnicodeVerticalOrientation.Upright)]
+    // Punctuation that has another glyph in a vertical line, which stays upright or, without that glyph, is rotated.
+    [InlineData(0x3001, UnicodeVerticalOrientation.TransformedUpright)]
+    [InlineData(0x3041, UnicodeVerticalOrientation.TransformedUpright)]
+    [InlineData(0x300C, UnicodeVerticalOrientation.TransformedRotated)]
+    [InlineData(0x30FC, UnicodeVerticalOrientation.TransformedRotated)]
+    [InlineData(0xFF08, UnicodeVerticalOrientation.TransformedRotated)]
+    // Unassigned code points are rotated, except in the areas of the ideographs and of the symbols, where they are upright.
+    [InlineData(0x0378, UnicodeVerticalOrientation.Rotated)]
+    [InlineData(0x3FFFD, UnicodeVerticalOrientation.Upright)]
+    [InlineData(-1, UnicodeVerticalOrientation.Rotated)]
+    [InlineData(0x110000, UnicodeVerticalOrientation.Rotated)]
+    public void GetVerticalOrientation_ReturnsTheOrientation(int codePoint, UnicodeVerticalOrientation expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.GetVerticalOrientation(codePoint));
+    }
+
+    [Theory]
     [InlineData(0x0041, UnicodeGraphemeClusterBreak.Other, UnicodeIndicConjunctBreak.None)]
     [InlineData(0x000D, UnicodeGraphemeClusterBreak.CR, UnicodeIndicConjunctBreak.None)]
     [InlineData(0x000A, UnicodeGraphemeClusterBreak.LF, UnicodeIndicConjunctBreak.None)]

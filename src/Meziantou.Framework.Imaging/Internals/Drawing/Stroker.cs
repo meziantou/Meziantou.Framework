@@ -32,7 +32,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Under a transformation of the canvas, the path is stroked as it is given and the vertices of the pieces are
 /// transformed when they are emitted: the pen is transformed with the path, whatever the transformation. The round
 /// joins and caps are cut finer by the factor of the transformation (<see cref="PathSink.Scale"/>), and no piece is
-/// tested against the frame.
+/// tested against the frame. A pen that the transformation does not apply to (<see cref="Pen.ScalesWithTransform"/>)
+/// is given the path as it is on the canvas instead, by a <see cref="TransformSink"/> before it: it strokes as it
+/// does without transformation.
 /// </para>
 /// </remarks>
 internal sealed class Stroker : PathSink

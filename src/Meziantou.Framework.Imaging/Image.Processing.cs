@@ -538,6 +538,58 @@ public abstract partial class Image
     }
 
     /// <summary>
+    /// Gets the tone curves of the ICC profile of the image, for what combines its samples in linear light, when the
+    /// profile is what says how they are encoded and is not recognized as sRGB: the samples of any other image are
+    /// decoded by the function of <see cref="GetLinearLightTransfer"/>.
+    /// </summary>
+    /// <returns>The curves, or <see langword="null"/> when a transfer function decodes the samples.</returns>
+    /// <exception cref="InvalidImageContentException">The profile is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The profile cannot label the pixel format, or has no tone curve for each channel.</exception>
+    /// <exception cref="ImageResourceLimitException">The tables of the curves exceed the allocation limit.</exception>
+    internal LinearLightCurves? CreateLinearLightCurves()
+    {
+        if (_metadata.TransferFunction == ColorTransferFunction.Linear || _metadata.IccProfile is not { } profile || SrgbProfileRecognition.IsSrgb(profile, PixelFormat))
+            return null;
+
+        EnsureColorProfileCompatible();
+        return LinearLightCurves.Create(profile, Owner.Scope);
+    }
+
+    /// <summary>
+    /// Creates the conversion that brings the colors of a profile to the color space of the stored pixels: the one of
+    /// the ICC profile of the image, else the one of its CICP color description, else sRGB (see
+    /// <see cref="GetSourceColorProfile"/> and <see cref="TryGetCicpColorSpace"/>).
+    /// </summary>
+    /// <param name="paints">The profile of the colors: an RGB profile.</param>
+    /// <param name="options">The options of the conversion.</param>
+    /// <returns>The conversion, or <see langword="null"/> when the profile is the one of the image: the colors are not changed.</returns>
+    /// <exception cref="InvalidImageContentException">A profile is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">
+    /// The profile of the paints is not an RGB profile, a profile is not supported in its role, the color space of the
+    /// image is ambiguous or unknown, or its samples are high dynamic range ones.
+    /// </exception>
+    internal IccPipeline? CreatePaintPipeline(IccProfile paints, IccColorTransformOptions options)
+    {
+        if (paints.ColorSpace != IccProfileColorSpace.Rgb)
+            throw new UnsupportedImageFeatureException(
+                $"The colors of the paints are red, green and blue values, but the profile that describes them declares the {paints.ColorSpace} color space. Use an RGB profile.",
+                ImageFormat.Unknown,
+                "Paint colors of a profile that is not RGB");
+
+        EnsureColorProfileCompatible();
+        if (_metadata.IccProfile is null && _metadata.TransferFunction != ColorTransferFunction.Linear && _metadata.Cicp is { } cicp && CicpTransfer.IsHdr(cicp.TransferCharacteristics))
+            throw new UnsupportedImageFeatureException(
+                $"The samples of the image are high dynamic range ones ({cicp}): the light that the white of a paint has among them is a choice that is not made implicitly. Give the paints as sample values of the image, or convert the image to a standard dynamic range with ConvertColorProfile first.",
+                ImageFormat.Unknown,
+                "Paint colors of a profile on high dynamic range samples");
+
+        var pipeline = TryGetCicpColorSpace(options: null, out var colorSpace, out _)
+            ? IccPipeline.Create(paints, colorSpace, options.Intent, options.BlackPointCompensation)
+            : IccPipeline.Create(paints, GetSourceColorProfile(), options.Intent, options.BlackPointCompensation);
+        return pipeline.IsIdentity ? null : pipeline;
+    }
+
+    /// <summary>
     /// Validates that the retained ICC profile can label the pixels before an in-place grayscale conversion. The storage
     /// format is kept, so a compatible profile stays compatible; an incompatible one is never retained silently.
     /// </summary>

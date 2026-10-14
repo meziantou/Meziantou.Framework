@@ -28,7 +28,8 @@ internal static class PropertyTablesWriter
         var joiningGroupEnum = CreateEnum(enumsPath, aliases, "jg", "UnicodeJoiningGroup", "No_Joining_Group", "the Joining_Group property of a code point", "https://www.unicode.org/reports/tr44/");
         var syllabicEnum = CreateEnum(enumsPath, aliases, "InSC", "UnicodeIndicSyllabicCategory", "Other", "the Indic_Syllabic_Category property of a code point", "https://www.unicode.org/reports/tr44/");
         var positionalEnum = CreateEnum(enumsPath, aliases, "InPC", "UnicodeIndicPositionalCategory", "Not_Applicable", "the Indic_Positional_Category property of a code point", "https://www.unicode.org/reports/tr44/");
-        GeneratedEnum[] enums = [lineBreakEnum, graphemeEnum, conjunctEnum, wordEnum, widthEnum, bracketEnum, joiningTypeEnum, joiningGroupEnum, syllabicEnum, positionalEnum];
+        var orientationEnum = CreateEnum(enumsPath, aliases, "vo", "UnicodeVerticalOrientation", "Rotated", "the Vertical_Orientation property of a code point", "https://www.unicode.org/reports/tr50/");
+        GeneratedEnum[] enums = [lineBreakEnum, graphemeEnum, conjunctEnum, wordEnum, widthEnum, bracketEnum, joiningTypeEnum, joiningGroupEnum, syllabicEnum, positionalEnum, orientationEnum];
 
         var generalCategory = await LoadGeneralCategoryAsync();
         var bidiClass = await LoadBidiClassAsync(aliases);
@@ -44,6 +45,7 @@ internal static class PropertyTablesWriter
         var joiningGroup = await LoadEnumAsync("ucd/extracted/DerivedJoiningGroup.txt", aliases, joiningGroupEnum, filter: null);
         var syllabic = await LoadEnumAsync("ucd/IndicSyllabicCategory.txt", aliases, syllabicEnum, filter: null);
         var positional = await LoadEnumAsync("ucd/IndicPositionalCategory.txt", aliases, positionalEnum, filter: null);
+        var orientation = await LoadEnumAsync("ucd/VerticalOrientation.txt", aliases, orientationEnum, filter: null);
         var (bracketType, bracketPairs) = await LoadBracketsAsync(aliases, bracketEnum);
         var mirroringPairs = await LoadMirroringPairsAsync();
         var (lowerDelta, upperDelta) = await LoadSimpleCaseMappingsAsync();
@@ -140,6 +142,9 @@ internal static class PropertyTablesWriter
             Indic_Positional_Category (a UnicodeIndicPositionalCategory).
             """);
         AppendBytes(tables, sizes, "IndicTuples", indicTuples.Bytes);
+        AppendTrie(tables, sizes, "VerticalOrientation", orientation, """
+            Vertical_Orientation (a UnicodeVerticalOrientation), with the default values of the unassigned code points.
+            """);
         AppendTrie(tables, sizes, "Case", caseLeaves, """
             Index of an 8-byte entry of CaseTuples: the difference between the Simple_Lowercase_Mapping of the code point
             and the code point, then the difference between its Simple_Uppercase_Mapping and the code point.

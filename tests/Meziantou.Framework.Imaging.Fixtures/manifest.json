@@ -112677,7 +112677,7 @@
       ],
       "shaping": {
         "path": "fonts/shaping/noto-color-emoji.json",
-        "sha256": "a011e768f903f944311dbdcaea69566c7e83048925350127cd8ef354d8042306",
+        "sha256": "ecea2f436e5b22b7e2761080d6f853bd46a825b748445a3c243bdf5db4dcad52",
         "role": "shaping-vectors"
       }
     },
@@ -112718,7 +112718,7 @@
       },
       "shaping": {
         "path": "fonts/shaping/noto-naskh-arabic.json",
-        "sha256": "9fef52161fd0f7f3843e2c90adfb71ffed9dd364b24323f9f280224a0674f24f",
+        "sha256": "28e8546de42835b5ac872d6026386314186a24c30fbbe7f0daa05ecd90af884a",
         "role": "shaping-vectors"
       }
     },
@@ -112940,7 +112940,7 @@
       },
       "shaping": {
         "path": "fonts/shaping/noto-sans-cjk-jp-regular.json",
-        "sha256": "775826ff2161f54a6a9c7fdfda82f0fae6dfd4dbe37486bdf7431aaa002e3bad",
+        "sha256": "06e58a25c9f510338ff4957304cdc4ec12e9e522fa92fb0a208e9564e1088055",
         "role": "shaping-vectors"
       }
     },
@@ -113006,7 +113006,7 @@
       },
       "shaping": {
         "path": "fonts/shaping/noto-sans-cjk-jp-variable.json",
-        "sha256": "60ccd2e1a47f454464430fb662a2026db35d9eff00f3081b8213d1274cfffc67",
+        "sha256": "81547f110bd10074b13e16412219b49c8098f4b454a6b645dda9bd2d5d9f329b",
         "role": "shaping-vectors"
       }
     },
@@ -113047,7 +113047,7 @@
       },
       "shaping": {
         "path": "fonts/shaping/noto-sans-cjk-kr-letters.json",
-        "sha256": "fbb3d1c77ec9fffa086f116078284c292ba47629fbdf59c35e74875dcab66b9c",
+        "sha256": "3a5c2ee2063a04f9d6338425b929ac51bb9abd17056fde96be167c5c6cae1dbd",
         "role": "shaping-vectors"
       }
     },
@@ -113088,7 +113088,7 @@
       },
       "shaping": {
         "path": "fonts/shaping/noto-sans-cjk-kr-regular.json",
-        "sha256": "468cb9d3da6599a7d1f57dab2a7fef12dfcecd9fe10ebb8f7e25fdef2de9e3ff",
+        "sha256": "47d4faff505b23e16cd013159091076d2bdf9843478b83fb39677917acd54081",
         "role": "shaping-vectors"
       }
     },
@@ -113676,7 +113676,7 @@
       },
       "shaping": {
         "path": "fonts/shaping/noto-sans-mongolian.json",
-        "sha256": "8e7fd52c9b020a840e3f228d01bdb902c2ba3a4aa6fbf14cb1ac94045ad2aca4",
+        "sha256": "aa960499b6ab37781c5e03408dbee276b8d40857c9aac00bd4cf2b54159d7a95",
         "role": "shaping-vectors"
       }
     },
@@ -113858,7 +113858,7 @@
       },
       "shaping": {
         "path": "fonts/shaping/noto-sans-regular.json",
-        "sha256": "a10422eed2a32385b0cecc735d41ca07bd9227b483bd4f3c20a26e4cdca52e95",
+        "sha256": "1a2489e175851e8fe3c916f9ca752671500c12a8e95ed58b34bf2b2d2f2e0b6a",
         "role": "shaping-vectors"
       }
     },
@@ -113898,7 +113898,7 @@
       },
       "shaping": {
         "path": "fonts/shaping/noto-sans-regular-cff.json",
-        "sha256": "d341c1d3dc2a5beea067646a461161703862e2488e879996f6063383ec5cce73",
+        "sha256": "28104a38c672db7f974d86578d403014da94e02bed51645018fe072ed8f48b20",
         "role": "shaping-vectors"
       }
     },
@@ -114441,7 +114441,7 @@
       },
       "shaping": {
         "path": "fonts/shaping/synthetic-boxes.json",
-        "sha256": "5fb5bfde448f39063cb959edac52101b026eeb3ac6c844fc952a588469b68525",
+        "sha256": "a9f86582ee24cf27e34c7813038274eadb015d15c12998211dfae9aa8902cf4d",
         "role": "shaping-vectors"
       }
     },

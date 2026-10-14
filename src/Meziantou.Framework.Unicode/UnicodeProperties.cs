@@ -111,6 +111,19 @@ public static class UnicodeProperties
         return (UnicodeEastAsianWidth)(UnicodeTables.LineBreakTuples[(UnicodeTables.GetLineBreak(codePoint) * 2) + 1] & 0x7);
     }
 
+    /// <summary>Gets the Vertical_Orientation property of a code point: how the character is set in a line of vertical text.</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <returns>
+    /// The orientation: upright as in a horizontal line, rotated by a quarter turn clockwise, or one of the two with
+    /// another glyph than in a horizontal line. A value that is not a code point is rotated, the default of the
+    /// property.
+    /// </returns>
+    /// <seealso href="https://www.unicode.org/reports/tr50/" />
+    public static UnicodeVerticalOrientation GetVerticalOrientation(int codePoint)
+    {
+        return (UnicodeVerticalOrientation)UnicodeTables.GetVerticalOrientation(codePoint);
+    }
+
     /// <summary>Gets the Grapheme_Cluster_Break property of a code point.</summary>
     /// <param name="codePoint">The code point.</param>
     /// <returns>The class used by the grapheme cluster boundary rules.</returns>

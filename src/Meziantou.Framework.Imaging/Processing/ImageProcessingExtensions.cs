@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -374,6 +375,57 @@ public static class ImageProcessingExtensions
         using var lease = storage.AcquireLease();
         image.Metadata.RemoveStaleThumbnail();
         frame.GrayscalePixels(lease, cancellationToken);
+    }
+
+    /// <summary>
+    /// Gives every pixel of every frame of the image (including the poster frame) the color a matrix makes of its own
+    /// one, in place: brightness, contrast, saturation, a tint, a negative. The pixel format is kept.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The matrix is applied to the stored (encoded) sample values, with straight alpha, at the storage precision:
+    /// see <see cref="ColorMatrix"/> for the arithmetic. A pixel format without alpha gets the color of the result
+    /// over black, and a grayscale format the Rec. 709 luma of the result. Every pixel gets the samples the matrix
+    /// gives it, the color of a fully transparent pixel included, as <see cref="Grayscale(Image, CancellationToken)"/>
+    /// does: with <see cref="ColorMatrix.CreateGrayscale(double)"/>, the pixels are the same, bit for bit. No color
+    /// profile is applied: the colors of the matrix are those of the color space of the image.
+    /// </para>
+    /// <para>
+    /// The working storage (one row) is charged to the image and rented before a pixel changes. On cancellation, some
+    /// rows may already be converted, the same ones in every frame. To change the colors of a part of an image, or of
+    /// a drawing, see <see cref="DrawingCanvas.FilterBackdrop(ColorMatrix)"/> and
+    /// <see cref="DrawingCanvas.Filter(ColorMatrix, DrawingAction)"/>.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="matrix">The matrix.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> or <paramref name="matrix"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. Nothing is changed.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void ApplyColorMatrix(this Image image, ColorMatrix matrix, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ArgumentNullException.ThrowIfNull(matrix);
+        image.Draw(matrix, static (canvas, matrix) => canvas.FilterBackdrop(matrix), cancellationToken);
+    }
+
+    /// <summary>Gives every pixel of one frame the color a matrix makes of its own one, in place. See <see cref="ApplyColorMatrix(Image, ColorMatrix, CancellationToken)"/>.</summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="matrix">The matrix.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be converted.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="frame"/> or <paramref name="matrix"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. Nothing is changed.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void ApplyColorMatrix(this ImageFrame frame, ColorMatrix matrix, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(matrix);
+        frame.Draw(matrix, static (canvas, matrix) => canvas.FilterBackdrop(matrix), cancellationToken);
     }
 
     /// <summary>

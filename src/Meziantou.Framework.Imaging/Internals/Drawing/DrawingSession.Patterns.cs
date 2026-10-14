@@ -29,7 +29,8 @@ internal sealed partial class DrawingSession
     private Image? _patternImage;
     private PatternBrush? _patternBrush;
     private bool _patternIsAliased;
-    private byte _patternTransfer;
+    private CompositingSpace _patternSpace;
+    private IccPipeline? _patternPipeline;
 
     /// <summary>Draws the tile of a pattern, unless it is the one that was drawn last, and gets the transformation that places its image on the canvas.</summary>
     /// <returns>The frame that holds the tile, or <see langword="null"/> when the pattern paints nothing.</returns>
@@ -52,7 +53,7 @@ internal sealed partial class DrawingSession
         var height = (int)Math.Min(Math.Max(Math.Ceiling(tileHeight - (1.0 / 1024)), 1), DrawingGuard.MaxCoordinate);
         var isWide = _frames[0].PixelFormat is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24);
         var image = _patternImage;
-        if (image is null || image.Width != width || image.Height != height || !ReferenceEquals(_patternBrush, brush) || _patternIsAliased != _isAliased || _patternTransfer != _transfer)
+        if (image is null || image.Width != width || image.Height != height || !ReferenceEquals(_patternBrush, brush) || _patternIsAliased != _isAliased || _patternSpace != _compositingSpace || !ReferenceEquals(_patternPipeline, _paintPipeline))
         {
             if (_patternDepth >= MaxPatternDepth)
                 throw new InvalidOperationException("A pattern brush is drawn inside too many pattern brushes: a pattern must not paint itself.");
@@ -81,7 +82,8 @@ internal sealed partial class DrawingSession
             DrawTile(brush, image, width / tile.Width, height / tile.Height);
             _patternBrush = brush;
             _patternIsAliased = _isAliased;
-            _patternTransfer = _transfer;
+            _patternSpace = _compositingSpace;
+            _patternPipeline = _paintPipeline;
         }
 
         placement = new AffineTransform(tile.Width / width, 0, 0, tile.Height / height, tile.X, tile.Y).Then(transform);
@@ -95,10 +97,13 @@ internal sealed partial class DrawingSession
         using var session = Begin(image, [frame], [frame.GetStorage()], _cancellationToken);
         session._patternDepth = _patternDepth + 1;
 
-        // The tile is drawn as the shapes it paints are
-        session._compositingSpace = _compositingSpace;
+        // The tile is drawn as the shapes it paints are, and holds samples of the image that is drawn on: its
+        // paints are converted to the color space of that image, and combined in its linear light
+        session._colorImage = _colorImage ?? _image;
         session._imageTransfer = _imageTransfer;
-        session._transfer = _transfer;
+        session._imageCurves = _imageCurves;
+        session._paintPipeline = _paintPipeline;
+        session.RestoreCompositingSpace(_compositingSpace);
         if (_isAliased)
         {
             session.SetAntialiasing(enabled: false);

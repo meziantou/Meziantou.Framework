@@ -903,3 +903,21 @@ public enum UnicodeIndicPositionalCategory : byte
     /// <summary>The <c>Visual_Order_Left</c> value.</summary>
     VisualOrderLeft = 15,
 }
+
+/// <summary>Represents the Vertical_Orientation property of a code point.</summary>
+/// <remarks>The numeric values are stable across the versions of this package.</remarks>
+/// <seealso href="https://www.unicode.org/reports/tr50/" />
+public enum UnicodeVerticalOrientation : byte
+{
+    /// <summary>The <c>Rotated</c> value (<c>R</c>).</summary>
+    Rotated = 0,
+
+    /// <summary>The <c>Transformed_Rotated</c> value (<c>Tr</c>).</summary>
+    TransformedRotated = 1,
+
+    /// <summary>The <c>Transformed_Upright</c> value (<c>Tu</c>).</summary>
+    TransformedUpright = 2,
+
+    /// <summary>The <c>Upright</c> value (<c>U</c>).</summary>
+    Upright = 3,
+}

@@ -184,6 +184,20 @@ internal sealed class LayoutTable
     public uint GetFeatureTag(ReadOnlySpan<byte> table, int feature)
         => (uint)feature < (uint)FontBinary.UInt16(table, _features) ? FontBinary.UInt32(table, _features + 2 + (feature * 6)) : 0;
 
+    /// <summary>Finds the first feature of the feature list that has a tag, whatever the scripts and the language systems that list it.</summary>
+    /// <returns>The index of the feature in the feature list, or <see cref="NoFeature"/>.</returns>
+    public int FindFeature(ReadOnlySpan<byte> table, uint tag)
+    {
+        var count = FontBinary.UInt16(table, _features);
+        for (var i = 0; i < count; i++)
+        {
+            if (_features + 8 + (i * 6) <= table.Length && FontBinary.UInt32(table, _features + 2 + (i * 6)) == tag)
+                return i;
+        }
+
+        return NoFeature;
+    }
+
     /// <summary>Gets the number of lookups of a feature of the feature list.</summary>
     /// <param name="table">The table.</param>
     /// <param name="feature">The index of the feature in the feature list.</param>

@@ -364,11 +364,14 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
     }
 
     /// <summary>The unsigned residuals of a quad-pair, with the interleaving of 7.3.4 (decodeUPrefix, decodeUSuffix and decodeUExtension of 7.3.6).</summary>
+    /// <param name="isInitialRow">Whether the quads are in the first row of quads.</param>
+    /// <param name="pairLength">The number of quads of the pair, 1 or 2.</param>
+    /// <param name="offsets">The unsigned residual offsets of the quads.</param>
+    /// <param name="residuals">Receives the unsigned residuals of the quads; 0 for a quad that is not in the pair.</param>
     private void DecodeResiduals(bool isInitialRow, int pairLength, ReadOnlySpan<int> offsets, Span<int> residuals)
     {
-        residuals.Clear();
-        Span<int> prefixes = stackalloc int[2];
-        prefixes.Clear();
+        var prefix0 = 0;
+        var prefix1 = 0;
         var bias = 0;
         if (isInitialRow && pairLength == 2 && offsets[0] != 0 && offsets[1] != 0)
         {
@@ -376,48 +379,36 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
             if (DecodeMelSymbol() != 0)
             {
                 bias = 2;
-                prefixes[0] = DecodePrefix();
-                prefixes[1] = DecodePrefix();
+                prefix0 = DecodePrefix();
+                prefix1 = DecodePrefix();
             }
             else
             {
                 // The second residual is one bit when the first prefix has three bits
-                prefixes[0] = DecodePrefix();
-                prefixes[1] = prefixes[0] > 2 ? ReadVlcBit() + 1 : DecodePrefix();
+                prefix0 = DecodePrefix();
+                prefix1 = prefix0 > 2 ? ReadVlcBit() + 1 : DecodePrefix();
             }
         }
         else
         {
-            for (var i = 0; i < pairLength; i++)
+            if (offsets[0] != 0)
             {
-                if (offsets[i] != 0)
-                {
-                    prefixes[i] = DecodePrefix();
-                }
+                prefix0 = DecodePrefix();
+            }
+
+            if (pairLength == 2 && offsets[1] != 0)
+            {
+                prefix1 = DecodePrefix();
             }
         }
 
         // The suffixes of both quads, then their extensions
-        Span<int> suffixes = stackalloc int[2];
-        suffixes.Clear();
-        for (var i = 0; i < pairLength; i++)
-        {
-            if (prefixes[i] >= 3)
-            {
-                suffixes[i] = ReadVlcBits(prefixes[i] == 3 ? 1 : 5);
-            }
-        }
+        var suffix0 = prefix0 >= 3 ? ReadVlcBits(prefix0 == 3 ? 1 : 5) : 0;
+        var suffix1 = prefix1 >= 3 ? ReadVlcBits(prefix1 == 3 ? 1 : 5) : 0;
 
-        for (var i = 0; i < pairLength; i++)
-        {
-            if (prefixes[i] == 0)
-                continue;
-
-            var extension = suffixes[i] >= 28 ? ReadVlcBits(4) : 0;
-
-            // Formulae (3) and (4)
-            residuals[i] = bias + prefixes[i] + suffixes[i] + (4 * extension);
-        }
+        // Formulae (3) and (4)
+        residuals[0] = prefix0 == 0 ? 0 : bias + prefix0 + suffix0 + (4 * (suffix0 >= 28 ? ReadVlcBits(4) : 0));
+        residuals[1] = prefix1 == 0 ? 0 : bias + prefix1 + suffix1 + (4 * (suffix1 >= 28 ? ReadVlcBits(4) : 0));
     }
 
     /// <summary>decodeUPrefix (7.3.6): the codewords 1, 01, 001 and 000 stand for the prefix values 1, 2, 3 and 5.</summary>

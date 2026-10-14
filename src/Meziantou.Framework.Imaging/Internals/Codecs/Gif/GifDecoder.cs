@@ -147,6 +147,21 @@ internal sealed class GifDecoder : GifDecodeObserver
         }
     }
 
+    public override void OnImageDataBlocks(ReadOnlySpan<byte> subBlocks)
+    {
+        if (!_imageOpen)
+            throw new InvalidOperationException("No GIF image was started.");
+
+        // One lease of the canvas for the sub-blocks of this parser call
+        using var canvas = _visible && !subBlocks.IsEmpty ? _compositor!.LeaseCanvas() : default;
+        while (!subBlocks.IsEmpty)
+        {
+            var size = subBlocks[0];
+            Decode(subBlocks.Slice(1, size), canvas);
+            subBlocks = subBlocks[(1 + size)..];
+        }
+    }
+
     public override bool OnImageEnd()
     {
         if (!_imageOpen)

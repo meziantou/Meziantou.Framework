@@ -30,10 +30,10 @@ namespace Meziantou.AspNetCore.Components
         public object? Data { get => throw null; set { } }
         public Meziantou.AspNetCore.Components.LogDetailsDisplayFormat Format { get => throw null; set { } }
         public int MaxDepth { get => throw null; set { } }
-        protected override void OnParametersSet() { }
         #nullable disable
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
         #nullable restore
+        protected override void OnParametersSet() { }
     }
 
     public class LogHighlighterResult : System.IEquatable<Meziantou.AspNetCore.Components.LogHighlighterResult>

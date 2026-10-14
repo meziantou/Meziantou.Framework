@@ -1439,6 +1439,62 @@ public sealed class VectorizedKernelTests
     }
 
     [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(11)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HevcIntraPredictionMatchesTheScalarReferences(int bitDepth)
+    {
+        // Every angular mode, the planar mode and the filtering of the neighbouring samples, for every block size, with
+        // random neighbouring samples and the extremes of the range
+        var random = new Random(bitDepth);
+        var maxValue = (1 << bitDepth) - 1;
+        const int Stride = 40;
+        for (var log2 = 2; log2 <= 5; log2++)
+        {
+            var nTbS = 1 << log2;
+            var p = new ushort[HevcIntraPredictor.MaxNeighbourCount];
+            for (var round = 0; round < 40; round++)
+            {
+                for (var i = 0; i < p.Length; i++)
+                {
+                    p[i] = (ushort)(round % 4 is 0 ? (random.Next(2) is 0 ? 0 : maxValue) : random.Next(maxValue + 1));
+                }
+
+                var neighbours = p.AsSpan(0, (4 * nTbS) + 1);
+                for (var mode = 2; mode <= 34; mode++)
+                {
+                    foreach (var edgeFilter in new[] { false, true })
+                    {
+                        var expected = new ushort[Stride * nTbS];
+                        var actual = new ushort[Stride * nTbS];
+                        HevcIntraPredictor.PredictAngularScalar(neighbours, expected, Stride, nTbS, mode, edgeFilter, bitDepth);
+                        HevcIntraPredictor.PredictAngular(neighbours, actual, Stride, nTbS, mode, edgeFilter, bitDepth);
+                        Assert.Equal(expected, actual);
+                    }
+                }
+
+                var expectedPlanar = new ushort[Stride * nTbS];
+                var actualPlanar = new ushort[Stride * nTbS];
+                HevcIntraPredictor.PredictPlanarScalar(neighbours, expectedPlanar, Stride, nTbS);
+                HevcIntraPredictor.PredictPlanar(neighbours, actualPlanar, Stride, nTbS, bitDepth);
+                Assert.Equal(expectedPlanar, actualPlanar);
+
+                foreach (var strong in new[] { false, true })
+                {
+                    var expectedFiltered = new ushort[neighbours.Length];
+                    var actualFiltered = new ushort[neighbours.Length];
+                    var expectedFlag = HevcIntraPredictor.FilterScalar(neighbours, expectedFiltered, nTbS, strong, bitDepth);
+                    var actualFlag = HevcIntraPredictor.Filter(neighbours, actualFiltered, nTbS, strong, bitDepth);
+                    Assert.Equal(expectedFlag, actualFlag);
+                    Assert.Equal(expectedFiltered, actualFiltered);
+                }
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(2, 0)]
     [InlineData(2, 1)]
     [InlineData(3, 0)]

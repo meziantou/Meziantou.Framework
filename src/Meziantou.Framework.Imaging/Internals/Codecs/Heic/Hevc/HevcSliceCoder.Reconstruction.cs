@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -286,6 +287,7 @@ internal ref partial struct HevcSliceCoder
     /// Predicts a block from its neighbouring samples (clause 8.4.4.2.1 "General intra sample prediction"), into the plane
     /// of its colour component.
     /// </summary>
+    [SkipLocalsInit]
     private void PredictIntra(Av1Plane plane, int cIdx, int xTb, int yTb, int xTbY, int yTbY, int nTbS, int predModeIntra)
     {
         var subWidth = cIdx is 0 ? 1 : _sps.SubWidthC;
@@ -298,10 +300,13 @@ internal ref partial struct HevcSliceCoder
         var stride = plane.Stride;
         var corner = nTbS * 2;
         var count = (nTbS * 4) + 1;
-        Span<ushort> buffer = stackalloc ushort[2 * HevcIntraPredictor.MaxNeighbourCount];
-        Span<bool> availableBuffer = stackalloc bool[HevcIntraPredictor.MaxNeighbourCount];
+        // The samples that are not available are substituted before they are read, and the filtered samples are all
+        // written: only the availability needs to be cleared
+        Span<ushort> buffer = unsafe(stackalloc ushort[2 * HevcIntraPredictor.MaxNeighbourCount]);
+        Span<bool> availableBuffer = unsafe(stackalloc bool[HevcIntraPredictor.MaxNeighbourCount]);
         var p = buffer[..count];
         var available = availableBuffer[..count];
+        available.Clear();
         var constrainedIntraPred = _pps.ConstrainedIntraPredFlag;
 
         // The left column, p[ -1 ][ y ]
@@ -357,7 +362,7 @@ internal ref partial struct HevcSliceCoder
         switch (predModeIntra)
         {
             case HevcConstants.IntraPlanar:
-                HevcIntraPredictor.PredictPlanar(p, destination, stride, nTbS);
+                HevcIntraPredictor.PredictPlanar(p, destination, stride, nTbS, _bitDepth);
                 _tools |= HevcTools.IntraPlanar;
                 break;
 

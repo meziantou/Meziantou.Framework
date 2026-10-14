@@ -476,6 +476,31 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegEncoderNonZeroMaskMatchesTheScalarReference()
+    {
+        var random = new Random(603);
+        var coefficients = new int[64];
+        for (var round = 0; round < 5_000; round++)
+        {
+            // Sparse and dense blocks, every magnitude of a coefficient (multiples of 256 included), and single coefficients
+            var density = random.NextDouble();
+            for (var i = 0; i < 64; i++)
+            {
+                coefficients[i] = random.NextDouble() < density ? random.Next(-2048, 2048) * (round % 3 == 0 ? 256 : 1) : 0;
+            }
+
+            if (round < 64)
+            {
+                Array.Clear(coefficients);
+                coefficients[round] = round % 2 == 0 ? int.MinValue : 1 << 16;
+            }
+
+            Assert.Equal(JpegEncoderCodec.GetNonZeroMaskScalar(coefficients), JpegEncoderCodec.GetNonZeroMask(coefficients));
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegEncoderBlockExtractionMatchesTheScalarReference()
     {
         var random = new Random(602);

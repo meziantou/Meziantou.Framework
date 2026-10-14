@@ -148,6 +148,44 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         }
     }
 
+    /// <summary>Gets a mask of the non-zero values among 64 coefficients: bit <c>k</c> is set when <c>coefficients[k]</c> is not zero.</summary>
+    /// <param name="coefficients">The 64 coefficients.</param>
+    internal static ulong GetNonZeroMask(ReadOnlySpan<int> coefficients)
+    {
+        coefficients = coefficients[..64];
+        if (!Vector128.IsHardwareAccelerated)
+            return GetNonZeroMaskScalar(coefficients);
+
+        // The comparison results (all ones or zero) of 16 coefficients narrowed to 16 bytes, one mask bit each
+        ref var start = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        var zeros = 0UL;
+        for (var i = 0; i < 64; i += 16)
+        {
+            var first = Vector128.Narrow(Vector128.Equals(Load(ref start, i), Vector128<int>.Zero), Vector128.Equals(Load(ref start, i + 4), Vector128<int>.Zero));
+            var second = Vector128.Narrow(Vector128.Equals(Load(ref start, i + 8), Vector128<int>.Zero), Vector128.Equals(Load(ref start, i + 12), Vector128<int>.Zero));
+            zeros |= (ulong)Vector128.Narrow(first, second).ExtractMostSignificantBits() << i;
+        }
+
+        return ~zeros;
+
+        static Vector128<int> Load(ref int start, int index) => unsafe(Vector128.LoadUnsafe(ref start, (nuint)index));
+    }
+
+    /// <summary>The scalar reference of <see cref="GetNonZeroMask"/>.</summary>
+    internal static ulong GetNonZeroMaskScalar(ReadOnlySpan<int> coefficients)
+    {
+        var mask = 0UL;
+        for (var k = 0; k < 64; k++)
+        {
+            if (coefficients[k] != 0)
+            {
+                mask |= 1UL << k;
+            }
+        }
+
+        return mask;
+    }
+
     /// <summary>
     /// Copies an 8x8 block of samples starting at (<paramref name="x0"/>, <paramref name="y0"/>) of an MCU-row plane. With
     /// subsampling factors above 1, each block sample is the mean of the <c>factorX x factorY</c> full-resolution samples
@@ -975,53 +1013,40 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             _predictions[component] = coefficients[0];
             WriteValue(destination, ref position, dc, symbolHigh: 0, difference);
 
-            // AC: run lengths of zeros (ZRL for 16), EOB after the last nonzero coefficient (T.81 F.1.2.2)
-            var run = 0;
-            for (var k = 1; k < 64; k++)
+            // AC: run lengths of zeros (ZRL for 16), EOB after the last nonzero coefficient (T.81 F.1.2.2); the nonzero
+            // coefficients are visited through a bit mask
+            var mask = GetNonZeroMask(coefficients) & ~1UL;
+            var previous = 0;
+            while (mask != 0)
             {
-                var value = coefficients[k];
-                if (value == 0)
-                {
-                    run++;
-                    continue;
-                }
-
+                var k = BitOperations.TrailingZeroCount(mask);
+                mask &= mask - 1;
+                var run = k - previous - 1;
                 while (run > 15)
                 {
                     WriteSymbol(destination, ref position, ac, 0xF0);
                     run -= 16;
                 }
 
-                WriteValue(destination, ref position, ac, run, value);
-                run = 0;
+                WriteValue(destination, ref position, ac, run, coefficients[k]);
+                previous = k;
             }
 
-            if (run > 0)
+            if (previous < 63)
             {
                 WriteSymbol(destination, ref position, ac, 0x00);
             }
         }
 
-        /// <summary>Writes the symbol <c>(symbolHigh &lt;&lt; 4) | SSSS</c> for a value, then its SSSS additional bits (negative values as <c>value - 1</c>).</summary>
+        /// <summary>Writes the symbol <c>(symbolHigh &lt;&lt; 4) | SSSS</c> for a value, then its SSSS additional bits (negative values as <c>value - 1</c>), as one write.</summary>
         private void WriteValue(Span<byte> destination, ref int position, JpegHuffmanEncoder table, int symbolHigh, int value)
         {
             var magnitude = (uint)Math.Abs(value);
             var size = magnitude == 0 ? 0 : 32 - BitOperations.LeadingZeroCount(magnitude);
-            WriteSymbol(destination, ref position, table, (symbolHigh << 4) | size);
-            if (size > 0)
-            {
-                var bits = value < 0 ? (uint)(value - 1) & ((1u << size) - 1) : (uint)value;
-                _bits.Write(destination, ref position, bits, size);
-            }
+            var bits = value < 0 ? (uint)(value - 1) & ((1u << size) - 1) : (uint)value;
+            _bits.WriteSymbolAndBits(destination, ref position, table, (symbolHigh << 4) | size, bits, size);
         }
 
-        private void WriteSymbol(Span<byte> destination, ref int position, JpegHuffmanEncoder table, int symbol)
-        {
-            var length = table.GetLength(symbol);
-            if (length == 0)
-                throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"The Huffman table has no code for the symbol 0x{symbol:X2}."));
-
-            _bits.Write(destination, ref position, table.GetCode(symbol), length);
-        }
+        private void WriteSymbol(Span<byte> destination, ref int position, JpegHuffmanEncoder table, int symbol) => _bits.WriteSymbolAndBits(destination, ref position, table, symbol, 0, 0);
     }
 }

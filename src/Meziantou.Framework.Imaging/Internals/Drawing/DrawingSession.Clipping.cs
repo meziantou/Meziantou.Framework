@@ -26,7 +26,7 @@ internal sealed partial class DrawingSession
     public void PushClip(RectangleD rectangle)
     {
         DrawingGuard.Rectangle(rectangle, nameof(rectangle));
-        if (_hasTransform || !IsWhole(rectangle.Left) || !IsWhole(rectangle.Top) || !IsWhole(rectangle.Right) || !IsWhole(rectangle.Bottom))
+        if (_hasTransform || _isProjective || !IsWhole(rectangle.Left) || !IsWhole(rectangle.Top) || !IsWhole(rectangle.Right) || !IsWhole(rectangle.Bottom))
         {
             var sink = BeginFill();
             AddRectangle(sink, rectangle);

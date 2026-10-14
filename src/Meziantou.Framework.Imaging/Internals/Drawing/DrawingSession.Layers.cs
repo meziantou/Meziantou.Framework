@@ -80,12 +80,28 @@ internal sealed partial class DrawingSession
 
     /// <summary>Starts a layer that is blurred when it ends, before it is drawn.</summary>
     /// <param name="sigma">The standard deviation of the blur.</param>
+    /// <returns>The session the drawings of the layer are made by: this one, or the one of an image of the plane of the drawing under a projective transformation.</returns>
     /// <exception cref="ArgumentException">The standard deviation is not a finite number.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The standard deviation is negative or too large.</exception>
     /// <exception cref="ImageResourceLimitException">The image of the layer exceeds the allocation limit.</exception>
-    public void PushBlur(double sigma)
+    public DrawingSession PushBlur(double sigma)
     {
         GaussianKernel.Validate(sigma, nameof(sigma));
+        if (_isProjective)
+        {
+            // Blurred in the plane of the drawing, then seen in perspective
+            var session = PushProjectedLayer(GaussianKernel.GetRadius(sigma) + 1);
+            try
+            {
+                return session.PushBlur(sigma);
+            }
+            catch
+            {
+                DiscardProjectedLayer();
+                throw;
+            }
+        }
+
         sigma = ToCanvasBlur(sigma);
 
         // What is drawn around the pixels the clip can show spreads over them: the layer keeps that much more
@@ -96,11 +112,18 @@ internal sealed partial class DrawingSession
         level.Effect = sigma > 0 ? LayerEffect.Blur : LayerEffect.None;
         level.IsLuminanceMask = false;
         level.BlurSigma = sigma;
+        return this;
     }
 
-    /// <summary>Gets the standard deviation a blur of the drawing has on the canvas: a transformation that enlarges the drawing blurs it more, by the square root of what it does to an area.</summary>
+    /// <summary>
+    /// Gets the standard deviation a blur of the drawing has on the canvas: a transformation that enlarges the drawing
+    /// blurs it more, by the square root of what it does to an area, or by the factor of a projective transformation
+    /// where W is the one of the origin.
+    /// </summary>
     private double ToCanvasBlur(double sigma)
-        => _hasTransform ? Math.Min(sigma * Math.Sqrt(Math.Abs(_transform.Determinant)), GaussianKernel.MaxSigma) : sigma;
+        => _isProjective ? Math.Min(sigma * _transformScale, GaussianKernel.MaxSigma)
+        : _hasTransform ? Math.Min(sigma * Math.Sqrt(Math.Abs(_transform.Determinant)), GaussianKernel.MaxSigma)
+        : sigma;
 
     /// <summary>Starts a layer whose drawings are drawn with their shadow when it ends.</summary>
     /// <param name="color">The color of the shadow; its alpha is the opacity of the shadow of an opaque drawing.</param>
@@ -110,10 +133,26 @@ internal sealed partial class DrawingSession
     /// <exception cref="ArgumentOutOfRangeException">The offset is beyond the largest coordinate, or the standard deviation is negative or too large.</exception>
     /// <exception cref="ImageResourceLimitException">The image of the layer exceeds the allocation limit.</exception>
     /// <param name="isInner"><see langword="true"/> for a shadow cast on the drawings by what is around them, instead of the one they cast.</param>
-    public void PushShadow(Rgba64 color, PointD offset, double sigma, bool isInner = false)
+    /// <returns>The session the drawings of the layer are made by: this one, or the one of an image of the plane of the drawing under a projective transformation.</returns>
+    public DrawingSession PushShadow(Rgba64 color, PointD offset, double sigma, bool isInner = false)
     {
         DrawingGuard.Point(offset, nameof(offset));
         GaussianKernel.Validate(sigma, nameof(sigma));
+        if (_isProjective)
+        {
+            // The shadow is cast in the plane of the drawing, then seen in perspective with it
+            var session = PushProjectedLayer(GaussianKernel.GetRadius(sigma) + Math.Max(Math.Abs(offset.X), Math.Abs(offset.Y)) + 1);
+            try
+            {
+                return session.PushShadow(color, offset, sigma, isInner);
+            }
+            catch
+            {
+                DiscardProjectedLayer();
+                throw;
+            }
+        }
+
         if (_hasTransform)
         {
             // The offset is a distance of the drawing, and so is the blur: a transformation that enlarges the drawing
@@ -136,6 +175,7 @@ internal sealed partial class DrawingSession
         level.ShadowOffsetX = offset.X;
         level.ShadowOffsetY = offset.Y;
         level.BlurSigma = sigma;
+        return this;
     }
 
     /// <summary>Starts a layer on the pixels the clip can show, and on a margin around them.</summary>
@@ -185,6 +225,24 @@ internal sealed partial class DrawingSession
     public void PopLayer(bool draw)
     {
         var level = _layers[--_layerDepth];
+        if (level.Projected is { } scope)
+        {
+            // A layer of an image of the plane of the drawing: it ends in its own session, then the image is drawn in perspective
+            level.Projected = null;
+            try
+            {
+                scope.Session.PopLayer(draw);
+            }
+            catch
+            {
+                scope.Release();
+                throw;
+            }
+
+            EndProjectedScope(scope, draw, CompositeMode.SourceOver, BlendMode.Normal);
+            return;
+        }
+
         _clipDepth--;
         _frames = level.ParentFrames!;
         _storages = level.ParentStorages!;
@@ -289,6 +347,13 @@ internal sealed partial class DrawingSession
         while (_layerDepth > 0)
         {
             var level = _layers[--_layerDepth];
+            if (level.Projected is { } scope)
+            {
+                level.Projected = null;
+                scope.Release();
+                continue;
+            }
+
             _frames = level.ParentFrames!;
             _storages = level.ParentStorages!;
             level.End();
@@ -330,6 +395,9 @@ internal sealed partial class DrawingSession
         public PixelStorage[]? ParentStorages { get; set; }
 
         public uint Opacity { get; set; }
+
+        /// <summary>Gets or sets the session on an image of the plane of the drawing the layer is drawn by, under a projective transformation; the other properties are then not used.</summary>
+        public ProjectedScope? Projected { get; set; }
 
         public CompositeMode Mode { get; set; }
 

@@ -427,6 +427,32 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>A card turned in three dimensions and seen in perspective, as the 3D transforms of CSS draw it.</summary>
+    // begin-snippet: draw-3d
+    public static void DrawTiltedCard(string outputPath)
+    {
+        using var image = new Image<Rgba32>(240, 160, Colors.WhiteSmoke);
+        var card = new RectangleD(60, 30, 120, 100);
+        var face = new LinearGradientBrush(new PointD(60, 0), new PointD(180, 0), [new GradientStop(0, Colors.SteelBlue), new GradientStop(1, Colors.MidnightBlue)]);
+
+        // "perspective: 300px" and "transform: rotateY(40deg)", both around the center of the image: the turn of the
+        // card applies first, then the perspective, combined in three dimensions
+        var toCenter = Transform3D.CreateTranslation(-120, -80, 0);
+        var fromCenter = Transform3D.CreateTranslation(120, 80, 0);
+        var perspective = toCenter.Then(Transform3D.CreatePerspective(300)).Then(fromCenter);
+        var turn = toCenter.Then(Transform3D.CreateRotationY(40)).Then(fromCenter);
+
+        image.Draw(canvas => canvas.Transform(perspective, viewer => viewer.Transform(turn, plane =>
+        {
+            // Everything is drawn in the plane of the card: its shadow, its gradient, its border
+            plane.Shadow(new Rgba32(0, 0, 0, 90), new PointD(0, 6), 6, shadowed => shadowed.FillRoundedRectangle(face, card, 12));
+            plane.StrokeRoundedRectangle(new Pen(Colors.White, 3), card.Inflate(-10, -10), 6);
+        })));
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
     /// <summary>Hard edges for pixel art, and paints mixed in linear light.</summary>
     // begin-snippet: draw-rendering
     public static void DrawSprite(string outputPath)

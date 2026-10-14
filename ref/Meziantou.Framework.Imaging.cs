@@ -920,6 +920,37 @@ namespace Meziantou.Framework.Imaging
         public static implicit operator Meziantou.Framework.Imaging.PointD(Meziantou.Framework.Imaging.Point point) => throw null;
     }
 
+    public readonly struct ProjectiveTransform : System.IEquatable<Meziantou.Framework.Imaging.ProjectiveTransform>
+    {
+        public double Determinant { get => throw null; }
+        public static Meziantou.Framework.Imaging.ProjectiveTransform Identity { get => throw null; }
+        public bool IsAffine { get => throw null; }
+        public bool IsIdentity { get => throw null; }
+        public double M11 { get => throw null; }
+        public double M12 { get => throw null; }
+        public double M13 { get => throw null; }
+        public double M21 { get => throw null; }
+        public double M22 { get => throw null; }
+        public double M23 { get => throw null; }
+        public double M31 { get => throw null; }
+        public double M32 { get => throw null; }
+        public double M33 { get => throw null; }
+        public ProjectiveTransform(double m11, double m12, double m13, double m21, double m22, double m23, double m31, double m32, double m33) { }
+        public static Meziantou.Framework.Imaging.ProjectiveTransform CreateFromQuadrilateral(Meziantou.Framework.Imaging.RectangleD source, Meziantou.Framework.Imaging.PointD topLeft, Meziantou.Framework.Imaging.PointD topRight, Meziantou.Framework.Imaging.PointD bottomRight, Meziantou.Framework.Imaging.PointD bottomLeft) => throw null;
+        public bool Equals(Meziantou.Framework.Imaging.ProjectiveTransform other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static Meziantou.Framework.Imaging.ProjectiveTransform Multiply(Meziantou.Framework.Imaging.ProjectiveTransform first, Meziantou.Framework.Imaging.ProjectiveTransform second) => throw null;
+        public Meziantou.Framework.Imaging.ProjectiveTransform Then(Meziantou.Framework.Imaging.ProjectiveTransform next) => throw null;
+        public override string ToString() => throw null;
+        public bool TryInvert(out Meziantou.Framework.Imaging.ProjectiveTransform inverse) => throw null;
+        public bool TryTransform(Meziantou.Framework.Imaging.PointD point, out Meziantou.Framework.Imaging.PointD result) => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.ProjectiveTransform left, Meziantou.Framework.Imaging.ProjectiveTransform right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.ProjectiveTransform left, Meziantou.Framework.Imaging.ProjectiveTransform right) => throw null;
+        public static Meziantou.Framework.Imaging.ProjectiveTransform operator *(Meziantou.Framework.Imaging.ProjectiveTransform left, Meziantou.Framework.Imaging.ProjectiveTransform right) => throw null;
+        public static implicit operator Meziantou.Framework.Imaging.ProjectiveTransform(Meziantou.Framework.Imaging.AffineTransform transform) => throw null;
+    }
+
     public readonly struct Rectangle : System.IEquatable<Meziantou.Framework.Imaging.Rectangle>
     {
         public int Bottom { get => throw null; }
@@ -1104,6 +1135,48 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.Size left, Meziantou.Framework.Imaging.Size right) => throw null;
     }
 
+    public readonly struct Transform3D : System.IEquatable<Meziantou.Framework.Imaging.Transform3D>
+    {
+        public static Meziantou.Framework.Imaging.Transform3D Identity { get => throw null; }
+        public bool IsIdentity { get => throw null; }
+        public double M11 { get => throw null; }
+        public double M12 { get => throw null; }
+        public double M13 { get => throw null; }
+        public double M14 { get => throw null; }
+        public double M21 { get => throw null; }
+        public double M22 { get => throw null; }
+        public double M23 { get => throw null; }
+        public double M24 { get => throw null; }
+        public double M31 { get => throw null; }
+        public double M32 { get => throw null; }
+        public double M33 { get => throw null; }
+        public double M34 { get => throw null; }
+        public double M41 { get => throw null; }
+        public double M42 { get => throw null; }
+        public double M43 { get => throw null; }
+        public double M44 { get => throw null; }
+        public Transform3D(double m11, double m12, double m13, double m14, double m21, double m22, double m23, double m24, double m31, double m32, double m33, double m34, double m41, double m42, double m43, double m44) { }
+        public static Meziantou.Framework.Imaging.Transform3D CreatePerspective(double distance) => throw null;
+        public static Meziantou.Framework.Imaging.Transform3D CreateRotation(double axisX, double axisY, double axisZ, double degrees) => throw null;
+        public static Meziantou.Framework.Imaging.Transform3D CreateRotationX(double degrees) => throw null;
+        public static Meziantou.Framework.Imaging.Transform3D CreateRotationY(double degrees) => throw null;
+        public static Meziantou.Framework.Imaging.Transform3D CreateRotationZ(double degrees) => throw null;
+        public static Meziantou.Framework.Imaging.Transform3D CreateScale(double x, double y, double z) => throw null;
+        public static Meziantou.Framework.Imaging.Transform3D CreateTranslation(double x, double y, double z) => throw null;
+        public bool Equals(Meziantou.Framework.Imaging.Transform3D other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static Meziantou.Framework.Imaging.Transform3D Multiply(Meziantou.Framework.Imaging.Transform3D first, Meziantou.Framework.Imaging.Transform3D second) => throw null;
+        public Meziantou.Framework.Imaging.Transform3D Then(Meziantou.Framework.Imaging.Transform3D next) => throw null;
+        public Meziantou.Framework.Imaging.ProjectiveTransform ToProjectiveTransform() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Transform3D left, Meziantou.Framework.Imaging.Transform3D right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Transform3D left, Meziantou.Framework.Imaging.Transform3D right) => throw null;
+        public static Meziantou.Framework.Imaging.Transform3D operator *(Meziantou.Framework.Imaging.Transform3D left, Meziantou.Framework.Imaging.Transform3D right) => throw null;
+        public static implicit operator Meziantou.Framework.Imaging.Transform3D(Meziantou.Framework.Imaging.AffineTransform transform) => throw null;
+        public static implicit operator Meziantou.Framework.Imaging.Transform3D(Meziantou.Framework.Imaging.ProjectiveTransform transform) => throw null;
+    }
+
     public class UnknownImageFormatException : Meziantou.Framework.Imaging.ImageException
     {
         public UnknownImageFormatException(string? message) { }
@@ -1213,6 +1286,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.PointD position, double opacity = 1d) { }
         public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.RectangleD destination, double opacity = 1d) { }
         public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.AffineTransform transform, Meziantou.Framework.Imaging.Drawing.ImageSampling sampling, double opacity = 1d) { }
+        public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.ProjectiveTransform transform, Meziantou.Framework.Imaging.Drawing.ImageSampling sampling, double opacity = 1d) { }
         public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.Rectangle sourceRegion, Meziantou.Framework.Imaging.RectangleD destination, double opacity = 1d) { }
         public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.RectangleD destination, Meziantou.Framework.Imaging.Drawing.ImageSampling sampling, double opacity = 1d) { }
         public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.Rectangle sourceRegion, Meziantou.Framework.Imaging.RectangleD destination, Meziantou.Framework.Imaging.Drawing.ImageSampling sampling, double opacity = 1d) { }
@@ -1260,7 +1334,11 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void StrokeText(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.PointD origin) { }
         public void StrokeText(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.TextPathOptions? options = null) { }
         public void Transform(Meziantou.Framework.Imaging.AffineTransform transform, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
+        public void Transform(Meziantou.Framework.Imaging.ProjectiveTransform transform, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
+        public void Transform(Meziantou.Framework.Imaging.Transform3D transform, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void Transform<TState>(Meziantou.Framework.Imaging.AffineTransform transform, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
+        public void Transform<TState>(Meziantou.Framework.Imaging.ProjectiveTransform transform, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
+        public void Transform<TState>(Meziantou.Framework.Imaging.Transform3D transform, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
     }
 
     public enum FillRule

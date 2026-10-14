@@ -1793,6 +1793,263 @@ public sealed class DrawingSessionTests
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    // Projective transformations and transformations of space
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void AnAffineProjectiveTransformationDrawsWhatTheAffineOneDraws()
+    {
+        var transform = new AffineTransform(0.8, 0.3, -0.4, 1.1, 9, 2);
+        var polygon = new VectorPathBuilder().AddPolygon([new PointD(2, 1), new PointD(13.5, 3), new PointD(9, 12.25), new PointD(1.5, 8)]).Build();
+        var curve = new VectorPathBuilder().MoveTo(2, 9).CubicBezierTo(3, -4, 9, 16, 13, 2).AddEllipse(new PointD(7, 7), 5, 3, 25).Build();
+        GradientStop[] stops = [new(0, new Rgba32(255, 0, 0)), new(1, new Rgba32(0, 0, 255, 60))];
+        var gradient = new LinearGradientBrush(new PointD(1, 2), new PointD(12, 9), stops);
+        using var texture = DrawingTestSupport.CreateRandom(PixelFormat.Rgba32, 5, 4, new Random(3).Next);
+        var round = new Pen(White, 2) { LineJoin = LineJoin.Round, LineCap = LineCap.Round, DashPattern = [3, 1] };
+        var fixedPen = new Pen(gradient, 1.5) { ScalesWithTransform = false };
+        DrawingAction drawing = canvas =>
+        {
+            canvas.Fill(gradient, curve);
+            canvas.Stroke(round, polygon);
+            canvas.Stroke(fixedPen, curve);
+            canvas.DrawImage(texture.Frames[0], new RectangleD(1, 2, 10, 6), ImageSampling.Smooth);
+            canvas.Clip(polygon, clipped => clipped.Fill(new ImageBrush(texture.Frames[0]) { WrapMode = ImageWrapMode.Reflect }));
+            canvas.Shadow(new Rgba32(0, 0, 0, 128), new PointD(2, 1), 1.5, shadowed => shadowed.FillCircle(gradient, new PointD(8, 8), 4));
+            canvas.Blur(1, blurred => blurred.FillRectangle(White, new RectangleD(3, 3, 4, 2)));
+        };
+
+        var expected = Draw(canvas => canvas.Transform(transform, drawing));
+
+        // The third column is (0, 0, 1): the transformation is the affine one, and so is a multiple of it by 2, or the
+        // transformation of space it is
+        Assert.Equal(expected, Draw(canvas => canvas.Transform((ProjectiveTransform)transform, drawing)));
+        Assert.Equal(expected, Draw(canvas => canvas.Transform(new ProjectiveTransform(1.6, 0.6, 0, -0.8, 2.2, 0, 18, 4, 2), drawing)));
+        Assert.Equal(expected, Draw(canvas => canvas.Transform((Transform3D)transform, drawing)));
+        Assert.Equal(expected, Draw(canvas => canvas.Transform(Transform3D.CreateTranslation(0, 0, 40), outer => outer.Transform((Transform3D)transform, drawing))));
+
+        static int[] Draw(DrawingAction action)
+        {
+            using var image = new Image<Rgba32>(32, 28, new Rgba32(10, 20, 30, 200));
+            image.Draw(action, Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
+    public void APlaneInPerspectiveIsDrawnFromTheImagesOfItsPoints()
+    {
+        var transform = ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, 10, 10), new PointD(3, 2), new PointD(27, 5), new PointD(22, 21), new PointD(6, 25));
+        PointD[] points = [new(1, 1), new(9, 2), new(8.5, 9), new(4, 6.5), new(2, 8)];
+        var projected = points.Select(point => transform.TryTransform(point, out var image) ? image : throw new InvalidOperationException()).ToArray();
+
+        // A straight side stays straight: a polygon is the polygon of the images of its vertices, bit for bit, and so
+        // is the stroke of a pen that does not scale. A pen that scales is the stroke of the plane, seen in perspective:
+        // the pieces of the stroke, transformed.
+        var miter = new Pen(White, 1.25) { LineJoin = LineJoin.Miter };
+        var fixedPen = new Pen(White, 1.5) { ScalesWithTransform = false, LineJoin = LineJoin.Bevel, LineCap = LineCap.Square };
+        var polygon = new VectorPathBuilder().AddPolygon(points).Build();
+        AssertSame(canvas => canvas.FillPolygon(White, projected), canvas => canvas.Transform(transform, inner => inner.FillPolygon(White, points)));
+        AssertSame(canvas => canvas.StrokePolygon(fixedPen, projected), canvas => canvas.Transform(transform, inner => inner.StrokePolygon(fixedPen, points)));
+        AssertSame(canvas => canvas.Transform(transform, inner => inner.Fill(White, polygon.Widen(miter))), canvas => canvas.Transform(transform, inner => inner.Stroke(miter, polygon)));
+        AssertSame(canvas => canvas.FillPolygon(White, projected), canvas => canvas.Transform(transform, inner => inner.Clip(polygon, clipped => clipped.Fill(White))));
+
+        // An image on the rectangle is the image on the quadrilateral, up to the rounding of two ways of computing
+        // the same transformation
+        using var texture = DrawingTestSupport.CreateRandom(PixelFormat.Rgba32, 5, 4, new Random(5).Next);
+        AssertClose(
+            canvas => canvas.DrawImage(texture.Frames[0], new PointD(3, 2), new PointD(27, 5), new PointD(22, 21), new PointD(6, 25), ImageSampling.Smooth),
+            canvas => canvas.Transform(transform, inner => inner.DrawImage(texture.Frames[0], new RectangleD(0, 0, 10, 10), ImageSampling.Smooth)),
+            1);
+        AssertClose(
+            canvas => canvas.DrawImage(texture.Frames[0], new PointD(3, 2), new PointD(27, 5), new PointD(22, 21), new PointD(6, 25)),
+            canvas => canvas.DrawImage(texture.Frames[0], ((ProjectiveTransform)AffineTransform.CreateScale(2, 2.5)).Then(transform), ImageSampling.Bilinear),
+            1);
+
+        // The color of a brush is the one of the point of the plane the center of the pixel comes from
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(10, 0), [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))]);
+        using var image = new Image<Rgba32>(32, 28, new Rgba32(10, 20, 30));
+        image.Draw(canvas => canvas.Transform(transform, inner => inner.Fill(gradient)), Ct);
+        Assert.True(transform.TryInvert(out var inverse));
+        for (var y = 0; y < 28; y++)
+        {
+            for (var x = 0; x < 32; x++)
+            {
+                Assert.True(inverse.TryTransform(new PointD(x + 0.5, y + 0.5), out var point));
+                var level = 255 * Math.Clamp(point.X / 10, 0, 1);
+                Assert.InRange(image.Frames[0][x, y].R, Math.Floor(level), Math.Ceiling(level));
+            }
+        }
+
+        static void AssertSame(DrawingAction expected, DrawingAction actual) => AssertClose(expected, actual, 0);
+
+        static void AssertClose(DrawingAction expected, DrawingAction actual, int tolerance)
+        {
+            using var first = new Image<Rgba32>(32, 28, new Rgba32(10, 20, 30, 200));
+            using var second = new Image<Rgba32>(32, 28, new Rgba32(10, 20, 30, 200));
+            first.Draw(expected, Ct);
+            second.Draw(actual, Ct);
+            var left = DrawingTestSupport.ReadSamples(first.Frames[0]);
+            var right = DrawingTestSupport.ReadSamples(second.Frames[0]);
+            Assert.NotEqual(Enumerable.Repeat<int[]>([10, 20, 30, 200], 32 * 28).SelectMany(pixel => pixel).ToArray(), left);
+            for (var i = 0; i < left.Length; i++)
+            {
+                Assert.InRange(right[i], left[i] - tolerance, left[i] + tolerance, message: $"sample {i}");
+            }
+        }
+    }
+
+    [Fact]
+    public void WhatIsBeyondTheHorizonOfThePlaneIsNotDrawn()
+    {
+        // W = 1 - x / 10, then a translation by 20: the plane goes to infinity at x = 10, whose image is the vertical
+        // line x = 10 of the canvas, and x becomes (20 - x) / (1 - x / 10) on the canvas. What is on the other side of
+        // the horizon (x > 10) is behind the viewer and has no image.
+        var transform = new ProjectiveTransform(1, 0, -0.1, 0, 1, 0, 0, 0, 1).Then(AffineTransform.CreateTranslation(20, 0));
+        var gray = new Rgba32(50, 50, 50);
+        using var image = new Image<Rgba32>(32, 4, gray);
+
+        // A rectangle that crosses the horizon is cut there, whatever the size of its image, and nothing is
+        // rejected. Its left side, x = -100, is at 20 - 10 + 100 / 11 on the canvas: it covers 1 / 11 of the pixel 10.
+        image.Draw(canvas => canvas.Transform(transform, inner => inner.FillRectangle(White, new RectangleD(-100, -1000, 200, 2000))), Ct);
+        for (var x = 0; x < 32; x++)
+        {
+            var pixel = image.Frames[0][x, 1];
+            if (x < 10)
+            {
+                Assert.Equal(gray, pixel);
+            }
+            else if (x == 10)
+            {
+                Assert.Equal(69, pixel.R);
+            }
+            else
+            {
+                Assert.Equal(new Rgba32(255, 255, 255), pixel);
+            }
+        }
+
+        // A drawing that is entirely beyond the horizon draws nothing, and a brush has no color beyond it
+        image.Draw(canvas => canvas.Clear(gray), Ct);
+        image.Draw(canvas => canvas.Transform(transform, inner => inner.FillRectangle(White, new RectangleD(12, 0, 4, 4))), Ct);
+        for (var x = 0; x < 32; x++)
+        {
+            Assert.Equal(gray, image.Frames[0][x, 1]);
+        }
+
+        var stops = new[] { new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 255)) };
+        using var texture = new Image<Rgba32>(2, 2, new Rgba32(0, 255, 0));
+        foreach (var brush in new Brush[] { new LinearGradientBrush(new PointD(0, 0), new PointD(1, 0), stops), new ImageBrush(texture.Frames[0]) { WrapMode = ImageWrapMode.Repeat } })
+        {
+            image.Draw(canvas => canvas.Clear(gray), Ct);
+            image.Draw(canvas => canvas.Transform(transform, inner => inner.Fill(brush)), Ct);
+            Assert.Equal(gray, image.Frames[0][9, 1]);
+            Assert.NotEqual(gray, image.Frames[0][10, 1]);
+            Assert.NotEqual(gray, image.Frames[0][31, 1]);
+        }
+
+        // Lines across the horizon, stroked with a pen that scales or not, and images: they go through the vanishing
+        // point of the canvas, (10, 0)
+        image.Draw(canvas => canvas.Clear(gray), Ct);
+        image.Draw(
+            canvas => canvas.Transform(transform, inner =>
+            {
+                inner.StrokeLine(new Pen(White, 1) { ScalesWithTransform = false }, new PointD(-100, 1.5), new PointD(100, 1.5));
+                inner.StrokeLine(new Pen(White, 0.5), new PointD(-100, 3), new PointD(100, 3));
+                inner.DrawImage(texture.Frames[0], new RectangleD(-100, 0, 200, 1));
+                inner.DrawImage(texture.Frames[0], new ProjectiveTransform(1, 0, 0.5, 0, 1, 0, 0, 0, 1), ImageSampling.Bilinear);
+            }),
+            Ct);
+        for (var y = 0; y < 4; y++)
+        {
+            for (var x = 0; x < 10; x++)
+            {
+                Assert.Equal(gray, image.Frames[0][x, y]);
+            }
+        }
+
+        // At x = 0 of the plane, the canvas is the plane moved by 20: the image covers the rows from 0 to 1, the
+        // line of the pen that does not scale is one pixel wide around 1.5 there
+        Assert.Equal(new Rgba32(0, 255, 0), image.Frames[0][20, 0]);
+        Assert.Equal(new Rgba32(0, 255, 0), image.Frames[0][25, 0]);
+        Assert.NotEqual(gray, image.Frames[0][28, 2]);
+    }
+
+    [Fact]
+    public void TransformationsOfSpaceInsideEachOtherKeepTheirDepth()
+    {
+        // A rotation around the vertical axis through the center of the canvas, inside a perspective seen from its
+        // center: as the 3D transforms of two nested elements of CSS
+        var toCenter = Transform3D.CreateTranslation(-16, -14, 0);
+        var fromCenter = Transform3D.CreateTranslation(16, 14, 0);
+        var perspective = toCenter.Then(Transform3D.CreatePerspective(40)).Then(fromCenter);
+        var rotation = toCenter.Then(Transform3D.CreateRotationY(50)).Then(fromCenter);
+        var square = new RectangleD(6, 4, 20, 20);
+        var nested = Draw(canvas => canvas.Transform(perspective, outer => outer.Transform(rotation, inner => inner.FillRectangle(White, square))));
+
+        // The two transformations of space are combined: the one of their product
+        Assert.Equal(nested, Draw(canvas => canvas.Transform(rotation.Then(perspective), inner => inner.FillRectangle(White, square))));
+        Assert.Equal(nested, Draw(canvas => canvas.Transform(rotation.Then(perspective).ToProjectiveTransform(), inner => inner.FillRectangle(White, square))));
+
+        // Each flattened to the plane on its own, the rotation is a horizontal scaling that the perspective does not
+        // see: the depth it gives to the right side is lost
+        Assert.NotEqual(nested, Draw(canvas => canvas.Transform(perspective.ToProjectiveTransform(), outer => outer.Transform(rotation.ToProjectiveTransform(), inner => inner.FillRectangle(White, square)))));
+
+        // The right side turns away from the viewer: it is smaller than the left one
+        Assert.True(CountColumn(nested, 10) > CountColumn(nested, 21) + 2);
+
+        static int CountColumn(int[] samples, int x)
+        {
+            var count = 0;
+            for (var y = 0; y < 28; y++)
+            {
+                count += samples[(((y * 32) + x) * 4) + 3] == 255 ? 1 : 0;
+            }
+
+            return count;
+        }
+
+        static int[] Draw(DrawingAction action)
+        {
+            using var image = new Image<Rgba32>(32, 28);
+            image.Draw(action, Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
+    public void ShadowsAndBlursInPerspectiveAreDrawnInThePlane()
+    {
+        // A transformation whose W changes by a billionth across the canvas: the shadow, the blur and the inner shadow
+        // are drawn on an image of the plane, at the scale of the transformation, then that image in perspective. The
+        // image is on the pixels of the canvas, so the result is the one of the affine transformation, up to rounding.
+        var affine = new AffineTransform(2, 0, 0, 2, 4, 2);
+        var projective = new ProjectiveTransform(2, 0, 1e-9, 0, 2, 0, 4, 2, 1);
+        var black = new Rgba32(0, 0, 0, 160);
+        var pattern = new PatternBrush(new RectangleD(0, 0, 2, 2), tile => tile.FillRectangle(new Rgba32(200, 30, 30), new RectangleD(0, 0, 1, 1)));
+        DrawingAction drawing = canvas =>
+        {
+            canvas.Shadow(black, new PointD(1, 1.5), 1, shadowed => shadowed.FillRectangle(White, new RectangleD(2, 2, 5, 4)));
+            canvas.InnerShadow(black, new PointD(0.5, 0.5), 0.75, shadowed => shadowed.FillRectangle(new Rgba32(30, 200, 30), new RectangleD(8, 1, 4, 6)));
+            canvas.Blur(0.8, blurred => blurred.FillRectangle(new Rgba32(30, 30, 200), new RectangleD(2, 8, 4, 3)));
+            canvas.FillRectangle(pattern, new RectangleD(8, 8, 4, 3));
+        };
+
+        using var expected = new Image<Rgba32>(32, 28, new Rgba32(240, 240, 240));
+        using var actual = new Image<Rgba32>(32, 28, new Rgba32(240, 240, 240));
+        expected.Draw(canvas => canvas.Transform(affine, drawing), Ct);
+        actual.Draw(canvas => canvas.Transform(projective, drawing), Ct);
+        var left = DrawingTestSupport.ReadSamples(expected.Frames[0]);
+        var right = DrawingTestSupport.ReadSamples(actual.Frames[0]);
+        for (var i = 0; i < left.Length; i++)
+        {
+            Assert.InRange(right[i], left[i] - 2, left[i] + 2, message: $"sample {i}");
+        }
+
+        // The canvas of the callback is the canvas, whatever it is drawn on
+        actual.Draw(canvas => canvas.Transform(projective, inner => inner.Shadow(black, default, 1, shadowed => Assert.Equal((32, 28), (shadowed.Width, shadowed.Height)))), Ct);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
     // Masks
     // -----------------------------------------------------------------------------------------------------------------
 

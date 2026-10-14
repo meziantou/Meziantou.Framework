@@ -194,7 +194,7 @@ public sealed class DrawingFuzzTests
         var count = random.Next(1, 7);
         for (var i = 0; i < count; i++)
         {
-            switch (random.Next(22))
+            switch (random.Next(23))
             {
                 case 0:
                     canvas.Fill(CreateBrush(random, canvas, context));
@@ -309,6 +309,29 @@ public sealed class DrawingFuzzTests
                     break;
                 case 20:
                     Measure(canvas, random, context);
+                    break;
+                case 21:
+                    // A plane seen in perspective: what crosses its horizon is cut, nothing is rejected
+                    if (depth >= 3)
+                    {
+                        canvas.Fill(CreateBrush(random, canvas, context));
+                    }
+                    else if (random.Chance(50))
+                    {
+                        canvas.Transform(CreateProjectiveTransform(random, canvas), inner => Paint(inner, random, context, depth + 1));
+                    }
+                    else
+                    {
+                        var center = Transform3D.CreateTranslation(-canvas.Width / 2.0, -canvas.Height / 2.0, 0);
+                        var back = Transform3D.CreateTranslation(canvas.Width / 2.0, canvas.Height / 2.0, 0);
+                        // A turn by a multiple of half a turn makes the transformation affine, which rejects what it
+                        // sends beyond the largest coordinate
+                        var angle = CreateAngle(random);
+                        angle += angle % 180 == 0 ? 1 : 0;
+                        var turn = random.Chance(50) ? Transform3D.CreateRotationX(angle) : Transform3D.CreateRotationY(angle);
+                        canvas.Transform(center.Then(Transform3D.CreatePerspective(10 + (NextDouble(random) * 100))).Then(back), outer => outer.Transform(center.Then(turn).Then(back), inner => Paint(inner, random, context, depth + 1)));
+                    }
+
                     break;
                 default:
                     canvas.Stroke(CreateDashedPen(random, canvas, context), CreatePath(random, canvas));
@@ -427,6 +450,22 @@ public sealed class DrawingFuzzTests
         }
 
         return transform;
+    }
+
+    /// <summary>
+    /// A projective transformation that is never affine: a turn, a scaling by up to 2, a translation, then a perspective
+    /// whose horizon may cross the canvas. What the transformation enlarges or reduces a lot near its horizon costs what
+    /// a pen or a pattern of that size costs, as the generator of pens keeps in mind.
+    /// </summary>
+    private static ProjectiveTransform CreateProjectiveTransform(FuzzRandom random, DrawingCanvas canvas)
+    {
+        var scale = 0.5 + (NextDouble(random) * 1.5);
+        var plane = AffineTransform.CreateRotation(CreateAngle(random), CreatePoint(random, canvas))
+            .Then(AffineTransform.CreateScale(scale, random.Chance(50) ? scale : 0.5 + (NextDouble(random) * 1.5)))
+            .Then(AffineTransform.CreateTranslation(random.Next(-8, 9), random.Next(-8, 9)));
+        var p = ((NextDouble(random) * 0.1) - 0.05) + (random.Chance(50) ? 1e-3 : -1e-3);
+        var q = random.Chance(30) ? 0 : (NextDouble(random) * 0.1) - 0.05;
+        return ((ProjectiveTransform)plane).Then(new ProjectiveTransform(1, 0, p, 0, 1, q, 0, 0, 1));
     }
 
     private static RectangleD CreateRectangle(FuzzRandom random, DrawingCanvas canvas)

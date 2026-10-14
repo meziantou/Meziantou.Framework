@@ -49,6 +49,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <c>sqrt(((h3 - h6 v) / w)^2 + ((h4 - h7 v) / w)^2)</c>.
 /// </para>
 /// <para>
+/// An image placed by a projective transformation of the canvas (the one of a brush, then the one of the canvas) is
+/// read the same way, with the nine numbers of the inverse of that transformation, and the region and the wrap mode
+/// of the brush.
+/// </para>
+/// <para>
 /// <b>Method.</b> When the rows of the canvas stay rows of the image (no rotation, no skew), the two rows of the image
 /// around a row of the canvas are converted once and kept until another row needs their place: the image is read row
 /// by row. Otherwise each pixel is read on its own. A reduced image is read the same two ways, one row of the image at
@@ -194,6 +199,48 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             _rows = ResampleWeights.Rent<Rgba64>(_scope, 2L * _regionWidth);
             _rowCapacity = _regionWidth;
         }
+    }
+
+    /// <summary>Sets the image and its placement by a transformation that may be projective, and rents the rows the evaluation needs. The image is not read yet.</summary>
+    /// <param name="source">The frame whose pixels are painted.</param>
+    /// <param name="region">The pixels of the frame that are painted, or <see langword="null"/> for all of them.</param>
+    /// <param name="transform">The transformation that places the image on the canvas.</param>
+    /// <param name="wrapMode">What is painted outside the region.</param>
+    /// <param name="sampling">How the image is read between the centers of its pixels.</param>
+    /// <param name="destination">A frame that is drawn on: the colors are converted to its pixel format.</param>
+    /// <param name="width">The width of the canvas.</param>
+    /// <param name="regionParameterName">The name of the parameter the region comes from, for the exception.</param>
+    /// <exception cref="ObjectDisposedException">The frame no longer belongs to a live image.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The region is not inside the frame.</exception>
+    /// <exception cref="ImageResourceLimitException">The rows exceed the allocation limit.</exception>
+    public void Prepare(ImageFrame source, Rectangle? region, in ProjectiveTransform transform, ImageWrapMode wrapMode, ImageSampling sampling, ImageFrame destination, int width, string regionParameterName)
+    {
+        if (transform.TryGetExactAffine(out var affine))
+        {
+            Prepare(source, region, affine, wrapMode, sampling, destination, width, regionParameterName);
+            return;
+        }
+
+        Prepare(source, region, AffineTransform.Identity, wrapMode, ImageSampling.Bilinear, destination, width, regionParameterName);
+        _isNearest = sampling == ImageSampling.Nearest;
+        _isSmooth = sampling == ImageSampling.Smooth;
+        _isProjective = true;
+        if (!transform.TryInvert(out var inverse))
+        {
+            _isEmpty = true;
+            return;
+        }
+
+        // The inverse keeps the sign of W: a pixel whose center comes from a point in front of the viewer has a positive one
+        _h0 = inverse.M11;
+        _h1 = inverse.M21;
+        _h2 = inverse.M31;
+        _h3 = inverse.M12;
+        _h4 = inverse.M22;
+        _h5 = inverse.M32;
+        _h6 = inverse.M13;
+        _h7 = inverse.M23;
+        _h8 = inverse.M33;
     }
 
     /// <summary>Sets an image that is placed by a projective transformation, its pixels on the edges extended. The image is not read yet.</summary>

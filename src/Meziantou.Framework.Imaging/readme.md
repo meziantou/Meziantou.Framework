@@ -852,6 +852,49 @@ and the blur of a shadow. A drawing is flattened for the size the transformation
 they are enlarged, and straight sides are placed exactly where `VectorPath.Transform` places them. Transformations
 nest (the inner one applies first), with clips and layers in any order.
 
+**Perspective and three dimensions**. A `ProjectiveTransform` keeps straight lines straight, but not parallel lines
+parallel: it draws a plane seen in perspective. A point `(x, y)` becomes `(X / W, Y / W)`, with
+`X = x M11 + y M21 + M31`, `Y = x M12 + y M22 + M32` and `W = x M13 + y M23 + M33`; an `AffineTransform` converts to
+the one whose `W` is 1, and `ProjectiveTransform.CreateFromQuadrilateral` gives the one that maps a rectangle to four
+points. A `Transform3D` is a 4x4 matrix as the 3D transforms of CSS: `CreateTranslation`, `CreateScale`,
+`CreateRotationX`, `CreateRotationY`, `CreateRotationZ`, `CreateRotation` around an axis, `CreatePerspective` (the
+distance from the viewer to the plane), combined with `Then`; the drawing is its plane `z = 0`, and
+`ToProjectiveTransform` gives what the matrix does to it.
+
+`canvas.Transform` takes both: everything the callback draws is drawn in perspective, the paints of the brushes
+included. What is on the other side of the horizon of the plane (where `W` is not positive: behind the viewer) has no
+image: a drawing that crosses the horizon is cut there, and nothing is rejected. Transformations of space started
+inside each other are combined in three dimensions, so that a rotation inside a perspective shows the side that comes
+closer larger, as the transforms of nested elements of CSS do. The blur and the offset of a shadow, a blur and the
+glyphs a font draws with its own colors are drawn in the plane, on an image of it, then that image is drawn in
+perspective. `DrawImage` takes a `ProjectiveTransform` too.
+
+<!-- snippet: draw-3d -->
+```csharp
+public static void DrawTiltedCard(string outputPath)
+{
+    using var image = new Image<Rgba32>(240, 160, Colors.WhiteSmoke);
+    var card = new RectangleD(60, 30, 120, 100);
+    var face = new LinearGradientBrush(new PointD(60, 0), new PointD(180, 0), [new GradientStop(0, Colors.SteelBlue), new GradientStop(1, Colors.MidnightBlue)]);
+
+    // "perspective: 300px" and "transform: rotateY(40deg)", both around the center of the image: the turn of the
+    // card applies first, then the perspective, combined in three dimensions
+    var toCenter = Transform3D.CreateTranslation(-120, -80, 0);
+    var fromCenter = Transform3D.CreateTranslation(120, 80, 0);
+    var perspective = toCenter.Then(Transform3D.CreatePerspective(300)).Then(fromCenter);
+    var turn = toCenter.Then(Transform3D.CreateRotationY(40)).Then(fromCenter);
+
+    image.Draw(canvas => canvas.Transform(perspective, viewer => viewer.Transform(turn, plane =>
+    {
+        // Everything is drawn in the plane of the card: its shadow, its gradient, its border
+        plane.Shadow(new Rgba32(0, 0, 0, 90), new PointD(0, 6), 6, shadowed => shadowed.FillRoundedRectangle(face, card, 12));
+        plane.StrokeRoundedRectangle(new Pen(Colors.White, 3), card.Inflate(-10, -10), 6);
+    })));
+
+    image.Save(outputPath);
+}
+```
+
 <!-- snippet: draw-watermark -->
 ```csharp
 public static void DrawWatermark(string fontPath, string inputPath, string outputPath)
@@ -1073,7 +1116,7 @@ it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), `Sampling` 
 `Opacity` fades it. An image drawn on whole pixels without scaling keeps its pixels exactly; its pixels are converted
 to the pixel format of the canvas like any brush color, and no color profile is applied.
 
-**Perspective**. `DrawImage` with four points draws the image on a quadrilateral, as a plane seen in perspective: a
+**Images in perspective**. `DrawImage` with four points draws the image on a quadrilateral, as a plane seen in perspective: a
 screenshot on the screen of a photograph, a label on a wall. The four corners of the image go to the four points
 (top-left, top-right, bottom-right, bottom-left), straight lines stay straight, and what is further away is smaller.
 The points must be the corners of a convex quadrilateral, in order around it (the other way around mirrors the
@@ -1467,7 +1510,27 @@ public static void MarkAnimation(string inputPath, string outputPath)
   then its vertices are transformed: on the canvas the chords stay within 1/16 of a pixel. A stroke is the stroke of
   the path as it is given, transformed the same way; with a pen that does not scale with the transformation, it is
   the stroke of the path flattened that way, its vertices transformed first. A brush is placed by its own transformation, then by the one of
-  the canvas. A shape with straight sides is, bit for bit, the transformed path.
+  the canvas. A shape with straight sides is, bit for bit, the transformed path. A dashed stroke is cut into the
+  dashes that can change a pixel of the canvas: the part of the drawing the canvas shows is the intersection of four
+  half-planes of the drawing, around which the dashes are cut.
+- **Projective transformations.** A projective transformation whose `W` is the same positive number everywhere is the
+  affine transformation it divides to, bit for bit. Otherwise, each contour of a shape, and each piece of a stroke,
+  is cut in the coordinates of the drawing by the four half-planes where `|X| <= 16777216 W` and
+  `|Y| <= 16777216 W`, then its vertices are divided by `W`: a polygon is, bit for bit, the polygon of the images of
+  its vertices. A Bézier curve is halved until each part needs at most 8 chords, cut at uniform parameters, for a
+  bound of the factor the transformation enlarges a length by on the part of the rectangle of its control points
+  that is seen (`(|A| + D |c|) / W`, `A` the four coefficients of x and y, `c = (M13, M23)`, `D` the distance from
+  the origin to a corner of the canvas, `W` its smallest value there); an arc is halved while its chord is further
+  from it than 1/16 of a pixel divided by that bound on the triangle that contains it. The bound is limited to
+  65536, and a part that is not seen gets 1/1024. The color of a brush is its color at the point the center of the
+  pixel comes from through the inverse of the transformation; where that point is beyond the horizon, the pixel has
+  no color. A shadow, a blur and a color glyph are drawn on an image of a rectangle of the plane (the part of it the
+  clip shows, with the reach of the effect around it, or the box of the glyph), scaled by the largest singular value
+  of the four coefficients of x and y divided by `|M33|` (between 1/1024 and 1024, and smaller when the image would
+  have more than 16,777,216 pixels), then that image is drawn as an image is, placed by the transformation of its
+  pixels, with smooth sampling and nothing around it; the tile of a pattern has the size that scaling gives it. A
+  transformation whose determinant is at most 2^-40 of the product of the lengths of its rows shows the plane from
+  its edge, and draws nothing.
 - **Clips.** The coverage of a pixel under a clip is the product of the coverage of the shape and of the coverage of
   the clip, rounded to the nearest 1/65536 (ties upward). It is the area of what the shape and the clip have in common
   wherever one of them covers the pixel entirely; on a pixel that both only cover in part, it is the product of the two
@@ -1518,7 +1581,9 @@ public static void MarkAnimation(string inputPath, string outputPath)
 the width and height of the canvas, and to the number of edges of the shape), and each `Draw` call allocates a few small
 objects; the shapes themselves allocate nothing once that storage has grown to the largest of them, so reuse brushes,
 pens and paths and use the overloads with a state and a static callback. A pattern brush is the exception: drawing
-its tile allocates a few objects each time the tile is drawn. The time to draw a shape grows with the number
+its tile allocates a few objects each time the tile is drawn. So do a shadow, a blur and a glyph a font draws with
+its own colors under a projective transformation: each is drawn on an image of the plane of its own, rented when it
+starts and released when it ends. The time to draw a shape grows with the number
 of its edges and with the number of points where they cross each other, which the exact area depends on. One family of
 shapes has millions of crossings: a pen far wider than the bends of a long curve it follows. A dashed stroke has the
 edges of every dash the canvas shows: what cannot change a pixel of the canvas is not cut into dashes, whatever the
@@ -1820,7 +1885,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 | Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
 | Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
 | Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
-| Drawing | Under a transformation of the canvas, every dash of a dashed stroke is cut, also those the canvas does not show; composited on the encoded sample values unless linear light is asked for; sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image or a pattern gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
+| Drawing | Composited on the encoded sample values unless linear light is asked for; sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image or a pattern gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
 | Fonts made before OpenType Layout | The marks of a font without positioning table are placed from the shapes of the glyphs; the letters of an Arabic font without substitution table take the presentation forms the font has as characters, with the ligatures of lam and alef; the marks of a Thai font without substitution table take the forms the font has in the private use area |
 
 The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of
@@ -3358,7 +3423,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | PNG/APNG | Palette output is opt-in and exact only (`PngPixelLayout.Indexed`: no color reduction or dithering, and a sequential writer cannot declare colors beyond its first image), no grayscale output below 8 bits, no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
-| Drawing | Sequential; affine transformations of the canvas only (perspective is for an image drawn on a quadrilateral); no mesh gradient, and a radial gradient between two circles needs the first one strictly inside the second one; a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, a pixel is painted when at least half of it is covered (not when its center is), and the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 |
+| Drawing | Sequential; under a projective transformation of the canvas, shadows, blurs and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 16,777,216 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; no mesh gradient, and a radial gradient between two circles needs the first one strictly inside the second one; a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, a pixel is painted when at least half of it is covered (not when its center is), and the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 |
 | Processing | No floating-point or scene-referred pixel format (HDR samples are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping), no custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, or temporal motion vector prediction. Three tools were implemented, measured with the `avif-quality` report and left out because they did not make its sequences smaller: key frames at scene changes (the key frame of an image that follows a cut is 0.3 to 1.7% larger than the inter frame whose blocks are all intra, since it gives up the probabilities that the previous images adapted; `KeyFrameInterval` is how a sequence gets seek points), the split of the transform blocks of an inter block (0.01% in total: it keeps the largest transform of its size) and an interpolation filter per block (the same size at equal quality, for several times the encoding time). Intra block copy is for lossless images only (a frame that copies blocks has no in-loop filter), and its delay of five superblocks leaves small images out. The loop restoration is the Wiener filter, in units of 256x256 samples, at the efforts 0 to 2 only (it recovered nothing above them in the report), and never the self-guided filter. Not used: quantizer deltas, quantization matrices, CDEF strengths per block (one pair per frame), super-resolution and film grain. No layered (progressive) output, and no grid for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: more than eight nested derivations, an image built from images of several color descriptions, an overlay whose sRGB fill color shows on an image that is not an sRGB one, an alpha plane of an overlay or of a grid of derived images, a derived image with more than 1,024 input images, an alpha plane that is not presented as its derived color image, movie fragments that do not follow each other, have composition time offsets, precede their `moov` box or follow their samples, an edit list that selects a part of a fragmented sequence, edit lists that do not play the media forward at its rate (empty edits, a media rate other than 1, edits out of order or overlapping), an alpha track with another edit list than its color track, image sequences whose images change size, clean apertures that do not select whole samples, grid tiles that declare other transformations than their grid, large scale tile streams, reserved matrix coefficients, and matrix coefficients without the transfer characteristics or the primaries they are defined with (constant luminance without a transfer function, ICtCp with other transfer characteristics than PQ and HLG, chromaticity-derived coefficients without chromaticities). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, a `tkhd` matrix that is not a quarter turn or a mirror (the images are returned as stored), the content color volume (`cclv`) and the light levels and the mastering display of AV1 metadata units. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: tone mapping is an explicit `ConvertColorProfile` with `ToneMapping` options |

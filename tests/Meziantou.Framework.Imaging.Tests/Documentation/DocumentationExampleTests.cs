@@ -279,6 +279,39 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawTiltedCardShowsTheSideThatComesCloserLarger()
+    {
+        var output = GetPath("tilted.png");
+        Examples.DrawTiltedCard(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(240, 160), image.Size);
+        var frame = image.Frames[0];
+
+        // Turned by 40 degrees, the card is 120 cos(40) = 92 pixels wide in the plane of the image, and the perspective
+        // moves its sides: the left one comes toward the viewer (from 74 to 67), the right one goes away (from 166 to
+        // 161). The left side is taller than the right one.
+        Assert.True(IsCard(frame[69, 80]));
+        Assert.False(IsCard(frame[64, 80]));
+        Assert.True(IsCard(frame[158, 80]));
+        Assert.False(IsCard(frame[163, 80]));
+        Assert.True(Height(frame, 70) > Height(frame, 150) + 15);
+
+        static bool IsCard(Rgba32 pixel) => pixel.B > pixel.R + 40;
+
+        static int Height(ImageFrame<Rgba32> frame, int x)
+        {
+            var count = 0;
+            for (var y = 0; y < frame.Height; y++)
+            {
+                count += IsCard(frame[x, y]) ? 1 : 0;
+            }
+
+            return count;
+        }
+    }
+
+    [Fact]
     public void DrawOnScreenDrawsTheScreenshotBetweenItsFourCorners()
     {
         var photoPath = GetPath("desk.png");

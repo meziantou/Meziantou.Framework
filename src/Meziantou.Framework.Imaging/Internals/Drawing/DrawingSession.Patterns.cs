@@ -12,7 +12,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// callback draws on it, through a canvas of its own whose transformation maps the tile to the image
 /// (a scaling by <c>W / tw</c> and <c>H / th</c>). The shape is then painted with that image, placed by the scaling
 /// that maps it back to the tile, then by <c>T</c>, with <see cref="ImageWrapMode.Repeat"/> and
-/// <see cref="ImageSampling.Bilinear"/>.
+/// <see cref="ImageSampling.Bilinear"/>. Under a projective transformation of the canvas, <c>T</c> is the transformation
+/// of the brush followed by the scaling by the factor of the canvas where <c>W</c> is the one of the origin (see
+/// <see cref="GetLocalScale"/>), and the image is placed by the scaling, the transformation of the brush, then the
+/// projective one.
 /// </para>
 /// <para>
 /// The image of the last tile is kept until the session ends: the shapes that follow with the same brush at the same
@@ -36,10 +39,13 @@ internal sealed partial class DrawingSession
     /// <returns>The frame that holds the tile, or <see langword="null"/> when the pattern paints nothing.</returns>
     /// <exception cref="InvalidOperationException">The pattern is drawn inside too many patterns.</exception>
     /// <exception cref="ImageResourceLimitException">The image of the tile exceeds the limits of the image that is drawn on.</exception>
-    private ImageFrame? PreparePattern(PatternBrush brush, out AffineTransform placement)
+    private ImageFrame? PreparePattern(PatternBrush brush, out ProjectiveTransform placement)
     {
         placement = default;
-        var transform = ToCanvas(brush.Transform);
+
+        // Under a projective transformation, the tile has the size the factor of the transformation where W is the one
+        // of the origin gives it
+        var transform = _isProjective ? brush.Transform.Then(AffineTransform.CreateScale(_transformScale, _transformScale)) : ToCanvas(brush.Transform);
         var tile = brush.Tile;
         var tileWidth = tile.Width * Math.Sqrt((transform.M11 * transform.M11) + (transform.M12 * transform.M12));
         var tileHeight = tile.Height * Math.Sqrt((transform.M21 * transform.M21) + (transform.M22 * transform.M22));
@@ -86,7 +92,8 @@ internal sealed partial class DrawingSession
             _patternPipeline = _paintPipeline;
         }
 
-        placement = new AffineTransform(tile.Width / width, 0, 0, tile.Height / height, tile.X, tile.Y).Then(transform);
+        var toTile = new AffineTransform(tile.Width / width, 0, 0, tile.Height / height, tile.X, tile.Y);
+        placement = _isProjective ? ((ProjectiveTransform)toTile.Then(brush.Transform)).Then(_projection) : toTile.Then(transform);
         return image.Frames[0];
     }
 

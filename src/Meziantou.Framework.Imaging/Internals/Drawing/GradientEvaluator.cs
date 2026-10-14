@@ -22,6 +22,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// parameter <c>(angle(p - center) - start) mod 360 / (end - start)</c>, the angle being the one of
 /// <see cref="DeterministicAngle.Atan2"/>. When the brush has a transformation, <c>p</c> is the center of the pixel
 /// brought back through the inverse of that transformation; a transformation without inverse makes a degenerate gradient.
+/// A projective transformation brings the center back to <c>(X / W, Y / W)</c>; where <c>W</c> is not positive (beyond
+/// the horizon of the plane), the pixel has no color.
 /// </para>
 /// <para>
 /// With <c>i</c> the last stop whose offset is not greater than the parameter: before the first stop the color is the
@@ -67,6 +69,8 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     private bool _degenerate;
     private bool _hasTransform;
     private Affine2D _inverse;
+    private bool _isProjective;
+    private ProjectiveTransform _projectiveInverse;
     private GradientSpreadMode _spreadMode;
     private double _originX;
     private double _originY;
@@ -98,6 +102,30 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     {
         _paintPipeline = paintPipeline;
         Prepare(brush, transform, frame, width, (1 << PixelFormats.GetBitsPerComponent(frame.PixelFormat)) - 1);
+    }
+
+    /// <summary>Converts the stops of a brush placed by a projective transformation, and rents the row of colors.</summary>
+    /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
+    /// <param name="brush">The gradient.</param>
+    /// <param name="transform">The transformation that places the gradient on the canvas: the one of the brush, then the one of the canvas.</param>
+    /// <param name="frame">A frame that is drawn on.</param>
+    /// <param name="width">The width of the canvas.</param>
+    /// <param name="paintPipeline">The conversion that brings the colors of the stops to the color space of the image, or <see langword="null"/> when they are colors of the image.</param>
+    public void Prepare(GradientBrush brush, in ProjectiveTransform transform, ImageFrame frame, int width, IccPipeline? paintPipeline = null)
+    {
+        if (transform.TryGetExactAffine(out var affine))
+        {
+            Prepare(brush, affine, frame, width, paintPipeline);
+            return;
+        }
+
+        _paintPipeline = paintPipeline;
+        Prepare(brush, AffineTransform.Identity, frame, width, (1 << PixelFormats.GetBitsPerComponent(frame.PixelFormat)) - 1);
+        _isProjective = true;
+        if (!transform.TryInvert(out _projectiveInverse))
+        {
+            _degenerate = true;
+        }
     }
 
     /// <summary>
@@ -206,6 +234,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         }
 
         _degenerate = !(_divisor > 0);
+        _isProjective = false;
         _hasTransform = !transform.IsIdentity;
         if (_hasTransform)
         {
@@ -243,6 +272,13 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         {
             var t = GetParameter(x + i + 0.5, centerY);
             var output = colors.Slice(i * 4, 4);
+            if (double.IsNaN(t))
+            {
+                // A position without color: beyond the horizon of a plane seen in perspective
+                output.Clear();
+                continue;
+            }
+
             if (t < stops[0])
             {
                 WriteStop(stops, 0, output);
@@ -296,12 +332,23 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         _frame = null;
     }
 
-    /// <summary>Gets the parameter of the center of a pixel, brought into the range of the stops by the spread mode.</summary>
+    /// <summary>Gets the parameter of the center of a pixel, brought into the range of the stops by the spread mode; not a number where the gradient has no color.</summary>
     private double GetParameter(double centerX, double centerY)
     {
         double px;
         var py = centerY - _originY;
-        if (_hasTransform)
+        if (_isProjective)
+        {
+            var w = _projectiveInverse.TransformW(centerX, centerY);
+
+            // Written so that a value that is not a number has no color: what is beyond the horizon is not painted
+            if (!(w > 0))
+                return double.NaN;
+
+            px = (_projectiveInverse.TransformX(centerX, centerY) / w) - _originX;
+            py = (_projectiveInverse.TransformY(centerX, centerY) / w) - _originY;
+        }
+        else if (_hasTransform)
         {
             px = _inverse.TransformX(centerX, centerY) - _originX;
             py = _inverse.TransformY(centerX, centerY) - _originY;
@@ -377,6 +424,12 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         for (var i = 0; i < count; i++)
         {
             var t = GetParameter(x + i + 0.5, centerY);
+            if (double.IsNaN(t))
+            {
+                samples[i] = default;
+                continue;
+            }
+
             if (t < stops[0])
             {
                 samples[i] = colorStops[0].Color;

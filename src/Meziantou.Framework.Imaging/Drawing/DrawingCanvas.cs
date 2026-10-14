@@ -50,10 +50,10 @@ public readonly ref struct DrawingCanvas
     }
 
     /// <summary>Gets the width of the canvas, in pixels (0 for a default instance).</summary>
-    public int Width => _session?.Width ?? 0;
+    public int Width => _session?.CanvasWidth ?? 0;
 
     /// <summary>Gets the height of the canvas, in pixels (0 for a default instance).</summary>
-    public int Height => _session?.Height ?? 0;
+    public int Height => _session?.CanvasHeight ?? 0;
 
     /// <summary>Replaces every pixel of the canvas by a color, alpha included: a transparent color erases the canvas.</summary>
     /// <remarks>
@@ -224,6 +224,32 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void DrawImage(ImageFrame source, AffineTransform transform, ImageSampling sampling, double opacity = 1) => GetSession().DrawImage(source, transform, sampling, opacity);
+
+    /// <summary>Draws the pixels of a frame of another image, placed on the canvas by a projective transformation: the image seen in perspective.</summary>
+    /// <remarks>
+    /// <para>
+    /// The pixel <c>(x, y)</c> of the frame covers the square from <c>(x, y)</c> to <c>(x + 1, y + 1)</c>, which the
+    /// transformation places on the canvas (then the transformation of the canvas). What is on the other side of the
+    /// horizon of the transformation (where its <c>W</c> is not positive) is not drawn. The edges of the image are
+    /// antialiased, and its pixels on the edges are extended, as for the other ways of drawing an image. An affine transformation draws what
+    /// <see cref="DrawImage(ImageFrame, AffineTransform, ImageSampling, double)"/> draws, with the same pixels.
+    /// </para>
+    /// <para>
+    /// With <see cref="ImageSampling.Smooth"/>, each pixel of the canvas reads what it covers of the image, which
+    /// changes from the near side to the far side: use it for an image that the perspective reduces.
+    /// </para>
+    /// </remarks>
+    /// <param name="source">The frame to draw.</param>
+    /// <param name="transform">The transformation that places the pixels of the frame on the canvas.</param>
+    /// <param name="sampling">How the image is read between the centers of its pixels.</param>
+    /// <param name="opacity">The opacity of the image, from 0 to 1.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="sampling"/> is not a defined <see cref="ImageSampling"/>, <paramref name="opacity"/> is not between 0 and 1, or the transformation is affine and moves a corner of the image beyond 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned, or <paramref name="source"/> is a frame that is being drawn on or whose pixels are being accessed.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void DrawImage(ImageFrame source, ProjectiveTransform transform, ImageSampling sampling, double opacity = 1) => GetSession().DrawImage(source, transform, sampling, opacity);
 
     /// <summary>Draws a frame of another image on a quadrilateral, as it is seen in perspective: on a screen, a page or a wall of a photograph.</summary>
     /// <remarks>
@@ -847,8 +873,12 @@ public readonly ref struct DrawingCanvas
     /// </para>
     /// <para>
     /// The coordinates given to a draw call are validated as they are without transformation, and a coordinate that
-    /// the transformation moves beyond 16777216 is rejected, before the call changes a pixel. A dashed stroke has
-    /// every dash of its path cut, even those the canvas does not show.
+    /// the transformation moves beyond 16777216 is rejected, before the call changes a pixel. A dashed stroke is cut
+    /// into the dashes the canvas can show, as without transformation.
+    /// </para>
+    /// <para>
+    /// <see cref="Transform(ProjectiveTransform, DrawingAction)"/> and <see cref="Transform(Transform3D, DrawingAction)"/>
+    /// draw in perspective.
     /// </para>
     /// </remarks>
     /// <param name="transform">The transformation.</param>
@@ -898,6 +928,133 @@ public readonly ref struct DrawingCanvas
         }
     }
 
+    /// <summary>Runs a callback whose drawings are transformed by a projective transformation: drawn on a plane seen in perspective.</summary>
+    /// <remarks>
+    /// <para>
+    /// Everything <see cref="Transform(AffineTransform, DrawingAction)"/> transforms is transformed: shapes, strokes,
+    /// the paints of the brushes, images, texts, clips and layers. A straight line stays straight, and what is further
+    /// away is smaller. A point whose <c>W</c> is not positive (on the other side of the horizon of the plane, behind
+    /// the viewer) has no image: a drawing that crosses the horizon is cut there, and the paint of a brush has no
+    /// color beyond it. Nothing is rejected because of the transformation: what it sends beyond 16777216 is cut off.
+    /// </para>
+    /// <para>
+    /// Curves are cut into chords that stay within 1/16 of a pixel of them on the canvas, wherever the transformation
+    /// enlarges a length by less than 65536. What has a size in the drawing (the blur and the offset of a shadow, a
+    /// blur, the glyphs a font draws with its own colors) is drawn on an image of the plane of the drawing, then that
+    /// image is drawn in perspective; that image has the resolution the transformation has where <c>W</c> is the one of
+    /// the origin, and at most 16,777,216 pixels. A pattern is drawn at that resolution too.
+    /// </para>
+    /// <para>
+    /// An affine transformation (whose third column is <c>(0, 0, 1)</c>) draws what
+    /// <see cref="Transform(AffineTransform, DrawingAction)"/> draws, bit for bit. Inside a transformation of space
+    /// (<see cref="Transform(Transform3D, DrawingAction)"/>), the transformation is combined as the transformation of
+    /// space it is.
+    /// </para>
+    /// </remarks>
+    /// <param name="transform">The transformation.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coefficient of the transformation, combined with the one it starts in, is not a finite number.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Transform(ProjectiveTransform transform, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushTransform(transform);
+        try
+        {
+            action(this);
+        }
+        finally
+        {
+            session.PopTransform();
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are transformed by a projective transformation, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="transform">The transformation.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Transform(ProjectiveTransform, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coefficient of the transformation, combined with the one it starts in, is not a finite number.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Transform<TState>(ProjectiveTransform transform, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushTransform(transform);
+        try
+        {
+            action(this, state);
+        }
+        finally
+        {
+            session.PopTransform();
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are the plane <c>z = 0</c> transformed by a transformation of space: turned in three dimensions and seen in perspective, as by the 3D transforms of CSS.</summary>
+    /// <remarks>
+    /// <para>
+    /// The drawings are transformed by what the transformation does to the plane <c>z = 0</c>
+    /// (<see cref="Transform3D.ToProjectiveTransform"/>), as <see cref="Transform(ProjectiveTransform, DrawingAction)"/>
+    /// transforms them. A transformation started inside this one is combined with it in three dimensions
+    /// (<see cref="Transform3D.Then"/>), whatever its kind: what an inner rotation does to z reaches an outer
+    /// perspective, as the transforms of nested elements of CSS do.
+    /// </para>
+    /// </remarks>
+    /// <param name="transform">The transformation of space.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coefficient of the transformation, combined with the one it starts in, is not a finite number.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Transform(Transform3D transform, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushTransform(transform);
+        try
+        {
+            action(this);
+        }
+        finally
+        {
+            session.PopTransform();
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are transformed by a transformation of space, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="transform">The transformation of space.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Transform(Transform3D, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coefficient of the transformation, combined with the one it starts in, is not a finite number.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Transform<TState>(Transform3D transform, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushTransform(transform);
+        try
+        {
+            action(this, state);
+        }
+        finally
+        {
+            session.PopTransform();
+        }
+    }
+
     /// <summary>Runs a callback whose drawings are drawn with their shadow: a drop shadow, or a glow without offset.</summary>
     /// <remarks>
     /// <para>
@@ -929,11 +1086,11 @@ public readonly ref struct DrawingCanvas
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushShadow(color, offset, blur);
+        var target = new DrawingCanvas(session.PushShadow(color, offset, blur));
         var isDrawn = false;
         try
         {
-            action(this);
+            action(target);
             isDrawn = true;
         }
         finally
@@ -961,11 +1118,11 @@ public readonly ref struct DrawingCanvas
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushShadow(color, offset, blur);
+        var target = new DrawingCanvas(session.PushShadow(color, offset, blur));
         var isDrawn = false;
         try
         {
-            action(this, state);
+            action(target, state);
             isDrawn = true;
         }
         finally
@@ -1100,11 +1257,11 @@ public readonly ref struct DrawingCanvas
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushBlur(blur);
+        var target = new DrawingCanvas(session.PushBlur(blur));
         var isDrawn = false;
         try
         {
-            action(this);
+            action(target);
             isDrawn = true;
         }
         finally
@@ -1130,11 +1287,11 @@ public readonly ref struct DrawingCanvas
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushBlur(blur);
+        var target = new DrawingCanvas(session.PushBlur(blur));
         var isDrawn = false;
         try
         {
-            action(this, state);
+            action(target, state);
             isDrawn = true;
         }
         finally
@@ -1288,11 +1445,11 @@ public readonly ref struct DrawingCanvas
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushShadow(color, offset, blur, isInner: true);
+        var target = new DrawingCanvas(session.PushShadow(color, offset, blur, isInner: true));
         var isDrawn = false;
         try
         {
-            action(this);
+            action(target);
             isDrawn = true;
         }
         finally
@@ -1320,11 +1477,11 @@ public readonly ref struct DrawingCanvas
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushShadow(color, offset, blur, isInner: true);
+        var target = new DrawingCanvas(session.PushShadow(color, offset, blur, isInner: true));
         var isDrawn = false;
         try
         {
-            action(this, state);
+            action(target, state);
             isDrawn = true;
         }
         finally

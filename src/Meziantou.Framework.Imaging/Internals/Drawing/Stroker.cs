@@ -31,10 +31,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// Under a transformation of the canvas, the path is stroked as it is given and the vertices of the pieces are
 /// transformed when they are emitted: the pen is transformed with the path, whatever the transformation. The round
-/// joins and caps are cut finer by the factor of the transformation (<see cref="PathSink.Scale"/>), and no piece is
-/// tested against the frame. A pen that the transformation does not apply to (<see cref="Pen.ScalesWithTransform"/>)
+/// joins and caps are cut finer by the factor of the transformation (<see cref="PathSink.Scale"/>), and no piece of an
+/// affine transformation is tested against the frame. A pen that the transformation does not apply to (<see cref="Pen.ScalesWithTransform"/>)
 /// is given the path as it is on the canvas instead, by a <see cref="TransformSink"/> before it: it strokes as it
-/// does without transformation.
+/// does without transformation. Under a projective transformation, each piece is cut where it has no image before its
+/// vertices are transformed (<see cref="ProjectiveSink"/>), and the arcs of a join or a cap are cut finer by the
+/// factor of the transformation on each of their parts (<see cref="ProjectiveView"/>). The pieces stay convex once they
+/// are cut and transformed, so they are tested against the frame whatever the width of the pen, which is not a width
+/// of the canvas.
 /// </para>
 /// </remarks>
 internal sealed class Stroker : PathSink
@@ -47,6 +51,12 @@ internal sealed class Stroker : PathSink
     private double _miterLimitSquared;
     private bool _hasOutputTransform;
     private Affine2D _outputTransform;
+    private ProjectiveSink? _projectiveOutput;
+    private PieceSink? _pieceSink;
+    private bool _isProjectiveOutput;
+
+    // The view of the pieces themselves: their arcs are what is drawn, nothing reaches beyond them
+    private ProjectiveView _pieceView;
 
     // The contour being stroked
     private bool _hasStart;
@@ -102,7 +112,24 @@ internal sealed class Stroker : PathSink
     {
         _hasOutputTransform = hasTransform;
         _outputTransform = transform;
+        _isProjectiveOutput = false;
+        Projection = null;
         Scale = hasTransform ? scale : 1;
+    }
+
+    /// <summary>
+    /// Sets the projective transformation the pieces of the next strokes go through before they become edges: each
+    /// piece is cut where it has no image (<see cref="ProjectiveSink"/>), then its vertices are transformed. Set before
+    /// the pen.
+    /// </summary>
+    public void SetOutput(in ProjectiveView view)
+    {
+        _hasOutputTransform = false;
+        _isProjectiveOutput = true;
+        Projection = view;
+        _pieceView = view.WithoutReach();
+        Scale = 1;
+        (_projectiveOutput ??= new ProjectiveSink()).Configure(_pieceSink ??= new PieceSink(this), view, isPolyline: false);
     }
 
     /// <summary>Sets the pen of the next path.</summary>
@@ -112,7 +139,7 @@ internal sealed class Stroker : PathSink
     {
         var width = pen.Width * widthFactor;
         CoversFrame = false;
-        _testFrame = _edges is not null && !_hasOutputTransform && width >= Math.Min(_edges.Width, _edges.Height);
+        _testFrame = _edges is not null && !_hasOutputTransform && (_isProjectiveOutput || width >= Math.Min(_edges.Width, _edges.Height));
         _halfWidth = width / 2;
         _join = pen.LineJoin;
         _cap = pen.LineCap;
@@ -124,7 +151,7 @@ internal sealed class Stroker : PathSink
     public void Configure(double width, LineJoin join, double miterLimit)
     {
         CoversFrame = false;
-        _testFrame = _edges is not null && !_hasOutputTransform && width >= Math.Min(_edges.Width, _edges.Height);
+        _testFrame = _edges is not null && !_hasOutputTransform && (_isProjectiveOutput || width >= Math.Min(_edges.Width, _edges.Height));
         _halfWidth = width / 2;
         _join = join;
         _cap = LineCap.Butt;
@@ -413,7 +440,22 @@ internal sealed class Stroker : PathSink
         var mx = ux + vx;
         var my = uy + vy;
         var length = Math.Sqrt((mx * mx) + (my * my));
-        if (depth >= PathFlattener.MaxArcDepth || !(_halfWidth * Scale * (1 - (length / 2)) > PathFlattener.Tolerance))
+        var scale = Scale;
+        if (_isProjectiveOutput)
+        {
+            // The factor of a projective transformation on the triangle of the ends of the arc and of the meeting
+            // point of their tangents, which contains the arc
+            var x0 = centerX + (_halfWidth * ux);
+            var y0 = centerY + (_halfWidth * uy);
+            var x1 = centerX + (_halfWidth * vx);
+            var y1 = centerY + (_halfWidth * vy);
+            var toTangents = 2 * _halfWidth / (length * length);
+            var tx = centerX + (mx * toTangents);
+            var ty = centerY + (my * toTangents);
+            scale = _pieceView.GetScale(Math.Min(x0, Math.Min(x1, tx)), Math.Min(y0, Math.Min(y1, ty)), Math.Max(x0, Math.Max(x1, tx)), Math.Max(y0, Math.Max(y1, ty)));
+        }
+
+        if (depth >= PathFlattener.MaxArcDepth || !(_halfWidth * scale * (1 - (length / 2)) > PathFlattener.Tolerance))
         {
             PieceLineTo(centerX + (_halfWidth * vx), centerY + (_halfWidth * vy));
             return;
@@ -427,11 +469,23 @@ internal sealed class Stroker : PathSink
 
     private void BeginPiece(double x, double y)
     {
+        if (_isProjectiveOutput)
+        {
+            _projectiveOutput!.MoveTo(x, y);
+            return;
+        }
+
         if (_hasOutputTransform)
         {
             (x, y) = TransformOutput(x, y);
         }
 
+        BeginOutputPiece(x, y);
+    }
+
+    /// <summary>Starts a piece at a point of the canvas.</summary>
+    private void BeginOutputPiece(double x, double y)
+    {
         _pieceStartX = x;
         _pieceStartY = y;
         _pieceX = x;
@@ -455,11 +509,23 @@ internal sealed class Stroker : PathSink
 
     private void PieceLineTo(double x, double y)
     {
+        if (_isProjectiveOutput)
+        {
+            _projectiveOutput!.LineTo(x, y, smooth: false);
+            return;
+        }
+
         if (_hasOutputTransform)
         {
             (x, y) = TransformOutput(x, y);
         }
 
+        OutputLineTo(x, y);
+    }
+
+    /// <summary>Adds a side to the piece, to a point of the canvas.</summary>
+    private void OutputLineTo(double x, double y)
+    {
         AddPieceEdge(x, y);
         _pieceX = x;
         _pieceY = y;
@@ -467,6 +533,18 @@ internal sealed class Stroker : PathSink
     }
 
     private void ClosePiece()
+    {
+        if (_isProjectiveOutput)
+        {
+            _projectiveOutput!.Close(smooth: false);
+            return;
+        }
+
+        CloseOutputPiece();
+    }
+
+    /// <summary>Ends the piece on the canvas.</summary>
+    private void CloseOutputPiece()
     {
         if (_edges is null)
         {
@@ -528,6 +606,20 @@ internal sealed class Stroker : PathSink
             _topRightInside &= (dx * top) - (dy * right) > 0;
             _bottomLeftInside &= (dx * bottom) - (dy * left) > 0;
             _bottomRightInside &= (dx * bottom) - (dy * right) > 0;
+        }
+    }
+
+    /// <summary>Receives the pieces of the stroke once they are cut and transformed by a projective transformation.</summary>
+    private sealed class PieceSink(Stroker stroker) : PathSink
+    {
+        public override void MoveTo(double x, double y) => stroker.BeginOutputPiece(x, y);
+
+        public override void LineTo(double x, double y, bool smooth) => stroker.OutputLineTo(x, y);
+
+        public override void Close(bool smooth) => stroker.CloseOutputPiece();
+
+        public override void End()
+        {
         }
     }
 }

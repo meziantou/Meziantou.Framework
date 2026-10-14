@@ -58,6 +58,8 @@ internal sealed partial class DrawingSession : IDisposable
         _cancellationToken = cancellationToken;
         Width = image.Width;
         Height = image.Height;
+        CanvasWidth = Width;
+        CanvasHeight = Height;
     }
 
     /// <summary>Gets the width of the canvas.</summary>
@@ -161,6 +163,47 @@ internal sealed partial class DrawingSession : IDisposable
         PaintImage(source, new Rectangle(0, 0, width, height), transform, sampling, coverage, isEmpty: false, nameof(source));
     }
 
+    public void DrawImage(ImageFrame source, ProjectiveTransform transform, ImageSampling sampling, double opacity)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ValidateSampling(sampling);
+        if (transform.TryGetExactAffine(out var affine))
+        {
+            DrawImage(source, affine, sampling, opacity);
+            return;
+        }
+
+        var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
+        DrawProjectedImage(source, transform.Then(GetProjection()), ImageWrapMode.Pad, sampling, coverage, CompositeMode.SourceOver, BlendMode.Normal);
+    }
+
+    /// <summary>
+    /// Draws a frame placed on the canvas by a projective transformation of its pixels: its rectangle is cut where it
+    /// has no image, and each pixel of the canvas reads the frame through the inverse of the transformation, with its
+    /// pixels on the edges extended (<see cref="ImageWrapMode.Pad"/>) or nothing around it.
+    /// </summary>
+    private void DrawProjectedImage(ImageFrame source, in ProjectiveTransform toCanvas, ImageWrapMode wrapMode, ImageSampling sampling, uint coverage, CompositeMode mode, BlendMode blend)
+    {
+        var sink = _projectiveSink ??= new ProjectiveSink();
+        sink.Configure(BeginDeviceFill(), new ProjectiveView(toCanvas, -1, -1, Width + 1, Height + 1, reach: 0), isPolyline: false);
+        AddRectangle(sink, new RectangleD(0, 0, source.Width, source.Height));
+        sink.End();
+        var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
+        evaluator.Prepare(source, region: null, toCanvas, wrapMode, sampling, _frames[0], Width, nameof(source));
+        if (coverage == 0 || _edges!.Count == 0)
+            return;
+
+        if (coverage != CoverageRasterizer.FullCoverage)
+        {
+            EnsureCoverageRow();
+        }
+
+        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _cancellationToken))
+        {
+            Paint(default, evaluator, mode, blend, coverage);
+        }
+    }
+
     public void DrawImage(ImageFrame source, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft, ImageSampling sampling, double opacity)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -182,6 +225,20 @@ internal sealed partial class DrawingSession : IDisposable
 
         var width = source.Width;
         var height = source.Height;
+        if (_isProjective)
+        {
+            // In a plane seen in perspective: the projective transformation of the quadrilateral, then the one of the canvas
+            if (isFlat || width == 0 || height == 0)
+            {
+                _ = BeginCall();
+                return;
+            }
+
+            var quadrilateral = ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, width, height), topLeft, topRight, bottomRight, bottomLeft);
+            DrawProjectedImage(source, quadrilateral.Then(_projection), ImageWrapMode.Pad, sampling, coverage, CompositeMode.SourceOver, BlendMode.Normal);
+            return;
+        }
+
         if (!isFlat && topLeft.X - topRight.X + bottomRight.X - bottomLeft.X == 0 && topLeft.Y - topRight.Y + bottomRight.Y - bottomLeft.Y == 0)
         {
             // A parallelogram: the image is not seen in perspective, and an affine transformation places it
@@ -326,7 +383,7 @@ internal sealed partial class DrawingSession : IDisposable
     private void PaintImage(ImageFrame source, Rectangle region, AffineTransform transform, ImageSampling sampling, uint coverage, bool isEmpty, string regionParameterName)
     {
         var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-        evaluator.Prepare(source, region, ToCanvas(transform), ImageWrapMode.Pad, sampling, _frames[0], Width, regionParameterName);
+        evaluator.Prepare(source, region, ToCanvasProjection(transform), ImageWrapMode.Pad, sampling, _frames[0], Width, regionParameterName);
         if (coverage == 0 || isEmpty || _edges!.Count == 0)
             return;
 
@@ -772,7 +829,16 @@ internal sealed partial class DrawingSession : IDisposable
             return null;
 
         var stroker = _stroker ??= new Stroker(_edges!);
-        stroker.SetOutput(_hasTransform, _transformMatrix, _transformScale);
+        if (_isProjective)
+        {
+            // The thickness of a glyph is small: its curves are cut for the whole plane
+            stroker.SetOutput(_projectionView.Inflate(0, DrawingGuard.MaxCoordinate));
+        }
+        else
+        {
+            stroker.SetOutput(_hasTransform, _transformMatrix, _transformScale);
+        }
+
         return stroker;
     }
 
@@ -780,7 +846,9 @@ internal sealed partial class DrawingSession : IDisposable
     private PathMeasure Measure(VectorPath path)
     {
         var measure = _pathMeasure ??= new PathMeasure(_image.Owner.Scope);
-        measure.Scale = _transformScale;
+
+        // The glyphs along the path can be seen where the path is not
+        SetDrawingScale(measure, DrawingGuard.MaxCoordinate);
         measure.Reset();
         PathFlattener.Flatten(path, measure);
         return measure;
@@ -866,7 +934,7 @@ internal sealed partial class DrawingSession : IDisposable
         _cancellationToken.ThrowIfCancellationRequested();
         var recorder = _strokeRecorder ??= new PathRecorder(_image.Owner.Scope);
         recorder.Reset();
-        recorder.Scale = _transformScale;
+        SetDrawingScale(recorder, GetStrokeReach(pen, widthFactor: 2));
         return recorder;
     }
 
@@ -878,19 +946,31 @@ internal sealed partial class DrawingSession : IDisposable
         // A pen the transformation does not apply to strokes the path as it is on the canvas: the vertices of the
         // path are transformed before they reach the pen, and nothing after it
         var isPlacedFirst = IsPlacedBeforeStroke(pen);
-        var hasOutputTransform = _hasTransform && !isPlacedFirst;
+        var hasOutputTransform = (_hasTransform || _isProjective) && !isPlacedFirst;
         var scale = hasOutputTransform ? _transformScale : 1;
-        stroker.SetOutput(hasOutputTransform, _transformMatrix, _transformScale);
+        ProjectiveView? projection = hasOutputTransform && _isProjective ? _projectionView.Inflate(0, GetStrokeReach(pen, widthFactor)) : null;
+        if (projection is { } outputProjection)
+        {
+            stroker.SetOutput(outputProjection);
+        }
+        else
+        {
+            stroker.SetOutput(hasOutputTransform, _transformMatrix, _transformScale);
+        }
+
         stroker.Configure(pen, widthFactor);
         PathSink sink = stroker;
         if (pen.IsDashed)
         {
             var dasher = _dasher ??= new Dasher(_image.Owner.Scope);
             dasher.Scale = scale;
+            dasher.Projection = projection;
             if (hasOutputTransform)
             {
-                // The dashes are cut in the coordinates of the drawing, where the canvas is not a rectangle: all of them
-                dasher.Configure(pen, stroker, _cancellationToken);
+                // The dashes are cut in the coordinates of the drawing, where the canvas is the intersection of four
+                // half-planes: those the canvas shows
+                var view = _isProjective ? _projectionView : new ProjectiveView(_transform, -1, -1, Width + 1, Height + 1, reach: 0);
+                dasher.Configure(pen, stroker, view, _cancellationToken, widthFactor);
             }
             else
             {
@@ -904,11 +984,19 @@ internal sealed partial class DrawingSession : IDisposable
         {
             var markers = _markers ??= new MarkerSink(_image.Owner.Scope);
             markers.Scale = scale;
+            markers.Projection = projection;
             markers.Configure(pen, stroker, sink);
             sink = markers;
         }
 
-        if (isPlacedFirst)
+        if (isPlacedFirst && _isProjective)
+        {
+            // The path is placed on the canvas and cut where it has no image, as a line: what remains is stroked
+            var placed = _strokeProjectiveSink ??= new ProjectiveSink();
+            placed.Configure(sink, _projectionView.Inflate(GetStrokeReach(pen, widthFactor), 0), isPolyline: true);
+            sink = placed;
+        }
+        else if (isPlacedFirst)
         {
             var placed = _strokeTransformSink ??= new TransformSink();
             placed.Configure(sink, _transformMatrix, _transformScale);
@@ -918,8 +1006,12 @@ internal sealed partial class DrawingSession : IDisposable
         return sink;
     }
 
+    /// <summary>Gets the distance from its path a stroke can reach: half its width, its miters, or anywhere with markers.</summary>
+    private static double GetStrokeReach(Pen pen, double widthFactor)
+        => pen.HasMarkers ? DrawingGuard.MaxCoordinate : pen.Width * widthFactor * Math.Max(pen.MiterLimit, 1) / 2;
+
     /// <summary>Gets a value indicating whether the path of a stroke is placed on the canvas before the pen strokes it: the pen is then not transformed with the path.</summary>
-    private bool IsPlacedBeforeStroke(Pen pen) => _hasTransform && !pen.ScalesWithTransform;
+    private bool IsPlacedBeforeStroke(Pen pen) => (_hasTransform || _isProjective) && !pen.ScalesWithTransform;
 
     /// <summary>Renders the pieces the stroker emitted, or the whole frame when one of them contains it.</summary>
     private void RenderStroke(Pen pen)
@@ -940,7 +1032,12 @@ internal sealed partial class DrawingSession : IDisposable
         {
             // What a stroke reaches around its path: its joins and its caps, and its markers anywhere
             var reach = pen.HasMarkers ? DrawingGuard.MaxCoordinate : pen.Width * Math.Max(pen.MiterLimit, 2);
-            if (IsPlacedBeforeStroke(pen))
+            if (IsPlacedBeforeStroke(pen) && _isProjective)
+            {
+                // A distance of the canvas is any distance of the drawing near the horizon of the plane
+                reach = DrawingGuard.MaxCoordinate;
+            }
+            else if (IsPlacedBeforeStroke(pen))
             {
                 // The reach is a distance of the canvas, and the bounds are those of the drawing: the distance of
                 // the drawing that the transformation shortens the most to it. Written so that a transformation
@@ -1065,7 +1162,7 @@ internal sealed partial class DrawingSession : IDisposable
         else if (brush is ImageBrush image)
         {
             var imagePaint = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-            imagePaint.Prepare(image.Source, image.SourceRegion, ToCanvas(image.Transform), image.WrapMode, image.Sampling, _frames[0], Width, nameof(brush));
+            imagePaint.Prepare(image.Source, image.SourceRegion, ToCanvasProjection(image.Transform), image.WrapMode, image.Sampling, _frames[0], Width, nameof(brush));
             if (image.OpacityCoverage == 0)
                 return false;
 
@@ -1090,7 +1187,7 @@ internal sealed partial class DrawingSession : IDisposable
         {
             var gradient = _gradient ??= new GradientEvaluator(_image.Owner.Scope);
             var gradientBrush = (GradientBrush)brush;
-            gradient.Prepare(gradientBrush, ToCanvas(gradientBrush.Transform), _frames[0], Width, _paintPipeline);
+            gradient.Prepare(gradientBrush, ToCanvasProjection(gradientBrush.Transform), _frames[0], Width, _paintPipeline);
             if (gradient.IsTransparent && isInert)
                 return false;
 

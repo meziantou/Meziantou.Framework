@@ -175,6 +175,19 @@ public sealed class PerformanceContractTests
                 turned.Clip(state.Path, state, static (clipped, state) => clipped.Transform(AffineTransform.CreateTranslation(2.5, -1), state, static (moved, state) => moved.Fill(state.Focal)));
                 turned.Shadow(new Rgba32(0, 0, 0, 100), new PointD(2, 1), 0.75, state, static (shadowed, state) => shadowed.FillCircle(state.Solid, new PointD(20, 20), 6));
             });
+            // In perspective: the shapes are cut where they have no image, and their curves cut for what is seen of them
+            canvas.Transform(new ProjectiveTransform(1.1, 0.05, 0.004, -0.1, 0.9, 0.002, 3, 2, 1), state, static (plane, state) =>
+            {
+                plane.Fill(state.Gradient, state.Path);
+                plane.Stroke(state.Pen, state.Path);
+                plane.Stroke(state.DashedPen, state.Path);
+                plane.FillRoundedRectangle(state.Sweep, new RectangleD(3.5, 2.25, 40, 30), 6.5);
+                plane.FillText(state.Solid, state.RichText, new PointD(2, 3));
+                plane.StrokeText(state.Pen, state.CffText, new PointD(3, 30));
+                plane.DrawImage(state.Sprite, new RectangleD(-5, 6.5, 30, 20), ImageSampling.Smooth, 0.9);
+                plane.Fill(state.Tile, state.Path);
+                plane.Clip(state.Path, state, static (clipped, state) => clipped.Fill(state.Focal));
+            });
             canvas.Clip(new Rectangle(10, 8, 30, 24), state, static (clipped, state) => clipped.Shadow(new Rgba32(255, 255, 0), default, 0.8, state, static (glow, state) => glow.Stroke(state.Pen, state.Path)));
             canvas.Clip(state.Path, state, static (clipped, state) =>
             {

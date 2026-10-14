@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -104,6 +105,14 @@ internal sealed class Vp8Decoder : IDisposable
 
     // Per-macroblock loop-filter information: level (bits 0-5) and the inner-edge flag (bit 7)
     private byte[] _filterInfo = [];
+
+    // Blocks of the current macroblock (bit i: block i, bit 24: Y2) that may have a non-zero coefficient (DC included), that
+    // may have a non-zero AC coefficient, and whose coefficients were written by the token decoder; whether the inverse WHT
+    // wrote the DC of the luma blocks
+    private uint _blocksWithCoefficients;
+    private uint _blocksWithAc;
+    private uint _blocksWritten;
+    private bool _lumaDcWritten;
 
     private Vp8Planes? _planes;
 
@@ -408,9 +417,12 @@ internal sealed class Vp8Decoder : IDisposable
 
         var uvMode = d.ReadTree(UVModeTree, Vp8Tables.KeyFrameUVModeProbabilities);
 
-        // Residuals
+        // Residuals: the coefficients are all zero here (the blocks written by the previous macroblock were cleared)
         var coefficients = _coefficients.AsSpan();
-        coefficients.Clear();
+        _blocksWithCoefficients = 0;
+        _blocksWithAc = 0;
+        _blocksWritten = 0;
+        _lumaDcWritten = false;
         var hasY2 = yMode != Vp8Tables.BPred;
         var nonZero = false;
         var aboveNonZero = _aboveNonZero.AsSpan(mbX * 9, 9);
@@ -447,7 +459,21 @@ internal sealed class Vp8Decoder : IDisposable
         var inner = !hasY2 || nonZero;
         _filterInfo[(mbY * _mbWidth) + mbX] = (byte)(level | (inner ? 0x80 : 0));
 
-        Vp8Reconstruction.ReconstructMacroblock(_planes!, mbX, mbY, _mbWidth, yMode, subModes, uvMode, coefficients);
+        Vp8Reconstruction.ReconstructMacroblock(_planes!, mbX, mbY, _mbWidth, yMode, subModes, uvMode, coefficients, _blocksWithCoefficients, _blocksWithAc);
+
+        // Clear only what was written, for the next macroblock
+        for (var written = _blocksWritten; written != 0; written &= written - 1)
+        {
+            coefficients.Slice(BitOperations.TrailingZeroCount(written) * 16, 16).Clear();
+        }
+
+        if (_lumaDcWritten)
+        {
+            for (var i = 0; i < 16; i++)
+            {
+                coefficients[i * 16] = 0;
+            }
+        }
     }
 
     /// <returns><see langword="true"/> when at least one block has a decoded non-zero coefficient.</returns>
@@ -466,7 +492,27 @@ internal sealed class Vp8Decoder : IDisposable
             var hasCoefficients = eob > 0;
             above[8] = left[8] = hasCoefficients ? (byte)1 : (byte)0;
             nonZero |= hasCoefficients;
-            Vp8Transforms.InverseWalshHadamard(y2, coefficients);
+            if (hasCoefficients)
+            {
+                // Without Y2 coefficient the luma DCs stay zero; with a Y2 DC only, the transform gives (dc + 3) >> 3 everywhere
+                if (eob == 1)
+                {
+                    var dc = (short)((y2[0] + 3) >> 3);
+                    for (var i = 0; i < 16; i++)
+                    {
+                        coefficients[i * 16] = dc;
+                    }
+                }
+                else
+                {
+                    Vp8Transforms.InverseWalshHadamard(y2, coefficients);
+                }
+
+                _blocksWritten |= 1u << 24;
+                _blocksWithCoefficients |= 0xFFFF;
+                _lumaDcWritten = true;
+            }
+
             firstCoefficient = 1;
             yType = 0;
         }
@@ -484,6 +530,7 @@ internal sealed class Vp8Decoder : IDisposable
                 var hasCoefficients = eob > firstCoefficient;
                 above[x] = left[y] = hasCoefficients ? (byte)1 : (byte)0;
                 nonZero |= hasCoefficients;
+                TrackBlock((y * 4) + x, eob, hasCoefficients);
             }
         }
 
@@ -501,11 +548,27 @@ internal sealed class Vp8Decoder : IDisposable
                     var hasCoefficients = eob > 0;
                     above[context + x] = left[context + y] = hasCoefficients ? (byte)1 : (byte)0;
                     nonZero |= hasCoefficients;
+                    TrackBlock(index, eob, hasCoefficients);
                 }
             }
         }
 
         return nonZero;
+    }
+
+    /// <summary>Records which coefficients of a block the token decoder may have made non-zero: only positions before <paramref name="eob"/>.</summary>
+    private void TrackBlock(int index, int eob, bool hasCoefficients)
+    {
+        if (hasCoefficients)
+        {
+            var bit = 1u << index;
+            _blocksWritten |= bit;
+            _blocksWithCoefficients |= bit;
+            if (eob > 1)
+            {
+                _blocksWithAc |= bit;
+            }
+        }
     }
 
     /// <summary>Decodes the tokens of one block (RFC 6386 section 13) into dequantized coefficients in raster order.</summary>

@@ -63,23 +63,34 @@ internal static class Vp8Transforms
 
         if (acZero)
         {
-            // Exact shortcut: with only a DC coefficient every output is (dc + 4) >> 3
-            if (block[0] == 0)
-                return;
-
-            var dc = (block[0] + 4) >> 3;
-            for (var y = 0; y < 4; y++)
-            {
-                var row = destination.Slice(y * stride, 4);
-                for (var x = 0; x < 4; x++)
-                {
-                    row[x] = ClampByte(row[x] + dc);
-                }
-            }
-
-            return;
+            InverseDctAddDc(block[0], destination, stride);
         }
+        else
+        {
+            InverseDctAddFull(block, destination, stride);
+        }
+    }
 
+    /// <summary>Adds the inverse DCT of a block whose only non-zero coefficient is the DC: exactly (dc + 4) >> 3 everywhere.</summary>
+    public static void InverseDctAddDc(short dcCoefficient, Span<byte> destination, int stride)
+    {
+        if (dcCoefficient == 0)
+            return;
+
+        var dc = (dcCoefficient + 4) >> 3;
+        for (var y = 0; y < 4; y++)
+        {
+            var row = destination.Slice(y * stride, 4);
+            for (var x = 0; x < 4; x++)
+            {
+                row[x] = ClampByte(row[x] + dc);
+            }
+        }
+    }
+
+    /// <summary>Adds the inverse DCT of a block to the 4x4 prediction (any coefficients; exact for DC-only blocks too).</summary>
+    public static void InverseDctAddFull(ReadOnlySpan<short> block, Span<byte> destination, int stride)
+    {
         // Vertical pass (columns), then horizontal pass (rows) with rounding
         Span<int> temp = stackalloc int[16];
         for (var i = 0; i < 4; i++)

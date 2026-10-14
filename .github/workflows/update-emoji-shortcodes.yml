@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
       - run: |
           dotnet run --project tools/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator
           if ($LASTEXITCODE -ne 0) {

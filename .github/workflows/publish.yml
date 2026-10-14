@@ -39,10 +39,10 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
       - name: Generate delta build file
         id: package-project
-        uses: ./.github/actions/deltabuild
+        uses: $/.github/actions/deltabuild
         with:
           input-project: eng/packages.proj
           output-project: eng/packages.delta.proj
@@ -93,7 +93,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - parallel:
           - name: Setup .NET
-            uses: ./.github/actions/setup-dotnet
+            uses: $/.github/actions/setup-dotnet
           - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
             if: needs.create_nuget.outputs.has-project == 'true'
             with:
@@ -119,7 +119,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - parallel:
           - name: Setup .NET
-            uses: ./.github/actions/setup-dotnet
+            uses: $/.github/actions/setup-dotnet
           - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
             with:
               name: nuget

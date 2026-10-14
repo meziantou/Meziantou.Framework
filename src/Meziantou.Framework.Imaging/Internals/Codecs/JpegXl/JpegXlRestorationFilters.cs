@@ -22,6 +22,9 @@ internal static class JpegXlRestorationFilters
 
     private const int Border = 3;
 
+    /// <summary>The largest number of samples over which a neighbor is compared with a sample.</summary>
+    private const int MaxPatchLength = 5;
+
     /// <summary>
     /// Computes, for each block of 8x8 samples of a VarDCT frame, the inverse of the strength of the edge-preserving filter:
     /// the strength grows with the quantization step of the block and with its sharpness parameter.
@@ -254,11 +257,21 @@ internal static class JpegXlRestorationFilters
         Span<float> outputB)
     {
         var x = 0;
-        if (Vector128.IsHardwareAccelerated)
+        if (Vector128.IsHardwareAccelerated && patchOffsets.Length <= MaxPatchLength && IsInside(paddedX.Length, rowStart, width, neighborOffsets, patchOffsets) && IsInside(paddedY.Length, rowStart, width, neighborOffsets, patchOffsets) && IsInside(paddedB.Length, rowStart, width, neighborOffsets, patchOffsets))
         {
+            // Every position read is checked above, once for the row: the loads are not checked again
+            ref var originX = ref unsafe(MemoryMarshal.GetReference(paddedX));
+            ref var originY = ref unsafe(MemoryMarshal.GetReference(paddedY));
+            ref var originB = ref unsafe(MemoryMarshal.GetReference(paddedB));
             var scaleX = Vector128.Create(parameters.ScaleX);
             var scaleY = Vector128.Create(parameters.ScaleY);
             var scaleB = Vector128.Create(parameters.ScaleB);
+
+            // The samples of the patch around the four samples, which every neighbor is compared with
+            Span<Vector128<float>> patch = stackalloc Vector128<float>[3 * MaxPatchLength];
+            var patchX = patch[..patchOffsets.Length];
+            var patchY = patch.Slice(MaxPatchLength, patchOffsets.Length);
+            var patchB = patch.Slice(2 * MaxPatchLength, patchOffsets.Length);
             for (; x <= width - 4; x += 4)
             {
                 // The four samples are in the same block: the first one is on its left border, or the last one on its right border
@@ -270,30 +283,38 @@ internal static class JpegXlRestorationFilters
                 var border = blockInverseSigma * parameters.BorderScale;
                 var scaledInverseSigma = isBorderRow ? Vector128.Create(border) : (x & 4) == 0 ? Vector128.Create(border, inner, inner, inner) : Vector128.Create(inner, inner, inner, border);
                 var position = rowStart + x;
+                for (var k = 0; k < patchOffsets.Length; k++)
+                {
+                    var reference = position + patchOffsets[k];
+                    patchX[k] = Load(ref originX, reference);
+                    patchY[k] = Load(ref originY, reference);
+                    patchB[k] = Load(ref originB, reference);
+                }
+
                 var weightSum = Vector128<float>.One;
-                var sumX = Vector128.Create(paddedX.Slice(position, 4));
-                var sumY = Vector128.Create(paddedY.Slice(position, 4));
-                var sumB = Vector128.Create(paddedB.Slice(position, 4));
+                var sumX = Load(ref originX, position);
+                var sumY = Load(ref originY, position);
+                var sumB = Load(ref originB, position);
                 foreach (var neighbor in neighborOffsets)
                 {
                     var differenceX = Vector128<float>.Zero;
                     var differenceY = Vector128<float>.Zero;
                     var differenceB = Vector128<float>.Zero;
-                    foreach (var offset in patchOffsets)
+                    for (var k = 0; k < patchOffsets.Length; k++)
                     {
-                        var reference = position + offset;
-                        differenceX += Vector128.Abs(Vector128.Create(paddedX.Slice(reference, 4)) - Vector128.Create(paddedX.Slice(reference + neighbor, 4)));
-                        differenceY += Vector128.Abs(Vector128.Create(paddedY.Slice(reference, 4)) - Vector128.Create(paddedY.Slice(reference + neighbor, 4)));
-                        differenceB += Vector128.Abs(Vector128.Create(paddedB.Slice(reference, 4)) - Vector128.Create(paddedB.Slice(reference + neighbor, 4)));
+                        var reference = position + patchOffsets[k] + neighbor;
+                        differenceX += Vector128.Abs(patchX[k] - Load(ref originX, reference));
+                        differenceY += Vector128.Abs(patchY[k] - Load(ref originY, reference));
+                        differenceB += Vector128.Abs(patchB[k] - Load(ref originB, reference));
                     }
 
                     var difference = (differenceX * scaleX) + (differenceY * scaleY) + (differenceB * scaleB);
                     var weight = (difference * scaledInverseSigma) + Vector128<float>.One;
                     var isPositive = Vector128.GreaterThan(weight, Vector128<float>.Zero);
                     weightSum = Vector128.ConditionalSelect(isPositive, weightSum + weight, weightSum);
-                    sumX = Vector128.ConditionalSelect(isPositive, sumX + (weight * Vector128.Create(paddedX.Slice(position + neighbor, 4))), sumX);
-                    sumY = Vector128.ConditionalSelect(isPositive, sumY + (weight * Vector128.Create(paddedY.Slice(position + neighbor, 4))), sumY);
-                    sumB = Vector128.ConditionalSelect(isPositive, sumB + (weight * Vector128.Create(paddedB.Slice(position + neighbor, 4))), sumB);
+                    sumX = Vector128.ConditionalSelect(isPositive, sumX + (weight * Load(ref originX, position + neighbor)), sumX);
+                    sumY = Vector128.ConditionalSelect(isPositive, sumY + (weight * Load(ref originY, position + neighbor)), sumY);
+                    sumB = Vector128.ConditionalSelect(isPositive, sumB + (weight * Load(ref originB, position + neighbor)), sumB);
                 }
 
                 var inverseWeight = Vector128<float>.One / weightSum;
@@ -305,6 +326,32 @@ internal static class JpegXlRestorationFilters
 
         FilterRowScalar(paddedX, paddedY, paddedB, rowStart, width, neighborOffsets, patchOffsets, sigmaRow, isBorderRow, parameters, outputX, outputY, outputB, x);
     }
+
+    /// <summary>
+    /// Gets a value indicating whether every position the vectorized row reads is inside a padded channel: from the first
+    /// sample of the row plus the most negative offsets to the last one plus the most positive offsets.
+    /// </summary>
+    private static bool IsInside(int length, int rowStart, int width, ReadOnlySpan<int> neighborOffsets, ReadOnlySpan<int> patchOffsets)
+    {
+        int lowestNeighbor = 0, highestNeighbor = 0, lowestPatch = 0, highestPatch = 0;
+        foreach (var offset in neighborOffsets)
+        {
+            lowestNeighbor = Math.Min(lowestNeighbor, offset);
+            highestNeighbor = Math.Max(highestNeighbor, offset);
+        }
+
+        foreach (var offset in patchOffsets)
+        {
+            lowestPatch = Math.Min(lowestPatch, offset);
+            highestPatch = Math.Max(highestPatch, offset);
+        }
+
+        return width > 0 && (long)rowStart + lowestNeighbor + lowestPatch >= 0 && (long)rowStart + width - 1 + highestNeighbor + highestPatch < length;
+    }
+
+    /// <summary>Loads four samples from a position that was checked.</summary>
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    private static Vector128<float> Load(ref float origin, int position) => unsafe(Vector128.LoadUnsafe(ref origin, (nuint)position));
 
     /// <summary>The scalar reference of <see cref="FilterRow"/>, from the sample <paramref name="start"/> on.</summary>
     internal static void FilterRowScalar(

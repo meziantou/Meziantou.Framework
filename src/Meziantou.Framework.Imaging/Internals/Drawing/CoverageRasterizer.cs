@@ -54,6 +54,9 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>The winding number of an edge that just entered the sweep line and was not walked yet.</summary>
     private const int UnknownWinding = int.MinValue;
 
+    /// <summary>The number of columns of a row from which the entries of the difference row that are zero are skipped.</summary>
+    private const int MinZeroSkipWidth = 32;
+
     // The scratch of the sweep, for each edge a row can hold at once
     private const int SweepDoublesPerEdge = 4;
     private const int SweepIntegersPerEdge = 9;
@@ -874,21 +877,29 @@ internal sealed class CoverageRasterizer : IDisposable
         var firstCovered = -1;
         var lastCovered = -1;
         double area = 0;
-        for (var column = _dirtyMin; column <= last; column++)
-        {
-            area += accumulation[column];
-            accumulation[column] = 0;
-            var value = Quantize(area);
-            coverage[column] = value;
-            if (value != 0)
-            {
-                if (firstCovered < 0)
-                {
-                    firstCovered = column;
-                }
 
-                lastCovered = column;
+        if (last - _dirtyMin < MinZeroSkipWidth)
+        {
+            for (var column = _dirtyMin; column <= last; column++)
+            {
+                area += accumulation[column];
+                accumulation[column] = 0;
+                var value = Quantize(area);
+                coverage[column] = value;
+                if (value != 0)
+                {
+                    if (firstCovered < 0)
+                    {
+                        firstCovered = column;
+                    }
+
+                    lastCovered = column;
+                }
             }
+        }
+        else
+        {
+            area = FlushWide(accumulation, coverage, _dirtyMin, last, ref firstCovered, ref lastCovered);
         }
 
         // The entry past the last column only receives what leaves the frame
@@ -916,6 +927,47 @@ internal sealed class CoverageRasterizer : IDisposable
         X = firstCovered;
         Count = lastCovered - firstCovered + 1;
         return true;
+    }
+
+    /// <summary>
+    /// Turns the difference row of a long row into coverages, skipping the entries that are zero: an entry of +0
+    /// leaves the area as it is (only a sum of zeros changes its sign, which quantizes the same), so the columns up to
+    /// the next other entry have the coverage of the column before them.
+    /// </summary>
+    /// <returns>The area after the last column.</returns>
+    private static double FlushWide(Span<double> accumulation, Span<uint> coverage, int first, int last, ref int firstCovered, ref int lastCovered)
+    {
+        var bits = unsafe(MemoryMarshal.Cast<double, ulong>(accumulation));
+        double area = 0;
+        var column = first;
+        while (column <= last)
+        {
+            area += accumulation[column];
+            accumulation[column] = 0;
+            var value = Quantize(area);
+            coverage[column] = value;
+            var end = column + 1;
+            if (end <= last && bits[end] == 0)
+            {
+                var next = bits[end..(last + 1)].IndexOfAnyExcept(0UL);
+                end = next < 0 ? last + 1 : end + next;
+                coverage[(column + 1)..end].Fill(value);
+            }
+
+            if (value != 0)
+            {
+                if (firstCovered < 0)
+                {
+                    firstCovered = column;
+                }
+
+                lastCovered = end - 1;
+            }
+
+            column = end;
+        }
+
+        return area;
     }
 
     private void Touch(int first, int last)

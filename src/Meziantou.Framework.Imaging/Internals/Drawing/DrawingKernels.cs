@@ -538,58 +538,68 @@ internal static class DrawingKernels
         var colors = source.Colors;
         var color = source.Color;
         Span<ushort> paint = [color.C0, color.C1, color.C2, color.Alpha];
-        Span<ushort> blended = stackalloc ushort[4];
         Span<double> s = stackalloc double[3];
         Span<double> d = stackalloc double[3];
         Span<double> b = stackalloc double[3];
 
+        // The paint of each pixel of a chunk, composited at once: a pixel only depends on its own samples
+        const int ChunkSize = 64;
+        Span<ushort> chunkColors = stackalloc ushort[ChunkSize * 4];
+
         // Where red is among the color samples of a pixel, and where blue is
         var red = isBlueFirst ? 2 : 0;
         var blue = 2 - red;
-        for (var i = 0; i < coverage.Length; i++)
+        for (var start = 0; start < coverage.Length; start += ChunkSize)
         {
-            if (coverage[i] == 0)
-                continue;
-
-            if (!colors.IsEmpty)
+            var count = Math.Min(ChunkSize, coverage.Length - start);
+            for (var k = 0; k < count; k++)
             {
-                colors.Slice(i * 4, 4).CopyTo(paint);
+                var i = start + k;
+                if (coverage[i] == 0)
+                    continue;
+
+                if (!colors.IsEmpty)
+                {
+                    colors.Slice(i * 4, 4).CopyTo(paint);
+                }
+
+                var blended = chunkColors.Slice(k * 4, 4);
+                paint.CopyTo(blended);
+                var pixel = samples.Slice(i * channels, channels);
+                var backdrop = channels == 4 ? double.CreateTruncating(pixel[3]) / max : 1;
+                if (paint[3] != 0 && backdrop != 0)
+                {
+                    if (colorChannels == 1)
+                    {
+                        s[0] = s[1] = s[2] = paint[0] / max;
+                        d[0] = d[1] = d[2] = double.CreateTruncating(pixel[0]) / max;
+                    }
+                    else
+                    {
+                        s[0] = paint[red] / max;
+                        s[1] = paint[1] / max;
+                        s[2] = paint[blue] / max;
+                        d[0] = double.CreateTruncating(pixel[red]) / max;
+                        d[1] = double.CreateTruncating(pixel[1]) / max;
+                        d[2] = double.CreateTruncating(pixel[blue]) / max;
+                    }
+
+                    BlendFunctions.Blend(source.Blend, s, d, b);
+                    if (colorChannels == 1)
+                    {
+                        blended[0] = ToSample(((1 - backdrop) * s[0]) + (backdrop * b[0]), max);
+                    }
+                    else
+                    {
+                        blended[red] = ToSample(((1 - backdrop) * s[0]) + (backdrop * b[0]), max);
+                        blended[1] = ToSample(((1 - backdrop) * s[1]) + (backdrop * b[1]), max);
+                        blended[blue] = ToSample(((1 - backdrop) * s[2]) + (backdrop * b[2]), max);
+                    }
+                }
             }
 
-            paint.CopyTo(blended);
-            var pixel = samples.Slice(i * channels, channels);
-            var backdrop = channels == 4 ? double.CreateTruncating(pixel[3]) / max : 1;
-            if (paint[3] != 0 && backdrop != 0)
-            {
-                if (colorChannels == 1)
-                {
-                    s[0] = s[1] = s[2] = paint[0] / max;
-                    d[0] = d[1] = d[2] = double.CreateTruncating(pixel[0]) / max;
-                }
-                else
-                {
-                    s[0] = paint[red] / max;
-                    s[1] = paint[1] / max;
-                    s[2] = paint[blue] / max;
-                    d[0] = double.CreateTruncating(pixel[red]) / max;
-                    d[1] = double.CreateTruncating(pixel[1]) / max;
-                    d[2] = double.CreateTruncating(pixel[blue]) / max;
-                }
-
-                BlendFunctions.Blend(source.Blend, s, d, b);
-                if (colorChannels == 1)
-                {
-                    blended[0] = ToSample(((1 - backdrop) * s[0]) + (backdrop * b[0]), max);
-                }
-                else
-                {
-                    blended[red] = ToSample(((1 - backdrop) * s[0]) + (backdrop * b[0]), max);
-                    blended[1] = ToSample(((1 - backdrop) * s[1]) + (backdrop * b[1]), max);
-                    blended[blue] = ToSample(((1 - backdrop) * s[2]) + (backdrop * b[2]), max);
-                }
-            }
-
-            Composite(pixel, channels, coverage.Slice(i, 1), new DrawingSource(blended, source.Mode));
+            // The pixels without coverage are not written: their entry is not read
+            CompositeCore(samples.Slice(start * channels, count * channels), channels, coverage.Slice(start, count), new DrawingSource(chunkColors[..(count * 4)], source.Mode));
         }
 
         // Written so that a value that is not a number is zero

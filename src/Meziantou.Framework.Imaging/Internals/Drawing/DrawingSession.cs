@@ -1033,7 +1033,10 @@ internal sealed partial class DrawingSession : IDisposable
                 coverage = ApplyOpacity(coverage, opacity);
             }
 
-            var source = evaluator is null ? new DrawingSource(color, mode, blend, _transfer, _curves) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend, _transfer, _curves);
+            // A paint that gives the whole row one color is composited as a single color: the same formulas
+            var source = evaluator is null ? new DrawingSource(color, mode, blend, _transfer, _curves)
+                : evaluator.TryGetRowColor(y, x, out var rowColor) ? new DrawingSource(rowColor, mode, blend, _transfer, _curves)
+                : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend, _transfer, _curves);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], y, x, coverage, source);

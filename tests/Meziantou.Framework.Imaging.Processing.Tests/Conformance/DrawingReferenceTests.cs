@@ -536,7 +536,9 @@ public sealed class DrawingReferenceTests
     [MemberData(nameof(AllFormats))]
     public void RandomGradientsMatchTheExactReference(PixelFormat format)
     {
-        const int Cases = 120;
+        // The last cases are linear gradients along a vertical axis, whose rows have one color
+        const int Cases = 150;
+        const int VerticalCases = 30;
         var layout = ReferencePixelLayout.FromPixelFormat(format);
         var failures = new List<string>();
         for (var index = 0; index < Cases; index++)
@@ -550,8 +552,14 @@ public sealed class DrawingReferenceTests
             var stops = offsets.Select(offset => new GradientStop(offset, CreateColor(random))).ToArray();
             var spreadMode = (GradientSpreadMode)random.Next(3);
             double Coordinate(int size) => random.Next(3) == 0 ? random.Next(-2, size + 3) : (random.NextDouble() * (size + 4)) - 2;
-            var radial = random.Next(2) == 0;
+            var isVertical = index >= Cases - VerticalCases;
+            var radial = random.Next(2) == 0 && !isVertical;
             var (x0, y0, x1, y1) = (Coordinate(width), Coordinate(height), Coordinate(width), Coordinate(height));
+            if (isVertical)
+            {
+                x1 = x0;
+            }
+
             var radius = random.Next(4) == 0 ? random.Next(0, 6) : random.NextDouble() * 8;
             GradientBrush brush = radial
                 ? new RadialGradientBrush(new PointD(x0, y0), radius, stops) { SpreadMode = spreadMode }

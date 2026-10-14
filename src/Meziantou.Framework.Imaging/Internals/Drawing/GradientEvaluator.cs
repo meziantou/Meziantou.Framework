@@ -284,6 +284,25 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         return colors;
     }
 
+    /// <remarks>
+    /// The color does not depend on the column for a degenerate gradient, a gradient of one stop, and a linear
+    /// gradient without transformation whose axis is vertical: its parameter is
+    /// <c>((px 0) + (py ay)) / |a|^2</c>, where <c>px 0</c> is a zero for every finite <c>px</c> and the sign of a zero
+    /// does not change any rounded sample. The color of the first pixel is then the color of the row.
+    /// </remarks>
+    public override bool TryGetRowColor(int y, int x, out DrawingColor color)
+    {
+        if (_degenerate || _stopCount == 1 || (_kind == GradientKind.Linear && !_hasTransform && _axisX == 0))
+        {
+            var samples = Evaluate(y, x, 1);
+            color = new DrawingColor(samples[0], samples[1], samples[2], samples[3]);
+            return true;
+        }
+
+        color = default;
+        return false;
+    }
+
     public void Dispose()
     {
         _stops?.Dispose();

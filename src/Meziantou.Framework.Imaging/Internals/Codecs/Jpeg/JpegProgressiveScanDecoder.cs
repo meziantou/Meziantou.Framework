@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -100,6 +102,10 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
     }
 
     /// <summary>T.81 G.1.2.2: run-length coding of the band, with end-of-band runs that span blocks.</summary>
+    /// <remarks>
+    /// The bit state is kept in a <see cref="JpegEntropyReader.Cursor"/> for the block. Short codes with small magnitudes
+    /// are decoded with <see cref="JpegHuffmanTable.FastAc"/>, with the checks of the regular path in the same order.
+    /// </remarks>
     private void DecodeAcFirst(JpegHuffmanTable table, Span<short> block)
     {
         if (_endOfBandRun > 0)
@@ -108,10 +114,29 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
             return;
         }
 
-        var reader = Reader;
+        var reader = Reader.GetCursor();
         var zigZag = JpegIdct.ZigZag;
-        for (var k = _start; k <= _end;)
+        var fastAc = table.FastAc!;
+        var end = _end;
+        var low = _low;
+        for (var k = _start; k <= end;)
         {
+            var fast = reader.TryDecodeFastAc(fastAc);
+            if (fast != 0)
+            {
+                k += (fast >> 4) & 0x0F;
+                if (k > end)
+                    throw Invalid("The JPEG AC coefficients run past the end of the spectral band.");
+
+                var shifted = (long)(fast >> 8) << low;
+                if (Math.Abs(shifted) > short.MaxValue)
+                    throw Invalid("The JPEG AC coefficient is out of range.");
+
+                block[zigZag[k]] = (short)shifted;
+                k++;
+                continue;
+            }
+
             var symbol = reader.DecodeHuffman(table);
             var run = symbol >> 4;
             var size = symbol & 0x0F;
@@ -121,7 +146,7 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
                 {
                     // EOBn: this block and the next 2^n - 1 + (n extra bits) blocks end here
                     _endOfBandRun = (1 << run) - 1 + (run == 0 ? 0 : reader.ReadBits(run));
-                    return;
+                    break;
                 }
 
                 k += 16; // ZRL
@@ -129,19 +154,21 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
             }
 
             k += run;
-            if (k > _end)
+            if (k > end)
                 throw Invalid("The JPEG AC coefficients run past the end of the spectral band.");
 
             if (size > MaxAcCategory)
                 throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG AC coefficient magnitude category is greater than {MaxAcCategory}."));
 
-            var value = (long)reader.ReceiveExtend(size) << _low;
+            var value = (long)reader.ReceiveExtend(size) << low;
             if (Math.Abs(value) > short.MaxValue)
                 throw Invalid("The JPEG AC coefficient is out of range.");
 
             block[zigZag[k]] = (short)value;
             k++;
         }
+
+        reader.Commit();
     }
 
     /// <summary>
@@ -149,15 +176,18 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
     /// <c>run</c> coefficients that are still zero; a correction bit follows for every coefficient already nonzero that the
     /// symbol passes over (or, for an EOB run, for every remaining one in each block of the run).
     /// </summary>
+    /// <remarks>The bit state is kept in a <see cref="JpegEntropyReader.Cursor"/> for the block.</remarks>
     private void DecodeAcRefinement(JpegHuffmanTable table, Span<short> block)
     {
-        var reader = Reader;
+        var reader = Reader.GetCursor();
         var zigZag = JpegIdct.ZigZag;
         var positive = 1 << _low;
+        var end = _end;
+        var endOfBandRun = _endOfBandRun;
         var k = _start;
-        if (_endOfBandRun == 0)
+        if (endOfBandRun == 0)
         {
-            for (; k <= _end; k++)
+            for (; k <= end; k++)
             {
                 var symbol = reader.DecodeHuffman(table);
                 var run = symbol >> 4;
@@ -173,17 +203,17 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
                 else if (run != 15)
                 {
                     // EOBn: the rest of this block and of the next blocks of the run only have correction bits
-                    _endOfBandRun = (1 << run) + (run == 0 ? 0 : reader.ReadBits(run));
+                    endOfBandRun = (1 << run) + (run == 0 ? 0 : reader.ReadBits(run));
                     break;
                 }
 
                 // Skip 'run' coefficients that are still zero (16 for ZRL), refining the nonzero ones on the way
-                for (; k <= _end; k++)
+                for (; k <= end; k++)
                 {
                     ref var coefficient = ref block[zigZag[k]];
                     if (coefficient != 0)
                     {
-                        Refine(ref coefficient, positive);
+                        Refine(ref reader, ref coefficient, positive);
                     }
                     else
                     {
@@ -196,7 +226,7 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
 
                 if (value != 0)
                 {
-                    if (k > _end)
+                    if (k > end)
                         throw Invalid("The JPEG AC coefficients run past the end of the spectral band.");
 
                     block[zigZag[k]] = (short)value;
@@ -204,26 +234,30 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
             }
         }
 
-        if (_endOfBandRun > 0)
+        if (endOfBandRun > 0)
         {
-            for (; k <= _end; k++)
+            for (; k <= end; k++)
             {
                 ref var coefficient = ref block[zigZag[k]];
                 if (coefficient != 0)
                 {
-                    Refine(ref coefficient, positive);
+                    Refine(ref reader, ref coefficient, positive);
                 }
             }
 
-            _endOfBandRun--;
+            endOfBandRun--;
         }
+
+        reader.Commit();
+        _endOfBandRun = endOfBandRun;
     }
 
     /// <summary>Applies the correction bit of a coefficient that is already nonzero: adds <c>2^Al</c> to its magnitude when set.</summary>
-    private void Refine(ref short coefficient, int bit)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Refine(ref JpegEntropyReader.Cursor reader, ref short coefficient, int bit)
     {
         // The bits below the previous position are zero, so the magnitude stays at most 32,767 (checked by the first scan)
-        if (Reader.ReadBits(1) != 0 && (Math.Abs((int)coefficient) & bit) == 0)
+        if (reader.ReadBits(1) != 0 && (Math.Abs((int)coefficient) & bit) == 0)
         {
             coefficient = (short)(coefficient >= 0 ? coefficient + bit : coefficient - bit);
         }

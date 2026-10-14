@@ -2431,6 +2431,54 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1ForwardTransformMatchesTheScalarReference()
+    {
+        // Every transform size and every transform type that applies to it, on residuals of random, extreme (the largest
+        // differences of 12-bit samples), sparse and constant samples
+        var random = new Random(42);
+        var expected = new int[32 * 32];
+        var actual = new int[32 * 32];
+        for (var txSz = 0; txSz < Av1Constants.TxSizesAll; txSz++)
+        {
+            var log2W = Av1Tables.TxWidthLog2[txSz];
+            var log2H = Av1Tables.TxHeightLog2[txSz];
+            var count = Math.Min(32, 1 << log2W) * Math.Min(32, 1 << log2H);
+            var residual = new int[(1 << log2W) << log2H];
+            for (var txType = 0; txType < Av1Constants.TxTypes; txType++)
+            {
+                if (!IsApplicable(Av1InverseTransform.GetRowKind(txType), log2W) || !IsApplicable(Av1InverseTransform.GetColumnKind(txType), log2H))
+                    continue;
+
+                for (var round = 0; round < 12; round++)
+                {
+                    for (var i = 0; i < residual.Length; i++)
+                    {
+                        residual[i] = (round % 4) switch
+                        {
+                            0 => random.Next(-4095, 4096),
+                            1 => random.Next(2) == 0 ? -4095 : 4095,
+                            2 => random.Next(8) == 0 ? random.Next(-300, 301) : 0,
+                            _ => round is 3 ? 4095 : -4095,
+                        };
+                    }
+
+                    Av1ForwardTransform.ForwardScalar(residual, expected.AsSpan(0, count), txSz, txType);
+                    Av1ForwardTransform.Forward(residual, actual.AsSpan(0, count), txSz, txType);
+                    Assert.True(expected.AsSpan(0, count).SequenceEqual(actual.AsSpan(0, count)), $"Transform size {txSz}, type {txType}, round {round}.");
+                }
+            }
+        }
+
+        static bool IsApplicable(Av1InverseTransform.Kind kind, int log2Size) => kind switch
+        {
+            Av1InverseTransform.Kind.Adst => log2Size <= 4,
+            Av1InverseTransform.Kind.Identity => log2Size <= 5,
+            _ => true,
+        };
+    }
+
     [Theory]
     [InlineData(PixelFormat.Rgb24, false, false)]
     [InlineData(PixelFormat.Rgba32, false, false)]

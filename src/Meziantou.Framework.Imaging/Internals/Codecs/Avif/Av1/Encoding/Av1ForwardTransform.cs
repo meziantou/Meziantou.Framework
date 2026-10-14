@@ -1,3 +1,7 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -12,6 +16,8 @@ internal static class Av1ForwardTransform
 
     private static readonly int[]?[] DctBases = CreateBases(Av1InverseTransform.Kind.Dct, 6);
     private static readonly int[]?[] AdstBases = CreateBases(Av1InverseTransform.Kind.Adst, 4);
+    private static readonly int[]?[] DctBasesTransposed = Transpose(DctBases);
+    private static readonly int[]?[] AdstBasesTransposed = Transpose(AdstBases);
     private static readonly int[] SquaredGains = MeasureSquaredGains();
 
     /// <summary>
@@ -44,6 +50,19 @@ internal static class Av1ForwardTransform
     /// <param name="txSz">The transform size.</param>
     /// <param name="txType">The transform type (<c>PlaneTxType</c>).</param>
     public static void Forward(ReadOnlySpan<int> residual, Span<int> coefficients, int txSz, int txType)
+    {
+        if (AdvSimd.IsSupported)
+        {
+            ForwardAdvSimd(residual, coefficients, txSz, txType);
+        }
+        else
+        {
+            ForwardScalar(residual, coefficients, txSz, txType);
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="Forward"/>.</summary>
+    internal static void ForwardScalar(ReadOnlySpan<int> residual, Span<int> coefficients, int txSz, int txType)
     {
         var log2W = Av1Tables.TxWidthLog2[txSz];
         var log2H = Av1Tables.TxHeightLog2[txSz];
@@ -107,6 +126,122 @@ internal static class Av1ForwardTransform
         }
     }
 
+    // The same sums of exact products as ForwardScalar, accumulated in 64 bits for 4 columns or 4 coefficients at once. The
+    // samples of the residual are differences of samples (at most 2^12 in magnitude) and the bases are below 2^22, so the
+    // intermediate values, a sum of at most 64 products divided by 2^12, are below 2^28: they are stored in 32 bits, and
+    // multiplied by the bases into 64-bit products like the scalar reference does
+    [SkipLocalsInit]
+    private static void ForwardAdvSimd(ReadOnlySpan<int> residual, Span<int> coefficients, int txSz, int txType)
+    {
+        var log2W = Av1Tables.TxWidthLog2[txSz];
+        var log2H = Av1Tables.TxHeightLog2[txSz];
+        var w = 1 << log2W;
+        var h = 1 << log2H;
+        var tw = Math.Min(32, w);
+        var th = Math.Min(32, h);
+        var rowShift = Av1Tables.TransformRowShift[txSz];
+        var isRectangular2To1 = Math.Abs(log2W - log2H) is 1;
+        var rowKind = Av1InverseTransform.GetRowKind(txType);
+        var colKind = Av1InverseTransform.GetColumnKind(txType);
+        var flipUD = txType is Av1Constants.FlipadstDct or Av1Constants.FlipadstAdst or Av1Constants.VFlipadst or Av1Constants.FlipadstFlipadst;
+        var flipLR = txType is Av1Constants.DctFlipadst or Av1Constants.AdstFlipadst or Av1Constants.HFlipadst or Av1Constants.FlipadstFlipadst;
+        residual = residual[..(w * h)];
+
+        // The columns, every element written before it is read: th outputs per column, with IntermediateBits fractional bits
+        Span<int> intermediate = unsafe(stackalloc int[th * w]);
+        var colBasis = GetBasis(colKind, log2H);
+        if (colBasis is null)
+        {
+            var colIdentity = GetIdentityMultiplier(log2H);
+            for (var k = 0; k < th; k++)
+            {
+                var source = residual.Slice(k * w, w);
+                var line = intermediate.Slice(k * w, w);
+                for (var c = 0; c < w; c++)
+                {
+                    line[c] = (int)Round(source[c] * colIdentity, BasisBits - IntermediateBits);
+                }
+            }
+        }
+        else
+        {
+            var rounding = Vector128.Create(1L << (BasisBits - IntermediateBits - 1));
+            for (var k = 0; k < th; k++)
+            {
+                var basis = colBasis.AsSpan(k * h, h);
+                for (var c = 0; c < w; c += 4)
+                {
+                    var low = rounding;
+                    var high = rounding;
+                    for (var r = 0; r < h; r++)
+                    {
+                        var samples = Vector128.Create(residual.Slice(((flipUD ? h - 1 - r : r) * w) + c, 4));
+                        var factor = Vector64.Create(basis[r]);
+                        low = AdvSimd.MultiplyWideningLowerAndAdd(low, samples.GetLower(), factor);
+                        high = AdvSimd.MultiplyWideningLowerAndAdd(high, samples.GetUpper(), factor);
+                    }
+
+                    low = Vector128.ShiftRightArithmetic(low, BasisBits - IntermediateBits);
+                    high = Vector128.ShiftRightArithmetic(high, BasisBits - IntermediateBits);
+                    Vector128.Narrow(low, high).CopyTo(intermediate.Slice((k * w) + c, 4));
+                }
+            }
+        }
+
+        if (flipLR)
+        {
+            for (var k = 0; k < th; k++)
+            {
+                intermediate.Slice(k * w, w).Reverse();
+            }
+        }
+
+        // The rows, then the scale of the inverse process: 2^(4 + rowShift), and sqrt(2) for a 2:1 rectangle
+        var rowBasis = GetTransposedBasis(rowKind, log2W);
+        var rowIdentity = GetIdentityMultiplier(log2W);
+        var shift = BasisBits + IntermediateBits - 4 - rowShift;
+        Span<long> sums = unsafe(stackalloc long[4]);
+        for (var k = 0; k < th; k++)
+        {
+            var line = intermediate.Slice(k * w, w);
+            var output = coefficients.Slice(k * tw, tw);
+            for (var l = 0; l < tw; l += 4)
+            {
+                if (rowBasis is null)
+                {
+                    for (var i = 0; i < 4; i++)
+                    {
+                        sums[i] = line[l + i] * rowIdentity;
+                    }
+                }
+                else
+                {
+                    var low = Vector128<long>.Zero;
+                    var high = Vector128<long>.Zero;
+                    for (var c = 0; c < w; c++)
+                    {
+                        var basis = Vector128.Create(rowBasis.AsSpan((c * tw) + l, 4));
+                        var factor = Vector64.Create(line[c]);
+                        low = AdvSimd.MultiplyWideningLowerAndAdd(low, basis.GetLower(), factor);
+                        high = AdvSimd.MultiplyWideningLowerAndAdd(high, basis.GetUpper(), factor);
+                    }
+
+                    low.CopyTo(sums);
+                    high.CopyTo(sums[2..]);
+                }
+
+                for (var i = 0; i < 4; i++)
+                {
+                    var sum = sums[i];
+                    if (isRectangular2To1)
+                        sum = Round(sum * 5793, 12);
+
+                    output[l + i] = (int)Round(sum, shift);
+                }
+            }
+        }
+    }
+
     // The sums of products are exact: the order of the terms does not change them
     private static long Dot(ReadOnlySpan<int> samples, ReadOnlySpan<int> basis)
     {
@@ -154,6 +289,39 @@ internal static class Av1ForwardTransform
         Av1InverseTransform.Kind.Adst => AdstBases[n],
         _ => null,
     };
+
+    private static int[]? GetTransposedBasis(Av1InverseTransform.Kind kind, int n) => kind switch
+    {
+        Av1InverseTransform.Kind.Dct => DctBasesTransposed[n],
+        Av1InverseTransform.Kind.Adst => AdstBasesTransposed[n],
+        _ => null,
+    };
+
+    // The bases with one row per sample: the entry of the coefficient k for the sample i is at (i * count) + k
+    private static int[]?[] Transpose(int[]?[] bases)
+    {
+        var transposed = new int[]?[bases.Length];
+        for (var n = 0; n < bases.Length; n++)
+        {
+            if (bases[n] is not { } basis)
+                continue;
+
+            var length = 1 << n;
+            var count = Math.Min(length, 32);
+            var values = new int[basis.Length];
+            for (var k = 0; k < count; k++)
+            {
+                for (var i = 0; i < length; i++)
+                {
+                    values[(i * count) + k] = basis[(k * length) + i];
+                }
+            }
+
+            transposed[n] = values;
+        }
+
+        return transposed;
+    }
 
     // The inverse of the scale of the inverse identity transform (section 7.13.2.15): sqrt(2), 2, 2 sqrt(2) and 4
     private static long GetIdentityMultiplier(int n) => n switch

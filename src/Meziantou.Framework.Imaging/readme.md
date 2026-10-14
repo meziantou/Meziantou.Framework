@@ -1087,7 +1087,8 @@ below). A `SolidBrush` paints one
 color (an `Rgba32` or `Rgba64` converts implicitly to a brush). A `LinearGradientBrush` (between two points), a
 `RadialGradientBrush` (around a center, up to a radius) and a `SweepGradientBrush` (around a center, by the angle) paint
 the color of their `GradientStop`s at the center of each pixel; `SpreadMode` gives the colors beyond the stops: `Pad`
-(default), `Repeat` or `Reflect`. Gradients are positioned in canvas coordinates, whatever the shape they fill. Two
+(default), `Repeat`, `Reflect`, or `Transparent` (nothing is painted where the parameter is outside the range from 0
+to 1: a gradient that ends at its first and its last offsets). Gradients are positioned in canvas coordinates, whatever the shape they fill. Two
 stops with the same offset make a hard edge, and stops are interpolated on alpha-premultiplied values, so a transparent
 stop does not tint its neighbors.
 
@@ -1116,7 +1117,8 @@ rectangle, a region of it stretched to a rectangle (a sprite of a sheet), or pla
 skewed, mirrored: its edges are antialiased, and a quarter turn or a mirror keeps its pixels exactly), with an optional
 opacity. An `ImageBrush`
 paints any shape or text with an image: `Transform` places the image on the canvas, `WrapMode` gives the colors around
-it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), `Sampling` chooses how the image is read, and
+it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), or `WrapModeX` and `WrapModeY` for each direction
+(a row of tiles, as `background-repeat: repeat-x` of CSS), `Sampling` chooses how the image is read, and
 `Opacity` fades it. An image drawn on whole pixels without scaling keeps its pixels exactly; its pixels are converted
 to the pixel format of the canvas like any brush color, and no color profile is applied.
 
@@ -1156,8 +1158,11 @@ transformation of the brush, then the one of the canvas), then repeated like the
 that is enlarged stays as sharp as its drawing, and a tile of a whole number of pixels placed on whole pixels keeps
 the pixels of its drawing exactly. What the callback draws outside the tile is not painted. The callback must draw
 the same thing every time (it runs again when the size of the tile changes, or after another pattern was painted),
-and can use any brush but, directly or not, its own pattern. A callback is also what replays a drawing: keep a
-`DrawingAction`, and call it inside `canvas.Transform` wherever the drawing is needed, at any size.
+and can use any brush but, directly or not, its own pattern. `WrapModeX` and `WrapModeY` say how the tile is laid in
+each direction (`Repeat` by default; `Transparent` paints it once in that direction), and `SpacingX` and `SpacingY`
+leave a gap after each tile, where nothing is painted: the spacing `background-repeat: space` of CSS computes. A
+callback is also what replays a drawing: keep a `DrawingAction`, and call it inside `canvas.Transform` wherever the
+drawing is needed, at any size.
 
 An `ImageSampling` is `Bilinear` (the default: the four pixels around a position, interpolated), `Nearest` (the pixel
 that contains the position: an enlarged image keeps its pixels as squares) or `Smooth`. With the first two, an image
@@ -1545,10 +1550,11 @@ public static void MarkAnimation(string inputPath, string outputPath)
   the image to the four points: the color of a pixel is the color the image has at the position its center comes
   from, by the rules of any image. With smooth sampling, `sx` and `sy` are the lengths of the derivatives of that
   position at the center of the pixel.
-- **Patterns.** With `w` and `h` the width and the height the tile has on the canvas, its image has
+- **Patterns.** With `w` and `h` the width and the height the tile and its spacing have on the canvas, its image has
   `max(1, ceil(w - 1/1024))` columns and as many rows computed from `h`, with colors and alpha (8-bit samples on an
   8-bit color canvas, 16-bit samples otherwise). The callback draws on it through a transformation that maps the
-  tile to the image, and the shape is painted with that image, repeated, with bilinear interpolation.
+  tile and its spacing to the image, clipped to the tile when there is a spacing, and the shape is painted with that
+  image, laid by the wrap modes of the brush, with bilinear interpolation.
 - **Masks.** A mask is a layer combined with the layer of its content by `DestinationIn`. A luminance mask first
   replaces the alpha `a` of each of its pixels by `round(a Y / M)`, where `Y` is the Rec. 709 luma of the pixel on
   its stored samples (the gray level of `Grayscale`) and `M` the largest sample value.

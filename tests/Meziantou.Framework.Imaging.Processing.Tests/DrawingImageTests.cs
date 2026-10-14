@@ -422,6 +422,65 @@ public sealed class DrawingImageTests
     }
 
     [Fact]
+    public void EachAxisHasAWrapMode()
+    {
+        // Two pixels, 10 and 20, at the origin of a canvas of 5 by 3: repeated along x, nothing above or below them
+        // (background-repeat: repeat-x), then the other way around
+        using var source = new Image<Gray8>(2, 1);
+        DrawingTestSupport.WriteSamples(source.Frames[0], [10, 20]);
+        var brush = new ImageBrush(source.Frames[0]) { WrapModeX = ImageWrapMode.Repeat, Sampling = ImageSampling.Nearest };
+        Assert.Equal(ImageWrapMode.Repeat, brush.WrapMode);
+        Assert.Equal(ImageWrapMode.Transparent, brush.WrapModeY);
+        Assert.Equal([10, 20, 10, 20, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], Fill(brush));
+        Assert.Equal([10, 20, 0, 0, 0, 10, 20, 0, 0, 0, 10, 20, 0, 0, 0], Fill(new ImageBrush(source.Frames[0]) { WrapModeY = ImageWrapMode.Repeat }));
+        Assert.Equal([10, 20, 20, 20, 20, 10, 20, 20, 20, 20, 10, 20, 20, 20, 20], Fill(new ImageBrush(source.Frames[0]) { WrapModeX = ImageWrapMode.Pad, WrapModeY = ImageWrapMode.Reflect }));
+
+        // WrapMode sets both
+        var both = new ImageBrush(source.Frames[0]) { WrapMode = ImageWrapMode.Reflect };
+        Assert.Equal((ImageWrapMode.Reflect, ImageWrapMode.Reflect), (both.WrapModeX, both.WrapModeY));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageBrush(source.Frames[0]) { WrapModeY = (ImageWrapMode)4 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageBrush(source.Frames[0]) { WrapModeX = (ImageWrapMode)(-1) });
+
+        static int[] Fill(ImageBrush brush)
+        {
+            using var image = new Image<Gray8>(5, 3, new Gray8(0));
+            image.Draw(canvas => canvas.Fill(brush), Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
+    public void APatternHasAWrapModePerAxisAndASpacing()
+    {
+        // A tile of 2 by 1 filled with 200, then a gap of 1: the period is 3 along x
+        var tile = new Rectangle(0, 0, 2, 1);
+        DrawingAction content = canvas => canvas.FillRectangle(new Rgba32(200, 200, 200), new Rectangle(-5, -5, 20, 20));
+        Assert.Equal([200, 200, 0, 200, 200, 0, 200, 200, 0, 200, 200, 0], Fill(new PatternBrush(tile, content) { SpacingX = 1 }, 1));
+        Assert.Equal([200, 200, 0, 200, 200, 0, 200, 200, 0, 200, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], Fill(new PatternBrush(tile, content) { SpacingX = 1, SpacingY = 1 }, 2));
+
+        // Once along x, repeated along y; once along y, repeated along x
+        Assert.Equal([200, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 200, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], Fill(new PatternBrush(tile, content) { WrapModeX = ImageWrapMode.Transparent }, 2));
+        Assert.Equal([200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], Fill(new PatternBrush(tile, content) { WrapModeY = ImageWrapMode.Transparent }, 2));
+
+        // A spacing on whole pixels of the canvas at a scale of 2: the tile is 4 pixels wide and the gap 2
+        var scaled = new PatternBrush(tile, content) { SpacingX = 1, Transform = AffineTransform.CreateScale(2, 2) };
+        Assert.Equal([200, 200, 200, 200, 0, 0, 200, 200, 200, 200, 0, 0], Fill(scaled, 1));
+
+        var brush = new PatternBrush(tile, content);
+        Assert.Equal((ImageWrapMode.Repeat, ImageWrapMode.Repeat, 0d, 0d), (brush.WrapModeX, brush.WrapModeY, brush.SpacingX, brush.SpacingY));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PatternBrush(tile, content) { SpacingX = -1 });
+        Assert.Throws<ArgumentException>(() => new PatternBrush(tile, content) { SpacingY = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PatternBrush(tile, content) { WrapModeY = (ImageWrapMode)4 });
+
+        static int[] Fill(PatternBrush brush, int height)
+        {
+            using var image = new Image<Gray8>(12, height, new Gray8(0));
+            image.Draw(canvas => canvas.Fill(brush), Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
     public void TheSamplingAndTheTransformOfAnImageBrush()
     {
         using var source = new Image<Gray8>(2, 1);

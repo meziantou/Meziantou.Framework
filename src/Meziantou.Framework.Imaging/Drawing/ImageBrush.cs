@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// <c>(i + 1, j + 1)</c>, the pixel at the top-left corner of the frame being at the origin, and <see cref="Transform"/>
 /// places it on the canvas. Without transformation, the pixels of the image are on the pixels of the canvas.
 /// <see cref="SourceRegion"/> limits the image to some of its pixels, which stay where they are;
-/// <see cref="WrapMode"/> gives the colors around them.
+/// <see cref="WrapModeX"/> and <see cref="WrapModeY"/> give the colors around them.
 /// </para>
 /// <para>
 /// <b>Colors.</b> The color of a pixel of the canvas is the color of the image at the position its center comes from. With
@@ -53,9 +53,43 @@ public sealed class ImageBrush : Brush
     /// <remarks>With a transformation that flattens the plane to a line or a point, the brush paints nothing.</remarks>
     public AffineTransform Transform { get; init; }
 
-    /// <summary>Gets what the brush paints outside the pixels of the image. Defaults to <see cref="ImageWrapMode.Transparent"/>.</summary>
+    /// <summary>
+    /// Gets what the brush paints outside the pixels of the image, in both directions: setting it sets
+    /// <see cref="WrapModeX"/> and <see cref="WrapModeY"/>, and getting it gets <see cref="WrapModeX"/>. Defaults to
+    /// <see cref="ImageWrapMode.Transparent"/>.
+    /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="ImageWrapMode"/>.</exception>
     public ImageWrapMode WrapMode
+    {
+        get => WrapModeX;
+        init
+        {
+            WrapModeX = value;
+            WrapModeY = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets what the brush paints on the left and on the right of the pixels of the image: with
+    /// <see cref="ImageWrapMode.Repeat"/> along x and <see cref="ImageWrapMode.Transparent"/> along y, a row of tiles
+    /// (<c>background-repeat: repeat-x</c> of CSS). Defaults to <see cref="ImageWrapMode.Transparent"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="ImageWrapMode"/>.</exception>
+    public ImageWrapMode WrapModeX
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The wrap mode is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>Gets what the brush paints above and below the pixels of the image. Defaults to <see cref="ImageWrapMode.Transparent"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="ImageWrapMode"/>.</exception>
+    public ImageWrapMode WrapModeY
     {
         get;
         init

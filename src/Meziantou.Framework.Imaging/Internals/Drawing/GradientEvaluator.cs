@@ -9,8 +9,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <b>Contract.</b> The color of a pixel is the color of the gradient at its center <c>(x + 1/2, y + 1/2)</c>. The
 /// parameter is <c>((p - start) . (end - start)) / |end - start|^2</c> for a linear gradient and
 /// <c>|p - center| / radius</c> for a radial one, computed for each pixel on its own (no running sum), then brought into
-/// <c>[0, 1]</c>: clamped (pad), <c>t - floor(t)</c> (repeat), or <c>u = t - 2 floor(t / 2)</c> folded as
-/// <c>u &lt;= 1 ? u : 2 - u</c> (reflect).
+/// <c>[0, 1]</c>: clamped (pad), <c>t - floor(t)</c> (repeat), <c>u = t - 2 floor(t / 2)</c> folded as
+/// <c>u &lt;= 1 ? u : 2 - u</c> (reflect), or left out when it is outside (transparent: the pixel has no color).
 /// </para>
 /// <para>
 /// A radial gradient with a focal point <c>f</c> has, with <c>e = center - f</c>, <c>d = p - f</c> and
@@ -272,7 +272,9 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             return colors;
         }
 
-        if (_degenerate || last == 0)
+        // One stop is the same color everywhere, but where the gradient has no color: outside the range of a transparent
+        // spread, beyond the horizon of a projective transformation, outside a cone
+        if (_degenerate || (last == 0 && _spreadMode != GradientSpreadMode.Transparent && !_isProjective && _kind != GradientKind.Cone))
         {
             for (var i = 0; i < count; i++)
             {
@@ -423,6 +425,13 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                 {
                     t = 2 - t;
                 }
+
+                break;
+
+            case GradientSpreadMode.Transparent:
+                // Written so that a value that is not a number stays one
+                if (t < 0 || t > 1)
+                    return double.NaN;
 
                 break;
 

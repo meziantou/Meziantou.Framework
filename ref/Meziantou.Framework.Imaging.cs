@@ -1368,6 +1368,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         Pad = 0,
         Repeat = 1,
         Reflect = 2,
+        Transparent = 3,
     }
 
     public readonly struct GradientStop : System.IEquatable<Meziantou.Framework.Imaging.Drawing.GradientStop>
@@ -1391,6 +1392,8 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Rectangle? SourceRegion { get => throw null; init { } }
         public Meziantou.Framework.Imaging.AffineTransform Transform { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.ImageWrapMode WrapMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.ImageWrapMode WrapModeX { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.ImageWrapMode WrapModeY { get => throw null; init { } }
         public ImageBrush(Meziantou.Framework.Imaging.ImageFrame source) { }
     }
 
@@ -1499,8 +1502,12 @@ namespace Meziantou.Framework.Imaging.Drawing
     public sealed class PatternBrush : Meziantou.Framework.Imaging.Drawing.Brush
     {
         public Meziantou.Framework.Imaging.Drawing.DrawingAction Content { get => throw null; }
+        public double SpacingX { get => throw null; init { } }
+        public double SpacingY { get => throw null; init { } }
         public Meziantou.Framework.Imaging.RectangleD Tile { get => throw null; }
         public Meziantou.Framework.Imaging.AffineTransform Transform { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.ImageWrapMode WrapModeX { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.ImageWrapMode WrapModeY { get => throw null; init { } }
         public PatternBrush(Meziantou.Framework.Imaging.RectangleD tile, Meziantou.Framework.Imaging.Drawing.DrawingAction content) { }
     }
 

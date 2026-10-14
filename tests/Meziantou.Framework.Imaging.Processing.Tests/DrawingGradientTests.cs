@@ -191,6 +191,30 @@ public sealed class DrawingGradientTests
     }
 
     [Fact]
+    public void AGradientWithATransparentSpreadPaintsNothingOutsideItsRange()
+    {
+        // From x = 1 to x = 5, the centers of the pixels have the parameters (x - 1/2) / 4: -1/8 (nothing), 1/8, 3/8, 5/8,
+        // 7/8, then 9/8 and 11/8 (nothing). The pixels that are not painted keep 50.
+        Assert.Equal([50, 32, 96, 159, 223, 50, 50], Fill(new LinearGradientBrush(new PointD(1, 0), new PointD(5, 0), BlackToWhite) { SpreadMode = GradientSpreadMode.Transparent }));
+
+        // Around (3.5, 0.5) up to 2: the parameters 3/2, 1, 1/2, 0, 1/2, 1, 3/2; 0 and 1 are in the range
+        Assert.Equal([50, 255, 128, 0, 128, 255, 50], Fill(new RadialGradientBrush(new PointD(3.5, 0.5), 2, BlackToWhite) { SpreadMode = GradientSpreadMode.Transparent }));
+
+        // A gradient of one stop is that color in its range only
+        Assert.Equal([50, 100, 100, 100, 100, 50, 50], Fill(new LinearGradientBrush(new PointD(1, 0), new PointD(5, 0), [new GradientStop(0.5, new Rgba32(100, 100, 100))]) { SpreadMode = GradientSpreadMode.Transparent }));
+
+        // The same in the other color spaces
+        Assert.Equal([50, 0, 0, 0, 0, 50, 50], Fill(new LinearGradientBrush(new PointD(1, 0), new PointD(5, 0), [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 0))]) { SpreadMode = GradientSpreadMode.Transparent, ColorSpace = GradientColorSpace.Oklab }));
+
+        static int[] Fill(Brush brush)
+        {
+            using var image = new Image<Gray8>(7, 1, new Gray8(50));
+            image.Frames[0].Draw(canvas => canvas.Fill(brush), Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
     public void ARadialGradientSpreadsFromItsFocalPoint()
     {
         // The circle of center (4.5, 0.5) and radius 6 goes from x = -1.5 to x = 10.5 on the row; from the focal point

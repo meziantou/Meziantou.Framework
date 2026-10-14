@@ -542,7 +542,8 @@ public sealed class DrawingFuzzTests
                 CompositeMode = mode,
                 SourceRegion = random.Chance(30) ? new Rectangle(x, y, random.Next(0, context.Sprite.Width - x + 1), random.Next(0, context.Sprite.Height - y + 1)) : null,
                 Transform = random.Chance(60) ? CreateTransform(random, canvas) : AffineTransform.Identity,
-                WrapMode = (ImageWrapMode)random.Next(4),
+                WrapModeX = (ImageWrapMode)random.Next(4),
+                WrapModeY = (ImageWrapMode)random.Next(4),
                 Sampling = (ImageSampling)random.Next(2),
                 Opacity = CreateOpacity(random),
             };
@@ -556,7 +557,7 @@ public sealed class DrawingFuzzTests
 
         Array.Sort(offsets);
         var stops = offsets.Select(offset => new GradientStop(offset, CreateColor(random))).ToArray();
-        var spreadMode = (GradientSpreadMode)random.Next(3);
+        var spreadMode = (GradientSpreadMode)random.Next(4);
         var transform = random.Chance(25) ? CreateTransform(random, canvas) : AffineTransform.Identity;
         switch (random.Next(5))
         {

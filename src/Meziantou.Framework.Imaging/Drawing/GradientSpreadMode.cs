@@ -11,4 +11,10 @@ public enum GradientSpreadMode
 
     /// <summary>The gradient is mirrored, then starts over.</summary>
     Reflect = 2,
+
+    /// <summary>
+    /// Nothing is painted outside the range from 0 to 1: the gradient ends at its first and its last offsets, as the
+    /// decal tile mode of graphics libraries.
+    /// </summary>
+    Transparent = 3,
 }

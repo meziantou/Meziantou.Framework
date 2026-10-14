@@ -11,4 +11,7 @@ public enum ReferenceSpreadMode
 
     /// <summary>The gradient is mirrored, then starts over.</summary>
     Reflect,
+
+    /// <summary>Nothing outside the range from 0 to 1.</summary>
+    Transparent,
 }

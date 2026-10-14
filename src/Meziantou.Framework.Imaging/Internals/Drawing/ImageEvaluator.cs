@@ -34,8 +34,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// is <c>Tc / Ta</c>, rounded as above.
 /// </para>
 /// <para>
-/// A pixel outside the region of the image is, by wrap mode: transparent, the nearest pixel of the region, or the
-/// pixel the repeated or mirrored region has there. The colors are converted to the pixel format of the frame last, as
+/// A pixel outside the region of the image is, by the wrap mode of each axis (a column by the one of x, a row by the
+/// one of y): transparent, the nearest pixel of the region, or the pixel the repeated or mirrored region has there. The colors are converted to the pixel format of the frame last, as
 /// any brush color is.
 /// </para>
 /// <para>
@@ -90,7 +90,8 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private Affine2D _inverse;
     private bool _isEmpty;
     private bool _keepsRows;
-    private ImageWrapMode _wrapMode;
+    private ImageWrapMode _wrapModeX;
+    private ImageWrapMode _wrapModeY;
     private bool _isNearest;
     private bool _isReduced;
     private double _spanX;
@@ -139,6 +140,22 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     /// <exception cref="ArgumentOutOfRangeException">The region is not inside the frame.</exception>
     /// <exception cref="ImageResourceLimitException">The rows exceed the allocation limit.</exception>
     public void Prepare(ImageFrame source, Rectangle? region, AffineTransform transform, ImageWrapMode wrapMode, ImageSampling sampling, ImageFrame destination, int width, string regionParameterName)
+        => Prepare(source, region, transform, wrapMode, wrapMode, sampling, destination, width, regionParameterName);
+
+    /// <summary>Sets the image and its placement, with a wrap mode per axis, and rents the rows the evaluation needs. The image is not read yet.</summary>
+    /// <param name="source">The frame whose pixels are painted.</param>
+    /// <param name="region">The pixels of the frame that are painted, or <see langword="null"/> for all of them.</param>
+    /// <param name="transform">The transformation that places the image on the canvas.</param>
+    /// <param name="wrapModeX">What is painted on the left and on the right of the region.</param>
+    /// <param name="wrapModeY">What is painted above and below the region.</param>
+    /// <param name="sampling">How the image is read between the centers of its pixels.</param>
+    /// <param name="destination">A frame that is drawn on: the colors are converted to its pixel format.</param>
+    /// <param name="width">The width of the canvas.</param>
+    /// <param name="regionParameterName">The name of the parameter the region comes from, for the exception.</param>
+    /// <exception cref="ObjectDisposedException">The frame no longer belongs to a live image.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The region is not inside the frame.</exception>
+    /// <exception cref="ImageResourceLimitException">The rows exceed the allocation limit.</exception>
+    public void Prepare(ImageFrame source, Rectangle? region, AffineTransform transform, ImageWrapMode wrapModeX, ImageWrapMode wrapModeY, ImageSampling sampling, ImageFrame destination, int width, string regionParameterName)
     {
         var storage = source.GetStorage();
         var area = region ?? new Rectangle(0, 0, storage.Width, storage.Height);
@@ -152,7 +169,8 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         _top = area.Top;
         _regionWidth = area.Width;
         _regionHeight = area.Height;
-        _wrapMode = wrapMode;
+        _wrapModeX = wrapModeX;
+        _wrapModeY = wrapModeY;
         _isNearest = sampling == ImageSampling.Nearest;
         _isProjective = false;
         _isEmpty = area.IsEmpty || !new Affine2D(transform.M11, transform.M12, transform.M21, transform.M22, transform.OffsetX, transform.OffsetY).TryInvert(out _inverse);
@@ -214,14 +232,21 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     /// <exception cref="ArgumentOutOfRangeException">The region is not inside the frame.</exception>
     /// <exception cref="ImageResourceLimitException">The rows exceed the allocation limit.</exception>
     public void Prepare(ImageFrame source, Rectangle? region, in ProjectiveTransform transform, ImageWrapMode wrapMode, ImageSampling sampling, ImageFrame destination, int width, string regionParameterName)
+        => Prepare(source, region, transform, wrapMode, wrapMode, sampling, destination, width, regionParameterName);
+
+    /// <summary>Sets the image and its placement by a transformation that may be projective, with a wrap mode per axis. The image is not read yet.</summary>
+    /// <exception cref="ObjectDisposedException">The frame no longer belongs to a live image.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The region is not inside the frame.</exception>
+    /// <exception cref="ImageResourceLimitException">The rows exceed the allocation limit.</exception>
+    public void Prepare(ImageFrame source, Rectangle? region, in ProjectiveTransform transform, ImageWrapMode wrapModeX, ImageWrapMode wrapModeY, ImageSampling sampling, ImageFrame destination, int width, string regionParameterName)
     {
         if (transform.TryGetExactAffine(out var affine))
         {
-            Prepare(source, region, affine, wrapMode, sampling, destination, width, regionParameterName);
+            Prepare(source, region, affine, wrapModeX, wrapModeY, sampling, destination, width, regionParameterName);
             return;
         }
 
-        Prepare(source, region, AffineTransform.Identity, wrapMode, ImageSampling.Bilinear, destination, width, regionParameterName);
+        Prepare(source, region, AffineTransform.Identity, wrapModeX, wrapModeY, ImageSampling.Bilinear, destination, width, regionParameterName);
         _isNearest = sampling == ImageSampling.Nearest;
         _isSmooth = sampling == ImageSampling.Smooth;
         _isProjective = true;
@@ -355,12 +380,12 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         var centerY = y + 0.5;
         var v = _inverse.TransformY(x + 0.5, centerY);
         Split(v, out var row, out var fy);
-        var hasRow0 = TryWrap(row, _top, _regionHeight, out var row0);
+        var hasRow0 = TryWrap(row, _top, _regionHeight, _wrapModeY, out var row0);
         var hasRow1 = false;
         var row1 = 0;
         if (fy != 0)
         {
-            hasRow1 = TryWrap(row + 1, _top, _regionHeight, out row1);
+            hasRow1 = TryWrap(row + 1, _top, _regionHeight, _wrapModeY, out row1);
         }
 
         if (!hasRow0 && !hasRow1)
@@ -376,12 +401,12 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         {
             var u = _inverse.TransformX(x + i + 0.5, centerY);
             Split(u, out var column, out var fx);
-            var hasColumn0 = TryWrap(column, _left, _regionWidth, out var column0);
+            var hasColumn0 = TryWrap(column, _left, _regionWidth, _wrapModeX, out var column0);
             var hasColumn1 = false;
             var column1 = 0;
             if (fx != 0)
             {
-                hasColumn1 = TryWrap(column + 1, _left, _regionWidth, out column1);
+                hasColumn1 = TryWrap(column + 1, _left, _regionWidth, _wrapModeX, out column1);
             }
 
             if (fx == 0 && fy == 0)
@@ -524,7 +549,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
                 continue;
 
             totalY += weightY;
-            var hasRow = TryWrap(row, _top, _regionHeight, out var wrapped);
+            var hasRow = TryWrap(row, _top, _regionHeight, _wrapModeY, out var wrapped);
             if (hasRow)
             {
                 _source!.ReadRgba64(_storage!, _top + wrapped, _left, rows);
@@ -542,7 +567,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
                         continue;
 
                     sum.Total += weightX;
-                    if (hasRow && TryWrap(column, _left, _regionWidth, out var index))
+                    if (hasRow && TryWrap(column, _left, _regionWidth, _wrapModeX, out var index))
                     {
                         sum.Add(rows[index], weightX);
                     }
@@ -673,9 +698,10 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     /// <param name="index">The row or the column, in the coordinates of the frame.</param>
     /// <param name="origin">The first row or column of the region.</param>
     /// <param name="size">The height or the width of the region.</param>
+    /// <param name="mode">The wrap mode of the axis.</param>
     /// <param name="result">The row or the column, from the first one of the region.</param>
     /// <returns><see langword="false"/> when there is no pixel there: outside the region, without wrapping.</returns>
-    private bool TryWrap(int index, int origin, int size, out int result)
+    private static bool TryWrap(int index, int origin, int size, ImageWrapMode mode, out int result)
     {
         var offset = (long)index - origin;
         if ((ulong)offset < (ulong)size)
@@ -684,7 +710,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             return true;
         }
 
-        switch (_wrapMode)
+        switch (mode)
         {
             case ImageWrapMode.Pad:
                 result = offset < 0 ? 0 : size - 1;
@@ -744,7 +770,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private bool TryRead(int column, int row, out Rgba64 color)
     {
         color = default;
-        if (!TryWrap(column, _left, _regionWidth, out var x) || !TryWrap(row, _top, _regionHeight, out var y))
+        if (!TryWrap(column, _left, _regionWidth, _wrapModeX, out var x) || !TryWrap(row, _top, _regionHeight, _wrapModeY, out var y))
             return false;
 
         _source!.ReadRgba64(_storage!, _top + y, _left + x, new Span<Rgba64>(ref color));

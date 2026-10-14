@@ -1162,7 +1162,7 @@ internal sealed partial class DrawingSession : IDisposable
         else if (brush is ImageBrush image)
         {
             var imagePaint = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-            imagePaint.Prepare(image.Source, image.SourceRegion, ToCanvasProjection(image.Transform), image.WrapMode, image.Sampling, _frames[0], Width, nameof(brush));
+            imagePaint.Prepare(image.Source, image.SourceRegion, ToCanvasProjection(image.Transform), image.WrapModeX, image.WrapModeY, image.Sampling, _frames[0], Width, nameof(brush));
             if (image.OpacityCoverage == 0)
                 return false;
 
@@ -1180,7 +1180,7 @@ internal sealed partial class DrawingSession : IDisposable
                 return false;
 
             var imagePaint = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-            imagePaint.Prepare(tile, region: null, placement, ImageWrapMode.Repeat, ImageSampling.Bilinear, _frames[0], Width, nameof(brush));
+            imagePaint.Prepare(tile, region: null, placement, pattern.WrapModeX, pattern.WrapModeY, ImageSampling.Bilinear, _frames[0], Width, nameof(brush));
             evaluator = imagePaint;
         }
         else

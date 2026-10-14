@@ -375,7 +375,7 @@ public sealed class DrawingSessionTests
         Assert.Throws<ArgumentException>(() => new RadialGradientBrush(new PointD(0, double.PositiveInfinity), 1, stops));
         Assert.Throws<ArgumentException>(() => new RadialGradientBrush(default, double.NaN, stops));
         Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(default, -1, stops));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new LinearGradientBrush(default, default, stops) { SpreadMode = (GradientSpreadMode)3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new LinearGradientBrush(default, default, stops) { SpreadMode = (GradientSpreadMode)4 });
 
         // The stops are copied
         var brush = new LinearGradientBrush(new PointD(1, 2), new PointD(3, 4), stops);

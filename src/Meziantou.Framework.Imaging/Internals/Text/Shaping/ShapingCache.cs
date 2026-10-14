@@ -2,13 +2,32 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// What shaping computes from a font alone, kept for the runs of one layout: the glyphs each lookup of its layout tables
-/// may apply at, and the plan of the runs of each font and settings. A font has no cache of its own; this one lives as
-/// long as the engine that lays out a text.
+/// may apply at, the plan of the runs of each font and settings, and the advances a variable font computes from the
+/// outlines of its glyphs. A font has no cache of its own; this one lives as long as the engine that lays out a text.
 /// </summary>
 internal sealed class ShapingCache
 {
     private readonly Dictionary<FontFace, (LookupDigests? Substitutions, LookupDigests? Positions)> _digests = [];
     private readonly Dictionary<FontFace, List<TextShaper.Plan>> _plans = [];
+    private readonly Dictionary<(FontFace Face, int Glyph), int> _advances = [];
+
+    /// <summary>
+    /// Gets the advance width of a glyph: kept for a font whose advances come from the outlines of its glyphs, where
+    /// each one decodes the variations of the glyph.
+    /// </summary>
+    public int GetAdvanceWidth(FontFace face, int glyph)
+    {
+        if (!face.VariesAdvancesWithOutlines)
+            return face.GetAdvanceWidth(glyph);
+
+        if (!_advances.TryGetValue((face, glyph), out var advance))
+        {
+            advance = face.GetAdvanceWidth(glyph);
+            _advances.Add((face, glyph), advance);
+        }
+
+        return advance;
+    }
 
     /// <summary>Gets the plan of the runs of a font shaped with settings: a new one, not complete, for the first run.</summary>
     public TextShaper.Plan GetPlan(FontFace face, UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, bool isVertical, ReadOnlySpan<ShapingFeature> features)

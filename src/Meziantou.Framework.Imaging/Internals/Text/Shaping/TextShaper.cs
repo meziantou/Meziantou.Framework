@@ -333,7 +333,7 @@ internal static class TextShaper
             }
             else
             {
-                positions[i].XAdvance = info[i].ShaperData is > 0 and <= SpaceEm5 ? GetSpaceAdvance(face, info[i].ShaperData) : face.GetAdvanceWidth(info[i].Glyph);
+                positions[i].XAdvance = info[i].ShaperData is > 0 and <= SpaceEm5 ? GetSpaceAdvance(face, info[i].ShaperData) : cache?.GetAdvanceWidth(face, info[i].Glyph) ?? face.GetAdvanceWidth(info[i].Glyph);
             }
         }
 

@@ -1,6 +1,9 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -14,11 +17,21 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// and the range 0..4095.
 /// </summary>
 /// <remarks>
-/// With hardware vector support, <see cref="Transform"/> runs each pass on <see cref="Vector{T}.Count"/> columns (then rows)
-/// at once: every lane performs exactly the operations of the scalar reference (<see cref="TransformScalar"/>) in the same
-/// order, without fused multiply-adds, so the samples are bit-identical. The scalar shortcut for columns without
-/// AC coefficients is skipped there; it is itself exact (the full formula reduces to <c>x0 * C0</c> when the other inputs are
-/// zero). The transform of 12-bit samples is the scalar one.
+/// <para>
+/// With hardware vector support, <see cref="Transform(Span{double}, Span{byte}, int, bool)"/> runs each pass on two
+/// columns (then rows) at once, or on <see cref="Vector{T}.Count"/> of them with wider vectors: every lane performs exactly
+/// the operations of the scalar reference (<see cref="TransformScalar"/>) in the same order, without fused multiply-adds,
+/// so the samples are bit-identical. The scalar shortcut for columns without AC coefficients is skipped there; it is
+/// itself exact (the full formula reduces to <c>x0 * C0</c> when the other inputs are zero). The transform of 12-bit
+/// samples is the scalar one.
+/// </para>
+/// <para>
+/// A block whose non-zero coefficients are all in its top-left 4x4 corner (the first 10 in zig-zag order, and the others
+/// of that corner) skips the columns 4 to 7, whose transform is zero, and drops the inputs 4 to 7, which are zero, from
+/// both passes (<c>Transform1D</c> of four inputs). This is exact: a term multiplied by zero is a zero, and adding a zero
+/// to a value gives the value itself; the only difference can be the sign of a zero result, which stays a zero through
+/// the additions and multiplications that follow and gives the same sample (<c>floor(±0 + 128.5)</c>).
+/// </para>
 /// </remarks>
 internal static class JpegIdct
 {
@@ -102,11 +115,22 @@ internal static class JpegIdct
     /// <param name="coefficients">64 dequantized coefficients, natural order; overwritten (used as the intermediate buffer).</param>
     /// <param name="destination">The first sample of the block.</param>
     /// <param name="stride">The distance between two sample rows.</param>
-    public static void Transform(Span<double> coefficients, Span<byte> destination, int stride)
+    public static void Transform(Span<double> coefficients, Span<byte> destination, int stride) => Transform(coefficients, destination, stride, sparse: false);
+
+    /// <summary>Transforms dequantized coefficients (natural order) into 8x8 samples.</summary>
+    /// <param name="coefficients">64 dequantized coefficients, natural order; overwritten (used as the intermediate buffer).</param>
+    /// <param name="destination">The first sample of the block.</param>
+    /// <param name="stride">The distance between two sample rows.</param>
+    /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero (see <see cref="IsSparse(int)"/>).</param>
+    public static void Transform(Span<double> coefficients, Span<byte> destination, int stride, bool sparse)
     {
-        if (Vector.IsHardwareAccelerated && Vector<double>.Count is 2 or 4 or 8)
+        if (Vector128.IsHardwareAccelerated && Vector<double>.Count == 2)
         {
-            TransformVector(coefficients, destination, stride);
+            TransformVector128(coefficients, destination, stride, sparse);
+        }
+        else if (Vector.IsHardwareAccelerated && Vector<double>.Count is 2 or 4 or 8)
+        {
+            TransformVector(coefficients, destination, stride, sparse);
         }
         else
         {
@@ -114,7 +138,24 @@ internal static class JpegIdct
         }
     }
 
-    /// <summary>The scalar reference of <see cref="Transform"/>.</summary>
+    /// <summary>
+    /// Gets a value indicating whether the natural indexes of the non-zero coefficients of a block, ORed together, are all in
+    /// the top-left 4x4 corner: row and column below 4 (bits 5 and 2 clear).
+    /// </summary>
+    /// <param name="naturalIndexes">The natural indexes of the non-zero coefficients, ORed together.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsSparse(int naturalIndexes) => (naturalIndexes & 0b100_100) == 0;
+
+    /// <summary>Gets a value indicating whether every coefficient (natural order) outside the top-left 4x4 corner of a block is zero.</summary>
+    /// <param name="coefficients">The 64 coefficients.</param>
+    public static bool IsSparse(ReadOnlySpan<short> coefficients)
+    {
+        // Rows 0 to 3: the columns 4 to 7 are the second half of each row; rows 4 to 7: everything
+        var words = unsafe(MemoryMarshal.Cast<short, ulong>(coefficients[..64]));
+        return (words[1] | words[3] | words[5] | words[7]) == 0 && words[8..].IndexOfAnyExcept(0UL) < 0;
+    }
+
+    /// <summary>The scalar reference of <see cref="Transform(Span{double}, Span{byte}, int, bool)"/>.</summary>
     internal static void TransformScalar(Span<double> coefficients, Span<byte> destination, int stride)
     {
         var block = coefficients[..64];
@@ -173,7 +214,147 @@ internal static class JpegIdct
         }
     }
 
-    private static void TransformVector(Span<double> coefficients, Span<byte> destination, int stride)
+    /// <summary>The transform with <see cref="Vector128{T}"/>: two columns, then two rows at once, the rows read from the column pass with interleaving instead of a transposition.</summary>
+    internal static void TransformVector128(Span<double> coefficients, Span<byte> destination, int stride, bool sparse)
+    {
+        // Bounds are checked once here; the loops below use unchecked references
+        ArgumentOutOfRangeException.ThrowIfLessThan(coefficients.Length, 64);
+        ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, (7 * stride) + 8);
+        ref var block = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+
+        if (sparse)
+        {
+            // Columns 0 to 3 (rows 4 to 7 are zero); the columns 4 to 7 are zero and stay so
+            for (var u = 0; u < 4; u += 2)
+            {
+                Transform1D(
+                    Load128(ref block, u), Load128(ref block, 8 + u), Load128(ref block, 16 + u), Load128(ref block, 24 + u),
+                    out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
+                Store128(o0, o1, o2, o3, o4, o5, o6, o7, ref block, u);
+            }
+
+            // Rows, two at a time (the samples 4 to 7 of each row are zero): lane 0 is row y, lane 1 row y + 1
+            for (var y = 0; y < 8; y += 2)
+            {
+                var a0 = Load128(ref block, y * 8);
+                var a2 = Load128(ref block, (y * 8) + 2);
+                var b0 = Load128(ref block, (y * 8) + 8);
+                var b2 = Load128(ref block, (y * 8) + 10);
+                Transform1D(
+                    InterleaveLower(a0, b0), InterleaveUpper(a0, b0), InterleaveLower(a2, b2), InterleaveUpper(a2, b2),
+                    out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
+                StoreSamples(o0, o1, o2, o3, o4, o5, o6, o7, ref unsafe(Unsafe.Add(ref output, y * stride)), stride);
+            }
+
+            return;
+        }
+
+        // Columns, two at a time: block[v * 8 + u] -> block[y * 8 + u]
+        for (var u = 0; u < 8; u += 2)
+        {
+            Transform1D(
+                Load128(ref block, u), Load128(ref block, 8 + u), Load128(ref block, 16 + u), Load128(ref block, 24 + u),
+                Load128(ref block, 32 + u), Load128(ref block, 40 + u), Load128(ref block, 48 + u), Load128(ref block, 56 + u),
+                out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
+            Store128(o0, o1, o2, o3, o4, o5, o6, o7, ref block, u);
+        }
+
+        // Rows, two at a time: lane 0 is row y, lane 1 row y + 1
+        for (var y = 0; y < 8; y += 2)
+        {
+            var a0 = Load128(ref block, y * 8);
+            var a2 = Load128(ref block, (y * 8) + 2);
+            var a4 = Load128(ref block, (y * 8) + 4);
+            var a6 = Load128(ref block, (y * 8) + 6);
+            var b0 = Load128(ref block, (y * 8) + 8);
+            var b2 = Load128(ref block, (y * 8) + 10);
+            var b4 = Load128(ref block, (y * 8) + 12);
+            var b6 = Load128(ref block, (y * 8) + 14);
+            Transform1D(
+                InterleaveLower(a0, b0), InterleaveUpper(a0, b0), InterleaveLower(a2, b2), InterleaveUpper(a2, b2),
+                InterleaveLower(a4, b4), InterleaveUpper(a4, b4), InterleaveLower(a6, b6), InterleaveUpper(a6, b6),
+                out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
+            StoreSamples(o0, o1, o2, o3, o4, o5, o6, o7, ref unsafe(Unsafe.Add(ref output, y * stride)), stride);
+        }
+
+        static Vector128<double> Load128(ref double block, int index) => unsafe(Vector128.LoadUnsafe(ref block, (nuint)index));
+    }
+
+    /// <summary>Stores the outputs of a column pass: <c>o[y]</c> at <c>block[y * 8 + u]</c>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Store128(Vector128<double> o0, Vector128<double> o1, Vector128<double> o2, Vector128<double> o3, Vector128<double> o4, Vector128<double> o5, Vector128<double> o6, Vector128<double> o7, ref double block, int u)
+    {
+        unsafe { o0.StoreUnsafe(ref block, (nuint)u); }
+        unsafe { o1.StoreUnsafe(ref block, (nuint)(8 + u)); }
+        unsafe { o2.StoreUnsafe(ref block, (nuint)(16 + u)); }
+        unsafe { o3.StoreUnsafe(ref block, (nuint)(24 + u)); }
+        unsafe { o4.StoreUnsafe(ref block, (nuint)(32 + u)); }
+        unsafe { o5.StoreUnsafe(ref block, (nuint)(40 + u)); }
+        unsafe { o6.StoreUnsafe(ref block, (nuint)(48 + u)); }
+        unsafe { o7.StoreUnsafe(ref block, (nuint)(56 + u)); }
+    }
+
+    /// <summary>
+    /// Writes two rows of samples: <c>o[n]</c> holds the sample <c>n</c> of the first row in lane 0 and of the second in lane 1.
+    /// Each value is rounded and clamped as <see cref="ToSample"/> does, the lanes are regrouped by row, and each row is
+    /// narrowed to 8 bytes and written at once.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreSamples(Vector128<double> o0, Vector128<double> o1, Vector128<double> o2, Vector128<double> o3, Vector128<double> o4, Vector128<double> o5, Vector128<double> o6, Vector128<double> o7, ref byte destination, int stride)
+    {
+        var r0 = RoundAndClamp(o0);
+        var r1 = RoundAndClamp(o1);
+        var r2 = RoundAndClamp(o2);
+        var r3 = RoundAndClamp(o3);
+        var r4 = RoundAndClamp(o4);
+        var r5 = RoundAndClamp(o5);
+        var r6 = RoundAndClamp(o6);
+        var r7 = RoundAndClamp(o7);
+        var first = Vector128.Narrow(
+            Vector128.Narrow(ToUInt64(InterleaveLower(r0, r1)), ToUInt64(InterleaveLower(r2, r3))),
+            Vector128.Narrow(ToUInt64(InterleaveLower(r4, r5)), ToUInt64(InterleaveLower(r6, r7))));
+        var second = Vector128.Narrow(
+            Vector128.Narrow(ToUInt64(InterleaveUpper(r0, r1)), ToUInt64(InterleaveUpper(r2, r3))),
+            Vector128.Narrow(ToUInt64(InterleaveUpper(r4, r5)), ToUInt64(InterleaveUpper(r6, r7))));
+        var rows = Vector128.Narrow(first, second).AsUInt64();
+        unsafe { Unsafe.WriteUnaligned(ref destination, rows.ToScalar()); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, stride), rows.GetElement(1)); }
+
+        static Vector128<double> RoundAndClamp(Vector128<double> value) => Vector128.Min(Vector128.Max(Vector128.Floor(value + Vector128.Create(128.5)), Vector128<double>.Zero), Vector128.Create(255.0));
+
+        // The values are integers in 0..255: the conversion is exact
+        static Vector128<ulong> ToUInt64(Vector128<double> value) => Vector128.ConvertToInt64(value).AsUInt64();
+    }
+
+    /// <summary>Gets the lanes 0 of two vectors: <c>(a[0], b[0])</c>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<double> InterleaveLower(Vector128<double> a, Vector128<double> b)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.Arm64.ZipLow(a, b);
+
+        if (Sse2.IsSupported)
+            return Sse2.UnpackLow(a, b);
+
+        return Vector128.Create(a.ToScalar(), b.ToScalar());
+    }
+
+    /// <summary>Gets the lanes 1 of two vectors: <c>(a[1], b[1])</c>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<double> InterleaveUpper(Vector128<double> a, Vector128<double> b)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.Arm64.ZipHigh(a, b);
+
+        if (Sse2.IsSupported)
+            return Sse2.UnpackHigh(a, b);
+
+        return Vector128.Create(a.GetElement(1), b.GetElement(1));
+    }
+
+    /// <summary>The transform with <see cref="Vector{T}"/>, <see cref="Vector{T}.Count"/> columns (then rows) at once.</summary>
+    internal static void TransformVector(Span<double> coefficients, Span<byte> destination, int stride, bool sparse)
     {
         // Bounds are checked once here; the loops below use unchecked references
         ArgumentOutOfRangeException.ThrowIfLessThan(coefficients.Length, 64);
@@ -182,13 +363,25 @@ internal static class JpegIdct
         ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
         var count = Vector<double>.Count;
 
-        // Columns, count at a time: block[v * 8 + u] -> block[y * 8 + u]
-        for (var u = 0; u < 8; u += count)
+        // Columns, count at a time: block[v * 8 + u] -> block[y * 8 + u]. A sparse block has the columns 0 to 3 only
+        // (the others are zero and stay so) and zeros in the rows 4 to 7
+        for (var u = 0; u < (sparse ? 4 : 8); u += count)
         {
-            Transform1D(
-                Load(ref block, u), Load(ref block, 8 + u), Load(ref block, 16 + u), Load(ref block, 24 + u),
-                Load(ref block, 32 + u), Load(ref block, 40 + u), Load(ref block, 48 + u), Load(ref block, 56 + u),
-                out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
+            Vector<double> o0, o1, o2, o3, o4, o5, o6, o7;
+            if (sparse)
+            {
+                Transform1D(
+                    Load(ref block, u), Load(ref block, 8 + u), Load(ref block, 16 + u), Load(ref block, 24 + u),
+                    out o0, out o1, out o2, out o3, out o4, out o5, out o6, out o7);
+            }
+            else
+            {
+                Transform1D(
+                    Load(ref block, u), Load(ref block, 8 + u), Load(ref block, 16 + u), Load(ref block, 24 + u),
+                    Load(ref block, 32 + u), Load(ref block, 40 + u), Load(ref block, 48 + u), Load(ref block, 56 + u),
+                    out o0, out o1, out o2, out o3, out o4, out o5, out o6, out o7);
+            }
+
             unsafe { o0.StoreUnsafe(ref block, (nuint)u); }
             unsafe { o1.StoreUnsafe(ref block, (nuint)(8 + u)); }
             unsafe { o2.StoreUnsafe(ref block, (nuint)(16 + u)); }
@@ -210,13 +403,24 @@ internal static class JpegIdct
             }
         }
 
-        // Rows, count at a time: lane k of vector u holds sample u of row y + k
+        // Rows, count at a time: lane k of vector u holds sample u of row y + k (a sparse block has zeros in the samples 4 to 7)
         for (var y = 0; y < 8; y += count)
         {
-            Transform1D(
-                Load(ref block, y), Load(ref block, 8 + y), Load(ref block, 16 + y), Load(ref block, 24 + y),
-                Load(ref block, 32 + y), Load(ref block, 40 + y), Load(ref block, 48 + y), Load(ref block, 56 + y),
-                out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
+            Vector<double> o0, o1, o2, o3, o4, o5, o6, o7;
+            if (sparse)
+            {
+                Transform1D(
+                    Load(ref block, y), Load(ref block, 8 + y), Load(ref block, 16 + y), Load(ref block, 24 + y),
+                    out o0, out o1, out o2, out o3, out o4, out o5, out o6, out o7);
+            }
+            else
+            {
+                Transform1D(
+                    Load(ref block, y), Load(ref block, 8 + y), Load(ref block, 16 + y), Load(ref block, 24 + y),
+                    Load(ref block, 32 + y), Load(ref block, 40 + y), Load(ref block, 48 + y), Load(ref block, 56 + y),
+                    out o0, out o1, out o2, out o3, out o4, out o5, out o6, out o7);
+            }
+
             ref var row = ref unsafe(Unsafe.Add(ref output, y * stride));
             Store(o0, ref row, stride);
             Store(o1, ref unsafe(Unsafe.Add(ref row, 1)), stride);
@@ -263,6 +467,96 @@ internal static class JpegIdct
         var d2 = (C5 * x1) - (C1 * x3) + (C7 * x5) + (C3 * x7);
         var d3 = (C7 * x1) - (C5 * x3) + (C3 * x5) - (C1 * x7);
 
+        o0 = e0 + d0;
+        o7 = e0 - d0;
+        o1 = e1 + d1;
+        o6 = e1 - d1;
+        o2 = e2 + d2;
+        o5 = e2 - d2;
+        o3 = e3 + d3;
+        o4 = e3 - d3;
+    }
+
+    /// <summary>The <see cref="Vector128{T}"/> form of <see cref="Transform1D(double, double, double, double, double, double, double, double, out double, out double, out double, out double, out double, out double, out double, out double)"/>: the same expressions, lane by lane.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Transform1D(Vector128<double> x0, Vector128<double> x1, Vector128<double> x2, Vector128<double> x3, Vector128<double> x4, Vector128<double> x5, Vector128<double> x6, Vector128<double> x7,
+        out Vector128<double> o0, out Vector128<double> o1, out Vector128<double> o2, out Vector128<double> o3, out Vector128<double> o4, out Vector128<double> o5, out Vector128<double> o6, out Vector128<double> o7)
+    {
+        // Even part: x0, x2, x4, x6
+        var a = C0 * (x0 + x4);
+        var b = C0 * (x0 - x4);
+        var p = (C2 * x2) + (C6 * x6);
+        var q = (C6 * x2) - (C2 * x6);
+        var e0 = a + p;
+        var e1 = b + q;
+        var e2 = b - q;
+        var e3 = a - p;
+
+        // Odd part: x1, x3, x5, x7
+        var d0 = (C1 * x1) + (C3 * x3) + (C5 * x5) + (C7 * x7);
+        var d1 = (C3 * x1) - (C7 * x3) - (C1 * x5) - (C5 * x7);
+        var d2 = (C5 * x1) - (C1 * x3) + (C7 * x5) + (C3 * x7);
+        var d3 = (C7 * x1) - (C5 * x3) + (C3 * x5) - (C1 * x7);
+
+        o0 = e0 + d0;
+        o7 = e0 - d0;
+        o1 = e1 + d1;
+        o6 = e1 - d1;
+        o2 = e2 + d2;
+        o5 = e2 - d2;
+        o3 = e3 + d3;
+        o4 = e3 - d3;
+    }
+
+    /// <summary>
+    /// <see cref="Transform1D(Vector128{double}, Vector128{double}, Vector128{double}, Vector128{double}, Vector128{double}, Vector128{double}, Vector128{double}, Vector128{double}, out Vector128{double}, out Vector128{double}, out Vector128{double}, out Vector128{double}, out Vector128{double}, out Vector128{double}, out Vector128{double}, out Vector128{double})"/>
+    /// with <c>x4 = x5 = x6 = x7 = 0</c>: the terms of the zero inputs are left out (see the remarks of the class).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Transform1D(Vector128<double> x0, Vector128<double> x1, Vector128<double> x2, Vector128<double> x3,
+        out Vector128<double> o0, out Vector128<double> o1, out Vector128<double> o2, out Vector128<double> o3, out Vector128<double> o4, out Vector128<double> o5, out Vector128<double> o6, out Vector128<double> o7)
+    {
+        // Even part: a = b = C0 * x0, p = C2 * x2, q = C6 * x2
+        var a = C0 * x0;
+        var p = C2 * x2;
+        var q = C6 * x2;
+        var e0 = a + p;
+        var e1 = a + q;
+        var e2 = a - q;
+        var e3 = a - p;
+
+        // Odd part: the first two terms of each sum
+        var d0 = (C1 * x1) + (C3 * x3);
+        var d1 = (C3 * x1) - (C7 * x3);
+        var d2 = (C5 * x1) - (C1 * x3);
+        var d3 = (C7 * x1) - (C5 * x3);
+
+        o0 = e0 + d0;
+        o7 = e0 - d0;
+        o1 = e1 + d1;
+        o6 = e1 - d1;
+        o2 = e2 + d2;
+        o5 = e2 - d2;
+        o3 = e3 + d3;
+        o4 = e3 - d3;
+    }
+
+    /// <summary>The <see cref="Vector{T}"/> form of the four-input <c>Transform1D</c>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Transform1D(Vector<double> x0, Vector<double> x1, Vector<double> x2, Vector<double> x3,
+        out Vector<double> o0, out Vector<double> o1, out Vector<double> o2, out Vector<double> o3, out Vector<double> o4, out Vector<double> o5, out Vector<double> o6, out Vector<double> o7)
+    {
+        var a = C0 * x0;
+        var p = C2 * x2;
+        var q = C6 * x2;
+        var e0 = a + p;
+        var e1 = a + q;
+        var e2 = a - q;
+        var e3 = a - p;
+        var d0 = (C1 * x1) + (C3 * x3);
+        var d1 = (C3 * x1) - (C7 * x3);
+        var d2 = (C5 * x1) - (C1 * x3);
+        var d3 = (C7 * x1) - (C5 * x3);
         o0 = e0 + d0;
         o7 = e0 - d0;
         o1 = e1 + d1;

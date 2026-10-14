@@ -713,7 +713,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
                 }
                 else
                 {
-                    JpegIdct.Transform(block, component.Samples.AsSpan(offset), stride);
+                    JpegIdct.Transform(block, component.Samples.AsSpan(offset), stride, JpegIdct.IsSparse(coefficients));
                 }
             }
         }

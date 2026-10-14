@@ -46,7 +46,8 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         var zigZag = JpegIdct.ZigZag;
         var acTable = scanComponent.AcTable!;
         var fastAc = acTable.FastAc!;
-        var hasAc = false;
+        // The natural indexes of the non-zero AC coefficients ORed together, with bit 6 set when there is one
+        var naturalIndexes = 0;
         for (var k = 1; k < 64;)
         {
             // Short codes with small magnitudes: symbol and magnitude in one lookup
@@ -59,7 +60,7 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
 
                 var fastNatural = zigZag[k];
                 block[fastNatural] = (fast >> 8) * (double)quantization[fastNatural];
-                hasAc = true;
+                naturalIndexes |= fastNatural | 64;
                 k++;
                 continue;
             }
@@ -85,13 +86,13 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
 
             var natural = zigZag[k];
             block[natural] = reader.ReceiveExtend(size) * (double)quantization[natural];
-            hasAc = true;
+            naturalIndexes |= natural | 64;
             k++;
         }
 
         reader.Commit();
 
         // The DC coefficient is read back from the predictor: one value less to keep alive in the loop
-        TransformBlock(scanComponent, blockRow, blockColumn, block, scanComponent.Predictor, hasAc);
+        TransformBlock(scanComponent, blockRow, blockColumn, block, scanComponent.Predictor, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));
     }
 }

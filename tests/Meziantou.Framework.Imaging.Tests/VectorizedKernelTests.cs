@@ -231,23 +231,65 @@ public sealed class VectorizedKernelTests
         for (var round = 0; round < 20_000; round++)
         {
             // Dequantized coefficients: sparse or dense, small or extreme (12-bit range times 16-bit quantization values)
+            // Every other block only has coefficients in its top-left 4x4 corner (the sparse transform)
             var block = new double[64];
             var density = random.NextDouble();
             var magnitude = round % 4 == 0 ? 2047 * 255 : round % 4 == 1 ? 1023 : 64;
+            var sparse = round % 2 == 1;
             for (var i = 0; i < 64; i++)
             {
-                if (i == 0 || random.NextDouble() < density)
+                if ((i == 0 || random.NextDouble() < density) && (!sparse || ((i & 0b100_100) == 0)))
                 {
                     block[i] = random.Next(-magnitude, magnitude + 1);
                 }
             }
 
             var expected = new byte[(8 * Stride) + 8];
-            var actual = new byte[(8 * Stride) + 8];
             JpegIdct.TransformScalar(block.ToArray(), expected, Stride);
-            JpegIdct.Transform(block.ToArray(), actual, Stride);
+            AssertTransform(block, expected, (coefficients, destination) => JpegIdct.Transform(coefficients, destination, Stride));
+            AssertTransform(block, expected, (coefficients, destination) => JpegIdct.Transform(coefficients, destination, Stride, sparse));
+            if (System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated)
+            {
+                AssertTransform(block, expected, (coefficients, destination) => JpegIdct.TransformVector128(coefficients, destination, Stride, sparse));
+            }
+
+            if (System.Numerics.Vector.IsHardwareAccelerated && System.Numerics.Vector<double>.Count is 2 or 4 or 8)
+            {
+                AssertTransform(block, expected, (coefficients, destination) => JpegIdct.TransformVector(coefficients, destination, Stride, sparse));
+            }
+        }
+
+        static void AssertTransform(double[] block, byte[] expected, Action<double[], byte[]> transform)
+        {
+            var actual = new byte[expected.Length];
+            transform(block.ToArray(), actual);
             Assert.Equal(expected, actual);
         }
+    }
+
+    [Fact]
+    public void JpegSparseBlocksAreTheTopLeftQuadrant()
+    {
+        var coefficients = new short[64];
+        Assert.True(JpegIdct.IsSparse(coefficients));
+        for (var i = 0; i < 64; i++)
+        {
+            Array.Clear(coefficients);
+            coefficients[i] = -1;
+            var inQuadrant = i / 8 < 4 && i % 8 < 4;
+            Assert.Equal(inQuadrant, JpegIdct.IsSparse(coefficients));
+            Assert.Equal(inQuadrant, JpegIdct.IsSparse(i | 64));
+        }
+
+        // The first 10 coefficients in zig-zag order are all in the quadrant
+        var naturalIndexes = 0;
+        foreach (var natural in JpegIdct.ZigZag[..10])
+        {
+            naturalIndexes |= natural;
+        }
+
+        Assert.True(JpegIdct.IsSparse(naturalIndexes));
+        Assert.False(JpegIdct.IsSparse(naturalIndexes | JpegIdct.ZigZag[10]));
     }
 
     [Fact]

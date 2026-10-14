@@ -192,7 +192,8 @@ internal abstract class JpegScanDecoder
     /// <param name="block">The dequantized AC coefficients (natural order), when <paramref name="hasAc"/>; cleared.</param>
     /// <param name="dc">The quantized DC coefficient.</param>
     /// <param name="hasAc">Whether an AC coefficient is not zero.</param>
-    protected static void TransformBlock(ScanComponent scanComponent, int blockRow, int blockColumn, double[] block, int dc, bool hasAc)
+    /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero (<see cref="JpegIdct.IsSparse(int)"/>).</param>
+    protected static void TransformBlock(ScanComponent scanComponent, int blockRow, int blockColumn, double[] block, int dc, bool hasAc, bool sparse)
     {
         var component = scanComponent.Component;
         var quantization = scanComponent.Quantization;
@@ -206,7 +207,7 @@ internal abstract class JpegScanDecoder
             }
             else
             {
-                JpegIdct.Transform(block, component.Samples.AsSpan(offset), component.Stride);
+                JpegIdct.Transform(block, component.Samples.AsSpan(offset), component.Stride, sparse);
             }
 
             Array.Clear(block);

@@ -312,6 +312,44 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawFrostedCardBlursWhatIsBehindTheCardAndShadowsTheBadge()
+    {
+        // A photo of stripes of one pixel
+        var photoPath = GetPath("stripes-card.png");
+        using (var photo = new Image<Rgba32>(200, 130))
+        {
+            photo.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = (x & 1) == 0 ? new Rgba32(20, 40, 160) : new Rgba32(230, 240, 255);
+                    }
+                }
+            });
+            photo.Save(photoPath);
+        }
+
+        var output = GetPath("frosted.png");
+        Examples.DrawFrostedCard(photoPath, output);
+
+        using var image = Image.Load<Rgba32>(output);
+        var frame = image.Frames[0];
+
+        // Outside the card, the stripes are untouched; inside, they are one color, from its edge to its middle
+        Assert.Equal(new Rgba32(20, 40, 160), frame[10, 10]);
+        Assert.Equal(new Rgba32(230, 240, 255), frame[11, 10]);
+        Assert.InRange(Math.Abs(frame[80, 60].R - frame[81, 60].R), 0, 2);
+        Assert.InRange(Math.Abs(frame[30, 60].B - frame[31, 60].B), 0, 3);
+
+        // The badge is gold, and its shadow darkens the card below it, more than above it
+        Assert.Equal(Colors.Gold, frame[146, 74]);
+        Assert.True(frame[146, 92].R < frame[146, 56].R - 10, $"{frame[146, 92]} {frame[146, 56]}");
+    }
+
+    [Fact]
     public void DrawOnScreenDrawsTheScreenshotBetweenItsFourCorners()
     {
         var photoPath = GetPath("desk.png");

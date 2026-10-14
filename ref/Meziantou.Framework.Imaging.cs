@@ -1214,6 +1214,15 @@ namespace Meziantou.Framework.Imaging.Drawing
         Luminosity = 15,
     }
 
+    public sealed class BlurFilter : Meziantou.Framework.Imaging.Drawing.Filter
+    {
+        public Meziantou.Framework.Imaging.Drawing.FilterEdgeMode EdgeMode { get => throw null; init { } }
+        public double SigmaX { get => throw null; }
+        public double SigmaY { get => throw null; }
+        public BlurFilter(double sigma) { }
+        public BlurFilter(double sigmaX, double sigmaY) { }
+    }
+
     public abstract class Brush
     {
         public Meziantou.Framework.Imaging.Drawing.BlendMode BlendMode { get => throw null; init { } }
@@ -1222,6 +1231,12 @@ namespace Meziantou.Framework.Imaging.Drawing
         public static Meziantou.Framework.Imaging.Drawing.Brush FromRgba64(Meziantou.Framework.Imaging.Rgba64 color) => throw null;
         public static implicit operator Meziantou.Framework.Imaging.Drawing.Brush(Meziantou.Framework.Imaging.Rgba32 color) => throw null;
         public static implicit operator Meziantou.Framework.Imaging.Drawing.Brush(Meziantou.Framework.Imaging.Rgba64 color) => throw null;
+    }
+
+    public sealed class ColorMatrixFilter : Meziantou.Framework.Imaging.Drawing.Filter
+    {
+        public Meziantou.Framework.Imaging.ColorMatrix Matrix { get => throw null; }
+        public ColorMatrixFilter(Meziantou.Framework.Imaging.ColorMatrix matrix) { }
     }
 
     public enum CompositeMode
@@ -1273,6 +1288,8 @@ namespace Meziantou.Framework.Imaging.Drawing
         public int Width { get => throw null; }
         public void Antialiasing(bool enabled, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void Antialiasing<TState>(bool enabled, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
+        public void BackdropLayer(Meziantou.Framework.Imaging.Drawing.Filter? filter, Meziantou.Framework.Imaging.RectangleD bounds, double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) { }
+        public void BackdropLayer<TState>(Meziantou.Framework.Imaging.Drawing.Filter? filter, Meziantou.Framework.Imaging.RectangleD bounds, double opacity, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) where TState : allows ref struct { }
         public void Blur(double blur, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void Blur<TState>(double blur, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void BlurBackdrop(double blur) { }
@@ -1306,7 +1323,9 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.TextPathOptions? options = null) { }
         public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, string text, Meziantou.Framework.Imaging.Typography.Font font, double size, Meziantou.Framework.Imaging.PointD origin) { }
         public void Filter(Meziantou.Framework.Imaging.ColorMatrix matrix, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
+        public void Filter(Meziantou.Framework.Imaging.Drawing.Filter filter, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void Filter<TState>(Meziantou.Framework.Imaging.ColorMatrix matrix, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
+        public void Filter<TState>(Meziantou.Framework.Imaging.Drawing.Filter filter, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void FilterBackdrop(Meziantou.Framework.Imaging.ColorMatrix matrix) { }
         public void InnerShadow(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void InnerShadow<TState>(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
@@ -1342,10 +1361,37 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void Transform<TState>(Meziantou.Framework.Imaging.Transform3D transform, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
     }
 
+    public sealed class DropShadowFilter : Meziantou.Framework.Imaging.Drawing.Filter
+    {
+        public Meziantou.Framework.Imaging.Rgba64 Color { get => throw null; }
+        public Meziantou.Framework.Imaging.PointD Offset { get => throw null; }
+        public bool ShadowOnly { get => throw null; init { } }
+        public double Sigma { get => throw null; }
+        public DropShadowFilter(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double sigma) { }
+    }
+
     public enum FillRule
     {
         NonZero = 0,
         EvenOdd = 1,
+    }
+
+    public abstract class Filter
+    {
+    }
+
+    public sealed class FilterChain : Meziantou.Framework.Imaging.Drawing.Filter
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Drawing.Filter> Filters { get => throw null; }
+        public FilterChain(params System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.Filter> filters) { }
+    }
+
+    public enum FilterEdgeMode
+    {
+        Transparent = 0,
+        Duplicate = 1,
+        Wrap = 2,
+        Mirror = 3,
     }
 
     public abstract class GradientBrush : Meziantou.Framework.Imaging.Drawing.Brush

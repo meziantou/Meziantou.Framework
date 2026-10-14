@@ -9,7 +9,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// of a shape (the blur and the offset of a shadow, a blur, the glyphs a font draws with its own colors) is drawn on an
 /// image of a rectangle of the plane of the drawing, by a session of its own whose transformation is the scaling
 /// <c>s</c> of the plane to that image: the factor of <see cref="GetLocalScale"/>, made smaller when the image would have
-/// more than <see cref="MaxProjectedPixels"/> pixels. The rectangle is the part of the plane whose image the bounds of
+/// more than <see cref="MaxProjectedPixels"/> pixels, or more than 16 times the pixels of the bounds of the clip (and at
+/// least 4,096). The rectangle is the part of the plane whose image the bounds of
 /// the clip can show (cut where the plane is near its horizon, and brought within the largest coordinate), with a
 /// margin for what is around it and casts a shadow on it, or only the box of a glyph. When the session ends, the image
 /// is drawn on the canvas as an image placed by the projective transformation of its pixels, with
@@ -23,7 +24,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed partial class DrawingSession
 {
     /// <summary>The largest number of pixels of an image of the plane of the drawing.</summary>
-    private const double MaxProjectedPixels = 1 << 24;
+    private const double MaxProjectedPixels = 1 << 22;
 
     /// <summary>Gets or sets the width the canvas of the session reports: the one of the canvas it draws for.</summary>
     public int CanvasWidth { get; private set; }
@@ -56,10 +57,14 @@ internal sealed partial class DrawingSession
         var isEmpty = !(bounds.Width > 0 && bounds.Height > 0);
         if (!isEmpty)
         {
+            // At most 16 times the pixels the clip shows: the image is drawn on them
+            GetClipBounds(out var clipLeft, out var clipTop, out var clipRight, out var clipBottom, out _);
+            var visible = Math.Max(clipRight - clipLeft, 1) * (double)Math.Max(clipBottom - clipTop, 1);
+            var limit = Math.Min(MaxProjectedPixels, Math.Max(16 * visible, 4096));
             var pixels = Math.Ceiling(bounds.Width * scale) * Math.Ceiling(bounds.Height * scale);
-            if (pixels > MaxProjectedPixels)
+            if (pixels > limit)
             {
-                scale *= Math.Sqrt(MaxProjectedPixels / pixels);
+                scale *= Math.Sqrt(limit / pixels);
             }
 
             width = (int)Math.Max(1, Math.Ceiling(bounds.Width * scale));
@@ -99,7 +104,7 @@ internal sealed partial class DrawingSession
             }
 
             var toPlane = new AffineTransform(1 / scale, 0, 0, 1 / scale, bounds.Left, bounds.Top);
-            return new ProjectedScope(image, session, isEmpty ? default : ((ProjectiveTransform)toPlane).Then(_projection), isEmpty);
+            return new ProjectedScope(image, session, isEmpty ? default : ((ProjectiveTransform)toPlane).Then(GetProjection()), isEmpty);
         }
         catch
         {
@@ -159,7 +164,7 @@ internal sealed partial class DrawingSession
     private RectangleD GetVisiblePlaneBounds()
     {
         GetClipBounds(out var left, out var top, out var right, out var bottom, out _);
-        if (right <= left || bottom <= top || !_projection.TryInvert(out var inverse))
+        if (right <= left || bottom <= top || !GetProjection().TryInvert(out var inverse))
             return RectangleD.Empty;
 
         // The corners of the bounds, cut where W is too small: that part of the canvas shows the plane far beyond

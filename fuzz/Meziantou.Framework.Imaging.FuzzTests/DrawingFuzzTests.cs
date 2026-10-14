@@ -199,7 +199,7 @@ public sealed class DrawingFuzzTests
         var count = random.Next(1, 7);
         for (var i = 0; i < count; i++)
         {
-            switch (random.Next(23))
+            switch (random.Next(24))
             {
                 case 0:
                     canvas.Fill(CreateBrush(random, canvas, context));
@@ -314,6 +314,22 @@ public sealed class DrawingFuzzTests
                     break;
                 case 20:
                     Measure(canvas, random, context);
+                    break;
+                case 22:
+                    // A filtered drawing, or a layer that starts with the filtered backdrop of a rectangle
+                    if (depth >= 3)
+                    {
+                        canvas.Fill(CreateBrush(random, canvas, context));
+                    }
+                    else if (random.Chance(50))
+                    {
+                        canvas.Filter(CreateFilter(random), inner => Paint(inner, random, context, depth + 1));
+                    }
+                    else
+                    {
+                        canvas.BackdropLayer(random.Chance(10) ? null : CreateFilter(random), CreateRectangle(random, canvas), CreateOpacity(random), inner => Paint(inner, random, context, depth + 1));
+                    }
+
                     break;
                 case 21:
                     // A plane seen in perspective: what crosses its horizon is cut, nothing is rejected
@@ -491,6 +507,20 @@ public sealed class DrawingFuzzTests
         var q = random.Chance(30) ? 0 : (NextDouble(random) * 0.1) - 0.05;
         return ((ProjectiveTransform)plane).Then(new ProjectiveTransform(1, 0, p, 0, 1, q, 0, 0, 1));
     }
+
+    /// <summary>A filter of a few pixels of reach: a blur, a color matrix, a shadow, or a chain of them.</summary>
+    private static Filter CreateFilter(FuzzRandom random) => random.Next(4) switch
+    {
+        0 => new BlurFilter(NextDouble(random) * 4, random.Chance(30) ? 0 : NextDouble(random) * 4) { EdgeMode = (FilterEdgeMode)random.Next(4) },
+        1 => new ColorMatrixFilter(random.Next(3) switch
+        {
+            0 => ColorMatrix.CreateInvert(),
+            1 => ColorMatrix.CreateSaturation(NextDouble(random) * 3),
+            _ => ColorMatrix.CreateOpacity(NextDouble(random)),
+        }),
+        2 => new DropShadowFilter(CreateColor(random), new PointD((NextDouble(random) - 0.5) * 8, (NextDouble(random) - 0.5) * 8), NextDouble(random) * 3) { ShadowOnly = random.Chance(30) },
+        _ => new FilterChain(CreateFilter(random), CreateFilter(random)),
+    };
 
     private static RectangleD CreateRectangle(FuzzRandom random, DrawingCanvas canvas)
     {

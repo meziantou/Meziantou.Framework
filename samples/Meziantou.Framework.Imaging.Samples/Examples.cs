@@ -406,6 +406,31 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>The filters of CSS: frosted glass behind a card (backdrop-filter) and a drop shadow under a badge (filter).</summary>
+    // begin-snippet: draw-filters
+    public static void DrawFrostedCard(string photoPath, string outputPath)
+    {
+        using var image = Image.Load(photoPath);
+        var card = new RectangleD(24, 24, image.Width - 48, 80);
+        var shape = new VectorPathBuilder().AddRoundedRectangle(card, 16).Build();
+
+        // backdrop-filter: blur(16px) saturate(1.4), and filter: drop-shadow(0 4px 12px rgb(0 0 0 / 47%))
+        var glass = new FilterChain(new BlurFilter(8), new ColorMatrixFilter(ColorMatrix.CreateSaturation(1.4)));
+        var lift = new DropShadowFilter(new Rgba32(0, 0, 0, 120), new PointD(0, 4), 6);
+
+        image.Draw(canvas =>
+        {
+            // The card starts with what is behind it, blurred, inside its rounded corners, then is lightened
+            canvas.Clip(shape, clipped => clipped.BackdropLayer(glass, card, 1, panel => panel.Fill(new Rgba32(255, 255, 255, 60))));
+
+            // The badge and its shadow, as a whole
+            canvas.Filter(lift, badge => badge.FillCircle(Colors.Gold, new PointD(card.Right - 30, card.Bottom - 30), 14));
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
     /// <summary>An image drawn on a quadrilateral, as a plane seen in perspective: a screenshot on the screen of a photo.</summary>
     // begin-snippet: draw-perspective
     public static void DrawOnScreen(string photoPath, string screenshotPath, string outputPath)

@@ -179,7 +179,12 @@ internal sealed partial class DrawingSession
     }
 
     /// <summary>Starts a layer on the pixels the clip can show, and on a margin around them.</summary>
-    private LayerLevel PushLayerCore(int margin)
+    private LayerLevel PushLayerCore(int margin) => PushLayerCore(margin, frameCount: 1);
+
+    /// <summary>Starts a layer of one or several frames on the pixels the clip can show, and on a margin around them.</summary>
+    /// <param name="margin">The pixels around the bounds of the clip that the layer holds too.</param>
+    /// <param name="frameCount">The number of frames of the layer: one, or one per frame that is drawn on, when each starts with what is under it.</param>
+    private LayerLevel PushLayerCore(int margin, int frameCount)
     {
         _cancellationToken.ThrowIfCancellationRequested();
         GetClipBounds(out var left, out var top, out var right, out var bottom, out _);
@@ -201,7 +206,7 @@ internal sealed partial class DrawingSession
             bottom = Math.Min(Height, bottom + margin);
         }
 
-        level.Begin(_image, _frames[0].PixelFormat is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24), Width, Height, left, top, right, bottom);
+        level.Begin(_image, _frames[0].PixelFormat is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24), Width, Height, left, top, right, bottom, frameCount);
         level.ParentFrames = _frames;
         level.ParentStorages = _storages;
         _frames = level.Frames!;
@@ -271,6 +276,10 @@ internal sealed partial class DrawingSession
                     case LayerEffect.ColorMatrix:
                         FilterLayer(level);
                         break;
+
+                    case LayerEffect.Filter:
+                        ApplyFilterLayer(level);
+                        break;
                 }
 
                 if (level.IsLuminanceMask)
@@ -287,13 +296,42 @@ internal sealed partial class DrawingSession
         if (!draw || isEmpty)
             return;
 
-        // The layer is an image at the origin of the canvas: its pixels are those of the canvas, read as they are
+        // The layer is an image at the origin of the canvas: its pixels are those of the canvas, read as they are. A
+        // layer of several frames has one for each frame it is drawn on.
         var bounds = Rectangle.FromLTRB(level.Left, level.Top, level.Right, level.Bottom);
+        var layerFrames = level.Frames!;
+        if (layerFrames.Length == 1)
+        {
+            DrawLayerFrame(layerFrames[0], bounds, level);
+            return;
+        }
+
+        var frames = _frames;
+        var storages = _storages;
+        try
+        {
+            for (var i = 0; i < frames.Length; i++)
+            {
+                _frames = [frames[i]];
+                _storages = [storages[i]];
+                DrawLayerFrame(layerFrames[i], bounds, level);
+            }
+        }
+        finally
+        {
+            _frames = frames;
+            _storages = storages;
+        }
+    }
+
+    /// <summary>Draws a frame of a layer on what is drawn on.</summary>
+    private void DrawLayerFrame(ImageFrame frame, Rectangle bounds, LayerLevel level)
+    {
         var sink = BeginDeviceFill();
         AddRectangle(sink, bounds);
         sink.End();
         var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-        evaluator.Prepare(level.Frames![0], bounds, AffineTransform.Identity, ImageWrapMode.Transparent, ImageSampling.Nearest, _frames[0], Width, nameof(draw));
+        evaluator.Prepare(frame, bounds, AffineTransform.Identity, ImageWrapMode.Transparent, ImageSampling.Nearest, _frames[0], Width, "draw");
         if (level.Opacity != CoverageRasterizer.FullCoverage)
         {
             EnsureCoverageRow();
@@ -368,6 +406,7 @@ internal sealed partial class DrawingSession
         DisposeShadows();
         DisposeBlur();
         DisposeFilters();
+        DisposeFilterEffects();
     }
 
     /// <summary>What changes the pixels of a layer, or is drawn with it, when it ends.</summary>
@@ -378,13 +417,14 @@ internal sealed partial class DrawingSession
         InnerShadow,
         Blur,
         ColorMatrix,
+        Filter,
     }
 
     /// <summary>A layer of the stack: its image, what was drawn on before it started, and how it is drawn when it ends.</summary>
     private sealed class LayerLevel : IDisposable
     {
         private Image? _image;
-        private long _token;
+        private long[]? _tokens;
 
         public ImageFrame[]? Frames { get; private set; }
 
@@ -418,6 +458,12 @@ internal sealed partial class DrawingSession
         /// <summary>Gets or sets the color matrix the pixels of the layer go through when it ends.</summary>
         public ColorMatrix? Matrix { get; set; }
 
+        /// <summary>Gets or sets the filter the pixels of the layer go through when it ends.</summary>
+        public Filter? Filter { get; set; }
+
+        /// <summary>Gets or sets the scales of the lengths of <see cref="Filter"/> along x and along y.</summary>
+        public (double X, double Y) FilterScale { get; set; }
+
         /// <summary>Gets or sets the standard deviation of the blur of the shadow of the layer, or of the layer itself.</summary>
         public double BlurSigma { get; set; }
 
@@ -440,7 +486,7 @@ internal sealed partial class DrawingSession
         public int Bottom { get; private set; }
 
         /// <summary>Creates the image of the layer if it has none, makes the pixels it can draw on transparent, and holds them until <see cref="End"/>.</summary>
-        public void Begin(Image owner, bool isWide, int width, int height, int left, int top, int right, int bottom)
+        public void Begin(Image owner, bool isWide, int width, int height, int left, int top, int right, int bottom, int frameCount)
         {
             if (_image is null)
             {
@@ -448,23 +494,41 @@ internal sealed partial class DrawingSession
                     ? new Image<Rgba64>(owner.Configuration, new Size(width, height), owner.Owner.Scope, layoutOptions: null)
                     : new Image<Rgba32>(owner.Configuration, new Size(width, height), owner.Owner.Scope, layoutOptions: null);
                 _image = image;
-                var frame = image.Frames[0];
-                Frames = [frame];
-                Storages = [frame.GetStorage()];
+            }
+
+            // A frame per frame that is drawn on when each one starts with what is under it: added once, and kept
+            while (_image.Frames.Count < frameCount)
+            {
+                _image.AppendFrame();
+            }
+
+            if (Frames is null || Frames.Length != frameCount)
+            {
+                Frames = new ImageFrame[frameCount];
+                Storages = new PixelStorage[frameCount];
+                _tokens = new long[frameCount];
+                for (var i = 0; i < frameCount; i++)
+                {
+                    Frames[i] = _image.Frames[i];
+                    Storages[i] = Frames[i].GetStorage();
+                }
             }
 
             Left = left;
             Top = top;
             Right = right;
             Bottom = bottom;
-            var storage = Storages![0];
-            _token = storage.AcquireLease().Token;
-            if (right > left)
+            for (var i = 0; i < frameCount; i++)
             {
-                var bytesPerPixel = storage.BytesPerPixel;
-                for (var y = top; y < bottom; y++)
+                var storage = Storages![i];
+                _tokens![i] = storage.AcquireLease().Token;
+                if (right > left)
                 {
-                    storage.GetRowSpanCore(y).Slice(left * bytesPerPixel, (right - left) * bytesPerPixel).Clear();
+                    var bytesPerPixel = storage.BytesPerPixel;
+                    for (var y = top; y < bottom; y++)
+                    {
+                        storage.GetRowSpanCore(y).Slice(left * bytesPerPixel, (right - left) * bytesPerPixel).Clear();
+                    }
                 }
             }
         }
@@ -472,11 +536,17 @@ internal sealed partial class DrawingSession
         /// <summary>Releases the pixels of the layer: they can be read to draw it.</summary>
         public void End()
         {
-            if (_token != 0)
+            if (_tokens is null)
+                return;
+
+            for (var i = 0; i < _tokens.Length; i++)
             {
-                var storage = Storages![0];
-                storage.Owner.ReleaseLease(storage, _token);
-                _token = 0;
+                if (_tokens[i] != 0)
+                {
+                    var storage = Storages![i];
+                    storage.Owner.ReleaseLease(storage, _tokens[i]);
+                    _tokens[i] = 0;
+                }
             }
         }
 

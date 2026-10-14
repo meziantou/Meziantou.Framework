@@ -942,7 +942,7 @@ public readonly ref struct DrawingCanvas
     /// enlarges a length by less than 65536. What has a size in the drawing (the blur and the offset of a shadow, a
     /// blur, the glyphs a font draws with its own colors) is drawn on an image of the plane of the drawing, then that
     /// image is drawn in perspective; that image has the resolution the transformation has where <c>W</c> is the one of
-    /// the origin, and at most 16,777,216 pixels. A pattern is drawn at that resolution too.
+    /// the origin, and at most 4,194,304 pixels. A pattern is drawn at that resolution too.
     /// </para>
     /// <para>
     /// An affine transformation (whose third column is <c>(0, 0, 1)</c>) draws what
@@ -1323,6 +1323,157 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void BlurBackdrop(double blur) => GetSession().BlurBackdrop(blur);
+
+    /// <summary>Runs a callback whose drawings go through a filter, as a whole, before they are drawn on the canvas: the <c>filter</c> property of CSS.</summary>
+    /// <remarks>
+    /// <para>
+    /// The drawings are made on a layer (see <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode)"/>) that
+    /// holds the pixels the clip can show and, around them, as far as the filter moves what it filters (the reach of a
+    /// blur, the offset and the blur of a shadow). When the callback returns, the layer goes through the filter (see
+    /// <see cref="Drawing.Filter"/> for the arithmetic), then it is drawn on the canvas. What a filter reads beyond the
+    /// edges of the canvas is given by its edge mode: transparent by default.
+    /// </para>
+    /// <para>
+    /// The lengths of the filter are lengths of the drawing: under a transformation that scales the axes, they are
+    /// scaled with them; under one that turns, skews or puts the drawing in perspective, the drawings and the filter are
+    /// made on an image of the plane of the drawing, which is then drawn transformed (see
+    /// <see cref="Transform(ProjectiveTransform, DrawingAction)"/>).
+    /// </para>
+    /// </remarks>
+    /// <param name="filter">The filter.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="filter"/> or <paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Filter(Filter filter, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var target = new DrawingCanvas(session.PushFilter(filter));
+        var isDrawn = false;
+        try
+        {
+            action(target);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings go through a filter before they are drawn, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="filter">The filter.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Filter(Drawing.Filter, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="filter"/> or <paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Filter<TState>(Filter filter, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var target = new DrawingCanvas(session.PushFilter(filter));
+        var isDrawn = false;
+        try
+        {
+            action(target, state);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>
+    /// Runs a callback whose drawings are made on a layer that starts with what is already drawn behind a rectangle,
+    /// filtered: the <c>backdrop-filter</c> property of CSS (frosted glass, a dimmed or grayed backdrop, the shadow of
+    /// what is behind).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The backdrop is the pixels already drawn (on the canvas, or on the layer this one starts in) whose center is in
+    /// the rectangle on the canvas (in the box of its image under a transformation of the canvas). It goes through the
+    /// filter as an image of its own, whose pixels are mirrored beyond its edges, whatever the edge modes of the filter:
+    /// a blur of a backdrop does not fade at its edges. The result is the start of a layer (see
+    /// <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode)"/>), transparent around it; the callback draws
+    /// on it, then the layer is drawn on the canvas with the opacity, the operator and the blend mode. A clip that is
+    /// active when the layer starts (the rounded corners of a panel) applies to the layer as a whole.
+    /// </para>
+    /// <para>
+    /// The lengths of the filter are lengths of the drawing, which the linear part of the transformation of the canvas
+    /// scales: a deviation along an axis by the length of the image of the unit vector of that axis. When an image of
+    /// several frames is drawn on, each frame starts with its own backdrop.
+    /// </para>
+    /// </remarks>
+    /// <param name="filter">The filter of the backdrop, or <see langword="null"/> to start with the backdrop as it is.</param>
+    /// <param name="bounds">The rectangle of the backdrop, in the coordinates of the drawing.</param>
+    /// <param name="opacity">The opacity of the layer, from 0 to 1.</param>
+    /// <param name="action">The callback that draws on the backdrop. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <param name="blendMode">The blend mode that mixes the colors of the layer with those of the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="bounds"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of <paramref name="bounds"/> exceeds 16777216, <paramref name="opacity"/> is not between 0 and 1, <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>, or <paramref name="blendMode"/> is not a defined <see cref="BlendMode"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void BackdropLayer(Filter? filter, RectangleD bounds, double opacity, DrawingAction action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushBackdropLayer(filter, bounds, opacity, compositeMode, blendMode);
+        var isDrawn = false;
+        try
+        {
+            action(this);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are made on a layer that starts with the filtered backdrop of a rectangle, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="filter">The filter of the backdrop, or <see langword="null"/> to start with the backdrop as it is.</param>
+    /// <param name="bounds">The rectangle of the backdrop, in the coordinates of the drawing.</param>
+    /// <param name="opacity">The opacity of the layer, from 0 to 1.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws on the backdrop. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <param name="blendMode">The blend mode that mixes the colors of the layer with those of the canvas.</param>
+    /// <remarks>See <see cref="BackdropLayer(Drawing.Filter, RectangleD, double, DrawingAction, CompositeMode, BlendMode)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="bounds"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of <paramref name="bounds"/> exceeds 16777216, <paramref name="opacity"/> is not between 0 and 1, <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>, or <paramref name="blendMode"/> is not a defined <see cref="BlendMode"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void BackdropLayer<TState>(Filter? filter, RectangleD bounds, double opacity, TState state, DrawingAction<TState> action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushBackdropLayer(filter, bounds, opacity, compositeMode, blendMode);
+        var isDrawn = false;
+        try
+        {
+            action(this, state);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
 
     /// <summary>Runs a callback whose drawings get new colors, as a whole, before they are drawn on the canvas: a photograph in gray levels, an icon in another color, a drawing that is dimmed.</summary>
     /// <remarks>

@@ -2968,9 +2968,9 @@ public sealed class DrawingSessionTests
                     }
 
                     canvas.Filter(ColorMatrix.CreateInvert(), 1, static (layer, _) => layer.FillRectangle(new Rgba32(55, 55, 55), new Rectangle(1, 0, 1, 1)));
-                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Filter(null!, static _ => { }));
+                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Filter((ColorMatrix)null!, static _ => { }));
                     AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Filter(ColorMatrix.Identity, null!));
-                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Filter(null!, 1, static (_, _) => { }));
+                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Filter((ColorMatrix)null!, 1, static (_, _) => { }));
                     AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Filter(ColorMatrix.Identity, 1, null!));
                     AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.FilterBackdrop(null!));
                 },
@@ -3167,6 +3167,186 @@ public sealed class DrawingSessionTests
         using var layer = new Image<Rgb24>(5, 1, new Rgb24(0, 0, 0));
         layer.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static inner => inner.Blur(60, static blurred => blurred.FillRectangle(White, new Rectangle(0, 0, 5, 1)))), Ct);
         Assert.All(DrawingTestSupport.ReadSamples(layer.Frames[0]), sample => Assert.Equal(255, sample));
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Filters and backdrops
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void AFilteredDrawingIsBlurredByTheWeightsOfABellAlongEachAxis()
+    {
+        // One opaque white pixel, blurred with a deviation of 1: the weights are exp(-i^2 / 2) for i from -3 to 3,
+        // divided by their sum. The middle one is 1 / 2.505964..., so the pixel keeps 0.159244... of its alpha (41 of
+        // 255) and its neighbor along an axis 0.159244 * exp(-1/2) (25 of 255); the color stays white.
+        var center = 1 / (1 + (2 * (Math.Exp(-0.5) + Math.Exp(-2) + Math.Exp(-4.5))));
+        using var image = new Image<Rgba32>(9, 9);
+        image.Draw(canvas => canvas.Filter(new BlurFilter(1), layer => layer.FillRectangle(White, new Rectangle(4, 4, 1, 1))), Ct);
+        Assert.Equal(new Rgba32(255, 255, 255, (byte)Math.Floor((255 * center * center) + 0.5)), image.Frames[0][4, 4]);
+        Assert.Equal(new Rgba32(255, 255, 255, (byte)Math.Floor((255 * center * center * Math.Exp(-0.5)) + 0.5)), image.Frames[0][5, 4]);
+        Assert.Equal(41, image.Frames[0][4, 4].A);
+        Assert.Equal(image.Frames[0][5, 4], image.Frames[0][4, 3]);
+
+        // One deviation per axis: along x only, the rows above and below stay transparent
+        image.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
+        image.Draw(canvas => canvas.Filter(new BlurFilter(1, 0), layer => layer.FillRectangle(White, new Rectangle(4, 4, 1, 1))), Ct);
+        Assert.Equal((byte)Math.Floor((255 * center) + 0.5), image.Frames[0][4, 4].A);
+        Assert.Equal((byte)Math.Floor((255 * center * Math.Exp(-0.5)) + 0.5), image.Frames[0][5, 4].A);
+        Assert.Equal(0, image.Frames[0][4, 3].A);
+
+        // The edges of the canvas: transparent beyond them by default (a drawing that covers the canvas fades at its
+        // edges), or the drawing continued, wrapped or mirrored
+        using var full = new Image<Rgba32>(10, 10);
+        full.Draw(canvas => canvas.Filter(new BlurFilter(1), layer => layer.Fill(White)), Ct);
+        Assert.InRange(full.Frames[0][0, 0].A, 1, 254);
+        Assert.Equal(255, full.Frames[0][5, 5].A);
+        foreach (var mode in new[] { FilterEdgeMode.Duplicate, FilterEdgeMode.Wrap, FilterEdgeMode.Mirror })
+        {
+            full.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
+            full.Draw(canvas => canvas.Filter(new BlurFilter(1) { EdgeMode = mode }, layer => layer.Fill(White)), Ct);
+            Assert.Equal(new Rgba32(255, 255, 255), full.Frames[0][0, 0]);
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new BlurFilter(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new BlurFilter(1, 10001));
+        Assert.Throws<ArgumentException>(() => new BlurFilter(double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new BlurFilter(1) { EdgeMode = (FilterEdgeMode)4 });
+        Assert.Equal((2d, 3d, FilterEdgeMode.Transparent), (new BlurFilter(2, 3).SigmaX, new BlurFilter(2, 3).SigmaY, new BlurFilter(2, 3).EdgeMode));
+    }
+
+    [Fact]
+    public void AFilterCanChangeColorsCastAShadowAndBeChained()
+    {
+        // A color matrix on the straight colors: the gray of the matrix of the canvas, up to the rounding of the
+        // single precision values
+        var photo = new LinearGradientBrush(new PointD(0, 0), new PointD(8, 0), [new GradientStop(0, new Rgba32(200, 30, 90)), new GradientStop(1, new Rgba32(20, 160, 240, 180))]);
+        var expected = Draw(canvas => canvas.Filter(ColorMatrix.CreateGrayscale(), layer => layer.Fill(photo)));
+        var actual = Draw(canvas => canvas.Filter(new ColorMatrixFilter(ColorMatrix.CreateGrayscale()), layer => layer.Fill(photo)));
+        for (var i = 0; i < expected.Length; i++)
+        {
+            Assert.InRange(actual[i], expected[i] - 1, expected[i] + 1, message: $"sample {i}");
+        }
+
+        // Inverted twice: the colors back
+        var twice = Draw(canvas => canvas.Filter(new FilterChain(new ColorMatrixFilter(ColorMatrix.CreateInvert()), new ColorMatrixFilter(ColorMatrix.CreateInvert())), layer => layer.Fill(photo)));
+        var plain = Draw(canvas => canvas.Fill(photo));
+        for (var i = 0; i < plain.Length; i++)
+        {
+            Assert.InRange(twice[i], plain[i] - 1, plain[i] + 1, message: $"sample {i}");
+        }
+
+        // A shadow without blur 3 pixels to the right, under the drawing: a white square of 2 at (2, 2), its black
+        // shadow at (5, 2); with half a pixel, the shadow is half on its first and its last column
+        using var image = new Image<Rgba32>(10, 6);
+        var square = new Rectangle(2, 2, 2, 2);
+        image.Draw(canvas => canvas.Filter(new DropShadowFilter(new Rgba32(0, 0, 0), new PointD(3, 0), 0), layer => layer.FillRectangle(White, square)), Ct);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][2, 2]);
+        Assert.Equal(new Rgba32(0, 0, 0, 0), image.Frames[0][4, 2]);
+        Assert.Equal(new Rgba32(0, 0, 0), image.Frames[0][5, 2]);
+        Assert.Equal(new Rgba32(0, 0, 0), image.Frames[0][6, 3]);
+        image.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
+        image.Draw(canvas => canvas.Filter(new DropShadowFilter(new Rgba32(0, 0, 0), new PointD(2.5, 0), 0) { ShadowOnly = true }, layer => layer.FillRectangle(White, square)), Ct);
+        Assert.Equal(new Rgba32(0, 0, 0, 0), image.Frames[0][2, 2]);
+        Assert.Equal(new Rgba32(0, 0, 0, 128), image.Frames[0][4, 2]);
+        Assert.Equal(new Rgba32(0, 0, 0), image.Frames[0][5, 2]);
+        Assert.Equal(new Rgba32(0, 0, 0, 128), image.Frames[0][6, 2]);
+
+        Assert.Throws<ArgumentException>(() => new DropShadowFilter(default, new PointD(double.NaN, 0), 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new DropShadowFilter(default, default, -1));
+        Assert.Throws<ArgumentNullException>(() => new ColorMatrixFilter(null!));
+        Assert.Throws<ArgumentNullException>(() => new FilterChain(new BlurFilter(1), null!));
+        Assert.Equal(2, new FilterChain(new BlurFilter(1), new BlurFilter(2)).Filters.Count);
+
+        static int[] Draw(DrawingAction action)
+        {
+            using var image = new Image<Rgba32>(8, 2);
+            image.Draw(action, Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
+    public void TheLengthsOfAFilterAreLengthsOfTheDrawing()
+    {
+        // Scaled by 2: a blur of 1 is a blur of 2, and a shadow 1 pixel away is 2 pixels away
+        var filter = new FilterChain(new BlurFilter(1), new DropShadowFilter(new Rgba32(0, 0, 0, 128), new PointD(1, 0.5), 0.5));
+        var expected = Draw(canvas => canvas.Filter(new FilterChain(new BlurFilter(2), new DropShadowFilter(new Rgba32(0, 0, 0, 128), new PointD(2, 1), 1)), layer => layer.FillRectangle(White, new Rectangle(6, 6, 6, 6))));
+        Assert.Equal(expected, Draw(canvas => canvas.Transform(AffineTransform.CreateScale(2, 2), scaled => scaled.Filter(filter, layer => layer.FillRectangle(White, new Rectangle(3, 3, 3, 3))))));
+
+        // Turned by a quarter of a turn: the filter applies in the plane of the drawing, which is then turned. The
+        // square is symmetric and its shadow is below it: turned, the shadow is on its left.
+        var turned = Draw(canvas => canvas.Transform(AffineTransform.CreateRotation(90, new PointD(12, 12)), plane => plane.Filter(new DropShadowFilter(new Rgba32(0, 0, 0), new PointD(0, 4), 0), layer => layer.FillRectangle(White, new Rectangle(8, 8, 8, 8)))));
+        Assert.Equal(255, turned[((12 * 24) + 6) * 4 + 3]);
+        Assert.Equal(0, turned[((12 * 24) + 6) * 4]);
+        Assert.Equal(0, turned[((12 * 24) + 18) * 4 + 3]);
+
+        static int[] Draw(DrawingAction action)
+        {
+            using var image = new Image<Rgba32>(24, 24);
+            image.Draw(action, Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
+    public void ABackdropLayerStartsWithWhatIsBehindItFiltered()
+    {
+        // Red on the left half, blue on the right one; the backdrop is the rectangle from x = 4 to x = 12
+        var red = new Rgba32(255, 0, 0);
+        var blue = new Rgba32(0, 0, 255);
+        using var image = CreateHalves();
+        image.Draw(canvas => canvas.BackdropLayer(new BlurFilter(0.5), new RectangleD(4, 0, 8, 4), 1, static _ => { }), Ct);
+
+        // Outside the rectangle, nothing changes; on its edges, the backdrop is mirrored (a blur of 0.5 reaches 2
+        // pixels): still red, still blue, and opaque. In the middle, red and blue are mixed.
+        Assert.Equal(red, image.Frames[0][3, 1]);
+        Assert.Equal(blue, image.Frames[0][12, 1]);
+        Assert.Equal(red, image.Frames[0][4, 1]);
+        Assert.Equal(blue, image.Frames[0][11, 1]);
+        Assert.True(image.Frames[0][7, 1].B > 0 && image.Frames[0][8, 1].R > 0);
+        Assert.Equal(image.Frames[0][7, 0], image.Frames[0][7, 3]);
+
+        // The callback draws on the filtered backdrop, and the layer has an opacity: inverted at half its opacity,
+        // red over red is (255, 0, 0) and (0, 255, 255) mixed half way
+        using var inverted = CreateHalves();
+        inverted.Draw(canvas => canvas.BackdropLayer(new ColorMatrixFilter(ColorMatrix.CreateInvert()), new RectangleD(0, 0, 16, 4), 0.5, layer => layer.FillRectangle(White, new Rectangle(0, 0, 1, 1))), Ct);
+        Assert.Equal(new Rgba32(128, 128, 128), inverted.Frames[0][1, 1]);
+        Assert.Equal(new Rgba32(255, 128, 128), inverted.Frames[0][0, 0]);
+
+        // A clip applies to the layer: only the pixels it lets through change; without filter, the layer starts with
+        // the backdrop as it is
+        using var clipped = CreateHalves();
+        clipped.Draw(canvas => canvas.Clip(new Rectangle(0, 0, 2, 2), inner => inner.BackdropLayer(new ColorMatrixFilter(ColorMatrix.CreateInvert()), new RectangleD(0, 0, 16, 4), 1, static _ => { })), Ct);
+        Assert.Equal(new Rgba32(0, 255, 255), clipped.Frames[0][1, 1]);
+        Assert.Equal(red, clipped.Frames[0][2, 2]);
+        clipped.Draw(canvas => canvas.BackdropLayer(null, new RectangleD(0, 0, 16, 4), 1, layer => layer.Fill(new SolidBrush(red) { CompositeMode = CompositeMode.DestinationOut })), Ct);
+        Assert.Equal(new Rgba32(0, 255, 255), clipped.Frames[0][1, 1]);
+
+        // Each frame starts with its own backdrop
+        using var animation = new Image<Rgba32>(2, 1, red);
+        animation.AppendFrame();
+        animation.Frames[1].Draw(canvas => canvas.Fill(blue), Ct);
+        animation.Draw(canvas => canvas.BackdropLayer(new ColorMatrixFilter(ColorMatrix.CreateInvert()), new RectangleD(0, 0, 2, 1), 1, static _ => { }), Ct);
+        Assert.Equal(new Rgba32(0, 255, 255), animation.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(255, 255, 0), animation.Frames[1][0, 0]);
+
+        image.Draw(
+            canvas =>
+            {
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.BackdropLayer(null, new RectangleD(0, 0, 1, 1), 1, null!));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.BackdropLayer(null, new RectangleD(double.NaN, 0, 1, 1), 1, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.BackdropLayer(null, new RectangleD(0, 0, 1, 1), 2, static _ => Assert.Fail("The callback ran.")));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.BackdropLayer(null, new RectangleD(0, 0, 1, 1), 1, static _ => Assert.Fail("The callback ran."), (CompositeMode)12));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Filter((Filter)null!, static _ => Assert.Fail("The callback ran.")));
+            },
+            Ct);
+
+        Image<Rgba32> CreateHalves()
+        {
+            var halves = new Image<Rgba32>(16, 4, red);
+            halves.Draw(canvas => canvas.FillRectangle(blue, new Rectangle(8, 0, 8, 4)), Ct);
+            return halves;
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------

@@ -1242,6 +1242,43 @@ photograph drawn in gray levels, an icon drawn in the color of a theme and a dis
 through: the page behind a dialog that is dimmed, a region shown in gray levels, with the antialiased edge of the
 clip.
 
+**Filters and backdrops**. A `Filter` is what the `filter` and `backdrop-filter` properties of CSS apply: a
+`BlurFilter` (a Gaussian blur, with one standard deviation or one per axis, and an `EdgeMode` for what it reads beyond
+the edges of the canvas: transparent by default, the edges extended, wrapped or mirrored), a `ColorMatrixFilter` (the
+filter functions that change colors), a `DropShadowFilter` (a shadow of the alpha, moved, blurred and colored, under
+the drawing, or alone with `ShadowOnly`, as the shadows of the HTML canvas), and a `FilterChain` of them, applied one
+after the other. `canvas.Filter(filter, callback)` draws the callback on a layer that holds what the clip can show and
+what the filter moves into it, then filters the layer and draws it. `canvas.BackdropLayer(filter, bounds, opacity,
+callback)` starts a layer with what is already drawn behind a rectangle, filtered (its pixels mirrored beyond its edges,
+so that a blurred backdrop does not fade there): the callback draws on it, then it is drawn with its opacity, and the
+clip around it gives it its shape. The lengths of a filter are lengths of the drawing: a transformation of the canvas
+that enlarges the drawing enlarges its blurs and its offsets.
+
+<!-- snippet: draw-filters -->
+```csharp
+public static void DrawFrostedCard(string photoPath, string outputPath)
+{
+    using var image = Image.Load(photoPath);
+    var card = new RectangleD(24, 24, image.Width - 48, 80);
+    var shape = new VectorPathBuilder().AddRoundedRectangle(card, 16).Build();
+
+    // backdrop-filter: blur(16px) saturate(1.4), and filter: drop-shadow(0 4px 12px rgb(0 0 0 / 47%))
+    var glass = new FilterChain(new BlurFilter(8), new ColorMatrixFilter(ColorMatrix.CreateSaturation(1.4)));
+    var lift = new DropShadowFilter(new Rgba32(0, 0, 0, 120), new PointD(0, 4), 6);
+
+    image.Draw(canvas =>
+    {
+        // The card starts with what is behind it, blurred, inside its rounded corners, then is lightened
+        canvas.Clip(shape, clipped => clipped.BackdropLayer(glass, card, 1, panel => panel.Fill(new Rgba32(255, 255, 255, 60))));
+
+        // The badge and its shadow, as a whole
+        canvas.Filter(lift, badge => badge.FillCircle(Colors.Gold, new PointD(card.Right - 30, card.Bottom - 30), 14));
+    });
+
+    image.Save(outputPath);
+}
+```
+
 **Masks**. `canvas.Mask(mask, content, mode)` keeps what one callback draws only where another one draws: the content
 is drawn on a layer, the mask on a layer of its own, and each pixel of the content is kept in proportion to the mask
 there. With `MaskMode.Alpha` (the default), the mask is the alpha of its drawings, whatever their colors: a shape, a
@@ -1538,7 +1575,7 @@ public static void MarkAnimation(string inputPath, string outputPath)
   no color. A shadow, a blur and a color glyph are drawn on an image of a rectangle of the plane (the part of it the
   clip shows, with the reach of the effect around it, or the box of the glyph), scaled by the largest singular value
   of the four coefficients of x and y divided by `|M33|` (between 1/1024 and 1024, and smaller when the image would
-  have more than 16,777,216 pixels), then that image is drawn as an image is, placed by the transformation of its
+  have more than 4,194,304 pixels, or more than 16 times the pixels of the bounds of the clip), then that image is drawn as an image is, placed by the transformation of its
   pixels, with smooth sampling and nothing around it; the tile of a pattern has the size that scaling gives it. A
   transformation whose determinant is at most 2^-40 of the product of the lengths of its rows shows the plane from
   its edge, and draws nothing.
@@ -1569,6 +1606,20 @@ public static void MarkAnimation(string inputPath, string outputPath)
   16-bit samples otherwise. A pixel the clip covers entirely gets the samples of the result; a pixel on the edge of
   the clip is replaced in proportion to the coverage of the clip, as a paint of that color drawn with
   `CompositeMode.Source` replaces it.
+- **Filters.** The pixels of a filtered layer, or of a backdrop, are read as 16-bit colors, each multiplied by its
+  alpha, as fractions of one in single precision. A blur of a deviation `s` under 2 pixels adds the pixels with the
+  weights of `GaussianKernel` in double precision; from 2 pixels, it is three box blurs of `d = floor(3 sqrt(2 pi) s / 4 + 1/2)`
+  pixels (centered when `d` is odd; otherwise ending on the pixel, starting on it, then of `d + 1` pixels centered on
+  it), as SVG defines it; the rows then the columns, the pixels beyond the canvas (or the rectangle of a backdrop) given by the edge
+  mode and those beyond the layer being transparent. A color matrix is applied to the colors without alpha, clipped to
+  the range from 0 to 1. A drop shadow is the alpha at the position the offset moves each pixel from (the four pixels
+  around it, interpolated), blurred with transparent edges, multiplied by the color of the shadow, under the pixels
+  unless the shadow is alone. The result is rounded to the samples of the layer: the alpha as
+  `floor(M a + 1/2 + 2^-20)` and the colors as `floor(M p / a + 1/2 + 2^-20)`. Under a transformation that scales the
+  axes, the lengths of a filter of a layer are multiplied by the scale of their axis and its offsets by the
+  transformation; under one that turns, skews or is projective, the layer is drawn and filtered on an image of the plane
+  of the drawing, which is then drawn transformed. The lengths of a filter of a backdrop go through the linear part of
+  the transformation.
 - **Inner shadows.** The shadow is the one of **Shadows** computed from one minus the alpha of the layer; its color
   is combined with the pixels of the layer by `SourceAtop`, with the coverage of the shadow.
 - **Aligned strokes and markers.** A stroke on one side of its path is the stroke of a pen twice as wide under a clip
@@ -3435,7 +3486,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | PNG/APNG | Palette output is opt-in and exact only (`PngPixelLayout.Indexed`: no color reduction or dithering, and a sequential writer cannot declare colors beyond its first image), no grayscale output below 8 bits, no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
-| Drawing | Sequential; under a projective transformation of the canvas, shadows, blurs and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 16,777,216 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; no mesh gradient; a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, a pixel is painted when at least half of it is covered (not when its center is), and the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 |
+| Drawing | Sequential; under a projective transformation of the canvas (or, for filters, one that turns or skews), shadows, blurs, filters and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 4,194,304 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; no mesh gradient; a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, a pixel is painted when at least half of it is covered (not when its center is), and the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 |
 | Processing | No floating-point or scene-referred pixel format (HDR samples are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping), no custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, or temporal motion vector prediction. Three tools were implemented, measured with the `avif-quality` report and left out because they did not make its sequences smaller: key frames at scene changes (the key frame of an image that follows a cut is 0.3 to 1.7% larger than the inter frame whose blocks are all intra, since it gives up the probabilities that the previous images adapted; `KeyFrameInterval` is how a sequence gets seek points), the split of the transform blocks of an inter block (0.01% in total: it keeps the largest transform of its size) and an interpolation filter per block (the same size at equal quality, for several times the encoding time). Intra block copy is for lossless images only (a frame that copies blocks has no in-loop filter), and its delay of five superblocks leaves small images out. The loop restoration is the Wiener filter, in units of 256x256 samples, at the efforts 0 to 2 only (it recovered nothing above them in the report), and never the self-guided filter. Not used: quantizer deltas, quantization matrices, CDEF strengths per block (one pair per frame), super-resolution and film grain. No layered (progressive) output, and no grid for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: more than eight nested derivations, an image built from images of several color descriptions, an overlay whose sRGB fill color shows on an image that is not an sRGB one, an alpha plane of an overlay or of a grid of derived images, a derived image with more than 1,024 input images, an alpha plane that is not presented as its derived color image, movie fragments that do not follow each other, have composition time offsets, precede their `moov` box or follow their samples, an edit list that selects a part of a fragmented sequence, edit lists that do not play the media forward at its rate (empty edits, a media rate other than 1, edits out of order or overlapping), an alpha track with another edit list than its color track, image sequences whose images change size, clean apertures that do not select whole samples, grid tiles that declare other transformations than their grid, large scale tile streams, reserved matrix coefficients, and matrix coefficients without the transfer characteristics or the primaries they are defined with (constant luminance without a transfer function, ICtCp with other transfer characteristics than PQ and HLG, chromaticity-derived coefficients without chromaticities). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, a `tkhd` matrix that is not a quarter turn or a mirror (the images are returned as stored), the content color volume (`cclv`) and the light levels and the mastering display of AV1 metadata units. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: tone mapping is an explicit `ConvertColorProfile` with `ToneMapping` options |

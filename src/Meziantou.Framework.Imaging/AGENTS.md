@@ -584,6 +584,12 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   drawn: the layer covers a margin around the bounds of the clip (the reach of the blur and of the offset), and the
   blur reads beyond it as its edge pixels (a shape that leaves the canvas keeps its shadow along the edge). The
   weights are those of `GaussianKernel`, shared with `GaussianBlur`: computed without `Math.Exp`.
+- Filters (`Filter` and its derived types, `DrawingSession.FilterEffects.cs`) run on `FilterSurface`s: premultiplied
+  single-precision colors of a rectangle of the canvas, read through `ReadRgba64` and written back to a layer with the
+  rounding of the blurs. `FilterProcessor` holds the edges (the canvas, or the rectangle of a backdrop, always mirrored)
+  and the scales of the lengths; every neighborhood operation reads through `TryMap`. A backdrop layer has one frame per
+  frame that is drawn on (`LayerLevel.Begin` with a frame count), each started with its own filtered backdrop, and is
+  drawn frame by frame. `Filter(ColorMatrix)` and `BlurBackdrop` keep their own exact arithmetic: they are not filters.
 - The transformation of the canvas (`DrawingSession.Transforms.cs`) is applied where a shape becomes edges, not where
   it is described: `BeginFill` wraps the fill sink in a `TransformSink`, the `Stroker` transforms the vertices of its
   pieces (`SetOutput`: the path is stroked in the coordinates of the drawing, so the pen is transformed with it; a pen

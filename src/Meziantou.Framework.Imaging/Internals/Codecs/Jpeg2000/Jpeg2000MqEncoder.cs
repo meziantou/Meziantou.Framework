@@ -16,6 +16,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal struct Jpeg2000MqEncoder
 {
     private PooledPayloadWriter _output;
+    private uint[] _transitions;
     private int _start;
     private uint _c;
     private uint _a;
@@ -25,6 +26,7 @@ internal struct Jpeg2000MqEncoder
     public void Initialize(PooledPayloadWriter output)
     {
         _output = output;
+        _transitions = Jpeg2000MqTables.ContextTransitions;
         _start = output.Length;
         _a = 0x8000;
         _c = 0;
@@ -37,12 +39,15 @@ internal struct Jpeg2000MqEncoder
     /// <remarks>
     /// The state, its more probable symbol and their transitions are one entry of
     /// <see cref="Jpeg2000MqTables.ContextTransitions"/>, and RENORME shifts the registers by as many bits as the interval
-    /// needs at once, up to the bits left before the next byte is written, instead of one bit per iteration.
+    /// needs at once, up to the bits left before the next byte is written, instead of one bit per iteration. It is
+    /// inlined, and BYTEOUT is a call that does not take the address of the encoder, so that a copy of the encoder in a
+    /// local keeps its registers in processor registers.
     /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Encode(int decision, ref byte context)
     {
         var current = context;
-        var transitions = unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Jpeg2000MqTables.ContextTransitions), current));
+        var transitions = unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_transitions), current));
         var probability = transitions & 0xFFFF;
         var a = _a - probability;
         if (decision == (current & 1))
@@ -100,7 +105,7 @@ internal struct Jpeg2000MqEncoder
             shift -= count;
             if (_ct == 0)
             {
-                ByteOut();
+                (_c, _ct) = ByteOut(_output, _start, _c);
             }
 
             if (shift == 0)
@@ -123,9 +128,9 @@ internal struct Jpeg2000MqEncoder
         }
 
         _c <<= _ct;
-        ByteOut();
+        (_c, _ct) = ByteOut(_output, _start, _c);
         _c <<= _ct;
-        ByteOut();
+        (_c, _ct) = ByteOut(_output, _start, _c);
 
         // A segment does not end with an FF byte: the decoder supplies 1 bits past the end
         if (_output.Length > _start && _output.WrittenSpan[^1] == 0xFF)
@@ -136,35 +141,32 @@ internal struct Jpeg2000MqEncoder
         return _output.Length - _start;
     }
 
-    private void ByteOut()
+    // BYTEOUT: writes the next byte of the code register; returns the code register without it and the number of bits
+    // before the next byte
+    private static (uint C, int Count) ByteOut(PooledPayloadWriter output, int start, uint c)
     {
-        var hasByte = _output.Length > _start;
-        var last = hasByte ? _output.WrittenSpan[^1] : (byte)0;
+        var hasByte = output.Length > start;
+        var last = hasByte ? output.WrittenSpan[^1] : (byte)0;
         if (last == 0xFF)
         {
             // The byte that follows an FF byte holds seven bits
-            _output.Write((byte)(_c >> 20));
-            _c &= 0xFFFFF;
-            _ct = 7;
-            return;
+            output.Write((byte)(c >> 20));
+            return (c & 0xFFFFF, 7);
         }
 
-        if (_c >= 0x8000000 && hasByte)
+        if (c >= 0x8000000 && hasByte)
         {
             // The carry goes into the last byte
-            _output.WrittenSpan[^1] = ++last;
-            _c &= 0x7FFFFFF;
+            output.WrittenSpan[^1] = ++last;
+            c &= 0x7FFFFFF;
             if (last == 0xFF)
             {
-                _output.Write((byte)(_c >> 20));
-                _c &= 0xFFFFF;
-                _ct = 7;
-                return;
+                output.Write((byte)(c >> 20));
+                return (c & 0xFFFFF, 7);
             }
         }
 
-        _output.Write((byte)(_c >> 19));
-        _c &= 0x7FFFF;
-        _ct = 8;
+        output.Write((byte)(c >> 19));
+        return (c & 0x7FFFF, 8);
     }
 }

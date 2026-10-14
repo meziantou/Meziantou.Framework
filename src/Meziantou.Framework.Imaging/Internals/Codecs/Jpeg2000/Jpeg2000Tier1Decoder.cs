@@ -50,7 +50,7 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
 
     public Jpeg2000Tier1Decoder(AllocationScope scope)
     {
-        _flagBuffer = Av1PooledArray<uint>.Rent(scope, Jpeg2000Tier1Tables.MaxStripeFlags, clear: false);
+        _flagBuffer = Av1PooledArray<uint>.Rent(scope, Jpeg2000Tier1Tables.MaxFlags, clear: false);
     }
 
     /// <summary>Decodes the coding passes of a code-block.</summary>
@@ -384,6 +384,6 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
     {
         var value = 3u << plane;
         sample = (int)(negative ? value | SignBit : value);
-        Jpeg2000Tier1Tables.SetSignificantInStripes(ref flag, row, _stripeStride, negative, updateNorth: !(_isVerticallyCausal && row == 0));
+        Jpeg2000Tier1Tables.SetSignificant(ref flag, row, _stripeStride, negative, updateNorth: !(_isVerticallyCausal && row == 0));
     }
 }

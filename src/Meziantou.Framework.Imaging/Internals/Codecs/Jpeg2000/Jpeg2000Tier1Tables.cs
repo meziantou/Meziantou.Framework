@@ -7,9 +7,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// tables, and the update of the flags when a coefficient becomes significant.
 /// </summary>
 /// <remarks>
-/// Each coefficient of a code-block has a word of flags, in an array with a border of one coefficient on each side: the
-/// significance of its eight neighbors, the sign of the four nearest ones, and its own state. A coefficient that becomes
-/// significant updates the flags of its neighbors, so that a context is one table lookup.
+/// Each coefficient of a code-block has a word of flags: the significance of its eight neighbors, the sign of the four
+/// nearest ones, and its own state. A coefficient that becomes significant updates the flags of its neighbors, so that a
+/// context is one table lookup. The flags are stored in the order of the passes: stripe by stripe, the four words of a
+/// column of a stripe next to each other, with a border of one column on each side and of one stripe above and below.
 /// </remarks>
 internal static class Jpeg2000Tier1Tables
 {
@@ -25,14 +26,11 @@ internal static class Jpeg2000Tier1Tables
     /// <summary>The largest number of coefficients of a code-block.</summary>
     public const int MaxSamples = 4096;
 
-    /// <summary>The largest number of flags of a code-block with its border: a code-block is at most 1024 coefficients wide or high.</summary>
-    public const int MaxFlags = MaxSamples + (2 * (1024 + 4)) + 4;
-
     /// <summary>
     /// The largest number of flags of a code-block stored stripe by stripe (<see cref="GetStripeFlagCount"/>): at most
     /// (h / 4 + 3) x (w + 2) x 4 = h x w + 2h + 12w + 24 words, with h x w at most 4096 and w and h at most 1024.
     /// </summary>
-    public const int MaxStripeFlags = MaxSamples + (2 * 1024) + (12 * 1024) + 24;
+    public const int MaxFlags = MaxSamples + (2 * 1024) + (12 * 1024) + 24;
 
     public const uint West = 1u << 0;
     public const uint East = 1u << 1;
@@ -168,7 +166,7 @@ internal static class Jpeg2000Tier1Tables
         fourth &= ~Visited;
     }
 
-    /// <summary>Records that a coefficient became significant, in its flags and in those of its neighbors, with the flags stored stripe by stripe.</summary>
+    /// <summary>Records that a coefficient became significant, in its flags and in those of its neighbors.</summary>
     /// <param name="flag">The flags of the coefficient, in the flags of the code-block stored stripe by stripe.</param>
     /// <param name="row">The row of the coefficient in its stripe, 0 to 3.</param>
     /// <param name="stripeStride">The number of words of a stripe (<see cref="GetStripeStride"/>).</param>
@@ -178,7 +176,7 @@ internal static class Jpeg2000Tier1Tables
     /// the coefficients of the stripe above ignore it.
     /// </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SetSignificantInStripes(ref uint flag, int row, int stripeStride, bool negative, bool updateNorth)
+    public static void SetSignificant(ref uint flag, int row, int stripeStride, bool negative, bool updateNorth)
     {
         var sign = negative ? 1u : 0u;
         ref var west = ref unsafe(Unsafe.Add(ref flag, -4));
@@ -204,32 +202,6 @@ internal static class Jpeg2000Tier1Tables
         north |= South | (sign << (NegativeShift + 3));
         northWest |= SouthEast;
         northEast |= SouthWest;
-    }
-
-    /// <summary>Records that a coefficient became significant, in its flags and in those of its neighbors.</summary>
-    /// <param name="flags">The flags of the code-block.</param>
-    /// <param name="index">The index of the coefficient in <paramref name="flags"/>.</param>
-    /// <param name="stride">The width of the code-block with its border.</param>
-    /// <param name="negative">Whether the coefficient is negative.</param>
-    /// <param name="updateNorth">
-    /// <see langword="false"/> for a coefficient of the first row of a stripe when the contexts are vertically causal (D.7):
-    /// the coefficients of the stripe above ignore it.
-    /// </param>
-    public static void SetSignificant(Span<uint> flags, int index, int stride, bool negative, bool updateNorth)
-    {
-        var sign = negative ? 1u : 0u;
-        flags[index] |= Significant;
-        flags[index - 1] |= East | (sign << (NegativeShift + 1));
-        flags[index + 1] |= West | (sign << NegativeShift);
-        flags[index + stride] |= North | (sign << (NegativeShift + 2));
-        flags[index + stride - 1] |= NorthEast;
-        flags[index + stride + 1] |= NorthWest;
-        if (!updateNorth)
-            return;
-
-        flags[index - stride] |= South | (sign << (NegativeShift + 3));
-        flags[index - stride - 1] |= SouthEast;
-        flags[index - stride + 1] |= SouthWest;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

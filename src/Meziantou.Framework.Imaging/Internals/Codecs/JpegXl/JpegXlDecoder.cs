@@ -471,20 +471,60 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
             }
             else
             {
-                var channels = hasAlphaFormat ? 4 : 3;
-                for (var x = 0; x < width; x++)
-                {
-                    row[x * channels] = (byte)ToInteger(first[x], targetMax);
-                    row[(x * channels) + 1] = (byte)ToInteger(second[x], targetMax);
-                    row[(x * channels) + 2] = (byte)ToInteger(third[x], targetMax);
-                    if (hasAlphaFormat)
-                    {
-                        row[(x * 4) + 3] = alphaChannel < 0 ? byte.MaxValue : (byte)ToInteger(alphaRow[x], targetMax);
-                    }
-                }
+                WriteCanvasRow(first, second, third, alphaRow, hasAlphaFormat, alphaChannel >= 0, row);
             }
 
             sink.WriteRow(target, y, row);
+        }
+    }
+
+    /// <summary>
+    /// Writes a row of Rgb24 or Rgba32 pixels from floating-point samples (opaque when the image has no alpha channel),
+    /// four pixels at a time: each lane rounds and clamps as <see cref="ToInteger"/> does, and the bytes are those of
+    /// <see cref="WriteCanvasRowScalar"/>.
+    /// </summary>
+    internal static void WriteCanvasRow(ReadOnlySpan<float> first, ReadOnlySpan<float> second, ReadOnlySpan<float> third, ReadOnlySpan<float> alpha, bool hasAlphaFormat, bool hasAlpha, Span<byte> row)
+    {
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            var opaque = Vector128.Create(byte.MaxValue << 24);
+            var indices = Vector128.Create((byte)0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 15, 15, 15, 15);
+            var pixelSize = hasAlphaFormat ? 4 : 3;
+            for (; x <= first.Length - 4 && (x * pixelSize) + 16 <= row.Length; x += 4)
+            {
+                var high = hasAlphaFormat && hasAlpha ? ToByte(Vector128.Create(alpha.Slice(x, 4))) << 24 : opaque;
+                var pixels = ToByte(Vector128.Create(first.Slice(x, 4))) | (ToByte(Vector128.Create(second.Slice(x, 4))) << 8) | (ToByte(Vector128.Create(third.Slice(x, 4))) << 16) | high;
+                var bytes = hasAlphaFormat ? pixels.AsByte() : Vector128.Shuffle(pixels.AsByte(), indices);
+                bytes.CopyTo(row.Slice(x * pixelSize, 16));
+            }
+        }
+
+        WriteCanvasRowScalar(first, second, third, alpha, hasAlphaFormat, hasAlpha, row, x);
+
+        // ToInteger for 8-bit samples
+        static Vector128<int> ToByte(Vector128<float> value)
+        {
+            var max = Vector128.Create((float)byte.MaxValue);
+            var scaled = (value * max) + Vector128.Create(0.5f);
+            var result = Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(scaled, max).AsInt32(), Vector128.Create((int)byte.MaxValue), Vector128.ConvertToInt32(scaled));
+            return Vector128.ConditionalSelect(Vector128.GreaterThan(scaled, Vector128<float>.Zero).AsInt32(), result, Vector128<int>.Zero);
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="WriteCanvasRow"/>, from the pixel <paramref name="start"/> on.</summary>
+    internal static void WriteCanvasRowScalar(ReadOnlySpan<float> first, ReadOnlySpan<float> second, ReadOnlySpan<float> third, ReadOnlySpan<float> alpha, bool hasAlphaFormat, bool hasAlpha, Span<byte> row, int start = 0)
+    {
+        var channels = hasAlphaFormat ? 4 : 3;
+        for (var x = start; x < first.Length; x++)
+        {
+            row[x * channels] = (byte)ToInteger(first[x], byte.MaxValue);
+            row[(x * channels) + 1] = (byte)ToInteger(second[x], byte.MaxValue);
+            row[(x * channels) + 2] = (byte)ToInteger(third[x], byte.MaxValue);
+            if (hasAlphaFormat)
+            {
+                row[(x * 4) + 3] = hasAlpha ? (byte)ToInteger(alpha[x], byte.MaxValue) : byte.MaxValue;
+            }
         }
     }
 

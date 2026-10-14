@@ -111,17 +111,108 @@ internal static class DrawingKernels
     }
 
     /// <summary>Converts paint colors to the pixel format of a frame: four samples per color, laid out as <see cref="DrawingColor"/>.</summary>
+    /// <remarks>
+    /// The colors are those of <see cref="ConvertColor{TPixel}(Rgba64)"/>: the opaque colors of a chunk are converted
+    /// by one call of <see cref="PixelConverter"/>, which converts each pixel on its own.
+    /// </remarks>
     public static void ConvertColors<TPixel>(ReadOnlySpan<Rgba64> colors, Span<ushort> destination)
         where TPixel : unmanaged
     {
-        for (var i = 0; i < colors.Length; i++)
+        const int ChunkSize = 64;
+        Span<Rgba64> opaque = stackalloc Rgba64[ChunkSize];
+        Span<TPixel> pixels = stackalloc TPixel[ChunkSize];
+        for (var start = 0; start < colors.Length; start += ChunkSize)
         {
-            var color = ConvertColor<TPixel>(colors[i]);
-            var entry = destination.Slice(i * 4, 4);
-            entry[0] = color.C0;
-            entry[1] = color.C1;
-            entry[2] = color.C2;
-            entry[3] = color.Alpha;
+            var chunk = colors.Slice(start, Math.Min(ChunkSize, colors.Length - start));
+            var count = chunk.Length;
+            for (var i = 0; i < count; i++)
+            {
+                var color = chunk[i];
+                opaque[i] = new Rgba64(color.R, color.G, color.B);
+            }
+
+            PixelConverter.ConvertRow<Rgba64, TPixel>(opaque[..count], pixels);
+            var entries = destination.Slice(start * 4, count * 4);
+            if (typeof(TPixel) == typeof(Rgba64))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, Rgba64>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var value = values[i];
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = value.R;
+                    entry[1] = value.G;
+                    entry[2] = value.B;
+                    entry[3] = chunk[i].A;
+                }
+            }
+            else if (typeof(TPixel) == typeof(Gray16))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, Gray16>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = values[i].Value;
+                    entry[1] = 0;
+                    entry[2] = 0;
+                    entry[3] = chunk[i].A;
+                }
+            }
+            else if (typeof(TPixel) == typeof(Rgba32))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, Rgba32>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var value = values[i];
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = value.R;
+                    entry[1] = value.G;
+                    entry[2] = value.B;
+                    entry[3] = PixelConverter.To8Bit(chunk[i].A);
+                }
+            }
+            else if (typeof(TPixel) == typeof(Bgra32))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, Bgra32>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var value = values[i];
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = value.B;
+                    entry[1] = value.G;
+                    entry[2] = value.R;
+                    entry[3] = PixelConverter.To8Bit(chunk[i].A);
+                }
+            }
+            else if (typeof(TPixel) == typeof(Rgb24))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, Rgb24>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var value = values[i];
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = value.R;
+                    entry[1] = value.G;
+                    entry[2] = value.B;
+                    entry[3] = PixelConverter.To8Bit(chunk[i].A);
+                }
+            }
+            else if (typeof(TPixel) == typeof(Gray8))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, Gray8>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = values[i].Value;
+                    entry[1] = 0;
+                    entry[2] = 0;
+                    entry[3] = PixelConverter.To8Bit(chunk[i].A);
+                }
+            }
+            else
+            {
+                throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
+            }
         }
     }
 

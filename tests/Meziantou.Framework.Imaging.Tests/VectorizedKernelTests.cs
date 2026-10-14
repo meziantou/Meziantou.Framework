@@ -830,6 +830,49 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlInverseDctMatchesTheScalarReferenceBitForBit()
+    {
+        var random = new Random(181);
+        var sizes = new[] { 4, 8, 16, 32, 64, 128, 256 };
+        var expectedScratch = new float[JpegXlInverseTransform.ScratchLength];
+        var actualScratch = new float[JpegXlInverseTransform.ScratchLength];
+        foreach (var rows in sizes)
+        {
+            foreach (var columns in sizes)
+            {
+                var rounds = rows * columns >= 128 * 128 ? 2 : 40;
+                for (var round = 0; round < rounds; round++)
+                {
+                    // Dequantized coefficients: sparse or dense, small or large, with signed zeros and extremes
+                    var coefficients = new float[rows * columns];
+                    var density = random.NextDouble();
+                    for (var i = 0; i < coefficients.Length; i++)
+                    {
+                        if (i == 0 || random.NextDouble() < density)
+                        {
+                            coefficients[i] = (round % 5) switch
+                            {
+                                0 => random.Next(-2048, 2049),
+                                1 => (float)((random.NextDouble() - 0.5) * 1e-3),
+                                2 => random.Next(2) == 0 ? -0f : float.MaxValue / 1e6f,
+                                _ => (float)((random.NextDouble() - 0.5) * 64),
+                            };
+                        }
+                    }
+
+                    var stride = columns + (round % 3);
+                    var expected = new float[rows * stride];
+                    var actual = new float[rows * stride];
+                    JpegXlInverseTransform.InverseDctScalar(coefficients.ToArray(), rows, columns, expected, stride, expectedScratch);
+                    JpegXlInverseTransform.InverseDct(coefficients.ToArray(), rows, columns, actual, stride, actualScratch);
+                    Assert.Equal(Array.ConvertAll(expected, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+                }
+            }
+        }
+    }
+
     public static TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace> ResizeCases()
     {
         var data = new TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace>();

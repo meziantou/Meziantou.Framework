@@ -1,3 +1,9 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -23,8 +29,11 @@ internal static class JpegXlInverseTransform
     /// <summary>The largest side of a transform, in samples.</summary>
     public const int MaxSize = 256;
 
-    /// <summary>The number of float values of scratch memory the transforms of at most <see cref="MaxSize"/> samples per side need.</summary>
-    public const int ScratchLength = 4 * MaxSize;
+    /// <summary>
+    /// The number of float values of scratch memory the transforms of at most <see cref="MaxSize"/> samples per side need:
+    /// the vectorized DCT keeps four lines of the largest side and as much scratch memory.
+    /// </summary>
+    public const int ScratchLength = 8 * MaxSize;
 
     // For a transform of N samples, at N / 2 + i: 1 / (2 * cos((i + 1/2) * pi / N))
     private static readonly float[] HalfSecants = CreateHalfSecants();
@@ -79,8 +88,21 @@ internal static class JpegXlInverseTransform
     /// <param name="columns">The number of columns of samples.</param>
     /// <param name="output">Receives the samples.</param>
     /// <param name="stride">The distance between two rows of <paramref name="output"/>.</param>
-    /// <param name="scratch">Scratch memory of at least four times the larger side.</param>
+    /// <param name="scratch">Scratch memory of at least eight times the larger side.</param>
     public static void InverseDct(Span<float> coefficients, int rows, int columns, Span<float> output, int stride, Span<float> scratch)
+    {
+        // Four one-dimensional transforms at once, one per lane, each with the operations of the scalar one in the same order
+        if (Vector128.IsHardwareAccelerated && rows >= 4 && columns >= 4)
+        {
+            InverseDctVector(coefficients, rows, columns, output, stride, scratch);
+            return;
+        }
+
+        InverseDctScalar(coefficients, rows, columns, output, stride, scratch);
+    }
+
+    /// <summary>The scalar reference of <see cref="InverseDct(Span{float}, int, int, Span{float}, int, Span{float})"/>.</summary>
+    public static void InverseDctScalar(Span<float> coefficients, int rows, int columns, Span<float> output, int stride, Span<float> scratch)
     {
         var line = scratch[..Math.Max(rows, columns)];
         var work = scratch.Slice(Math.Max(rows, columns), Math.Max(rows, columns));
@@ -169,6 +191,234 @@ internal static class JpegXlInverseTransform
             values[i] = even[i] + scaled;
             values[count - 1 - i] = even[i] - scaled;
         }
+    }
+
+    /// <summary>
+    /// The inverse DCT of a block whose sides are multiples of 4: the one-dimensional transforms are computed four at a
+    /// time, one per lane of a vector. The lines that are contiguous in memory are transposed 4x4 values at a time on the
+    /// way in or out; the others are loaded and stored as vectors.
+    /// </summary>
+    private static void InverseDctVector(Span<float> coefficients, int rows, int columns, Span<float> output, int stride, Span<float> scratch)
+    {
+        var size = Math.Max(rows, columns);
+        var vectors = unsafe(MemoryMarshal.Cast<float, Vector128<float>>(scratch));
+        var lines = vectors[..size];
+        var work = vectors.Slice(size, size);
+        if (rows < columns)
+        {
+            // Rows of horizontal frequencies, four at a time, then the columns of vertical frequencies, four at a time
+            var line = lines[..columns];
+            for (var v = 0; v < rows; v += 4)
+            {
+                var block = coefficients.Slice(v * columns, 4 * columns);
+                LoadTransposed(block, columns, line);
+                InverseDct(line, work);
+                StoreTransposed(line, block, columns);
+            }
+
+            var column = lines[..rows];
+            for (var x = 0; x < columns; x += 4)
+            {
+                for (var v = 0; v < rows; v++)
+                {
+                    column[v] = Vector128.Create(coefficients.Slice((v * columns) + x, 4));
+                }
+
+                InverseDct(column, work);
+                for (var y = 0; y < rows; y++)
+                {
+                    column[y].CopyTo(output.Slice((y * stride) + x, 4));
+                }
+            }
+        }
+        else
+        {
+            // Transposed: rows of vertical frequencies, four at a time, then the rows of samples, four at a time
+            var line = lines[..rows];
+            for (var u = 0; u < columns; u += 4)
+            {
+                var block = coefficients.Slice(u * rows, 4 * rows);
+                LoadTransposed(block, rows, line);
+                InverseDct(line, work);
+                StoreTransposed(line, block, rows);
+            }
+
+            var row = lines[..columns];
+            for (var y = 0; y < rows; y += 4)
+            {
+                for (var u = 0; u < columns; u++)
+                {
+                    row[u] = Vector128.Create(coefficients.Slice((u * rows) + y, 4));
+                }
+
+                InverseDct(row, work);
+                for (var x = 0; x < columns; x += 4)
+                {
+                    Transpose(row[x], row[x + 1], row[x + 2], row[x + 3], out var r0, out var r1, out var r2, out var r3);
+                    r0.CopyTo(output.Slice((y * stride) + x, 4));
+                    r1.CopyTo(output.Slice(((y + 1) * stride) + x, 4));
+                    r2.CopyTo(output.Slice(((y + 2) * stride) + x, 4));
+                    r3.CopyTo(output.Slice(((y + 3) * stride) + x, 4));
+                }
+            }
+        }
+    }
+
+    /// <summary>Loads four lines of <paramref name="length"/> values, one after the other, as the lanes of <paramref name="destination"/>.</summary>
+    private static void LoadTransposed(ReadOnlySpan<float> source, int length, Span<Vector128<float>> destination)
+    {
+        for (var k = 0; k < length; k += 4)
+        {
+            Transpose(
+                Vector128.Create(source.Slice(k, 4)),
+                Vector128.Create(source.Slice(length + k, 4)),
+                Vector128.Create(source.Slice((2 * length) + k, 4)),
+                Vector128.Create(source.Slice((3 * length) + k, 4)),
+                out var r0,
+                out var r1,
+                out var r2,
+                out var r3);
+            destination[k] = r0;
+            destination[k + 1] = r1;
+            destination[k + 2] = r2;
+            destination[k + 3] = r3;
+        }
+    }
+
+    /// <summary>Stores the lanes of <paramref name="source"/> as four lines of <paramref name="length"/> values, one after the other.</summary>
+    private static void StoreTransposed(ReadOnlySpan<Vector128<float>> source, Span<float> destination, int length)
+    {
+        for (var k = 0; k < length; k += 4)
+        {
+            Transpose(source[k], source[k + 1], source[k + 2], source[k + 3], out var r0, out var r1, out var r2, out var r3);
+            r0.CopyTo(destination.Slice(k, 4));
+            r1.CopyTo(destination.Slice(length + k, 4));
+            r2.CopyTo(destination.Slice((2 * length) + k, 4));
+            r3.CopyTo(destination.Slice((3 * length) + k, 4));
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Transpose(Vector128<float> a, Vector128<float> b, Vector128<float> c, Vector128<float> d, out Vector128<float> r0, out Vector128<float> r1, out Vector128<float> r2, out Vector128<float> r3)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            var ac0 = AdvSimd.Arm64.ZipLow(a, c);
+            var bd0 = AdvSimd.Arm64.ZipLow(b, d);
+            var ac1 = AdvSimd.Arm64.ZipHigh(a, c);
+            var bd1 = AdvSimd.Arm64.ZipHigh(b, d);
+            r0 = AdvSimd.Arm64.ZipLow(ac0, bd0);
+            r1 = AdvSimd.Arm64.ZipHigh(ac0, bd0);
+            r2 = AdvSimd.Arm64.ZipLow(ac1, bd1);
+            r3 = AdvSimd.Arm64.ZipHigh(ac1, bd1);
+        }
+        else if (Sse.IsSupported)
+        {
+            var ac0 = Sse.UnpackLow(a, c);
+            var bd0 = Sse.UnpackLow(b, d);
+            var ac1 = Sse.UnpackHigh(a, c);
+            var bd1 = Sse.UnpackHigh(b, d);
+            r0 = Sse.UnpackLow(ac0, bd0);
+            r1 = Sse.UnpackHigh(ac0, bd0);
+            r2 = Sse.UnpackLow(ac1, bd1);
+            r3 = Sse.UnpackHigh(ac1, bd1);
+        }
+        else
+        {
+            r0 = Vector128.Create(a.GetElement(0), b.GetElement(0), c.GetElement(0), d.GetElement(0));
+            r1 = Vector128.Create(a.GetElement(1), b.GetElement(1), c.GetElement(1), d.GetElement(1));
+            r2 = Vector128.Create(a.GetElement(2), b.GetElement(2), c.GetElement(2), d.GetElement(2));
+            r3 = Vector128.Create(a.GetElement(3), b.GetElement(3), c.GetElement(3), d.GetElement(3));
+        }
+    }
+
+    /// <summary>
+    /// Four one-dimensional inverse DCTs of a power-of-two number of values (4 or more), one per lane, in place: the
+    /// operations of <see cref="InverseDct(Span{float}, Span{float})"/>, in the same order.
+    /// </summary>
+    private static void InverseDct(Span<Vector128<float>> values, Span<Vector128<float>> scratch)
+    {
+        var count = values.Length;
+        switch (count)
+        {
+            case 4:
+                InverseDct4(ref values[0], ref values[1], ref values[2], ref values[3]);
+                return;
+
+            case 8:
+                InverseDct8(values);
+                return;
+        }
+
+        var half = count / 2;
+        var even = scratch[..half];
+        var odd = scratch.Slice(half, half);
+        for (var i = 0; i < half; i++)
+        {
+            even[i] = values[2 * i];
+        }
+
+        odd[0] = Vector128.Create(MathF.Sqrt(2)) * values[1];
+        for (var i = 1; i < half; i++)
+        {
+            odd[i] = values[(2 * i) - 1] + values[(2 * i) + 1];
+        }
+
+        InverseDct(even, values[..half]);
+        InverseDct(odd, values.Slice(half, half));
+        var secants = HalfSecants.AsSpan(half, half);
+        for (var i = 0; i < half; i++)
+        {
+            var scaled = odd[i] * Vector128.Create(secants[i]);
+            values[i] = even[i] + scaled;
+            values[count - 1 - i] = even[i] - scaled;
+        }
+    }
+
+    private static void InverseDct8(Span<Vector128<float>> values)
+    {
+        values = values[..8];
+        var e0 = values[0];
+        var e1 = values[2];
+        var e2 = values[4];
+        var e3 = values[6];
+        var o0 = Vector128.Create(MathF.Sqrt(2)) * values[1];
+        var o1 = values[1] + values[3];
+        var o2 = values[3] + values[5];
+        var o3 = values[5] + values[7];
+        InverseDct4(ref e0, ref e1, ref e2, ref e3);
+        InverseDct4(ref o0, ref o1, ref o2, ref o3);
+        var secants = HalfSecants.AsSpan(4, 4);
+        var scaled = o0 * Vector128.Create(secants[0]);
+        values[0] = e0 + scaled;
+        values[7] = e0 - scaled;
+        scaled = o1 * Vector128.Create(secants[1]);
+        values[1] = e1 + scaled;
+        values[6] = e1 - scaled;
+        scaled = o2 * Vector128.Create(secants[2]);
+        values[2] = e2 + scaled;
+        values[5] = e2 - scaled;
+        scaled = o3 * Vector128.Create(secants[3]);
+        values[3] = e3 + scaled;
+        values[4] = e3 - scaled;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void InverseDct4(ref Vector128<float> v0, ref Vector128<float> v1, ref Vector128<float> v2, ref Vector128<float> v3)
+    {
+        // Each half is a transform of two values: their sum and their difference
+        var e0 = v0 + v2;
+        var e1 = v0 - v2;
+        var o = Vector128.Create(MathF.Sqrt(2)) * v1;
+        var o1 = v1 + v3;
+        var o0 = o + o1;
+        o1 = o - o1;
+        var scaled = o0 * Vector128.Create(HalfSecants[2]);
+        v0 = e0 + scaled;
+        v3 = e0 - scaled;
+        scaled = o1 * Vector128.Create(HalfSecants[3]);
+        v1 = e1 + scaled;
+        v2 = e1 - scaled;
     }
 
     /// <summary>

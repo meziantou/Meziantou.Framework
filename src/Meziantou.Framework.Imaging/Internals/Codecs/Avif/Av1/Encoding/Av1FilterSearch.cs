@@ -236,13 +236,7 @@ internal static class Av1FilterSearch
             long sum = 0;
             for (var y = 0; y < reconstructed.Height; y++)
             {
-                var actual = reconstructed.GetRow(y);
-                var expected = source.GetRow(y);
-                for (var x = 0; x < actual.Length; x++)
-                {
-                    var difference = expected[x] - actual[x];
-                    sum += difference * difference;
-                }
+                sum += Av1EncoderKernels.SumOfSquaredDifferences(source.GetRow(y), reconstructed.GetRow(y));
             }
 
             error[plane] = sum;

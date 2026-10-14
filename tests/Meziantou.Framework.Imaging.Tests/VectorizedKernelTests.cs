@@ -2479,6 +2479,42 @@ public sealed class VectorizedKernelTests
         };
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1EncoderKernelsMatchTheScalarReferences()
+    {
+        // Rows of every length around the vector sizes, longer than a chunk of the 32-bit sums, of random and extreme 12-bit
+        // samples
+        var random = new Random(7);
+        int[] lengths = [0, 1, 3, 4, 7, 8, 9, 15, 16, 17, 31, 32, 33, 64, 100, 511, 512, 513, 1030, 4096, 5000];
+        foreach (var length in lengths)
+        {
+            for (var round = 0; round < 8; round++)
+            {
+                var left = new ushort[length];
+                var right = new ushort[length];
+                for (var i = 0; i < length; i++)
+                {
+                    (left[i], right[i]) = (round % 4) switch
+                    {
+                        0 => ((ushort)random.Next(4096), (ushort)random.Next(4096)),
+                        1 => ((ushort)4095, (ushort)0),
+                        2 => ((ushort)0, (ushort)4095),
+                        _ => ((ushort)random.Next(256), (ushort)random.Next(256)),
+                    };
+                }
+
+                Assert.Equal(Av1EncoderKernels.SumOfAbsoluteDifferencesScalar(left, right), Av1EncoderKernels.SumOfAbsoluteDifferences(left, right));
+                Assert.Equal(Av1EncoderKernels.SumOfSquaredDifferencesScalar(left, right), Av1EncoderKernels.SumOfSquaredDifferences(left, right));
+                var expected = new int[length];
+                var actual = new int[length];
+                Av1EncoderKernels.SubtractScalar(left, right, expected);
+                Av1EncoderKernels.Subtract(left, right, actual);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
     [Theory]
     [InlineData(PixelFormat.Rgb24, false, false)]
     [InlineData(PixelFormat.Rgba32, false, false)]

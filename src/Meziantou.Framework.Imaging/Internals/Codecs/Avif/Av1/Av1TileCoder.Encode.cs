@@ -716,11 +716,7 @@ internal ref partial struct Av1TileCoder
             {
                 var predicted = samples.Slice(((y0 + i) * stride) + x0, width);
                 var original = source.Slice(((y0 + i) * sourceStride) + x0, width);
-                for (var j = 0; j < width; j++)
-                {
-                    var difference = original[j] - predicted[j];
-                    error += difference * difference;
-                }
+                error += Av1EncoderKernels.SumOfSquaredDifferences(original, predicted);
             }
         }
 
@@ -1407,10 +1403,7 @@ internal ref partial struct Av1TileCoder
                 if (inside)
                 {
                     var predicted = Reference.Slice(((refY + i) * ReferenceStride) + refX, Width);
-                    for (var j = 0; j < original.Length; j++)
-                    {
-                        difference += Math.Abs(original[j] - predicted[j]);
-                    }
+                    difference += Av1EncoderKernels.SumOfAbsoluteDifferences(original, predicted);
                 }
                 else
                 {
@@ -1445,10 +1438,7 @@ internal ref partial struct Av1TileCoder
             {
                 var original = source.Slice(((y + i) * sourceStride) + x, width);
                 var prediction = predicted.Slice(((y + i) * predictedStride) + x, width);
-                for (var j = 0; j < original.Length; j++)
-                {
-                    difference += Math.Abs(original[j] - prediction[j]);
-                }
+                difference += Av1EncoderKernels.SumOfAbsoluteDifferences(original, prediction);
             }
 
             return difference;
@@ -1481,11 +1471,7 @@ internal ref partial struct Av1TileCoder
             {
                 var predicted = samples.Slice(((startY + i) * stride) + startX, w);
                 var original = source.Slice(((startY + i) * sourceStride) + startX, w);
-                for (var j = 0; j < w; j++)
-                {
-                    error += Math.Abs(original[j] - predicted[j]);
-                }
-
+                error += Av1EncoderKernels.SumOfAbsoluteDifferences(original, predicted);
                 original.CopyTo(predicted);
             }
 
@@ -1499,10 +1485,7 @@ internal ref partial struct Av1TileCoder
         {
             var predicted = samples.Slice(((startY + i) * stride) + startX, w);
             var original = source.Slice(((startY + i) * sourceStride) + startX, w);
-            for (var j = 0; j < w; j++)
-            {
-                residual[(i * w) + j] = original[j] - predicted[j];
-            }
+            Av1EncoderKernels.Subtract(original, predicted, residual.Slice(i * w, w));
         }
 
         // The transform type of a luma block is searched; the type of a chroma block follows from its mode, or from the
@@ -1555,11 +1538,7 @@ internal ref partial struct Av1TileCoder
             {
                 var reconstructed = samples.Slice(((startY + i) * stride) + startX, visibleWidth);
                 var original = source.Slice(((startY + i) * sourceStride) + startX, visibleWidth);
-                for (var j = 0; j < visibleWidth; j++)
-                {
-                    var difference = original[j] - reconstructed[j];
-                    error += difference * difference;
-                }
+                error += Av1EncoderKernels.SumOfSquaredDifferences(original, reconstructed);
             }
 
             _distortion += error;

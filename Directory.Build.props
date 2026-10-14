@@ -27,6 +27,10 @@
     <IsPackable>False</IsPackable>
 
     <DefineConstants Condition="$(InvariantGlobalization) == 'true'">$(DefineConstants);INVARIANT_GLOBALIZATION_MODE_ENABLED</DefineConstants>
+
+    <!-- The .NET 11 RC2 SDK publishes a Native AOT project without running its full build, so the XML documentation file
+         it then copies from the output directory does not exist (MSB3030): https://github.com/dotnet/sdk/issues/56618 -->
+    <UseOptimizedPublish>false</UseOptimizedPublish>
   </PropertyGroup>
 
   <!-- disable the nullable warnings when compiling for target that haven't annotation -->

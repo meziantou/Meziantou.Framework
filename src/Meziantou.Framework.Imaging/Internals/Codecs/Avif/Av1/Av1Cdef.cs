@@ -18,6 +18,12 @@ internal static class Av1Cdef
     // The taps of a sample: 4 primary taps and 8 secondary taps
     private const int TapCount = 12;
 
+    // The value of the samples outside the frame in the window of a block on an edge of the frame
+    private const ushort Unavailable = ushort.MaxValue;
+
+    // The number of samples of a row of the window of a block on an edge: 8 samples, and 2 on each side
+    private const int EdgeWindowStride = 8 + 4;
+
     /// <summary>Filters the planes of <paramref name="frame"/>.</summary>
     /// <param name="frame">The deblocked frame.</param>
     /// <param name="state">The block-level state of the frame.</param>
@@ -186,6 +192,104 @@ internal static class Av1Cdef
             return;
         }
 
+        FilterEdgeBlock(samples, stride, source, x0, y0, w, h, subX, subY, miRows, miCols, priStr, secStr, damping, dir, priTaps, secTaps);
+    }
+
+    /// <summary>
+    /// Filters a block of a plane whose taps may be outside the frame: those are not available (<c>CdefAvailable</c> is 0).
+    /// <paramref name="source"/> holds the unfiltered rows from two rows above the block.
+    /// </summary>
+    /// <remarks>
+    /// With 128-bit hardware vectors, the block and the two rows and columns around it are copied into a window where the
+    /// samples outside the frame are <see cref="Unavailable"/>, a value that no sample has, and the rows are filtered with
+    /// the arithmetic of the interior blocks: as a signed value the marker is below every sample, so it is never the
+    /// maximum, as an unsigned value it is above every sample, so it is never the minimum, and its taps are masked out of
+    /// the sum.
+    /// </remarks>
+    internal static void FilterEdgeBlock(Span<ushort> samples, int stride, ReadOnlySpan<ushort> source, int x0, int y0, int w, int h, int subX, int subY, int miRows, int miCols, int priStr, int secStr, int damping, int dir, ReadOnlySpan<byte> priTaps, ReadOnlySpan<byte> secTaps)
+    {
+        if (!Vector128.IsHardwareAccelerated || w is not (8 or 4) || h is not (8 or 4))
+        {
+            FilterEdgeBlockScalar(samples, stride, source, x0, y0, w, h, subX, subY, miRows, miCols, priStr, secStr, damping, dir, priTaps, secTaps);
+            return;
+        }
+
+        // The samples of the plane are those of the 8x8 luma blocks of the frame
+        var planeWidth = (miCols * Av1Constants.MiSize) >> subX;
+        var planeHeight = (miRows * Av1Constants.MiSize) >> subY;
+        Span<ushort> window = stackalloc ushort[(8 + 4) * EdgeWindowStride];
+        for (var i = 0; i < h + 4; i++)
+        {
+            var y = y0 - 2 + i;
+            var row = window.Slice(i * EdgeWindowStride, w + 4);
+            if (y < 0 || y >= planeHeight)
+            {
+                row.Fill(Unavailable);
+                continue;
+            }
+
+            var sourceRow = source.Slice(i * stride, stride);
+            for (var j = 0; j < row.Length; j++)
+            {
+                var x = x0 - 2 + j;
+                row[j] = x >= 0 && x < planeWidth ? sourceRow[x] : Unavailable;
+            }
+        }
+
+        Span<int> offsets = stackalloc int[TapCount];
+        GetTapOffsets(offsets, EdgeWindowStride, dir);
+        var priShift = priStr is 0 ? 0 : Math.Max(0, damping - BitOperations.Log2((uint)priStr));
+        var secShift = secStr is 0 ? 0 : Math.Max(0, damping - BitOperations.Log2((uint)secStr));
+        var priThreshold = Vector128.Create((short)priStr);
+        var secThreshold = Vector128.Create((short)secStr);
+        var unavailable = Vector128.Create(Unavailable).AsInt16();
+        var eight = Vector128.Create((short)8);
+        var destination = samples.Slice((y0 * stride) + x0);
+        for (var i = 0; i < h; i++)
+        {
+            var center = ((i + 2) * EdgeWindowStride) + 2;
+            var x = Load(window, center, w);
+            var max = x;
+            var min = x.AsUInt16();
+            var sum = Vector128<short>.Zero;
+            for (var t = 0; t < TapCount; t++)
+            {
+                var p = Load(window, center + offsets[t], w);
+                max = Vector128.Max(p, max);
+                min = Vector128.Min(p.AsUInt16(), min);
+                if (t < 4)
+                {
+                    if (priStr is not 0)
+                        sum += Vector128.AndNot(ConstrainVector(p - x, priThreshold, priShift), Vector128.Equals(p, unavailable)) * (short)(t < 2 ? priTaps[0] : priTaps[1]);
+                }
+                else if (secStr is not 0)
+                {
+                    sum += Vector128.AndNot(ConstrainVector(p - x, secThreshold, secShift), Vector128.Equals(p, unavailable)) * (short)(t < 8 ? secTaps[0] : secTaps[1]);
+                }
+            }
+
+            // (8 + sum - (sum < 0 ? 1 : 0)) >> 4: the sign of the sum is -1 or 0
+            var filtered = x + ((eight + sum + (sum >> 15)) >> 4);
+            var result = Vector128.Min(Vector128.Max(filtered, min.AsInt16()), max).AsUInt16();
+            var row = destination.Slice(i * stride, w);
+            if (w is 8)
+            {
+                result.CopyTo(row);
+            }
+            else
+            {
+                result.GetLower().CopyTo(row);
+            }
+        }
+
+        static Vector128<short> Load(ReadOnlySpan<ushort> window, int index, int w) => w is 8
+            ? Vector128.Create(window.Slice(index, 8)).AsInt16()
+            : Vector64.Create(window.Slice(index, 4)).ToVector128().AsInt16();
+    }
+
+    /// <summary>The scalar reference of <see cref="FilterEdgeBlock"/>.</summary>
+    internal static void FilterEdgeBlockScalar(Span<ushort> samples, int stride, ReadOnlySpan<ushort> source, int x0, int y0, int w, int h, int subX, int subY, int miRows, int miCols, int priStr, int secStr, int damping, int dir, ReadOnlySpan<byte> priTaps, ReadOnlySpan<byte> secTaps)
+    {
         for (var i = 0; i < h; i++)
         {
             for (var j = 0; j < w; j++)
@@ -222,13 +326,10 @@ internal static class Av1Cdef
         }
     }
 
-    // The filter of a block whose taps are all inside the frame. The window starts two rows above and two samples to the
-    // left of the block: the block is at row 2 and column 2 of the window
-    private static void FilterInteriorBlock(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, int priStr, int secStr, int damping, int dir, ReadOnlySpan<byte> priTaps, ReadOnlySpan<byte> secTaps)
+    // The offsets of the taps in a window of the given stride: 4 primary taps, then 8 secondary taps; two taps of opposite
+    // signs for each distance, the two taps of the first distance before the ones of the second
+    private static void GetTapOffsets(Span<int> offsets, int stride, int dir)
     {
-        // The offsets of the taps in the window: 4 primary taps, then 8 secondary taps; two taps of opposite signs for each
-        // distance, the two taps of the first distance before the ones of the second
-        Span<int> offsets = stackalloc int[TapCount];
         var directions = Av1Tables.CdefDirections;
         for (var k = 0; k < 2; k++)
         {
@@ -244,7 +345,14 @@ internal static class Av1Cdef
             offsets[6 + (4 * k)] = secondOffset;
             offsets[7 + (4 * k)] = -secondOffset;
         }
+    }
 
+    // The filter of a block whose taps are all inside the frame. The window starts two rows above and two samples to the
+    // left of the block: the block is at row 2 and column 2 of the window
+    private static void FilterInteriorBlock(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, int priStr, int secStr, int damping, int dir, ReadOnlySpan<byte> priTaps, ReadOnlySpan<byte> secTaps)
+    {
+        Span<int> offsets = stackalloc int[TapCount];
+        GetTapOffsets(offsets, stride, dir);
         var priShift = priStr is 0 ? 0 : Math.Max(0, damping - BitOperations.Log2((uint)priStr));
         var secShift = secStr is 0 ? 0 : Math.Max(0, damping - BitOperations.Log2((uint)secStr));
         FilterInteriorRows(destination, window, stride, w, h, offsets, priStr, secStr, priShift, secShift, priTaps[0], priTaps[1], secTaps[0], secTaps[1]);
@@ -343,7 +451,7 @@ internal static class Av1Cdef
                 max = Vector128.Max(p, max);
                 min = Vector128.Min(p, min);
                 if (priStr is not 0)
-                    sum += Constrain(p - x, priThreshold, priShift) * (short)(t < 2 ? priTap0 : priTap1);
+                    sum += ConstrainVector(p - x, priThreshold, priShift) * (short)(t < 2 ? priTap0 : priTap1);
             }
 
             for (var t = 4; t < TapCount; t++)
@@ -352,7 +460,7 @@ internal static class Av1Cdef
                 max = Vector128.Max(p, max);
                 min = Vector128.Min(p, min);
                 if (secStr is not 0)
-                    sum += Constrain(p - x, secThreshold, secShift) * (short)(t < 8 ? secTap0 : secTap1);
+                    sum += ConstrainVector(p - x, secThreshold, secShift) * (short)(t < 8 ? secTap0 : secTap1);
             }
 
             // (8 + sum - (sum < 0 ? 1 : 0)) >> 4: the sign of the sum is -1 or 0
@@ -379,15 +487,16 @@ internal static class Av1Cdef
                 : Vector128.CreateScalar(unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<ushort, byte>(ref first)))).AsInt16();
         }
 
-        // ConstrainShifted on every lane
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static Vector128<short> Constrain(Vector128<short> diff, Vector128<short> threshold, int shift)
-        {
-            var absolute = Vector128.Abs(diff);
-            var magnitude = Vector128.Max(Vector128<short>.Zero, Vector128.Min(absolute, threshold - (absolute >> shift)));
-            var sign = diff >> 15;
-            return (magnitude ^ sign) - sign;
-        }
+    }
+
+    // ConstrainShifted on every lane
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<short> ConstrainVector(Vector128<short> diff, Vector128<short> threshold, int shift)
+    {
+        var absolute = Vector128.Abs(diff);
+        var magnitude = Vector128.Max(Vector128<short>.Zero, Vector128.Min(absolute, threshold - (absolute >> shift)));
+        var sign = diff >> 15;
+        return (magnitude ^ sign) - sign;
     }
 
     // The constrain function for a threshold that is not zero, whose damping shift is known

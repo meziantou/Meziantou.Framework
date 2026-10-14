@@ -2361,6 +2361,68 @@ public sealed class VectorizedKernelTests
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1CdefEdgeBlocksMatchTheScalarReference(int bitDepth)
+    {
+        // Blocks of every plane size and subsampling at every position of small frames (the edges, the corners, and frames of
+        // one block), with random, extreme, flat and ramp samples, every direction and strengths over their coded range
+        var random = new Random(bitDepth);
+        var maxSample = (1 << bitDepth) - 1;
+        var coeffShift = bitDepth - 8;
+        for (var round = 0; round < 3000; round++)
+        {
+            var (subX, subY) = (round % 4) switch
+            {
+                0 => (0, 0),
+                1 => (1, 1),
+                2 => (1, 0),
+                _ => (0, 1),
+            };
+            var miRows = 2 * random.Next(1, 4);
+            var miCols = 2 * random.Next(1, 4);
+            var w = 8 >> subX;
+            var h = 8 >> subY;
+            var r = 2 * random.Next(miRows / 2);
+            var c = 2 * random.Next(miCols / 2);
+            var x0 = (c * 4) >> subX;
+            var y0 = (r * 4) >> subY;
+            var stride = ((miCols * 4) >> subX) + 4 + random.Next(3);
+            var source = new ushort[Av1Cdef.SourceRows * stride];
+            for (var i = 0; i < source.Length; i++)
+            {
+                source[i] = (round % 5) switch
+                {
+                    0 => (ushort)random.Next(maxSample + 1),
+                    1 => (ushort)(random.Next(2) * maxSample),
+                    2 => (ushort)Math.Clamp((maxSample / 2) + random.Next(-3, 4), 0, maxSample),
+                    3 => (ushort)Math.Clamp((i % stride * maxSample / stride) + random.Next(-8, 9), 0, maxSample),
+                    _ => random.Next(4) == 0 ? (ushort)random.Next(maxSample + 1) : (ushort)(maxSample / 3),
+                };
+            }
+
+            var priStr = random.Next(4) == 0 ? 0 : random.Next(1, 16) << coeffShift;
+            var secStr = random.Next(4) == 0 ? 0 : (1 << random.Next(3)) << coeffShift;
+            var damping = random.Next(3, 7) + coeffShift - (subX | subY);
+            var dir = random.Next(8);
+            var priTaps = Av1Tables.CdefPriTaps.Slice(((priStr >> coeffShift) & 1) * 2, 2);
+            var secTaps = Av1Tables.CdefSecTaps.Slice(((priStr >> coeffShift) & 1) * 2, 2);
+            var expected = new ushort[(y0 + h + 1) * stride];
+            for (var i = 0; i < expected.Length; i++)
+            {
+                expected[i] = (ushort)random.Next(maxSample + 1);
+            }
+
+            var actual = expected.ToArray();
+            Av1Cdef.FilterEdgeBlockScalar(expected, stride, source, x0, y0, w, h, subX, subY, miRows, miCols, priStr, secStr, damping, dir, priTaps, secTaps);
+            Av1Cdef.FilterEdgeBlock(actual, stride, source, x0, y0, w, h, subX, subY, miRows, miCols, priStr, secStr, damping, dir, priTaps, secTaps);
+            Assert.True(expected.AsSpan().SequenceEqual(actual), $"Round {round}: {w}x{h} block at ({x0}, {y0}) of {miCols}x{miRows} blocks, direction {dir}, strengths {priStr}/{secStr}.");
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1LoopRestorationFiltersMatchTheScalarReferences(int bitDepth)
     {
         // Blocks of every width around the vector size up to the largest one, on a padded source of random, extreme, flat and

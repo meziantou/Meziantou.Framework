@@ -91,6 +91,53 @@ public sealed class DrawingReferenceTests
         Assert.Empty(failures.Take(3));
     }
 
+    [Theory]
+    [MemberData(nameof(AllFormats))]
+    public void WideShapesWhosePaintReplacesThePixelsMatchTheExactReference(PixelFormat format)
+    {
+        // Rows long enough for the runs of pixels covered entirely to be written at once: an opaque paint with
+        // source-over, and any paint, transparent included, with the operator that replaces the pixels
+        const int Cases = 120;
+        var failures = new List<string>();
+        for (var index = 0; index < Cases; index++)
+        {
+            var random = new Random(Seed + 9000 + index);
+            var width = random.Next(16, 80);
+            var height = random.Next(1, 6);
+            var polygons = CreatePolygons(random, width, height);
+            var evenOdd = random.Next(2) == 0;
+            var color = CreateColor(random);
+            var mode = (index % 3) switch
+            {
+                0 => CompositeMode.SourceOver,
+                _ => CompositeMode.Source,
+            };
+
+            color = (index % 4) switch
+            {
+                0 or 1 => new Rgba64(color.R, color.G, color.B, ushort.MaxValue),
+                2 => new Rgba64(color.R, color.G, color.B, 0),
+                _ => color,
+            };
+
+            using var image = DrawingTestSupport.CreateRandom(format, width, height, new Random(Seed - 9000 - index).Next);
+            var frame = image.Frames[0];
+            var before = DrawingTestSupport.ReadSamples(frame);
+            var path = DrawingTestSupport.ToPath(polygons);
+            var brush = new SolidBrush(color) { CompositeMode = mode };
+            frame.Draw(canvas => canvas.Fill(brush, path, evenOdd ? FillRule.EvenOdd : FillRule.NonZero), Ct);
+
+            var areas = ReferenceCoverage.Compute(ReferenceCoverage.FromPolygons(polygons), width, height, evenOdd);
+            var mismatch = DrawingTestSupport.Compare(frame, before, areas, DrawingTestSupport.ToPaint(color, format), ToReference(mode));
+            if (mismatch is not null)
+            {
+                failures.Add($"case {index} ({mode}, {width}x{height}, {(evenOdd ? "even-odd" : "non-zero")}, color {color}, polygons {Describe(polygons)}):{Environment.NewLine}{mismatch}");
+            }
+        }
+
+        Assert.Empty(failures.Take(3));
+    }
+
     [Fact]
     public void TheReferenceOfTheOperatorsIsTheReferenceOfSourceOver()
     {

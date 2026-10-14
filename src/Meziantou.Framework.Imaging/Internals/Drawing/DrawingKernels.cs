@@ -65,6 +65,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal static class DrawingKernels
 {
+    /// <summary>The number of pixels from which a run with a single paint is searched for pixels covered entirely.</summary>
+    private const int MinFullRunSearchLength = 16;
+
     /// <summary>Converts a paint color to the pixel format of a frame, with the rules of pixel conversion.</summary>
     /// <remarks>
     /// The color samples are those of the opaque color converted by <see cref="PixelConverter"/> (Rec. 709 luma for
@@ -298,12 +301,158 @@ internal static class DrawingKernels
             return;
         }
 
+        // A short run is cheaper pixel by pixel than searched for runs
+        if (coverage.Length >= MinFullRunSearchLength && source.Colors.IsEmpty && TryCompositeFullRuns(samples, channels, coverage, source))
+            return;
+
+        CompositeCore(samples, channels, coverage, source);
+    }
+
+    /// <summary>Composites a paint with the formulas of the stored samples, pixel by pixel.</summary>
+    private static void CompositeCore<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
         if (source.Mode != CompositeMode.SourceOver)
         {
             CompositeWithOperator(samples, channels, coverage, source);
+        }
+        else
+        {
+            CompositeOver(samples, channels, coverage, source);
+        }
+    }
+
+    /// <summary>
+    /// Composites a single paint whose result on a pixel covered entirely does not depend on the pixel: an opaque paint
+    /// with source-over, or any paint that replaces the pixel (<see cref="CompositeMode.Source"/>). The runs of full
+    /// coverage get the samples the formulas give one of their pixels; the other pixels go through the formulas.
+    /// </summary>
+    /// <returns><see langword="false"/> when the paint has no such result, or no pixel is covered entirely.</returns>
+    /// <remarks>
+    /// With <c>q = Q</c>, source-over and <c>sa = M</c> write the paint (<c>c' = sc</c>, <c>a' = M</c>). The operator
+    /// <see cref="CompositeMode.Source"/> has <c>D = 0</c>: the color is <c>round(sc S / S) = sc</c> and the alpha
+    /// <c>round(S / (M Q)) = sa</c>, or the color over black without alpha, whatever the pixel was. A paint without
+    /// opacity then makes a pixel with alpha transparent black, or leaves it as it is when it was transparent.
+    /// </remarks>
+    private static bool TryCompositeFullRuns<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        const uint Full = CoverageRasterizer.FullCoverage;
+        var paintAlpha = source.Color.Alpha;
+        var isConstant = source.Mode switch
+        {
+            CompositeMode.SourceOver => paintAlpha == ushort.CreateTruncating(TSample.MaxValue),
+            CompositeMode.Source => paintAlpha != 0 || channels != 4,
+            _ => false,
+        };
+
+        var erases = !isConstant && source.Mode == CompositeMode.Source;
+        if (!isConstant && !erases)
+            return false;
+
+        var first = coverage.IndexOf(Full);
+        if (first < 0)
+            return false;
+
+        // The samples of a pixel covered entirely, from the formulas
+        Span<TSample> pixel = stackalloc TSample[4];
+        pixel = pixel[..channels];
+        if (isConstant)
+        {
+            var full = Full;
+            CompositeCore(pixel, channels, new ReadOnlySpan<uint>(in full), source);
+        }
+
+        var start = 0;
+        while (true)
+        {
+            if (first > start)
+            {
+                CompositeCore(samples[(start * channels)..(first * channels)], channels, coverage[start..first], source);
+            }
+
+            if (first == coverage.Length)
+                return true;
+
+            var length = coverage[first..].IndexOfAnyExcept(Full);
+            if (length < 0)
+            {
+                length = coverage.Length - first;
+            }
+
+            var run = samples.Slice(first * channels, length * channels);
+            if (isConstant)
+            {
+                FillPixels(run, pixel);
+            }
+            else
+            {
+                ErasePixels(run);
+            }
+
+            start = first + length;
+            if (start == coverage.Length)
+                return true;
+
+            var next = coverage[start..].IndexOf(Full);
+            first = next < 0 ? coverage.Length : start + next;
+        }
+    }
+
+    /// <summary>Writes the samples of one pixel to every pixel of a run.</summary>
+    private static void FillPixels<TSample>(Span<TSample> run, ReadOnlySpan<TSample> pixel)
+        where TSample : unmanaged
+    {
+        if (pixel.Length == 1)
+        {
+            run.Fill(pixel[0]);
             return;
         }
 
+        if (pixel.Length == 4 && typeof(TSample) == typeof(byte))
+        {
+            var packed = unsafe(MemoryMarshal.Read<uint>(MemoryMarshal.AsBytes(pixel)));
+            var pixels = unsafe(MemoryMarshal.Cast<TSample, uint>(run));
+            pixels.Fill(packed);
+            return;
+        }
+
+        if (pixel.Length == 4 && typeof(TSample) == typeof(ushort))
+        {
+            var packed = unsafe(MemoryMarshal.Read<ulong>(MemoryMarshal.AsBytes(pixel)));
+            var pixels = unsafe(MemoryMarshal.Cast<TSample, ulong>(run));
+            pixels.Fill(packed);
+            return;
+        }
+
+        // The pixels written so far are copied after themselves
+        pixel.CopyTo(run);
+        var filled = pixel.Length;
+        while (filled < run.Length)
+        {
+            var count = Math.Min(filled, run.Length - filled);
+            run[..count].CopyTo(run[filled..]);
+            filled += count;
+        }
+    }
+
+    /// <summary>Makes the pixels of a run (color then alpha) that are not transparent transparent black.</summary>
+    private static void ErasePixels<TSample>(Span<TSample> run)
+        where TSample : unmanaged, IBinaryInteger<TSample>
+    {
+        for (var i = 0; i < run.Length; i += 4)
+        {
+            if (run[i + 3] != TSample.Zero)
+            {
+                run.Slice(i, 4).Clear();
+            }
+        }
+    }
+
+    /// <summary>Composites a paint over interleaved samples with source-over, pixel by pixel.</summary>
+    private static void CompositeOver<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
         var max = ulong.CreateTruncating(TSample.MaxValue);
         var scale = max * CoverageRasterizer.FullCoverage;
         var half = scale / 2;

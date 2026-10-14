@@ -226,8 +226,6 @@ internal sealed class JpegEntropyReader : IDisposable
     internal ref struct Cursor
     {
         private readonly JpegEntropyReader _reader;
-        private readonly byte[] _data;
-        private readonly int _end;
         private int _start;
         private ulong _bits;
         private int _bitCount;
@@ -237,8 +235,6 @@ internal sealed class JpegEntropyReader : IDisposable
         public Cursor(JpegEntropyReader reader)
         {
             _reader = reader;
-            _data = reader._data;
-            _end = reader._end;
             _start = reader._start;
             _bits = reader._bits;
             _bitCount = reader._bitCount;
@@ -274,6 +270,32 @@ internal sealed class JpegEntropyReader : IDisposable
             var symbol = _reader.DecodeLongCode(table);
             Reload();
             return symbol;
+        }
+
+        /// <summary>
+        /// Decodes the next AC coefficient when its code and its magnitude bits fit in <see cref="JpegHuffmanTable.LookupBits"/>
+        /// (<see cref="JpegHuffmanTable.FastAc"/>) and are not fill bits; otherwise consumes nothing.
+        /// </summary>
+        /// <param name="fastAc">The <see cref="JpegHuffmanTable.FastAc"/> of the table.</param>
+        /// <returns><c>(coefficient &lt;&lt; 8) | (run &lt;&lt; 4) | length</c>, or 0 when the regular path must decode the symbol.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int TryDecodeFastAc(int[] fastAc)
+        {
+            if (_bitCount < 16)
+            {
+                Fill();
+            }
+
+            var entry = fastAc[(int)(_bits >> (64 - JpegHuffmanTable.LookupBits))];
+            var length = entry & 0x0F;
+
+            // Fill bits are left to the regular path, which reports the truncation where it occurs
+            if (entry == 0 || _bitCount - length < _paddingBits)
+                return 0;
+
+            _bits <<= length;
+            _bitCount -= length;
+            return entry;
         }
 
         /// <inheritdoc cref="JpegEntropyReader.ReceiveExtend"/>
@@ -321,9 +343,11 @@ internal sealed class JpegEntropyReader : IDisposable
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Fill()
         {
-            if (_end - _start >= 8)
+            // The buffer and its end are read from the reader, which keeps fewer values alive in the decoding loops
+            var reader = _reader;
+            if (reader._end - _start >= 8)
             {
-                _bits |= BinaryPrimitives.ReadUInt64BigEndian(_data.AsSpan(_start)) >> _bitCount;
+                _bits |= BinaryPrimitives.ReadUInt64BigEndian(reader._data.AsSpan(_start)) >> _bitCount;
                 var count = (63 - _bitCount) >> 3;
                 _start += count;
                 _bitCount += count << 3;

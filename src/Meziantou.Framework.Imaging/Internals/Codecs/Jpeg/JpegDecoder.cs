@@ -382,7 +382,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
             if (payload.Length < 17 + total)
                 throw Invalid("The JPEG DHT segment is truncated.");
 
-            var table = JpegHuffmanTable.TryCreate(counts, payload.Slice(17, total), out var error) ?? throw Invalid(error!);
+            var table = JpegHuffmanTable.TryCreate(counts, payload.Slice(17, total), out var error, ac: tableClass == 1) ?? throw Invalid(error!);
             (tableClass == 0 ? _dcTables : _acTables)[id] = table;
             payload = payload[(17 + total)..];
         }

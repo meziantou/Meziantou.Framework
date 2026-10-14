@@ -45,9 +45,25 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         var block = _block;
         var zigZag = JpegIdct.ZigZag;
         var acTable = scanComponent.AcTable!;
+        var fastAc = acTable.FastAc!;
         var hasAc = false;
         for (var k = 1; k < 64;)
         {
+            // Short codes with small magnitudes: symbol and magnitude in one lookup
+            var fast = reader.TryDecodeFastAc(fastAc);
+            if (fast != 0)
+            {
+                k += (fast >> 4) & 0x0F;
+                if (k > 63)
+                    throw Invalid("The JPEG AC coefficients run past the end of the block.");
+
+                var fastNatural = zigZag[k];
+                block[fastNatural] = (fast >> 8) * (double)quantization[fastNatural];
+                hasAc = true;
+                k++;
+                continue;
+            }
+
             var symbol = reader.DecodeHuffman(acTable);
             var run = symbol >> 4;
             var size = symbol & 0x0F;
@@ -74,6 +90,8 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         }
 
         reader.Commit();
-        TransformBlock(scanComponent, blockRow, blockColumn, block, dc, hasAc);
+
+        // The DC coefficient is read back from the predictor: one value less to keep alive in the loop
+        TransformBlock(scanComponent, blockRow, blockColumn, block, scanComponent.Predictor, hasAc);
     }
 }

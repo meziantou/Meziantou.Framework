@@ -578,6 +578,35 @@ public sealed class JpegDecoderTests
         Assert.Equal(-1, table.DecodeLong(0xFFFF, out _));
     }
 
+    [Fact]
+    public void FastAcLookupMatchesTheSymbolAndTheMagnitudeBits()
+    {
+        Assert.Null(JpegHuffmanTable.TryCreate(JpegEncodingTables.LuminanceAcBits, JpegEncodingTables.LuminanceAcValues, out _)!.FastAc);
+        var table = JpegHuffmanTable.TryCreate(JpegEncodingTables.LuminanceAcBits, JpegEncodingTables.LuminanceAcValues, out _, ac: true)!;
+        var fastAc = table.FastAc!;
+        var fastEntries = 0;
+        for (var bits = 0; bits < 1 << JpegHuffmanTable.LookupBits; bits++)
+        {
+            var entry = table.Lookup(bits);
+            var length = entry >> 8;
+            var run = (entry >> 4) & 0x0F;
+            var size = entry & 0x0F;
+            if (entry == 0 || size == 0 || length + size > JpegHuffmanTable.LookupBits)
+            {
+                Assert.Equal(0, fastAc[bits]);
+                continue;
+            }
+
+            // T.81 F.2.2.1 (EXTEND), written independently of the decoder
+            var magnitude = (bits >> (JpegHuffmanTable.LookupBits - length - size)) & ((1 << size) - 1);
+            var coefficient = magnitude >= 1 << (size - 1) ? magnitude : magnitude - ((1 << size) - 1);
+            Assert.Equal((coefficient << 8) | (run << 4) | (length + size), fastAc[bits]);
+            fastEntries++;
+        }
+
+        Assert.True(fastEntries > 100);
+    }
+
     public static TheoryData<string, byte[]> TableAndScanDefects
     {
         get

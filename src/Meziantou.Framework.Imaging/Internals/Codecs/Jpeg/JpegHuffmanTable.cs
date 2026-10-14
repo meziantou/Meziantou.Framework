@@ -15,6 +15,10 @@ internal sealed class JpegHuffmanTable
     // (code length << 8) | symbol, or 0 when the code is longer than LookupBits
     private readonly ushort[] _lookup = new ushort[1 << LookupBits];
 
+    // AC tables: (coefficient << 8) | (run << 4) | (code length + size) for the coefficients whose code and magnitude bits
+    // fit in LookupBits, 0 for the other bit patterns (end of block, ZRL, longer codes or magnitudes)
+    private int[]? _fastAc;
+
     // Largest code of each length (index 1 to 16), -1 when there is none
     private readonly int[] _maxCode = new int[17];
 
@@ -32,8 +36,9 @@ internal sealed class JpegHuffmanTable
     /// <param name="counts">The number of codes of each length (1 to 16).</param>
     /// <param name="values">The symbols, in order of increasing code length.</param>
     /// <param name="error">The reason the definition is invalid.</param>
+    /// <param name="ac">Whether the table codes AC coefficients: it then also has <see cref="FastAc"/>.</param>
     /// <returns>The table, or <see langword="null"/> if the definition is invalid.</returns>
-    public static JpegHuffmanTable? TryCreate(ReadOnlySpan<byte> counts, ReadOnlySpan<byte> values, out string? error)
+    public static JpegHuffmanTable? TryCreate(ReadOnlySpan<byte> counts, ReadOnlySpan<byte> values, out string? error, bool ac = false)
     {
         if (counts.Length != 16)
             throw new ArgumentException("A Huffman table has 16 code counts.", nameof(counts));
@@ -100,8 +105,41 @@ internal sealed class JpegHuffmanTable
             code <<= 1;
         }
 
+        if (ac)
+        {
+            table._fastAc = BuildFastAc(table._lookup);
+        }
+
         error = null;
         return table;
+    }
+
+    /// <summary>
+    /// Gets, for AC tables, the coefficients resolved by the next <see cref="LookupBits"/> bits:
+    /// <c>(coefficient &lt;&lt; 8) | (run &lt;&lt; 4) | length</c>, where <c>length</c> counts the bits of the code and of the
+    /// magnitude (T.81 F.2.2.1, EXTEND applied), or 0 when the symbol is an end of block or a ZRL, or when its code or its
+    /// magnitude bits do not fit.
+    /// </summary>
+    public int[]? FastAc => _fastAc;
+
+    private static int[] BuildFastAc(ushort[] lookup)
+    {
+        var fastAc = new int[1 << LookupBits];
+        for (var bits = 0; bits < fastAc.Length; bits++)
+        {
+            var entry = lookup[bits];
+            var length = entry >> 8;
+            var size = entry & 0x0F;
+            if (entry == 0 || size == 0 || length + size > LookupBits)
+                continue;
+
+            var run = (entry >> 4) & 0x0F;
+            var magnitude = (bits >> (LookupBits - length - size)) & ((1 << size) - 1);
+            var coefficient = magnitude < (1 << (size - 1)) ? magnitude - (1 << size) + 1 : magnitude;
+            fastAc[bits] = (coefficient << 8) | (run << 4) | (length + size);
+        }
+
+        return fastAc;
     }
 
     /// <summary>Gets the lookup entry of the next <see cref="LookupBits"/> bits: <c>(length &lt;&lt; 8) | symbol</c>, or 0 for a longer code.</summary>

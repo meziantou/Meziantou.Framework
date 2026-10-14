@@ -2,8 +2,8 @@
 
 A fully managed, performance-oriented image library for .NET 10 and .NET 11: PNG, animated PNG (APNG), GIF, JPEG, WebP
 (still and animated, lossless and lossy), QOI, BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and animated
-cursor (ANI), AVIF and HEIC (still and animated, lossless and lossy) and JPEG XL (still and animated, lossless and
-lossy, progressive) decoding and encoding, lossless JPEG recompression, animation-aware processing, vector drawing, ICC
+cursor (ANI), AVIF and HEIC (still and animated, lossless and lossy), JPEG XL (still and animated, lossless and
+lossy, progressive) and JPEG 2000 (lossless and lossy) decoding and encoding, lossless JPEG recompression, animation-aware processing, vector drawing, ICC
 color conversion, and bounded-memory streaming.
 
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive JPEG, WebP (still and animated, lossless and lossy), QOI,
@@ -16,6 +16,10 @@ color conversion, and bounded-memory streaming.
   output, and progressive reading (the renderings of a frame before it is complete)
 - JPEG files recompressed as JPEG XL files without decoding their pixels, about a fifth smaller, and rebuilt byte for
   byte (`JpegXlTranscoder`)
+- JPEG 2000 decoding and encoding with a fully managed codec: JP2 files and bare codestreams, the reversible (5-3) and
+  irreversible (9-7) wavelet transformations, every coding tool of Rec. ITU-T T.800 | ISO/IEC 15444-1, up to 16 bits,
+  opacity, palettes, sYCC; the high-throughput block coder (HTJ2K, Rec. ITU-T T.814 | ISO/IEC 15444-15) is decoded;
+  lossless and lossy encoding of every pixel format
 - AVIF decoding and encoding with a fully managed AV1 decoder and a fully managed AV1 encoder: still images and
   animations, lossless and lossy, 8, 10 and 12 bits, alpha; grids and film grain are decoded
 - HEIC decoding and encoding with a fully managed HEVC (H.265) decoder and a fully managed HEVC encoder: the photos of
@@ -86,6 +90,7 @@ compiled and run by the test suite.
   - [HEIC](#heic)
   - [ANI](#ani)
   - [JPEG XL](#jpeg-xl)
+  - [JPEG 2000](#jpeg-2000)
 - [Limitations](#limitations)
 
 ## Quick start
@@ -163,11 +168,12 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | BMP | Windows headers up to V5 and OS/2 1.x/2.x headers, 1/4/8/16/24/32-bit, bit fields, RLE4/RLE8/RLE24 | 24-bit or 32-bit with an alpha mask by default; 1/4/8-bit indexed, RLE4/RLE8, 16-bit and top-down on request | `.bmp`, `.dib` |
 | TGA | True-color, grayscale and color-mapped, uncompressed or run-length | True-color and grayscale, uncompressed or run-length | `.tga`, `.icb`, `.vda`, `.vst` |
 | Netpbm | `P1` to `P7` (PBM, PGM, PPM, PAM), 8 and 16 bits | `P1` to `P7`, lossless (PBM on request, from black and white pixels) | `.pnm`, `.pam`, `.ppm`, `.pgm`, `.pbm` |
-| TIFF / BigTIFF | Both byte orders and offset sizes; bilevel, 2/4/8/16-bit gray, gray+alpha, RGB, RGBA, palette, YCbCr, and CMYK with a color conversion; strips and tiles; Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3, Group 4) and JPEG; predictor; multi-page documents | Strips; uncompressed, Deflate, LZW, PackBits, CCITT (bilevel) or JPEG; gray, RGB, RGBA, bilevel or palette; classic or BigTIFF; multi-page documents (seekable destination) | `.tif`, `.tiff` |
+| TIFF / BigTIFF | Both byte orders and offset sizes; bilevel, 2/4/8/16-bit gray, gray+alpha, RGB, RGBA, palette, YCbCr, and CMYK with a color conversion; strips and tiles; Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3, Group 4), JPEG and JPEG 2000; predictor; multi-page documents | Strips; uncompressed, Deflate, LZW, PackBits, CCITT (bilevel) or JPEG; gray, RGB, RGBA, bilevel or palette; classic or BigTIFF; multi-page documents (seekable destination) | `.tif`, `.tiff` |
 | ICO / CUR | PNG and DIB representations, cursor hotspots | PNG or 32-bit DIB representations, cursor hotspots | `.ico`, `.cur` |
 | AVIF | Still images and image sequences (animations); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; alpha, straight or premultiplied; grids; film grain; clean aperture and orientation; ICC/EXIF/XMP, CICP color descriptions, light levels, mastering display and pixel aspect ratio | Lossless and lossy still images and image sequences (seekable destination); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; lossless alpha, straight or premultiplied; grids; clean aperture and orientation; ICC/EXIF/XMP, CICP color descriptions, light levels, mastering display and pixel aspect ratio | `.avif`, `.avifs` (lossless by default) |
 | HEIC | Still images and image sequences (animations); the HEVC version 1 and range extensions profiles: 8 to 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; intra and inter pictures (P and B, reordered); alpha; grids; ICC/EXIF/XMP and CICP color descriptions | Lossless and lossy still images and image sequences (seekable destination); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; lossless alpha; ICC/EXIF/XMP, CICP color descriptions and orientation | `.heic`, `.heif`, `.heics`, `.heifs` (lossless by default) |
 | JPEG XL | Bare codestreams and containers; lossy (VarDCT) and lossless (Modular) frames; up to 16 bits; alpha; animations and layers; patches, splines, noise; recompressed JPEG files; ICC/EXIF/XMP and enumerated color encodings; progressive renderings | Lossless (default) or lossy, every pixel format at its own depth, lossless alpha, animations with any frame count, progressive output, ICC/EXIF/XMP, orientation; JPEG files recompressed without loss (`JpegXlTranscoder`) | `.jxl` |
+| JPEG 2000 | JP2 files (also JPX and JPH files of one codestream) and bare codestreams; reversible and irreversible wavelet transformations; tiles, layers, every progression order and code-block style, regions of interest; the high-throughput block coder (HTJ2K); 1 to 16 bits; opacity, palettes, sYCC, CMYK with a color conversion; ICC/EXIF/XMP and resolution | Lossless and lossy, every pixel format at its own depth, lossless opacity, a JP2 file or a codestream, ICC/EXIF/XMP and resolution | `.jp2` (lossless), `.j2k`, `.j2c`, `.jpc` (a codestream) |
 | ANI | Animated cursors: icon and cursor frames (PNG and DIB), rate and sequence tables, hotspots, title and author | One cursor image per frame (PNG or 32-bit DIB), hotspots, identical frames stored once, title and author (seekable destination) | `.ani` |
 
 ## Usage guide
@@ -1810,8 +1816,8 @@ content light level, the mastering display color volume and text entries.
 - **Color profiles are preserved, never applied implicitly.** A profile labels the pixels; untagged pixels are assumed
   sRGB. Decoders keep it, encoders write it (for example PNG `iCCP`, JPEG APP2), conversions keep it only when it can
   still label the converted pixels (gray profile for gray formats, RGB profile for color formats). Colors are converted
-  only on request (see [Color management](#color-management)). A CMYK image (a JPEG file or a TIFF page) is the one
-  image that cannot be loaded as it is, since no pixel format holds inks: it is rejected unless the load asks for its
+  only on request (see [Color management](#color-management)). A CMYK image (a JPEG file, a TIFF page or a JPEG 2000
+  file) is the one image that cannot be loaded as it is, since no pixel format holds inks: it is rejected unless the load asks for its
   conversion (`CmykConversionOptions`).
 - **Transfer functions are labels too.** `Metadata.TransferFunction` is `Srgb` (the default: sRGB samples, or as described
   by the ICC profile) or `Linear` (linear-light samples, declared by a QOI colorspace of 1 or by a JPEG XL color
@@ -1865,8 +1871,12 @@ also stores the content light level, the mastering display color volume and the 
 and `pasp` boxes) and the orientation of an image sequence (the matrix of its track headers), which HEIC does not
 store yet. Neither format has a text entry or a resolution. JPEG XL stores an ICC profile (in the
 codestream), EXIF and XMP (in `Exif` and `xml ` boxes), the orientation (in the image header, not as an EXIF tag), the
-linear transfer function and a CICP color description; it stores no resolution and no text entry. Unknown chunks,
-segments and extensions are skipped on decode and not round-tripped.
+linear transfer function and a CICP color description; it stores no resolution and no text entry. A JP2 file stores an
+ICC profile (in its color specification box: a grayscale profile or a matrix-based RGB profile, the only ones the
+format allows there), the resolution (capture resolution box), EXIF, which carries the orientation, and XMP (UUID
+boxes); it stores no text entry, no CICP color description and no linear transfer function, and a JPEG 2000 codestream
+written without a file stores no metadata at all. Unknown chunks, segments, boxes and extensions are skipped on decode
+and not round-tripped.
 
 <!-- snippet: edit-metadata -->
 ```csharp
@@ -2161,7 +2171,7 @@ output.
 | JPEG XL | Optional; any count, without seeking (a frame is written when the next one, or the completion, tells whether it is the last) |
 | ANI | Optional; any count, with a seekable destination (the counts and sizes are patched at completion) |
 | AVIF, HEIC | Required; an image sequence (any count other than 1) needs a seekable destination (its index is written at completion, in the room that the count reserves) |
-| JPEG, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR | Optional; exactly one frame |
+| JPEG, JPEG 2000, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR | Optional; exactly one frame |
 
 `Complete` checks that at least one frame was written and that the count matches. Errors detected before any work
 (state, order, frame size or pixel type, a frame duration the format cannot store) leave the writer usable; a failure once
@@ -2234,7 +2244,9 @@ public static void StreamingWithReusedBuffer(string inputPath, string outputPath
 `Save(stream, encoder)` requires an encoder. `Save(path)` infers it from the extension: `.png`
 (APNG when the image is animated), `.apng` (always APNG), `.gif`, `.jpg`/`.jpeg`, `.webp` (lossless by default), `.qoi`,
 `.bmp`/`.dib`, `.tga`/`.icb`/`.vda`/`.vst`, `.pnm`/`.pam`/`.ppm`/`.pgm`, `.pbm` (a portable bitmap, from black and white
-pixels only), `.tif`/`.tiff`, `.ico`, `.cur`, `.ani`, `.avif`/`.avifs` (lossless by default), `.heic`/`.heif`/`.heics`/`.heifs` (lossless by default) and `.jxl` (lossless by default); anything else throws `ArgumentException`. An eager save validates the whole image against the output (animation, poster,
+pixels only), `.tif`/`.tiff`, `.ico`, `.cur`, `.ani`, `.avif`/`.avifs` (lossless by default), `.heic`/`.heif`/`.heics`/`.heifs` (lossless by default), `.jxl` (lossless by default), `.jp2` (a JP2 file,
+lossless by default) and `.j2k`/`.j2c`/`.jpc` (a JPEG 2000 codestream, lossless by default); anything else throws
+`ArgumentException`, the `.jpx`, `.jpf`, `.jph` and `.jhc` extensions included (these files are read, not written). An eager save validates the whole image against the output (animation, poster,
 durations, alpha, precision, metadata) before writing anything.
 
 Path outputs, eager or through writers, are written to a temporary file in the destination directory and published by a
@@ -2600,7 +2612,7 @@ the offsets of the strips it describes.
 | CMYK | 8 or 16 bits, with an optional alpha sample: loaded only with `CmykConversion`, by an ICC conversion to RGB (see [Color management](#color-management)); `Identify` reports `ImageColorModel.Cmyk` and the CMYK profile | Not written |
 | YCbCr | 8 bits, one chroma sample for 1, 2 or 4 pixels in each direction, `YCbCrCoefficients` and `ReferenceBlackWhite` applied → `Rgb24` | Only as the samples of JPEG compression |
 | Alpha | Only unassociated (straight) extra samples are alpha | Always unassociated |
-| Compression | None, Deflate, LZW, PackBits, CCITT modified Huffman, Group 3 (one and two dimensions, with or without fill bits) and Group 4, and JPEG (TIFF Technical Note 2, with or without `JPEGTables`) | `TiffCompression.None`, `Deflate` (the default), `Lzw`, `PackBits`, `CcittModifiedHuffman`, `CcittGroup3` and `CcittGroup4` (bilevel layout only), `Jpeg` (lossy: `JpegQuality`, `JpegChromaSubsampling`) |
+| Compression | None, Deflate, LZW, PackBits, CCITT modified Huffman, Group 3 (one and two dimensions, with or without fill bits) and Group 4, JPEG (TIFF Technical Note 2, with or without `JPEGTables`), and JPEG 2000 (compression 34712: a codestream or a JP2 file in each strip or tile, samples of 8 or 16 bits, the high-throughput block coder included) | `TiffCompression.None`, `Deflate` (the default), `Lzw`, `PackBits`, `CcittModifiedHuffman`, `CcittGroup3` and `CcittGroup4` (bilevel layout only), `Jpeg` (lossy: `JpegQuality`, `JpegChromaSubsampling`) |
 | Predictor | None and horizontal differencing, at 8 and 16 bits | Not written |
 | Layout | Strips and tiles, chunky samples only | Strips only (`TiffEncoder.RowsPerStrip`, or about 64 KiB of samples per strip); a JPEG page is one strip |
 | Metadata | Resolution, orientation (reported, never applied), ICC profile, XMP | The same four, following `MetadataHandling`; EXIF and text entries are not written |
@@ -2964,6 +2976,58 @@ public static bool RecompressJpeg(string jpegPath, string jxlPath, string rebuil
 `JpegXlTranscoder` also rebuilds the files `cjxl --lossless_jpeg=1` writes, and libjxl and jxl-oxide rebuild the files it
 writes. `HasJpegReconstructionData` tells whether a file holds a JPEG file, without decoding it.
 
+### JPEG 2000
+
+JPEG 2000 files and codestreams are decoded and encoded, without loss or with loss. The codec is fully managed and
+implements Rec. ITU-T T.800 | ISO/IEC 15444-1; the decoder also reads the high-throughput block coder of Rec. ITU-T
+T.814 | ISO/IEC 15444-15 (HTJ2K). The reversible path (the 5-3 wavelet transformation) is exact: a lossless file decodes
+to the samples that were encoded, and the files the encoder writes decode to the same samples in OpenJPEG and FFmpeg.
+The irreversible path (the 9-7 wavelet transformation) is defined on real numbers: the decoded samples are within one
+8-bit level of what those decoders give (they differ from each other by as much), not bit-exact.
+
+<!-- snippet: save-jpeg2000 -->
+```csharp
+public static string SaveJpeg2000(string inputPath, string jp2Path, string codestreamPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // Lossless by default: every pixel format is stored as it is, 16-bit samples and the colors of fully
+    // transparent pixels included. A JP2 file stores the ICC profile, the resolution, EXIF and XMP.
+    image.Save(jp2Path);
+
+    // Lossy: the quality sets the quantization, on the scale of the JPEG encoder; the opacity stays exact.
+    // A codestream alone (.j2k, .j2c, .jpc) stores no metadata: a strict save rejects an image that has some.
+    image.Save(codestreamPath, new Jpeg2000Encoder
+    {
+        Compression = Jpeg2000Compression.Lossy,
+        Quality = 80,
+        Container = Jpeg2000Container.Codestream,
+        MetadataHandling = MetadataHandling.DiscardUnsupported,
+    });
+
+    // Files, codestreams and the high-throughput block coder (HTJ2K) are decoded, whatever wrote them.
+    var info = Image.Identify(jp2Path);
+    return $"{info.Format} {info.Size.Width}x{info.Size.Height} {info.PixelFormat}, {info.BitsPerComponent} bits";
+}
+```
+
+| Feature | Decoding | Encoding |
+| --- | --- | --- |
+| Files | A bare codestream (`.j2k`, `.j2c`, `.jpc`, `.jhc`), or a file of the JP2 family whose brand or a compatible brand is `jp2 `, `jpx ` or `jph ` and that holds one codestream; boxes of 64-bit length, a last box that extends to the end of the file. The boxes that follow the codestream are read (metadata) and are not needed: a file that ends after its codestream is complete | A JP2 file (`Container = Jp2`, the default) or a codestream (`Container = Codestream`) |
+| Coding | The reversible 5-3 and irreversible 9-7 wavelet transformations, 0 to 32 decomposition levels; the reversible and irreversible component transformations; quantization without step, with derived and with expounded steps; tiles and tile-parts in any legal order, image and tile grid offsets; the five progression orders and progression order changes (POC); layers; precincts; code-blocks of 4 to 1024 samples per side; every style of the coding passes (selective bypass, reset, termination on each pass, vertically causal contexts, predictable termination, segmentation symbols); regions of interest (RGN); SOP and EPH markers; packet headers in the main header (PPM) or in tile-part headers (PPT); PLT, TLM and COM marker segments (not used); coding styles and quantizations per component (COC, QCC) and per tile. The coding passes that a codestream leaves out (a rate, a layer that was cut) are not an error: the missing bits of a coefficient are replaced by the middle of their range | Lossless: the 5-3 transformation and the reversible component transformation, without quantization. Lossy: the 9-7 transformation, the irreversible component transformation and scalar quantization; the opacity is always coded without loss. One tile, one layer, the LRCP progression, code-blocks of 64x64, up to five decomposition levels, no rate control |
+| HTJ2K | Code-blocks of the high-throughput block coder: the HT cleanup, HT SigProp and HT MagRef passes, placeholder passes, the vertically causal contexts; in a codestream or in a JPH file | Not written |
+| Pixel formats | Files of at most 8 bits load as `Gray8`, `Rgb24` or `Rgba32`; deeper files as `Gray16` or `Rgba64`; grayscale with opacity as `Rgba32`/`Rgba64`. Depths other than 8 and 16 are scaled exactly; `ImageInfo.BitsPerComponent` reports the depth of the file (of its palette for a paletted file) | `Gray8`, `Gray16`, `Rgb24`, `Rgba32`, `Bgra32` and `Rgba64`, each at its own depth: nothing is reduced, the colors of fully transparent pixels are kept |
+| Channels | The channel definition box orders the colors and names the opacity; without one, the components are the colors in order and one more component is the opacity. A palette (with or without an opacity column) is expanded. A codestream alone has one to four components: gray, gray and opacity, RGB, RGB and opacity | Gray, gray and opacity, RGB, or RGB and opacity; a channel definition box names the opacity |
+| Color | sRGB and grayscale as they are; sYCC components (sub-sampled chrominances included, each used for the pixels it covers) are converted to RGB, exactly rounded; a codestream of three components whose last two are sub-sampled alike is read as sYCC; an ICC profile, restricted or not, is kept byte for byte and never applied. CMYK inks (the enumerated color space, or a CMYK ICC profile) are identified, and loaded only with `CmykConversion` | sRGB or grayscale, or the ICC profile when it is one a JP2 file allows: a grayscale profile or a matrix-based RGB profile. Another profile is metadata the format cannot store (`MetadataHandling`) |
+| Metadata | The capture resolution box (the default display resolution box when there is none), and the EXIF profile (its orientation is reported, never applied) and the XMP packet of UUID boxes, before or after the codestream | In a JP2 file: the resolution, EXIF (with the orientation) and XMP. A codestream stores none: any metadata follows `MetadataHandling` |
+| Quality | n/a | `Quality` 1 to 100 (default 90), for `Compression = Lossy`: it sets the quantization steps of the sub-bands, and it is calibrated on `JpegEncoder.Quality`: on photographs, the same value gives the structural similarity (SSIM) of the JPEG file, in about two thirds of its size. The two chrominances are quantized twice as coarsely as the luminance. It is not a rate: the size follows from the image |
+| TIFF | Strips and tiles compressed with JPEG 2000 (compression 34712), as a codestream or as a JP2 file | Not written |
+| Limits | The size and the depth are checked on the main header; a tile is decoded as a whole: its coded bytes, its coefficients (four bytes per sample) and the decoded image are charged to the memory budget, so that a very large image of one tile can exceed the default 512 MiB | At most 16 bits per sample; one frame |
+
+`Image.Identify` reads the main header of the codestream: its `Header` mode stops at the first tile-part, and `FullScan`
+follows the chain of the tile-parts to the end of the codestream without decoding any packet. A codestream ends with
+its EOC marker: a file that is cut is `InvalidImageContentException`, never a shorter image.
+
 ## Limitations
 
 Everything below is rejected explicitly (never decoded or encoded approximately) or documented as lossy.
@@ -2980,7 +3044,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | BMP | Decoding: no embedded JPEG/PNG payloads, no OS/2 Huffman 1D, no 2-bit depth, no channel wider than 8 bits, no embedded ICC profile; OS/2 bitmap arrays (`BA`) are not recognized; a 40-byte header is always a Windows header (an OS/2 2.x header of that length with Huffman 1D or RLE24 is read as `BI_BITFIELDS` or `BI_JPEG`); run-length streams are read strictly (nothing is clamped, the end-of-bitmap marker is required). Encoding: one still image; Windows headers only; run-length output for 4-bit and 8-bit indexed layouts only, bottom-up; indexed output needs one byte per pixel of working memory; no alpha below 32 bits (no 1-5-5-5 output); resolution is the only metadata; the file must fit the 32-bit `bfSize` field |
 | TGA | Decoding: 16-bit grayscale is always an 8-bit gray sample and an attribute byte, so a file that stores a 16-bit luminance is not read as one; premultiplied alpha (attributes type 4) is rejected and no other attributes type changes the decoded representation (an alpha channel the extension area calls absent or undefined is still decoded when the image descriptor declares it); the other fields of the extension area and the developer area are not interpreted; the input is read to its end and the bytes after the image data are buffered; truncation is only detected before the end of the image data. Encoding: true-color and grayscale only, bottom-up, one still image, at most 65,535 pixels per side; no color map, no 15/16-bit output, no metadata |
 | Netpbm | Decoding: only the first image of a concatenation is read; tuple types other than the standard grayscale, RGB and alpha forms are rejected; the header is bounded at 65,536 bytes; truncation of a plain raster is not detectable. Encoding: one image, no metadata; the variant follows the pixel format, and a portable bitmap (`P1`/`P4`) is only written on request, from pixels that are exactly black or white (no threshold, no dithering); plain output and portable bitmaps have no alpha (PAM has no plain form) |
-| TIFF | Decoding: old-style JPEG compression (6), L\*a\*b\* and transparency-mask photometric interpretations, planar storage of several samples, the reversed fill order for other data than bilevel, the floating-point predictor, signed and floating-point samples, sample widths other than 1, 2, 4, 8 and 16 bits (8 and 16 for RGB and CMYK, 8 for YCbCr, at most 8 for palette indexes), more than one extra sample, associated (premultiplied) or unspecified extra samples, alpha next to palette, YCbCr or packed grayscale samples, the uncompressed mode of the CCITT compressions, the LZW bit order of TIFF 5.0 drafts, and JPEG-compressed YCbCr data that is not the full-range BT.601 data of JFIF are all rejected with `UnsupportedImageFeatureException`; CMYK pages are loaded only with `CmykConversion`. Compressed data is never repaired (a damaged fax row is an error, not a white row). Subsampled chroma of pages that are not JPEG-compressed is replicated. No EXIF block, no sub-IFD, no unknown-tag round trip. Encoding: one page per `Image.Save` (use `ImageCollection.Save`), strips only, no predictor, no tiles, no CMYK, no thresholding and no color reduction (the bilevel and palette layouts store a page exactly or reject it; 16-bit palette colors that are all multiples of 256 without being all multiples of 257 are rejected, since readers take them for 8-bit colors), Group 3 in one dimension only, one strip per JPEG page (at most 65,535 pixels per side, 8-bit samples, opaque pixels), a seekable destination required |
+| TIFF | Decoding: old-style JPEG compression (6), L\*a\*b\* and transparency-mask photometric interpretations, planar storage of several samples, the reversed fill order for other data than bilevel, the floating-point predictor, signed and floating-point samples, sample widths other than 1, 2, 4, 8 and 16 bits (8 and 16 for RGB and CMYK, 8 for YCbCr, at most 8 for palette indexes), more than one extra sample, associated (premultiplied) or unspecified extra samples, alpha next to palette, YCbCr or packed grayscale samples, the uncompressed mode of the CCITT compressions, the LZW bit order of TIFF 5.0 drafts, and JPEG-compressed YCbCr data that is not the full-range BT.601 data of JFIF, and JPEG 2000 compression of samples that are not 8 or 16 bits wide, of palette indexes, of YCbCr data or with a predictor are all rejected with `UnsupportedImageFeatureException`; CMYK pages are loaded only with `CmykConversion`. Compressed data is never repaired (a damaged fax row is an error, not a white row). Subsampled chroma of pages that are not JPEG-compressed is replicated. No EXIF block, no sub-IFD, no unknown-tag round trip. Encoding: one page per `Image.Save` (use `ImageCollection.Save`), strips only, no predictor, no tiles, no CMYK, no thresholding and no color reduction (the bilevel and palette layouts store a page exactly or reject it; 16-bit palette colors that are all multiples of 256 without being all multiples of 257 are rejected, since readers take them for 8-bit colors), Group 3 in one dimension only, one strip per JPEG page (at most 65,535 pixels per side, 8-bit samples, opaque pixels), a seekable destination required |
 | ICO/CUR | Decoding: a top-down DIB payload, a DIB whose stored height is not doubled, an animated PNG payload, a representation larger than 256 pixels per side and the DIB variants an icon payload cannot use (run-length encoding, embedded codecs, OS/2 headers) are rejected. Encoding: 32-bit DIB or still PNG payloads only (16-bit pixels need a PNG payload: `IconPayloadFormat.Dib` is rejected for them), at most 256 pixels per side, no metadata; an icon cannot store a hotspot |
 | ANI | Decoding: raw bitmap frames (no icon flag), a frame without a representation of the canvas size and everything the ICO/CUR decoder rejects are `UnsupportedImageFeatureException`; the geometry fields and the sequence flag of the header are not used (the payloads and the `seq ` chunk are authoritative); an ICC profile or text inside a PNG frame is not retained; `Image.OpenReader` does not read it. Encoding: one representation per frame, at most 256 pixels per side, whole jiffies, an infinite play count only, a title and an author as the only metadata, a seekable destination, at most 4 GiB per file |
 | PNG/APNG | Palette output is opt-in and exact only (`PngPixelLayout.Indexed`: no color reduction or dithering, and a sequential writer cannot declare colors beyond its first image), no grayscale output below 8 bits, no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
@@ -2994,6 +3058,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | HEIC decoding | The container limitations of AVIF decoding apply (the two formats share their container), and the container features that only AVIF reads so far are rejected: premultiplied alpha, derived images (`iden`, `iovl`, grids of derived images), fragmented files, edit lists that do not play the whole track, and the matrix coefficients that are not a linear matrix of the coded samples (SMPTE ST 2085, chromaticity-derived, constant luminance, ICtCp). The `clli`, `mdcv` and `pasp` boxes are not reported either (a `pasp` box is only validated). Rejected with `UnsupportedImageFeatureException`: the screen content coding, multilayer and 3D extensions of HEVC, bit depths above 12 bits, luma and chroma samples of different bit depths, separate color planes, field sequences, extended precision processing, the chroma sample positions of types 3 to 5, and an image sequence whose pictures change size. Only the base layer of a layered stream is decoded, and a layer selector (`lsel`) is rejected. Not read: the other images of a file (bursts, thumbnails, depth and gain maps, the video of a live photo, which is another file), the supplemental information of the bitstream other than its picture hashes (mastering display, content light level), and the `tkhd` matrix of an image sequence. A file whose bitstream has no video signal description and no `colr` box is read in limited range, as H.265 infers, with the BT.601 matrix: Apple ImageIO reads the same file with the BT.709 matrix, and libheif does not expand the samples of a monochrome image. The decoder is sequential: the tiles and the wavefront rows of a picture are decoded one after the other |
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: `Image.Load` decodes a recompressed JPEG file to pixels, `JpegXlTranscoder` rebuilds the JPEG file), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Progressive reading: whole stages only (the data of a section that is not complete are not shown), none for a frame of one section, for a Modular frame that is not squeezed, or for the frames that are not shown; an alpha channel that is not squeezed is opaque until it is decoded; the pixels of an intermediate rendering are not part of the contract. Encoding: full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header. Lossy encoding: DCTs of 8x8 to 64x64 samples only (no smaller transform, no identity or AFV transform), a quantization factor per block that is computed from the image once (the encoder does not decode its output to refine it), no patches, splines or noise; an ICC profile that is not sRGB, and the PQ and HLG transfer functions, are rejected (use lossless output, or convert the image) |
 | JPEG recompression | `JpegXlTranscoder.RecompressJpeg` rejects with `UnsupportedImageFeatureException` what a JPEG XL frame cannot hold: four components (CMYK, YCCK), a sampling factor other than 1 or 2 (4:1:1), subsampled RGB components, arithmetic, lossless, hierarchical and 12-bit files, restart intervals of several lengths (the description of the file has one), a quantization table that no component uses unless it repeats the table defined before it, a Huffman table that uses the code of all ones, more than 65,535 bytes between two markers or 4,260,096 bytes after the end of image, and entropy-coded data that would not be rebuilt byte for byte (the output is always checked). The whole file is held in memory, with two bytes per coefficient. The reconstruction data (`jbrd`) are read wherever the container has them: every encoder writes them before the codestream; when they follow it, the frame is held as it is coded until they are read, and `HasJpegReconstructionData` reads the file to its end |
+| JPEG 2000 | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the headers tell): signed samples and samples of more than 16 bits, components of different depths, a sub-sampled first component and sub-sampled components that are not the chrominances of an image of three components, more than four components without color specification, a premultiplied opacity, several opacity channels, an opacity of one color, channels that are not defined, the extensions of ISO/IEC 15444-2 (other wavelet filters, other component transformations, other regions of interest), files of the `jpm ` and `mjp2` brands, files of several codestreams or of a fragmented codestream, more than 30 bit-planes in a sub-band; for the high-throughput block coder: tile-components that mix both block coders, a code-block with several HT sets, and placeholder passes in another packet than the HT cleanup pass. CMYK is loaded only with `CmykConversion`. Not read: the intellectual property and XML boxes, the comments of the codestream. Not available: decoding a lower resolution, a region or fewer layers. Encoding: no rate control (a quality, not a size), one tile and one layer (the whole image is transformed at once, in memory), no HTJ2K, no palette, no sub-sampling, no CMYK, no animation; a codestream stores no metadata |
 | Text | Horizontal text only; a synthetic bold is not in the path of a layout nor in a stroked text; no word list is provided for the scripts that need a dictionary to break their lines; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
 | Fonts | No system font, no SVG glyph, no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hinting; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

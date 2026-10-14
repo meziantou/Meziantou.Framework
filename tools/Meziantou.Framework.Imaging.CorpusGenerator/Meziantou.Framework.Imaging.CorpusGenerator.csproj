@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <!-- `verify` re-decodes the corpus with the tools of the interop tests: keep the same version as the TestHarness project -->
-    <PackageReference Include="Meziantou.Prebuilt" Version="3.5.0" />
+    <PackageReference Include="Meziantou.Prebuilt" Version="3.6.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,6 +46,12 @@
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Resampling\DecimalMath.cs" LinkBase="TestHarness\Resampling" />
     <!-- The independent reader of the structure of JPEG XL files: the generator reads the fields of its fixtures with it -->
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\JpegXl\*.cs" LinkBase="TestHarness\JpegXl" />
+    <!--
+      The independent reader of the structure of JPEG 2000 codestreams and files, the builder of the boxes of a JP2 file
+      and the reader of the PGX files opj_decompress writes
+    -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Jpeg2000\*.cs" LinkBase="TestHarness\Jpeg2000" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\ExternalTools\PgxImage.cs" LinkBase="TestHarness\ExternalTools" />
   </ItemGroup>
 
   <ItemGroup>

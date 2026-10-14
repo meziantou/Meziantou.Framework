@@ -22,6 +22,7 @@
     <Project Path="../tests/Meziantou.Framework.Imaging.Ico.Tests/Meziantou.Framework.Imaging.Ico.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.InteropTests/Meziantou.Framework.Imaging.InteropTests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Jpeg.Tests/Meziantou.Framework.Imaging.Jpeg.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Jpeg2000.Tests/Meziantou.Framework.Imaging.Jpeg2000.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.JpegXl.Tests/Meziantou.Framework.Imaging.JpegXl.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Png.Tests/Meziantou.Framework.Imaging.Png.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Pnm.Tests/Meziantou.Framework.Imaging.Pnm.Tests.csproj" />

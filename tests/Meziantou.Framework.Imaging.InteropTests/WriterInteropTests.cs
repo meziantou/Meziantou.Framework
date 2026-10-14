@@ -37,6 +37,10 @@ public sealed class WriterInteropTests
     [InlineData("jxl", true)]
     [InlineData("jxl-animation", false)]
     [InlineData("jxl-animation", true)]
+    [InlineData("jp2", false)]
+    [InlineData("jp2", true)]
+    [InlineData("j2k", false)]
+    [InlineData("j2k", true)]
     public async Task WriterOutputDecodesIndependently(string output, bool toPath)
     {
         var frames = CreateFrames(output is "apng" or "gif" or "jxl-animation" ? 3 : 1, blackAndWhite: output == "pbm");
@@ -56,6 +60,8 @@ public sealed class WriterInteropTests
                 "pnm" => new PnmEncoder(),
                 "pbm" => new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap },
                 "jxl" or "jxl-animation" => new JpegXlEncoder(),
+                "jp2" => new Jpeg2000Encoder(),
+                "j2k" => new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream },
                 _ => new JpegEncoder(),
             },
             ExpectedFrameCount = output == "gif" ? null : frames.Length, // GIF: unknown count
@@ -122,6 +128,8 @@ public sealed class WriterInteropTests
         "pnm" => ".pam",
         "pbm" => ".pbm",
         "jxl" or "jxl-animation" => ".jxl",
+        "jp2" => ".jp2",
+        "j2k" => ".j2k",
         _ => ".png",
     };
 

@@ -122,6 +122,105 @@ internal static class ResolutionConversion
         static bool IsWhole(double value) => Math.Floor(value) == value;
     }
 
+    /// <summary>
+    /// Converts the fields of a JP2 capture or default display resolution box (T.800, I.5.3.7) to a resolution. Each axis
+    /// is a number of grid points per meter: <c>numerator / denominator * 10^exponent</c>.
+    /// </summary>
+    /// <returns>The resolution, or <see langword="null"/> when a numerator or a denominator is zero.</returns>
+    /// <remarks>
+    /// The dots per inch are <c>numerator * 254 * 10^(exponent - 4) / denominator</c>, computed with one division of two
+    /// integers held in IEEE double precision, so that a resolution whose fields are exact gives an exact value.
+    /// </remarks>
+    public static ImageResolution? FromJp2Resolution(ushort horizontalNumerator, ushort horizontalDenominator, sbyte horizontalExponent, ushort verticalNumerator, ushort verticalDenominator, sbyte verticalExponent)
+    {
+        if (horizontalNumerator == 0 || horizontalDenominator == 0 || verticalNumerator == 0 || verticalDenominator == 0)
+            return null;
+
+        var horizontal = FromJp2Axis(horizontalNumerator, horizontalDenominator, horizontalExponent);
+        var vertical = FromJp2Axis(verticalNumerator, verticalDenominator, verticalExponent);
+        if (!double.IsFinite(horizontal) || !double.IsFinite(vertical) || horizontal <= 0 || vertical <= 0)
+            return null;
+
+        return new ImageResolution(horizontal, vertical);
+
+        static double FromJp2Axis(ushort numerator, ushort denominator, sbyte exponent)
+        {
+            // One inch is 254 / 10^4 meter
+            var top = numerator * 254.0;
+            double bottom = denominator;
+            for (var i = exponent - 4; i > 0; i--)
+            {
+                top *= 10;
+            }
+
+            for (var i = exponent - 4; i < 0; i++)
+            {
+                bottom *= 10;
+            }
+
+            return top / bottom;
+        }
+    }
+
+    /// <summary>
+    /// Converts a resolution to the fields of a JP2 capture resolution box (T.800, I.5.3.7): for each axis, a numerator, a
+    /// denominator and a decimal exponent whose value <c>numerator / denominator * 10^exponent</c> is a number of grid
+    /// points per meter.
+    /// </summary>
+    /// <param name="resolution">The resolution.</param>
+    /// <returns>The fields of each axis.</returns>
+    /// <remarks>
+    /// The fields that <see cref="FromJp2Resolution"/> converts back to the same resolution are used when the denominators 1
+    /// and 127 give some (one inch is 127 / 5000 meter): whole numbers of dots per inch and whole numbers of pixels per
+    /// meter are stored exactly. Otherwise the numerator is the nearest one of five digits.
+    /// </remarks>
+    /// <exception cref="UnsupportedImageFeatureException">The resolution is outside the range of the fields.</exception>
+    public static ((ushort Numerator, ushort Denominator, sbyte Exponent) Horizontal, (ushort Numerator, ushort Denominator, sbyte Exponent) Vertical) ToJp2Resolution(ImageResolution resolution)
+    {
+        ArgumentNullException.ThrowIfNull(resolution);
+        return (ToJp2Axis(resolution.HorizontalDpi), ToJp2Axis(resolution.VerticalDpi));
+
+        static (ushort Numerator, ushort Denominator, sbyte Exponent) ToJp2Axis(double dpi)
+        {
+            // Exact fields, with the largest numerator: the grid points per meter are dpi * 10^4 / 254
+            for (var exponent = -8; exponent <= 8; exponent++)
+            {
+                foreach (var denominator in (ReadOnlySpan<ushort>)[1, 127])
+                {
+                    var numerator = Math.Round(Scale(dpi * denominator / 254, 4 - exponent), MidpointRounding.AwayFromZero);
+                    if (numerator is >= 1 and <= ushort.MaxValue && FromJp2Resolution((ushort)numerator, denominator, (sbyte)exponent, 1, 1, 0) is { } converted && converted.HorizontalDpi == dpi)
+                        return ((ushort)numerator, denominator, (sbyte)exponent);
+                }
+            }
+
+            // The nearest numerator of five digits
+            var pointsPerMeter = dpi / MetersPerInch;
+            for (var exponent = -40; exponent <= 40; exponent++)
+            {
+                var numerator = Math.Round(Scale(pointsPerMeter, -exponent), MidpointRounding.AwayFromZero);
+                if (numerator is >= 6554 and <= ushort.MaxValue)
+                    return ((ushort)numerator, 1, (sbyte)exponent);
+            }
+
+            throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The resolution cannot be represented in a {ImageFormat.Jpeg2000} file ({dpi} dots per inch)."), ImageFormat.Jpeg2000, "Resolution range");
+        }
+
+        static double Scale(double value, int power)
+        {
+            for (; power > 0; power--)
+            {
+                value *= 10;
+            }
+
+            for (; power < 0; power++)
+            {
+                value /= 10;
+            }
+
+            return value;
+        }
+    }
+
     private static uint ToInteger(double value, uint max, ImageFormat format)
     {
         var rounded = Math.Round(value, MidpointRounding.AwayFromZero);

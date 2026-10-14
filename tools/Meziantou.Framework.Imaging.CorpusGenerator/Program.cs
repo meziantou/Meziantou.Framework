@@ -33,6 +33,9 @@ const string Usage = """
                       three HEVC decoders of the pinned meziantou/prebuilt release)
         jxl           JPEG XL fixtures: lossless and lossy stills, metadata, containers, animations, malformed, unsupported
                       and over-limit files (cjxl, jxl_from_tree, djxl and jxl-oxide of the pinned meziantou/prebuilt release)
+        jp2           JPEG 2000 fixtures: codestreams and JP2 files, lossless and lossy, the high-throughput block coder,
+                      malformed, unsupported and over-limit files (opj_compress and opj_decompress of OpenJPEG,
+                      ojph_compress and ojph_expand of OpenJPH, and the ffmpeg of the pinned meziantou/prebuilt release)
         icc           ICC profiles and color conversion vectors (transicc of LittleCMS; any OS)
         icc-builtin   the source of the CMYK profile provided by the library, transcribed from the committed corpus
                       (no tool; any OS)
@@ -161,6 +164,8 @@ try
             return HeicCorpus.RunContainer(options);
         case "jxl":
             return JxlCorpus.Run(options);
+        case "jp2":
+            return Jp2Corpus.Run(options);
         case "icc":
             if (iccProfiles is null)
             {

@@ -97,6 +97,59 @@ internal static class Av1EncoderKernels
         return sum;
     }
 
+    /// <summary>
+    /// Returns the sum of the absolute differences between source samples and their chroma from luma prediction with an
+    /// alpha (section 7.11.5): <paramref name="samples"/> packs the source sample (low 16 bits) and the DC prediction (high
+    /// 16 bits), <paramref name="luma"/> holds the luma samples minus their average.
+    /// </summary>
+    public static long GetChromaFromLumaError(ReadOnlySpan<int> samples, ReadOnlySpan<int> luma, int alpha, int maxSample)
+    {
+        luma = luma[..samples.Length];
+        long error = 0;
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            // A lane adds at most 2^12 per group of 4 samples: the lanes are added to the sum every 2^16 groups
+            var max = Vector128.Create(maxSample);
+            var rounding = Vector128.Create(32);
+            var low = Vector128.Create(0xFFFF);
+            while (i <= samples.Length - Vector128<int>.Count)
+            {
+                var end = Math.Min(samples.Length - Vector128<int>.Count, i + ((AbsoluteChunkVectors - 1) * Vector128<int>.Count));
+                var lanes = Vector128<int>.Zero;
+                for (; i <= end; i += Vector128<int>.Count)
+                {
+                    var packed = Vector128.Create(samples[i..]);
+                    var product = Vector128.Create(luma[i..]) * alpha;
+                    var sign = product >> 31;
+                    var scaledLuma = (((Vector128.Abs(product) + rounding) >> 6) ^ sign) - sign;
+                    var predicted = Vector128.Min(Vector128.Max((packed >>> 16) + scaledLuma, Vector128<int>.Zero), max);
+                    lanes += Vector128.Abs((packed & low) - predicted);
+                }
+
+                error += (long)Vector128.Sum(Vector128.WidenLower(lanes.AsUInt32()) + Vector128.WidenUpper(lanes.AsUInt32()));
+            }
+        }
+
+        return error + GetChromaFromLumaErrorScalar(samples[i..], luma[i..], alpha, maxSample);
+    }
+
+    /// <summary>The scalar reference of <see cref="GetChromaFromLumaError"/>.</summary>
+    public static long GetChromaFromLumaErrorScalar(ReadOnlySpan<int> samples, ReadOnlySpan<int> luma, int alpha, int maxSample)
+    {
+        long error = 0;
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var original = samples[i] & 0xFFFF;
+            var predicted = samples[i] >>> 16;
+            var product = alpha * luma[i];
+            var scaledLuma = product >= 0 ? (product + 32) >> 6 : -((-product + 32) >> 6);
+            error += Math.Abs(original - Math.Clamp(predicted + scaledLuma, 0, maxSample));
+        }
+
+        return error;
+    }
+
     /// <summary>Writes the differences <paramref name="left"/> - <paramref name="right"/> of two rows of samples.</summary>
     public static void Subtract(ReadOnlySpan<ushort> left, ReadOnlySpan<ushort> right, Span<int> difference)
     {

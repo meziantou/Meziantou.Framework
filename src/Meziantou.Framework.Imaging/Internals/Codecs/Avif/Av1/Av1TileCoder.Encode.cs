@@ -1082,8 +1082,14 @@ internal ref partial struct Av1TileCoder
         _estimating = true;
         for (var plane = 1; plane <= 2; plane++)
         {
+            // The estimate with an alpha of 0 captures the samples of the plane: the DC prediction of a transform block
+            // reads the source samples that the estimate leaves in the blocks before it, and the luma samples do not
+            // change, so the predictions with another alpha differ only by alpha times the alternating luma
+            _capturesCfl = true;
+            _cflCaptured = 0;
             var best = 0;
             var bestError = Estimate(contexts, r, c, bw4, bh4, plane, alpha: 0);
+            _capturesCfl = false;
             for (var step = MaxAlpha / 2; step >= 1; step >>= 1)
             {
                 var center = best;
@@ -1093,7 +1099,7 @@ internal ref partial struct Av1TileCoder
                     if (Math.Abs(alpha) > MaxAlpha)
                         continue;
 
-                    var error = Estimate(contexts, r, c, bw4, bh4, plane, alpha);
+                    var error = _cflCaptured >= 0 ? EstimateCaptured(alpha) : Estimate(contexts, r, c, bw4, bh4, plane, alpha);
                     if (error < bestError)
                         (bestError, best) = (error, alpha);
                 }
@@ -1111,6 +1117,56 @@ internal ref partial struct Av1TileCoder
 
         _estimating = false;
         return _cflAlphaU is not 0 || _cflAlphaV is not 0;
+    }
+
+    // The error of the chroma from luma prediction of the samples captured by the estimate with an alpha of 0 (the source,
+    // the DC prediction and the alternating luma of each sample), with another alpha: the error that Estimate gives
+    private readonly long EstimateCaptured(int alpha)
+    {
+        var workspace = _workspace!;
+        var samples = workspace.Residual[.._cflCaptured];
+        var luma = workspace.Coefficients[.._cflCaptured];
+        return Av1EncoderKernels.GetChromaFromLumaError(samples, luma, alpha, (1 << _bitDepth) - 1);
+    }
+
+    // Captures the samples of a chroma transform block predicted from the luma samples with an alpha of 0: the source and
+    // the prediction, packed, and the luma samples minus their average, as PredictChromaFromLuma computes them
+    private void CaptureCfl(int plane, int txSz, int startX, int startY)
+    {
+        var w = Av1Tables.TxWidth[txSz];
+        var h = Av1Tables.TxHeight[txSz];
+        var workspace = _workspace!;
+        if (_cflCaptured < 0 || plane is 0 || _isInter || _paletteSizeUv is not 0 || _uvMode is not Av1Constants.UvCflPred || _cflCaptured + (w * h) > workspace.Residual.Length)
+        {
+            _cflCaptured = -1;
+            return;
+        }
+
+        var values = _scratch.Cfl[..(w * h)];
+        var sum = 0;
+        foreach (var value in values)
+        {
+            sum += value;
+        }
+
+        var shift = Av1Tables.TxWidthLog2[txSz] + Av1Tables.TxHeightLog2[txSz];
+        var average = (sum + (1 << (shift - 1))) >> shift;
+        var planeBuffer = _frame.GetPlane(plane);
+        var sourcePlane = workspace.GetSource(plane);
+        var samples = workspace.Residual.Slice(_cflCaptured, w * h);
+        var luma = workspace.Coefficients.Slice(_cflCaptured, w * h);
+        for (var i = 0; i < h; i++)
+        {
+            var predicted = planeBuffer.Samples.Slice(((startY + i) * planeBuffer.Stride) + startX, w);
+            var original = sourcePlane.Samples.Slice(((startY + i) * sourcePlane.Stride) + startX, w);
+            for (var j = 0; j < w; j++)
+            {
+                samples[(i * w) + j] = original[j] | (predicted[j] << 16);
+                luma[(i * w) + j] = values[(i * w) + j] - average;
+            }
+        }
+
+        _cflCaptured += w * h;
     }
 
     // The error of the prediction of a chroma plane from the luma samples with an alpha
@@ -1466,6 +1522,9 @@ internal ref partial struct Av1TileCoder
         var h = Av1Tables.TxHeight[txSz];
         if (_estimating)
         {
+            if (_capturesCfl)
+                CaptureCfl(plane, txSz, startX, startY);
+
             long error = 0;
             for (var i = 0; i < h; i++)
             {

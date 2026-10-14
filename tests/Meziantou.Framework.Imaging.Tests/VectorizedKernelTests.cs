@@ -2943,6 +2943,18 @@ public sealed class VectorizedKernelTests
                 Av1EncoderKernels.SubtractScalar(left, right, expected);
                 Av1EncoderKernels.Subtract(left, right, actual);
                 Assert.Equal(expected, actual);
+
+                // The chroma from luma error: source and DC prediction packed, luma minus its average (8 x 4095 at most)
+                var packed = new int[length];
+                var luma = new int[length];
+                for (var i = 0; i < length; i++)
+                {
+                    packed[i] = left[i] | (right[i] << 16);
+                    luma[i] = random.Next(-32760, 32761);
+                }
+
+                var alpha = random.Next(-16, 17);
+                Assert.Equal(Av1EncoderKernels.GetChromaFromLumaErrorScalar(packed, luma, alpha, 4095), Av1EncoderKernels.GetChromaFromLumaError(packed, luma, alpha, 4095));
             }
         }
     }

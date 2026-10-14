@@ -746,9 +746,14 @@ internal ref partial struct Av1TileCoder
             var coeffBaseEobOffset = Av1CdfLayout.CoeffBaseEob + ((((txSzCtx * Av1Constants.PlaneTypes) + ptype) * Av1Constants.SigCoefContextsEob) * Av1CdfLayout.CoeffBaseEobSize);
             var coeffBrOffset = Av1CdfLayout.CoeffBr + ((((Math.Min(txSzCtx, Av1Constants.Tx32x32) * Av1Constants.PlaneTypes) + ptype) * Av1Constants.LevelContexts) * Av1CdfLayout.CoeffBrSize);
             const int MaxCodedLevel = Av1Constants.NumBaseLevels + Av1Constants.CoeffBaseRange + 1;
+            var levelStride = width + Av1TileScratch.LevelMapPadding;
+            var levelMap = _scratch.LevelMap[..((height + Av1TileScratch.LevelMapPadding) * levelStride)];
+            levelMap.Clear();
             for (var c = eob - 1; c >= 0; c--)
             {
                 var pos = scan[c];
+                var row = pos >> bwl;
+                var col = pos & (width - 1);
                 var magnitude = Math.Abs(levels[c]);
                 var level = Math.Min(magnitude, Av1Constants.NumBaseLevels + 1);
                 if (c == eob - 1)
@@ -758,13 +763,13 @@ internal ref partial struct Av1TileCoder
                 }
                 else
                 {
-                    var ctx = GetCoeffBaseContext(quant, txSz, txClass, bwl, width, height, pos);
+                    var ctx = GetCoeffBaseContext(levelMap, txSz, txClass, levelStride, row, col);
                     WriteSymbol(coeffBaseOffset + (ctx * Av1CdfLayout.CoeffBaseSize), Av1CdfLayout.CoeffBaseSize, level);
                 }
 
                 if (level > Av1Constants.NumBaseLevels)
                 {
-                    var ctx = GetCoeffBrContext(quant, txClass, bwl, width, height, pos);
+                    var ctx = GetCoeffBrContext(levelMap, txClass, levelStride, row, col);
                     for (var idx = 0; idx < Av1Constants.CoeffBaseRange / (Av1Constants.BrCdfSize - 1); idx++)
                     {
                         var coeffBr = Math.Min(magnitude - level, Av1Constants.BrCdfSize - 1);
@@ -777,7 +782,7 @@ internal ref partial struct Av1TileCoder
 
                 // The contexts of the coefficients that follow read the levels coded so far, without their Golomb part
                 Debug.Assert(level == Math.Min(magnitude, MaxCodedLevel));
-                quant[pos] = level;
+                levelMap[(row * levelStride) + col] = (byte)level;
             }
 
             for (var c = 0; c < eob; c++)

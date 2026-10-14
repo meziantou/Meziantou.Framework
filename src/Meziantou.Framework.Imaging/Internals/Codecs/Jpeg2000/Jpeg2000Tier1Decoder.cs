@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -109,12 +111,20 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
                 var type = pass == 0 ? 2 : (pass - 1) % 3;
                 switch (type)
                 {
+                    case 0 when isRaw:
+                        DecodeRawSignificancePropagation(samples, flags, plane);
+                        break;
+
                     case 0:
-                        DecodeSignificancePropagation(samples, flags, zeroCoding, plane, isRaw);
+                        DecodeSignificancePropagation(samples, flags, zeroCoding, plane);
+                        break;
+
+                    case 1 when isRaw:
+                        DecodeRawMagnitudeRefinement(samples, flags, plane);
                         break;
 
                     case 1:
-                        DecodeMagnitudeRefinement(samples, flags, plane, isRaw);
+                        DecodeMagnitudeRefinement(samples, flags, plane);
                         break;
 
                     default:
@@ -153,11 +163,15 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
         return (_rawByte >> _rawBits) & 1;
     }
 
-    private void DecodeSignificancePropagation(Span<int> samples, Span<uint> flags, ReadOnlySpan<byte> zeroCoding, int plane, bool isRaw)
+    // The passes that use the arithmetic decoder work on a copy of it, so that its registers stay in processor registers;
+    // the copy is stored back at the end of the pass
+    private void DecodeSignificancePropagation(Span<int> samples, Span<uint> flags, ReadOnlySpan<byte> zeroCoding, int plane)
     {
         var width = _width;
         var height = _height;
         var stripeStride = _stripeStride;
+        var contexts = _contexts;
+        var mq = _mq;
         for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
         {
             var rows = Math.Min(4, height - stripe);
@@ -178,11 +192,43 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
                     if ((flag & Significant) != 0 || (flag & NeighborMask) == 0)
                         continue;
 
-                    var bit = isRaw ? ReadRawBit() : _mq.Decode(ref _contexts[zeroCoding[(int)(flag & NeighborMask)]]);
-                    if (bit != 0)
+                    if (mq.Decode(ref contexts[zeroCoding[(int)(flag & NeighborMask)]]) != 0)
                     {
-                        var negative = isRaw ? ReadRawBit() != 0 : DecodeSign(flag);
-                        SetSignificant(samples, flags, x, stripe, row, index, negative, plane);
+                        SetSignificant(samples, flags, x, stripe, row, index, DecodeSign(ref mq, contexts, flag), plane);
+                    }
+
+                    flags[index] |= Visited;
+                }
+            }
+        }
+
+        _mq = mq;
+    }
+
+    private void DecodeRawSignificancePropagation(Span<int> samples, Span<uint> flags, int plane)
+    {
+        var width = _width;
+        var height = _height;
+        var stripeStride = _stripeStride;
+        for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
+        {
+            var rows = Math.Min(4, height - stripe);
+            for (var x = 0; x < width; x++)
+            {
+                var column = first + (x * 4);
+                if (!Jpeg2000Tier1Tables.HasSignificanceCandidate(flags, column))
+                    continue;
+
+                for (var row = 0; row < rows; row++)
+                {
+                    var index = column + row;
+                    var flag = flags[index];
+                    if ((flag & Significant) != 0 || (flag & NeighborMask) == 0)
+                        continue;
+
+                    if (ReadRawBit() != 0)
+                    {
+                        SetSignificant(samples, flags, x, stripe, row, index, ReadRawBit() != 0, plane);
                     }
 
                     flags[index] |= Visited;
@@ -191,12 +237,14 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
         }
     }
 
-    private void DecodeMagnitudeRefinement(Span<int> samples, Span<uint> flags, int plane, bool isRaw)
+    private void DecodeMagnitudeRefinement(Span<int> samples, Span<uint> flags, int plane)
     {
         var width = _width;
         var height = _height;
         var stripeStride = _stripeStride;
         var step = 1 << plane;
+        var contexts = _contexts;
+        var mq = _mq;
         for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
         {
             var rows = Math.Min(4, height - stripe);
@@ -215,20 +263,42 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
                     if ((flag & (Significant | Visited)) != Significant)
                         continue;
 
-                    int bit;
-                    if (isRaw)
-                    {
-                        bit = ReadRawBit();
-                    }
-                    else
-                    {
-                        // Table D.4
-                        var context = (flag & Refined) != 0 ? ContextMagnitude + 2 : (flag & NeighborMask) != 0 ? ContextMagnitude + 1 : ContextMagnitude;
-                        bit = _mq.Decode(ref _contexts[context]);
-                    }
+                    // Table D.4
+                    var context = (flag & Refined) != 0 ? ContextMagnitude + 2 : (flag & NeighborMask) != 0 ? ContextMagnitude + 1 : ContextMagnitude;
+                    ref var sample = ref samples[((stripe + row) * width) + x];
+                    sample += mq.Decode(ref contexts[context]) != 0 ? step : -step;
+                    flags[index] = flag | Refined;
+                }
+            }
+        }
+
+        _mq = mq;
+    }
+
+    private void DecodeRawMagnitudeRefinement(Span<int> samples, Span<uint> flags, int plane)
+    {
+        var width = _width;
+        var height = _height;
+        var stripeStride = _stripeStride;
+        var step = 1 << plane;
+        for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
+        {
+            var rows = Math.Min(4, height - stripe);
+            for (var x = 0; x < width; x++)
+            {
+                var column = first + (x * 4);
+                if (!Jpeg2000Tier1Tables.HasRefinementCandidate(flags, column))
+                    continue;
+
+                for (var row = 0; row < rows; row++)
+                {
+                    var index = column + row;
+                    var flag = flags[index];
+                    if ((flag & (Significant | Visited)) != Significant)
+                        continue;
 
                     ref var sample = ref samples[((stripe + row) * width) + x];
-                    sample += bit != 0 ? step : -step;
+                    sample += ReadRawBit() != 0 ? step : -step;
                     flags[index] = flag | Refined;
                 }
             }
@@ -240,6 +310,8 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
         var width = _width;
         var height = _height;
         var stripeStride = _stripeStride;
+        var contexts = _contexts;
+        var mq = _mq;
         for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
         {
             var rows = Math.Min(4, height - stripe);
@@ -250,13 +322,13 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
                 if (rows == 4 && Jpeg2000Tier1Tables.IsRunLengthColumn(flags, column))
                 {
                     // D.3.4: the four coefficients of the column are insignificant and have no significant neighbor
-                    if (_mq.Decode(ref _contexts[ContextRunLength]) == 0)
+                    if (mq.Decode(ref contexts[ContextRunLength]) == 0)
                         continue;
 
-                    ref var uniform = ref _contexts[ContextUniform];
-                    row = _mq.Decode(ref uniform) << 1;
-                    row |= _mq.Decode(ref uniform);
-                    SetSignificant(samples, flags, x, stripe, row, column + row, DecodeSign(flags[column + row]), plane);
+                    ref var uniform = ref contexts[ContextUniform];
+                    row = mq.Decode(ref uniform) << 1;
+                    row |= mq.Decode(ref uniform);
+                    SetSignificant(samples, flags, x, stripe, row, column + row, DecodeSign(ref mq, contexts, flags[column + row]), plane);
                     row++;
                 }
                 else if (!Jpeg2000Tier1Tables.HasCleanupCandidate(flags, column))
@@ -270,27 +342,28 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
                 {
                     var index = column + row;
                     var flag = flags[index];
-                    if ((flag & (Significant | Visited)) == 0)
+                    if ((flag & (Significant | Visited)) == 0 && mq.Decode(ref contexts[zeroCoding[(int)(flag & NeighborMask)]]) != 0)
                     {
-                        if (_mq.Decode(ref _contexts[zeroCoding[(int)(flag & NeighborMask)]]) != 0)
-                        {
-                            SetSignificant(samples, flags, x, stripe, row, index, DecodeSign(flag), plane);
-                        }
+                        SetSignificant(samples, flags, x, stripe, row, index, DecodeSign(ref mq, contexts, flag), plane);
                     }
 
                     flags[index] &= ~Visited;
                 }
             }
         }
+
+        _mq = mq;
     }
 
-    private bool DecodeSign(uint flag)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool DecodeSign(ref Jpeg2000MqDecoder mq, byte[] contexts, uint flag)
     {
         var entry = Jpeg2000Tier1Tables.GetSignContext(flag);
-        var bit = _mq.Decode(ref _contexts[entry & 0x7F]);
+        var bit = mq.Decode(ref contexts[entry & 0x7F]);
         return (bit ^ (entry >> 7)) != 0;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void SetSignificant(Span<int> samples, Span<uint> flags, int x, int stripe, int row, int index, bool negative, int plane)
     {
         var value = 3u << plane;

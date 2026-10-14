@@ -16,6 +16,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal struct Jpeg2000MqDecoder
 {
     private byte[] _data;
+    private uint[] _transitions;
     private int _position;
     private int _end;
     private uint _c;
@@ -26,6 +27,7 @@ internal struct Jpeg2000MqDecoder
     public void Initialize(byte[] data, int offset, int length)
     {
         _data = data;
+        _transitions = Jpeg2000MqTables.ContextTransitions;
         _position = offset;
         _end = offset + length;
         _c = (uint)ByteAt(_position) << 16;
@@ -47,7 +49,7 @@ internal struct Jpeg2000MqDecoder
     public int Decode(ref byte context)
     {
         var current = context;
-        var transitions = unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Jpeg2000MqTables.ContextTransitions), current));
+        var transitions = unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_transitions), current));
         var probability = transitions & 0xFFFF;
         var moreProbable = current & 1;
         int decision;
@@ -97,10 +99,19 @@ internal struct Jpeg2000MqDecoder
 
     // RENORMD: the interval is shifted until its most significant bit is set, a byte being read whenever the code register
     // has no bit left. A shift of n bits equals n shifts of one bit
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Renormalize()
     {
         var a = _a;
         var shift = BitOperations.LeadingZeroCount(a) - 16;
+        if (shift <= _ct)
+        {
+            _a = a << shift;
+            _c <<= shift;
+            _ct -= shift;
+            return;
+        }
+
         while (true)
         {
             if (_ct == 0)
@@ -120,8 +131,10 @@ internal struct Jpeg2000MqDecoder
         _a = a;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private readonly int ByteAt(int position) => position < _end ? _data[position] : 0xFF;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ByteIn()
     {
         if (ByteAt(_position) == 0xFF)

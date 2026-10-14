@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
+using Meziantou.Prebuilt;
 
 namespace Meziantou.Framework.Imaging.CorpusGenerator;
 
@@ -13,7 +14,9 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 /// Requirements: macOS, ffmpeg, cjpeg, djpeg and jpegtran (libjpeg-turbo), jpgicc and transicc (LittleCMS: the CMYK JPEG
 /// fixtures) and sips (Apple ImageIO: JPEG cross-checks, and PNG features FFmpeg does not implement) at the pinned
 /// versions below (override with --accept-tool-versions after reviewing the differences), and swift (Xcode command line
-/// tools) to run imageio_frames.swift, the Apple ImageIO APNG and GIF cross-check.
+/// tools) to run imageio_frames.swift, the Apple ImageIO APNG and GIF cross-check. The ISO JPEG reference codec (the
+/// arithmetic-coded and 12-bit JPEG cross-checks) is downloaded from the meziantou/prebuilt release pinned by the
+/// Meziantou.Prebuilt package.
 /// </summary>
 internal static partial class GoldenCorpus
 {
@@ -283,6 +286,13 @@ internal sealed partial class GoldenTools : ToolSet
             throw new FatalException($"sips version {SipsVersion} differs from the pinned {pinnedSips}; rerun with --accept-tool-versions after review.");
         Swift = ExecutableFinder.GetFullExecutablePath("swift") ?? throw new FatalException("swift (Xcode command line tools) is required for the Apple ImageIO APNG and GIF cross-checks (imageio_frames.swift).");
         LibjpegLabel = $"libjpeg-turbo {CjpegVersion} (cjpeg/djpeg)";
+
+        // The ISO JPEG reference codec prints no version: the package declares it
+        IsoJpeg = PrebuiltTools.IsoJpeg.GetOrDownloadAsync(CancellationToken.None).GetAwaiter().GetResult();
+        if (PrebuiltTools.IsoJpeg.Version != PinnedIsoJpeg && !acceptVersions)
+            throw new FatalException($"The ISO JPEG reference codec {PrebuiltTools.IsoJpeg.Version} differs from the pinned {PinnedIsoJpeg}; rerun with --accept-tool-versions after review.");
+
+        IsoJpegLabel = $"ISO JPEG reference codec {PrebuiltTools.IsoJpeg.Version} (thorfdbg/libjpeg jpeg)";
         LittleCmsLabel = $"LittleCMS {LittleCmsVersion} (jpgicc/transicc)";
         DisplayNames = new Dictionary<string, string>(StringComparer.Ordinal)
         {
@@ -294,6 +304,7 @@ internal sealed partial class GoldenTools : ToolSet
             [Transicc] = "transicc",
             [Sips] = "sips",
             [Swift] = "swift",
+            [IsoJpeg] = "jpeg",
         };
     }
 
@@ -309,6 +320,9 @@ internal sealed partial class GoldenTools : ToolSet
         ("transicc", "2.19"), // LittleCMS: cross-check of their color conversion
         ("sips", "sips-316"), // Apple ImageIO: independent JPEG cross-check, and arbiter when FFmpeg lacks a PNG feature
     ];
+
+    // The ISO JPEG reference codec (meziantou/prebuilt): the only arithmetic JPEG decoder that shares no code with libjpeg-turbo
+    private const string PinnedIsoJpeg = "1.72+702114c";
 
     public string Cjpeg { get; }
 
@@ -339,6 +353,11 @@ internal sealed partial class GoldenTools : ToolSet
     public string Swift { get; }
 
     public string LibjpegLabel { get; }
+
+    /// <summary>Gets the path of the <c>jpeg</c> tool of the ISO JPEG reference codec. It exits with 0 when a conversion fails.</summary>
+    public string IsoJpeg { get; }
+
+    public string IsoJpegLabel { get; }
 
     public override IReadOnlyDictionary<string, string> DisplayNames { get; }
 

@@ -1763,6 +1763,47 @@ public sealed class VectorizedKernelTests
     [InlineData(8)]
     [InlineData(10)]
     [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HevcDeblockingLumaLinesMatchTheScalarReference(int bitDepth)
+    {
+        // Both orientations and both filters, with every combination of the decisions, random values of tC and samples
+        // that are smooth (most lines filtered), noisy (some lines left as they are) or at the extremes of the range
+        var random = new Random(bitDepth);
+        var maxValue = (1 << bitDepth) - 1;
+        const int Stride = 24;
+        for (var round = 0; round < 4000; round++)
+        {
+            var expected = new ushort[Stride * 16];
+            var level = random.Next(maxValue + 1);
+            for (var i = 0; i < expected.Length; i++)
+            {
+                expected[i] = (round % 3) switch
+                {
+                    0 => (ushort)Math.Clamp(level + random.Next(-6, 7), 0, maxValue),
+                    1 => (ushort)random.Next(maxValue + 1),
+                    _ => (ushort)(random.Next(2) is 0 ? 0 : maxValue),
+                };
+            }
+
+            var actual = (ushort[])expected.Clone();
+            var vertical = random.Next(2) is 0;
+            var origin = vertical ? (6 * Stride) + 8 : (8 * Stride) + 6;
+            var dE = random.Next(1, 3);
+            var dEp = random.Next(2) is 0;
+            var dEq = random.Next(2) is 0;
+            var tC = random.Next(0, 25) << (bitDepth - 8);
+            var filterP = random.Next(4) is not 0;
+            var filterQ = random.Next(4) is not 0;
+            HevcDeblockingFilter.FilterLumaLinesScalar(expected, origin, vertical, Stride, dE, dEp, dEq, tC, filterP, filterQ, maxValue);
+            HevcDeblockingFilter.FilterLumaLines(actual, origin, vertical, Stride, dE, dEp, dEq, tC, filterP, filterQ, maxValue);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
     [InlineData(16)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void HevcSampleAdaptiveOffsetRowsMatchTheScalarReferences(int bitDepth)

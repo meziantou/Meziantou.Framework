@@ -164,7 +164,6 @@ public sealed class ApiSurfaceTests
         // A new format is appended: the values of the existing members never change
         Assert.Equal(15, (int)ImageFormat.Heic);
         Assert.Equal(nameof(ImageFormat.Heic), Enum.GetName((ImageFormat)15));
-        Assert.Equal(15, Enum.GetValues<ImageFormat>().Max(format => (int)format));
 
         // The encoder is an immutable settings object with the settings of the AVIF one: the two formats share a container
         var type = typeof(HeicEncoder);
@@ -194,7 +193,6 @@ public sealed class ApiSurfaceTests
         // A new format is appended: the values of the existing members never change
         Assert.Equal(14, (int)ImageFormat.JpegXl);
         Assert.Equal(nameof(ImageFormat.JpegXl), Enum.GetName((ImageFormat)14));
-
 
         // The encoder is an immutable settings object like the others: sealed, a parameterless constructor, init-only settings
         var type = typeof(JpegXlEncoder);
@@ -251,6 +249,32 @@ public sealed class ApiSurfaceTests
         Assert.Equal(
             [nameof(JpegXlTranscodeOptions.Configuration), nameof(JpegXlTranscodeOptions.Effort)],
             options.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void Jpeg2000AdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(16, (int)ImageFormat.Jpeg2000);
+        Assert.Equal(nameof(ImageFormat.Jpeg2000), Enum.GetName((ImageFormat)16));
+        Assert.Equal(16, Enum.GetValues<ImageFormat>().Max(format => (int)format));
+
+        var type = typeof(Jpeg2000Encoder);
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
+        Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
+        Assert.Equal(
+            [nameof(Jpeg2000Encoder.Compression), nameof(Jpeg2000Encoder.Container), nameof(Jpeg2000Encoder.Format), nameof(Jpeg2000Encoder.Quality)],
+            type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(Jpeg2000Compression), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.Compression)).PropertyType);
+        Assert.Equal(typeof(Jpeg2000Container), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.Container)).PropertyType);
+        Assert.Equal(typeof(int), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.Quality)).PropertyType);
+
+        // The defaults are the zero values
+        Assert.Equal([nameof(Jpeg2000Compression.Lossless), nameof(Jpeg2000Compression.Lossy)], Enum.GetNames<Jpeg2000Compression>());
+        Assert.Equal([nameof(Jpeg2000Container.Jp2), nameof(Jpeg2000Container.Codestream)], Enum.GetNames<Jpeg2000Container>());
+        Assert.Equal(0, (int)Jpeg2000Compression.Lossless);
+        Assert.Equal(0, (int)Jpeg2000Container.Jp2);
     }
 
     [Theory]

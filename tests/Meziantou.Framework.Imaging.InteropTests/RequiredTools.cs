@@ -27,6 +27,10 @@ internal static class RequiredTools
     /// <summary>Gets an HEVC encoder: <see cref="HevcReferenceEncoder.X265"/>, <see cref="HevcReferenceEncoder.Kvazaar"/> or <see cref="HevcReferenceEncoder.Hm"/>.</summary>
     public static Task<HevcReferenceEncoder> HevcReferenceEncoderAsync(string name) => HevcReferenceEncoder.LocateAsync(name, XunitCancellationToken);
 
+    public static Task<OpenJpegTool> OpenJpegAsync() => OpenJpegTool.LocateAsync(XunitCancellationToken);
+
+    public static Task<OpenJphTool> OpenJphAsync() => OpenJphTool.LocateAsync(XunitCancellationToken);
+
     /// <summary>
     /// Gets the <c>swift</c> executable and the Apple ImageIO helper script (<c>tools/Meziantou.Framework.Imaging.CorpusGenerator/imageio_frames.swift</c>).
     /// Apple ImageIO is part of macOS and cannot be downloaded: the cases are skipped on other systems, unless

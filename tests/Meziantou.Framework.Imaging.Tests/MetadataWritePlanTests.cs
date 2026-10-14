@@ -379,6 +379,49 @@ public sealed class MetadataWritePlanTests
     }
 
     [Fact]
+    public void Jp2StoresProfilesAndTheResolutionAndACodestreamStoresNothing()
+    {
+        var metadata = new ImageMetadata
+        {
+            ExifProfile = new ExifProfile(new MetadataBlob(ExifTiff.CreateMinimal(ExifOrientation.TopLeft))),
+            XmpProfile = new XmpProfile(new MetadataBlob("<x:xmpmeta xmlns:x='adobe:ns:meta/'/>"u8.ToArray())),
+            Resolution = new ImageResolution(300, 150),
+        };
+        var plan = MetadataWritePlan.Create(metadata, ImageFormat.Jpeg2000, MetadataHandling.Strict, Canvas, encoder: new Jpeg2000Encoder());
+        Assert.NotNull(plan.Exif);
+        Assert.Same(metadata.XmpProfile, plan.XmpProfile);
+        Assert.Equal(metadata.Resolution, plan.Resolution);
+
+        // The orientation has no field of its own: it is the one of the EXIF profile, created when there is none
+        var rotated = MetadataWritePlan.Create(new ImageMetadata { Orientation = ExifOrientation.RightTop }, ImageFormat.Jpeg2000, MetadataHandling.Strict, Canvas, encoder: new Jpeg2000Encoder());
+        Assert.Equal(ExifOrientation.RightTop, ExifTiff.ReadOrientation(rotated.Exif));
+
+        // A JP2 file has no box for text, and its color specification has no CICP description
+        AssertUnsupported(WithText(new ImageTextEntry("Title", "t")), ImageFormat.Jpeg2000, "text entry 'Title'");
+
+        // A codestream has no place for any of them
+        var codestream = new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream };
+        foreach (var item in new[]
+        {
+            new ImageMetadata { ExifProfile = metadata.ExifProfile },
+            new ImageMetadata { XmpProfile = metadata.XmpProfile },
+            new ImageMetadata { Resolution = metadata.Resolution },
+            new ImageMetadata { Orientation = ExifOrientation.RightTop },
+            new ImageMetadata { IccProfile = new IccProfile(new MetadataBlob(IccTestBlobs.Create("RGB "))) },
+        })
+        {
+            Assert.StartsWith("Metadata: ", Assert.Throws<UnsupportedImageFeatureException>(() => MetadataWritePlan.Create(item, ImageFormat.Jpeg2000, MetadataHandling.Strict, Canvas, encoder: codestream)).Feature, StringComparison.Ordinal);
+            var discarded = MetadataWritePlan.Create(item, ImageFormat.Jpeg2000, MetadataHandling.DiscardUnsupported, Canvas, encoder: codestream);
+            Assert.Null(discarded.Exif);
+            Assert.Null(discarded.XmpProfile);
+            Assert.Null(discarded.Resolution);
+            Assert.Null(discarded.IccProfile);
+        }
+
+        _ = MetadataWritePlan.Create(new ImageMetadata(), ImageFormat.Jpeg2000, MetadataHandling.Strict, Canvas, encoder: codestream);
+    }
+
+    [Fact]
     public void SavingACicpDescriptionThatIsNotSrgbEquivalentNeedsAnExplicitSetting()
     {
         using var image = new Image<Rgb24>(2, 2);

@@ -8,7 +8,7 @@ Independent reference data for the conformance and interop tests, extended with 
   `bmp`, `BmpCorpus.cs`; TGA entries: `tga`, `TgaCorpus.cs`; Netpbm entries: `pnm`, `PnmCorpus.cs`; ICC profiles and
   color conversion vectors: `icc`, `IccCorpus.cs`; the AV1 conformance vectors of the `av1Vectors` section: `avif`,
   `AvifCorpus.cs`; AVIF entries: `avif-container`, `AvifCorpus.Container.cs`; HEIC entries: `heic-container`,
-  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; the HEVC
+  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; the HEVC
   conformance vectors of the `hevcVectors` section: `hevc`, `HevcCorpus.cs`). Every file of this folder except this README, the manifest, the schema and `LICENSES/` is listed with
   its SHA-256 hash, provenance and license.
 - The folder is copied to `<test output>/Fixtures` by the conformance and interop test projects
@@ -24,7 +24,8 @@ Independent reference data for the conformance and interop tests, extended with 
 
 ```
 tests/Meziantou.Framework.Imaging.Fixtures/
-  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/ encoded inputs and their raw references
+  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/
+                                      encoded inputs and their raw references
   invalid/<format>/                   malformed, unsupported or over-limit inputs (expected errors, no expected pixels)
   limit/avif/                         over-limit inputs that are not valid fixtures (an AVIF sequence with hidden frames)
   av1/                                raw AV1 OBU streams (*.obu): conformance vectors with plane digests, no raw references
@@ -39,7 +40,7 @@ tests/Meziantou.Framework.Imaging.Fixtures/
 - Fixture ids are lowercase paths without extension (`png/gray16-low-bit-gradient`); `format` is the container
   (`png` for PNG and APNG, `gif`, `jpeg`, `webp`, `qoi`, `bmp`, `tga`, `pnm` for every Netpbm variant, `avif` for AVIF
   still images and image sequences, `heic` for HEIC still images and image sequences, `jxl` for JPEG XL codestreams and
-  containers).
+  containers, `jp2` for JPEG 2000 codestreams and files of the JP2 family, whatever their block coder).
 - Kinds: `valid` (expected pixels and metadata), `invalid` (malformed: expected exception), `unsupported` (recognized but
   unsupported feature: `UnsupportedImageFeatureException`), `limit` (decoded with `decodeOptions.limits`:
   `ImageResourceLimitException` with `limitKind`). Error fixtures never carry fabricated expected pixels and are kept
@@ -733,6 +734,8 @@ header (65,536 bytes) rejects.
 | HEIC errors | invalid: truncated `meta` box and item data, a child box larger than its parent, no file type box (unknown format), no `pitm`, `ispe` or `hvcC`, item data outside the file, `ispe` contradicting the picture, an `hvcC` record that is truncated, reserves its length size or contradicts its sequence parameter set (bit depth, chroma format), an item with no picture, with two pictures, whose picture is not an intra random access point, whose NAL unit lengths exceed or do not fill its data, whose slice data are truncated or are random bytes, grids (tile count, a tile that does not exist, descriptor size, tile sizes), a sequence without HEVC track, without chunk offsets, truncated, with two samples at one composition time, with a missing reference picture, with a record that contradicts its bitstream, with a malformed `meta` box in its track; unsupported: an `hvc1` item under the brands of AVIF and an `av01` item under the brands of HEIC, `lhv1` items and layer selectors, an `hvcC` record of another version, premultiplied alpha, `iden`/`iovl` derived images, a grid whose tiles have a `clap` property (as `heif-enc` writes small tiles), fractional `clap`, an essential unknown property, ICtCp matrix coefficients, an alpha plane of another size, 16-bit samples, luma and chroma planes of different depths, extended precision processing, `chroma_sample_loc_type` 3, `moof`, an edit that starts after the first image, a sequence whose pictures do not have the size of its sample entry (assembled, and as `heif-enc` writes small images); limits: width, height, frame pixels (of the image, and of the picture under a clean aperture), encoded bytes, live allocations, metadata bytes (ICC, then Exif; the items of a sequence), sequence frames and displayed pixels |
 | JPEG XL | lossless (Modular): gray, gray + alpha, RGB and RGBA at 8 and 16 bits, 12-bit samples scaled to 16 bits, efforts 1 and 9, an image of few colors (palette), a responsive image (squeeze), four groups of 128x128 samples, a bare codestream and a container; metadata: Exif and XMP boxes, plain and compressed (`brob`), ICC profiles (RGB and gray) in the codestream, the linear transfer function, enumerated color encodings with code points (Display P3, BT.2100 PQ, gray BT.709), orientation 6 in the image header; containers assembled around one codestream: three `jxlp` parts, a 64-bit box size, a box that extends to the end of the file, unknown boxes, metadata after the codestream; lossy (references decoded by djxl): VarDCT RGB, RGBA, gray and 16-bit, effort 3, large transforms on a smooth image, progressive passes with a permuted table of contents, an LF frame, noise, patches, a frame upsampled by 2, a lossy Modular frame, without and with strong restoration filters, JPEG files recompressed without loss (4:2:0, 4:2:2, 4:4:4, gray), a spline; animations: full frames at 10 ticks per second, 30000/1001 ticks per second, a layer without duration and a cropped frame, a multiplied frame, an alpha animation played three times |
 | JPEG XL errors | invalid (rejected by djxl and jxl-oxide too): inverted bytes in the frame header and in the coded samples, a codestream without its signature, a container without codestream, with two codestreams, with parts out of order, with a box smaller than its header; unsupported: floating-point samples, premultiplied alpha, PQ with the white point E, an XYB image with an ICC profile that is not sRGB; limits: width, height, frame pixels, animation frames, metadata bytes, and the pixels of a layer that is decoded without being shown |
+| JPEG 2000 | reversible (5-3): gray, gray + opacity, RGB and RGBA at 8 and 16 bits, samples of 4 and 12 bits scaled exactly, with and without the component transformation, zero to six decomposition levels, images of one pixel, one column and one row; the five progression orders with layers and precincts, a POC marker segment, tiles (with offsets of the image and of the tile grid), tile-parts by resolution level, layer and component, interleaved tile-parts, SOP/EPH, PLT/TLM, packet headers packed in the main header (PPM) and in tile-part headers (PPT), COC/QCC marker segments, a coding style in the tile-part headers, a region of interest, five guard bits, every style of the coding passes (bypass, reset, termination on each pass, vertically causal, predictable termination, segmentation symbols, all of them), code-blocks of 4x4 and 64x4; irreversible (9-7): gray, RGB with and without the component transformation, RGBA, 16 bits, layers, tiles, a region of interest, and a reversible codestream cut by a rate; JP2 files: written by opj_compress (RGB, gray 16 bits, RGBA), a palette (with an opacity column), channel definitions (colors reordered, opacity first, gray + opacity), sYCC with and without sub-sampled chrominances, ICC profiles (RGB and gray), a capture resolution, EXIF and XMP UUID boxes before and after the codestream, boxes of 64-bit length, a codestream box that extends to the end of the file; the high-throughput block coder (Rec. ITU-T T.814): reversible gray and RGB at 8, 12 and 16 bits, tiles, precincts, code-blocks of 1024 columns, images of one column and one row, irreversible, a JPH file, and hand-authored coding passes: HT SigProp and HT MagRef passes (with and without the vertically causal contexts), an HT SigProp pass alone, placeholder passes, the passes of a code-block over two and three layers |
+| JPEG 2000 errors | invalid (rejected by opj_decompress, and by FFmpeg unless stated): a codestream without EOC marker and one cut in its tile-part, a tile of width 0, no component, an empty image area, no COD and no QCD marker segment, a tile index, a tile-part length and a tile-part index out of range, a file without codestream box, without JP2 header box (FFmpeg reads it), with an image header that contradicts the codestream (FFmpeg reads it), with a codestream box that is cut (FFmpeg reads it), without color specification box and with a box length of 4 (the reference decoders read both: the Recommendation is the reference), an HT cleanup segment with a suffix longer than itself; unsupported: signed samples, five components without color specification, a sub-sampled first component, a premultiplied opacity, several opacity channels, the extensions of ISO/IEC 15444-2, the brand of Motion JPEG 2000, two codestreams, mixed block coders, a second HT set, placeholder passes in another packet than the HT cleanup pass; limits: width, height, frame pixels, metadata bytes before and after the codestream |
 | Errors | PNG header defects (bad IHDR CRC, IHDR not first, illegal bit depth, chunk length above 2^31 - 1, unknown critical chunk `CgBI` — unsupported), structure defects (truncated IDAT, bad IDAT CRC, non-consecutive IDAT, PLTE after IDAT, missing IEND) and pixel-data defects with valid containers (truncated zlib, missing or wrong Adler-32, bytes after the zlib datastream, one extra scanline, one missing scanline, filter type 5, out-of-range palette index); truncated GIF image data, GIF plain-text extension (unsupported), arithmetic-coded JPEG (unsupported); GIF LZW and color-table defects inside valid containers (code above the next table code, table code after a clear, end code too early, data ending without end code, too many indices, a string exceeding the image, an index outside the table, no color table) and block defects (unknown block, 3-byte Graphic Control Extension, minimum code size 12, missing trailer, no image, empty logical screen); resource limits: frame count, GIF displayed pixels (`MaxTotalPixels`, decode-only), width, frame pixels, encoded bytes (reached at IEND), and a `zTXt` whose 171-byte zlib stream inflates to 25,801 bytes with `MaxMetadataBytes` = 4096 (deterministic fixed-Huffman stream written by the generator) |
 
 ## Fixture coverage matrix
@@ -771,6 +774,7 @@ follows it, so keep both headings unique in this file.
 | gif | 24 | 15 | 1 | 2 |
 | heic | 117 | 31 | 21 | 11 |
 | jpeg | 55 | 15 | 6 | 1 |
+| jp2 | 92 | 17 | 11 | 5 |
 | jxl | 54 | 7 | 4 | 6 |
 | png | 109 | 31 | 1 | 6 |
 | pnm | 15 | 12 | 1 | 2 |
@@ -1386,6 +1390,79 @@ follows it, so keep both headings unique in this file.
 | JPEG XL splines | `jxl.splines` | 1 | 0 | 0 | 0 |
 | JPEG XL permuted table of contents | `jxl.toc=permuted` | 1 | 0 | 0 | 0 |
 | JPEG XL frame upsampled by 2 | `jxl.upsampling=2` | 1 | 0 | 0 | 0 |
+| JPEG 2000 12-bit samples | `jp2.bits=12` | 2 | 0 | 0 | 0 |
+| JPEG 2000 16-bit samples | `jp2.bits=16` | 7 | 0 | 0 | 0 |
+| JPEG 2000 2-bit samples (palette indexes) | `jp2.bits=2` | 1 | 0 | 0 | 0 |
+| JPEG 2000 4-bit samples | `jp2.bits=4` | 1 | 0 | 0 | 0 |
+| JPEG 2000 8-bit samples | `jp2.bits=8` | 81 | 17 | 11 | 5 |
+| JP2 channel definition box (`cdef`) | `jp2.box=cdef` | 4 | 0 | 2 | 0 |
+| JP2 component mapping box (`cmap`) | `jp2.box=cmap` | 2 | 0 | 0 | 0 |
+| JP2 palette box (`pclr`) | `jp2.box=pclr` | 2 | 0 | 0 | 0 |
+| JP2 resolution box (`res `) | `jp2.box=res` | 1 | 0 | 0 | 0 |
+| JP2 capture resolution box (`resc`) | `jp2.box=resc` | 1 | 0 | 0 | 0 |
+| JP2 UUID box (EXIF, XMP) | `jp2.box=uuid` | 2 | 0 | 0 | 2 |
+| JP2 boxes after the codestream | `jp2.boxesAfterCodestream` | 1 | 0 | 1 | 1 |
+| JP2 file (brand `jp2 `) | `jp2.brand=jp2` | 17 | 6 | 2 | 2 |
+| JPH file (brand `jph `, Rec. ITU-T T.814) | `jp2.brand=jph` | 1 | 0 | 0 | 0 |
+| JPX file of several codestreams (rejected) | `jp2.brand=jpx` | 0 | 0 | 1 | 0 |
+| Motion JPEG 2000 file (rejected) | `jp2.brand=mjp2` | 0 | 0 | 1 | 0 |
+| JPEG 2000 COC marker segment | `jp2.coc` | 1 | 0 | 0 | 0 |
+| JP2 enumerated color space | `jp2.color=enumerated` | 16 | 6 | 4 | 2 |
+| JP2 ICC profile | `jp2.color=icc` | 2 | 0 | 0 | 0 |
+| JP2 grayscale color space | `jp2.colorSpace=gray` | 2 | 0 | 1 | 0 |
+| JP2 sRGB color space | `jp2.colorSpace=srgb` | 12 | 6 | 3 | 2 |
+| JP2 sYCC color space | `jp2.colorSpace=sycc` | 2 | 0 | 0 | 0 |
+| JPEG 2000 multiple component transformation | `jp2.componentTransform` | 48 | 16 | 5 | 5 |
+| JPEG 2000 one component | `jp2.components=1` | 34 | 1 | 4 | 0 |
+| JPEG 2000 two components | `jp2.components=2` | 3 | 0 | 0 | 0 |
+| JPEG 2000 three components | `jp2.components=3` | 50 | 16 | 4 | 5 |
+| JPEG 2000 four components | `jp2.components=4` | 5 | 0 | 2 | 0 |
+| JPEG 2000 five components without color specification (rejected) | `jp2.components=5` | 0 | 0 | 1 | 0 |
+| JPEG 2000 EPH markers | `jp2.eph` | 3 | 0 | 0 | 0 |
+| JPEG 2000 bare codestream | `jp2.file=codestream` | 74 | 11 | 7 | 3 |
+| JPEG 2000 file (boxes) | `jp2.file=jp2` | 18 | 6 | 4 | 2 |
+| JPEG 2000 high-throughput block coder | `jp2.ht` | 19 | 1 | 3 | 0 |
+| JPEG 2000 HT MagRef pass | `jp2.ht.magRef` | 5 | 0 | 0 | 0 |
+| JPEG 2000 placeholder passes | `jp2.ht.placeholders` | 2 | 0 | 0 | 0 |
+| JPEG 2000 HT SigProp pass | `jp2.ht.sigProp` | 6 | 0 | 0 | 0 |
+| JPEG 2000 several layers | `jp2.layers` | 15 | 0 | 2 | 0 |
+| JPEG 2000 no decomposition level | `jp2.levels=0` | 16 | 0 | 2 | 0 |
+| JPEG 2000 one decomposition level | `jp2.levels=1` | 14 | 0 | 3 | 0 |
+| JPEG 2000 two decomposition levels | `jp2.levels=2` | 52 | 16 | 6 | 5 |
+| JPEG 2000 three decomposition levels | `jp2.levels=3` | 9 | 1 | 0 | 0 |
+| JPEG 2000 six decomposition levels | `jp2.levels=6` | 1 | 0 | 0 | 0 |
+| JP2 metadata boxes after the codestream | `jp2.metadataAfterCodestream` | 1 | 0 | 0 | 1 |
+| JPEG 2000 image or tile grid offset | `jp2.offsets` | 1 | 0 | 0 | 0 |
+| JP2 opacity channel (channel definition) | `jp2.opacity` | 3 | 0 | 1 | 0 |
+| JP2 palette | `jp2.palette` | 2 | 0 | 0 | 0 |
+| JPEG 2000 packet lengths (PLT) | `jp2.plt` | 1 | 0 | 0 | 0 |
+| JPEG 2000 progression order changes (POC) | `jp2.poc` | 1 | 0 | 0 | 0 |
+| JPEG 2000 packet headers in the main header (PPM) | `jp2.ppm` | 1 | 0 | 0 | 0 |
+| JPEG 2000 packet headers in tile-part headers (PPT) | `jp2.ppt` | 1 | 0 | 0 | 0 |
+| JPEG 2000 precinct sizes | `jp2.precincts` | 6 | 0 | 0 | 0 |
+| JPEG 2000 CPRL progression | `jp2.progression=cprl` | 3 | 0 | 0 | 0 |
+| JPEG 2000 LRCP progression | `jp2.progression=lrcp` | 67 | 16 | 8 | 5 |
+| JPEG 2000 PCRL progression | `jp2.progression=pcrl` | 1 | 0 | 0 | 0 |
+| JPEG 2000 RLCP progression | `jp2.progression=rlcp` | 1 | 0 | 0 | 0 |
+| JPEG 2000 RPCL progression | `jp2.progression=rpcl` | 20 | 1 | 3 | 0 |
+| JPEG 2000 QCC marker segment | `jp2.qcc` | 1 | 0 | 0 | 0 |
+| JPEG 2000 scalar expounded quantization | `jp2.quantization=expounded` | 11 | 0 | 0 | 0 |
+| JPEG 2000 no quantization | `jp2.quantization=none` | 81 | 17 | 11 | 5 |
+| JPEG 2000 region of interest (RGN) | `jp2.roi` | 2 | 0 | 0 | 0 |
+| JPEG 2000 SOP marker segments | `jp2.sop` | 3 | 0 | 0 | 0 |
+| JPEG 2000 selective arithmetic coding bypass | `jp2.style=bypass` | 2 | 0 | 0 | 0 |
+| JPEG 2000 vertically causal contexts | `jp2.style=causal` | 3 | 0 | 0 | 0 |
+| JPEG 2000 predictable termination | `jp2.style=pterm` | 2 | 0 | 0 | 0 |
+| JPEG 2000 reset of the context probabilities | `jp2.style=reset` | 2 | 0 | 0 | 0 |
+| JPEG 2000 segmentation symbols | `jp2.style=segsym` | 2 | 0 | 0 | 0 |
+| JPEG 2000 termination on each coding pass | `jp2.style=termall` | 2 | 0 | 0 | 0 |
+| JPEG 2000 sub-sampled components | `jp2.subsampling` | 1 | 0 | 1 | 0 |
+| JPEG 2000 coding style in a tile-part header | `jp2.tileCodingStyle` | 1 | 0 | 0 | 0 |
+| JPEG 2000 several tile-parts per tile | `jp2.tileParts` | 5 | 0 | 0 | 0 |
+| JPEG 2000 several tiles | `jp2.tiles` | 13 | 0 | 0 | 0 |
+| JPEG 2000 tile-part lengths (TLM) | `jp2.tlm` | 1 | 0 | 0 | 0 |
+| JPEG 2000 reversible 5-3 transformation | `jp2.transform=5-3` | 81 | 17 | 11 | 5 |
+| JPEG 2000 irreversible 9-7 transformation | `jp2.transform=9-7` | 11 | 0 | 0 | 0 |
 
 Not covered by fixtures, and verified elsewhere: encoder outputs (independent readers, FFmpeg and Apple ImageIO), malformed-input robustness beyond the error
 fixtures (`FuzzTests/MutationFuzzTests`, `Tests.Shared/Suites/Decode/TruncationTests`), and limits at every boundary (`Tests.Shared/Suites/Decode/ResourceLimitBoundaryTests`).
@@ -2415,6 +2492,43 @@ tool version to see what changes; the interop CI job runs it on every build to d
 
   After a change of the lossy decoder, run `JpegXlDecoderConformanceTests.ToleranceIsTheMeasuredDisagreementWithTheReference`
   and copy the measurements it prints into `LibraryJxlMeasurements`, then regenerate.
+- `jp2` (`Jp2Corpus.cs`: tools, references, cross-checks and manifest entries; `Jp2Corpus.Fixtures.cs`: the recipes;
+  `Jp2Corpus.Editor.cs`: the codestreams that are rearranged; `Jp2Corpus.HighThroughput.cs`: the hand-authored coding
+  passes) generates the JPEG 2000 fixtures; it replaces only the entries of format `jp2` and their files (`jp2/`,
+  `invalid/jp2/`). It needs no installed tool: `opj_compress` and `opj_decompress` (OpenJPEG, pinned in
+  `PinnedOpenJpeg`, currently 2.5.4), `ojph_compress` and `ojph_expand` (OpenJPH, `PinnedOpenJph`, currently 0.32.0) and
+  FFmpeg come from the meziantou/prebuilt release of the `Meziantou.Prebuilt` package. A fixture of the reversible
+  transformations expects the pattern given to the encoder; a fixture of the irreversible ones, and a codestream cut by a
+  rate, expect the samples opj_decompress decodes, and record how the native decoder of FFmpeg (and ojph_expand, for the
+  high-throughput block coder) differs from them. The cross-checks compare the channels each decoder returns, at the
+  depth of the file, scaled the way the library scales them. A decoder that does not read a fixture as the
+  Recommendation says is recorded with the reason, excluded from the tolerance, and the generator fails when it starts
+  to agree: OpenJPEG refuses placeholder passes and does not read an HT refinement segment from another packet than
+  its HT cleanup segment, OpenJPH reads one layer, FFmpeg refuses the HT cleanup magnitudes that use every bit-plane,
+  a palette of four columns, and takes the last of four components as the opacity. The fields of the files and their
+  feature tags are read by `TestHarness/Jpeg2000/ReferenceJpeg2000` (linked into the generator project, no dependency
+  on the library). Three kinds of fixtures are not the output of a tool alone:
+  - files assembled around a codestream of opj_compress with `TestHarness/Jpeg2000/Jp2FileBuilder` (palettes, channel
+    definitions, sYCC, ICC profiles of `icc/profiles/`, resolution, UUID boxes, box lengths);
+  - codestreams whose marker segments and packets are moved (`Jp2Corpus.Editor.cs`): packet headers packed in PPM and PPT
+    marker segments (the packets are found by the SOP marker segments and EPH markers the encoder was asked to write),
+    interleaved tile-parts, COC and QCC marker segments, a coding style moved to the tile-part headers;
+  - codestreams of the high-throughput block coder with coding passes no pinned encoder writes
+    (`Jp2Corpus.HighThroughput.cs`): one code-block without wavelet transformation, whose HT cleanup segment comes from
+    ojph_compress and whose packet headers and HT refinement segment are written from Rec. ITU-T T.814; their expected
+    pixels are the coefficients the generator codes.
+
+  ojph_compress loses the sample 0 of an 8-bit image without decomposition level (its coefficient, -128, does not fit
+  the bit-planes it declares): the hand-authored codestreams keep their coefficients below 64.
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- jp2          # check
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- jp2 --write  # replace the JPEG 2000 fixtures, then review the diff
+  ```
+
+  After a change of the irreversible path of the decoder, run
+  `Jpeg2000DecoderConformanceTests.ToleranceIsTheMeasuredDisagreementWithTheReference` and copy the measurements it
+  prints into `LibraryJp2Measurements`, then regenerate.
 - `heic-container` (`HeicCorpus.Container.cs`: tools, references, cross-check and manifest entries;
   `HeicCorpus.ContainerFixtures.cs`: the valid recipes; `HeicCorpus.ContainerErrors.cs`: the malformed, unsupported and
   over-limit ones; `HevcCorpus.Reference.cs`: the three decoders and x265 for the streams of a container) generates the

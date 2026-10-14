@@ -538,6 +538,7 @@ namespace Meziantou.Framework.Imaging
         Avif = 13,
         JpegXl = 14,
         Heic = 15,
+        Jpeg2000 = 16,
     }
 
     public abstract class ImageFrame
@@ -1725,6 +1726,26 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         public abstract Meziantou.Framework.Imaging.ImageFormat Format { get; }
         public Meziantou.Framework.Imaging.Formats.MetadataHandling MetadataHandling { get => throw null; init { } }
+    }
+
+    public enum Jpeg2000Compression
+    {
+        Lossless = 0,
+        Lossy = 1,
+    }
+
+    public enum Jpeg2000Container
+    {
+        Jp2 = 0,
+        Codestream = 1,
+    }
+
+    public sealed class Jpeg2000Encoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
+    {
+        public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.Jpeg2000Compression Compression { get => throw null; init { } }
+        public int Quality { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.Jpeg2000Container Container { get => throw null; init { } }
     }
 
     public enum JpegChromaSubsampling

@@ -847,6 +847,39 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveJpeg2000WritesALosslessFileAndALossyCodestream()
+    {
+        var photo = GetPath("photo16-resolution.png");
+        var color = new Rgba64(65535, 32768, 1, 32767);
+        using (var source = new Image<Rgba64>(32, 16, color))
+        {
+            source.Metadata.Resolution = new ImageResolution(300, 300);
+            source.Save(photo);
+        }
+
+        var jp2 = GetPath("photo.jp2");
+        var codestream = GetPath("photo.j2k");
+        Assert.Equal("Jpeg2000 32x16 Rgba64, 16 bits", Examples.SaveJpeg2000(photo, jp2, codestream));
+        using (var image = Image.Load<Rgba64>(jp2))
+        {
+            Assert.Equal(ImageFormat.Jpeg2000, image.Metadata.SourceFormat);
+            Assert.Equal(color, image.Frames[0][16, 8]); // 16 bits, lossless
+
+            // The resolution of the PNG file, a whole number of pixels per meter, is stored exactly
+            Assert.Equal(new ImageResolution(11811 * 0.0254, 11811 * 0.0254), image.Metadata.Resolution);
+        }
+
+        // The codestream has no box for the resolution; its opacity is exact and its colors are close
+        using var lossy = Image.Load<Rgba64>(codestream);
+        Assert.Null(lossy.Metadata.Resolution);
+        var pixel = lossy.Frames[0][16, 8];
+        Assert.Equal(color.A, pixel.A);
+        Assert.InRange(Math.Abs(pixel.R - color.R), 0, 1024);
+        Assert.InRange(Math.Abs(pixel.G - color.G), 0, 1024);
+        Assert.InRange(Math.Abs(pixel.B - color.B), 0, 1024);
+    }
+
+    [Fact]
     public void SaveHeicWritesALossyPhotoALosslessImageAndAnImageSequence()
     {
         var (apngPath, _) = BuildAnimation();

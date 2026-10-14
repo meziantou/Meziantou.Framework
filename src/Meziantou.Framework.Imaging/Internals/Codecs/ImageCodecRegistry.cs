@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>The ordered set of codecs used for content-based dispatch.</summary>
 /// <remarks>
-/// The public API always uses <see cref="Current"/>: <see cref="Default"/> (PNG/APNG, GIF, JPEG, WebP, ANI, QOI, BMP, TIFF/BigTIFF, ICO, CUR, PNM, TGA), unless a test replaced it
+/// The public API always uses <see cref="Current"/>: <see cref="Default"/> (PNG/APNG, GIF, JPEG, WebP, ANI, QOI, BMP, TIFF/BigTIFF, AVIF, JPEG XL, JPEG 2000, ICO, CUR, PNM, TGA), unless a test replaced it
 /// for the current asynchronous flow with <see cref="Override"/>. Tests use this to plug test-only decoders into the real
 /// public entry points (paths, streams, spans, sync and async) without any public extensibility.
 /// </remarks>
@@ -22,10 +22,10 @@ internal sealed class ImageCodecRegistry
 
     /// <summary>
     /// Gets the built-in codecs: PNG (including APNG), GIF, JPEG, WebP, ANI, QOI, BMP, TIFF (including BigTIFF), AVIF, HEIC,
-    /// JPEG XL, ICO, CUR, PNM and TGA. TGA has no signature and is recognized by the plausibility of its header, so it is always consulted last;
+    /// JPEG XL, JPEG 2000, ICO, CUR, PNM and TGA. TGA has no signature and is recognized by the plausibility of its header, so it is always consulted last;
     /// ICO and CUR have a very weak one and are therefore consulted before it (<see cref="IcoFormat.MatchesSignature"/>).
     /// </summary>
-    public static ImageCodecRegistry Default { get; } = new([PngCodec.Instance, GifCodec.Instance, JpegCodec.Instance, WebPCodec.Instance, AniCodec.Instance, QoiCodec.Instance, BmpCodec.Instance, TiffCodec.Instance, AvifCodec.Instance, HeicCodec.Instance, JpegXlCodec.Instance, IcoCodec.Icon, IcoCodec.Cursor, PnmCodec.Instance, TgaCodec.Instance]);
+    public static ImageCodecRegistry Default { get; } = new([PngCodec.Instance, GifCodec.Instance, JpegCodec.Instance, WebPCodec.Instance, AniCodec.Instance, QoiCodec.Instance, BmpCodec.Instance, TiffCodec.Instance, AvifCodec.Instance, HeicCodec.Instance, JpegXlCodec.Instance, Jpeg2000Codec.Instance, IcoCodec.Icon, IcoCodec.Cursor, PnmCodec.Instance, TgaCodec.Instance]);
 
     /// <summary>Gets the registry used by the public API in the current asynchronous flow.</summary>
     public static ImageCodecRegistry Current => CurrentOverride.Value ?? Default;

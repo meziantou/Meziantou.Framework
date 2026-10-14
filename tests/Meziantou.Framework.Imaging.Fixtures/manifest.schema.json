@@ -651,7 +651,7 @@
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
         "kind": { "enum": ["valid", "invalid", "unsupported", "limit"] },
-        "format": { "enum": ["png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl"] },
+        "format": { "enum": ["png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl", "jp2"] },
         "input": { "$ref": "#/$defs/file" },
         "provenance": { "$ref": "#/$defs/provenance" },
         "features": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },

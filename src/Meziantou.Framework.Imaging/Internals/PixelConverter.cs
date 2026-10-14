@@ -546,8 +546,134 @@ internal static class PixelConverter
                 StoreGray16AsRgba64(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(2 * i))), ref output, i);
             }
         }
+        else if (!Is16Bit<TSource>() && !IsGray<TSource>() && IsGray<TDestination>())
+        {
+            // Luma of 16 pixels; a 16-byte load of Rgb24 pixels reads 4 bytes beyond the 4 pixels it converts
+            var end = typeof(TSource) == typeof(Rgb24) ? length - 18 : length - 16;
+            var low = Vector128.Create((byte)0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7);
+            var high = Vector128.Create((byte)8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15);
+            for (; i <= end; i += 16)
+            {
+                var y0 = Luma8Vector(LoadPixels32<TSource>(ref input, i), typeof(TSource) == typeof(Bgra32)).AsUInt32();
+                var y1 = Luma8Vector(LoadPixels32<TSource>(ref input, i + 4), typeof(TSource) == typeof(Bgra32)).AsUInt32();
+                var y2 = Luma8Vector(LoadPixels32<TSource>(ref input, i + 8), typeof(TSource) == typeof(Bgra32)).AsUInt32();
+                var y3 = Luma8Vector(LoadPixels32<TSource>(ref input, i + 12), typeof(TSource) == typeof(Bgra32)).AsUInt32();
+                var gray = Vector128.Narrow(Vector128.Narrow(y0, y1), Vector128.Narrow(y2, y3));
+                if (typeof(TDestination) == typeof(Gray8))
+                {
+                    unsafe { gray.StoreUnsafe(ref output, (nuint)i); }
+                }
+                else
+                {
+                    // v * 257: each byte twice
+                    unsafe { Vector128.Shuffle(gray, low).StoreUnsafe(ref output, (nuint)(2 * i)); }
+                    unsafe { Vector128.Shuffle(gray, high).StoreUnsafe(ref output, (nuint)((2 * i) + 16)); }
+                }
+            }
+        }
+        else if (typeof(TSource) == typeof(Rgba64) && IsGray<TDestination>())
+        {
+            for (; i + 16 <= length; i += 16)
+            {
+                var y0 = Luma16Vector(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(8 * i))), unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 16))));
+                var y1 = Luma16Vector(unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 32))), unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 48))));
+                var y2 = Luma16Vector(unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 64))), unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 80))));
+                var y3 = Luma16Vector(unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 96))), unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 112))));
+                var gray0 = Vector128.Narrow(y0, y1);
+                var gray1 = Vector128.Narrow(y2, y3);
+                if (typeof(TDestination) == typeof(Gray8))
+                {
+                    unsafe { Narrow8Bit(gray0, gray1).StoreUnsafe(ref output, (nuint)i); }
+                }
+                else
+                {
+                    unsafe { gray0.AsByte().StoreUnsafe(ref output, (nuint)(2 * i)); }
+                    unsafe { gray1.AsByte().StoreUnsafe(ref output, (nuint)((2 * i) + 16)); }
+                }
+            }
+        }
 
         return i;
+    }
+
+    /// <summary>Loads 4 pixels of an 8-bit color format as 4 lanes of 32 bits whose bytes 0, 1 and 2 are the color components in memory order.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<byte> LoadPixels32<TSource>(ref byte input, int index)
+    {
+        if (typeof(TSource) == typeof(Rgb24))
+        {
+            // 16 bytes are read for 12
+            var order = Vector128.Create((byte)0, 1, 2, 0xFF, 3, 4, 5, 0xFF, 6, 7, 8, 0xFF, 9, 10, 11, 0xFF);
+            return Vector128.Shuffle(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(3 * index))), order);
+        }
+
+        return unsafe(Vector128.LoadUnsafe(ref input, (nuint)(4 * index)));
+    }
+
+    /// <summary>
+    /// Computes the Rec. 709 luma of 4 pixels of 8-bit samples, with the result of <see cref="Luma(uint, uint, uint, uint)"/>.
+    /// </summary>
+    /// <param name="pixels">4 lanes of 32 bits whose bytes 0, 1 and 2 are red, green and blue (blue, green and red when <paramref name="bgr"/>).</param>
+    /// <param name="bgr">Whether blue is the first byte.</param>
+    /// <returns>The 4 lumas.</returns>
+    /// <remarks>
+    /// <c>x = 2126 R + 7152 G + 722 B + 5000</c> is at most 2,555,000, so luma never exceeds 255 and the clamp of the scalar
+    /// reference has no effect. The division by 10000 is <c>(int)((float)x * (1f / 10000))</c>: <c>x</c> is exact as a
+    /// <see cref="float"/>, and the result equals <c>x / 10000</c> for every <c>x</c> of that range
+    /// (<see cref="DivideBy10000Vector"/>, checked exhaustively by the tests).
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector128<int> Luma8Vector(Vector128<byte> pixels, bool bgr)
+    {
+        var lanes = pixels.AsInt32();
+        var byteMask = Vector128.Create(0xFF);
+        var first = lanes & byteMask;
+        var second = Vector128.ShiftRightLogical(lanes, 8) & byteMask;
+        var third = Vector128.ShiftRightLogical(lanes, 16) & byteMask;
+        var (r, b) = bgr ? (third, first) : (first, third);
+        var x = (r * 2126) + (second * 7152) + (b * 722) + Vector128.Create(5000);
+        return DivideBy10000Vector(x);
+    }
+
+    /// <summary>Divides by 10000 every lane of a vector of integers between 0 and 2,555,000 (rounding down).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector128<int> DivideBy10000Vector(Vector128<int> value) => Vector128.ConvertToInt32(Vector128.ConvertToSingle(value) * Vector128.Create(1f / 10000));
+
+    /// <summary>
+    /// Computes the Rec. 709 luma of 4 <see cref="Rgba64"/> pixels, with the result of <see cref="Luma(uint, uint, uint, uint)"/>.
+    /// </summary>
+    /// <param name="first">The first 2 pixels.</param>
+    /// <param name="second">The next 2 pixels.</param>
+    /// <returns>The 4 lumas (16 bits each, in 32-bit lanes).</returns>
+    /// <remarks>
+    /// Narrowing the 32-bit lanes keeps red and blue (and, after a shift, green and alpha) as one 32-bit lane per pixel.
+    /// <c>x = 2126 R + 7152 G + 722 B + 5000</c> is at most 655,355,000, so luma never exceeds 65535 and the clamp of the
+    /// scalar reference has no effect; <see cref="DivideBy10000ExactVector"/> divides it.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<uint> Luma16Vector(Vector128<byte> first, Vector128<byte> second)
+    {
+        var redBlue = Vector128.Narrow(first.AsUInt32(), second.AsUInt32()).AsInt32();
+        var greenAlpha = Vector128.Narrow(Vector128.ShiftRightLogical(first.AsUInt32(), 16), Vector128.ShiftRightLogical(second.AsUInt32(), 16)).AsInt32();
+        var sampleMask = Vector128.Create(0xFFFF);
+        var x = ((redBlue & sampleMask) * 2126) + ((greenAlpha & sampleMask) * 7152) + (Vector128.ShiftRightLogical(redBlue, 16) * 722) + Vector128.Create(5000);
+        return DivideBy10000ExactVector(x).AsUInt32();
+    }
+
+    /// <summary>Divides by 10000 every lane of a vector of integers between 0 and 655,355,000 (rounding down).</summary>
+    /// <remarks>
+    /// The quotient computed in <see cref="float"/> is within 0.02 of the exact quotient (three roundings of relative error
+    /// 2^-24 on a quotient below 2^17), so its truncation is the exact quotient, one less or one more; the remainder
+    /// corrects it.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector128<int> DivideBy10000ExactVector(Vector128<int> value)
+    {
+        var quotient = DivideBy10000Vector(value);
+        var remainder = value - (quotient * 10000);
+
+        // A lane mask is all ones (-1): subtracting it adds one
+        return quotient - Vector128.GreaterThanOrEqual(remainder, Vector128.Create(10000)) + Vector128.LessThan(remainder, Vector128<int>.Zero);
     }
 
     /// <summary>

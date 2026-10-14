@@ -502,6 +502,32 @@ public sealed class VectorizedKernelTests
                 Assert.Equal(PixelConverter.To8Bit(samples[lane]), reduced[lane]);
             }
         }
+
+        // Every luma sum of 8-bit samples (2126 R + 7152 G + 722 B + 5000) divided by 10000
+        for (var value = 0; value <= 2_555_000; value += 4)
+        {
+            var quotients = PixelConverter.DivideBy10000Vector(Vector128.Create(value, value + 1, value + 2, value + 3));
+            if (quotients != Vector128.Create(value / 10000, (value + 1) / 10000, (value + 2) / 10000, (value + 3) / 10000))
+                Assert.Fail($"Wrong quotient from {value}: {quotients}");
+        }
+
+        // Luma sums of 16-bit samples, up to 655,355,000: the values around every multiple of 10000 and a stride over the range
+        for (var multiple = 0; multiple <= 65535; multiple++)
+        {
+            CheckExactDivision(Math.Max((multiple * 10000) - 2, 0));
+        }
+
+        for (var value = 0; value <= 655_355_000 - 3; value += 997)
+        {
+            CheckExactDivision(value);
+        }
+
+        static void CheckExactDivision(int value)
+        {
+            var quotients = PixelConverter.DivideBy10000ExactVector(Vector128.Create(value, value + 1, value + 2, value + 3));
+            if (quotients != Vector128.Create(value / 10000, (value + 1) / 10000, (value + 2) / 10000, (value + 3) / 10000))
+                Assert.Fail($"Wrong quotient from {value}: {quotients}");
+        }
     }
 
     [Fact]

@@ -1479,6 +1479,98 @@ public sealed class VectorizedKernelTests
     }
 
     [Theory]
+    [InlineData(2, 0)]
+    [InlineData(2, 1)]
+    [InlineData(3, 0)]
+    [InlineData(4, 0)]
+    [InlineData(5, 0)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HevcInverseTransformOfTheFirstRowsAndColumnsMatchesTheScalarReference(int log2TrafoSize, int trType)
+    {
+        // The coefficients outside the rows and the columns are not read: they are garbage here, and zeros for the reference,
+        // whose residual is then rounded by Equation 8-299 for 8, 10 and 12 bits, or not
+        var random = new Random((log2TrafoSize * 10) + trType + 1000);
+        var nTbS = 1 << log2TrafoSize;
+        var scratch = new int[nTbS * nTbS];
+        for (var round = 0; round < 1000; round++)
+        {
+            var rows = random.Next(1, nTbS + 1);
+            var columns = 4 * random.Next(1, (nTbS / 4) + 1);
+            var residualShift = (round % 4) switch
+            {
+                0 => 0,
+                1 => 12,
+                2 => 10,
+                _ => 8,
+            };
+            var block = new int[nTbS * nTbS];
+            var expected = new int[nTbS * nTbS];
+            for (var i = 0; i < block.Length; i++)
+            {
+                var inside = i / nTbS < rows && i % nTbS < columns;
+                var value = (round % 5) switch
+                {
+                    0 => 0,
+                    1 => i is 0 ? random.Next(HevcInverseTransform.CoeffMin, HevcInverseTransform.CoeffMax + 1) : 0,
+                    2 => random.Next(5) is 0 ? random.Next(-64, 65) : 0,
+                    3 => random.Next(2) is 0 ? (random.Next(2) is 0 ? HevcInverseTransform.CoeffMin : HevcInverseTransform.CoeffMax) : 0,
+                    _ => random.Next(HevcInverseTransform.CoeffMin, HevcInverseTransform.CoeffMax + 1),
+                };
+                block[i] = inside ? value : random.Next(int.MinValue, int.MaxValue);
+                expected[i] = inside ? value : 0;
+            }
+
+            HevcInverseTransform.TransformScalar(expected, log2TrafoSize, trType, scratch);
+            if (residualShift > 0)
+            {
+                for (var i = 0; i < expected.Length; i++)
+                {
+                    expected[i] = (expected[i] + (1 << (residualShift - 1))) >> residualShift;
+                }
+            }
+
+            Array.Fill(scratch, int.MinValue);
+            HevcInverseTransform.Transform(block, log2TrafoSize, trType, scratch, rows, columns, residualShift);
+            Assert.Equal(expected, block);
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HevcPictureConstructionMatchesTheScalarReference(int bitDepth)
+    {
+        // Residuals that clip at both ends of the range of the samples, and rows of every block size and around them
+        var random = new Random(bitDepth);
+        var maxValue = (1 << bitDepth) - 1;
+        foreach (var length in new[] { 1, 4, 7, 8, 9, 15, 16, 17, 32, 33 })
+        {
+            for (var round = 0; round < 200; round++)
+            {
+                var row = new ushort[length];
+                var residual = new int[length];
+                for (var x = 0; x < length; x++)
+                {
+                    row[x] = (ushort)random.Next(maxValue + 1);
+                    residual[x] = (round % 3) switch
+                    {
+                        0 => random.Next(-maxValue - 1, maxValue + 2),
+                        1 => random.Next(2) is 0 ? int.MinValue / 2 : int.MaxValue / 2,
+                        _ => random.Next(-8, 9),
+                    };
+                }
+
+                var expected = (ushort[])row.Clone();
+                HevcSliceCoder.AddResidualRowScalar(expected, residual, maxValue);
+                HevcSliceCoder.AddResidualRow(row, residual, maxValue);
+                Assert.Equal(expected, row);
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(8)]
     [InlineData(10)]
     [InlineData(12)]

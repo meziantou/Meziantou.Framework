@@ -1,3 +1,5 @@
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 // The decoding process of the blocks of a transform unit: intra prediction, scaling, transformation and construction of
@@ -30,8 +32,8 @@ internal ref partial struct HevcSliceCoder
         var hasResidual = false;
         if (coded)
         {
-            var transformSkipFlag = ResidualCoding(log2TrafoSize, cIdx, predModeIntra, residual);
-            ScaleAndTransform(residual, log2TrafoSize, cIdx, transformSkipFlag);
+            var transformSkipFlag = ResidualCoding(log2TrafoSize, cIdx, predModeIntra, residual, out var rows, out var columns);
+            ScaleAndTransform(residual, log2TrafoSize, cIdx, transformSkipFlag, scaled: true, rows, columns);
 
             // Step 7: the residual of a block that has no transform is a difference with the residual before it, in the
             // direction of the prediction (clause 8.6.5)
@@ -100,12 +102,38 @@ internal ref partial struct HevcSliceCoder
         var samples = plane.Samples;
         for (var y = 0; y < nTbS; y++)
         {
-            var row = samples.Slice(((yTb + y) * plane.Stride) + xTb, nTbS);
-            var residualRow = residual.Slice(y * nTbS, nTbS);
-            for (var x = 0; x < nTbS; x++)
+            AddResidualRow(samples.Slice(((yTb + y) * plane.Stride) + xTb, nTbS), residual.Slice(y * nTbS, nTbS), maxValue);
+        }
+    }
+
+    /// <summary>
+    /// Adds the residual samples of a row to the prediction samples, clipped to the range of the samples (Equation 8-300):
+    /// 8 samples at a time.
+    /// </summary>
+    internal static void AddResidualRow(Span<ushort> row, ReadOnlySpan<int> residual, int maxValue)
+    {
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            var max = Vector128.Create(maxValue);
+            for (; x + 8 <= row.Length; x += 8)
             {
-                row[x] = (ushort)Math.Clamp(row[x] + residualRow[x], 0, maxValue);
+                var (low, high) = Vector128.Widen(Vector128.Create(row[x..]));
+                var sumLow = Vector128.Min(Vector128.Max(low.AsInt32() + Vector128.Create(residual[x..]), Vector128<int>.Zero), max);
+                var sumHigh = Vector128.Min(Vector128.Max(high.AsInt32() + Vector128.Create(residual[(x + 4)..]), Vector128<int>.Zero), max);
+                Vector128.Narrow(sumLow.AsUInt32(), sumHigh.AsUInt32()).CopyTo(row[x..]);
             }
+        }
+
+        AddResidualRowScalar(row[x..], residual[x..], maxValue);
+    }
+
+    /// <summary>The addition of <see cref="AddResidualRow"/>, one sample at a time: the reference of the vector path.</summary>
+    internal static void AddResidualRowScalar(Span<ushort> row, ReadOnlySpan<int> residual, int maxValue)
+    {
+        for (var x = 0; x < row.Length; x++)
+        {
+            row[x] = (ushort)Math.Clamp(row[x] + residual[x], 0, maxValue);
         }
     }
 
@@ -147,12 +175,21 @@ internal ref partial struct HevcSliceCoder
     }
 
     /// <summary>
-    /// The scaling and transformation process (clause 8.6.2) of a block of a coding unit coded in intra prediction mode:
-    /// the transform coefficient levels are replaced by the residual samples.
+    /// The scaling and transformation process (clause 8.6.2) of a block: the transform coefficient levels, or the scaled
+    /// transform coefficients when <paramref name="scaled"/> is set, are replaced by the residual samples.
     /// </summary>
-    private void ScaleAndTransform(Span<int> block, int log2TrafoSize, int cIdx, bool transformSkipFlag)
+    /// <param name="block">The rows of the block.</param>
+    /// <param name="log2TrafoSize">The base 2 logarithm of the size of the block.</param>
+    /// <param name="cIdx">The colour component of the block.</param>
+    /// <param name="transformSkipFlag"><c>transform_skip_flag</c>.</param>
+    /// <param name="scaled">Whether the block has the scaled transform coefficients already (<see cref="ResidualCoding"/>), rather than the levels.</param>
+    /// <param name="rows">The number of rows that can have values that are not zero: the others are not read when the block is transformed.</param>
+    /// <param name="columns">The number of columns that can have values that are not zero: a multiple of 4.</param>
+    private void ScaleAndTransform(Span<int> block, int log2TrafoSize, int cIdx, bool transformSkipFlag, bool scaled = false, int rows = 32, int columns = 32)
     {
         var nTbS = 1 << log2TrafoSize;
+        rows = Math.Min(rows, nTbS);
+        columns = Math.Min(columns, nTbS);
         var rotateCoeffs = _sps.TransformSkipRotationEnabledFlag && nTbS is 4 && _isIntra;
         if (_cuTransquantBypassFlag)
         {
@@ -167,36 +204,14 @@ internal ref partial struct HevcSliceCoder
         }
 
         // Clause 8.6.3 "Scaling process for transform coefficients"
-        var qP = cIdx is 0 ? _qpY + _sps.QpBdOffset : GetChromaQp(cIdx);
-        var bdShift = _bitDepth + log2TrafoSize + 10 - 15;
-        long levelScale = HevcQuantizationTables.LevelScale[qP % 6] << (qP / 6);
-        var rounding = 1L << (bdShift - 1);
-        var scalingFactors = _layout.ScalingFactors;
-        if (scalingFactors.IsEmpty || (transformSkipFlag && nTbS > 4))
+        var scalingList = !_layout.ScalingFactors.IsEmpty && !(transformSkipFlag && nTbS > 4);
+        if (!scaled)
         {
-            // m[ x ][ y ] is 16
-            levelScale *= 16;
-            for (var i = 0; i < block.Length; i++)
-            {
-                if (block[i] is not 0)
-                {
-                    block[i] = (int)Math.Clamp(((block[i] * levelScale) + rounding) >> bdShift, HevcInverseTransform.CoeffMin, HevcInverseTransform.CoeffMax);
-                }
-            }
+            ScaleLevels(block, log2TrafoSize, cIdx, scalingList);
         }
-        else
-        {
-            // Equation 8-308: matrixId is cIdx for a coding unit coded in intra prediction mode, 3 + cIdx otherwise
-            // (Table 7-4)
-            var m = scalingFactors.Slice(HevcScalingList.GetScalingFactorOffset(log2TrafoSize - 2, _isIntra ? cIdx : 3 + cIdx), block.Length);
-            for (var i = 0; i < block.Length; i++)
-            {
-                if (block[i] is not 0)
-                {
-                    block[i] = (int)Math.Clamp(((block[i] * m[i] * levelScale) + rounding) >> bdShift, HevcInverseTransform.CoeffMin, HevcInverseTransform.CoeffMax);
-                }
-            }
 
+        if (scalingList)
+        {
             _tools |= HevcTools.ScalingList;
         }
 
@@ -221,7 +236,7 @@ internal ref partial struct HevcSliceCoder
 
         // Clause 8.6.4.1: the transform type of the 4x4 luma blocks of an intra coding unit is the discrete sine transform
         var trType = nTbS is 4 && cIdx is 0 && _isIntra ? 1 : 0;
-        HevcInverseTransform.Transform(block, log2TrafoSize, trType, _scratch.Transform);
+        HevcInverseTransform.Transform(block, log2TrafoSize, trType, _scratch.Transform, rows, columns, residualShift);
         _tools |= trType is 1
             ? HevcTools.Dst4x4
             : log2TrafoSize switch
@@ -231,11 +246,39 @@ internal ref partial struct HevcSliceCoder
                 4 => HevcTools.Transform16x16,
                 _ => HevcTools.Transform32x32,
             };
+    }
 
-        // Equation 8-299
+    // Clause 8.6.3 "Scaling process for transform coefficients": the transform coefficient levels of a block are replaced by
+    // the scaled transform coefficients
+    private readonly void ScaleLevels(Span<int> block, int log2TrafoSize, int cIdx, bool scalingList)
+    {
+        var qP = cIdx is 0 ? _qpY + _sps.QpBdOffset : GetChromaQp(cIdx);
+        var bdShift = _bitDepth + log2TrafoSize + 10 - 15;
+        long levelScale = HevcQuantizationTables.LevelScale[qP % 6] << (qP / 6);
+        var rounding = 1L << (bdShift - 1);
+        if (!scalingList)
+        {
+            // m[ x ][ y ] is 16
+            levelScale *= 16;
+            for (var i = 0; i < block.Length; i++)
+            {
+                if (block[i] is not 0)
+                {
+                    block[i] = (int)Math.Clamp(((block[i] * levelScale) + rounding) >> bdShift, HevcInverseTransform.CoeffMin, HevcInverseTransform.CoeffMax);
+                }
+            }
+
+            return;
+        }
+
+        // Equation 8-308: matrixId is cIdx for a coding unit coded in intra prediction mode, 3 + cIdx otherwise (Table 7-4)
+        var m = _layout.ScalingFactors.Slice(HevcScalingList.GetScalingFactorOffset(log2TrafoSize - 2, _isIntra ? cIdx : 3 + cIdx), block.Length);
         for (var i = 0; i < block.Length; i++)
         {
-            block[i] = (block[i] + (1 << (residualShift - 1))) >> residualShift;
+            if (block[i] is not 0)
+            {
+                block[i] = (int)Math.Clamp(((block[i] * m[i] * levelScale) + rounding) >> bdShift, HevcInverseTransform.CoeffMin, HevcInverseTransform.CoeffMax);
+            }
         }
     }
 

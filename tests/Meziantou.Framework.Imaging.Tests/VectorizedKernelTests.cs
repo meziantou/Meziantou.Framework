@@ -1680,6 +1680,89 @@ public sealed class VectorizedKernelTests
     [InlineData(8)]
     [InlineData(10)]
     [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HevcInterPredictionMatchesTheScalarReferences(int bitDepth)
+    {
+        // Every fractional position of the luma and chroma filters, the block sizes of the prediction units, blocks inside
+        // the reference picture and blocks that reach outside it, then the weighted sample prediction processes
+        var random = new Random(bitDepth);
+        var max = (1 << bitDepth) - 1;
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(HevcInterPredictionMatchesTheScalarReferences));
+        using var reference = Av1Plane.Create(scope, 96, 80, 16);
+        for (var y = 0; y < reference.Height; y++)
+        {
+            for (var x = 0; x < reference.Width; x++)
+            {
+                reference.Samples[(y * reference.Stride) + x] = (ushort)(random.Next(4) is 0 ? (random.Next(2) is 0 ? 0 : max) : random.Next(max + 1));
+            }
+        }
+
+        var intermediate = new short[71 * 64];
+        var window = new ushort[71 * 71];
+        foreach (var luma in new[] { true, false })
+        {
+            foreach (var (width, height) in new[] { (4, 4), (8, 8), (16, 16), (32, 32), (64, 64), (12, 16), (4, 8), (24, 32), (48, 64), (16, 4), (2, 4), (6, 8), (64, 16) })
+            {
+                for (var round = 0; round < 6; round++)
+                {
+                    var xInt = random.Next(-8, 96 - width + 8);
+                    var yInt = random.Next(-8, 80 - height + 8);
+                    for (var frac = 0; frac < (luma ? 16 : 64); frac++)
+                    {
+                        var xFrac = luma ? frac & 3 : frac & 7;
+                        var yFrac = luma ? frac >> 2 : frac >> 3;
+                        var expected = new short[width * height];
+                        var actual = new short[width * height];
+                        HevcInterPredictor.PredictScalar(reference, xInt, yInt, xFrac, yFrac, width, height, luma, bitDepth, expected, intermediate, window);
+                        HevcInterPredictor.Predict(reference, xInt, yInt, xFrac, yFrac, width, height, luma, bitDepth, actual, intermediate, window);
+                        Assert.Equal(expected, actual);
+                    }
+
+                    // The weighted sample prediction of two predictions
+                    var prediction0 = new short[width * height];
+                    var prediction1 = new short[width * height];
+                    HevcInterPredictor.Predict(reference, xInt, yInt, 1, 2, width, height, luma, bitDepth, prediction0, intermediate, window);
+                    HevcInterPredictor.Predict(reference, yInt + 3, xInt + 2, 3, 1, width, height, luma, bitDepth, prediction1, intermediate, window);
+                    var stride = width + 5;
+                    var weight0 = random.Next(-128, 128);
+                    var weight1 = random.Next(-128, 128);
+                    var offset0 = random.Next(-(1 << (bitDepth - 1)), 1 << (bitDepth - 1));
+                    var offset1 = random.Next(-(1 << (bitDepth - 1)), 1 << (bitDepth - 1));
+                    var log2Wd = random.Next(0, 8) + (14 - bitDepth);
+                    for (var kind = 0; kind < 4; kind++)
+                    {
+                        var expectedSamples = new ushort[stride * height];
+                        var actualSamples = new ushort[stride * height];
+                        foreach (var (samples, useVectors) in new[] { (expectedSamples, false), (actualSamples, true) })
+                        {
+                            switch (kind)
+                            {
+                                case 0:
+                                    HevcInterPredictor.WeightDefault(prediction0, samples, stride, width, height, bitDepth, useVectors);
+                                    break;
+                                case 1:
+                                    HevcInterPredictor.WeightDefault(prediction0, prediction1, samples, stride, width, height, bitDepth, useVectors);
+                                    break;
+                                case 2:
+                                    HevcInterPredictor.WeightExplicit(prediction0, samples, stride, width, height, bitDepth, weight0, offset0, log2Wd, useVectors);
+                                    break;
+                                default:
+                                    HevcInterPredictor.WeightExplicit(prediction0, prediction1, samples, stride, width, height, bitDepth, weight0, weight1, offset0, offset1, log2Wd, useVectors);
+                                    break;
+                            }
+                        }
+
+                        Assert.Equal(expectedSamples, actualSamples);
+                    }
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
     [InlineData(16)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void HevcSampleAdaptiveOffsetRowsMatchTheScalarReferences(int bitDepth)

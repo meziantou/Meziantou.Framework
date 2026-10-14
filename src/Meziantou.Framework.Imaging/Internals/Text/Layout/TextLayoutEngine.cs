@@ -1018,6 +1018,15 @@ internal sealed class TextLayoutEngine
         var pen = 0.0;
         var hanging = 0.0;
         var glyphs = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(paragraph.Glyphs);
+
+        // A tabulation and a placeholder are one glyph of the line each.
+        var glyphCount = 0;
+        foreach (var item in items)
+        {
+            glyphCount += item.IsTabulation || item.Placeholder >= 0 ? 1 : item.GlyphCount;
+        }
+
+        line.Glyphs.Capacity = glyphCount;
         for (var i = 0; i < items.Count; i++)
         {
             var item = items[order[i]];

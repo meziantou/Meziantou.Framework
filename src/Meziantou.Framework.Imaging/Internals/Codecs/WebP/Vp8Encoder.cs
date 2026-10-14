@@ -843,11 +843,74 @@ internal sealed class Vp8Encoder : IDisposable
     private static double BoolBits(int probability, bool value) => BitCosts[value ? 256 - probability : probability];
 
     /// <summary>Estimates the bits of the tokens of one block (raster-order levels) with the current probabilities.</summary>
+    /// <remarks>
+    /// The walk of <see cref="WalkTokens"/> with the bit costs added, in the same order, to a local sum (a cost sink adds them
+    /// through a reference); probabilities and costs are addressed by reference
+    /// (the type, band and context offsets stay inside the probability table, the costs are indexed by p or 256 - p).
+    /// </remarks>
     private double TokenBits(ReadOnlySpan<short> levels, int first, int type, int context)
     {
-        var sink = new CostSink();
-        WalkTokens(levels, first, type, context, ref sink);
-        return sink.Bits;
+        levels = levels[..16];
+        ref var probabilities = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_probabilities), type * 8 * 3 * Vp8Tables.TokenNodes));
+        ref var costs = ref unsafe(MemoryMarshal.GetArrayDataReference(BitCosts));
+        var bands = Vp8Tables.Bands;
+        var zigzag = Vp8Tables.Zigzag;
+        var last = -1;
+        for (var i = 15; i >= first; i--)
+        {
+            if (levels[zigzag[i]] != 0)
+            {
+                last = i;
+                break;
+            }
+        }
+
+        var bits = 0.0;
+        var previousWasZero = false;
+        for (var i = first; i < 16; i++)
+        {
+            ref var p = ref unsafe(Unsafe.Add(ref probabilities, ((bands[i] * 3) + context) * Vp8Tables.TokenNodes));
+            if (!previousWasZero)
+            {
+                if (i > last)
+                    return bits + Cost(ref costs, p, false); // end of block
+
+                bits += Cost(ref costs, p, true);
+            }
+
+            var level = (int)levels[zigzag[i]];
+            var value = Math.Abs(level);
+            if (value == 0)
+            {
+                bits += Cost(ref costs, unsafe(Unsafe.Add(ref p, 1)), false);
+                previousWasZero = true;
+                context = 0;
+                continue;
+            }
+
+            bits += Cost(ref costs, unsafe(Unsafe.Add(ref p, 1)), true);
+            previousWasZero = false;
+            if (value == 1)
+            {
+                bits += Cost(ref costs, unsafe(Unsafe.Add(ref p, 2)), false);
+                context = 1;
+            }
+            else
+            {
+                bits += Cost(ref costs, unsafe(Unsafe.Add(ref p, 2)), true);
+                var sink = new CostSink(bits);
+                WriteLargeValue(unsafe(MemoryMarshal.CreateReadOnlySpan(ref p, Vp8Tables.TokenNodes)), value, ref sink);
+                bits = sink.Bits;
+                context = 2;
+            }
+
+            bits += Cost(ref costs, 128, level < 0);
+        }
+
+        return bits;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static double Cost(ref double costs, int probability, bool value) => unsafe(Unsafe.Add(ref costs, value ? 256 - probability : probability));
     }
 
     private static double[] CreateBitCosts()
@@ -1448,9 +1511,9 @@ internal sealed class Vp8Encoder : IDisposable
 
     /// <summary>Sums the estimated cost in bits of the booleans.</summary>
     [StructLayout(LayoutKind.Auto)]
-    private struct CostSink : IBoolSink
+    private struct CostSink(double bits) : IBoolSink
     {
-        public double Bits { get; private set; }
+        public double Bits { get; private set; } = bits;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Write(int probability, bool value) => Bits += BoolBits(probability, value);

@@ -2043,6 +2043,8 @@ public sealed class VectorizedKernelTests
                     Vp8Encoder.QuantizeReference(coefficients, expected, dcStep, step, first);
                     Vp8Encoder.Quantize(coefficients, actual, dcStep, step, first);
                     Assert.Equal(expected, actual);
+                    Vp8Encoder.QuantizeScalar(coefficients, actual, dcStep, step, first);
+                    Assert.Equal(expected, actual);
                 }
             }
         }

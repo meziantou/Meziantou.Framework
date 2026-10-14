@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -618,6 +619,70 @@ internal sealed class Vp8Encoder : IDisposable
     /// correction (<see cref="Divide"/>): the levels are the ones of <see cref="QuantizeReference"/>.
     /// </remarks>
     internal static void Quantize(ReadOnlySpan<int> coefficients, Span<short> levels, int dcStep, int acStep, int first)
+    {
+        if (!Vector128.IsHardwareAccelerated || !TryQuantizeVector(coefficients, levels, dcStep, acStep, first))
+        {
+            QuantizeScalar(coefficients, levels, dcStep, acStep, first);
+        }
+    }
+
+    /// <summary>
+    /// <see cref="Quantize"/> 4 coefficients at a time: the quotients are single-precision divisions rounded down, exact while
+    /// the numerators are below 2^24 (otherwise nothing is written and <see langword="false"/> is returned).
+    /// </summary>
+    /// <remarks>
+    /// For integers <c>0 &lt;= n &lt; 2^24</c> and <c>d &gt; 0</c>, the correctly rounded quotient differs from <c>n / d</c> by at
+    /// most <c>n / d * 2^-24 &lt; 1 / d</c>, which is less than the distance from a non-integer <c>n / d</c> to the next integer:
+    /// its floor is the integer quotient. Integer quotients are exact.
+    /// </remarks>
+    private static bool TryQuantizeVector(ReadOnlySpan<int> coefficients, Span<short> levels, int dcStep, int acStep, int first)
+    {
+        coefficients = coefficients[..16];
+        levels = levels[..16];
+
+        // Lane 0 of the first vector is the DC (rounded to nearest), the other lanes AC coefficients (2/3 of a step dead zone)
+        var multiplierFirst = Vector128.Create(1, 3, 3, 3);
+        var offsetFirst = Vector128.Create(dcStep >> 1, acStep, acStep, acStep);
+        var divisorFirst = Vector128.Create((float)dcStep, 3 * acStep, 3 * acStep, 3 * acStep);
+        var multiplier = Vector128.Create(3);
+        var offset = Vector128.Create(acStep);
+        var divisor = Vector128.Create((float)(3 * acStep));
+        var limit = Vector128.Create(1u << 24);
+        var c0 = Vector128.Create(coefficients[..4]);
+        var c1 = Vector128.Create(coefficients.Slice(4, 4));
+        var c2 = Vector128.Create(coefficients.Slice(8, 4));
+        var c3 = Vector128.Create(coefficients.Slice(12, 4));
+        var n0 = (Vector128.Abs(c0) * multiplierFirst) + offsetFirst;
+        var n1 = (Vector128.Abs(c1) * multiplier) + offset;
+        var n2 = (Vector128.Abs(c2) * multiplier) + offset;
+        var n3 = (Vector128.Abs(c3) * multiplier) + offset;
+
+        // Numerators from 2^24 (or wrapped to negative values, compared as unsigned) take the scalar path
+        var tooLarge = Vector128.GreaterThanOrEqual(n0.AsUInt32(), limit) | Vector128.GreaterThanOrEqual(n1.AsUInt32(), limit)
+            | Vector128.GreaterThanOrEqual(n2.AsUInt32(), limit) | Vector128.GreaterThanOrEqual(n3.AsUInt32(), limit);
+        if (tooLarge != Vector128<uint>.Zero)
+            return false;
+
+        var l0 = Level(c0, n0, divisorFirst);
+        if (first > 0)
+        {
+            l0 = l0.WithElement(0, 0);
+        }
+
+        Vector128.Narrow(l0, Level(c1, n1, divisor)).CopyTo(levels[..8]);
+        Vector128.Narrow(Level(c2, n2, divisor), Level(c3, n3, divisor)).CopyTo(levels.Slice(8, 8));
+        return true;
+
+        static Vector128<int> Level(Vector128<int> coefficient, Vector128<int> numerator, Vector128<float> divisor)
+        {
+            var quotient = Vector128.ConvertToInt32(Vector128.Floor(Vector128.ConvertToSingle(numerator) / divisor));
+            var level = Vector128.Min(quotient, Vector128.Create(MaxLevel));
+            return Vector128.ConditionalSelect(Vector128.LessThan(coefficient, Vector128<int>.Zero), -level, level);
+        }
+    }
+
+    /// <summary>The scalar version of <see cref="Quantize"/>, for any coefficient.</summary>
+    internal static void QuantizeScalar(ReadOnlySpan<int> coefficients, Span<short> levels, int dcStep, int acStep, int first)
     {
         coefficients = coefficients[..16];
         levels = levels[..16];

@@ -120,8 +120,9 @@ internal sealed class JpegEntropyReader : IDisposable
         var value = (int)(_bits >> (64 - size));
         Skip(size);
 
-        // Values below 2^(size-1) are negative: value - (2^size - 1)
-        return value < (1 << (size - 1)) ? value - (1 << size) + 1 : value;
+        // Values below 2^(size-1) are negative: value - (2^size - 1), without a branch (the sign of value - 2^(size-1)
+        // selects the correction)
+        return value + (((value - (1 << (size - 1))) >> 31) & ((-1 << size) + 1));
     }
 
     /// <summary>Reads <paramref name="count"/> bits as an unsigned value (EOB run lengths, progressive correction and sign bits).</summary>
@@ -311,8 +312,9 @@ internal sealed class JpegEntropyReader : IDisposable
             var value = (int)(_bits >> (64 - size));
             Skip(size);
 
-            // Values below 2^(size-1) are negative: value - (2^size - 1)
-            return value < (1 << (size - 1)) ? value - (1 << size) + 1 : value;
+            // Values below 2^(size-1) are negative: value - (2^size - 1), without a branch (the sign of value - 2^(size-1)
+            // selects the correction)
+            return value + (((value - (1 << (size - 1))) >> 31) & ((-1 << size) + 1));
         }
 
         /// <inheritdoc cref="JpegEntropyReader.ReadBits"/>

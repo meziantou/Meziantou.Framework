@@ -5,7 +5,7 @@ using Meziantou.Framework.Language.Toml;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-/// <summary>Scans Cargo manifests and lockfiles for Rust crate dependencies.</summary>
+/// <summary>Scans Cargo manifests (<c>Cargo.toml</c>) for Rust crate dependencies.</summary>
 public sealed class CargoDependencyScanner : DependencyScanner
 {
     // dev_dependencies and build_dependencies are the deprecated spellings Cargo still accepts
@@ -22,8 +22,7 @@ public sealed class CargoDependencyScanner : DependencyScanner
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        return context.HasFileName("Cargo.toml", ignoreCase: false)
-            || context.HasFileName("Cargo.lock", ignoreCase: false);
+        return context.HasFileName("Cargo.toml", ignoreCase: false);
     }
 
     public override async ValueTask ScanAsync(ScanFileContext context)
@@ -31,18 +30,7 @@ public sealed class CargoDependencyScanner : DependencyScanner
         using var reader = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
         var text = await reader.ReadToEndAsync(context.CancellationToken).ConfigureAwait(false);
         var tree = TomlSyntaxTree.ParseText(text, context.FullPath);
-        if (Path.GetFileName(context.FullPath).Equals("Cargo.lock", StringComparison.Ordinal))
-        {
-            ScanLockFile(context, tree);
-        }
-        else
-        {
-            ScanManifest(context, tree);
-        }
-    }
 
-    private void ScanManifest(ScanFileContext context, TomlSyntaxTree tree)
-    {
         // A crate can be declared over several entries, such as a [dependencies.serde] table, or dotted keys
         // (serde.version = "1.0" and serde.features = ["derive"]), so the entries are grouped by crate before reporting.
         var crates = new Dictionary<(string Section, string Key), CrateDeclaration>();
@@ -177,59 +165,6 @@ public sealed class CargoDependencyScanner : DependencyScanner
             return 3;
 
         return 0;
-    }
-
-    private void ScanLockFile(ScanFileContext context, TomlSyntaxTree tree)
-    {
-        TomlStringSyntax? name = null;
-        TomlStringSyntax? version = null;
-        var hasSource = false;
-        var inPackage = false;
-        foreach (var entry in tree.GetRoot().Entries)
-        {
-            switch (entry)
-            {
-                case TomlTableSyntax table:
-                    ReportPackage();
-                    inPackage = table.IsArrayOfTables && table.Key.Names is ["package"];
-                    name = null;
-                    version = null;
-                    hasSource = false;
-                    break;
-
-                case TomlPropertySyntax property when inPackage && TomlUtilities.IsWellFormed(property):
-                    switch (TomlUtilities.GetName(property.Key))
-                    {
-                        case "name":
-                            name ??= TomlUtilities.GetString(property.Value);
-                            break;
-
-                        case "version":
-                            version ??= TomlUtilities.GetString(property.Value);
-                            break;
-
-                        case "source":
-                            hasSource = true;
-                            break;
-                    }
-
-                    break;
-            }
-        }
-
-        ReportPackage();
-
-        void ReportPackage()
-        {
-            // Packages without a source are the crates of the workspace itself, or path dependencies
-            if (!inPackage || name is null || version is null || !hasSource)
-                return;
-
-            // The version is not updatable as the checksum of the package would not match anymore
-            context.ReportDependency(this, name.Value, version.Value, DependencyType.RustCrate,
-                TomlUtilities.CreateValueLocation(context, tree, name),
-                new NonUpdatableLocation(context));
-        }
     }
 
     private sealed class CrateDeclaration(string key)

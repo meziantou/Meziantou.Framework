@@ -36,8 +36,11 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         AssertContainDependency(result,
             (DependencyType.PyPi, "requests", "2.31.0", 5, 16),
             (DependencyType.PyPi, "httpx", "0.27.0", 10, 10));
-        Assert.Single(result, d => d.Name == "requests" && d.VersionLocation is { IsUpdatable: false } location && location.FilePath.EndsWith("poetry.lock", StringComparison.Ordinal));
+        Assert.HasCount(2, result);
         Assert.DoesNotContain(result, d => d.Name is "name" or "version");
+
+        var lockResult = await GetDependencies<PythonLockFileDependencyScanner>();
+        Assert.Single(lockResult, d => d.Name == "requests" && d.VersionLocation is { IsUpdatable: false } location && location.FilePath.EndsWith("poetry.lock", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -69,10 +72,15 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         var result = await GetDependencies<PythonProjectDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.PyPi, "requests", "2.31.0", 7, 15),
-            (DependencyType.PyPi, "pytest", "8.0.0", 10, 11),
-            (DependencyType.PyPi, "requests", "2.31.0", 0, 0));
+            (DependencyType.PyPi, "pytest", "8.0.0", 10, 11));
+        Assert.HasCount(2, result);
         Assert.DoesNotContain(result, d => d.Version is not null && d.Version.StartsWith('=', StringComparison.Ordinal));
         Assert.DoesNotContain(result, d => d.Name is "url" or "verify_ssl" or "name" or "python_version");
+
+        var lockResult = await GetDependencies<PythonLockFileDependencyScanner>();
+        var locked = Assert.Single(lockResult);
+        Assert.Equal("requests", locked.Name);
+        Assert.Equal("2.31.0", locked.Version);
     }
 
     [Fact]
@@ -313,7 +321,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             }
             """);
 
-        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        var result = await GetDependencies<PythonLockFileDependencyScanner>();
         Assert.HasCount(1, result);
         AssertContainDependency(result, (DependencyType.PyPi, "requests", "2.31.0", 0, 0));
     }
@@ -325,7 +333,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     {
         AddFile("Pipfile.lock", content);
 
-        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        var result = await GetDependencies<PythonLockFileDependencyScanner>();
         Assert.Empty(result);
     }
 
@@ -361,7 +369,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             source = { registry = "https://pypi.org/simple" }
             """);
 
-        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        var result = await GetDependencies<PythonLockFileDependencyScanner>();
         Assert.HasCount(2, result);
         AssertContainDependency(result,
             (DependencyType.PyPi, "requests", "2.31.0", 0, 0),
@@ -421,7 +429,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             content-hash = "abc"
             """);
 
-        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        var result = await GetDependencies<PythonLockFileDependencyScanner>();
         Assert.HasCount(2, result);
         AssertContainDependency(result,
             (DependencyType.PyPi, "requests", "2.31.0", 0, 0),
@@ -460,7 +468,15 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         AssertContainDependency(result,
             (DependencyType.PhpPackage, "monolog/monolog", "^3.0", 0, 0),
             (DependencyType.PhpPackage, "phpunit/phpunit", "^11.0", 0, 0));
+        Assert.HasCount(2, result);
         Assert.DoesNotContain(result, d => d.Name is "php" or "ext-json");
+
+        var lockResult = await GetDependencies<ComposerLockFileDependencyScanner>();
+        AssertContainDependency(lockResult,
+            (DependencyType.PhpPackage, "monolog/monolog", "3.0.0", 0, 0),
+            (DependencyType.PhpPackage, "phpunit/phpunit", "11.0.0", 0, 0));
+        Assert.HasCount(2, lockResult);
+        Assert.DoesNotContain(lockResult, d => d.VersionLocation!.IsUpdatable);
     }
 
     [Fact]
@@ -479,7 +495,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             }
             """);
 
-        var result = await GetDependencies<ComposerDependencyScanner>();
+        var result = await GetDependencies<ComposerLockFileDependencyScanner>();
 
         var dependency = Assert.Single(result);
         Assert.Equal("monolog/monolog", dependency.Name);
@@ -974,7 +990,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             golang.org/x/text v0.14.0 h1:ghi
             """);
 
-        var result = await GetDependencies<GoModuleDependencyScanner>();
+        var result = await GetDependencies<GoSumDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.GoModule, "github.com/foo/bar", "v1.2.3", 0, 0),
             (DependencyType.GoModule, "golang.org/x/text", "v0.14.0", 0, 0));
@@ -1275,7 +1291,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             ]
             """);
 
-        var result = await GetDependencies<CargoDependencyScanner>();
+        var result = await GetDependencies<CargoLockFileDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.RustCrate, "serde", "1.0.0", 0, 0),
             (DependencyType.RustCrate, "serde_derive", "1.0.0", 0, 0));
@@ -1335,9 +1351,10 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             (DependencyType.RubyGem, "rack", "3.0.0", 2, 32),
             (DependencyType.RubyGem, "puma", "~> 6.0", 3, 40),
             (DependencyType.RubyGem, "rspec", null, 0, 0));
+        Assert.HasCount(3, gemspecResult);
 
         var lockPath = _directory.GetFullPath("Gemfile.lock");
-        var lockResult = await DependencyScanner.ScanFileAsync(_directory.FullPath, lockPath, await File.ReadAllBytesAsync(lockPath), [new RubyGemDependencyScanner()], XunitCancellationToken);
+        var lockResult = await DependencyScanner.ScanFileAsync(_directory.FullPath, lockPath, await File.ReadAllBytesAsync(lockPath), [new RubyGemLockFileDependencyScanner()], XunitCancellationToken);
         AssertContainDependency(lockResult,
             (DependencyType.RubyGem, "rack", "3.0.0", 0, 0),
             (DependencyType.RubyGem, "puma", "6.0.1", 0, 0));
@@ -1405,7 +1422,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
               x86_64-linux
             """);
 
-        var result = await GetDependencies<RubyGemDependencyScanner>();
+        var result = await GetDependencies<RubyGemLockFileDependencyScanner>();
         Assert.HasCount(4, result);
         Assert.Equal(3, result.Count(d => d.Name == "nokogiri" && d.Version == "1.15.0"));
         Assert.Single(result, d => d.Name == "nokogiri" && !d.Metadata.ContainsKey("platform"));
@@ -1637,7 +1654,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
 }
 """);
 
-        var result = await GetDependencies<NpmPackageJsonDependencyScanner>();
+        var result = await GetDependencies<NpmLockFileDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.Npm, "a", "1.0.0", 0, 0),
             (DependencyType.Npm, "real-b", "2.0.0", 0, 0),
@@ -4544,8 +4561,11 @@ jobs:
       - uses: ../shared/action
       - uses: docker://localhost:5000/tool:2.0
       - uses: actions/checkout@v4
+      - uses: $/actions/local
   reusable:
     uses: ./.github/workflows/reusable.yml
+  self:
+    uses: $/.github/workflows/reusable.yml
 """;
         const string Expected = """
 jobs:
@@ -4560,8 +4580,11 @@ jobs:
       - uses: ../shared/action
       - uses: docker://dummy3:3.0.0
       - uses: dummy4@3.0.0
+      - uses: $/actions/local
   reusable:
     uses: ./.github/workflows/reusable.yml
+  self:
+    uses: $/.github/workflows/reusable.yml
 """;
 
         AddFile(Path, Original);
@@ -4678,6 +4701,187 @@ jobs:
         var result = await DependencyScanner.ScanFileAsync(rootDirectory, filePath, new ScannerOptions { Scanners = [new GitHubActionsScanner()] }, XunitCancellationToken);
 
         Assert.Single(result, d => d.Name == "actions/checkout");
+    }
+
+    [Fact]
+    public async Task GitHubActions_LockFile()
+    {
+        AddFile(".github/workflows/actions.lock", """
+            # This file is machine-generated by `gh actions-lock`.
+            # Do not edit by hand; run `gh actions-lock` to update.
+            # Docs: https://gh.io/actions-lockfile
+            version: 'v0.0.3'
+            workflows:
+                '.github/workflows/release.yml':
+                    - 'actions/checkout@v6.0.2'
+                    - 'cli/gh-extension-precompile@v2.1.0'
+            dependencies:
+                'actions/attest@67422f5511b7ff725f4dbd6fb9bd2cd925c65a8d':
+                    ref: 'v1.4.1'
+                    commit: 'sha1-67422f5511b7ff725f4dbd6fb9bd2cd925c65a8d'
+                    owner_id: 44036562
+                    repo_id: 760701061
+                'actions/checkout@v6.0.2':
+                    hostname: 'github.com'
+                    ref: 'v6.0.2'
+                    commit: 'sha1-de0fac2e4500dabe0009e67214ff5f5447ce83dd'
+                    owner_id: 44036562
+                    repo_id: 197814629
+                'cli/gh-extension-precompile@v2.1.0':
+                    ref: 'v2.1.0'
+                    commit: 'sha1-9e2237c30f869ad3bcaed6a4be2cd43564dd421b'
+                    owner_id: 59704711
+                    repo_id: 421583656
+                    uses:
+                        - 'actions/attest@67422f5511b7ff725f4dbd6fb9bd2cd925c65a8d'
+            """);
+        AddFile(".github/workflows/release.yml", """
+            jobs:
+              release:
+                steps:
+                  - uses: actions/checkout@v6.0.2
+                  - uses: cli/gh-extension-precompile@v2.1.0
+            """);
+
+        // The workflows are scanned by GitHubActionsScanner
+        var result = await GetDependencies<GitHubActionsLockFileDependencyScanner>();
+
+        Assert.HasCount(3, result);
+        AssertContainDependency(result,
+            (DependencyType.GitHubActions, "actions/attest", "67422f5511b7ff725f4dbd6fb9bd2cd925c65a8d", 0, 0),
+            (DependencyType.GitHubActions, "actions/checkout", "v6.0.2", 0, 0),
+            (DependencyType.GitHubActions, "cli/gh-extension-precompile", "v2.1.0", 0, 0));
+
+        var attest = Assert.Single(result, d => d.Name == "actions/attest");
+        Assert.Equal("sha1-67422f5511b7ff725f4dbd6fb9bd2cd925c65a8d", attest.Metadata["commit"]);
+        Assert.Equal("v1.4.1", attest.Metadata["ref"]);
+        Assert.Null(attest.Metadata["hostname"]);
+        Assert.Equal(44036562L, attest.Metadata["ownerId"]);
+        Assert.Equal(760701061L, attest.Metadata["repoId"]);
+
+        var checkout = Assert.Single(result, d => d.Name == "actions/checkout");
+        Assert.Equal("sha1-de0fac2e4500dabe0009e67214ff5f5447ce83dd", checkout.Metadata["commit"]);
+        Assert.Equal("v6.0.2", checkout.Metadata["ref"]);
+        Assert.Equal("github.com", checkout.Metadata["hostname"]);
+
+        // The lock file records the commit of each action, so its entries are not updatable
+        foreach (var dependency in result)
+        {
+            Assert.False(dependency.NameLocation!.IsUpdatable);
+            Assert.False(dependency.VersionLocation!.IsUpdatable);
+        }
+
+        Assert.HasCount(2, await GetDependencies<GitHubActionsScanner>());
+    }
+
+    [Fact]
+    public async Task GitHubActions_LockFile_Version001()
+    {
+        AddFile(".github/workflows/actions.lock", """
+            version: v0.0.1
+            workflows:
+              .github/workflows/ci.yml:
+                - actions/checkout@v4:sha1-34e114876b0b11c390a56381ad16ebd13914f8d5
+            dependencies:
+              actions/checkout@v4:sha1-34e114876b0b11c390a56381ad16ebd13914f8d5:
+                tag: v4.3.1
+                commit: sha1-34e114876b0b11c390a56381ad16ebd13914f8d5
+                owner_id: 44036562
+                repo_id: 197814629
+              actions/setup-go@main:sha256-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef:
+                branch: main
+                commit: sha256-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+                owner_id: 44036562
+                repo_id: 192624594
+            """);
+
+        var result = await GetDependencies<GitHubActionsLockFileDependencyScanner>();
+
+        Assert.HasCount(2, result);
+        AssertContainDependency(result,
+            (DependencyType.GitHubActions, "actions/checkout", "v4", 0, 0),
+            (DependencyType.GitHubActions, "actions/setup-go", "main", 0, 0));
+
+        var checkout = Assert.Single(result, d => d.Name == "actions/checkout");
+        Assert.Equal("v4.3.1", checkout.Metadata["ref"]);
+        Assert.Equal("sha1-34e114876b0b11c390a56381ad16ebd13914f8d5", checkout.Metadata["commit"]);
+
+        var setupGo = Assert.Single(result, d => d.Name == "actions/setup-go");
+        Assert.Equal("main", setupGo.Metadata["ref"]);
+        Assert.Equal("sha256-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", setupGo.Metadata["commit"]);
+    }
+
+    [Fact]
+    public async Task GitHubActions_LockFile_InvalidEntries()
+    {
+        AddFile(".github/workflows/actions.lock", """
+            version: v0.0.3
+            dependencies:
+              actions/checkout:
+                ref: v4
+              '@v4':
+                ref: v4
+              'actions/cache@':
+                ref: v4
+              'actions/setup-node@:sha1-34e114876b0b11c390a56381ad16ebd13914f8d5':
+                ref: v4
+              actions/setup-dotnet@v5: invalid
+              actions/upload-artifact@v6:
+                ref: ''
+                owner_id: -1
+                repo_id: abc
+            """);
+
+        var result = await GetDependencies<GitHubActionsLockFileDependencyScanner>();
+
+        Assert.HasCount(2, result);
+        AssertContainDependency(result,
+            (DependencyType.GitHubActions, "actions/setup-dotnet", "v5", 0, 0),
+            (DependencyType.GitHubActions, "actions/upload-artifact", "v6", 0, 0));
+        Assert.All(result, dependency =>
+        {
+            Assert.Null(dependency.Metadata["commit"]);
+            Assert.Null(dependency.Metadata["ref"]);
+            Assert.Null(dependency.Metadata["hostname"]);
+            Assert.Null(dependency.Metadata["ownerId"]);
+            Assert.Null(dependency.Metadata["repoId"]);
+        });
+    }
+
+    [Theory]
+    [InlineData("actions.lock")]
+    [InlineData(".github/actions.lock")]
+    [InlineData(".github/workflows/Actions.lock")]
+    [InlineData(".github/workflows/nested/actions.lock")]
+    [InlineData("sample/.github/workflows/actions.lock")]
+    public async Task GitHubActions_LockFile_WrongPath_NoDependency(string path)
+    {
+        AddFile(path, """
+            version: v0.0.3
+            dependencies:
+              actions/checkout@v4:
+                ref: v4
+                commit: sha1-34e114876b0b11c390a56381ad16ebd13914f8d5
+                owner_id: 44036562
+                repo_id: 197814629
+            """);
+
+        var result = await GetDependencies<GitHubActionsLockFileDependencyScanner>();
+        Assert.Empty(result);
+    }
+
+    [Theory]
+    [InlineData("dependencies: [actions/checkout@v4]")]
+    [InlineData("dependencies: actions/checkout@v4")]
+    [InlineData("- actions/checkout@v4")]
+    [InlineData("dependencies: {")]
+    [InlineData("")]
+    public async Task GitHubActions_LockFile_InvalidContent_NoDependency(string content)
+    {
+        AddFile(".github/workflows/actions.lock", content);
+
+        var result = await GetDependencies<GitHubActionsLockFileDependencyScanner>();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -4979,7 +5183,7 @@ jobs:
 """;
 
         AddFile("Package.resolved", Original);
-        var result = await GetDependencies<SwiftPackageDependencyScanner>();
+        var result = await GetDependencies<SwiftPackageLockFileDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.SwiftPackage, "swift-nio", "2.76.0", 0, 0),
             (DependencyType.SwiftPackage, "swift-log", "main", 0, 0),
@@ -5036,7 +5240,7 @@ jobs:
 """;
 
         AddFile("Package.resolved", Original);
-        var result = await GetDependencies<SwiftPackageDependencyScanner>();
+        var result = await GetDependencies<SwiftPackageLockFileDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.SwiftPackage, "alamofire", "5.8.0", 0, 0));
         Assert.False(Assert.Single(result).VersionLocation!.IsUpdatable);
@@ -5995,23 +6199,24 @@ jobs:
               repository: "@bitnami"
             """);
 
-        var result = await GetDependencies<HelmChartDependencyScanner>();
+        var lockResult = await GetDependencies<HelmChartLockFileDependencyScanner>();
 
-        Assert.HasCount(3, result);
-        AssertContainDependency(result,
+        Assert.HasCount(2, lockResult);
+        AssertContainDependency(lockResult,
             (DependencyType.HelmChart, "mariadb", "11.4.2", 0, 0),
-            (DependencyType.HelmChart, "redis", "11.4.2", 0, 0),
-            (DependencyType.HelmChart, "redis", "~17.0.0", 3, 12));
+            (DependencyType.HelmChart, "redis", "11.4.2", 0, 0));
 
         // The lock files record a digest of the dependencies, so their entries are not updatable
-        foreach (var dependency in result.Where(d => d.Version is "11.4.2"))
+        foreach (var dependency in lockResult)
         {
             Assert.False(dependency.NameLocation!.IsUpdatable);
             Assert.False(dependency.VersionLocation!.IsUpdatable);
             Assert.Equal("https://charts.bitnami.com/bitnami", dependency.Metadata["repository"]);
         }
 
-        var requirement = Assert.Single(result, d => d.Version is "~17.0.0");
+        var requirement = Assert.Single(await GetDependencies<HelmChartDependencyScanner>());
+        Assert.Equal("redis", requirement.Name);
+        Assert.Equal("~17.0.0", requirement.Version);
         Assert.True(requirement.VersionLocation!.IsUpdatable);
         Assert.Equal("@bitnami", requirement.Metadata["repository"]);
     }

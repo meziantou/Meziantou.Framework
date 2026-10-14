@@ -1,3 +1,5 @@
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -29,6 +31,36 @@ internal static class Av1InterPredictor
     /// <param name="pred">The prediction: <paramref name="h"/> rows of <paramref name="predStride"/> values.</param>
     /// <param name="predStride">The number of values of a row of <paramref name="pred"/>.</param>
     public static void PredictBlock(
+        ReadOnlySpan<ushort> reference,
+        int referenceStride,
+        int lastX,
+        int lastY,
+        int x,
+        int y,
+        int xStep,
+        int yStep,
+        int w,
+        int h,
+        int horizontalFilter,
+        int verticalFilter,
+        int interRound0,
+        int interRound1,
+        Span<int> intermediate,
+        Span<int> pred,
+        int predStride)
+    {
+        if (Vector128.IsHardwareAccelerated && xStep is 1 << Av1Constants.ScaleSubpelBits && yStep is 1 << Av1Constants.ScaleSubpelBits && (w & 3) is 0)
+        {
+            PredictBlockUnscaled(reference, referenceStride, lastX, lastY, x, y, w, h, horizontalFilter, verticalFilter, interRound0, interRound1, intermediate, pred, predStride);
+        }
+        else
+        {
+            PredictBlockScalar(reference, referenceStride, lastX, lastY, x, y, xStep, yStep, w, h, horizontalFilter, verticalFilter, interRound0, interRound1, intermediate, pred, predStride);
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="PredictBlock"/>.</summary>
+    internal static void PredictBlockScalar(
         ReadOnlySpan<ushort> reference,
         int referenceStride,
         int lastX,
@@ -94,6 +126,98 @@ internal static class Av1InterPredictor
                 destination[c] = (s + round1) >> interRound1;
             }
         }
+    }
+
+    // PredictBlockScalar for a reference of the size of the frame (steps of one sample): every sample of the block uses the
+    // same taps, and the taps of consecutive samples read consecutive samples. The rows whose taps are all inside the
+    // reference are filtered 4 samples at a time with the integer expressions of the scalar code, the others like it
+    private static void PredictBlockUnscaled(
+        ReadOnlySpan<ushort> reference,
+        int referenceStride,
+        int lastX,
+        int lastY,
+        int x,
+        int y,
+        int w,
+        int h,
+        int horizontalFilter,
+        int verticalFilter,
+        int interRound0,
+        int interRound1,
+        Span<int> intermediate,
+        Span<int> pred,
+        int predStride)
+    {
+        var intermediateHeight = h + 7;
+        var filters = Av1Tables.SubpelFilters;
+        var tapsH = filters.Slice((SelectFilter(horizontalFilter, w) * Av1Tables.SubpelFiltersLength1 * Av1Tables.SubpelFiltersLength2) + (((x >> 6) & Av1Constants.SubpelMask) * Av1Tables.SubpelFiltersLength2), 8);
+        var first = (x >> Av1Constants.ScaleSubpelBits) - 3;
+        var round0 = Vector128.Create((1 << interRound0) >> 1);
+        if (first >= 0 && first + w + 6 <= lastX)
+        {
+            var h0 = Vector128.Create((int)tapsH[0]);
+            var h1 = Vector128.Create((int)tapsH[1]);
+            var h2 = Vector128.Create((int)tapsH[2]);
+            var h3 = Vector128.Create((int)tapsH[3]);
+            var h4 = Vector128.Create((int)tapsH[4]);
+            var h5 = Vector128.Create((int)tapsH[5]);
+            var h6 = Vector128.Create((int)tapsH[6]);
+            var h7 = Vector128.Create((int)tapsH[7]);
+            for (var r = 0; r < intermediateHeight; r++)
+            {
+                var source = reference.Slice((Math.Clamp((y >> Av1Constants.ScaleSubpelBits) + r - 3, 0, lastY) * referenceStride) + first, w + 7);
+                var destination = intermediate.Slice(r * w, w);
+                for (var c = 0; c < w; c += 4)
+                {
+                    var s = (h0 * Load(source, c)) + (h1 * Load(source, c + 1)) + (h2 * Load(source, c + 2)) + (h3 * Load(source, c + 3))
+                        + (h4 * Load(source, c + 4)) + (h5 * Load(source, c + 5)) + (h6 * Load(source, c + 6)) + (h7 * Load(source, c + 7));
+                    ((s + round0) >> interRound0).CopyTo(destination[c..]);
+                }
+            }
+        }
+        else
+        {
+            for (var r = 0; r < intermediateHeight; r++)
+            {
+                var source = reference.Slice(Math.Clamp((y >> Av1Constants.ScaleSubpelBits) + r - 3, 0, lastY) * referenceStride, lastX + 1);
+                var destination = intermediate.Slice(r * w, w);
+                for (var c = 0; c < w; c++)
+                {
+                    var s = 0;
+                    for (var t = 0; t < 8; t++)
+                    {
+                        s += tapsH[t] * source[Math.Clamp(first + c + t, 0, lastX)];
+                    }
+
+                    destination[c] = (s + round0.ToScalar()) >> interRound0;
+                }
+            }
+        }
+
+        // The rows of the vertical filter start at the row of the block: (y & 1023) is below one sample
+        var tapsV = filters.Slice((SelectFilter(verticalFilter, h) * Av1Tables.SubpelFiltersLength1 * Av1Tables.SubpelFiltersLength2) + ((((y & 1023) >> 6) & Av1Constants.SubpelMask) * Av1Tables.SubpelFiltersLength2), 8);
+        var v0 = Vector128.Create((int)tapsV[0]);
+        var v1 = Vector128.Create((int)tapsV[1]);
+        var v2 = Vector128.Create((int)tapsV[2]);
+        var v3 = Vector128.Create((int)tapsV[3]);
+        var v4 = Vector128.Create((int)tapsV[4]);
+        var v5 = Vector128.Create((int)tapsV[5]);
+        var v6 = Vector128.Create((int)tapsV[6]);
+        var v7 = Vector128.Create((int)tapsV[7]);
+        var round1 = Vector128.Create((1 << interRound1) >> 1);
+        for (var r = 0; r < h; r++)
+        {
+            var rows = intermediate.Slice(r * w, 8 * w);
+            var destination = pred.Slice(r * predStride, w);
+            for (var c = 0; c < w; c += 4)
+            {
+                var s = (v0 * Vector128.Create(rows[c..])) + (v1 * Vector128.Create(rows[(w + c)..])) + (v2 * Vector128.Create(rows[((2 * w) + c)..])) + (v3 * Vector128.Create(rows[((3 * w) + c)..]))
+                    + (v4 * Vector128.Create(rows[((4 * w) + c)..])) + (v5 * Vector128.Create(rows[((5 * w) + c)..])) + (v6 * Vector128.Create(rows[((6 * w) + c)..])) + (v7 * Vector128.Create(rows[((7 * w) + c)..]));
+                ((s + round1) >> interRound1).CopyTo(destination[c..]);
+            }
+        }
+
+        static Vector128<int> Load(ReadOnlySpan<ushort> samples, int index) => Vector128.WidenLower(Vector64.Create(samples.Slice(index, 4)).ToVector128()).AsInt32();
     }
 
     // The 4-tap variants of the filters are used for the blocks of 4 samples or less in the direction of the filter

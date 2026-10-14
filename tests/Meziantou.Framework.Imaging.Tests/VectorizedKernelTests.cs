@@ -2587,6 +2587,46 @@ public sealed class VectorizedKernelTests
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1InterPredictionMatchesTheScalarReference(int bitDepth)
+    {
+        // Blocks of every size at every sub-sample position, inside the reference and across each of its edges, with every
+        // filter type and the rounding of the bit depth and of compound prediction
+        var random = new Random(bitDepth * 23);
+        var maxSample = (1 << bitDepth) - 1;
+        const int Stride = 96;
+        const int Height = 80;
+        var reference = new ushort[Stride * Height];
+        for (var i = 0; i < reference.Length; i++)
+        {
+            reference[i] = (ushort)(random.Next(4) == 0 ? random.Next(2) * maxSample : random.Next(maxSample + 1));
+        }
+
+        var intermediate = new int[Av1InterPredictor.MaxIntermediateHeight * 64];
+        for (var round = 0; round < 4000; round++)
+        {
+            var w = 4 << random.Next(5);
+            var h = 2 << random.Next(6);
+            var lastX = random.Next(8, Stride);
+            var lastY = random.Next(8, Height);
+            var x = (random.Next(-24, lastX + 24) << 10) + (random.Next(16) << 6);
+            var y = (random.Next(-24, lastY + 24) << 10) + (random.Next(16) << 6);
+            var horizontalFilter = random.Next(4);
+            var verticalFilter = random.Next(4);
+            var interRound0 = 3 + (bitDepth is 12 ? 2 : 0);
+            var interRound1 = random.Next(2) == 0 ? 7 : 11 - interRound0;
+            var expected = new int[h * 70];
+            var actual = new int[h * 70];
+            Av1InterPredictor.PredictBlockScalar(reference, Stride, lastX, lastY, x, y, 1024, 1024, w, h, horizontalFilter, verticalFilter, interRound0, interRound1, intermediate, expected, 70);
+            Av1InterPredictor.PredictBlock(reference, Stride, lastX, lastY, x, y, 1024, 1024, w, h, horizontalFilter, verticalFilter, interRound0, interRound1, intermediate, actual, 70);
+            Assert.True(expected.AsSpan().SequenceEqual(actual), $"Round {round}: {w}x{h} at ({x}, {y}), limits ({lastX}, {lastY}), filters {horizontalFilter}/{verticalFilter}.");
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1ResidualAdditionMatchesTheScalarReference(int bitDepth)
     {
         // Rows of every transform width, residuals that clamp at both ends and any 32-bit value

@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -173,6 +174,53 @@ internal sealed class WebPDecoder : WebPDecodeObserver
         }
     }
 
+    /// <summary>Converts ARGB pixels (<c>0xAARRGGBB</c>) to RGBA bytes (alpha 255 when <paramref name="opaque"/>), 4 pixels at a time.</summary>
+    internal static void ArgbToRgba(ReadOnlySpan<uint> pixels, Span<byte> rgba, bool opaque)
+    {
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            // Each little-endian pixel is B, G, R, A in memory: swapping the first and third byte gives R, G, B, A
+            var order = Vector128.Create((byte)2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15);
+            var alpha = Vector128.Create(opaque ? 0xFF000000u : 0u).AsByte();
+            if (!BitConverter.IsLittleEndian)
+            {
+                order = Vector128.Create((byte)1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12);
+                alpha = Vector128.Create(opaque ? 0x000000FFu : 0u).AsByte();
+            }
+
+            for (; x <= pixels.Length - Vector128<uint>.Count; x += Vector128<uint>.Count)
+            {
+                var bytes = Vector128.Create(pixels.Slice(x, Vector128<uint>.Count)).AsByte();
+                (Vector128.Shuffle(bytes, order) | alpha).CopyTo(rgba.Slice(x * BytesPerPixel, Vector128<byte>.Count));
+            }
+        }
+
+        for (; x < pixels.Length; x++)
+        {
+            var argb = pixels[x];
+            var pixel = rgba.Slice(x * BytesPerPixel, BytesPerPixel);
+            pixel[0] = (byte)(argb >> 16);
+            pixel[1] = (byte)(argb >> 8);
+            pixel[2] = (byte)argb;
+            pixel[3] = opaque ? byte.MaxValue : (byte)(argb >> 24);
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="ArgbToRgba"/>.</summary>
+    internal static void ArgbToRgbaScalar(ReadOnlySpan<uint> pixels, Span<byte> rgba, bool opaque)
+    {
+        for (var x = 0; x < pixels.Length; x++)
+        {
+            var argb = pixels[x];
+            var pixel = rgba.Slice(x * BytesPerPixel, BytesPerPixel);
+            pixel[0] = (byte)(argb >> 16);
+            pixel[1] = (byte)(argb >> 8);
+            pixel[2] = (byte)argb;
+            pixel[3] = opaque ? byte.MaxValue : (byte)(argb >> 24);
+        }
+    }
+
     /// <summary>A decoded image that produces RGBA rows: VP8L ARGB pixels, or VP8 planes with an optional alpha plane.</summary>
     private sealed class DecodedWebPImage : IDisposable
     {
@@ -201,16 +249,7 @@ internal sealed class WebPDecoder : WebPDecodeObserver
             if (_argb is not null)
             {
                 var pixels = unsafe(MemoryMarshal.Cast<byte, uint>(_argb.RawBuffer.AsSpan())).Slice(y * _width, _width);
-                for (var x = 0; x < pixels.Length; x++)
-                {
-                    var argb = pixels[x];
-                    var pixel = rgba.Slice(x * BytesPerPixel, BytesPerPixel);
-                    pixel[0] = (byte)(argb >> 16);
-                    pixel[1] = (byte)(argb >> 8);
-                    pixel[2] = (byte)argb;
-                    pixel[3] = _opaque ? byte.MaxValue : (byte)(argb >> 24);
-                }
-
+                ArgbToRgba(pixels, rgba, _opaque);
                 return;
             }
 

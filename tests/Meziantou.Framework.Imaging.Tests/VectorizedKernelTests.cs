@@ -3030,6 +3030,56 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPAlphaAndOutputKernelsMatchTheScalarReferences()
+    {
+        // Alpha unfiltering (every filter, the first row and column, clamps of the gradient), the green extraction and the
+        // ARGB to RGBA rows, at lengths around the vector sizes
+        var random = new Random(4053);
+        for (var round = 0; round < 600; round++)
+        {
+            var width = round < 40 ? 1 + round : random.Next(1, 100);
+            var height = random.Next(1, 8);
+            var values = new byte[width * height];
+            random.NextBytes(values);
+            if (round % 3 == 1)
+            {
+                for (var i = 0; i < values.Length; i++)
+                {
+                    values[i] = (byte)(random.Next(2) * 255);
+                }
+            }
+
+            for (var filter = 0; filter < 4; filter++)
+            {
+                var expected = values.ToArray();
+                var actual = values.ToArray();
+                WebPAlphaDecoder.UnfilterScalar(expected, width, height, filter);
+                WebPAlphaDecoder.Unfilter(actual, width, height, filter);
+                Assert.Equal(expected, actual);
+            }
+
+            var pixels = new uint[width * height];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                pixels[i] = (uint)random.Next() ^ ((uint)random.Next() << 16);
+            }
+
+            var green = new byte[pixels.Length];
+            WebPAlphaDecoder.ExtractGreen(pixels, green);
+            Assert.Equal(pixels.Select(pixel => (byte)(pixel >> 8)).ToArray(), green);
+            foreach (var opaque in new[] { false, true })
+            {
+                var expectedRgba = new byte[pixels.Length * 4];
+                var actualRgba = new byte[pixels.Length * 4];
+                WebPDecoder.ArgbToRgbaScalar(pixels, expectedRgba, opaque);
+                WebPDecoder.ArgbToRgba(pixels, actualRgba, opaque);
+                Assert.Equal(expectedRgba, actualRgba);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void WebPLosslessPredictionCostsMatchTheScalarReferences()
     {
         // Every predictor mode on images of every small width (first row and column, the last column whose top-right pixel

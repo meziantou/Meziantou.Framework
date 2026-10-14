@@ -20,13 +20,17 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>Cancellation is observed between row bands; the destination is a replacement storage, so a partial result is never visible.</para>
 /// <para>
 /// With hardware vector support, the horizontal pass of 3- and 4-sample pixels accumulates the samples of one pixel in the
-/// lanes of one 256-bit vector (two 128-bit vectors), and the vertical pass adds whole rows, lane by lane: every sample is
+/// lanes of one 256-bit vector (two 128-bit vectors), and the vertical pass adds whole rows, lane by lane (gathering sums
+/// the rows of a window by groups of at most 4, a block of samples at a time, <see cref="SetWeightedSum"/>): every sample is
 /// still <c>0 + w0 x0 + w1 x1 + ...</c> in the same order without fused multiply-adds, so the result is bit-identical to the
 /// scalar loops (<c>VectorizedKernelTests</c>).
 /// </para>
 /// </remarks>
 internal static class Resampler
 {
+    // The largest number of ring rows that the taps summed in one pass over the accumulator read (gather)
+    private const int MaxRowsPerPass = 4;
+
     private static readonly AsyncLocal<bool> TestForceScalarValue = new();
     private static readonly AsyncLocal<Action<int, bool>?> TestBandObserverValue = new();
 
@@ -160,6 +164,12 @@ internal static class Resampler
         var ringSize = scratch.RowCount;
         var accumulator = scratch.ExtraRow;
         var next = yWeights.GetStart(start);
+
+        // The taps are summed a block of samples at a time (SetWeightedSum) by groups that read at most MaxRowsPerPass ring
+        // rows (the prefetching of the processor follows a limited number of streams), each group adding to the sums of the
+        // previous ones; the scalar reference of the tests adds a row per tap
+        var blocked = !TestForceScalar && (Vector128.IsHardwareAccelerated || Vector256.IsHardwareAccelerated);
+        Span<int> offsets = stackalloc int[MaxRowsPerPass];
         for (var dy = start; dy < end; dy++)
         {
             if (dy % ProcessingKernels.RowsPerCancellationCheck == 0)
@@ -179,10 +189,28 @@ internal static class Resampler
             }
 
             // 0 + w0 H0 written directly (no separate clearing pass), then + w1 H1 + ...
-            SetScaled(accumulator, scratch.GetSlot(first % ringSize), weights[0]);
-            for (var k = 1; k < weights.Length; k++)
+            if (blocked)
             {
-                AddScaled(accumulator, scratch.GetSlot((first + k) % ringSize), weights[k]);
+                var rows = scratch.Rows;
+                var rowLength = scratch.RowLength;
+                for (var k = 0; k < weights.Length; k += MaxRowsPerPass)
+                {
+                    var count = Math.Min(MaxRowsPerPass, weights.Length - k);
+                    for (var t = 0; t < count; t++)
+                    {
+                        offsets[t] = (((first + k + t) % ringSize) + 1) * rowLength;
+                    }
+
+                    SetWeightedSum(rows, 0, rowLength, offsets[..count], weights.Slice(k, count), accumulate: k is not 0);
+                }
+            }
+            else
+            {
+                SetScaled(accumulator, scratch.GetSlot(first % ringSize), weights[0]);
+                for (var k = 1; k < weights.Length; k++)
+                {
+                    AddScaled(accumulator, scratch.GetSlot((first + k) % ringSize), weights[k]);
+                }
             }
 
             WorkingSamples.Store(accumulator, unsafe(MemoryMarshal.Cast<TPixel, TSample>(GetRow<TPixel>(destination, dy))), plan.Alpha, plan.Transfer, plan.MaxValue);

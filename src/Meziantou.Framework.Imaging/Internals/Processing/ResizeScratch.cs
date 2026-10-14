@@ -28,6 +28,12 @@ internal sealed class ResizeScratch : IDisposable
     /// <summary>Gets the number of ring rows (gather) or accumulator rows (scatter).</summary>
     public int RowCount { get; }
 
+    /// <summary>Gets the number of doubles of a row.</summary>
+    public int RowLength => _rowLength;
+
+    /// <summary>Gets the extra row followed by the <see cref="RowCount"/> slots: slot <c>s</c> starts at <c>(s + 1) * <see cref="RowLength"/></c>.</summary>
+    public Span<double> Rows => unsafe(MemoryMarshal.Cast<byte, double>((_rows ?? throw new ObjectDisposedException(nameof(ResizeScratch))).Span))[..(_rowLength * (RowCount + 1))];
+
     /// <summary>Rents the buffers of a worker; nothing stays charged on failure.</summary>
     /// <param name="scope">The image scope.</param>
     /// <param name="workingLength">The number of doubles of the working row.</param>

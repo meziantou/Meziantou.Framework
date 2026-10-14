@@ -1,3 +1,5 @@
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -29,6 +31,131 @@ internal static class JpegXlForwardTransform
     /// <param name="coefficients">Receives the coefficients, in the layout of the format: the smaller side as rows, transposed when the block is not wider than it is high.</param>
     /// <param name="scratch">Scratch memory of <paramref name="rows"/> times <paramref name="columns"/> values.</param>
     public static void ForwardDct(ReadOnlySpan<float> samples, int stride, int rows, int columns, Span<float> coefficients, Span<float> scratch)
+    {
+        // Four lines at once, one per lane, each with the operations of the scalar code in the same order
+        if (Vector128.IsHardwareAccelerated && rows >= 4 && columns >= 4)
+        {
+            ForwardDctVector(samples, stride, rows, columns, coefficients, scratch);
+            return;
+        }
+
+        ForwardDctScalar(samples, stride, rows, columns, coefficients, scratch);
+    }
+
+    /// <summary>
+    /// The DCT of a block whose sides are multiples of 4: the rows of samples are transformed four at a time (transposed
+    /// 4x4 values at a time on the way in and out), then the columns of horizontal frequencies four at a time.
+    /// </summary>
+    /// <remarks>Every element of the stack buffers is written before it is read.</remarks>
+    [System.Runtime.CompilerServices.SkipLocalsInit]
+    private static void ForwardDctVector(ReadOnlySpan<float> samples, int stride, int rows, int columns, Span<float> coefficients, Span<float> scratch)
+    {
+        var columnBasis = GetBasis(columns);
+        var rowBasis = GetBasis(rows);
+        Span<Vector128<float>> lines = unsafe(stackalloc Vector128<float>[MaxSize]);
+        Span<Vector128<float>> even = unsafe(stackalloc Vector128<float>[MaxSize / 2]);
+        Span<Vector128<float>> odd = unsafe(stackalloc Vector128<float>[MaxSize / 2]);
+
+        // The horizontal frequencies of each row of samples, for four rows at a time
+        var horizontal = scratch[..(rows * columns)];
+        var halfColumns = columns / 2;
+        var line = lines[..columns];
+        for (var y = 0; y < rows; y += 4)
+        {
+            for (var x = 0; x < columns; x += 4)
+            {
+                JpegXlInverseTransform.Transpose(
+                    Vector128.Create(samples.Slice((y * stride) + x, 4)),
+                    Vector128.Create(samples.Slice(((y + 1) * stride) + x, 4)),
+                    Vector128.Create(samples.Slice(((y + 2) * stride) + x, 4)),
+                    Vector128.Create(samples.Slice(((y + 3) * stride) + x, 4)),
+                    out var r0,
+                    out var r1,
+                    out var r2,
+                    out var r3);
+                line[x] = r0;
+                line[x + 1] = r1;
+                line[x + 2] = r2;
+                line[x + 3] = r3;
+            }
+
+            for (var x = 0; x < halfColumns; x++)
+            {
+                even[x] = line[x] + line[columns - 1 - x];
+                odd[x] = line[x] - line[columns - 1 - x];
+            }
+
+            for (var u = 0; u < columns; u += 4)
+            {
+                Sum(even, odd, columnBasis.AsSpan(u * columns, 4 * columns), columns, halfColumns, out var s0, out var s1, out var s2, out var s3);
+                JpegXlInverseTransform.Transpose(s0, s1, s2, s3, out var r0, out var r1, out var r2, out var r3);
+                r0.CopyTo(horizontal.Slice((y * columns) + u, 4));
+                r1.CopyTo(horizontal.Slice(((y + 1) * columns) + u, 4));
+                r2.CopyTo(horizontal.Slice(((y + 2) * columns) + u, 4));
+                r3.CopyTo(horizontal.Slice(((y + 3) * columns) + u, 4));
+            }
+        }
+
+        // Then the vertical frequencies of each column of horizontal frequencies, for four columns at a time
+        var isWide = rows < columns;
+        var halfRows = rows / 2;
+        for (var u = 0; u < columns; u += 4)
+        {
+            for (var y = 0; y < halfRows; y++)
+            {
+                var first = Vector128.Create(horizontal.Slice((y * columns) + u, 4));
+                var last = Vector128.Create(horizontal.Slice(((rows - 1 - y) * columns) + u, 4));
+                even[y] = first + last;
+                odd[y] = first - last;
+            }
+
+            for (var v = 0; v < rows; v += 4)
+            {
+                Sum(even, odd, rowBasis.AsSpan(v * rows, 4 * rows), rows, halfRows, out var s0, out var s1, out var s2, out var s3);
+                if (isWide)
+                {
+                    s0.CopyTo(coefficients.Slice((v * columns) + u, 4));
+                    s1.CopyTo(coefficients.Slice(((v + 1) * columns) + u, 4));
+                    s2.CopyTo(coefficients.Slice(((v + 2) * columns) + u, 4));
+                    s3.CopyTo(coefficients.Slice(((v + 3) * columns) + u, 4));
+                }
+                else
+                {
+                    JpegXlInverseTransform.Transpose(s0, s1, s2, s3, out var r0, out var r1, out var r2, out var r3);
+                    r0.CopyTo(coefficients.Slice((u * rows) + v, 4));
+                    r1.CopyTo(coefficients.Slice(((u + 1) * rows) + v, 4));
+                    r2.CopyTo(coefficients.Slice(((u + 2) * rows) + v, 4));
+                    r3.CopyTo(coefficients.Slice(((u + 3) * rows) + v, 4));
+                }
+            }
+        }
+
+        // For four consecutive coefficients (the first one of even rank), the sums of the products of the folded values by
+        // the first half of their basis functions, each from the first product: four independent sums
+        static void Sum(ReadOnlySpan<Vector128<float>> even, ReadOnlySpan<Vector128<float>> odd, ReadOnlySpan<float> bases, int count, int half, out Vector128<float> s0, out Vector128<float> s1, out Vector128<float> s2, out Vector128<float> s3)
+        {
+            even = even[..half];
+            odd = odd[..half];
+            var basis0 = bases.Slice(0, half);
+            var basis1 = bases.Slice(count, half);
+            var basis2 = bases.Slice(2 * count, half);
+            var basis3 = bases.Slice(3 * count, half);
+            s0 = Vector128<float>.Zero;
+            s1 = Vector128<float>.Zero;
+            s2 = Vector128<float>.Zero;
+            s3 = Vector128<float>.Zero;
+            for (var i = 0; i < half; i++)
+            {
+                s0 += even[i] * Vector128.Create(basis0[i]);
+                s1 += odd[i] * Vector128.Create(basis1[i]);
+                s2 += even[i] * Vector128.Create(basis2[i]);
+                s3 += odd[i] * Vector128.Create(basis3[i]);
+            }
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="ForwardDct"/>.</summary>
+    public static void ForwardDctScalar(ReadOnlySpan<float> samples, int stride, int rows, int columns, Span<float> coefficients, Span<float> scratch)
     {
         var columnBasis = GetBasis(columns);
         var rowBasis = GetBasis(rows);

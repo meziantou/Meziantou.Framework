@@ -875,6 +875,42 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlForwardDctMatchesTheScalarReferenceBitForBit()
+    {
+        var random = new Random(187);
+        var sizes = new[] { 4, 8, 16, 32, 64 };
+        foreach (var rows in sizes)
+        {
+            foreach (var columns in sizes)
+            {
+                for (var round = 0; round < 30; round++)
+                {
+                    // Samples of a plane wider than the block: XYB-like values, flat blocks, signed zeros and large values
+                    var stride = columns + (round % 5);
+                    var samples = new float[rows * stride];
+                    for (var i = 0; i < samples.Length; i++)
+                    {
+                        samples[i] = (round % 4) switch
+                        {
+                            0 => 0.125f,
+                            1 => random.Next(2) == 0 ? 0f : -0f,
+                            2 => (float)((random.NextDouble() - 0.5) * 1e6),
+                            _ => (float)(random.NextDouble() - 0.3),
+                        };
+                    }
+
+                    var expected = new float[rows * columns];
+                    var actual = new float[rows * columns];
+                    JpegXlForwardTransform.ForwardDctScalar(samples, stride, rows, columns, expected, new float[rows * columns]);
+                    JpegXlForwardTransform.ForwardDct(samples, stride, rows, columns, actual, new float[rows * columns]);
+                    Assert.Equal(Array.ConvertAll(expected, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegXlDequantizationMatchesTheScalarReferenceBitForBit()
     {
         var random = new Random(182);

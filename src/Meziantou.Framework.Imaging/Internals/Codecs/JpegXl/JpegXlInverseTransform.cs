@@ -298,8 +298,9 @@ internal static class JpegXlInverseTransform
         }
     }
 
+    /// <summary>Transposes four vectors of four values: the lane i of the result j is the lane j of the input i.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void Transpose(Vector128<float> a, Vector128<float> b, Vector128<float> c, Vector128<float> d, out Vector128<float> r0, out Vector128<float> r1, out Vector128<float> r2, out Vector128<float> r3)
+    internal static void Transpose(Vector128<float> a, Vector128<float> b, Vector128<float> c, Vector128<float> d, out Vector128<float> r0, out Vector128<float> r1, out Vector128<float> r2, out Vector128<float> r3)
     {
         if (AdvSimd.Arm64.IsSupported)
         {

@@ -259,6 +259,11 @@ public sealed class HevcCabacEncoderTests
                 HevcCabacEncoder.UpdateContext(ref updated, bin);
                 Assert.Equal(encoded, updated);
 
+                // The transition table is the one that the tables of the specification give
+                var reference = (byte)state;
+                HevcCabacEncoder.UpdateContextFromTables(ref reference, bin);
+                Assert.Equal(reference, updated);
+
                 decoder.Contexts[0] = (byte)state;
                 decoder.Initialize(output.WrittenSpan.ToArray(), 0, output.Length);
                 Assert.Equal(bin, decoder.DecodeDecision(0));

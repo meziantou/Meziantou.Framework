@@ -99,7 +99,11 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
                     foreach (ref readonly var block in blocks)
                     {
                         if (block.PassCount == 0)
+                        {
+                            // The plane is not cleared: a code-block without coding pass gives zeros
+                            ClearBlock(component, in band, in block);
                             continue;
+                        }
 
                         if ((++blockCount & 63) == 0)
                         {
@@ -314,6 +318,18 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
         }
 
         return _blockData.RawBuffer;
+    }
+
+    /// <summary>Clears the area of a code-block in the plane of its tile-component.</summary>
+    private static void ClearBlock(Jpeg2000TileComponent component, in Jpeg2000BandGeometry band, in Jpeg2000CodeBlock block)
+    {
+        var stride = component.Width;
+        var origin = ((band.PlaneY + block.Y) * stride) + band.PlaneX + block.X;
+        var plane = component.Samples;
+        for (var y = 0; y < block.Height; y++)
+        {
+            plane.Slice(origin + (y * stride), block.Width).Clear();
+        }
     }
 
     /// <summary>Dequantizes the coefficients of a code-block into the plane of its tile-component.</summary>

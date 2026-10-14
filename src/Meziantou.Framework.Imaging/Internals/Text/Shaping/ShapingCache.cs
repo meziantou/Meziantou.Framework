@@ -2,11 +2,33 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// What shaping computes from a font alone, kept for the runs of one layout: the glyphs each lookup of its layout tables
-/// may apply at. A font has no cache of its own; this one lives as long as the engine that lays out a text.
+/// may apply at, and the plan of the runs of each font and settings. A font has no cache of its own; this one lives as
+/// long as the engine that lays out a text.
 /// </summary>
 internal sealed class ShapingCache
 {
     private readonly Dictionary<FontFace, (LookupDigests? Substitutions, LookupDigests? Positions)> _digests = [];
+    private readonly Dictionary<FontFace, List<TextShaper.Plan>> _plans = [];
+
+    /// <summary>Gets the plan of the runs of a font shaped with settings: a new one, not complete, for the first run.</summary>
+    public TextShaper.Plan GetPlan(FontFace face, UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, bool isVertical, ReadOnlySpan<ShapingFeature> features)
+    {
+        if (!_plans.TryGetValue(face, out var plans))
+        {
+            plans = [];
+            _plans.Add(face, plans);
+        }
+
+        foreach (var plan in plans)
+        {
+            if (plan.Matches(script, languages, isRightToLeft, isVertical, features))
+                return plan;
+        }
+
+        var created = new TextShaper.Plan { Script = script, Languages = languages.ToArray(), IsRightToLeft = isRightToLeft, IsVertical = isVertical, FeatureSettings = features.ToArray() };
+        plans.Add(created);
+        return created;
+    }
 
     /// <summary>Gets the digests of the lookups of the GSUB or GPOS table of a font, which has the table.</summary>
     public LookupDigests GetDigests(FontFace face, bool isPositioning)

@@ -137,33 +137,47 @@ internal static class TextShaper
             Mirror(buffer, face);
         }
 
+        // What depends on the font and the settings of the run only is computed where it is used, by the first run that
+        // has them, and kept for the other runs of the layout: a malformed table fails at the same place.
+        var planned = cache?.GetPlan(face, script, languages, isRightToLeft, isVertical, features) ?? new Plan();
+        var isPlanned = planned.IsComplete;
         Span<uint> scripts = stackalloc uint[OpenTypeScript.MaxTagCount];
         scripts = scripts[..OpenTypeScript.GetTags(script, scripts)];
-        var scriptTag = face.Gsub?.FindScriptTag(face.GsubData.Span, scripts) ?? 0;
-        var shaper = GetShaper(script, scriptTag);
-
-        // The letters of Arabic and of Syriac join along a horizontal line only: upright, each one is on its own
-        if (isVertical && shaper == ScriptShaperKind.Arabic)
+        if (!isPlanned)
         {
-            shaper = ScriptShaperKind.Default;
+            planned.ScriptTag = face.Gsub?.FindScriptTag(face.GsubData.Span, scripts) ?? 0;
+            var model = GetShaper(script, planned.ScriptTag);
+
+            // The letters of Arabic and of Syriac join along a horizontal line only: upright, each one is on its own
+            if (isVertical && model == ScriptShaperKind.Arabic)
+            {
+                model = ScriptShaperKind.Default;
+            }
+
+            planned.Shaper = model;
+            planned.ShaperPlan = model switch
+            {
+                ScriptShaperKind.Arabic => ArabicShaper.GetPlan(script, face.Gsub is { } substitutions && HasFeature(substitutions, face.GsubData.Span, scripts, languages, ArabicShaper.RequiredAlternates)),
+                ScriptShaperKind.Hangul => HangulShaper.Plan,
+                ScriptShaperKind.Indic => IndicShaper.Plan,
+                ScriptShaperKind.Khmer => KhmerShaper.Plan,
+                ScriptShaperKind.Myanmar => MyanmarShaper.Plan,
+                ScriptShaperKind.Universal => UniversalShaper.Plan,
+                _ => ShaperPlan.Default,
+            };
+
+            // A font of Thai made before OpenType Layout, which has no substitution for the script, has the forms of
+            // its marks as characters of the private use area.
+            planned.HasThaiPrivateUseForms = model == ScriptShaperKind.Thai && script == UnicodeScript.Thai
+                && (face.Gsub is not { } thaiTable || thaiTable.FindLanguageSystem(face.GsubData.Span, scripts, languages) == 0);
         }
 
-        var shaperPlan = shaper switch
-        {
-            ScriptShaperKind.Arabic => ArabicShaper.GetPlan(script, face.Gsub is { } substitutions && HasFeature(substitutions, face.GsubData.Span, scripts, languages, ArabicShaper.RequiredAlternates)),
-            ScriptShaperKind.Hangul => HangulShaper.Plan,
-            ScriptShaperKind.Indic => IndicShaper.Plan,
-            ScriptShaperKind.Khmer => KhmerShaper.Plan,
-            ScriptShaperKind.Myanmar => MyanmarShaper.Plan,
-            ScriptShaperKind.Universal => UniversalShaper.Plan,
-            _ => ShaperPlan.Default,
-        };
+        var scriptTag = planned.ScriptTag;
+        var shaper = planned.Shaper;
+        var shaperPlan = planned.ShaperPlan;
+        var hasThaiPrivateUseForms = planned.HasThaiPrivateUseForms;
 
         // What a model does to the characters themselves, before they are put in the form the font has.
-        // A font of Thai made before OpenType Layout, which has no substitution for the script, has the forms of its
-        // marks as characters of the private use area.
-        var hasThaiPrivateUseForms = shaper == ScriptShaperKind.Thai && script == UnicodeScript.Thai
-            && (face.Gsub is not { } thaiTable || thaiTable.FindLanguageSystem(face.GsubData.Span, scripts, languages) == 0);
         if (shaper == ScriptShaperKind.Thai)
         {
             ThaiShaper.DecomposeSaraAm(buffer);
@@ -182,9 +196,16 @@ internal static class TextShaper
         }
 
         // A font that positions the points of Hebrew needs no precomposed letter.
-        var plan = new FeaturePlan(features, FirstShaperBit + shaperPlan.PerGlyphCount);
-        var composesPresentationForms = shaper == ScriptShaperKind.Hebrew
-            && ((plan.TryGetMask(Mark, out var markMask) && markMask == 0) || !(face.Gpos is { } positioning && HasFeature(positioning, face.GposData.Span, scripts, languages, Mark)));
+        if (!isPlanned)
+        {
+            var featurePlan = new FeaturePlan(features, FirstShaperBit + shaperPlan.PerGlyphCount);
+            planned.Features = featurePlan;
+            planned.ComposesPresentationForms = shaper == ScriptShaperKind.Hebrew
+                && ((featurePlan.TryGetMask(Mark, out var markMask) && markMask == 0) || !(face.Gpos is { } positioning && HasFeature(positioning, face.GposData.Span, scripts, languages, Mark)));
+        }
+
+        var plan = planned.Features!;
+        var composesPresentationForms = planned.ComposesPresentationForms;
         Normalize(buffer, face, shaper, composesPresentationForms);
         MapGlyphs(buffer, face);
         if (hasThaiPrivateUseForms)
@@ -195,22 +216,36 @@ internal static class TextShaper
         ReadOnlySpan<int> coordinates = face.Instance is null ? default : face.Instance.Coordinates;
         var applier = new LayoutApplier(buffer, face);
         applier.SetGlyphClasses();
-        var hasFractions = false;
         var hasStretching = false;
-        var lookups = face.Gsub is { } gsub ? CollectLookups(gsub, face.GsubData.Span, scripts, languages, isRightToLeft, isVertical, plan, shaperPlan, coordinates, out hasFractions, out _) : [];
+        if (!isPlanned)
+        {
+            var hasSubstitutionFractions = false;
+            planned.Substitutions = face.Gsub is { } gsub ? CollectLookups(gsub, face.GsubData.Span, scripts, languages, isRightToLeft, isVertical, plan, shaperPlan, coordinates, out hasSubstitutionFractions, out _) : [];
+            planned.HasFractions = hasSubstitutionFractions;
+        }
+
+        var lookups = planned.Substitutions;
+        var hasFractions = planned.HasFractions;
         SetMasks(buffer, plan, hasFractions, shaper, script);
         // A font of Arabic made before OpenType Layout has no substitution for the script: its letters take their forms
         // from the presentation forms it has as characters.
-        if (shaper == ScriptShaperKind.Arabic && script == UnicodeScript.Arabic && (face.Gsub is not { } arabicTable || arabicTable.FindLanguageSystem(face.GsubData.Span, scripts, languages) == 0))
+        if (!isPlanned)
+        {
+            planned.HasArabicPresentationForms = shaper == ScriptShaperKind.Arabic && script == UnicodeScript.Arabic && (face.Gsub is not { } arabicTable || arabicTable.FindLanguageSystem(face.GsubData.Span, scripts, languages) == 0);
+        }
+
+        if (planned.HasArabicPresentationForms)
         {
             ArabicShaper.ApplyPresentationForms(buffer, face, FirstShaperBit);
         }
 
-        IndicShaper? indic = null;
-        if (shaper == ScriptShaperKind.Indic)
+        // The model of an Indic script remembers what it asked the font.
+        if (!isPlanned && shaper == ScriptShaperKind.Indic)
         {
-            indic = CreateIndicShaper(face, script, scriptTag, scripts, languages, coordinates, plan);
+            planned.Indic = CreateIndicShaper(face, script, scriptTag, scripts, languages, coordinates, plan);
         }
+
+        var indic = planned.Indic;
 
         if (face.Gsub is { } substitutionTable)
         {
@@ -238,8 +273,12 @@ internal static class TextShaper
 
             if (shaper == ScriptShaperKind.Khmer && stage == KhmerShaper.ReorderingStage)
             {
-                var hasCfar = face.Gsub is { } table && HasFeature(table, face.GsubData.Span, scripts, languages, Cfar) && !(plan.TryGetMask(Cfar, out var cfarMask) && cfarMask == 0);
-                KhmerShaper.Reorder(buffer, face, FirstShaperBit, hasCfar);
+                if (!isPlanned)
+                {
+                    planned.HasCfar = face.Gsub is { } table && HasFeature(table, face.GsubData.Span, scripts, languages, Cfar) && !(plan.TryGetMask(Cfar, out var cfarMask) && cfarMask == 0);
+                }
+
+                KhmerShaper.Reorder(buffer, face, FirstShaperBit, planned.HasCfar);
             }
             else if (shaper == ScriptShaperKind.Myanmar && stage == MyanmarShaper.ReorderingStage)
             {
@@ -322,7 +361,14 @@ internal static class TextShaper
         var hasKerningFeature = false;
         if (face.Gpos is { } gpos)
         {
-            var positioningLookups = CollectLookups(gpos, face.GposData.Span, scripts, languages, isRightToLeft, isVertical, plan, shaperPlan, coordinates, out _, out hasKerningFeature);
+            if (!isPlanned)
+            {
+                planned.Positionings = CollectLookups(gpos, face.GposData.Span, scripts, languages, isRightToLeft, isVertical, plan, shaperPlan, coordinates, out _, out var hasKerning);
+                planned.HasKerningFeature = hasKerning;
+            }
+
+            var positioningLookups = planned.Positionings!;
+            hasKerningFeature = planned.HasKerningFeature;
             applier.Begin(gpos, face.GposData, isPositioning: true, isRightToLeft, isVertical, cache?.GetDigests(face, isPositioning: true) ?? ShapingCache.Create(face, isPositioning: true));
             foreach (var lookup in positioningLookups)
             {
@@ -383,6 +429,59 @@ internal static class TextShaper
                 ArabicShaper.ApplyStretching(buffer, face);
             }
         }
+
+        planned.IsComplete = true;
+    }
+
+    /// <summary>
+    /// What shaping derives from a font and the settings of a run before it looks at the glyphs: the model of the
+    /// script, the masks of the features and the lookups to apply, and the questions the Indic model asked the font.
+    /// The first run that has the settings computes it; the other runs of the layout reuse it.
+    /// </summary>
+    internal sealed class Plan
+    {
+        public UnicodeScript Script { get; init; }
+
+        public uint[] Languages { get; init; } = [];
+
+        public bool IsRightToLeft { get; init; }
+
+        public bool IsVertical { get; init; }
+
+        public ShapingFeature[] FeatureSettings { get; init; } = [];
+
+        /// <summary>Gets or sets a value indicating whether a run shaped with the settings completed: every value below is set.</summary>
+        public bool IsComplete { get; set; }
+
+        public uint ScriptTag { get; set; }
+
+        public ScriptShaperKind Shaper { get; set; }
+
+        public ShaperPlan ShaperPlan { get; set; } = ShaperPlan.Default;
+
+        public bool HasThaiPrivateUseForms { get; set; }
+
+        public FeaturePlan? Features { get; set; }
+
+        public bool ComposesPresentationForms { get; set; }
+
+        public List<PlannedLookup> Substitutions { get; set; } = [];
+
+        public bool HasFractions { get; set; }
+
+        public bool HasArabicPresentationForms { get; set; }
+
+        public IndicShaper? Indic { get; set; }
+
+        public bool HasCfar { get; set; }
+
+        public List<PlannedLookup>? Positionings { get; set; }
+
+        public bool HasKerningFeature { get; set; }
+
+        /// <summary>Determines whether the plan is the one of a font shaped with settings.</summary>
+        public bool Matches(UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, bool isVertical, ReadOnlySpan<ShapingFeature> features)
+            => Script == script && IsRightToLeft == isRightToLeft && IsVertical == isVertical && languages.SequenceEqual(Languages) && features.SequenceEqual(FeatureSettings);
     }
 
     private static ScriptShaperKind GetShaper(UnicodeScript script, uint scriptTag)
@@ -1270,14 +1369,14 @@ internal static class TextShaper
     }
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly record struct PlannedLookup(int Stage, int Index, uint Mask, ShaperFeatureFlags Flags);
+    internal readonly record struct PlannedLookup(int Stage, int Index, uint Mask, ShaperFeatureFlags Flags);
 
     /// <summary>
     /// The features the caller sets, and where the mask of a glyph holds the value of each one. A feature that is on
     /// for the whole run shares the bit of the features every glyph has; a feature with a value per range of
     /// characters, or with a value above 1 (the choice of an alternate), has bits of its own.
     /// </summary>
-    private sealed class FeaturePlan
+    internal sealed class FeaturePlan
     {
         private readonly List<(uint Tag, uint Mask)> _masks = [];
         private readonly ShapingFeature[] _features;

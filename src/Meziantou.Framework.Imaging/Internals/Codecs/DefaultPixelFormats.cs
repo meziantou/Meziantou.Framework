@@ -67,14 +67,15 @@ internal static class DefaultPixelFormats
 
     /// <summary>Selects the default pixel format of a JPEG image.</summary>
     /// <param name="componentCount">The number of frame components (1 for grayscale, 3 for color, 4 for inks, which are only loaded converted to color).</param>
-    /// <param name="precision">The number of bits of a sample (8 or 12).</param>
+    /// <param name="precision">The number of bits of a sample (8 or 12, or 2 to 16 for a lossless frame).</param>
     /// <returns>
-    /// <see cref="PixelFormat.Gray8"/> or <see cref="PixelFormat.Rgb24"/> for 8-bit samples; for deeper samples
-    /// <see cref="PixelFormat.Gray16"/> or, as there is no 16-bit RGB format, opaque <see cref="PixelFormat.Rgba64"/>.
+    /// <see cref="PixelFormat.Gray8"/> or <see cref="PixelFormat.Rgb24"/> for 8-bit samples; for the other samples, which
+    /// are scaled to 16 bits, <see cref="PixelFormat.Gray16"/> or, as there is no 16-bit RGB format, opaque
+    /// <see cref="PixelFormat.Rgba64"/>.
     /// </returns>
     public static PixelFormat ForJpeg(int componentCount, int precision)
     {
-        if (precision > 8)
+        if (precision != 8)
             return componentCount == 1 ? PixelFormat.Gray16 : PixelFormat.Rgba64;
 
         return componentCount == 1 ? PixelFormat.Gray8 : PixelFormat.Rgb24;

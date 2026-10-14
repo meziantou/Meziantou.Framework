@@ -225,7 +225,7 @@ internal static partial class CommonCorpus
     /// <summary>The samples of an image whose maximum value is <paramref name="maximum"/>, scaled to 16 bits: the nearest
     /// value of the same fraction of the range (0 and the maximum are exact).</summary>
     public static Img ScaleToSixteenBits(Img img, int maximum) =>
-        new(img.Width, img.Height, img.Model, 16, img.Pixels.Select(p => p.Select(v => (v * 65535 + maximum / 2) / maximum)));
+        new(img.Width, img.Height, img.Model, 16, img.Pixels.Select(p => p.Select(v => (int)(((long)v * 65535 + maximum / 2) / maximum))));
 
     public static Img ReadPnm(byte[] data)
     {
@@ -237,9 +237,11 @@ internal static partial class CommonCorpus
         var height = int.Parse(match.Groups["height"].Value, CultureInfo.InvariantCulture);
         var maximum = int.Parse(match.Groups["maximum"].Value, CultureInfo.InvariantCulture);
         var payload = data[(match.Index + match.Length)..];
-        if (maximum == 4095)
+        if (maximum > 255)
         {
-            // The 12-bit samples of djpeg: two bytes, most significant first; the values are kept as they are
+            // The samples of more than 8 bits of djpeg (12 bits, or 9 to 16 bits for a lossless file): two bytes, most
+            // significant first; the values are kept as they are
+            Py.Assert(((maximum + 1) & maximum) == 0 && maximum <= 65535);
             var samples = Enumerable.Range(0, payload.Length / 2).Select(i => (int)Bytes.U16BE(payload, 2 * i)).ToArray();
             Py.Assert(samples.All(v => v <= maximum));
             if (magic == "P5")
@@ -252,7 +254,8 @@ internal static partial class CommonCorpus
             return new Img(width, height, "rgb", 16, samples.Chunk(3).Select(p => new Px(p[0], p[1], p[2])));
         }
 
-        Py.Assert(maximum == 255);
+        // 8-bit samples, or the samples of 2 to 7 bits of a lossless file: one byte, the values are kept as they are
+        Py.Assert(((maximum + 1) & maximum) == 0 && maximum >= 3 && payload.All(v => v <= maximum));
         if (magic == "P5")
         {
             Py.Assert(payload.Length == width * height);

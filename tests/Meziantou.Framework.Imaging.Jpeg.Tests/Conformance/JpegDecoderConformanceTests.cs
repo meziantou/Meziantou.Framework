@@ -7,7 +7,8 @@ using Meziantou.Framework.Imaging.TestHarness.Pixels;
 namespace Meziantou.Framework.Imaging.Tests.Conformance;
 
 /// <summary>
-/// Measured disagreement of the sequential and progressive JPEG decoder with the libjpeg-turbo djpeg references of the corpus. The
+/// Measured disagreement of the sequential and progressive JPEG decoder with the libjpeg-turbo djpeg references of the corpus
+/// (the lossless fixtures are compared exactly with the samples given to their encoder). The
 /// eager and sequential conformance suites already compare every fixture under its policy; this test pins the policies to
 /// the measurement: each tolerance must be exactly the one the generator derives from the
 /// library's measured maximum and mean errors (<c>LibraryJpegMeasurements</c> in the generator: max(1, measured max),
@@ -85,6 +86,41 @@ public sealed class JpegDecoderConformanceTests
     }
 
     [Fact]
+    public void LosslessFixturesCoverTheDecoderFeatures()
+    {
+        // Lossless frames (SOF3): the seven predictors, a point transform, restart intervals, gray and color, the precisions
+        // on both sides of 8 bits up to 16, and YCbCr files of another encoder with subsampled chroma in interleaved scans
+        var fixtures = GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Valid).Select(GoldenCorpus.Default.Get).Where(fixture => fixture.Entry.HasFeature("jpeg.process=lossless")).ToList();
+        var features = fixtures.SelectMany(fixture => fixture.Entry.Features ?? []).ToHashSet(StringComparer.Ordinal);
+        foreach (var feature in new[]
+        {
+            "jpeg.predictor=1", "jpeg.predictor=2", "jpeg.predictor=3", "jpeg.predictor=4", "jpeg.predictor=5", "jpeg.predictor=6", "jpeg.predictor=7",
+            "jpeg.pointTransform=1", "jpeg.pointTransform=2", "jpeg.precision=5", "jpeg.precision=10", "jpeg.precision=12", "jpeg.precision=16",
+            "jpeg.components=1", "jpeg.components=3", "jpeg.app14=Adobe", "jpeg.sampling=4:2:0",
+        })
+        {
+            Assert.Contains(feature, features);
+        }
+
+        // A lossless file is compared exactly, whatever its precision, and its pixels follow the precision
+        Assert.All(fixtures, fixture => Assert.True(fixture.Policy.IsExact));
+        Assert.All(fixtures, fixture => Assert.Equal(fixture.Expected.BitsPerComponent == 8 ? (fixture.Entry.HasFeature("jpeg.components=1") ? PixelFormat.Gray8 : PixelFormat.Rgb24) : fixture.Entry.HasFeature("jpeg.components=1") ? PixelFormat.Gray16 : PixelFormat.Rgba64, Image.Identify(fixture.ReadInput()).PixelFormat));
+        foreach (var components in new[] { "jpeg.components=1", "jpeg.components=3" })
+        {
+            Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature(components) && fixture.Entry.Features!.Any(feature => feature.StartsWith("jpeg.restartInterval=", StringComparison.Ordinal)));
+            Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature(components) && fixture.Expected.BitsPerComponent == 16);
+        }
+
+        // Chroma planes with partial MCUs on both edges, and the difference that no other decoder at hand but the reference reads
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("jpeg.sampling=4:2:0") && fixture.Entry.Expected!.Width % 2 == 1 && fixture.Entry.Expected.Height % 2 == 1);
+        Assert.Contains(fixtures, fixture => fixture.Entry.Reference!.CrossChecks!.Any(check => check.Result == FixtureCrossCheck.Differs && check.Notes!.Contains("category 16", StringComparison.Ordinal)));
+
+        // The lossless process with arithmetic coding is the one that is still rejected
+        var rejected = GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Unsupported).Select(GoldenCorpus.Default.Get).Where(fixture => fixture.Entry.Features!.Any(feature => feature.StartsWith("jpeg.process=lossless", StringComparison.Ordinal))).ToList();
+        Assert.Equal("jpeg.process=lossless-arithmetic", Assert.Single(rejected).Entry.Features!.Single(feature => feature.StartsWith("jpeg.process=", StringComparison.Ordinal)));
+    }
+
+    [Fact]
     public void ProgressiveFixturesCoverTheDecoderFeatures()
     {
         var fixtures = ProgressiveIds.Select(id => GoldenCorpus.Default.Get(id)).ToList();
@@ -111,14 +147,14 @@ public sealed class JpegDecoderConformanceTests
     public void ToleranceIsTheMeasuredDisagreementWithTheReference(string id)
     {
         var fixture = GoldenCorpus.Default.Get(id);
-        using var image = Image.Load(fixture.ReadInput()); // Gray8 or Rgb24, Gray16 or Rgba64 for 12-bit samples: the profile of the fixture labels it
+        using var image = Image.Load(fixture.ReadInput()); // Gray8 or Rgb24, Gray16 or Rgba64 for samples that do not have 8 bits: the profile of the fixture labels it
         var actual = Assert.Single(ImageSnapshots.Capture(image).Frames).Pixels;
         var expected = fixture.GetFrame(0, actual.Layout);
         var (sampleMax, sampleMean, location) = Measure(expected, actual);
 
         // Like every tolerance of the corpus, the errors are on the 8-bit scale: 257 units of a 16-bit sample, the maximum
         // rounded up so that any difference counts
-        var deep = fixture.Expected.BitsPerComponent == 12;
+        var deep = fixture.Expected.BitsPerComponent != 8;
         Assert.Equal(deep, actual.Layout.BytesPerSample == 2);
         var max = deep ? (sampleMax + 256) / 257 : sampleMax;
         var mean = deep ? sampleMean / 257 : sampleMean;

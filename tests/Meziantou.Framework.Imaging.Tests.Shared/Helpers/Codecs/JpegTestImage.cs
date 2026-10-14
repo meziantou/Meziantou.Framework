@@ -374,14 +374,17 @@ internal sealed class JpegTestImage
     }
 
     /// <summary>JFIF full range, 16-bit fixed-point coefficients, ties upward.</summary>
-    private (int R, int G, int B) ConvertYCbCr(int luma, int blue, int red)
+    private (int R, int G, int B) ConvertYCbCr(int luma, int blue, int red) => ConvertYCbCr(luma, blue, red, Precision);
+
+    /// <summary>The color conversion contract of the library for samples of a precision: JFIF full range, 16-bit fixed-point coefficients, ties upward.</summary>
+    internal static (int R, int G, int B) ConvertYCbCr(int luma, int blue, int red, int precision)
     {
-        var max = MaxSample;
-        var cb = blue - (1 << (Precision - 1));
-        var cr = red - (1 << (Precision - 1));
+        long max = (1 << precision) - 1;
+        long cb = blue - (1 << (precision - 1));
+        long cr = red - (1 << (precision - 1));
         return (Clamp(luma + (((91881 * cr) + 32768) >> 16)), Clamp(luma + (((-22554 * cb) - (46802 * cr) + 32768) >> 16)), Clamp(luma + (((116130 * cb) + 32768) >> 16)));
 
-        int Clamp(int value) => Math.Clamp(value, 0, max);
+        int Clamp(long value) => (int)Math.Clamp(value, 0, max);
     }
 
     /// <summary>
@@ -667,15 +670,24 @@ internal sealed class JpegTestImage
 
     /// <summary>The upsampling contract of the library, one output sample at a time.</summary>
     private int Upsample(Component component, int[] plane, int x, int y)
+        => Upsample(plane, component.Width, component.Height, MaxHorizontal / component.H, MaxVertical / component.V, x, y);
+
+    /// <summary>The upsampling contract of the library, one output sample at a time.</summary>
+    /// <param name="plane">The samples of the component.</param>
+    /// <param name="width">The number of samples of a row of the component.</param>
+    /// <param name="height">The number of rows of the component.</param>
+    /// <param name="rh">The horizontal upsampling factor.</param>
+    /// <param name="rv">The vertical upsampling factor.</param>
+    /// <param name="x">The column of the output sample.</param>
+    /// <param name="y">The row of the output sample.</param>
+    internal static int Upsample(int[] plane, int width, int height, int rh, int rv, int x, int y)
     {
-        var rh = MaxHorizontal / component.H;
-        var rv = MaxVertical / component.V;
-        int S(int sx, int sy) => plane[(Math.Clamp(sy, 0, component.Height - 1) * component.Width) + Math.Clamp(sx, 0, component.Width - 1)];
+        int S(int sx, int sy) => plane[(Math.Clamp(sy, 0, height - 1) * width) + Math.Clamp(sx, 0, width - 1)];
         if (rh == 1 && rv == 1)
             return S(x, y);
 
         // A horizontal factor of 2 on a plane of at most 2 samples replicates in both directions (libjpeg-turbo's rule)
-        if (rh == 2 && component.Width <= 2)
+        if (rh == 2 && width <= 2)
             return S(x / rh, y / rv);
 
         if (rv == 2 && rh <= 2)

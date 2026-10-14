@@ -16,6 +16,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <see cref="UnsupportedImageFeatureException"/>, never guessed.
 /// </para>
 /// <para>
+/// A page compressed with JPEG stores the samples of its datastreams, which have 8 to 16 bits (12 bits for the
+/// DCT-based processes, any of them for the lossless one): <see cref="BitsPerSample"/> is their precision, and the
+/// samples of more than 8 bits are decoded scaled to 16 bits (<see cref="DecodedBitsPerSample"/>), as the ones of a
+/// JPEG file are.
+/// </para>
+/// <para>
 /// Alpha is only an alpha channel when <c>ExtraSamples</c> says so and says it is unassociated (straight): the working
 /// pixel formats store straight alpha, so associated (premultiplied) alpha is rejected instead of being silently divided
 /// out, and an unspecified extra sample is not transparency.
@@ -45,14 +51,20 @@ internal sealed class TiffPage
     /// <summary>Gets the page size, in pixels.</summary>
     public Size Size { get; private set; }
 
-    /// <summary>Gets the number of bits of one sample: 1, 2, 4, 8 or 16.</summary>
+    /// <summary>Gets the number of bits of one sample, as the page declares it: 1, 2, 4, 8 or 16, or 9 to 15 for a page compressed with JPEG.</summary>
     public int BitsPerSample { get; private set; }
+
+    /// <summary>
+    /// Gets the number of bits of one sample of a decoded block: <see cref="BitsPerSample"/>, or 16 for the samples of 9
+    /// to 15 bits of a JPEG datastream, which its decoder scales to 16 bits.
+    /// </summary>
+    public int DecodedBitsPerSample => BitsPerSample > 8 ? 16 : BitsPerSample;
 
     /// <summary>Gets the number of samples of one pixel: the color samples of the photometric interpretation, and at most one alpha sample.</summary>
     public int SamplesPerPixel { get; private set; }
 
-    /// <summary>Gets the number of bits of one pixel.</summary>
-    public int BitsPerPixel => SamplesPerPixel * BitsPerSample;
+    /// <summary>Gets the number of bits of one pixel of a decoded block.</summary>
+    public int BitsPerPixel => SamplesPerPixel * DecodedBitsPerSample;
 
     /// <summary>Gets the photometric interpretation (0, 1, 2, 3, 5 or 6).</summary>
     public int Photometric { get; private set; }
@@ -158,7 +170,7 @@ internal sealed class TiffPage
             if (IsPalette)
                 return HasSixteenBitColorMap ? PixelFormat.Rgba64 : PixelFormat.Rgb24;
 
-            return DefaultPixelFormats.ForTiff(IsGrayscale, HasAlpha, BitsPerSample == 16);
+            return DefaultPixelFormats.ForTiff(IsGrayscale, HasAlpha, DecodedBitsPerSample == 16);
         }
     }
 
@@ -229,8 +241,10 @@ internal sealed class TiffPage
                 throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} mixes sample widths ({string.Join(", ", bits)} bits); every sample must have the same width."), "BitsPerSample: mixed widths");
         }
 
-        if (bits[0] is not (1 or 2 or 4 or 8 or 16))
-            throw UnsupportedBitsPerSample(bits[0], "1, 2, 4, 8 and 16 bits are supported");
+        // The samples of a JPEG datastream have the precision of its frame: 12 bits, or any number of them when it is lossless
+        var isJpeg = Directory.TryGetUnsigned(TiffFormat.CompressionTag, out var compression) && compression == TiffFormat.CompressionJpeg;
+        if (bits[0] is not (1 or 2 or 4 or 8 or 16) && !(isJpeg && bits[0] is > 8 and < 16))
+            throw UnsupportedBitsPerSample(bits[0], "1, 2, 4, 8 and 16 bits are supported, and 9 to 15 bits with JPEG compression");
 
         BitsPerSample = (int)bits[0];
 
@@ -262,8 +276,8 @@ internal sealed class TiffPage
             case TiffFormat.PhotometricPalette when BitsPerSample > 8:
                 throw UnsupportedBitsPerSample(bits[0], "palette color data is supported with 1, 2, 4 and 8 bits");
 
-            case TiffFormat.PhotometricYCbCr when BitsPerSample != 8:
-                throw UnsupportedBitsPerSample(bits[0], "YCbCr data is supported with 8 bits");
+            case TiffFormat.PhotometricYCbCr when BitsPerSample != 8 && !(isJpeg && BitsPerSample > 8):
+                throw UnsupportedBitsPerSample(bits[0], "YCbCr data is supported with 8 bits, and with 9 to 16 bits with JPEG compression");
         }
 
         var colorSamples = Photometric switch
@@ -369,7 +383,7 @@ internal sealed class TiffPage
 
         var coefficients = Directory.TryReadRationalArray(TiffFormat.YCbCrCoefficientsTag, 3);
         var reference = Directory.TryReadRationalArray(TiffFormat.ReferenceBlackWhiteTag, 6);
-        YCbCr = TiffYCbCrConverter.Create(coefficients, reference, (int)subsampling[0], (int)subsampling[1])
+        YCbCr = TiffYCbCrConverter.Create(coefficients, reference, (int)subsampling[0], (int)subsampling[1], BitsPerSample)
             ?? throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} declares YCbCrCoefficients or ReferenceBlackWhite values that define no conversion to RGB."));
     }
 
@@ -455,14 +469,15 @@ internal sealed class TiffPage
 
     private void ResolveJpeg()
     {
-        if (BitsPerSample != 8)
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with {BitsPerSample}-bit samples; 8-bit samples are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: JPEG with {BitsPerSample}-bit samples"));
+        // The datastream of every block must have this precision: 8 or 12 bits, or any of them when it is lossless
+        if (BitsPerSample < 8)
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with {BitsPerSample}-bit samples; samples of 8 to 16 bits are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: JPEG with {BitsPerSample}-bit samples"));
 
         if (IsPalette || HasAlpha)
             throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with {(IsPalette ? "palette indexes" : "an alpha channel")}; grayscale, RGB, YCbCr and CMYK data without extra sample are supported."), "Compression: JPEG with this sample layout");
 
         if (YCbCr is { IsJfifCompatible: false })
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with YCbCrCoefficients or ReferenceBlackWhite values other than the full-range ITU-R BT.601 ones of JFIF."), "Compression: JPEG with other YCbCr coefficients");
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with YCbCrCoefficients or ReferenceBlackWhite values other than the full-range ITU-R BT.601 ones of JFIF (black at 0, white at {(1 << BitsPerSample) - 1} and chroma centered on {1 << (BitsPerSample - 1)} for {BitsPerSample}-bit samples)."), "Compression: JPEG with other YCbCr coefficients");
 
         if (Directory.Find(TiffFormat.JpegTablesTag) is { } field)
         {

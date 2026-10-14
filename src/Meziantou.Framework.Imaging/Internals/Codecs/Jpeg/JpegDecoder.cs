@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The JPEG pixel decoder plugged into the <see cref="JpegStructureParser"/> marker walk, shared by eager loads
 /// and sequential readers: sequential frames (baseline SOF0 and extended
 /// sequential SOF1) and progressive frames (SOF2), of 8-bit or 12-bit samples, Huffman coded or arithmetic coded (SOF9
-/// and SOF10). The walker validates the container (markers, segment lengths,
+/// and SOF10), and lossless frames (SOF3, Huffman coded) of 2-bit to 16-bit samples. The walker validates the container (markers, segment lengths,
 /// frame and scan headers, progressive scan parameters and coefficient progression, unsupported modes, metadata, limits);
 /// this observer parses the tables, decodes every scan and writes the rows through the frame sink.
 /// </summary>
@@ -47,9 +47,16 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// an <see cref="UnsupportedImageFeatureException"/> raised before any allocation.
 /// </description></item>
 /// <item><description>
-/// Samples of 12 bits are kept in 16-bit planes and written scaled to 16 bits (<see cref="JpegDeepRowWriter"/>):
-/// <see cref="PixelFormat.Gray16"/> for one component, opaque <see cref="PixelFormat.Rgba64"/> otherwise. A datastream
-/// embedded in another format only has 8-bit samples: 12-bit ones are an <see cref="UnsupportedImageFeatureException"/>.
+/// Samples that do not have 8 bits are kept in 16-bit planes and written scaled to 16 bits (<see cref="JpegDeepRowWriter"/>):
+/// <see cref="PixelFormat.Gray16"/> for one component, opaque <see cref="PixelFormat.Rgba64"/> otherwise. The container
+/// of an embedded datastream is told the precision and receives the scaled samples.
+/// </description></item>
+/// <item><description>
+/// Lossless frames (T.81 Annex H) share the scan structure, the planes and the row writers of the sequential frames,
+/// with a data unit of one sample instead of a block of 8 by 8: an MCU row is <c>Vmax</c> rows, a scan codes each
+/// component once, and <see cref="JpegLosslessScanDecoder"/> reconstructs the samples from their predictions. They use
+/// no quantization table. Subsampled components are upsampled and three components are converted like the ones of the
+/// other frames.
 /// </description></item>
 /// </list>
 /// </remarks>
@@ -87,6 +94,10 @@ internal sealed class JpegDecoder : JpegDecodeObserver
     private bool _streaming;
     private bool _progressive;
     private bool _arithmetic;
+    private bool _lossless;
+
+    // The number of samples of a side of a data unit: 8, or 1 for a lossless frame
+    private int _dataUnitSize = 8;
     private int _scanCount;
     private JpegEntropyReader? _reader;
     private JpegBandWriter? _writer;
@@ -155,12 +166,10 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         _structure = structure;
         _progressive = structure.IsProgressive;
         _arithmetic = structure.IsArithmetic;
+        _lossless = structure.IsLossless;
+        _dataUnitSize = _lossless ? 1 : 8;
         _precision = structure.Precision;
         _colorModel = structure.ColorModel;
-
-        // The container of an embedded datastream is handed rows of bytes
-        if (_receiver is not null && _precision != 8)
-            throw Unsupported("An embedded JPEG datastream with 12-bit samples is not supported.", "JPEG 12-bit precision");
 
         var frameComponents = structure.Components;
         var components = new JpegFrameComponent[frameComponents.Count];
@@ -170,8 +179,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver
 
             // The only component of a grayscale frame is coded in a non-interleaved scan: its sampling factors play no role
             components[i] = components.Length == 1
-                ? new JpegFrameComponent(i, component.Id, 1, 1, component.QuantizationTable, _precision)
-                : new JpegFrameComponent(i, component.Id, component.HorizontalSampling, component.VerticalSampling, component.QuantizationTable, _precision);
+                ? new JpegFrameComponent(i, component.Id, 1, 1, component.QuantizationTable, _precision, _dataUnitSize)
+                : new JpegFrameComponent(i, component.Id, component.HorizontalSampling, component.VerticalSampling, component.QuantizationTable, _precision, _dataUnitSize);
         }
 
         var maxHorizontal = components.Max(component => component.HorizontalSampling);
@@ -184,17 +193,17 @@ internal sealed class JpegDecoder : JpegDecodeObserver
 
         _components = components;
         _maxVertical = maxVertical;
-        _mcusX = (structure.Width + (8 * maxHorizontal) - 1) / (8 * maxHorizontal);
-        _mcusY = (structure.Height + (8 * maxVertical) - 1) / (8 * maxVertical);
+        _mcusX = (structure.Width + (_dataUnitSize * maxHorizontal) - 1) / (_dataUnitSize * maxHorizontal);
+        _mcusY = (structure.Height + (_dataUnitSize * maxVertical) - 1) / (_dataUnitSize * maxVertical);
         if (_receiver is not null)
         {
             _colorModel = _embeddedColorModel;
-            _receiver.OnFrame(structure.Width, structure.Height, components.Length);
+            _receiver.OnFrame(structure.Width, structure.Height, components.Length, _precision);
             return;
         }
 
         var request = _request!;
-        // The rows of the writer: 8-bit samples as they are, deeper ones scaled to 16 bits (no 16-bit RGB format: opaque RGBA)
+        // The rows of the writer: 8-bit samples as they are, the other ones scaled to 16 bits (no 16-bit RGB format: opaque RGBA)
         var source = DefaultPixelFormats.ForJpeg(components.Length, _precision);
         var profile = structure.Metadata.IccProfile;
         if (components.Length == 4)
@@ -456,6 +465,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver
             return;
         }
 
+        if (_lossless)
+        {
+            StartLosslessScan(payload);
+            return;
+        }
+
         // The walker validated the length, the component count and that every component exists once
         var count = payload[0];
         var scanComponents = new JpegScanDecoder.ScanComponent[count];
@@ -503,6 +518,45 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         _scan = _arithmetic
             ? new JpegArithmeticSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken)
             : new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken);
+    }
+
+    /// <summary>
+    /// Starts a scan of a lossless frame (T.81 H.1.2; the walker validated the predictor and the point transform). A
+    /// component is coded by one scan, with the DC table it selects and no quantization table.
+    /// </summary>
+    private void StartLosslessScan(ReadOnlySpan<byte> payload)
+    {
+        var count = payload[0];
+        var parameters = payload[(1 + (2 * count))..];
+        var scanComponents = new JpegScanDecoder.ScanComponent[count];
+        for (var i = 0; i < count; i++)
+        {
+            var id = payload[1 + (2 * i)];
+            var component = _components.First(component => component.Id == id);
+            if (component.IsDecoded)
+                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG component {id} is coded in several lossless scans."));
+
+            var dcId = payload[2 + (2 * i)] >> 4;
+            if (dcId > 3)
+                throw Invalid("A JPEG scan refers to a Huffman table identifier greater than 3.");
+
+            var dc = _dcTables[dcId] ?? throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG scan refers to the undefined DC Huffman table {dcId}."));
+            scanComponents[i] = new JpegScanDecoder.ScanComponent(component, dc, acTable: null, quantization: []);
+        }
+
+        if (_scanCount == 0)
+        {
+            AllocateDecoderState(streaming: count == _components.Length);
+            foreach (var component in _components)
+            {
+                component.AllocateDifferences(_context.Scope, _context.Limits);
+            }
+        }
+
+        _scanCount++;
+        var reader = _reader ?? throw new InvalidOperationException("The JPEG decoder state is not allocated.");
+        _scanComponents = scanComponents;
+        _scan = new JpegLosslessScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, predictor: parameters[0], pointTransform: parameters[2] & 0x0F, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken);
     }
 
     /// <summary>
@@ -675,19 +729,24 @@ internal sealed class JpegDecoder : JpegDecodeObserver
             component.AllocatePlane(scope, _mcusX, bandCount, _context.Limits);
         }
 
-        _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10, _precision, _arithmetic)));
+        _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10, _precision, _arithmetic, _lossless)));
         _writer = CreateRowWriter(scope);
     }
 
     private JpegBandWriter CreateRowWriter(AllocationScope scope)
     {
         var structure = _structure!;
-        if (_precision > 8)
-            return new JpegDeepRowWriter(_components, _sink!, _colorModel, _inkConversion, structure.Width, structure.Height, _maxVertical, _precision, scope);
+        var bandRows = _dataUnitSize * _maxVertical;
+        if (_precision != 8)
+        {
+            return _receiver is not null
+                ? new JpegDeepRowWriter(_components, _receiver, _colorModel, structure.Width, structure.Height, bandRows, _precision, scope)
+                : new JpegDeepRowWriter(_components, _sink!, _colorModel, _inkConversion, structure.Width, structure.Height, bandRows, _precision, scope);
+        }
 
         return _receiver is not null
-            ? new JpegRowWriter(_components, _receiver, _colorModel, structure.Width, structure.Height, _maxVertical, scope)
-            : new JpegRowWriter(_components, _sink!, _colorModel, _inkConversion, structure.Width, structure.Height, _maxVertical, scope);
+            ? new JpegRowWriter(_components, _receiver, _colorModel, structure.Width, structure.Height, bandRows, scope)
+            : new JpegRowWriter(_components, _sink!, _colorModel, _inkConversion, structure.Width, structure.Height, bandRows, scope);
     }
 
     /// <summary>Streaming: once MCU row <paramref name="row"/> is decoded, the previous one has its lower context row and is written.</summary>

@@ -3,8 +3,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// The entropy-coded data of one scan (ITU-T T.81 sections E.2.3/E.2.4 and F.2.2.5): the MCU structure (interleaved
 /// or not), restart intervals and the bounded buffering of the data. The block decoding is the subclass's: sequential
-/// (<see cref="JpegSequentialScanDecoder"/>) or progressive (<see cref="JpegProgressiveScanDecoder"/>) Huffman coding, or
-/// arithmetic coding (<see cref="JpegArithmeticScanDecoder"/>).
+/// (<see cref="JpegSequentialScanDecoder"/>) or progressive (<see cref="JpegProgressiveScanDecoder"/>) Huffman coding,
+/// arithmetic coding (<see cref="JpegArithmeticScanDecoder"/>), or the samples of a lossless frame, whose data unit is one
+/// sample instead of a block (<see cref="JpegLosslessScanDecoder"/>).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -35,6 +36,9 @@ internal abstract class JpegScanDecoder
     // 14 bits). That is 3959 bytes
     private const int MaxBytesPerArithmeticBlock = 4096;
 
+    // The difference of a sample of a lossless frame: a 16-bit code and at most 15 bits (T.81 table H.2)
+    private const int MaxBytesPerLosslessSample = 4;
+
     private readonly ScanComponent[] _components;
     private readonly JpegEntropyReader _reader;
     private readonly bool _interleaved;
@@ -57,7 +61,8 @@ internal abstract class JpegScanDecoder
     /// <param name="mcuRowDecoded">Called after each completed MCU row (block row for a non-interleaved scan) with its index.</param>
     /// <param name="cancellationToken">Checked after each MCU row.</param>
     /// <param name="arithmetic">Whether the scan is arithmetic coded.</param>
-    protected JpegScanDecoder(ScanComponent[] components, JpegEntropyReader reader, int mcusPerLine, int mcuRows, int restartInterval, Action<int>? mcuRowDecoded, CancellationToken cancellationToken, bool arithmetic = false)
+    /// <param name="lossless">Whether the scan codes the samples of a lossless frame.</param>
+    protected JpegScanDecoder(ScanComponent[] components, JpegEntropyReader reader, int mcusPerLine, int mcuRows, int restartInterval, Action<int>? mcuRowDecoded, CancellationToken cancellationToken, bool arithmetic = false, bool lossless = false)
     {
         _components = components;
         _reader = reader;
@@ -82,7 +87,7 @@ internal abstract class JpegScanDecoder
         }
 
         var precision = components[0].Component.Precision;
-        _safeBytes = GetRequiredBufferCapacity(blocksPerMcu, precision, arithmetic);
+        _safeBytes = GetRequiredBufferCapacity(blocksPerMcu, precision, arithmetic, lossless);
         MaxDcCategory = precision > 8 ? 15 : 11;
         MaxAcCategory = precision > 8 ? 14 : 10;
         _restartInterval = restartInterval;
@@ -96,14 +101,21 @@ internal abstract class JpegScanDecoder
     /// <param name="blocksPerMcu">The largest number of blocks of an MCU.</param>
     /// <param name="precision">The number of bits of a sample (8 or 12).</param>
     /// <param name="arithmetic">Whether the scans are arithmetic coded.</param>
-    public static int GetRequiredBufferCapacity(int blocksPerMcu, int precision, bool arithmetic)
-        => (blocksPerMcu * (arithmetic ? MaxBytesPerArithmeticBlock : precision > 8 ? MaxBytesPerDeepBlock : MaxBytesPerBlock)) + 8;
+    /// <param name="lossless">Whether the scans code the samples of a lossless frame.</param>
+    public static int GetRequiredBufferCapacity(int blocksPerMcu, int precision, bool arithmetic, bool lossless = false)
+        => (blocksPerMcu * (lossless ? MaxBytesPerLosslessSample : arithmetic ? MaxBytesPerArithmeticBlock : precision > 8 ? MaxBytesPerDeepBlock : MaxBytesPerBlock)) + 8;
 
     /// <summary>Gets a value indicating whether every MCU of the scan was decoded.</summary>
     public bool IsComplete => _mcu >= _totalMcus;
 
     /// <summary>Gets the entropy reader of the scan.</summary>
     protected JpegEntropyReader Reader => _reader;
+
+    /// <summary>Gets a value indicating whether the scan codes several components, whose data units are interleaved.</summary>
+    protected bool IsInterleaved => _interleaved;
+
+    /// <summary>Gets the number of MCUs of an MCU row of the scan.</summary>
+    protected int McusPerLine => _mcusPerLine;
 
     /// <summary>Gets the largest category of a DC difference: 11 for 8-bit samples, 15 for 12-bit samples (T.81 tables F.1 and F.6).</summary>
     protected int MaxDcCategory { get; }
@@ -209,6 +221,12 @@ internal abstract class JpegScanDecoder
         }
     }
 
+    /// <summary>Completes an MCU row (a row of data units for a non-interleaved scan), before the frame is told about it.</summary>
+    /// <param name="row">The index of the row.</param>
+    protected virtual void OnMcuRowDecoded(int row)
+    {
+    }
+
     /// <summary>Resets the decoding state at a restart marker (T.81 F.2.1.3.1, G.1.2.2): the DC predictions.</summary>
     protected virtual void OnRestart()
     {
@@ -287,7 +305,9 @@ internal abstract class JpegScanDecoder
             if (_mcu % _mcusPerLine == 0)
             {
                 _cancellationToken.ThrowIfCancellationRequested();
-                _mcuRowDecoded?.Invoke((_mcu / _mcusPerLine) - 1);
+                var row = (_mcu / _mcusPerLine) - 1;
+                OnMcuRowDecoded(row);
+                _mcuRowDecoded?.Invoke(row);
             }
         }
     }

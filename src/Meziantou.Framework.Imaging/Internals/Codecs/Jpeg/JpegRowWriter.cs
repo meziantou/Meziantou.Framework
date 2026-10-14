@@ -74,21 +74,21 @@ internal sealed class JpegRowWriter : JpegBandWriter
     private PooledBuffer? _sourceRow;
     private PooledBuffer? _inkRow;
 
-    public JpegRowWriter(JpegFrameComponent[] components, DecodedFrameSink sink, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int maxVertical, AllocationScope scope)
-        : this(components, sink, receiver: null, colorModel, inkConversion, width, height, maxVertical, scope)
+    public JpegRowWriter(JpegFrameComponent[] components, DecodedFrameSink sink, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int bandRows, AllocationScope scope)
+        : this(components, sink, receiver: null, colorModel, inkConversion, width, height, bandRows, scope)
     {
         if ((components.Length == 4) != (inkConversion is not null))
             throw new ArgumentException("A four-component frame, and only it, needs the conversion of its inks.", nameof(inkConversion));
     }
 
     /// <summary>Creates a writer that hands the rows to the container of an embedded datastream instead of an image.</summary>
-    public JpegRowWriter(JpegFrameComponent[] components, JpegSampleReceiver receiver, ImageColorModel colorModel, int width, int height, int maxVertical, AllocationScope scope)
-        : this(components, sink: null, receiver, colorModel, inkConversion: null, width, height, maxVertical, scope)
+    public JpegRowWriter(JpegFrameComponent[] components, JpegSampleReceiver receiver, ImageColorModel colorModel, int width, int height, int bandRows, AllocationScope scope)
+        : this(components, sink: null, receiver, colorModel, inkConversion: null, width, height, bandRows, scope)
     {
     }
 
-    private JpegRowWriter(JpegFrameComponent[] components, DecodedFrameSink? sink, JpegSampleReceiver? receiver, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int maxVertical, AllocationScope scope)
-        : base(height, maxVertical)
+    private JpegRowWriter(JpegFrameComponent[] components, DecodedFrameSink? sink, JpegSampleReceiver? receiver, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int bandRows, AllocationScope scope)
+        : base(height, bandRows)
     {
         _components = components;
         _sink = sink;

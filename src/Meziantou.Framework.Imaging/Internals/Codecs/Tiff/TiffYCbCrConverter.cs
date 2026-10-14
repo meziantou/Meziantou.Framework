@@ -22,7 +22,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// <c>ReferenceBlackWhite</c> defaults to 0 and 255 for luma and 128 and 255 for chroma (full range, chroma centered on
 /// 128): the default of TIFF 6.0 (0 and 255 for every sample) describes RGB data and would shift every color of a YCbCr
-/// page, so writers and readers of YCbCr data use this one.
+/// page, so writers and readers of YCbCr data use this one. The samples of a page compressed with JPEG may have more
+/// than 8 bits: the full range is then 0 to <c>2^n - 1</c> with the chroma centered on <c>2^(n - 1)</c>, which is the
+/// conversion of the JPEG decoder (<see cref="IsJfifCompatible"/>); the conversion of this class is for 8-bit samples.
 /// </para>
 /// <para>
 /// Chroma is stored once for <c>h</c> x <c>v</c> pixels (<c>YCbCrSubSampling</c>) and is replicated, not interpolated: the
@@ -32,7 +34,6 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class TiffYCbCrConverter
 {
     private static readonly double[] DefaultCoefficients = [0.299, 0.587, 0.114];
-    private static readonly double[] DefaultReferenceBlackWhite = [0, 255, 128, 255, 128, 255];
 
     private readonly double[] _luma = new double[256];
     private readonly double[] _chromaBlue = new double[256];
@@ -41,14 +42,14 @@ internal sealed class TiffYCbCrConverter
     private readonly double _lumaGreen;
     private readonly double _lumaBlue;
 
-    private TiffYCbCrConverter(double[] coefficients, double[] reference, int horizontal, int vertical)
+    private TiffYCbCrConverter(double[] coefficients, double[] reference, double[] fullRange, int horizontal, int vertical)
     {
         _lumaRed = coefficients[0];
         _lumaGreen = coefficients[1];
         _lumaBlue = coefficients[2];
         HorizontalSubsampling = horizontal;
         VerticalSubsampling = vertical;
-        IsJfifCompatible = IsClose(coefficients, DefaultCoefficients) && IsClose(reference, DefaultReferenceBlackWhite);
+        IsJfifCompatible = IsClose(coefficients, DefaultCoefficients) && IsClose(reference, fullRange);
         var redFactor = 2 - (2 * _lumaRed);
         var blueFactor = 2 - (2 * _lumaBlue);
         for (var i = 0; i < 256; i++)
@@ -79,11 +80,16 @@ internal sealed class TiffYCbCrConverter
     /// <param name="reference">The six values of <c>ReferenceBlackWhite</c>, or <see langword="null"/> for the default.</param>
     /// <param name="horizontal">The horizontal subsampling factor.</param>
     /// <param name="vertical">The vertical subsampling factor.</param>
+    /// <param name="bitsPerSample">The number of bits of a sample, which gives the full range.</param>
     /// <returns>The conversion, or <see langword="null"/> when a value makes it undefined (a zero or non-finite coefficient, a white equal to its black).</returns>
-    public static TiffYCbCrConverter? Create(double[]? coefficients, double[]? reference, int horizontal, int vertical)
+    public static TiffYCbCrConverter? Create(double[]? coefficients, double[]? reference, int horizontal, int vertical, int bitsPerSample = 8)
     {
+        // Full range: black is 0, white the largest sample, and the chroma samples are centered on half of the range
+        double white = (1 << bitsPerSample) - 1;
+        double center = 1 << (bitsPerSample - 1);
+        double[] fullRange = [0, white, center, white, center, white];
         coefficients ??= DefaultCoefficients;
-        reference ??= DefaultReferenceBlackWhite;
+        reference ??= fullRange;
         foreach (var coefficient in coefficients)
         {
             if (!double.IsFinite(coefficient) || coefficient <= 0 || coefficient >= 1)
@@ -96,7 +102,7 @@ internal sealed class TiffYCbCrConverter
                 return null;
         }
 
-        return new TiffYCbCrConverter(coefficients, reference, horizontal, vertical);
+        return new TiffYCbCrConverter(coefficients, reference, fullRange, horizontal, vertical);
     }
 
     /// <summary>Gets the number of bytes of the data units of a block.</summary>

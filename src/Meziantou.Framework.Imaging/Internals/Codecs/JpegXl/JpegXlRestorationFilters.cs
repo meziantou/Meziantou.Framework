@@ -83,14 +83,49 @@ internal static class JpegXlRestorationFilters
                 var top = padded.Span.Slice(y * paddedWidth, paddedWidth);
                 var middle = padded.Span.Slice((y + 1) * paddedWidth, paddedWidth);
                 var bottom = padded.Span.Slice((y + 2) * paddedWidth, paddedWidth);
-                var output = plane.Slice(y * stride, width);
-                for (var x = 0; x < width; x++)
-                {
-                    var sides = (middle[x] + middle[x + 2]) + (top[x + 1] + bottom[x + 1]);
-                    var corners = (top[x] + top[x + 2]) + (bottom[x] + bottom[x + 2]);
-                    output[x] = (corners * cornerWeight) + ((sides * sideWeight) + (middle[x + 1] * centerWeight));
-                }
+                GaborishRow(top, middle, bottom, centerWeight, sideWeight, cornerWeight, plane.Slice(y * stride, width));
             }
+        }
+    }
+
+    /// <summary>
+    /// Filters one row with the Gabor-like filter, four samples at a time: each lane performs the operations of
+    /// <see cref="GaborishRowScalar"/> in the same order.
+    /// </summary>
+    /// <param name="top">The row above, with one sample of border on each side.</param>
+    /// <param name="middle">The row, with one sample of border on each side.</param>
+    /// <param name="bottom">The row below, with one sample of border on each side.</param>
+    /// <param name="centerWeight">The weight of the sample.</param>
+    /// <param name="sideWeight">The weight of the four samples beside it.</param>
+    /// <param name="cornerWeight">The weight of the four samples at its corners.</param>
+    /// <param name="output">Receives the filtered samples.</param>
+    internal static void GaborishRow(ReadOnlySpan<float> top, ReadOnlySpan<float> middle, ReadOnlySpan<float> bottom, float centerWeight, float sideWeight, float cornerWeight, Span<float> output)
+    {
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            var center = Vector128.Create(centerWeight);
+            var side = Vector128.Create(sideWeight);
+            var corner = Vector128.Create(cornerWeight);
+            for (; x <= output.Length - 4; x += 4)
+            {
+                var sides = (Vector128.Create(middle.Slice(x, 4)) + Vector128.Create(middle.Slice(x + 2, 4))) + (Vector128.Create(top.Slice(x + 1, 4)) + Vector128.Create(bottom.Slice(x + 1, 4)));
+                var corners = (Vector128.Create(top.Slice(x, 4)) + Vector128.Create(top.Slice(x + 2, 4))) + (Vector128.Create(bottom.Slice(x, 4)) + Vector128.Create(bottom.Slice(x + 2, 4)));
+                ((corners * corner) + ((sides * side) + (Vector128.Create(middle.Slice(x + 1, 4)) * center))).CopyTo(output.Slice(x, 4));
+            }
+        }
+
+        GaborishRowScalar(top, middle, bottom, centerWeight, sideWeight, cornerWeight, output, x);
+    }
+
+    /// <summary>The scalar reference of <see cref="GaborishRow"/>, from the sample <paramref name="start"/> on.</summary>
+    internal static void GaborishRowScalar(ReadOnlySpan<float> top, ReadOnlySpan<float> middle, ReadOnlySpan<float> bottom, float centerWeight, float sideWeight, float cornerWeight, Span<float> output, int start = 0)
+    {
+        for (var x = start; x < output.Length; x++)
+        {
+            var sides = (middle[x] + middle[x + 2]) + (top[x + 1] + bottom[x + 1]);
+            var corners = (top[x] + top[x + 2]) + (bottom[x] + bottom[x + 2]);
+            output[x] = (corners * cornerWeight) + ((sides * sideWeight) + (middle[x + 1] * centerWeight));
         }
     }
 

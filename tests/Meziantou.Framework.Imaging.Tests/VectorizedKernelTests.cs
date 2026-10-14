@@ -935,6 +935,41 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlGaborishRowsMatchTheScalarReferenceBitForBit()
+    {
+        var random = new Random(184);
+        for (var round = 0; round < 2000; round++)
+        {
+            var width = round < 100 ? 1 + round : random.Next(1, 300);
+            var rows = new float[3][];
+            for (var r = 0; r < 3; r++)
+            {
+                rows[r] = new float[width + 2];
+                for (var i = 0; i < rows[r].Length; i++)
+                {
+                    rows[r][i] = (round % 4) switch
+                    {
+                        0 => -0f,
+                        1 => (float)random.NextDouble() * 1e-30f,
+                        2 => (float)((random.NextDouble() - 0.5) * 1e6),
+                        _ => (float)random.NextDouble(),
+                    };
+                }
+            }
+
+            var side = (float)random.NextDouble() * 0.2f;
+            var corner = (float)random.NextDouble() * 0.1f;
+            var scale = 1f / (1f + (4f * (side + corner)));
+            var expected = new float[width];
+            var actual = new float[width];
+            JpegXlRestorationFilters.GaborishRowScalar(rows[0], rows[1], rows[2], scale, side * scale, corner * scale, expected);
+            JpegXlRestorationFilters.GaborishRow(rows[0], rows[1], rows[2], scale, side * scale, corner * scale, actual);
+            Assert.Equal(Array.ConvertAll(expected, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegXlEdgePreservingFilterRowsMatchTheScalarReferenceBitForBit()
     {
         const int Border = 3;

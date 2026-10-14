@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -12,9 +13,14 @@ internal sealed class Av1PooledArray<T> : IDisposable
 {
     private PooledBuffer? _buffer;
 
+    // The array of the buffer, which does not change until the buffer is returned: the decoder reads the spans of its
+    // arrays for every block
+    private byte[]? _array;
+
     private Av1PooledArray(PooledBuffer buffer, int length)
     {
         _buffer = buffer;
+        _array = buffer.RawBuffer;
         Length = length;
     }
 
@@ -27,8 +33,9 @@ internal sealed class Av1PooledArray<T> : IDisposable
     {
         get
         {
-            var buffer = _buffer ?? throw new ObjectDisposedException(nameof(Av1PooledArray<>));
-            return unsafe(MemoryMarshal.Cast<byte, T>(buffer.RawBuffer.AsSpan()))[..Length];
+            // The array holds at least Length elements: it was rented for them
+            var array = _array ?? throw new ObjectDisposedException(nameof(Av1PooledArray<>));
+            return unsafe(MemoryMarshal.CreateSpan(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(array)), Length));
         }
     }
 
@@ -47,6 +54,7 @@ internal sealed class Av1PooledArray<T> : IDisposable
 
     public void Dispose()
     {
+        _array = null;
         _buffer?.Dispose();
         _buffer = null;
     }

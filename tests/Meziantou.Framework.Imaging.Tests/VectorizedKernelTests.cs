@@ -418,7 +418,6 @@ public sealed class VectorizedKernelTests
             {
                 // Random samples, with every sample (alpha included) often 0 or the maximum
                 var samples = new TSample[pixels * 4];
-                var values = new int[samples.Length];
                 for (var i = 0; i < samples.Length; i++)
                 {
                     var value = random.Next(4) switch
@@ -427,7 +426,6 @@ public sealed class VectorizedKernelTests
                         1 => max,
                         _ => random.Next(max + 1),
                     };
-                    values[i] = value;
                     samples[i] = typeof(TSample) == typeof(byte) ? (TSample)(object)(byte)value : (TSample)(object)(ushort)value;
                 }
 
@@ -436,6 +434,36 @@ public sealed class VectorizedKernelTests
                 WorkingSamples.LoadScalar<TSample>(samples, expected, alpha, transfer: 0);
                 WorkingSamples.Load<TSample>(samples, actual, alpha, transfer: 0);
                 Assert.Equal(expected.Select(BitConverter.DoubleToInt64Bits), actual.Select(BitConverter.DoubleToInt64Bits));
+
+                // Filtered values: out of range, negative, around the rounding boundaries (k + 0.5 - 2^-20), and alphas
+                // that round to zero or not
+                var boundary = 0.5 - (1.0 / (1 << 20));
+                var filtered = new double[samples.Length + 1];
+                for (var i = 0; i < filtered.Length; i++)
+                {
+                    filtered[i] = random.Next(8) switch
+                    {
+                        0 => 0,
+                        1 => random.Next(-2, max + 2) + boundary,
+                        2 => Math.BitDecrement(random.Next(-2, max + 2) + boundary),
+                        3 => (random.NextDouble() * 1.4 * max) - (0.2 * max),
+                        4 => random.Next(max + 1) * (double)random.Next(max + 1),
+                        5 => random.Next(4) - 1.5,
+                        _ => random.NextDouble() * max,
+                    };
+                }
+
+                var expectedSamples = new TSample[filtered.Length];
+                var actualSamples = new TSample[filtered.Length];
+                foreach (var count in new[] { samples.Length, filtered.Length })
+                {
+                    if (alpha != WorkingAlpha.None && count % 4 != 0)
+                        continue;
+
+                    WorkingSamples.StoreScalar<TSample>(filtered.AsSpan(0, count), expectedSamples.AsSpan(0, count), alpha, transfer: 0, max);
+                    WorkingSamples.Store<TSample>(filtered.AsSpan(0, count), actualSamples.AsSpan(0, count), alpha, transfer: 0, max);
+                    Assert.Equal(expectedSamples, actualSamples);
+                }
             }
         }
     }

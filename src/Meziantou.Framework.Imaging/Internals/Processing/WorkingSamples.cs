@@ -103,7 +103,19 @@ internal static class WorkingSamples
     /// encoded (linear light: clamped to [0, 1] and <c>max * Encode(L)</c>), rounded with <c>floor(v + 0.5 + 2^-20)</c>
     /// and clamped to [0, max].
     /// </summary>
+    /// <remarks>
+    /// With 128-bit hardware vectors, encoded samples without alpha or with premultiplied alpha are rounded 4 at a time with
+    /// the same IEEE operations (division, addition, floor) as <see cref="StoreScalar"/>, so the results are identical.
+    /// </remarks>
     public static void Store<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, WorkingAlpha alpha, byte transfer, int max)
+        where TSample : unmanaged
+    {
+        var done = transfer is 0 && alpha != WorkingAlpha.Preserved && Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar ? StoreVector(values, samples, alpha == WorkingAlpha.Premultiplied, max) : 0;
+        StoreScalar(values[done..], samples[done..], alpha, transfer, max);
+    }
+
+    /// <summary>The scalar reference of <see cref="Store"/>.</summary>
+    internal static void StoreScalar<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, WorkingAlpha alpha, byte transfer, int max)
         where TSample : unmanaged
     {
         Debug.Assert(samples.Length == values.Length);
@@ -198,6 +210,56 @@ internal static class WorkingSamples
         unsafe { low.StoreUnsafe(ref output, (nuint)index); }
         unsafe { high.StoreUnsafe(ref output, (nuint)(index + 2)); }
     }
+
+    /// <summary>Rounds the leading encoded working samples 4 at a time (whole pixels when <paramref name="premultiplied"/>).</summary>
+    /// <returns>The number of samples stored, a multiple of 4.</returns>
+    private static int StoreVector<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, bool premultiplied, int max)
+        where TSample : unmanaged
+    {
+        Debug.Assert(samples.Length == values.Length);
+        ref var input = ref unsafe(MemoryMarshal.GetReference(values));
+        ref var output = ref unsafe(Unsafe.As<TSample, byte>(ref MemoryMarshal.GetReference(samples)));
+        var maximum = Vector128.Create((double)max);
+        var i = 0;
+        for (; i + 4 <= samples.Length; i += 4)
+        {
+            var low = unsafe(Vector128.LoadUnsafe(ref input, (nuint)i));
+            var high = unsafe(Vector128.LoadUnsafe(ref input, (nuint)(i + 2)));
+            if (premultiplied)
+            {
+                // Colors are divided by the unrounded alpha, alpha itself is rounded (a division by a zero alpha gives a
+                // meaningless value, replaced below)
+                var a = Vector128.Create(high.GetElement(1));
+                low /= a;
+                high = Vector128.ConditionalSelect(Vector128.Create(0, -1L).AsDouble(), high, high / a);
+            }
+
+            // The rounded samples are integers between 0 and max, exact as floats
+            var rounded = Vector128.ConvertToInt32(Vector128.Narrow(RoundVector(low, maximum), RoundVector(high, maximum)));
+            if (premultiplied)
+            {
+                // A zero rounded alpha gives transparent black
+                rounded &= ~Vector128.Equals(Vector128.Shuffle(rounded, Vector128.Create(3)), Vector128<int>.Zero);
+            }
+
+            var narrowed = Vector128.Narrow(rounded.AsUInt32(), Vector128<uint>.Zero);
+            if (typeof(TSample) == typeof(byte))
+            {
+                unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, i), Vector128.Narrow(narrowed, Vector128<ushort>.Zero).AsUInt32().ToScalar()); }
+            }
+            else
+            {
+                unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 2 * i), narrowed.AsUInt64().ToScalar()); }
+            }
+        }
+
+        return i;
+    }
+
+    /// <summary>The rounding of <see cref="Round"/> on 2 lanes: <c>floor(v + 0.5 + 2^-20)</c> clamped to [0, max].</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<double> RoundVector(Vector128<double> value, Vector128<double> maximum)
+        => Vector128.Min(Vector128.Max(Vector128.Floor(value + Vector128.Create(RoundingOffset)), Vector128<double>.Zero), maximum);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int ToInt<TSample>(TSample value)

@@ -151,6 +151,11 @@ internal static class JpegXlModularDecoder
         var channel = image.Channels[channelIndex];
         var width = channel.Width;
         var height = channel.Height;
+        if (nodes[0].IsLeaf && !usesWeighted)
+        {
+            DecodeSingleLeaf(reader, decoder, channel, nodes[0], distanceMultiplier, cancellationToken);
+            return;
+        }
 
         // The previous channels of the same size are the source of the properties from 16 on, four per channel, nearest first
         var referenceCount = (maxProperty + 1 - FirstReferenceProperty + PropertiesPerReference - 1) / PropertiesPerReference;
@@ -250,6 +255,116 @@ internal static class JpegXlModularDecoder
             }
         }
     }
+
+    /// <summary>
+    /// Decodes a channel whose samples all reach the same leaf, which does not use the weighted predictor: no property is
+    /// computed, and the rows below the first one have a loop of their own for the predictors that only read the samples on
+    /// the left and above. The samples, and the values read from the stream, are those of the general loop.
+    /// </summary>
+    private static void DecodeSingleLeaf(JpegXlBitReader reader, JpegXlEntropyDecoder decoder, JpegXlModularChannel channel, JpegXlMaTreeNode leaf, uint distanceMultiplier, CancellationToken cancellationToken)
+    {
+        var width = channel.Width;
+        var height = channel.Height;
+        var samples = channel.Samples;
+        var context = leaf.LeftOrContext;
+        var predictor = leaf.RightOrPredictor;
+        long offset = leaf.ValueOrOffset;
+        long multiplier = leaf.Multiplier;
+        for (var y = 0; y < height; y++)
+        {
+            if ((y & 63) == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                reader.EnsureNotOverrun();
+            }
+
+            var row = samples.Slice(y * width, width);
+            if (y == 0 || predictor > 5)
+            {
+                DecodeRow(reader, decoder, samples, width, y, context, predictor, offset, multiplier, distanceMultiplier);
+                continue;
+            }
+
+            // The first sample of a row has the sample above as its left, top and top-left neighbors
+            var above = samples.Slice((y - 1) * width, width);
+            switch (predictor)
+            {
+                case 0:
+                    for (var x = 0; x < width; x++)
+                    {
+                        row[x] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset);
+                    }
+
+                    break;
+
+                case 1:
+                    row[0] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + above[0]);
+                    for (var x = 1; x < width; x++)
+                    {
+                        row[x] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + row[x - 1]);
+                    }
+
+                    break;
+
+                case 2:
+                    for (var x = 0; x < width; x++)
+                    {
+                        row[x] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + above[x]);
+                    }
+
+                    break;
+
+                case 3:
+                    row[0] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + (((long)above[0] + above[0]) / 2));
+                    for (var x = 1; x < width; x++)
+                    {
+                        row[x] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + (((long)row[x - 1] + above[x]) / 2));
+                    }
+
+                    break;
+
+                case 4:
+                    row[0] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + JpegXlModularTransform.Predict(4, above[0], above[0], 0, above[0], 0, 0, 0, 0));
+                    for (var x = 1; x < width; x++)
+                    {
+                        row[x] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + JpegXlModularTransform.Predict(4, row[x - 1], above[x], 0, above[x - 1], 0, 0, 0, 0));
+                    }
+
+                    break;
+
+                default:
+                    row[0] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + JpegXlModularTransform.ClampedGradient(above[0], above[0], above[0]));
+                    for (var x = 1; x < width; x++)
+                    {
+                        row[x] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + JpegXlModularTransform.ClampedGradient(row[x - 1], above[x], above[x - 1]));
+                    }
+
+                    break;
+            }
+        }
+
+        static void DecodeRow(JpegXlBitReader reader, JpegXlEntropyDecoder decoder, Span<int> samples, int width, int y, int context, int predictor, long offset, long multiplier, uint distanceMultiplier)
+        {
+            var row = samples.Slice(y * width, width);
+            var above = y > 0 ? samples.Slice((y - 1) * width, width) : default;
+            var twoAbove = y > 1 ? samples.Slice((y - 2) * width, width) : default;
+            for (var x = 0; x < width; x++)
+            {
+                long left = x > 0 ? row[x - 1] : y > 0 ? above[x] : 0;
+                long top = y > 0 ? above[x] : left;
+                long topLeft = x > 0 && y > 0 ? above[x - 1] : left;
+                long topRight = x + 1 < width && y > 0 ? above[x + 1] : top;
+                long leftLeft = x > 1 ? row[x - 2] : left;
+                long topTop = y > 1 ? twoAbove[x] : top;
+                long topRightRight = x + 2 < width && y > 0 ? above[x + 2] : topRight;
+                var guess = offset + JpegXlModularTransform.Predict(predictor, left, top, topTop, topLeft, topRight, leftLeft, topRightRight, 0);
+                row[x] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, guess);
+            }
+        }
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    private static int Sample(uint token, long multiplier, long guess) => (int)(((long)JpegXlBitReader.UnpackSigned(token) * multiplier) + guess);
 
     /// <summary>
     /// Copies the part of a tree that the samples of one channel of one sub-bitstream can reach: the decisions on the two

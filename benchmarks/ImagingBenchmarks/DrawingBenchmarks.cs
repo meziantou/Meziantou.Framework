@@ -1,0 +1,221 @@
+using BenchmarkDotNet.Attributes;
+using Meziantou.Framework.Imaging.Benchmarks.Infrastructure;
+using Meziantou.Framework.Imaging.Drawing;
+
+namespace Meziantou.Framework.Imaging.Benchmarks;
+
+/// <summary>
+/// Vector drawing on a 1024x768 canvas: large shapes, many small antialiased shapes (the edges of a text), gradients,
+/// images, clips, layers, shadows, blurs and color filters.
+/// </summary>
+/// <remarks>
+/// Every workload draws on the same opaque image again and again: what it costs does not depend on what the previous
+/// iteration left, except for the translucent paints, which keep the image opaque.
+/// </remarks>
+[Config(typeof(WorkloadConfig))]
+public class DrawingBenchmarks : IDisposable
+{
+    private const int Width = 1024;
+    private const int Height = 768;
+
+    private static readonly GradientStop[] Stops = [new(0, new Rgba64(65535, 0, 0, 65535)), new(0.3, new Rgba64(0, 65535, 0, 65535)), new(0.7, new Rgba64(0, 0, 65535, 32768)), new(1, new Rgba64(65535, 65535, 0, 65535))];
+
+    private Image<Rgba32> _image = null!;
+    private Image<Rgba64> _image64 = null!;
+    private Image<Rgba32> _source = null!;
+    private VectorPath _clipPath = null!;
+    private Brush _linear = null!;
+    private Brush _vertical = null!;
+    private Brush _radial = null!;
+    private Brush _sweep = null!;
+    private PointD[] _dots = null!;
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        _image = new Image<Rgba32>(Width, Height, new Rgba32(255, 255, 255));
+        _image64 = new Image<Rgba64>(Width, Height, new Rgba64(65535, 65535, 65535, 65535));
+        _source = new Image<Rgba32>(320, 240);
+        _source.Draw(static canvas =>
+        {
+            canvas.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(320, 240), Stops));
+            canvas.FillCircle(new Rgba32(20, 40, 200, 180), new PointD(160, 120), 90);
+        });
+
+        _clipPath = new VectorPathBuilder().AddEllipse(new PointD(512, 384), 480, 340).Build();
+        _linear = new LinearGradientBrush(new PointD(40, 30), new PointD(980, 700), Stops) { SpreadMode = GradientSpreadMode.Reflect };
+        _vertical = new LinearGradientBrush(new PointD(0, 0), new PointD(0, Height), Stops);
+        _radial = new RadialGradientBrush(new PointD(512, 384), 300, Stops) { SpreadMode = GradientSpreadMode.Repeat };
+        _sweep = new SweepGradientBrush(new PointD(512, 384), Stops);
+
+        // The dots of a text: small shapes on a grid, at positions that are not whole pixels
+        var dots = new List<PointD>();
+        for (var y = 12.3; y < Height - 8; y += 15.7)
+        {
+            for (var x = 9.1; x < Width - 8; x += 11.3)
+            {
+                dots.Add(new PointD(x, y));
+            }
+        }
+
+        _dots = [.. dots];
+    }
+
+    [GlobalCleanup]
+    public void Cleanup() => Dispose();
+
+    public void Dispose()
+    {
+        _image?.Dispose();
+        _image64?.Dispose();
+        _source?.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
+    [Benchmark(Baseline = true)]
+    [Workload("Opaque ellipse covering most of a 1024x768 Rgba32 canvas: fill")]
+    public int FillLarge()
+    {
+        _image.Draw(static canvas => canvas.FillEllipse(new Rgba32(30, 120, 200), new PointD(512, 384), 500, 370));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Translucent ellipse covering most of a 1024x768 Rgba32 canvas: fill")]
+    public int FillLargeTranslucent()
+    {
+        _image.Draw(static canvas => canvas.FillEllipse(new Rgba32(30, 120, 200, 100), new PointD(512, 384), 500, 370));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Opaque ellipse covering most of a 1024x768 Rgba64 canvas: fill")]
+    public int FillLarge64()
+    {
+        _image64.Draw(static canvas => canvas.FillEllipse(new Rgba64(10000, 30000, 50000, 65535), new PointD(512, 384), 500, 370));
+        return _image64.Width;
+    }
+
+    [Benchmark]
+    [Workload("4,300 small antialiased shapes (circles and rectangles of 3 to 5 pixels): fill")]
+    public int FillSmallShapes()
+    {
+        _image.Draw(_dots, static (canvas, dots) =>
+        {
+            for (var i = 0; i < dots.Length; i++)
+            {
+                var dot = dots[i];
+                if ((i & 1) == 0)
+                {
+                    canvas.FillCircle(new Rgba32(0, 0, 0), dot, 2.4);
+                }
+                else
+                {
+                    canvas.FillRectangle(new Rgba32(40, 40, 40), new RectangleD(dot.X - 1.7, dot.Y - 2.2, 3.6, 4.7));
+                }
+            }
+        });
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Linear gradient with four stops, reflected: fill of the canvas")]
+    public int FillLinearGradient()
+    {
+        _image.Draw(_linear, static (canvas, brush) => canvas.Fill(brush));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Vertical linear gradient with four stops: fill of the canvas")]
+    public int FillVerticalGradient()
+    {
+        _image.Draw(_vertical, static (canvas, brush) => canvas.Fill(brush));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Radial gradient with four stops, repeated: fill of the canvas")]
+    public int FillRadialGradient()
+    {
+        _image.Draw(_radial, static (canvas, brush) => canvas.Fill(brush));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Sweep gradient with four stops: fill of the canvas")]
+    public int FillSweepGradient()
+    {
+        _image.Draw(_sweep, static (canvas, brush) => canvas.Fill(brush));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("320x240 Rgba32 image scaled to 1000x740, bilinear: draw")]
+    public int DrawImage()
+    {
+        _image.Draw(_source.Frames[0], static (canvas, source) => canvas.DrawImage(source, new RectangleD(12, 14, 1000, 740)));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Clear of a 1024x768 Rgba32 canvas")]
+    public int Clear()
+    {
+        _image.Draw(static canvas => canvas.Clear(new Rgba64(65535, 65535, 65535, 65535)));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Rectangle clipped by an ellipse: fill")]
+    public int FillClipped()
+    {
+        _image.Draw(_clipPath, static (canvas, path) => canvas.Clip(path, static canvas => canvas.FillRectangle(new Rgba32(200, 60, 20, 200), new RectangleD(0, 0, Width, Height))));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Layer at 50% opacity holding three shapes over a quarter of the canvas")]
+    public int Layer()
+    {
+        _image.Draw(static canvas => canvas.Layer(0.5, static canvas =>
+        {
+            canvas.FillCircle(new Rgba32(200, 20, 20), new PointD(200, 200), 120);
+            canvas.FillRectangle(new Rgba32(20, 200, 20), new RectangleD(150, 150, 250, 180));
+            canvas.FillCircle(new Rgba32(20, 20, 200), new PointD(330, 300), 90);
+        }));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Drop shadow, blur 8, of a rounded rectangle of 300x200")]
+    public int DropShadow()
+    {
+        _image.Draw(static canvas => canvas.Shadow(new Rgba64(0, 0, 0, 40000), new PointD(6, 8), 8, static canvas => canvas.FillRoundedRectangle(new Rgba32(250, 250, 250), new RectangleD(100, 100, 300, 200), 16)));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Blur 6 of a circle of radius 150")]
+    public int Blur()
+    {
+        _image.Draw(static canvas => canvas.Blur(6, static canvas => canvas.FillCircle(new Rgba32(250, 120, 0), new PointD(600, 400), 150)));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Sepia color matrix over the canvas: filter of the backdrop")]
+    public int FilterBackdrop()
+    {
+        _image.Draw(static canvas => canvas.FilterBackdrop(ColorMatrix.CreateSepia(0.4)));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Multiply blend of a large ellipse")]
+    public int FillMultiply()
+    {
+        _image.Draw(static canvas => canvas.FillEllipse(new SolidBrush(new Rgba64(60000, 40000, 20000, 65535)) { BlendMode = BlendMode.Multiply }, new PointD(512, 384), 400, 300));
+        return _image.Width;
+    }
+}

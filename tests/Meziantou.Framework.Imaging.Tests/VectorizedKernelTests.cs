@@ -86,6 +86,45 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PngAdaptiveCostsOfEveryFilterMatchTheScalarReference()
+    {
+        var random = new Random(53);
+        foreach (var bytesPerPixel in new[] { 1, 2, 3, 4, 6, 8 })
+        {
+            foreach (var length in new[] { 1, 2, 7, 15, 16, 17, 31, 32, 33, 40, 100, 1000, (300 * 32) + 5 })
+            {
+                if (length < bytesPerPixel)
+                    continue;
+
+                var row = new byte[length];
+                var previous = new byte[length];
+                for (var round = 0; round < 4; round++)
+                {
+                    random.NextBytes(row);
+                    random.NextBytes(previous);
+                    if (round == 1)
+                    {
+                        // Extremes: the largest magnitudes, and long rows whose partial sums are flushed
+                        Array.Fill(row, (byte)0x80);
+                        Array.Fill(previous, (byte)0);
+                    }
+                    else if (round == 2)
+                    {
+                        Array.Fill(row, (byte)0xFF);
+                    }
+
+                    var expected = new long[5];
+                    var actual = new long[5];
+                    PngFilters.GetAdaptiveCostsScalar(row, previous, bytesPerPixel, expected);
+                    PngFilters.GetAdaptiveCosts(row, previous, bytesPerPixel, actual);
+                    Assert.Equal(expected, actual);
+                }
+            }
+        }
+    }
+
     [Theory]
     [InlineData(2)]
     [InlineData(7)]

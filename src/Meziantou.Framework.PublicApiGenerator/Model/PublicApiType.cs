@@ -111,7 +111,11 @@ public sealed class PublicApiType : PublicApiSymbol
     /// <summary>Gets the interfaces directly implemented by the type, sorted by documentation ID. Interfaces that are not visible outside the assembly are not included.</summary>
     public ImmutableArray<PublicApiTypeReference> Interfaces { get; }
 
-    /// <summary>Gets the members of the type, in metadata order: fields, properties, events, then methods.</summary>
+    /// <summary>
+    /// Gets the members of the type: fields, properties, events, constructors, methods, operators, then conversion operators.
+    /// The members of a kind are sorted by name, then by signature, so the order does not depend on the order of the declarations.
+    /// Enum members are sorted by value, then by name.
+    /// </summary>
     public ImmutableArray<PublicApiMember> Members { get; }
 
     /// <summary>Gets the nested types, sorted by metadata name.</summary>

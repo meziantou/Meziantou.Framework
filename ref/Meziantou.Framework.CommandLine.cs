@@ -7,21 +7,21 @@ namespace Meziantou.Framework
     public static class CommandLineBuilder
     {
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
-        public static string? WindowsQuotedArgument(string? value) => throw null;
-        public static string WindowsQuotedArguments(params string[] values) => throw null;
-        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static string? WindowsCmdArgument(string? value) => throw null;
         public static string WindowsCmdArguments(params string[] values) => throw null;
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+        public static string? WindowsQuotedArgument(string? value) => throw null;
+        public static string WindowsQuotedArguments(params string[] values) => throw null;
     }
 
     public sealed class CommandLineParser
     {
         public static Meziantou.Framework.CommandLineParser Current { get => throw null; }
         public bool HelpRequested { get => throw null; }
-        public void Parse(string[] args) { }
-        public bool HasArgument(string name) => throw null;
-        public string? GetArgument(string name) => throw null;
         public string? GetArgument(int position) => throw null;
+        public string? GetArgument(string name) => throw null;
+        public bool HasArgument(string name) => throw null;
+        public void Parse(string[] args) { }
     }
 
     public static class Prompt

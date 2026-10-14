@@ -19,13 +19,13 @@ namespace Meziantou.AspNetCore.Diagnostics
 {
     public sealed class MiddlewarePipelineDebugEndpoint
     {
+        public string? DisplayName { get => throw null; init { } }
         [System.Text.Json.Serialization.JsonIgnore]
         public Microsoft.AspNetCore.Http.Endpoint? Endpoint { get => throw null; init { } }
-        public string? DisplayName { get => throw null; init { } }
         public required string EndpointType { get => throw null; init { } }
-        public string? RoutePattern { get => throw null; init { } }
-        public int? Order { get => throw null; init { } }
         public required System.Collections.Generic.IReadOnlyList<string> HttpMethods { get => throw null; init { } }
+        public int? Order { get => throw null; init { } }
+        public string? RoutePattern { get => throw null; init { } }
     }
 
     public sealed class MiddlewarePipelineDebugInfoProvider
@@ -36,10 +36,10 @@ namespace Meziantou.AspNetCore.Diagnostics
 
     public sealed class MiddlewarePipelineDebugMiddleware
     {
-        public required string Name { get => throw null; init { } }
-        public string? DelegateType { get => throw null; init { } }
-        public string? DelegateMethod { get => throw null; init { } }
         public required System.Collections.Generic.IReadOnlyList<Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline> Branches { get => throw null; init { } }
+        public string? DelegateMethod { get => throw null; init { } }
+        public string? DelegateType { get => throw null; init { } }
+        public required string Name { get => throw null; init { } }
     }
 
     public sealed class MiddlewarePipelineDebugPipeline
@@ -49,9 +49,9 @@ namespace Meziantou.AspNetCore.Diagnostics
 
     public sealed class MiddlewarePipelineDebugSnapshot
     {
-        public required Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline Pipeline { get => throw null; init { } }
-        public required bool IsPipelineCaptured { get => throw null; init { } }
         public required System.Collections.Generic.IReadOnlyList<Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint> Endpoints { get => throw null; init { } }
+        public required bool IsPipelineCaptured { get => throw null; init { } }
+        public required Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline Pipeline { get => throw null; init { } }
         public override string ToString() => throw null;
     }
 
@@ -63,8 +63,8 @@ namespace Meziantou.AspNetCore.Diagnostics
     public static class MiddlewarePipelineDebuggingWebApplicationExtensions
     {
         public static Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot GetMiddlewarePipelineDebugSnapshot(this Microsoft.AspNetCore.Builder.WebApplication app) => throw null;
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("This method maps a delegate endpoint, which may use reflection and is not trim-safe.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("This method maps a delegate endpoint that serializes the snapshot with reflection-based JSON serialization.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("This method maps a delegate endpoint, which may use reflection and is not trim-safe.")]
         public static Microsoft.AspNetCore.Builder.RouteHandlerBuilder MapMiddlewarePipelineDebugEndpoint(this Microsoft.AspNetCore.Builder.WebApplication app, string pattern = "/_debug/pipeline", bool developmentOnly = true) => throw null;
     }
 }

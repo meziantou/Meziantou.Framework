@@ -76,6 +76,17 @@ public sealed class CronExpression : IRecurrenceRule
 The whole type is wrapped in a conditional block only when it cannot be merged, for instance when it does not exist in
 every target framework, or when its modifiers or generic constraints differ.
 
+## Order of the declarations
+
+The output only depends on the public API: moving a declaration in the source code, or in another file of a partial type, does not change it.
+
+- Namespaces and types are sorted by name.
+- Members are grouped by kind: fields, properties and indexers, events, constructors, destructors, methods, operators, then conversion operators. In a group, members are sorted by name, then by number of generic parameters, number of parameters, and types of the parameters. An explicit interface implementation is sorted by the name of the member, then by the name of the interface.
+- Enum members are sorted by value, then by name.
+- Interfaces, attributes and named arguments of attributes are sorted by name. The constraints of a generic parameter are sorted by name, after the base type.
+
+All comparisons are ordinal. The model (`PublicApiType.Members`, `PublicApiSymbol.Attributes`...) uses the same order.
+
 ## Reading the API model
 
 `PublicApi.ReadAssembly` returns a structured model of the public API, without generating C# files. It reads the metadata of the file or stream: the assembly, its attributes and its references are never loaded or executed. The model does not keep any reference to the file, the stream or the metadata reader, so it remains usable after they are disposed.

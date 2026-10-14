@@ -7,8 +7,8 @@ namespace Meziantou.Framework
     public sealed class HttpClientMock : System.IAsyncDisposable
     {
         public Microsoft.AspNetCore.Builder.WebApplication Application { get => throw null; }
-        public HttpClientMock(Microsoft.Extensions.Logging.ILoggerProvider? loggerProvider) { }
         public HttpClientMock(Microsoft.Extensions.Logging.ILogger? logger) { }
+        public HttpClientMock(Microsoft.Extensions.Logging.ILoggerProvider? loggerProvider) { }
         public HttpClientMock(System.Action<Microsoft.Extensions.Logging.ILoggingBuilder>? configureLogging) { }
         public HttpClientMock(Microsoft.Extensions.Logging.ILogger? logger, System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection>? configureServices) { }
         public HttpClientMock(Microsoft.Extensions.Logging.ILoggerProvider? loggerProvider, System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection>? configureServices) { }
@@ -18,20 +18,20 @@ namespace Meziantou.Framework
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
         public void ForwardUnknownRequestsToUpstream() { }
         public void ForwardUnknownRequestsToUpstream(System.Net.Http.HttpClient httpClient) { }
-        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapGet(string url, Microsoft.AspNetCore.Http.RequestDelegate handler) => throw null;
-        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapGet(string url, System.Delegate handler) => throw null;
-        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapPost(string url, Microsoft.AspNetCore.Http.RequestDelegate handler) => throw null;
-        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapPost(string url, System.Delegate handler) => throw null;
-        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapPut(string url, Microsoft.AspNetCore.Http.RequestDelegate handler) => throw null;
-        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapPut(string url, System.Delegate handler) => throw null;
-        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapPatch(string url, Microsoft.AspNetCore.Http.RequestDelegate handler) => throw null;
-        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapPatch(string url, System.Delegate handler) => throw null;
         public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapDelete(string url, Microsoft.AspNetCore.Http.RequestDelegate handler) => throw null;
         public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapDelete(string url, System.Delegate handler) => throw null;
+        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapGet(string url, Microsoft.AspNetCore.Http.RequestDelegate handler) => throw null;
+        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapGet(string url, System.Delegate handler) => throw null;
         public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapHead(string url, Microsoft.AspNetCore.Http.RequestDelegate handler) => throw null;
         public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapHead(string url, System.Delegate handler) => throw null;
         public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapOptions(string url, Microsoft.AspNetCore.Http.RequestDelegate handler) => throw null;
         public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapOptions(string url, System.Delegate handler) => throw null;
+        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapPatch(string url, Microsoft.AspNetCore.Http.RequestDelegate handler) => throw null;
+        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapPatch(string url, System.Delegate handler) => throw null;
+        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapPost(string url, Microsoft.AspNetCore.Http.RequestDelegate handler) => throw null;
+        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapPost(string url, System.Delegate handler) => throw null;
+        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapPut(string url, Microsoft.AspNetCore.Http.RequestDelegate handler) => throw null;
+        public Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapPut(string url, System.Delegate handler) => throw null;
     }
 
     public sealed class HttpMockServiceBuilder
@@ -47,18 +47,18 @@ namespace Meziantou.Framework
         public long TotalCount { get => throw null; }
         public RequestCounter(Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor) { }
         public long Get() => throw null;
-        public long Get(Microsoft.AspNetCore.Http.HttpContext httpContext) => throw null;
         public long Get(Microsoft.AspNetCore.Http.Endpoint? endpoint) => throw null;
+        public long Get(Microsoft.AspNetCore.Http.HttpContext httpContext) => throw null;
     }
 
     public static class ResultExtensions
     {
+        public static Microsoft.AspNetCore.Http.IResult ForwardToUpstream(this Microsoft.AspNetCore.Http.IResultExtensions _) => throw null;
+        public static Microsoft.AspNetCore.Http.IResult ForwardToUpstream(this Microsoft.AspNetCore.Http.IResultExtensions _, System.Net.Http.HttpClient httpClient) => throw null;
         public static Microsoft.AspNetCore.Http.IResult RawJson(this Microsoft.AspNetCore.Http.IResultExtensions _, [System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string content, System.Text.Encoding? encoding) => throw null;
         public static Microsoft.AspNetCore.Http.IResult RawJson(this Microsoft.AspNetCore.Http.IResultExtensions _, [System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string content, System.Text.Encoding? encoding = null, int? statusCode = null) => throw null;
         public static Microsoft.AspNetCore.Http.IResult RawXml(this Microsoft.AspNetCore.Http.IResultExtensions _, [System.Diagnostics.CodeAnalysis.StringSyntax("Xml")] string content, System.Text.Encoding? encoding) => throw null;
         public static Microsoft.AspNetCore.Http.IResult RawXml(this Microsoft.AspNetCore.Http.IResultExtensions _, [System.Diagnostics.CodeAnalysis.StringSyntax("Xml")] string content, System.Text.Encoding? encoding = null, int? statusCode = null) => throw null;
-        public static Microsoft.AspNetCore.Http.IResult ForwardToUpstream(this Microsoft.AspNetCore.Http.IResultExtensions _) => throw null;
-        public static Microsoft.AspNetCore.Http.IResult ForwardToUpstream(this Microsoft.AspNetCore.Http.IResultExtensions _, System.Net.Http.HttpClient httpClient) => throw null;
     }
 
     public static class ServicesCollectionExtensions

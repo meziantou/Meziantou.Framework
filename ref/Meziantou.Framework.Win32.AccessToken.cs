@@ -7,25 +7,25 @@ namespace Meziantou.Framework.Win32
     [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
     public sealed class AccessToken : System.IDisposable
     {
-        public bool IsRestricted() => throw null;
-        public Meziantou.Framework.Win32.TokenType GetTokenType() => throw null;
+        public void DisableAllPrivileges() { }
+        public void DisablePrivilege(string privilegeName) { }
+        public void Dispose() { }
+        public Meziantou.Framework.Win32.AccessToken Duplicate(Meziantou.Framework.Win32.SecurityImpersonationLevel impersonationLevel) => throw null;
+        public void EnablePrivilege(string privilegeName) { }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.TokenGroupEntry> EnumerateGroups() => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.TokenPrivilegeEntry> EnumeratePrivileges() => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.TokenGroupEntry> EnumerateRestrictedSid() => throw null;
         public Meziantou.Framework.Win32.TokenElevationType GetElevationType() => throw null;
-        public bool IsElevated() => throw null;
         public Meziantou.Framework.Win32.AccessToken? GetLinkedToken() => throw null;
         public Meziantou.Framework.Win32.TokenEntry GetMandatoryIntegrityLevel() => throw null;
         public Meziantou.Framework.Win32.SecurityIdentifier GetOwner() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.TokenGroupEntry> EnumerateGroups() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.TokenGroupEntry> EnumerateRestrictedSid() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.TokenPrivilegeEntry> EnumeratePrivileges() => throw null;
-        public void EnablePrivilege(string privilegeName) { }
-        public void DisablePrivilege(string privilegeName) { }
-        public void DisableAllPrivileges() { }
-        public void RemovePrivilege(string privilegeName) { }
-        public Meziantou.Framework.Win32.AccessToken Duplicate(Meziantou.Framework.Win32.SecurityImpersonationLevel impersonationLevel) => throw null;
-        public void Dispose() { }
+        public Meziantou.Framework.Win32.TokenType GetTokenType() => throw null;
+        public bool IsElevated() => throw null;
+        public static bool IsLimitedToken() => throw null;
+        public bool IsRestricted() => throw null;
         public static Meziantou.Framework.Win32.AccessToken OpenCurrentProcessToken(Meziantou.Framework.Win32.TokenAccessLevels accessLevels) => throw null;
         public static Meziantou.Framework.Win32.AccessToken OpenProcessToken(System.Diagnostics.Process process, Meziantou.Framework.Win32.TokenAccessLevels accessLevels) => throw null;
-        public static bool IsLimitedToken() => throw null;
+        public void RemovePrivilege(string privilegeName) { }
     }
 
     [System.Flags]
@@ -38,8 +38,8 @@ namespace Meziantou.Framework.Win32
         SE_GROUP_USE_FOR_DENY_ONLY = 16U,
         SE_GROUP_INTEGRITY = 32U,
         SE_GROUP_INTEGRITY_ENABLED = 64U,
-        SE_GROUP_LOGON_ID = 3221225472U,
         SE_GROUP_RESOURCE = 536870912U,
+        SE_GROUP_LOGON_ID = 3221225472U,
         SE_GROUP_VALID_ATTRIBUTES = 3758096511U,
     }
 
@@ -58,8 +58,8 @@ namespace Meziantou.Framework.Win32
     public enum PrivilegeAttribute : uint
     {
         Disabled = 0U,
-        Enabled = 2U,
         EnabledByDefault = 1U,
+        Enabled = 2U,
         Removed = 4U,
         UsedForAccess = 2147483648U,
     }
@@ -78,8 +78,8 @@ namespace Meziantou.Framework.Win32
         public const string SE_DEBUG_NAME = "SeDebugPrivilege";
         public const string SE_ENABLE_DELEGATION_NAME = "SeEnableDelegationPrivilege";
         public const string SE_IMPERSONATE_NAME = "SeImpersonatePrivilege";
-        public const string SE_INC_BASE_PRIORITY_NAME = "SeIncreaseBasePriorityPrivilege";
         public const string SE_INCREASE_QUOTA_NAME = "SeIncreaseQuotaPrivilege";
+        public const string SE_INC_BASE_PRIORITY_NAME = "SeIncreaseBasePriorityPrivilege";
         public const string SE_INC_WORKING_SET_NAME = "SeIncreaseWorkingSetPrivilege";
         public const string SE_LOAD_DRIVER_NAME = "SeLoadDriverPrivilege";
         public const string SE_LOCK_MEMORY_NAME = "SeLockMemoryPrivilege";
@@ -92,9 +92,9 @@ namespace Meziantou.Framework.Win32
         public const string SE_SECURITY_NAME = "SeSecurityPrivilege";
         public const string SE_SHUTDOWN_NAME = "SeShutdownPrivilege";
         public const string SE_SYNC_AGENT_NAME = "SeSyncAgentPrivilege";
+        public const string SE_SYSTEMTIME_NAME = "SeSystemtimePrivilege";
         public const string SE_SYSTEM_ENVIRONMENT_NAME = "SeSystemEnvironmentPrivilege";
         public const string SE_SYSTEM_PROFILE_NAME = "SeSystemProfilePrivilege";
-        public const string SE_SYSTEMTIME_NAME = "SeSystemtimePrivilege";
         public const string SE_TAKE_OWNERSHIP_NAME = "SeTakeOwnershipPrivilege";
         public const string SE_TCB_NAME = "SeTcbPrivilege";
         public const string SE_TIME_ZONE_NAME = "SeTimeZonePrivilege";
@@ -107,14 +107,14 @@ namespace Meziantou.Framework.Win32
     public sealed class SecurityIdentifier : System.IEquatable<Meziantou.Framework.Win32.SecurityIdentifier?>
     {
         public string? Domain { get => throw null; }
+        public string FullName { get => throw null; }
         public string? Name { get => throw null; }
         public string Sid { get => throw null; }
-        public string FullName { get => throw null; }
-        public override string ToString() => throw null;
-        public static Meziantou.Framework.Win32.SecurityIdentifier FromWellKnown(Meziantou.Framework.Win32.WellKnownSidType type) => throw null;
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Win32.SecurityIdentifier? other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.Win32.SecurityIdentifier FromWellKnown(Meziantou.Framework.Win32.WellKnownSidType type) => throw null;
         public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Win32.SecurityIdentifier? left, Meziantou.Framework.Win32.SecurityIdentifier? right) => throw null;
         public static bool operator !=(Meziantou.Framework.Win32.SecurityIdentifier? left, Meziantou.Framework.Win32.SecurityIdentifier? right) => throw null;
     }
@@ -160,14 +160,14 @@ namespace Meziantou.Framework.Win32
 
     public sealed class TokenGroupEntry
     {
-        public Meziantou.Framework.Win32.SecurityIdentifier Sid { get => throw null; }
         public Meziantou.Framework.Win32.GroupSidAttributes Attributes { get => throw null; }
+        public Meziantou.Framework.Win32.SecurityIdentifier Sid { get => throw null; }
     }
 
     public sealed class TokenPrivilegeEntry
     {
-        public string Name { get => throw null; }
         public Meziantou.Framework.Win32.PrivilegeAttribute Attributes { get => throw null; }
+        public string Name { get => throw null; }
         public override string ToString() => throw null;
     }
 

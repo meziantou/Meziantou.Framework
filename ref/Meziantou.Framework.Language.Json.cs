@@ -6,207 +6,207 @@ namespace Meziantou.Framework.Language.Json
 {
     public sealed class JsonArraySyntax : Meziantou.Framework.Language.Json.JsonValueSyntax
     {
-        public Meziantou.Framework.Language.SyntaxToken OpenBracketToken { get => throw null; }
-        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> Elements { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken CloseBracketToken { get => throw null; }
-        public Meziantou.Framework.Language.Json.JsonArraySyntax Update(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> elements, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
-        public Meziantou.Framework.Language.Json.JsonArraySyntax WithOpenBracketToken(Meziantou.Framework.Language.SyntaxToken openBracketToken) => throw null;
-        public Meziantou.Framework.Language.Json.JsonArraySyntax WithElements(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> elements) => throw null;
-        public Meziantou.Framework.Language.Json.JsonArraySyntax WithCloseBracketToken(Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
-        public Meziantou.Framework.Language.Json.JsonArraySyntax AddElements(params Meziantou.Framework.Language.Json.JsonValueSyntax[] items) => throw null;
+        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> Elements { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenBracketToken { get => throw null; }
         public override void Accept(Meziantou.Framework.Language.Json.JsonSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Language.Json.JsonSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
+        public Meziantou.Framework.Language.Json.JsonArraySyntax AddElements(params Meziantou.Framework.Language.Json.JsonValueSyntax[] items) => throw null;
+        public Meziantou.Framework.Language.Json.JsonArraySyntax Update(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> elements, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
+        public Meziantou.Framework.Language.Json.JsonArraySyntax WithCloseBracketToken(Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
+        public Meziantou.Framework.Language.Json.JsonArraySyntax WithElements(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> elements) => throw null;
+        public Meziantou.Framework.Language.Json.JsonArraySyntax WithOpenBracketToken(Meziantou.Framework.Language.SyntaxToken openBracketToken) => throw null;
     }
 
     public sealed class JsonDocumentSyntax : Meziantou.Framework.Language.Json.JsonSyntaxNode
     {
-        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> Values { get => throw null; }
-        public Meziantou.Framework.Language.Json.JsonValueSyntax? Value { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken EndOfFileToken { get => throw null; }
-        public Meziantou.Framework.Language.Json.JsonDocumentSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> values, Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
-        public Meziantou.Framework.Language.Json.JsonDocumentSyntax WithValues(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> values) => throw null;
-        public Meziantou.Framework.Language.Json.JsonDocumentSyntax WithValue(Meziantou.Framework.Language.Json.JsonValueSyntax? value) => throw null;
-        public Meziantou.Framework.Language.Json.JsonDocumentSyntax WithEndOfFileToken(Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
-        public Meziantou.Framework.Language.Json.JsonDocumentSyntax AddValues(params Meziantou.Framework.Language.Json.JsonValueSyntax[] items) => throw null;
+        public Meziantou.Framework.Language.Json.JsonValueSyntax? Value { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> Values { get => throw null; }
         public override void Accept(Meziantou.Framework.Language.Json.JsonSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Language.Json.JsonSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
+        public Meziantou.Framework.Language.Json.JsonDocumentSyntax AddValues(params Meziantou.Framework.Language.Json.JsonValueSyntax[] items) => throw null;
+        public Meziantou.Framework.Language.Json.JsonDocumentSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> values, Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
+        public Meziantou.Framework.Language.Json.JsonDocumentSyntax WithEndOfFileToken(Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
+        public Meziantou.Framework.Language.Json.JsonDocumentSyntax WithValue(Meziantou.Framework.Language.Json.JsonValueSyntax? value) => throw null;
+        public Meziantou.Framework.Language.Json.JsonDocumentSyntax WithValues(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> values) => throw null;
     }
 
     public static class JsonExtensions
     {
-        public static Meziantou.Framework.Language.Json.SyntaxKind Kind(this Meziantou.Framework.Language.SyntaxNode? node) => throw null;
-        public static Meziantou.Framework.Language.Json.SyntaxKind Kind(this Meziantou.Framework.Language.SyntaxToken token) => throw null;
-        public static Meziantou.Framework.Language.Json.SyntaxKind Kind(this Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;
-        public static Meziantou.Framework.Language.Json.SyntaxKind Kind(this Meziantou.Framework.Language.SyntaxNodeOrToken nodeOrToken) => throw null;
         public static bool IsKind(this Meziantou.Framework.Language.SyntaxNode? node, Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
+        public static bool IsKind(this Meziantou.Framework.Language.SyntaxNodeOrToken nodeOrToken, Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
         public static bool IsKind(this Meziantou.Framework.Language.SyntaxToken token, Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
         public static bool IsKind(this Meziantou.Framework.Language.SyntaxTrivia trivia, Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
-        public static bool IsKind(this Meziantou.Framework.Language.SyntaxNodeOrToken nodeOrToken, Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
+        public static Meziantou.Framework.Language.Json.SyntaxKind Kind(this Meziantou.Framework.Language.SyntaxNode? node) => throw null;
+        public static Meziantou.Framework.Language.Json.SyntaxKind Kind(this Meziantou.Framework.Language.SyntaxNodeOrToken nodeOrToken) => throw null;
+        public static Meziantou.Framework.Language.Json.SyntaxKind Kind(this Meziantou.Framework.Language.SyntaxToken token) => throw null;
+        public static Meziantou.Framework.Language.Json.SyntaxKind Kind(this Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;
     }
 
     public sealed class JsonLiteralSyntax : Meziantou.Framework.Language.Json.JsonValueSyntax
     {
         public Meziantou.Framework.Language.SyntaxToken LiteralToken { get => throw null; }
-        public Meziantou.Framework.Language.Json.JsonLiteralSyntax Update(Meziantou.Framework.Language.SyntaxToken literalToken) => throw null;
-        public Meziantou.Framework.Language.Json.JsonLiteralSyntax WithLiteralToken(Meziantou.Framework.Language.SyntaxToken literalToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Json.JsonSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Language.Json.JsonSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
+        public Meziantou.Framework.Language.Json.JsonLiteralSyntax Update(Meziantou.Framework.Language.SyntaxToken literalToken) => throw null;
+        public Meziantou.Framework.Language.Json.JsonLiteralSyntax WithLiteralToken(Meziantou.Framework.Language.SyntaxToken literalToken) => throw null;
     }
 
     public sealed class JsonMemberSyntax : Meziantou.Framework.Language.Json.JsonSyntaxNode
     {
-        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
-        public string Name { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken ColonToken { get => throw null; }
+        public string Name { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonValueSyntax Value { get => throw null; }
-        public Meziantou.Framework.Language.Json.JsonMemberSyntax Update(Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken colonToken, Meziantou.Framework.Language.Json.JsonValueSyntax value) => throw null;
-        public Meziantou.Framework.Language.Json.JsonMemberSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
-        public Meziantou.Framework.Language.Json.JsonMemberSyntax WithName(string name) => throw null;
-        public Meziantou.Framework.Language.Json.JsonMemberSyntax WithColonToken(Meziantou.Framework.Language.SyntaxToken colonToken) => throw null;
-        public Meziantou.Framework.Language.Json.JsonMemberSyntax WithValue(Meziantou.Framework.Language.Json.JsonValueSyntax value) => throw null;
         public override void Accept(Meziantou.Framework.Language.Json.JsonSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Language.Json.JsonSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
+        public Meziantou.Framework.Language.Json.JsonMemberSyntax Update(Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken colonToken, Meziantou.Framework.Language.Json.JsonValueSyntax value) => throw null;
+        public Meziantou.Framework.Language.Json.JsonMemberSyntax WithColonToken(Meziantou.Framework.Language.SyntaxToken colonToken) => throw null;
+        public Meziantou.Framework.Language.Json.JsonMemberSyntax WithName(string name) => throw null;
+        public Meziantou.Framework.Language.Json.JsonMemberSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Json.JsonMemberSyntax WithValue(Meziantou.Framework.Language.Json.JsonValueSyntax value) => throw null;
     }
 
     public sealed class JsonNumberSyntax : Meziantou.Framework.Language.Json.JsonValueSyntax
     {
         public Meziantou.Framework.Language.SyntaxToken NumberToken { get => throw null; }
         public string Text { get => throw null; }
+        public override void Accept(Meziantou.Framework.Language.Json.JsonSyntaxVisitor visitor) { }
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Json.JsonSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
         public Meziantou.Framework.Language.Json.JsonNumberSyntax Update(Meziantou.Framework.Language.SyntaxToken numberToken) => throw null;
         public Meziantou.Framework.Language.Json.JsonNumberSyntax WithNumberToken(Meziantou.Framework.Language.SyntaxToken numberToken) => throw null;
         public Meziantou.Framework.Language.Json.JsonNumberSyntax WithText(string text) => throw null;
-        public override void Accept(Meziantou.Framework.Language.Json.JsonSyntaxVisitor visitor) { }
-        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Json.JsonSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class JsonObjectSyntax : Meziantou.Framework.Language.Json.JsonValueSyntax
     {
-        public Meziantou.Framework.Language.SyntaxToken OpenBraceToken { get => throw null; }
-        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonMemberSyntax> Members { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken CloseBraceToken { get => throw null; }
-        public Meziantou.Framework.Language.Json.JsonMemberSyntax? GetMember(string name) => throw null;
-        public Meziantou.Framework.Language.Json.JsonObjectSyntax Update(Meziantou.Framework.Language.SyntaxToken openBraceToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonMemberSyntax> members, Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
-        public Meziantou.Framework.Language.Json.JsonObjectSyntax WithOpenBraceToken(Meziantou.Framework.Language.SyntaxToken openBraceToken) => throw null;
-        public Meziantou.Framework.Language.Json.JsonObjectSyntax WithMembers(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonMemberSyntax> members) => throw null;
-        public Meziantou.Framework.Language.Json.JsonObjectSyntax WithCloseBraceToken(Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
-        public Meziantou.Framework.Language.Json.JsonObjectSyntax AddMembers(params Meziantou.Framework.Language.Json.JsonMemberSyntax[] items) => throw null;
+        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonMemberSyntax> Members { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenBraceToken { get => throw null; }
         public override void Accept(Meziantou.Framework.Language.Json.JsonSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Language.Json.JsonSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
+        public Meziantou.Framework.Language.Json.JsonObjectSyntax AddMembers(params Meziantou.Framework.Language.Json.JsonMemberSyntax[] items) => throw null;
+        public Meziantou.Framework.Language.Json.JsonMemberSyntax? GetMember(string name) => throw null;
+        public Meziantou.Framework.Language.Json.JsonObjectSyntax Update(Meziantou.Framework.Language.SyntaxToken openBraceToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonMemberSyntax> members, Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
+        public Meziantou.Framework.Language.Json.JsonObjectSyntax WithCloseBraceToken(Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
+        public Meziantou.Framework.Language.Json.JsonObjectSyntax WithMembers(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonMemberSyntax> members) => throw null;
+        public Meziantou.Framework.Language.Json.JsonObjectSyntax WithOpenBraceToken(Meziantou.Framework.Language.SyntaxToken openBraceToken) => throw null;
     }
 
     public static class JsonPathExtensions
     {
-        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root) => throw null;
-        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
-        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPath path) => throw null;
-        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxNode? root) => throw null;
-        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root) => throw null;
         public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPath path) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPath path) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPath path) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxNode? root) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root) => throw null;
         public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPath path) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPath path) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
     }
 
     public sealed class JsonSkippedTextSyntax : Meziantou.Framework.Language.Json.JsonValueSyntax
     {
         public Meziantou.Framework.Language.SyntaxTokenList Tokens { get => throw null; }
-        public Meziantou.Framework.Language.Json.JsonSkippedTextSyntax Update(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
-        public Meziantou.Framework.Language.Json.JsonSkippedTextSyntax WithTokens(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
-        public Meziantou.Framework.Language.Json.JsonSkippedTextSyntax AddTokens(params Meziantou.Framework.Language.SyntaxToken[] items) => throw null;
         public override void Accept(Meziantou.Framework.Language.Json.JsonSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Language.Json.JsonSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
+        public Meziantou.Framework.Language.Json.JsonSkippedTextSyntax AddTokens(params Meziantou.Framework.Language.SyntaxToken[] items) => throw null;
+        public Meziantou.Framework.Language.Json.JsonSkippedTextSyntax Update(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
+        public Meziantou.Framework.Language.Json.JsonSkippedTextSyntax WithTokens(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
     }
 
     public sealed class JsonStringSyntax : Meziantou.Framework.Language.Json.JsonValueSyntax
     {
         public Meziantou.Framework.Language.SyntaxToken StringToken { get => throw null; }
         public string Value { get => throw null; }
+        public override void Accept(Meziantou.Framework.Language.Json.JsonSyntaxVisitor visitor) { }
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Json.JsonSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
         public Meziantou.Framework.Language.Json.JsonStringSyntax Update(Meziantou.Framework.Language.SyntaxToken stringToken) => throw null;
         public Meziantou.Framework.Language.Json.JsonStringSyntax WithStringToken(Meziantou.Framework.Language.SyntaxToken stringToken) => throw null;
         public Meziantou.Framework.Language.Json.JsonStringSyntax WithValue(string value) => throw null;
-        public override void Accept(Meziantou.Framework.Language.Json.JsonSyntaxVisitor visitor) { }
-        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Json.JsonSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public abstract class JsonSyntaxNode : Meziantou.Framework.Language.SyntaxNode
     {
         public new Meziantou.Framework.Language.Json.JsonSyntaxNode? Parent { get => throw null; }
-        public Meziantou.Framework.Language.Json.SyntaxKind Kind() => throw null;
         public abstract void Accept(Meziantou.Framework.Language.Json.JsonSyntaxVisitor visitor);
         public abstract TResult? Accept<TResult>(Meziantou.Framework.Language.Json.JsonSyntaxVisitor<TResult> visitor);
+        public Meziantou.Framework.Language.Json.SyntaxKind Kind() => throw null;
     }
 
     public class JsonSyntaxRewriter : Meziantou.Framework.Language.Json.JsonSyntaxVisitor<Meziantou.Framework.Language.SyntaxNode?>
     {
-        public override Meziantou.Framework.Language.SyntaxNode? VisitJsonDocument(Meziantou.Framework.Language.Json.JsonDocumentSyntax node) => throw null;
-        public override Meziantou.Framework.Language.SyntaxNode? VisitJsonObject(Meziantou.Framework.Language.Json.JsonObjectSyntax node) => throw null;
-        public override Meziantou.Framework.Language.SyntaxNode? VisitJsonMember(Meziantou.Framework.Language.Json.JsonMemberSyntax node) => throw null;
         public override Meziantou.Framework.Language.SyntaxNode? VisitJsonArray(Meziantou.Framework.Language.Json.JsonArraySyntax node) => throw null;
-        public override Meziantou.Framework.Language.SyntaxNode? VisitJsonString(Meziantou.Framework.Language.Json.JsonStringSyntax node) => throw null;
-        public override Meziantou.Framework.Language.SyntaxNode? VisitJsonNumber(Meziantou.Framework.Language.Json.JsonNumberSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitJsonDocument(Meziantou.Framework.Language.Json.JsonDocumentSyntax node) => throw null;
         public override Meziantou.Framework.Language.SyntaxNode? VisitJsonLiteral(Meziantou.Framework.Language.Json.JsonLiteralSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitJsonMember(Meziantou.Framework.Language.Json.JsonMemberSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitJsonNumber(Meziantou.Framework.Language.Json.JsonNumberSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitJsonObject(Meziantou.Framework.Language.Json.JsonObjectSyntax node) => throw null;
         public override Meziantou.Framework.Language.SyntaxNode? VisitJsonSkippedText(Meziantou.Framework.Language.Json.JsonSkippedTextSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitJsonString(Meziantou.Framework.Language.Json.JsonStringSyntax node) => throw null;
+        public virtual Meziantou.Framework.Language.SyntaxTokenList VisitList(Meziantou.Framework.Language.SyntaxTokenList list) => throw null;
+        public virtual Meziantou.Framework.Language.SyntaxTriviaList VisitList(Meziantou.Framework.Language.SyntaxTriviaList list) => throw null;
+        public virtual Meziantou.Framework.Language.SeparatedSyntaxList<TNode> VisitList<TNode>(Meziantou.Framework.Language.SeparatedSyntaxList<TNode> list) where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
+        public virtual Meziantou.Framework.Language.SyntaxList<TNode> VisitList<TNode>(Meziantou.Framework.Language.SyntaxList<TNode> list) where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
         public virtual Meziantou.Framework.Language.SyntaxToken VisitToken(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public virtual Meziantou.Framework.Language.SyntaxTrivia VisitTrivia(Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;
-        public virtual Meziantou.Framework.Language.SyntaxTriviaList VisitList(Meziantou.Framework.Language.SyntaxTriviaList list) => throw null;
-        public virtual Meziantou.Framework.Language.SyntaxList<TNode> VisitList<TNode>(Meziantou.Framework.Language.SyntaxList<TNode> list) where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
-        public virtual Meziantou.Framework.Language.SeparatedSyntaxList<TNode> VisitList<TNode>(Meziantou.Framework.Language.SeparatedSyntaxList<TNode> list) where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
-        public virtual Meziantou.Framework.Language.SyntaxTokenList VisitList(Meziantou.Framework.Language.SyntaxTokenList list) => throw null;
     }
 
     public sealed class JsonSyntaxTree : Meziantou.Framework.Language.SyntaxTree
     {
         public override string? FilePath { get => throw null; }
-        public override Meziantou.Framework.Language.SourceText GetText() => throw null;
-        public new Meziantou.Framework.Language.Json.JsonDocumentSyntax GetRoot() => throw null;
-        public static Meziantou.Framework.Language.Json.JsonSyntaxTree ParseText([System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string text, string? path = null) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonSyntaxTree ParseText(Meziantou.Framework.Language.SourceText text, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Json.JsonSyntaxTree Create(Meziantou.Framework.Language.Json.JsonDocumentSyntax root, string? path = null) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.Json.JsonSyntaxTree oldTree) => throw null;
         public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
+        public new Meziantou.Framework.Language.Json.JsonDocumentSyntax GetRoot() => throw null;
+        protected override Meziantou.Framework.Language.SyntaxNode GetRootCore() => throw null;
+        public override Meziantou.Framework.Language.SourceText GetText() => throw null;
+        public bool IsEquivalentTo(Meziantou.Framework.Language.Json.JsonSyntaxTree? other) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxTree ParseText(Meziantou.Framework.Language.SourceText text, string? path = null) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxTree ParseText([System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string text, string? path = null) => throw null;
         public new Meziantou.Framework.Language.Json.JsonSyntaxTree WithChangedText(Meziantou.Framework.Language.SourceText newText) => throw null;
+        protected override Meziantou.Framework.Language.SyntaxTree WithChangedTextCore(Meziantou.Framework.Language.SourceText newText) => throw null;
         public Meziantou.Framework.Language.Json.JsonSyntaxTree WithChanges(params Meziantou.Framework.Language.TextChange[] changes) => throw null;
         public Meziantou.Framework.Language.Json.JsonSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChange> changes) => throw null;
         public Meziantou.Framework.Language.Json.JsonSyntaxTree WithRoot(Meziantou.Framework.Language.Json.JsonDocumentSyntax root) => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.Json.JsonSyntaxTree oldTree) => throw null;
-        public bool IsEquivalentTo(Meziantou.Framework.Language.Json.JsonSyntaxTree? other) => throw null;
-        protected override Meziantou.Framework.Language.SyntaxNode GetRootCore() => throw null;
-        protected override Meziantou.Framework.Language.SyntaxTree WithChangedTextCore(Meziantou.Framework.Language.SourceText newText) => throw null;
         protected override Meziantou.Framework.Language.SyntaxTree WithRootCore(Meziantou.Framework.Language.SyntaxNode root) => throw null;
     }
 
     public abstract class JsonSyntaxVisitor
     {
-        public virtual void Visit(Meziantou.Framework.Language.Json.JsonSyntaxNode? node) { }
         public virtual void DefaultVisit(Meziantou.Framework.Language.Json.JsonSyntaxNode node) { }
-        public virtual void VisitJsonDocument(Meziantou.Framework.Language.Json.JsonDocumentSyntax node) { }
-        public virtual void VisitJsonObject(Meziantou.Framework.Language.Json.JsonObjectSyntax node) { }
-        public virtual void VisitJsonMember(Meziantou.Framework.Language.Json.JsonMemberSyntax node) { }
+        public virtual void Visit(Meziantou.Framework.Language.Json.JsonSyntaxNode? node) { }
         public virtual void VisitJsonArray(Meziantou.Framework.Language.Json.JsonArraySyntax node) { }
-        public virtual void VisitJsonString(Meziantou.Framework.Language.Json.JsonStringSyntax node) { }
-        public virtual void VisitJsonNumber(Meziantou.Framework.Language.Json.JsonNumberSyntax node) { }
+        public virtual void VisitJsonDocument(Meziantou.Framework.Language.Json.JsonDocumentSyntax node) { }
         public virtual void VisitJsonLiteral(Meziantou.Framework.Language.Json.JsonLiteralSyntax node) { }
+        public virtual void VisitJsonMember(Meziantou.Framework.Language.Json.JsonMemberSyntax node) { }
+        public virtual void VisitJsonNumber(Meziantou.Framework.Language.Json.JsonNumberSyntax node) { }
+        public virtual void VisitJsonObject(Meziantou.Framework.Language.Json.JsonObjectSyntax node) { }
         public virtual void VisitJsonSkippedText(Meziantou.Framework.Language.Json.JsonSkippedTextSyntax node) { }
+        public virtual void VisitJsonString(Meziantou.Framework.Language.Json.JsonStringSyntax node) { }
     }
 
     public abstract class JsonSyntaxVisitor<TResult>
     {
-        public virtual TResult? Visit(Meziantou.Framework.Language.Json.JsonSyntaxNode? node) => throw null;
         public virtual TResult? DefaultVisit(Meziantou.Framework.Language.Json.JsonSyntaxNode node) => throw null;
-        public virtual TResult? VisitJsonDocument(Meziantou.Framework.Language.Json.JsonDocumentSyntax node) => throw null;
-        public virtual TResult? VisitJsonObject(Meziantou.Framework.Language.Json.JsonObjectSyntax node) => throw null;
-        public virtual TResult? VisitJsonMember(Meziantou.Framework.Language.Json.JsonMemberSyntax node) => throw null;
+        public virtual TResult? Visit(Meziantou.Framework.Language.Json.JsonSyntaxNode? node) => throw null;
         public virtual TResult? VisitJsonArray(Meziantou.Framework.Language.Json.JsonArraySyntax node) => throw null;
-        public virtual TResult? VisitJsonString(Meziantou.Framework.Language.Json.JsonStringSyntax node) => throw null;
-        public virtual TResult? VisitJsonNumber(Meziantou.Framework.Language.Json.JsonNumberSyntax node) => throw null;
+        public virtual TResult? VisitJsonDocument(Meziantou.Framework.Language.Json.JsonDocumentSyntax node) => throw null;
         public virtual TResult? VisitJsonLiteral(Meziantou.Framework.Language.Json.JsonLiteralSyntax node) => throw null;
+        public virtual TResult? VisitJsonMember(Meziantou.Framework.Language.Json.JsonMemberSyntax node) => throw null;
+        public virtual TResult? VisitJsonNumber(Meziantou.Framework.Language.Json.JsonNumberSyntax node) => throw null;
+        public virtual TResult? VisitJsonObject(Meziantou.Framework.Language.Json.JsonObjectSyntax node) => throw null;
         public virtual TResult? VisitJsonSkippedText(Meziantou.Framework.Language.Json.JsonSkippedTextSyntax node) => throw null;
+        public virtual TResult? VisitJsonString(Meziantou.Framework.Language.Json.JsonStringSyntax node) => throw null;
     }
 
     public class JsonSyntaxWalker : Meziantou.Framework.Language.Json.JsonSyntaxVisitor
@@ -224,71 +224,71 @@ namespace Meziantou.Framework.Language.Json
 
     public static class SyntaxFactory
     {
+        public static Meziantou.Framework.Language.SyntaxTrivia CarriageReturnLineFeed { get => throw null; }
+        public static Meziantou.Framework.Language.SyntaxTrivia LineFeed { get => throw null; }
         public static Meziantou.Framework.Language.SyntaxTrivia Space { get => throw null; }
         public static Meziantou.Framework.Language.SyntaxTrivia Tab { get => throw null; }
-        public static Meziantou.Framework.Language.SyntaxTrivia LineFeed { get => throw null; }
-        public static Meziantou.Framework.Language.SyntaxTrivia CarriageReturnLineFeed { get => throw null; }
-        public static Meziantou.Framework.Language.SyntaxTrivia Whitespace(string text) => throw null;
-        public static Meziantou.Framework.Language.SyntaxTrivia EndOfLine(string text) => throw null;
+        public static bool AreEquivalent(Meziantou.Framework.Language.Json.JsonSyntaxNode? oldNode, Meziantou.Framework.Language.Json.JsonSyntaxNode? newNode) => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken BadToken(string text) => throw null;
         public static Meziantou.Framework.Language.SyntaxTrivia Comment(string text) => throw null;
+        public static Meziantou.Framework.Language.SyntaxTrivia EndOfLine(string text) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonArraySyntax JsonArray(params Meziantou.Framework.Language.Json.JsonValueSyntax[] values) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonArraySyntax JsonArray(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> elements) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonArraySyntax JsonArray(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> elements, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonDocumentSyntax JsonDocument(Meziantou.Framework.Language.Json.JsonValueSyntax value) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonDocumentSyntax JsonDocument(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> values, Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonLiteralSyntax JsonLiteral(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonLiteralSyntax JsonLiteral(Meziantou.Framework.Language.SyntaxToken literalToken) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonMemberSyntax JsonMember(string name, Meziantou.Framework.Language.Json.JsonValueSyntax value) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonMemberSyntax JsonMember(Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken colonToken, Meziantou.Framework.Language.Json.JsonValueSyntax value) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonNumberSyntax JsonNumber(Meziantou.Framework.Language.SyntaxToken numberToken) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonNumberSyntax JsonNumber(string text) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonObjectSyntax JsonObject(params Meziantou.Framework.Language.Json.JsonMemberSyntax[] members) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonObjectSyntax JsonObject(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonMemberSyntax> members) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonObjectSyntax JsonObject(Meziantou.Framework.Language.SyntaxToken openBraceToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonMemberSyntax> members, Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSkippedTextSyntax JsonSkippedText(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSkippedTextSyntax JsonSkippedText(string text) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonStringSyntax JsonString(Meziantou.Framework.Language.SyntaxToken stringToken) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonStringSyntax JsonString(string value) => throw null;
+        public static Meziantou.Framework.Language.SyntaxList<TNode> List<TNode>() where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
+        public static Meziantou.Framework.Language.SyntaxList<TNode> List<TNode>(System.Collections.Generic.IEnumerable<TNode> nodes) where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken Literal(string value) => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken Literal(string text, string value) => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken MissingToken(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken NumberToken(string text) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonDocumentSyntax ParseDocument([System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string text) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxTree ParseSyntaxTree([System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string text, string? path = null) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonValueSyntax? ParseValue([System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string text) => throw null;
+        public static Meziantou.Framework.Language.SeparatedSyntaxList<TNode> SeparatedList<TNode>() where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
+        public static Meziantou.Framework.Language.SeparatedSyntaxList<TNode> SeparatedList<TNode>(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNodeOrToken> nodesAndSeparators) where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
+        public static Meziantou.Framework.Language.SeparatedSyntaxList<TNode> SeparatedList<TNode>(System.Collections.Generic.IEnumerable<TNode> nodes) where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
+        public static Meziantou.Framework.Language.SyntaxList<TNode> SingletonList<TNode>(TNode node) where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
+        public static Meziantou.Framework.Language.SeparatedSyntaxList<TNode> SingletonSeparatedList<TNode>(TNode node) where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken Token(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken Token(Meziantou.Framework.Language.SyntaxTriviaList leading, Meziantou.Framework.Language.Json.SyntaxKind kind, Meziantou.Framework.Language.SyntaxTriviaList trailing) => throw null;
+        public static Meziantou.Framework.Language.SyntaxTokenList TokenList() => throw null;
+        public static Meziantou.Framework.Language.SyntaxTokenList TokenList(Meziantou.Framework.Language.SyntaxToken token) => throw null;
+        public static Meziantou.Framework.Language.SyntaxTokenList TokenList(params Meziantou.Framework.Language.SyntaxToken[] tokens) => throw null;
+        public static Meziantou.Framework.Language.SyntaxTokenList TokenList(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxToken> tokens) => throw null;
         public static Meziantou.Framework.Language.SyntaxTrivia Trivia(Meziantou.Framework.Language.Json.SyntaxKind kind, string text) => throw null;
         public static Meziantou.Framework.Language.SyntaxTriviaList TriviaList() => throw null;
         public static Meziantou.Framework.Language.SyntaxTriviaList TriviaList(Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;
         public static Meziantou.Framework.Language.SyntaxTriviaList TriviaList(params Meziantou.Framework.Language.SyntaxTrivia[] trivia) => throw null;
         public static Meziantou.Framework.Language.SyntaxTriviaList TriviaList(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxTrivia> trivia) => throw null;
-        public static Meziantou.Framework.Language.SyntaxToken Token(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
-        public static Meziantou.Framework.Language.SyntaxToken Token(Meziantou.Framework.Language.SyntaxTriviaList leading, Meziantou.Framework.Language.Json.SyntaxKind kind, Meziantou.Framework.Language.SyntaxTriviaList trailing) => throw null;
-        public static Meziantou.Framework.Language.SyntaxToken MissingToken(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
-        public static Meziantou.Framework.Language.SyntaxToken BadToken(string text) => throw null;
-        public static Meziantou.Framework.Language.SyntaxToken Literal(string value) => throw null;
-        public static Meziantou.Framework.Language.SyntaxToken Literal(string text, string value) => throw null;
-        public static Meziantou.Framework.Language.SyntaxToken NumberToken(string text) => throw null;
-        public static Meziantou.Framework.Language.SyntaxTokenList TokenList() => throw null;
-        public static Meziantou.Framework.Language.SyntaxTokenList TokenList(Meziantou.Framework.Language.SyntaxToken token) => throw null;
-        public static Meziantou.Framework.Language.SyntaxTokenList TokenList(params Meziantou.Framework.Language.SyntaxToken[] tokens) => throw null;
-        public static Meziantou.Framework.Language.SyntaxTokenList TokenList(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxToken> tokens) => throw null;
-        public static Meziantou.Framework.Language.SyntaxList<TNode> List<TNode>() where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
-        public static Meziantou.Framework.Language.SyntaxList<TNode> List<TNode>(System.Collections.Generic.IEnumerable<TNode> nodes) where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
-        public static Meziantou.Framework.Language.SyntaxList<TNode> SingletonList<TNode>(TNode node) where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
-        public static Meziantou.Framework.Language.SeparatedSyntaxList<TNode> SeparatedList<TNode>() where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
-        public static Meziantou.Framework.Language.SeparatedSyntaxList<TNode> SeparatedList<TNode>(System.Collections.Generic.IEnumerable<TNode> nodes) where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
-        public static Meziantou.Framework.Language.SeparatedSyntaxList<TNode> SeparatedList<TNode>(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNodeOrToken> nodesAndSeparators) where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
-        public static Meziantou.Framework.Language.SeparatedSyntaxList<TNode> SingletonSeparatedList<TNode>(TNode node) where TNode : Meziantou.Framework.Language.Json.JsonSyntaxNode => throw null;
-        public static Meziantou.Framework.Language.Json.JsonDocumentSyntax JsonDocument(Meziantou.Framework.Language.Json.JsonValueSyntax value) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonDocumentSyntax JsonDocument(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> values, Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonObjectSyntax JsonObject(params Meziantou.Framework.Language.Json.JsonMemberSyntax[] members) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonObjectSyntax JsonObject(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonMemberSyntax> members) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonObjectSyntax JsonObject(Meziantou.Framework.Language.SyntaxToken openBraceToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonMemberSyntax> members, Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonMemberSyntax JsonMember(string name, Meziantou.Framework.Language.Json.JsonValueSyntax value) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonMemberSyntax JsonMember(Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken colonToken, Meziantou.Framework.Language.Json.JsonValueSyntax value) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonArraySyntax JsonArray(params Meziantou.Framework.Language.Json.JsonValueSyntax[] values) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonArraySyntax JsonArray(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> elements) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonArraySyntax JsonArray(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Json.JsonValueSyntax> elements, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonStringSyntax JsonString(string value) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonStringSyntax JsonString(Meziantou.Framework.Language.SyntaxToken stringToken) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonNumberSyntax JsonNumber(string text) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonNumberSyntax JsonNumber(Meziantou.Framework.Language.SyntaxToken numberToken) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonLiteralSyntax JsonLiteral(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonLiteralSyntax JsonLiteral(Meziantou.Framework.Language.SyntaxToken literalToken) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonSkippedTextSyntax JsonSkippedText(string text) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonSkippedTextSyntax JsonSkippedText(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonSyntaxTree ParseSyntaxTree([System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string text, string? path = null) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonDocumentSyntax ParseDocument([System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string text) => throw null;
-        public static Meziantou.Framework.Language.Json.JsonValueSyntax? ParseValue([System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string text) => throw null;
-        public static bool AreEquivalent(Meziantou.Framework.Language.Json.JsonSyntaxNode? oldNode, Meziantou.Framework.Language.Json.JsonSyntaxNode? newNode) => throw null;
+        public static Meziantou.Framework.Language.SyntaxTrivia Whitespace(string text) => throw null;
     }
 
     public static class SyntaxFacts
     {
-        public static string GetText(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
-        public static bool IsTrivia(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
-        public static bool IsAnyToken(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
-        public static bool IsPunctuation(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
-        public static bool IsKeyword(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
-        public static bool IsValue(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
-        public static bool IsLiteralExpression(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
         public static Meziantou.Framework.Language.Json.SyntaxKind GetKeywordKind(string text) => throw null;
         public static Meziantou.Framework.Language.Json.SyntaxKind GetLiteralExpression(Meziantou.Framework.Language.Json.SyntaxKind tokenKind) => throw null;
+        public static string GetText(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
+        public static bool IsAnyToken(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
+        public static bool IsKeyword(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
+        public static bool IsLiteralExpression(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
+        public static bool IsPunctuation(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
+        public static bool IsTrivia(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
+        public static bool IsValue(Meziantou.Framework.Language.Json.SyntaxKind kind) => throw null;
     }
 
     public enum SyntaxKind

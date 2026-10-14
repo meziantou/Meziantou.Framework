@@ -1,3 +1,6 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -27,13 +30,14 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
 
     protected override void DecodeBlock(ScanComponent scanComponent, int blockRow, int blockColumn)
     {
+        // The destination is computed first: one value instead of two to keep alive through the loop
+        var offset = scanComponent.Component.GetRowOffset(blockRow * 8) + (blockColumn * 8);
         var reader = Reader.GetCursor();
-        var quantization = scanComponent.Quantization;
 
         // DC: difference from the prediction (T.81 F.2.2.1)
         var category = reader.DecodeHuffman(scanComponent.DcTable!);
         if (category > MaxDcCategory)
-            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG DC coefficient category is greater than {MaxDcCategory}."));
+            throw CreateDcCategoryException();
 
         var dc = scanComponent.Predictor + (category == 0 ? 0 : reader.ReceiveExtend(category));
         if (dc is < short.MinValue or > short.MaxValue)
@@ -41,11 +45,13 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
 
         scanComponent.Predictor = dc;
 
-        // AC: run-length/size symbols in zig-zag order (T.81 F.2.2.2)
-        var block = _block;
-        var zigZag = JpegIdct.ZigZag;
+        // AC: run-length/size symbols in zig-zag order (T.81 F.2.2.2). Each entry of the table gives the natural index of
+        // a zig-zag position and its quantization value
+        ref var block = ref unsafe(MemoryMarshal.GetArrayDataReference(_block));
+        var zigZagQuantization = scanComponent.ZigZagQuantization;
         var acTable = scanComponent.AcTable!;
         var fastAc = acTable.FastAc!;
+
         // The natural indexes of the non-zero AC coefficients ORed together, with bit 6 set when there is one
         var naturalIndexes = 0;
         for (var k = 1; k < 64;)
@@ -56,10 +62,12 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
             {
                 k += (fast >> 4) & 0x0F;
                 if (k > 63)
-                    throw Invalid("The JPEG AC coefficients run past the end of the block.");
+                    throw CreateRunException();
 
-                var fastNatural = zigZag[k];
-                block[fastNatural] = (fast >> 8) * (double)quantization[fastNatural];
+                // The natural index is at most 63 and the block has 64 coefficients
+                var fastEntry = zigZagQuantization[k];
+                var fastNatural = fastEntry & 63;
+                unsafe { Unsafe.Add(ref block, fastNatural) = (fast >> 8) * (double)(fastEntry >> 6); }
                 naturalIndexes |= fastNatural | 64;
                 k++;
                 continue;
@@ -79,13 +87,14 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
 
             k += run;
             if (k > 63)
-                throw Invalid("The JPEG AC coefficients run past the end of the block.");
+                throw CreateRunException();
 
             if (size > MaxAcCategory)
-                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG AC coefficient magnitude category is greater than {MaxAcCategory}."));
+                throw CreateAcCategoryException();
 
-            var natural = zigZag[k];
-            block[natural] = reader.ReceiveExtend(size) * (double)quantization[natural];
+            var entry = zigZagQuantization[k];
+            var natural = entry & 63;
+            unsafe { Unsafe.Add(ref block, natural) = reader.ReceiveExtend(size) * (double)(entry >> 6); }
             naturalIndexes |= natural | 64;
             k++;
         }
@@ -93,6 +102,13 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         reader.Commit();
 
         // The DC coefficient is read back from the predictor: one value less to keep alive in the loop
-        TransformBlock(scanComponent, blockRow, blockColumn, block, scanComponent.Predictor, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));
+        TransformBlock(scanComponent, offset, _block, scanComponent.Predictor, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));
     }
+
+    // The exceptions are created out of line, which keeps their message formatting out of the frame of DecodeBlock
+    private InvalidImageContentException CreateDcCategoryException() => Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG DC coefficient category is greater than {MaxDcCategory}."));
+
+    private InvalidImageContentException CreateAcCategoryException() => Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG AC coefficient magnitude category is greater than {MaxAcCategory}."));
+
+    private static InvalidImageContentException CreateRunException() => Invalid("The JPEG AC coefficients run past the end of the block.");
 }

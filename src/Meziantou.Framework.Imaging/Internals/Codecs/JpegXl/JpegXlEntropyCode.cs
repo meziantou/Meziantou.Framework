@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -14,7 +16,8 @@ internal sealed class JpegXlEntropyCode : IDisposable
     private readonly JpegXlHybridUintConfig[] _configs;
     private readonly Av1PooledArray<int>?[]? _prefixTables;
     private readonly byte[]? _prefixLengths;
-    private readonly Av1PooledArray<JpegXlAnsDistribution.AliasEntry>? _aliasTables;
+    private readonly PooledBuffer? _aliasTables;
+    private readonly int _aliasTableLength;
 
     private JpegXlEntropyCode(
         int contextCount,
@@ -27,7 +30,8 @@ internal sealed class JpegXlEntropyCode : IDisposable
         int logAlphabetSize,
         Av1PooledArray<int>?[]? prefixTables,
         byte[]? prefixLengths,
-        Av1PooledArray<JpegXlAnsDistribution.AliasEntry>? aliasTables)
+        PooledBuffer? aliasTables,
+        int aliasTableLength)
     {
         ContextCount = contextCount;
         _contextMap = contextMap;
@@ -40,6 +44,7 @@ internal sealed class JpegXlEntropyCode : IDisposable
         _prefixTables = prefixTables;
         _prefixLengths = prefixLengths;
         _aliasTables = aliasTables;
+        _aliasTableLength = aliasTableLength;
     }
 
     /// <summary>Gets the number of contexts of the stream, without the context of the LZ77 distances.</summary>
@@ -70,7 +75,24 @@ internal sealed class JpegXlEntropyCode : IDisposable
     public ReadOnlySpan<JpegXlHybridUintConfig> Configs => _configs;
 
     /// <summary>Gets the alias tables of the clusters, one after the other.</summary>
-    public ReadOnlySpan<JpegXlAnsDistribution.AliasEntry> AliasTables => _aliasTables is null ? default : _aliasTables.Span;
+    public ReadOnlySpan<JpegXlAnsDistribution.AliasEntry> AliasTables => _aliasTables is null ? default : GetAliasTables(_aliasTables.RawBuffer, _aliasTableLength);
+
+    /// <summary>Gets the buffer that holds <see cref="ContextMap"/> from its start, for a reader that caches it.</summary>
+    internal byte[] ContextMapBuffer => _contextMap.RawBuffer;
+
+    /// <summary>Gets the array behind <see cref="Configs"/>, for a reader that caches it.</summary>
+    internal JpegXlHybridUintConfig[] ConfigArray => _configs;
+
+    /// <summary>Gets the buffer that holds <see cref="AliasTables"/> from its start, or <see langword="null"/> for prefix codes.</summary>
+    internal byte[]? AliasTableBuffer => _aliasTables?.RawBuffer;
+
+    /// <summary>Gets the number of entries of <see cref="AliasTables"/>.</summary>
+    internal int AliasTableLength => _aliasTableLength;
+
+    /// <summary>Gets the alias tables held by a buffer that <see cref="AliasTableBuffer"/> returned.</summary>
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    internal static ReadOnlySpan<JpegXlAnsDistribution.AliasEntry> GetAliasTables(byte[] buffer, int length)
+        => unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, JpegXlAnsDistribution.AliasEntry>(buffer.AsSpan()))[..length];
 
     /// <summary>Gets the lookup table of the prefix code of a cluster, or an empty span when its alphabet has one symbol.</summary>
     public ReadOnlySpan<int> GetPrefixTable(int cluster, out int maxLength)
@@ -105,7 +127,8 @@ internal sealed class JpegXlEntropyCode : IDisposable
 
         var contextMap = scope.Rent(mapLength, AllocationKind.DecoderState, clear: true);
         Av1PooledArray<int>?[]? prefixTables = null;
-        Av1PooledArray<JpegXlAnsDistribution.AliasEntry>? aliasTables = null;
+        PooledBuffer? aliasTables = null;
+        var aliasTableLength = 0;
         try
         {
             var clusterCount = mapLength > 1 ? ReadContextMap(reader, contextMap.RawBuffer.AsSpan(0, mapLength), scope) : 1;
@@ -146,18 +169,21 @@ internal sealed class JpegXlEntropyCode : IDisposable
             else
             {
                 var tableSize = 1 << logAlphabetSize;
-                aliasTables = Av1PooledArray<JpegXlAnsDistribution.AliasEntry>.Rent(scope, (long)clusterCount * tableSize, clear: false);
+                // At most 256 clusters of 256 entries of 10 bytes: the size cannot overflow
+                aliasTableLength = clusterCount * tableSize;
+                aliasTables = scope.Rent(aliasTableLength * Unsafe.SizeOf<JpegXlAnsDistribution.AliasEntry>(), AllocationKind.DecoderState, clear: false);
+                var entries = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, JpegXlAnsDistribution.AliasEntry>(aliasTables.RawBuffer.AsSpan()))[..aliasTableLength];
                 Span<int> distribution = stackalloc int[tableSize];
                 for (var i = 0; i < clusterCount; i++)
                 {
                     JpegXlAnsDistribution.Read(reader, distribution);
-                    JpegXlAnsDistribution.BuildAliasTable(distribution, aliasTables.Span.Slice(i * tableSize, tableSize));
+                    JpegXlAnsDistribution.BuildAliasTable(distribution, entries.Slice(i * tableSize, tableSize));
                     if (reader.IsOverrun)
                         throw JpegXlFormat.Invalid("the description of an entropy-coded stream is truncated.");
                 }
             }
 
-            return new JpegXlEntropyCode(contextCount, contextMap, lz77Enabled, lz77MinSymbol, lz77MinLength, lz77LengthConfig, configs, logAlphabetSize, prefixTables, prefixLengths, aliasTables);
+            return new JpegXlEntropyCode(contextCount, contextMap, lz77Enabled, lz77MinSymbol, lz77MinLength, lz77LengthConfig, configs, logAlphabetSize, prefixTables, prefixLengths, aliasTables, aliasTableLength);
         }
         catch
         {

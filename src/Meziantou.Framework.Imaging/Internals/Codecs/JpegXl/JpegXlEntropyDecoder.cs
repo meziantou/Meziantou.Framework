@@ -13,6 +13,17 @@ internal sealed class JpegXlEntropyDecoder : IDisposable
 
     private readonly JpegXlEntropyCode _code;
     private readonly AllocationScope _scope;
+
+    // What every value reads, taken from the code once: the properties of the code are not read for each value
+    private readonly byte[] _contextMap;
+    private readonly int _contextMapLength;
+    private readonly JpegXlHybridUintConfig[] _configs;
+    private readonly bool _usesPrefixCodes;
+    private readonly bool _isLz77Enabled;
+    private readonly int _logAlphabetSize;
+    private readonly int _logBucketSize;
+    private readonly byte[]? _aliasTables;
+    private readonly int _aliasTableLength;
     private Av1PooledArray<uint>? _window;
     private uint _state;
     private uint _copyCount;
@@ -25,6 +36,15 @@ internal sealed class JpegXlEntropyDecoder : IDisposable
         ArgumentNullException.ThrowIfNull(scope);
         _code = code;
         _scope = scope;
+        _contextMap = code.ContextMapBuffer;
+        _contextMapLength = code.ContextMap.Length;
+        _configs = code.ConfigArray;
+        _usesPrefixCodes = code.UsesPrefixCodes;
+        _isLz77Enabled = code.IsLz77Enabled;
+        _logAlphabetSize = code.LogAlphabetSize;
+        _logBucketSize = JpegXlAnsDistribution.LogTableSize - code.LogAlphabetSize;
+        _aliasTables = code.AliasTableBuffer;
+        _aliasTableLength = code.AliasTableLength;
     }
 
     // The offsets (in pixels then in rows) of the 120 shortest distances of a two-dimensional stream, as (column + 7) * 16 + row
@@ -48,8 +68,8 @@ internal sealed class JpegXlEntropyDecoder : IDisposable
         _copyCount = 0;
         _copyPosition = 0;
         _decodedCount = 0;
-        _state = _code.UsesPrefixCodes ? JpegXlAnsDistribution.InitialState : reader.ReadBits(32);
-        if (_code.IsLz77Enabled && _window is null)
+        _state = _usesPrefixCodes ? JpegXlAnsDistribution.InitialState : reader.ReadBits(32);
+        if (_isLz77Enabled && _window is null)
         {
             _window = Av1PooledArray<uint>.Rent(_scope, WindowSize, clear: false);
         }
@@ -70,10 +90,11 @@ internal sealed class JpegXlEntropyDecoder : IDisposable
     /// <returns>The value.</returns>
     public uint Read(JpegXlBitReader reader, int context, uint distanceMultiplier = 0)
     {
-        if (!_code.IsLz77Enabled)
+        if (!_isLz77Enabled)
         {
-            var cluster = _code.ContextMap[context];
-            return _code.Configs[cluster].ReadValue(reader, ReadToken(reader, cluster));
+            var cluster = _contextMap.AsSpan(0, _contextMapLength)[context];
+            var token = _usesPrefixCodes ? ReadPrefixToken(reader, cluster) : ReadAnsToken(reader, cluster);
+            return _configs[cluster].ReadValue(reader, token);
         }
 
         return ReadWithLz77(reader, context, distanceMultiplier);
@@ -90,12 +111,12 @@ internal sealed class JpegXlEntropyDecoder : IDisposable
         var window = _window!.Span;
         if (_copyCount == 0)
         {
-            var map = _code.ContextMap;
+            var map = _contextMap.AsSpan(0, _contextMapLength);
             var cluster = map[context];
             var token = ReadToken(reader, cluster);
             if (token < _code.Lz77MinSymbol)
             {
-                var value = _code.Configs[cluster].ReadValue(reader, token);
+                var value = _configs[cluster].ReadValue(reader, token);
                 window[(int)(_decodedCount++ & WindowMask)] = value;
                 return value;
             }
@@ -103,7 +124,7 @@ internal sealed class JpegXlEntropyDecoder : IDisposable
             // A copy: its length, then its distance with the cluster of the last context
             _copyCount = _code.Lz77LengthConfig.ReadValue(reader, token - _code.Lz77MinSymbol) + _code.Lz77MinLength;
             var distanceCluster = map[^1];
-            var distance = _code.Configs[distanceCluster].ReadValue(reader, ReadToken(reader, distanceCluster));
+            var distance = _configs[distanceCluster].ReadValue(reader, ReadToken(reader, distanceCluster));
             if (distanceMultiplier == 0)
             {
                 distance++;
@@ -141,21 +162,24 @@ internal sealed class JpegXlEntropyDecoder : IDisposable
         return copied;
     }
 
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-    private uint ReadToken(JpegXlBitReader reader, int cluster)
-    {
-        if (_code.UsesPrefixCodes)
-        {
-            var table = _code.GetPrefixTable(cluster, out var maxLength);
-            return table.IsEmpty ? 0 : JpegXlPrefixCode.ReadSymbol(reader, table, maxLength);
-        }
+    private uint ReadToken(JpegXlBitReader reader, int cluster) => _usesPrefixCodes ? ReadPrefixToken(reader, cluster) : ReadAnsToken(reader, cluster);
 
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    private uint ReadPrefixToken(JpegXlBitReader reader, int cluster)
+    {
+        var table = _code.GetPrefixTable(cluster, out var maxLength);
+        return table.IsEmpty ? 0 : JpegXlPrefixCode.ReadSymbol(reader, table, maxLength);
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    private uint ReadAnsToken(JpegXlBitReader reader, int cluster)
+    {
         // ANS (section D.3.3): the low 12 bits of the state select a bucket and a position in it
-        var logBucketSize = JpegXlAnsDistribution.LogTableSize - _code.LogAlphabetSize;
-        var index = _state & (JpegXlAnsDistribution.TableSize - 1);
-        var bucket = (int)(index >> logBucketSize);
-        var position = index & ((1u << logBucketSize) - 1);
-        ref readonly var entry = ref _code.AliasTables[(cluster << _code.LogAlphabetSize) + bucket];
+        var state = _state;
+        var index = state & (JpegXlAnsDistribution.TableSize - 1);
+        var bucket = (int)(index >> _logBucketSize);
+        var position = index & ((1u << _logBucketSize) - 1);
+        ref readonly var entry = ref JpegXlEntropyCode.GetAliasTables(_aliasTables!, _aliasTableLength)[(cluster << _logAlphabetSize) + bucket];
         uint symbol;
         uint frequency;
         uint offset;
@@ -172,12 +196,13 @@ internal sealed class JpegXlEntropyDecoder : IDisposable
             offset = entry.Offset + position;
         }
 
-        _state = (frequency * (_state >> JpegXlAnsDistribution.LogTableSize)) + offset;
-        if (_state < 1u << 16)
+        state = (frequency * (state >> JpegXlAnsDistribution.LogTableSize)) + offset;
+        if (state < 1u << 16)
         {
-            _state = (_state << 16) | reader.ReadBits(16);
+            state = (state << 16) | reader.ReadBits(16);
         }
 
+        _state = state;
         return symbol;
     }
 }

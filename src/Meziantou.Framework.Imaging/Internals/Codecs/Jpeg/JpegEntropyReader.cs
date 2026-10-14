@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -146,6 +147,11 @@ internal sealed class JpegEntropyReader : IDisposable
         _data = [];
     }
 
+    /// <summary>Copies the bit state into a <see cref="Cursor"/>, which keeps it in locals while the blocks of an MCU are decoded.</summary>
+    /// <returns>The cursor; <see cref="Cursor.Commit"/> writes its state back.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Cursor GetCursor() => new(this);
+
     private int DecodeLongCode(JpegHuffmanTable table)
     {
         var symbol = table.DecodeLong((int)(_bits >> 48), out var length);
@@ -171,8 +177,22 @@ internal sealed class JpegEntropyReader : IDisposable
     }
 
     /// <summary>Loads bytes until the accumulator holds at least 57 bits (or the buffered bytes are exhausted).</summary>
+    /// <remarks>
+    /// With 8 buffered bytes, the 8 next bytes are loaded at once and only the whole bytes that fit are consumed: the bits
+    /// below the valid ones are then the next bits of the data instead of zeros, which nothing reads before they become
+    /// valid (they are ORed again, with the same values, when their byte is consumed).
+    /// </remarks>
     private void Fill()
     {
+        if (_end - _start >= 8)
+        {
+            _bits |= BinaryPrimitives.ReadUInt64BigEndian(_data.AsSpan(_start)) >> _bitCount;
+            var count = (63 - _bitCount) >> 3;
+            _start += count;
+            _bitCount += count << 3;
+            return;
+        }
+
         while (_bitCount <= 56)
         {
             if (_start < _end)
@@ -195,4 +215,134 @@ internal sealed class JpegEntropyReader : IDisposable
     }
 
     private static InvalidImageContentException CreateTruncatedException() => new("The JPEG entropy-coded data is truncated.", ImageFormat.Jpeg);
+
+    /// <summary>
+    /// The bit state of the reader copied into locals: the methods of the reader, with the accumulator kept in registers
+    /// between the symbols of a block instead of being loaded from and stored to the reader at every symbol. The state is
+    /// written back by <see cref="Commit"/>; the slow paths (loading bytes, codes longer than
+    /// <see cref="JpegHuffmanTable.LookupBits"/>) write it back, run the method of the reader and load it again. Every
+    /// member is inlined, so that the cursor stays a set of registers.
+    /// </summary>
+    internal ref struct Cursor
+    {
+        private readonly JpegEntropyReader _reader;
+        private readonly byte[] _data;
+        private readonly int _end;
+        private int _start;
+        private ulong _bits;
+        private int _bitCount;
+        private int _paddingBits;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Cursor(JpegEntropyReader reader)
+        {
+            _reader = reader;
+            _data = reader._data;
+            _end = reader._end;
+            _start = reader._start;
+            _bits = reader._bits;
+            _bitCount = reader._bitCount;
+            _paddingBits = reader._paddingBits;
+        }
+
+        /// <summary>Writes the state back to the reader.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly void Commit()
+        {
+            _reader._start = _start;
+            _reader._bits = _bits;
+            _reader._bitCount = _bitCount;
+        }
+
+        /// <inheritdoc cref="JpegEntropyReader.DecodeHuffman"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int DecodeHuffman(JpegHuffmanTable table)
+        {
+            if (_bitCount < 16)
+            {
+                Fill();
+            }
+
+            var entry = table.Lookup((int)(_bits >> (64 - JpegHuffmanTable.LookupBits)));
+            if (entry != 0)
+            {
+                Skip(entry >> 8);
+                return entry & 0xFF;
+            }
+
+            Commit();
+            var symbol = _reader.DecodeLongCode(table);
+            Reload();
+            return symbol;
+        }
+
+        /// <inheritdoc cref="JpegEntropyReader.ReceiveExtend"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int ReceiveExtend(int size)
+        {
+            Debug.Assert(size is > 0 and <= 16);
+            if (_bitCount < size)
+            {
+                Fill();
+            }
+
+            var value = (int)(_bits >> (64 - size));
+            Skip(size);
+
+            // Values below 2^(size-1) are negative: value - (2^size - 1)
+            return value < (1 << (size - 1)) ? value - (1 << size) + 1 : value;
+        }
+
+        /// <inheritdoc cref="JpegEntropyReader.ReadBits"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int ReadBits(int count)
+        {
+            Debug.Assert(count is > 0 and <= 16);
+            if (_bitCount < count)
+            {
+                Fill();
+            }
+
+            var value = (int)(_bits >> (64 - count));
+            Skip(count);
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Skip(int count)
+        {
+            _bits <<= count;
+            _bitCount -= count;
+            if (_bitCount < _paddingBits)
+                throw CreateTruncatedException();
+        }
+
+        /// <summary>The bulk path of <see cref="JpegEntropyReader.Fill"/>, inlined; the other cases are the reader's.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Fill()
+        {
+            if (_end - _start >= 8)
+            {
+                _bits |= BinaryPrimitives.ReadUInt64BigEndian(_data.AsSpan(_start)) >> _bitCount;
+                var count = (63 - _bitCount) >> 3;
+                _start += count;
+                _bitCount += count << 3;
+            }
+            else
+            {
+                Commit();
+                _reader.Fill();
+                Reload();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Reload()
+        {
+            _start = _reader._start;
+            _bits = _reader._bits;
+            _bitCount = _reader._bitCount;
+            _paddingBits = _reader._paddingBits;
+        }
+    }
 }

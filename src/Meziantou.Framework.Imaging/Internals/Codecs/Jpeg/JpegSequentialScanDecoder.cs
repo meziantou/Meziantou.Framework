@@ -27,7 +27,7 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
 
     protected override void DecodeBlock(ScanComponent scanComponent, int blockRow, int blockColumn)
     {
-        var reader = Reader;
+        var reader = Reader.GetCursor();
         var quantization = scanComponent.Quantization;
 
         // DC: difference from the prediction (T.81 F.2.2.1)
@@ -73,6 +73,7 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
             k++;
         }
 
+        reader.Commit();
         TransformBlock(scanComponent, blockRow, blockColumn, block, dc, hasAc);
     }
 }

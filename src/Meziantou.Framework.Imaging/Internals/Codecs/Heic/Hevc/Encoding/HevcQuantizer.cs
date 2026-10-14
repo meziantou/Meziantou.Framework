@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -109,16 +110,19 @@ internal static class HevcQuantizer
     /// <returns><see langword="true"/> when a level was changed.</returns>
     public static bool HideSign(ReadOnlySpan<int> coefficients, Span<int> levels, int log2TrafoSize, int scanIdx, int xS, int yS, int qP, int bitDepth, ReadOnlySpan<byte> scalingFactors)
     {
-        // The position in the block of the coefficient of each scan position of the sub-block
+        // The position in the block of the coefficient of each scan position of the sub-block, and the magnitude of its level
         var nTbS = 1 << log2TrafoSize;
         var scan = HevcScanOrder.Get(2, scanIdx);
         Span<int> positions = stackalloc int[16];
+        Span<long> magnitudes = stackalloc long[16];
         for (var n = 0; n < 16; n++)
         {
             positions[n] = (((yS << 2) + HevcScanOrder.Y(scan[n])) * nTbS) + (xS << 2) + HevcScanOrder.X(scan[n]);
+            magnitudes[n] = Math.Abs((long)levels[positions[n]]);
         }
 
-        if (!TryGetHiddenSign(levels, positions, changed: -1, changedMagnitude: 0, out var firstSigScanPos, out var sumAbsLevel))
+        var summary = new SubBlockSummary(magnitudes);
+        if (!summary.TryGetHiddenSign(magnitudes, changed: -1, changedMagnitude: 0, out var firstSigScanPos, out var sumAbsLevel))
             return false;
 
         // The parity already gives the sign of the level
@@ -149,7 +153,7 @@ internal static class HevcQuantizer
                 // A level that becomes significant has the sign of its coefficient; any sign when the coefficient is zero
                 var negative = magnitude is 0 ? coefficient < 0 : levels[position] < 0;
                 var anySign = magnitude is 0 && coefficient is 0;
-                if (TryGetHiddenSign(levels, positions, n, candidate, out var first, out var sum))
+                if (summary.TryGetHiddenSign(magnitudes, n, candidate, out var first, out var sum))
                 {
                     var parityNegative = (sum & 1) is 1;
                     if (first == n && anySign)
@@ -164,9 +168,9 @@ internal static class HevcQuantizer
                     }
                 }
 
-                // The squared error of the candidate minus the one of the level
-                var candidateError = error - (delta * factor);
-                var cost = ((Int128)candidateError * candidateError) - ((Int128)error * error);
+                // The squared error of the candidate minus the one of the level:
+                // ( error - delta * factor )^2 - error^2 = factor * ( factor - 2 * delta * error ), since delta^2 is 1
+                var cost = (Int128)factor * ((Int128)factor - (2 * (Int128)(delta * error)));
 
                 // Equal costs: the first candidate, which is the smaller magnitude of the lowest scan position
                 if (bestPosition < 0 || cost < bestCost)
@@ -191,28 +195,79 @@ internal static class HevcQuantizer
     /// <summary>Returns <c>levelScale[ qP % 6 ] &lt;&lt; ( qP / 6 )</c> (Equation 8-309).</summary>
     public static long GetLevelScale(int qP) => (long)HevcQuantizationTables.LevelScale[qP % 6] << (qP / 6);
 
-    // The residual coding syntax of a sub-block (clause 7.3.8.11): firstSigScanPos, lastSigScanPos and sumAbsLevel of the
-    // levels, the level of the scan position "changed" having the magnitude "changedMagnitude". Returns signHidden
-    private static bool TryGetHiddenSign(ReadOnlySpan<int> levels, ReadOnlySpan<int> positions, int changed, int changedMagnitude, out int firstSigScanPos, out long sumAbsLevel)
+    // The residual coding syntax of a sub-block (clause 7.3.8.11): firstSigScanPos, lastSigScanPos and sumAbsLevel of its
+    // levels, and the scan positions of the second significant coefficient from each end, so that the values of a sub-block
+    // whose level at one scan position changes are known without going through its 16 levels again
+    [StructLayout(LayoutKind.Auto)]
+    private readonly ref struct SubBlockSummary
     {
-        firstSigScanPos = 16;
-        var lastSigScanPos = -1;
-        sumAbsLevel = 0;
-        for (var n = 15; n >= 0; n--)
+        private readonly int _first;
+        private readonly int _second;
+        private readonly int _last;
+        private readonly int _secondToLast;
+        private readonly long _sum;
+
+        public SubBlockSummary(ReadOnlySpan<long> magnitudes)
         {
-            var magnitude = n == changed ? changedMagnitude : Math.Abs((long)levels[positions[n]]);
-            if (magnitude is 0)
-                continue;
-
-            if (lastSigScanPos < 0)
+            _first = 16;
+            _second = 16;
+            _last = -1;
+            _secondToLast = -1;
+            for (var n = 15; n >= 0; n--)
             {
-                lastSigScanPos = n;
-            }
+                var magnitude = magnitudes[n];
+                if (magnitude is 0)
+                    continue;
 
-            firstSigScanPos = n;
-            sumAbsLevel += magnitude;
+                if (_last < 0)
+                {
+                    _last = n;
+                }
+                else if (_secondToLast < 0)
+                {
+                    _secondToLast = n;
+                }
+
+                _second = _first;
+                _first = n;
+                _sum += magnitude;
+            }
         }
 
-        return lastSigScanPos - firstSigScanPos > 3;
+        // firstSigScanPos and sumAbsLevel of the levels, the level of the scan position "changed" having the magnitude
+        // "changedMagnitude" (no change when "changed" is -1). Returns signHidden
+        public bool TryGetHiddenSign(ReadOnlySpan<long> magnitudes, int changed, long changedMagnitude, out int firstSigScanPos, out long sumAbsLevel)
+        {
+            var first = _first;
+            var last = _last;
+            sumAbsLevel = _sum;
+            if (changed >= 0)
+            {
+                var magnitude = magnitudes[changed];
+                sumAbsLevel += changedMagnitude - magnitude;
+                if (magnitude is 0 && changedMagnitude is not 0)
+                {
+                    // The scan position becomes significant
+                    first = Math.Min(first, changed);
+                    last = Math.Max(last, changed);
+                }
+                else if (magnitude is not 0 && changedMagnitude is 0)
+                {
+                    // The scan position is no longer significant: the next significant one becomes the first or the last
+                    if (changed == first)
+                    {
+                        first = _second;
+                    }
+
+                    if (changed == last)
+                    {
+                        last = _secondToLast;
+                    }
+                }
+            }
+
+            firstSigScanPos = first;
+            return last - first > 3;
+        }
     }
 }

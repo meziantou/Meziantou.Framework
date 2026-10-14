@@ -48,6 +48,9 @@ internal sealed partial class DrawingSession : IDisposable
     // The draw calls prepare their shapes without painting them: the first pass of a text of several parts
     private bool _isPreparing;
 
+    /// <summary>The number of pixels without coverage from which a run painted with a color per pixel is cut in two.</summary>
+    private const int MinEvaluationGap = 16;
+
     private DrawingSession(Image image, ImageFrame[] frames, PixelStorage[] storages, CancellationToken cancellationToken)
     {
         _image = image;
@@ -1034,14 +1037,56 @@ internal sealed partial class DrawingSession : IDisposable
             }
 
             // A paint that gives the whole row one color is composited as a single color: the same formulas
-            var source = evaluator is null ? new DrawingSource(color, mode, blend, _transfer, _curves)
-                : evaluator.TryGetRowColor(y, x, out var rowColor) ? new DrawingSource(rowColor, mode, blend, _transfer, _curves)
-                : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend, _transfer, _curves);
-            MarkDrawn(x, y, x + coverage.Length, y + 1);
-            for (var i = 0; i < _frames.Length; i++)
+            if (evaluator is null || evaluator.TryGetRowColor(y, x, out color))
             {
-                _frames[i].CompositePixels(_storages[i], y, x, coverage, source);
+                CompositeRun(y, x, coverage, new DrawingSource(color, mode, blend, _transfer, _curves));
+                continue;
             }
+
+            // The colors of the pixels without coverage are not computed: the kernels do not read them. The run is
+            // cut where many of them follow one another.
+            var start = 0;
+            var search = 0;
+            while (true)
+            {
+                var gap = search < coverage.Length ? coverage[search..].IndexOf(0u) : -1;
+                if (gap < 0)
+                {
+                    PaintRun(evaluator, y, x + start, coverage[start..], mode, blend);
+                    break;
+                }
+
+                gap += search;
+                var gapEnd = coverage[gap..].IndexOfAnyExcept(0u);
+                gapEnd = gapEnd < 0 ? coverage.Length : gap + gapEnd;
+                if (gapEnd - gap >= MinEvaluationGap)
+                {
+                    if (gap > start)
+                    {
+                        PaintRun(evaluator, y, x + start, coverage[start..gap], mode, blend);
+                    }
+
+                    start = gapEnd;
+                }
+
+                search = gapEnd;
+                if (start == coverage.Length)
+                    break;
+            }
+        }
+    }
+
+    /// <summary>Evaluates the colors of a run and composites it onto every frame.</summary>
+    private void PaintRun(PaintEvaluator evaluator, int y, int x, ReadOnlySpan<uint> coverage, CompositeMode mode, BlendMode blend)
+        => CompositeRun(y, x, coverage, new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend, _transfer, _curves));
+
+    /// <summary>Composites a run onto every frame.</summary>
+    private void CompositeRun(int y, int x, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+    {
+        MarkDrawn(x, y, x + coverage.Length, y + 1);
+        for (var i = 0; i < _frames.Length; i++)
+        {
+            _frames[i].CompositePixels(_storages[i], y, x, coverage, source);
         }
     }
 

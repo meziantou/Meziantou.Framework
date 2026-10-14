@@ -151,6 +151,14 @@ public class DrawingBenchmarks : IDisposable
     }
 
     [Benchmark]
+    [Workload("Ellipse stroked 12 pixels wide with a linear gradient: rows of two short runs far apart")]
+    public int StrokeGradient()
+    {
+        _image.Draw(_linear, static (canvas, brush) => canvas.StrokeEllipse(new Pen(brush, 12), new PointD(512, 384), 480, 350));
+        return _image.Width;
+    }
+
+    [Benchmark]
     [Workload("320x240 Rgba32 image scaled to 1000x740, bilinear: draw")]
     public int DrawImage()
     {

@@ -2476,6 +2476,47 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Jpeg2000RowPackingMatchesTheScalarReferenceBitForBit()
+    {
+        // Samples of 8 bits and samples whose high bits the packing drops; rows of the length of a vector and around it,
+        // and rows whose last vector would write past the end of an RGB row
+        var random = new Random(15445);
+        foreach (var width in (int[])[0, 1, 3, 4, 5, 7, 8, 9, 15, 16, 17, 33, 100, 1021])
+        {
+            var channels = new int[4][];
+            for (var k = 0; k < 4; k++)
+            {
+                channels[k] = new int[width];
+                for (var x = 0; x < width; x++)
+                {
+                    channels[k][x] = random.Next(3) == 0 ? random.Next(int.MinValue, int.MaxValue) : random.Next(256);
+                }
+            }
+
+            var expected = new byte[4 * width];
+            var actual = new byte[4 * width];
+            Jpeg2000RowWriter.PackGray8Scalar(channels[0], expected);
+            Jpeg2000RowWriter.PackGray8(channels[0], actual);
+            Assert.Equal(expected, actual);
+
+            Array.Fill(expected, (byte)0x5A);
+            Array.Fill(actual, (byte)0x5A);
+            Jpeg2000RowWriter.PackRgb24Scalar(channels[0], channels[1], channels[2], expected.AsSpan(0, 3 * width));
+            Jpeg2000RowWriter.PackRgb24(channels[0], channels[1], channels[2], actual.AsSpan(0, 3 * width));
+            Assert.Equal(expected, actual);
+
+            Jpeg2000RowWriter.PackRgba32Scalar(channels[0], channels[1], channels[2], channels[3], expected);
+            Jpeg2000RowWriter.PackRgba32(channels[0], channels[1], channels[2], channels[3], actual);
+            Assert.Equal(expected, actual);
+
+            Jpeg2000RowWriter.PackRgba32Scalar(channels[0], channels[1], channels[2], default, expected);
+            Jpeg2000RowWriter.PackRgba32(channels[0], channels[1], channels[2], default, actual);
+            Assert.Equal(expected, actual);
+        }
+    }
+
     private static int[] ToBits(float[] values) => Array.ConvertAll(values, BitConverter.SingleToInt32Bits);
 
     /// <summary>A finite single-precision number: an integer, a fraction, a large or a tiny magnitude, or a zero of either sign.</summary>

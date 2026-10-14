@@ -3349,6 +3349,155 @@ public sealed class DrawingSessionTests
         }
     }
 
+    [Fact]
+    public void AFilterGraphComputesItsPrimitivesFromTheDrawingAndEachOther()
+    {
+        var red = new Rgba32(255, 0, 0);
+        var blue = new Rgba32(0, 0, 255);
+
+        // A flood fills its subregion only, and nothing is drawn outside the region of the filter
+        var pixels = DrawFiltered(new FilterGraph(new FloodPrimitive(new Rgba32(255, 0, 0, 128)) { Subregion = new RectangleD(1, 1, 2, 2) }));
+        Assert.Equal(new Rgba32(255, 0, 0, 128), pixels[1, 1]);
+        Assert.Equal(new Rgba32(255, 0, 0, 128), pixels[2, 2]);
+        Assert.Equal(default, pixels[3, 2]);
+        pixels = DrawFiltered(new FilterGraph(new FloodPrimitive(blue), new MergePrimitive(FilterInput.FromResult(0), FilterInput.SourceGraphic)) { Region = new RectangleD(0, 0, 3, 3) });
+        Assert.Equal(blue, pixels[0, 0]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[1, 1]);
+        Assert.Equal(default, pixels[3, 3]);
+
+        // An offset moves the drawing (the white pixel at (1, 1)); by half a pixel, half of it is on each side
+        pixels = DrawFiltered(new FilterGraph(new OffsetPrimitive(new PointD(2, 1))));
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[3, 2]);
+        Assert.Equal(default, pixels[1, 1]);
+        pixels = DrawFiltered(new FilterGraph(new OffsetPrimitive(new PointD(0.5, 0))));
+        Assert.Equal(new Rgba32(255, 255, 255, 128), pixels[1, 1]);
+        Assert.Equal(new Rgba32(255, 255, 255, 128), pixels[2, 1]);
+
+        // A tile repeats the subregion of its input: the pixels of the drawing from (0, 0) to (2, 2), with the white
+        // pixel at (1, 1), every 2 pixels
+        pixels = DrawFiltered(new FilterGraph(new OffsetPrimitive(default) { Subregion = new RectangleD(0, 0, 2, 2) }, new TilePrimitive { Subregion = new RectangleD(0, 0, 6, 6) }));
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[3, 3]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[5, 1]);
+        Assert.Equal(default, pixels[4, 3]);
+
+        // The alpha of the drawing, painted green
+        pixels = DrawFiltered(new FilterGraph(new FloodPrimitive(new Rgba32(0, 255, 0)), new CompositePrimitive(FilterCompositeOperator.In, FilterInput.SourceAlpha)));
+        Assert.Equal(new Rgba32(0, 255, 0), pixels[1, 1]);
+        Assert.Equal(default, pixels[0, 1]);
+
+        // The operators, with red on the pixels 0 and 1 and blue on the pixels 1 and 2
+        Assert.Equal([red, red, blue], Composite(FilterCompositeOperator.Over));
+        Assert.Equal([default, red, default], Composite(FilterCompositeOperator.In));
+        Assert.Equal([red, default, default], Composite(FilterCompositeOperator.Out));
+        Assert.Equal([default, red, blue], Composite(FilterCompositeOperator.Atop));
+        Assert.Equal([red, default, blue], Composite(FilterCompositeOperator.Xor));
+        Assert.Equal([red, new Rgba32(255, 0, 255), blue], Composite(FilterCompositeOperator.Lighter));
+
+        // Arithmetic, half of each: in sRGB, (0.5, 0, 0.5) where both are; by default in linear light, where 0.5 is
+        // encoded as 1.055 * 0.5^(1 / 2.4) - 0.055 = 0.7354 (188). Where only red is, 0.5 of red and of the alpha.
+        // With -A B + 0.3, every component is 0.3 where one input is (white), and the alpha is -0.7 where both are:
+        // zero, and a color is never more than its alpha.
+        Assert.Equal([new Rgba32(255, 0, 0, 128), new Rgba32(128, 0, 128), new Rgba32(0, 0, 255, 128)], Composite(FilterCompositeOperator.Arithmetic, FilterColorSpace.Srgb, k2: 0.5, k3: 0.5));
+        var encoded = (byte)Math.Floor((255 * ((1.055 * Math.Pow(0.5, 1 / 2.4)) - 0.055)) + 0.5);
+        Assert.Equal(188, encoded);
+        Assert.Equal(new Rgba32(encoded, 0, encoded), Composite(FilterCompositeOperator.Arithmetic, FilterColorSpace.LinearRgb, k2: 0.5, k3: 0.5)[1]);
+        Assert.Equal([new Rgba32(255, 255, 255, 77), default, new Rgba32(255, 255, 255, 77)], Composite(FilterCompositeOperator.Arithmetic, FilterColorSpace.Srgb, k1: -1, k4: 0.3));
+
+        // Blend modes: the first input is the source, the second one the backdrop; red at 128 / 255 over blue leaves
+        // 127 / 255 of the blue
+        Assert.Equal(new Rgba32(128, 128, 0), Blend(BlendMode.Multiply, new Rgba32(255, 128, 0), new Rgba32(128, 255, 255)));
+        Assert.Equal(new Rgba32(255, 255, 255), Blend(BlendMode.Screen, new Rgba32(255, 128, 0), new Rgba32(128, 255, 255)));
+        Assert.Equal(new Rgba32(128, 0, 127), Blend(BlendMode.Normal, new Rgba32(255, 0, 0, 128), new Rgba32(0, 0, 255)));
+
+        Assert.Throws<ArgumentException>(() => new FilterGraph());
+        Assert.Throws<ArgumentNullException>(() => new FilterGraph(new FloodPrimitive(red), null!));
+        Assert.Throws<ArgumentException>(() => new FilterGraph(new OffsetPrimitive(default) { Input = FilterInput.FromResult(0) }));
+        Assert.Throws<ArgumentException>(() => new FilterGraph(new FloodPrimitive(red)) { Region = new RectangleD(double.NaN, 0, 1, 1) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => FilterInput.FromResult(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new FloodPrimitive(red) { ColorSpace = (FilterColorSpace)2 });
+        Assert.Throws<ArgumentException>(() => new FloodPrimitive(red) { Subregion = new RectangleD(0, double.PositiveInfinity, 1, 1) });
+        Assert.Throws<ArgumentException>(() => new OffsetPrimitive(new PointD(double.NaN, 0)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CompositePrimitive((FilterCompositeOperator)7, FilterInput.SourceGraphic));
+        Assert.Throws<ArgumentException>(() => new CompositePrimitive(FilterCompositeOperator.Arithmetic, FilterInput.SourceGraphic) { K1 = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new BlendPrimitive((BlendMode)99, FilterInput.SourceGraphic));
+        Assert.Throws<ArgumentNullException>(() => new ColorMatrixPrimitive(null!));
+        Assert.Equal(FilterInput.Previous, default);
+        Assert.Equal((FilterInputKind.Result, 3), (FilterInput.FromResult(3).Kind, FilterInput.FromResult(3).ResultIndex));
+        Assert.NotEqual(FilterInput.SourceGraphic, FilterInput.SourceAlpha);
+
+        Rgba32[] Composite(FilterCompositeOperator @operator, FilterColorSpace space = FilterColorSpace.Srgb, double k1 = 0, double k2 = 0, double k3 = 0, double k4 = 0)
+        {
+            var result = DrawFiltered(new FilterGraph(
+                new FloodPrimitive(red) { Subregion = new RectangleD(0, 0, 2, 1) },
+                new FloodPrimitive(blue) { Subregion = new RectangleD(1, 0, 2, 1) },
+                new CompositePrimitive(@operator, FilterInput.FromResult(1)) { Input = FilterInput.FromResult(0), ColorSpace = space, K1 = k1, K2 = k2, K3 = k3, K4 = k4 }));
+            return [result[0, 0], result[1, 0], result[2, 0]];
+        }
+
+        Rgba32 Blend(BlendMode mode, Rgba32 source, Rgba32 backdrop)
+            => DrawFiltered(new FilterGraph(new FloodPrimitive(source), new FloodPrimitive(backdrop), new BlendPrimitive(mode, FilterInput.FromResult(1)) { Input = FilterInput.FromResult(0), ColorSpace = FilterColorSpace.Srgb }))[0, 0];
+    }
+
+    [Fact]
+    public void AFilterGraphChangesColorsInTheColorsOfEachPrimitive()
+    {
+        // Luminance to alpha: a gray of 128 in sRGB is 0.502 of luminance, but 0.2159 in linear light (55), the default
+        var gray = new Rgba32(128, 128, 128);
+        Assert.Equal(new Rgba32(0, 0, 0, 128), DrawFiltered(new FilterGraph(new ColorMatrixPrimitive(ColorMatrix.LuminanceToAlpha) { ColorSpace = FilterColorSpace.Srgb }), gray)[0, 0]);
+        Assert.Equal(new Rgba32(0, 0, 0, 55), DrawFiltered(new FilterGraph(new ColorMatrixPrimitive(ColorMatrix.LuminanceToAlpha)), gray)[0, 0]);
+
+        // A matrix that changes nothing in linear light gives the colors back
+        foreach (var color in new[] { new Rgba32(0, 1, 2), new Rgba32(10, 128, 254), new Rgba32(200, 30, 90, 77) })
+        {
+            Assert.Equal(color, DrawFiltered(new FilterGraph(new ColorMatrixPrimitive(ColorMatrix.CreateBrightness(1.0000001))), color)[0, 0]);
+        }
+
+        // Transfer functions, in sRGB: a table [0, 1, 0.5] takes 0.2 to 0.4 and 1 to 0.5; a discrete one [0.2, 0.6, 1]
+        // takes 0.2 to 0.2 and 128 / 255 to 0.6; 0.5 C + 0.25 takes 1 to 0.75; C^2 takes 128 / 255 to 0.252 (64)
+        var transfer = new ComponentTransferPrimitive
+        {
+            Red = TransferFunction.CreateTable(0, 1, 0.5),
+            Green = TransferFunction.CreateDiscrete(0.2, 0.6, 1),
+            Blue = TransferFunction.CreateLinear(0.5, 0.25),
+            ColorSpace = FilterColorSpace.Srgb,
+        };
+        Assert.Equal(new Rgba32(102, 51, 191), DrawFiltered(new FilterGraph(transfer), new Rgba32(51, 51, 255))[0, 0]);
+        Assert.Equal(new Rgba32(128, 153, 191), DrawFiltered(new FilterGraph(transfer), new Rgba32(255, 128, 255))[0, 0]);
+        Assert.Equal(new Rgba32(64, 0, 0, 128), DrawFiltered(new FilterGraph(new ComponentTransferPrimitive { Red = TransferFunction.CreateGamma(1, 2, 0), Alpha = TransferFunction.CreateDiscrete(0.5), ColorSpace = FilterColorSpace.Srgb }), new Rgba32(128, 0, 0))[0, 0]);
+        Assert.Equal(new Rgba32(1, 2, 3), DrawFiltered(new FilterGraph(new ComponentTransferPrimitive { Red = TransferFunction.CreateTable(), Green = TransferFunction.Identity }), new Rgba32(1, 2, 3))[0, 0]);
+
+        Assert.Throws<ArgumentException>(() => TransferFunction.CreateTable(0, double.NaN));
+        Assert.Throws<ArgumentException>(() => TransferFunction.CreateGamma(1, double.PositiveInfinity, 0));
+        Assert.Throws<ArgumentNullException>(() => new ComponentTransferPrimitive { Alpha = null! });
+        Assert.Equal((TransferFunctionKind.Linear, 0.5, 0.25), (transfer.Blue.Kind, transfer.Blue.Slope, transfer.Blue.Intercept));
+        Assert.Equal([0, 1, 0.5], transfer.Red.Values);
+
+        // A subregion is in the coordinates of the drawing: scaled by 2, the pixel (1, 1) is 4 pixels
+        using var image = new Image<Rgba32>(4, 4);
+        image.Draw(canvas => canvas.Transform(AffineTransform.CreateScale(2, 2), scaled => scaled.Filter(new FilterGraph(new FloodPrimitive(gray) { Subregion = new RectangleD(1, 1, 1, 1) }), static _ => { })), Ct);
+        Assert.Equal(gray, image.Frames[0][2, 3]);
+        Assert.Equal(default, image.Frames[0][1, 1]);
+    }
+
+    /// <summary>Filters a white pixel at (1, 1) of a canvas of 6 by 6 pixels, or the whole canvas painted with a color.</summary>
+    private static FilteredPixels DrawFiltered(Filter filter, Rgba32? color = null)
+    {
+        using var image = new Image<Rgba32>(6, 6);
+        image.Draw(canvas => canvas.Filter(filter, layer => layer.FillRectangle(color ?? new Rgba32(255, 255, 255), color is null ? new Rectangle(1, 1, 1, 1) : new Rectangle(0, 0, 6, 6))), Ct);
+        var pixels = new Rgba32[36];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = image.Frames[0][i % 6, i / 6];
+        }
+
+        return new FilteredPixels(pixels);
+    }
+
+    private sealed class FilteredPixels(Rgba32[] pixels)
+    {
+        public Rgba32 this[int x, int y] => pixels[x + (6 * y)];
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // Paint colors of a profile
     // -----------------------------------------------------------------------------------------------------------------

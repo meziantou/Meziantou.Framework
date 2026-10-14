@@ -23,6 +23,9 @@ internal sealed class FilterSurface : IDisposable
     /// <summary>Gets every value, row by row.</summary>
     public Span<float> Values => unsafe(MemoryMarshal.Cast<byte, float>(_buffer!.Span))[..(4 * Bounds.Width * Bounds.Height)];
 
+    /// <summary>Gets the index of the red of a pixel of the canvas in <see cref="Values"/>.</summary>
+    public int IndexOf(int x, int y) => 4 * (((y - Bounds.Top) * Bounds.Width) + (x - Bounds.Left));
+
     /// <summary>Gets the values of a row of the canvas, from the left of the surface.</summary>
     public Span<float> GetRow(int y) => Values.Slice(4 * (y - Bounds.Top) * Bounds.Width, 4 * Bounds.Width);
 

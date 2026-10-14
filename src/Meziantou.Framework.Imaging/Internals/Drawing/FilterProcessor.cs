@@ -33,6 +33,8 @@ internal sealed class FilterProcessor : IDisposable
     private double _m12;
     private double _m21;
     private double _m22 = 1;
+    private double _offsetX;
+    private double _offsetY;
     private CancellationToken _cancellationToken;
 
     public FilterProcessor(AllocationScope scope)
@@ -49,9 +51,13 @@ internal sealed class FilterProcessor : IDisposable
     /// <param name="m12">The factor of x in the transformed y.</param>
     /// <param name="m21">The factor of y in the transformed x.</param>
     /// <param name="m22">The factor of y in the transformed y.</param>
+    /// <param name="offsetX">The translation along x of the transformation of the canvas, for the rectangles of the filters.</param>
+    /// <param name="offsetY">The translation along y of the transformation of the canvas.</param>
     /// <param name="cancellationToken">The token checked every few rows.</param>
-    public void Configure(Rectangle edges, FilterEdgeMode? edgeOverride, double scaleX, double scaleY, double m11, double m12, double m21, double m22, CancellationToken cancellationToken)
+    public void Configure(Rectangle edges, FilterEdgeMode? edgeOverride, double scaleX, double scaleY, double m11, double m12, double m21, double m22, double offsetX, double offsetY, CancellationToken cancellationToken)
     {
+        _offsetX = offsetX;
+        _offsetY = offsetY;
         _edges = edges;
         _edgeOverride = edgeOverride;
         _scaleX = scaleX;
@@ -61,6 +67,55 @@ internal sealed class FilterProcessor : IDisposable
         _m21 = m21;
         _m22 = m22;
         _cancellationToken = cancellationToken;
+    }
+
+    /// <summary>Gets or sets the rectangle the edge modes apply to.</summary>
+    public Rectangle Edges
+    {
+        get => _edges;
+        set => _edges = value;
+    }
+
+    /// <summary>Gets the scope the surfaces of the filters are rented from.</summary>
+    public AllocationScope Scope => _scope;
+
+    /// <summary>Gets the token checked every few rows.</summary>
+    public CancellationToken CancellationToken => _cancellationToken;
+
+    /// <summary>Gets the factor of the lengths along x.</summary>
+    public double ScaleX => _scaleX;
+
+    /// <summary>Gets the factor of the lengths along y.</summary>
+    public double ScaleY => _scaleY;
+
+    /// <summary>Gets the image on the canvas of a vector of the drawing: through the linear part of the transformation.</summary>
+    public (double X, double Y) MapVector(PointD vector) => ((_m11 * vector.X) + (_m21 * vector.Y), (_m12 * vector.X) + (_m22 * vector.Y));
+
+    /// <summary>Gets the pixels of the canvas whose center is in the box of the image of a rectangle of the drawing.</summary>
+    public Rectangle ToPixels(RectangleD rectangle)
+    {
+        var minX = double.PositiveInfinity;
+        var minY = double.PositiveInfinity;
+        var maxX = double.NegativeInfinity;
+        var maxY = double.NegativeInfinity;
+        for (var corner = 0; corner < 4; corner++)
+        {
+            var x = (corner & 1) == 0 ? rectangle.Left : rectangle.Right;
+            var y = (corner & 2) == 0 ? rectangle.Top : rectangle.Bottom;
+            var px = (_m11 * x) + (_m21 * y) + _offsetX;
+            var py = (_m12 * x) + (_m22 * y) + _offsetY;
+            minX = Math.Min(minX, px);
+            minY = Math.Min(minY, py);
+            maxX = Math.Max(maxX, px);
+            maxY = Math.Max(maxY, py);
+        }
+
+        const double Limit = 1 << 29;
+        var left = (int)Math.Clamp(Math.Floor(minX + 0.5), -Limit, Limit);
+        var top = (int)Math.Clamp(Math.Floor(minY + 0.5), -Limit, Limit);
+        var right = (int)Math.Clamp(Math.Floor(maxX + 0.5), left, Limit);
+        var bottom = (int)Math.Clamp(Math.Floor(maxY + 0.5), top, Limit);
+        return Rectangle.FromLTRB(left, top, right, bottom);
     }
 
     /// <summary>Reads pixels of a frame into a surface: 16-bit colors multiplied by their alpha.</summary>
@@ -140,20 +195,32 @@ internal sealed class FilterProcessor : IDisposable
     }
 
     /// <summary>Applies a color matrix to the straight colors of the pixels of a surface.</summary>
-    public void ApplyColorMatrix(FilterSurface surface, ColorMatrix matrix)
+    public void ApplyColorMatrix(FilterSurface surface, ColorMatrix matrix) => ApplyColorMatrix(surface, matrix, surface.Bounds);
+
+    /// <summary>Applies a color matrix to the straight colors of the pixels of a rectangle of a surface.</summary>
+    public void ApplyColorMatrix(FilterSurface surface, ColorMatrix matrix, Rectangle area)
     {
         if (matrix.IsIdentity)
             return;
 
+        area = Rectangle.Intersect(area, surface.Bounds);
         var m = matrix.Values;
-        var values = surface.Values;
-        for (var i = 0; i < values.Length; i += 4)
+        for (var y = area.Top; y < area.Bottom; y++)
         {
-            if ((i & 0xFFFF) == 0)
+            if ((y & 63) == 0)
             {
                 _cancellationToken.ThrowIfCancellationRequested();
             }
 
+            var values = surface.GetRow(y).Slice(4 * (area.Left - surface.Bounds.Left), 4 * area.Width);
+            ApplyColorMatrix(values, m);
+        }
+    }
+
+    private static void ApplyColorMatrix(Span<float> values, ReadOnlySpan<double> m)
+    {
+        for (var i = 0; i < values.Length; i += 4)
+        {
             double alpha = values[i + 3];
             double red = 0, green = 0, blue = 0;
             if (alpha > 0)
@@ -168,6 +235,41 @@ internal sealed class FilterProcessor : IDisposable
             values[i + 1] = (float)(Clamp((((((m[5] * red) + (m[6] * green)) + (m[7] * blue)) + (m[8] * alpha)) + m[9])) * resultAlpha);
             values[i + 2] = (float)(Clamp((((((m[10] * red) + (m[11] * green)) + (m[12] * blue)) + (m[13] * alpha)) + m[14])) * resultAlpha);
             values[i + 3] = (float)resultAlpha;
+        }
+    }
+
+    /// <summary>Gets the color of a surface between pixels: the four pixels around the position, interpolated; transparent beyond the surface.</summary>
+    /// <param name="surface">The surface.</param>
+    /// <param name="x">The position along x, in pixels of the canvas: the center of a pixel is at its index.</param>
+    /// <param name="y">The position along y.</param>
+    /// <param name="result">The red, green, blue and alpha, multiplied by the alpha.</param>
+    public static void Interpolate(FilterSurface surface, double x, double y, Span<double> result)
+    {
+        result.Clear();
+        var column = Math.Floor(x);
+        var row = Math.Floor(y);
+        var fx = x - column;
+        var fy = y - row;
+        var bounds = surface.Bounds;
+        var values = surface.Values;
+        for (var corner = 0; corner < 4; corner++)
+        {
+            var wx = (corner & 1) == 0 ? 1 - fx : fx;
+            var wy = (corner & 2) == 0 ? 1 - fy : fy;
+            var weight = wy * wx;
+            if (weight == 0)
+                continue;
+
+            var px = column + (corner & 1);
+            var py = row + ((corner >> 1) & 1);
+            if (px < bounds.Left || px >= bounds.Right || py < bounds.Top || py >= bounds.Bottom)
+                continue;
+
+            var offset = surface.IndexOf((int)px, (int)py);
+            result[0] += weight * values[offset];
+            result[1] += weight * values[offset + 1];
+            result[2] += weight * values[offset + 2];
+            result[3] += weight * values[offset + 3];
         }
     }
 

@@ -96,6 +96,7 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.ColorMatrix Identity { get => throw null; }
         public bool IsIdentity { get => throw null; }
         public double this[int row, int column] { get => throw null; }
+        public static Meziantou.Framework.Imaging.ColorMatrix LuminanceToAlpha { get => throw null; }
         public ColorMatrix(System.ReadOnlySpan<double> values) { }
         public static Meziantou.Framework.Imaging.ColorMatrix CreateBrightness(double amount) => throw null;
         public static Meziantou.Framework.Imaging.ColorMatrix CreateContrast(double amount) => throw null;
@@ -1214,6 +1215,14 @@ namespace Meziantou.Framework.Imaging.Drawing
         Luminosity = 15,
     }
 
+    public sealed class BlendPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input2 { get => throw null; }
+        public Meziantou.Framework.Imaging.Drawing.BlendMode Mode { get => throw null; }
+        public BlendPrimitive(Meziantou.Framework.Imaging.Drawing.BlendMode mode, Meziantou.Framework.Imaging.Drawing.FilterInput input2) { }
+    }
+
     public sealed class BlurFilter : Meziantou.Framework.Imaging.Drawing.Filter
     {
         public Meziantou.Framework.Imaging.Drawing.FilterEdgeMode EdgeMode { get => throw null; init { } }
@@ -1239,6 +1248,22 @@ namespace Meziantou.Framework.Imaging.Drawing
         public ColorMatrixFilter(Meziantou.Framework.Imaging.ColorMatrix matrix) { }
     }
 
+    public sealed class ColorMatrixPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.ColorMatrix Matrix { get => throw null; }
+        public ColorMatrixPrimitive(Meziantou.Framework.Imaging.ColorMatrix matrix) { }
+    }
+
+    public sealed class ComponentTransferPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Drawing.TransferFunction Alpha { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.TransferFunction Blue { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.TransferFunction Green { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.TransferFunction Red { get => throw null; init { } }
+    }
+
     public enum CompositeMode
     {
         SourceOver = 0,
@@ -1253,6 +1278,18 @@ namespace Meziantou.Framework.Imaging.Drawing
         Xor = 9,
         Clear = 10,
         Plus = 11,
+    }
+
+    public sealed class CompositePrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input2 { get => throw null; }
+        public double K1 { get => throw null; init { } }
+        public double K2 { get => throw null; init { } }
+        public double K3 { get => throw null; init { } }
+        public double K4 { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.FilterCompositeOperator Operator { get => throw null; }
+        public CompositePrimitive(Meziantou.Framework.Imaging.Drawing.FilterCompositeOperator @operator, Meziantou.Framework.Imaging.Drawing.FilterInput input2) { }
     }
 
     public enum CompositingSpace
@@ -1386,12 +1423,71 @@ namespace Meziantou.Framework.Imaging.Drawing
         public FilterChain(params System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.Filter> filters) { }
     }
 
+    public enum FilterColorSpace
+    {
+        LinearRgb = 0,
+        Srgb = 1,
+    }
+
+    public enum FilterCompositeOperator
+    {
+        Over = 0,
+        In = 1,
+        Out = 2,
+        Atop = 3,
+        Xor = 4,
+        Lighter = 5,
+        Arithmetic = 6,
+    }
+
     public enum FilterEdgeMode
     {
         Transparent = 0,
         Duplicate = 1,
         Wrap = 2,
         Mirror = 3,
+    }
+
+    public sealed class FilterGraph : Meziantou.Framework.Imaging.Drawing.Filter
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Drawing.FilterPrimitive> Primitives { get => throw null; }
+        public Meziantou.Framework.Imaging.RectangleD? Region { get => throw null; init { } }
+        public FilterGraph(params System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.FilterPrimitive> primitives) { }
+    }
+
+    public readonly struct FilterInput : System.IEquatable<Meziantou.Framework.Imaging.Drawing.FilterInput>
+    {
+        public Meziantou.Framework.Imaging.Drawing.FilterInputKind Kind { get => throw null; }
+        public static Meziantou.Framework.Imaging.Drawing.FilterInput Previous { get => throw null; }
+        public int ResultIndex { get => throw null; }
+        public static Meziantou.Framework.Imaging.Drawing.FilterInput SourceAlpha { get => throw null; }
+        public static Meziantou.Framework.Imaging.Drawing.FilterInput SourceGraphic { get => throw null; }
+        public bool Equals(Meziantou.Framework.Imaging.Drawing.FilterInput other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.Imaging.Drawing.FilterInput FromResult(int index) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Drawing.FilterInput left, Meziantou.Framework.Imaging.Drawing.FilterInput right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Drawing.FilterInput left, Meziantou.Framework.Imaging.Drawing.FilterInput right) => throw null;
+    }
+
+    public enum FilterInputKind
+    {
+        Previous = 0,
+        SourceGraphic = 1,
+        SourceAlpha = 2,
+        Result = 3,
+    }
+
+    public abstract class FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Drawing.FilterColorSpace ColorSpace { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.RectangleD? Subregion { get => throw null; init { } }
+    }
+
+    public sealed class FloodPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Rgba64 Color { get => throw null; }
+        public FloodPrimitive(Meziantou.Framework.Imaging.Rgba64 color) { }
     }
 
     public abstract class GradientBrush : Meziantou.Framework.Imaging.Drawing.Brush
@@ -1494,6 +1590,19 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         Alpha = 0,
         Luminance = 1,
+    }
+
+    public sealed class MergePrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Drawing.FilterInput> Inputs { get => throw null; }
+        public MergePrimitive(params System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.FilterInput> inputs) { }
+    }
+
+    public sealed class OffsetPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.PointD Offset { get => throw null; }
+        public OffsetPrimitive(Meziantou.Framework.Imaging.PointD offset) { }
     }
 
     public enum PathCombineMode
@@ -1631,6 +1740,36 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         Left = 0,
         Right = 1,
+    }
+
+    public sealed class TilePrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input { get => throw null; init { } }
+    }
+
+    public sealed class TransferFunction
+    {
+        public double Amplitude { get => throw null; }
+        public double Exponent { get => throw null; }
+        public static Meziantou.Framework.Imaging.Drawing.TransferFunction Identity { get => throw null; }
+        public double Intercept { get => throw null; }
+        public Meziantou.Framework.Imaging.Drawing.TransferFunctionKind Kind { get => throw null; }
+        public double Offset { get => throw null; }
+        public double Slope { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<double> Values { get => throw null; }
+        public static Meziantou.Framework.Imaging.Drawing.TransferFunction CreateDiscrete(params System.ReadOnlySpan<double> values) => throw null;
+        public static Meziantou.Framework.Imaging.Drawing.TransferFunction CreateGamma(double amplitude, double exponent, double offset) => throw null;
+        public static Meziantou.Framework.Imaging.Drawing.TransferFunction CreateLinear(double slope, double intercept) => throw null;
+        public static Meziantou.Framework.Imaging.Drawing.TransferFunction CreateTable(params System.ReadOnlySpan<double> values) => throw null;
+    }
+
+    public enum TransferFunctionKind
+    {
+        Identity = 0,
+        Table = 1,
+        Discrete = 2,
+        Linear = 3,
+        Gamma = 4,
     }
 
     public sealed class VectorPath

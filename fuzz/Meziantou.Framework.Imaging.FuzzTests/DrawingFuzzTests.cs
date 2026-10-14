@@ -509,8 +509,9 @@ public sealed class DrawingFuzzTests
     }
 
     /// <summary>A filter of a few pixels of reach: a blur, a color matrix, a shadow, or a chain of them.</summary>
-    private static Filter CreateFilter(FuzzRandom random) => random.Next(4) switch
+    private static Filter CreateFilter(FuzzRandom random) => random.Next(5) switch
     {
+        3 => CreateFilterGraph(random),
         0 => new BlurFilter(NextDouble(random) * 4, random.Chance(30) ? 0 : NextDouble(random) * 4) { EdgeMode = (FilterEdgeMode)random.Next(4) },
         1 => new ColorMatrixFilter(random.Next(3) switch
         {
@@ -521,6 +522,57 @@ public sealed class DrawingFuzzTests
         2 => new DropShadowFilter(CreateColor(random), new PointD((NextDouble(random) - 0.5) * 8, (NextDouble(random) - 0.5) * 8), NextDouble(random) * 3) { ShadowOnly = random.Chance(30) },
         _ => new FilterChain(CreateFilter(random), CreateFilter(random)),
     };
+
+    private static FilterGraph CreateFilterGraph(FuzzRandom random)
+    {
+        var primitives = new FilterPrimitive[random.Next(1, 5)];
+        for (var index = 0; index < primitives.Length; index++)
+        {
+            var input = CreateInput(index);
+            var input2 = CreateInput(index);
+            RectangleD? subregion = random.Chance(3) ? null : new RectangleD((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, NextDouble(random) * 40, NextDouble(random) * 40);
+            var space = (FilterColorSpace)random.Next(2);
+            primitives[index] = random.Next(8) switch
+            {
+                0 => new FloodPrimitive(CreateColor(random)) { Subregion = subregion, ColorSpace = space },
+                1 => new OffsetPrimitive(new PointD((NextDouble(random) - 0.5) * 8, (NextDouble(random) - 0.5) * 8)) { Input = input, Subregion = subregion, ColorSpace = space },
+                2 => new MergePrimitive(input, input2) { Subregion = subregion, ColorSpace = space },
+                3 => new TilePrimitive { Input = input, Subregion = subregion, ColorSpace = space },
+                4 => new ColorMatrixPrimitive(random.Chance(2) ? ColorMatrix.LuminanceToAlpha : ColorMatrix.CreateHueRotation(NextDouble(random) * 360)) { Input = input, Subregion = subregion, ColorSpace = space },
+                5 => new ComponentTransferPrimitive
+                {
+                    Input = input,
+                    Subregion = subregion,
+                    ColorSpace = space,
+                    Red = TransferFunction.CreateTable(NextDouble(random), NextDouble(random), NextDouble(random)),
+                    Green = TransferFunction.CreateDiscrete(NextDouble(random), NextDouble(random)),
+                    Blue = TransferFunction.CreateLinear((NextDouble(random) - 0.5) * 4, NextDouble(random) - 0.5),
+                    Alpha = TransferFunction.CreateGamma(NextDouble(random) * 2, NextDouble(random) * 4, NextDouble(random) - 0.5),
+                },
+                6 => new CompositePrimitive((FilterCompositeOperator)random.Next(7), input2)
+                {
+                    Input = input,
+                    Subregion = subregion,
+                    ColorSpace = space,
+                    K1 = (NextDouble(random) - 0.5) * 4,
+                    K2 = (NextDouble(random) - 0.5) * 4,
+                    K3 = (NextDouble(random) - 0.5) * 4,
+                    K4 = NextDouble(random) - 0.5,
+                },
+                _ => new BlendPrimitive((BlendMode)random.Next(16), input2) { Input = input, Subregion = subregion, ColorSpace = space },
+            };
+        }
+
+        return random.Chance(3) ? new FilterGraph(primitives) { Region = new RectangleD((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, NextDouble(random) * 60, NextDouble(random) * 60) } : new FilterGraph(primitives);
+
+        FilterInput CreateInput(int index) => random.Next(4) switch
+        {
+            0 => FilterInput.SourceGraphic,
+            1 => FilterInput.SourceAlpha,
+            2 when index > 0 => FilterInput.FromResult(random.Next(index)),
+            _ => FilterInput.Previous,
+        };
+    }
 
     private static RectangleD CreateRectangle(FuzzRandom random, DrawingCanvas canvas)
     {

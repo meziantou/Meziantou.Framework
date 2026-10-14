@@ -100,7 +100,8 @@ internal sealed partial class DrawingSession
             {
                 var processor = GetFilterProcessor(crop.Width);
                 var (m11, m12, m21, m22) = GetLinearPart();
-                processor.Configure(crop, FilterEdgeMode.Mirror, Math.Sqrt((m11 * m11) + (m12 * m12)), Math.Sqrt((m21 * m21) + (m22 * m22)), m11, m12, m21, m22, _cancellationToken);
+                var (offsetX, offsetY) = GetTranslation();
+                processor.Configure(crop, FilterEdgeMode.Mirror, Math.Sqrt((m11 * m11) + (m12 * m12)), Math.Sqrt((m21 * m21) + (m22 * m22)), m11, m12, m21, m22, offsetX, offsetY, _cancellationToken);
                 var row = unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span));
                 for (var i = 0; i < _frames.Length; i++)
                 {
@@ -146,7 +147,8 @@ internal sealed partial class DrawingSession
         var (scaleX, scaleY) = level.FilterScale;
         var m11 = _hasTransform ? _transform.M11 : 1;
         var m22 = _hasTransform ? _transform.M22 : 1;
-        processor.Configure(new Rectangle(0, 0, Width, Height), edgeOverride: null, scaleX, scaleY, m11, 0, 0, m22, _cancellationToken);
+        var (offsetX, offsetY) = GetTranslation();
+        processor.Configure(new Rectangle(0, 0, Width, Height), edgeOverride: null, scaleX, scaleY, m11, 0, 0, m22, offsetX, offsetY, _cancellationToken);
         using var surface = new FilterSurface(_image.Owner.Scope, bounds);
         FilterProcessor.Read(level.Frames![0], level.Storages![0], surface, unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span)));
         level.Filter!.Apply(processor, surface);
@@ -176,6 +178,18 @@ internal sealed partial class DrawingSession
         }
 
         return _hasTransform ? (_transform.M11, _transform.M12, _transform.M21, _transform.M22) : (1, 0, 0, 1);
+    }
+
+    /// <summary>Gets the translation of the transformation of the canvas, divided by <c>M33</c> when it is projective: the image of the origin of the drawing when it is affine.</summary>
+    private (double X, double Y) GetTranslation()
+    {
+        if (_isProjective)
+        {
+            var w = Math.Abs(_projection.M33) > 0 ? _projection.M33 : 1;
+            return (_projection.M31 / w, _projection.M32 / w);
+        }
+
+        return _hasTransform ? (_transform.OffsetX, _transform.OffsetY) : (0, 0);
     }
 
     /// <summary>Gets the box of the image of a rectangle under a projective transformation: of its corners when they all have one, the canvas otherwise.</summary>

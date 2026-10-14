@@ -379,14 +379,28 @@ public sealed class VectorizedKernelTests
         {
             for (var i = 0; i < 64; i++)
             {
-                // Level-shifted samples: integers, chroma means (multiples of 0.25) and flat blocks (exact DC quotients and ties)
-                samples[i] = round % 5 == 0 ? (round % 256) - 128 : round % 5 == 1 ? (random.Next(0, 1021) / 4f) - 128 : random.Next(-128, 128);
+                // Level-shifted samples: integers, chroma means (multiples of 0.25) and flat blocks (exact DC quotients and ties),
+                // and samples far out of range (the clamping of the DC and AC coefficients)
+                samples[i] = round % 7 == 6 ? random.Next(-20_000, 20_000) : round % 5 == 0 ? (round % 256) - 128 : round % 5 == 1 ? (random.Next(0, 1021) / 4f) - 128 : random.Next(-128, 128);
                 quantization[i] = (ushort)(round % 3 == 0 ? 1 : random.Next(1, 256));
             }
 
             JpegForwardDct.TransformAndQuantizeScalar(samples, quantization, scratch, expected);
             JpegForwardDct.TransformAndQuantize(samples, quantization, scratch, actual);
             Assert.Equal(expected, actual);
+            if (System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated)
+            {
+                Array.Clear(actual);
+                JpegForwardDct.TransformAndQuantizeVector128(samples, quantization, scratch, actual);
+                Assert.Equal(expected, actual);
+            }
+
+            if (System.Numerics.Vector.IsHardwareAccelerated && System.Numerics.Vector<double>.Count is 2 or 4 or 8)
+            {
+                Array.Clear(actual);
+                JpegForwardDct.TransformAndQuantizeVector(samples, quantization, scratch, actual);
+                Assert.Equal(expected, actual);
+            }
         }
     }
 

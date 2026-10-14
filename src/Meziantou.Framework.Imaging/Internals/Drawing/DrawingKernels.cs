@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -449,8 +450,111 @@ internal static class DrawingKernels
         }
     }
 
-    /// <summary>Composites a paint over interleaved samples with source-over, pixel by pixel.</summary>
+    /// <summary>Composites a paint over interleaved samples with source-over.</summary>
     private static void CompositeOver<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        if (typeof(TSample) == typeof(byte) && channels == 4 && coverage.Length >= 4 && Vector128.IsHardwareAccelerated)
+        {
+            CompositeOver8(unsafe(MemoryMarshal.Cast<TSample, byte>(samples)), coverage, source);
+            return;
+        }
+
+        CompositeOverScalar(samples, channels, coverage, source);
+    }
+
+    /// <summary>
+    /// Composites a paint over pixels of four 8-bit samples (color then alpha) with source-over: four pixels at a time
+    /// when they are opaque, the others with <see cref="CompositeOverScalar"/>.
+    /// </summary>
+    /// <remarks>
+    /// On an opaque pixel the color is <c>floor(x / S)</c> with <c>x = sc E + dc (S - E) + S / 2</c>, <c>S = 255 Q</c>
+    /// and <c>E = sa q</c>, and the alpha stays 255. That formula also leaves the pixel as it is when <c>E</c> is 0 and
+    /// writes the paint when <c>E</c> is <c>S</c>, as the scalar path does. <c>x</c> is below <c>255.5 S &lt; 2^32</c>;
+    /// <c>floor(x / S) = floor(floor(x / 2^16) / 255)</c>, and <c>floor(y / 255) = (y 32897) >> 23</c> for every
+    /// <c>y &lt; 2^16</c>, whose product is below 2^32.
+    /// </remarks>
+    internal static void CompositeOver8(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+    {
+        const uint Scale = byte.MaxValue * CoverageRasterizer.FullCoverage;
+        var colors = source.Colors;
+        var color = source.Color;
+        var transpose = Vector128.Create((byte)0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15);
+        var colorMask = Vector128.Create((byte)255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0);
+        var half = Vector128.Create(Scale / 2);
+        var scale = Vector128.Create(Scale);
+        var reciprocal = Vector128.Create(32897u);
+        var red = Vector128.Create((uint)color.C0);
+        var green = Vector128.Create((uint)color.C1);
+        var blue = Vector128.Create((uint)color.C2);
+        var alpha = Vector128.Create((uint)color.Alpha);
+
+        // The pixels from 'pending' on are not composited yet
+        var pending = 0;
+        for (var i = 0; i + 4 <= coverage.Length; i += 4)
+        {
+            var block = samples.Slice(i * 4, 16);
+            var pixels = Vector128.Create(block);
+            if ((pixels | colorMask) != Vector128<byte>.AllBitsSet)
+                continue;
+
+            if (pending < i)
+            {
+                CompositeOverScalarRange(samples, coverage, source, pending, i);
+            }
+
+            if (!colors.IsEmpty)
+            {
+                var paint = colors.Slice(i * 4, 16);
+                var paintBytes = Vector128.Shuffle(Vector128.Narrow(Vector128.Create(paint[..8]), Vector128.Create(paint[8..])), transpose);
+                var paintLow = Vector128.WidenLower(paintBytes);
+                var paintHigh = Vector128.WidenUpper(paintBytes);
+                red = Vector128.WidenLower(paintLow);
+                green = Vector128.WidenUpper(paintLow);
+                blue = Vector128.WidenLower(paintHigh);
+                alpha = Vector128.WidenUpper(paintHigh);
+            }
+
+            var effective = Vector128.Create(coverage.Slice(i, 4)) * alpha;
+            var inverse = scale - effective;
+            var planar = Vector128.Shuffle(pixels, transpose);
+            var low = Vector128.WidenLower(planar);
+            var high = Vector128.WidenUpper(planar);
+            var r = Blend(red, Vector128.WidenLower(low), effective, inverse, half, reciprocal);
+            var g = Blend(green, Vector128.WidenUpper(low), effective, inverse, half, reciprocal);
+            var b = Blend(blue, Vector128.WidenLower(high), effective, inverse, half, reciprocal);
+            var result = Vector128.Narrow(Vector128.Narrow(r, g), Vector128.Narrow(b, Vector128.WidenUpper(high)));
+            Vector128.Shuffle(result, transpose).CopyTo(block);
+            pending = i + 4;
+        }
+
+        if (pending < coverage.Length)
+        {
+            CompositeOverScalarRange(samples, coverage, source, pending, coverage.Length);
+        }
+
+        static Vector128<uint> Blend(Vector128<uint> paint, Vector128<uint> pixel, Vector128<uint> effective, Vector128<uint> inverse, Vector128<uint> half, Vector128<uint> reciprocal)
+        {
+            var x = (paint * effective) + (pixel * inverse) + half;
+            return Vector128.ShiftRightLogical(Vector128.ShiftRightLogical(x, 16) * reciprocal, 23);
+        }
+    }
+
+    private static void CompositeOverScalarRange(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, int start, int end)
+    {
+        var range = samples[(start * 4)..(end * 4)];
+        if (source.Colors.IsEmpty)
+        {
+            CompositeOverScalar(range, 4, coverage[start..end], source);
+        }
+        else
+        {
+            CompositeOverScalar(range, 4, coverage[start..end], new DrawingSource(source.Colors[(start * 4)..(end * 4)]));
+        }
+    }
+
+    /// <summary>Composites a paint over interleaved samples with source-over, pixel by pixel: the reference of the vectorized paths.</summary>
+    internal static void CompositeOverScalar<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
         where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
     {
         var max = ulong.CreateTruncating(TSample.MaxValue);

@@ -755,6 +755,75 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingSourceOverOf8BitPixelsMatchesTheScalarReference()
+    {
+        // The division of the vectorized path: by 2^16, then by 255 as a product and a shift, below 2^32
+        var scale = 255UL * CoverageRasterizer.FullCoverage;
+        Assert.True((255 * scale) + (scale / 2) < (1UL << 32));
+        for (uint y = 0; y < 65536; y++)
+        {
+            Assert.True((ulong)y * 32897 < (1UL << 32));
+            Assert.Equal(y / 255, (y * 32897) >> 23);
+        }
+
+        var random = new Random(20261014);
+        int[] lengths = [4, 5, 7, 8, 9, 15, 16, 17, 33, 64, 101];
+        foreach (var length in lengths)
+        {
+            for (var round = 0; round < 64; round++)
+            {
+                var pixels = new byte[length * 4];
+                random.NextBytes(pixels);
+                var opaqueShare = round % 4;
+                for (var i = 0; i < length; i++)
+                {
+                    // Runs of opaque pixels, translucent and transparent ones
+                    pixels[(i * 4) + 3] = opaqueShare == 0 || random.Next(4) < opaqueShare ? (byte)255 : random.Next(3) == 0 ? (byte)0 : (byte)random.Next(256);
+                }
+
+                var coverage = new uint[length];
+                for (var i = 0; i < length; i++)
+                {
+                    coverage[i] = random.Next(4) switch
+                    {
+                        0 => 0,
+                        1 => CoverageRasterizer.FullCoverage,
+                        2 => (uint)random.Next(1, 256),
+                        _ => (uint)random.Next((int)CoverageRasterizer.FullCoverage + 1),
+                    };
+                }
+
+                var colors = new ushort[length * 4];
+                for (var i = 0; i < colors.Length; i++)
+                {
+                    colors[i] = (i & 3) == 3 && random.Next(3) == 0 ? (random.Next(2) == 0 ? (ushort)0 : (ushort)255) : (ushort)random.Next(256);
+                }
+
+                var paintAlpha = (round / 4 % 4) switch
+                {
+                    0 => 255,
+                    1 => 0,
+                    _ => random.Next(256),
+                };
+                var color = new DrawingColor((ushort)random.Next(256), (ushort)random.Next(256), (ushort)random.Next(256), (ushort)paintAlpha);
+
+                var expected = (byte[])pixels.Clone();
+                var actual = (byte[])pixels.Clone();
+                DrawingKernels.CompositeOverScalar<byte>(expected, 4, coverage, new DrawingSource(color));
+                DrawingKernels.CompositeOver8(actual, coverage, new DrawingSource(color));
+                Assert.Equal(expected, actual);
+
+                expected = (byte[])pixels.Clone();
+                actual = (byte[])pixels.Clone();
+                DrawingKernels.CompositeOverScalar<byte>(expected, 4, coverage, new DrawingSource(colors));
+                DrawingKernels.CompositeOver8(actual, coverage, new DrawingSource(colors));
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
     public void PixelConversionsMatchTheScalarReference()
     {
         CheckConversionsFrom<Rgba32>();

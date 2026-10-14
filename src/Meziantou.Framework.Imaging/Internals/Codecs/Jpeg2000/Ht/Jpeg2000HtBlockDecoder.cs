@@ -13,6 +13,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// predictors of 7.3.7, the MagSgn values of 7.3.8, and the two refinement passes of 7.4 and 7.5.
 /// </para>
 /// <para>
+/// The MagSgn and VLC bit-streams are read through a window of up to 64 bits, filled with the bits importMagSgnBit and
+/// importVLCBit would give: a codeword is found from the next seven bits at once, and the bits of a MagSgn value are
+/// taken at once. A malformed byte or the end of a bit-stream stops the filling, and is reported when a bit after the
+/// last one of the window is needed, where the procedures of the Recommendation meet it.
+/// </para>
+/// <para>
 /// A coefficient is returned as <see cref="Jpeg2000Tier1Decoder"/> returns it: its sign in the most significant bit, and
 /// twice its magnitude with the bit-planes that are not decoded replaced by half of their range (7.6: the decoded
 /// bit-planes are those above the skipped ones, with one more for the samples a refinement pass decoded).
@@ -41,9 +47,10 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
     private int _cleanupLength;
     private int _prefixLength;
     private int _magSgnPosition;
-    private int _magSgnBits;
-    private int _magSgnValue;
     private int _magSgnLast;
+    private ulong _magSgnWindow;
+    private int _magSgnCount;
+    private MagSgnError _magSgnError;
     private int _melPosition;
     private int _melBits;
     private int _melValue;
@@ -51,9 +58,10 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
     private int _melRun;
     private bool _melOne;
     private int _vlcPosition;
-    private int _vlcBits;
-    private int _vlcValue;
     private int _vlcLast;
+    private ulong _vlcWindow;
+    private int _vlcCount;
+    private bool _vlcEnded;
 
     // The HT refinement segment and its two bit-streams (7.1.5 and 7.1.6)
     private int _refinementOffset;
@@ -192,6 +200,13 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
         _exponents.Dispose();
     }
 
+    private enum MagSgnError
+    {
+        None,
+        NotStuffed,
+        TooShort,
+    }
+
     private static InvalidImageContentException Invalid(string message) => Jpeg2000Format.Invalid("a code-block of the high-throughput block coder is malformed: " + message);
 
     /// <summary>The HT cleanup decoding algorithm (7.3).</summary>
@@ -202,9 +217,10 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
 
         // initMS, initMEL, initMELDecoder and initVLC
         _magSgnPosition = 0;
-        _magSgnBits = 0;
-        _magSgnValue = 0;
         _magSgnLast = 0;
+        _magSgnWindow = 0;
+        _magSgnCount = 0;
+        _magSgnError = MagSgnError.None;
         _melPosition = _prefixLength;
         _melBits = 0;
         _melValue = 0;
@@ -213,8 +229,9 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
         _melOne = false;
         _vlcPosition = _cleanupLength - 3;
         _vlcLast = ReadCleanupByte(_cleanupLength - 2);
-        _vlcValue = _vlcLast >> 4;
-        _vlcBits = (_vlcValue & 7) < 7 ? 4 : 3;
+        _vlcCount = ((_vlcLast >> 4) & 7) < 7 ? 4 : 3;
+        _vlcWindow = (ulong)(_vlcLast >> 4) & ((1UL << _vlcCount) - 1);
+        _vlcEnded = false;
 
         // The exponents of the bottom samples of a row of quads: the bottom-left then the bottom-right sample of each
         // quad, after the two entries of the quad that does not exist on the left
@@ -406,37 +423,41 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
     /// <summary>decodeUPrefix (7.3.6): the codewords 1, 01, 001 and 000 stand for the prefix values 1, 2, 3 and 5.</summary>
     private int DecodePrefix()
     {
-        if (ReadVlcBit() != 0)
-            return 1;
-
-        if (ReadVlcBit() != 0)
-            return 2;
-
-        return ReadVlcBit() != 0 ? 3 : 5;
+        // The bits that are not in the bit-stream are 0: they can only make the codeword longer than the bits left
+        var bits = PeekVlcBits(3);
+        var (value, length) = (bits & 1) != 0 ? (1, 1) : (bits & 2) != 0 ? (2, 2) : (bits & 4) != 0 ? (3, 3) : (5, 3);
+        SkipVlcBits(length);
+        return value;
     }
 
-    /// <summary>decodeCxtVLC (7.3.5): bits are read until they form a codeword of the context.</summary>
+    /// <summary>decodeCxtVLC (7.3.5): the codeword the next bits start with.</summary>
+    /// <remarks>
+    /// The tables give the codeword of a context for any seven bits; the bits that are not in the bit-stream are 0, and
+    /// the codeword is consumed only when all its bits are there, as reading it bit by bit would require.
+    /// </remarks>
     private uint DecodeCodeword(bool isInitialRow, int context)
     {
-        var bits = 0;
-        for (var length = 1; length <= Jpeg2000HtVlcTables.MaxCodewordLength; length++)
-        {
-            bits |= ReadVlcBit() << (length - 1);
-            var entry = Jpeg2000HtVlcTables.Find(isInitialRow, context, bits);
-            if ((entry & 7) <= length)
-                return entry;
-        }
-
-        throw new InvalidOperationException("The CxtVLC tables are not complete prefix codes.");
+        var entry = Jpeg2000HtVlcTables.Find(isInitialRow, context, PeekVlcBits(Jpeg2000HtVlcTables.MaxCodewordLength));
+        SkipVlcBits((int)(entry & 7));
+        return entry;
     }
 
     /// <summary>decodeMagSgnValue (7.3.8).</summary>
     private uint DecodeMagSgnValue(int bitCount, int isOne)
     {
-        var value = 0u;
-        for (var i = 0; i < bitCount; i++)
+        uint value;
+        if (bitCount <= 32)
         {
-            value |= (uint)ReadMagSgnBit() << i;
+            value = (uint)ReadMagSgnBits(bitCount);
+        }
+        else
+        {
+            // A shift of 32 bits or more wraps around, as it does bit by bit
+            value = 0u;
+            for (var i = 0; i < bitCount; i++)
+            {
+                value |= (uint)ReadMagSgnBits(1) << i;
+            }
         }
 
         return value + ((uint)isOne << bitCount);
@@ -452,35 +473,57 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
         return position == _cleanupLength - 2 ? value | 0x0F : value;
     }
 
-    /// <summary>importMagSgnBit (7.1.2).</summary>
-    private int ReadMagSgnBit()
+    /// <summary>importMagSgnBit (7.1.2), for <paramref name="count"/> bits at once (at most 32), the first one in the least significant bit.</summary>
+    private ulong ReadMagSgnBits(int count)
     {
-        if (_magSgnBits == 0)
+        if (count > _magSgnCount)
         {
-            _magSgnBits = _magSgnLast == 0xFF ? 7 : 8;
+            FillMagSgnWindow();
+            if (count > _magSgnCount)
+            {
+                throw _magSgnError == MagSgnError.NotStuffed
+                    ? Invalid("a bit is not stuffed after an FF byte of its MagSgn byte-stream.")
+                    : Invalid("its MagSgn byte-stream is too short.");
+            }
+        }
+
+        var value = _magSgnWindow & ((1UL << count) - 1);
+        _magSgnWindow >>= count;
+        _magSgnCount -= count;
+        return value;
+    }
+
+    /// <summary>Appends the bits of the next bytes of the MagSgn byte-stream to its window, until it holds more than 56 bits or a byte cannot be read.</summary>
+    private void FillMagSgnWindow()
+    {
+        while (_magSgnCount <= 56 && _magSgnError == MagSgnError.None)
+        {
+            var bits = _magSgnLast == 0xFF ? 7 : 8;
+            int value;
             if (_magSgnPosition < _prefixLength)
             {
-                _magSgnValue = ReadCleanupByte(_magSgnPosition);
-                if ((_magSgnValue & (1 << _magSgnBits)) != 0)
-                    throw Invalid("a bit is not stuffed after an FF byte of its MagSgn byte-stream.");
+                value = ReadCleanupByte(_magSgnPosition);
+                if ((value & (1 << bits)) != 0)
+                {
+                    _magSgnError = MagSgnError.NotStuffed;
+                    return;
+                }
             }
             else if (_magSgnPosition == _prefixLength)
             {
-                _magSgnValue = 0xFF;
+                value = 0xFF;
             }
             else
             {
-                throw Invalid("its MagSgn byte-stream is too short.");
+                _magSgnError = MagSgnError.TooShort;
+                return;
             }
 
-            _magSgnLast = _magSgnValue;
+            _magSgnLast = value;
             _magSgnPosition++;
+            _magSgnWindow |= (ulong)(value & ((1 << bits) - 1)) << _magSgnCount;
+            _magSgnCount += bits;
         }
-
-        var bit = _magSgnValue & 1;
-        _magSgnValue >>= 1;
-        _magSgnBits--;
-        return bit;
     }
 
     /// <summary>decodeMELSym (7.3.3), on the bits of importMELBit (7.1.3).</summary>
@@ -537,35 +580,61 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
         return (_melValue >> _melBits) & 1;
     }
 
-    /// <summary>importVLCBit (7.1.4): the bytes are read backward.</summary>
-    private int ReadVlcBit()
-    {
-        if (_vlcBits == 0)
-        {
-            if (_vlcPosition < _prefixLength)
-                throw Invalid("its VLC byte-stream is too short.");
+    /// <summary>importVLCBit (7.1.4): the next bit.</summary>
+    private int ReadVlcBit() => ReadVlcBits(1);
 
-            _vlcValue = ReadCleanupByte(_vlcPosition);
-            _vlcBits = _vlcLast > 0x8F && (_vlcValue & 0x7F) == 0x7F ? 7 : 8;
-            _vlcLast = _vlcValue;
-            _vlcPosition--;
-        }
-
-        var bit = _vlcValue & 1;
-        _vlcValue >>= 1;
-        _vlcBits--;
-        return bit;
-    }
-
+    /// <summary>importVLCBit (7.1.4), for <paramref name="count"/> bits at once, the first one in the least significant bit.</summary>
     private int ReadVlcBits(int count)
     {
-        var value = 0;
-        for (var i = 0; i < count; i++)
+        var value = PeekVlcBits(count);
+        SkipVlcBits(count);
+        return value;
+    }
+
+    /// <summary>Gets the next <paramref name="count"/> bits of the VLC bit-stream (at most 32) without consuming them; the bits after the end of the bit-stream are 0.</summary>
+    private int PeekVlcBits(int count)
+    {
+        if (count > _vlcCount)
         {
-            value |= ReadVlcBit() << i;
+            FillVlcWindow();
         }
 
-        return value;
+        return (int)(_vlcWindow & ((1UL << count) - 1));
+    }
+
+    /// <summary>Consumes the next <paramref name="count"/> bits of the VLC bit-stream.</summary>
+    /// <exception cref="InvalidImageContentException">The bit-stream ends before.</exception>
+    private void SkipVlcBits(int count)
+    {
+        if (count > _vlcCount)
+        {
+            FillVlcWindow();
+            if (count > _vlcCount)
+                throw Invalid("its VLC byte-stream is too short.");
+        }
+
+        _vlcWindow >>= count;
+        _vlcCount -= count;
+    }
+
+    /// <summary>Appends the bits of the next bytes of the VLC byte-stream, read backward, to its window, until it holds more than 56 bits or the byte-stream ends.</summary>
+    private void FillVlcWindow()
+    {
+        while (_vlcCount <= 56 && !_vlcEnded)
+        {
+            if (_vlcPosition < _prefixLength)
+            {
+                _vlcEnded = true;
+                return;
+            }
+
+            var value = ReadCleanupByte(_vlcPosition);
+            var bits = _vlcLast > 0x8F && (value & 0x7F) == 0x7F ? 7 : 8;
+            _vlcLast = value;
+            _vlcPosition--;
+            _vlcWindow |= (ulong)(value & ((1 << bits) - 1)) << _vlcCount;
+            _vlcCount += bits;
+        }
     }
 
     /// <summary>The HT SigProp decoding procedure (7.4).</summary>

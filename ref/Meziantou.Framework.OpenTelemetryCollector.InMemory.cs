@@ -7,20 +7,20 @@ namespace Meziantou.Framework.OpenTelemetryCollector.InMemory
     public sealed class InMemoryOpenTelemetryHandler : Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandler
     {
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryItem> Logs { get => throw null; }
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryItem> Traces { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryItem> Metrics { get => throw null; }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryItem> Traces { get => throw null; }
         public InMemoryOpenTelemetryHandler(Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandlerOptions options) { }
         public InMemoryOpenTelemetryHandler(Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandlerOptions options, System.TimeProvider timeProvider) { }
         public override System.Threading.Tasks.ValueTask HandleLogsAsync(Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
-        public override System.Threading.Tasks.ValueTask HandleTracesAsync(Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
         public override System.Threading.Tasks.ValueTask HandleMetricsAsync(Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
+        public override System.Threading.Tasks.ValueTask HandleTracesAsync(Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
     }
 
     public sealed class InMemoryOpenTelemetryHandlerOptions
     {
         public int MaximumLogCount { get => throw null; set { } }
-        public int MaximumTraceCount { get => throw null; set { } }
         public int MaximumMetricCount { get => throw null; set { } }
+        public int MaximumTraceCount { get => throw null; set { } }
     }
 
     public sealed class InMemoryOpenTelemetryItemCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryItem>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryItem>, System.Collections.IEnumerable
@@ -34,8 +34,8 @@ namespace Meziantou.Framework.OpenTelemetryCollector.InMemory
     public static class OpenTelemetryCollectorInMemoryServiceCollectionExtensions
     {
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddInMemoryOpenTelemetryReceiver(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) => throw null;
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddInMemoryOpenTelemetryReceiver(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions> configure) => throw null;
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddInMemoryOpenTelemetryReceiver(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandlerOptions? options) => throw null;
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddInMemoryOpenTelemetryReceiver(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions> configure) => throw null;
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddInMemoryOpenTelemetryReceiver(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandlerOptions? options, System.Action<Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions>? configure) => throw null;
     }
 

@@ -15,8 +15,8 @@ namespace Meziantou.Framework.Http
 
     public sealed class HstsDomainPolicy
     {
-        public string Host { get => throw null; }
         public System.DateTimeOffset ExpiresAt { get => throw null; }
+        public string Host { get => throw null; }
         public bool IncludeSubdomains { get => throw null; }
         public bool IsPreloaded { get => throw null; }
         public override string ToString() => throw null;
@@ -29,14 +29,14 @@ namespace Meziantou.Framework.Http
         public int MaxLearnedPolicies { get => throw null; }
         public HstsDomainPolicyCollection(bool includePreloadDomains = true, int maxLearnedPolicies = 10000) { }
         public HstsDomainPolicyCollection(System.TimeProvider? timeProvider, bool includePreloadDomains = true, int maxLearnedPolicies = 10000) { }
-        public void Add(string host, System.TimeSpan maxAge, bool includeSubdomains) { }
         public void Add(string host, System.DateTimeOffset expiresAt, bool includeSubdomains) { }
-        public bool Remove(string host) => throw null;
+        public void Add(string host, System.TimeSpan maxAge, bool includeSubdomains) { }
         public void ClearLearnedPolicies() { }
-        public bool TryGetPolicy(string host, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Http.HstsDomainPolicy? policy) => throw null;
-        public bool MustUpgradeRequest(string host) => throw null;
-        public bool MustUpgradeRequest(System.ReadOnlySpan<char> host) => throw null;
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Http.HstsDomainPolicy> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool MustUpgradeRequest(System.ReadOnlySpan<char> host) => throw null;
+        public bool MustUpgradeRequest(string host) => throw null;
+        public bool Remove(string host) => throw null;
+        public bool TryGetPolicy(string host, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Http.HstsDomainPolicy? policy) => throw null;
     }
 }

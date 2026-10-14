@@ -6,28 +6,28 @@ namespace Meziantou.Framework
 {
     public static class AnsiTextProcessor
     {
-        public static string RemoveAnsiSequences(string value) => throw null;
-        public static string RemoveAnsiSequences(System.ReadOnlySpan<char> value) => throw null;
-        public static bool ContainsAnsiSequences(string value) => throw null;
         public static bool ContainsAnsiSequences(System.ReadOnlySpan<char> value) => throw null;
+        public static bool ContainsAnsiSequences(string value) => throw null;
         public static Meziantou.Framework.AnsiTextProcessor.AnsiText ParseTextWithAnsiStyles(string text) => throw null;
+        public static string RemoveAnsiSequences(System.ReadOnlySpan<char> value) => throw null;
+        public static string RemoveAnsiSequences(string value) => throw null;
         public sealed class AnsiColor : System.IEquatable<Meziantou.Framework.AnsiTextProcessor.AnsiColor>
         {
+            public byte Blue { get => throw null; init { } }
+            public byte Green { get => throw null; init { } }
+            public byte IndexedValue { get => throw null; init { } }
             public Meziantou.Framework.AnsiTextProcessor.AnsiColorKind Kind { get => throw null; init { } }
             public byte Red { get => throw null; init { } }
-            public byte Green { get => throw null; init { } }
-            public byte Blue { get => throw null; init { } }
-            public byte IndexedValue { get => throw null; init { } }
             public AnsiColor(Meziantou.Framework.AnsiTextProcessor.AnsiColorKind Kind, byte Red, byte Green, byte Blue, byte IndexedValue) { }
+            public void Deconstruct(out Meziantou.Framework.AnsiTextProcessor.AnsiColorKind Kind, out byte Red, out byte Green, out byte Blue, out byte IndexedValue) => throw null;
+            public bool Equals(Meziantou.Framework.AnsiTextProcessor.AnsiColor? other) => throw null;
+            public override bool Equals(object? obj) => throw null;
             public static Meziantou.Framework.AnsiTextProcessor.AnsiColor FromIndexed(int value) => throw null;
             public static Meziantou.Framework.AnsiTextProcessor.AnsiColor FromRgb(byte red, byte green, byte blue) => throw null;
-            public override string ToString() => throw null;
-            public static bool operator !=(Meziantou.Framework.AnsiTextProcessor.AnsiColor? left, Meziantou.Framework.AnsiTextProcessor.AnsiColor? right) => throw null;
-            public static bool operator ==(Meziantou.Framework.AnsiTextProcessor.AnsiColor? left, Meziantou.Framework.AnsiTextProcessor.AnsiColor? right) => throw null;
             public override int GetHashCode() => throw null;
-            public override bool Equals(object? obj) => throw null;
-            public bool Equals(Meziantou.Framework.AnsiTextProcessor.AnsiColor? other) => throw null;
-            public void Deconstruct(out Meziantou.Framework.AnsiTextProcessor.AnsiColorKind Kind, out byte Red, out byte Green, out byte Blue, out byte IndexedValue) => throw null;
+            public override string ToString() => throw null;
+            public static bool operator ==(Meziantou.Framework.AnsiTextProcessor.AnsiColor? left, Meziantou.Framework.AnsiTextProcessor.AnsiColor? right) => throw null;
+            public static bool operator !=(Meziantou.Framework.AnsiTextProcessor.AnsiColor? left, Meziantou.Framework.AnsiTextProcessor.AnsiColor? right) => throw null;
         }
         public enum AnsiColorKind
         {
@@ -36,48 +36,48 @@ namespace Meziantou.Framework
         }
         public sealed class AnsiStyle : System.IEquatable<Meziantou.Framework.AnsiTextProcessor.AnsiStyle>
         {
-            public Meziantou.Framework.AnsiTextProcessor.AnsiColor? Foreground { get => throw null; init { } }
             public Meziantou.Framework.AnsiTextProcessor.AnsiColor? Background { get => throw null; init { } }
             public bool Bold { get => throw null; init { } }
-            public bool Italic { get => throw null; init { } }
-            public bool Underline { get => throw null; init { } }
+            public Meziantou.Framework.AnsiTextProcessor.AnsiColor? Foreground { get => throw null; init { } }
             public bool Inverse { get => throw null; init { } }
+            public bool Italic { get => throw null; init { } }
             public static Meziantou.Framework.AnsiTextProcessor.AnsiStyle None { get => throw null; }
+            public bool Underline { get => throw null; init { } }
             public AnsiStyle(Meziantou.Framework.AnsiTextProcessor.AnsiColor? Foreground, Meziantou.Framework.AnsiTextProcessor.AnsiColor? Background, bool Bold, bool Italic, bool Underline, bool Inverse) { }
-            public override string ToString() => throw null;
-            public static bool operator !=(Meziantou.Framework.AnsiTextProcessor.AnsiStyle? left, Meziantou.Framework.AnsiTextProcessor.AnsiStyle? right) => throw null;
-            public static bool operator ==(Meziantou.Framework.AnsiTextProcessor.AnsiStyle? left, Meziantou.Framework.AnsiTextProcessor.AnsiStyle? right) => throw null;
-            public override int GetHashCode() => throw null;
-            public override bool Equals(object? obj) => throw null;
-            public bool Equals(Meziantou.Framework.AnsiTextProcessor.AnsiStyle? other) => throw null;
             public void Deconstruct(out Meziantou.Framework.AnsiTextProcessor.AnsiColor? Foreground, out Meziantou.Framework.AnsiTextProcessor.AnsiColor? Background, out bool Bold, out bool Italic, out bool Underline, out bool Inverse) => throw null;
+            public bool Equals(Meziantou.Framework.AnsiTextProcessor.AnsiStyle? other) => throw null;
+            public override bool Equals(object? obj) => throw null;
+            public override int GetHashCode() => throw null;
+            public override string ToString() => throw null;
+            public static bool operator ==(Meziantou.Framework.AnsiTextProcessor.AnsiStyle? left, Meziantou.Framework.AnsiTextProcessor.AnsiStyle? right) => throw null;
+            public static bool operator !=(Meziantou.Framework.AnsiTextProcessor.AnsiStyle? left, Meziantou.Framework.AnsiTextProcessor.AnsiStyle? right) => throw null;
         }
         public sealed class AnsiText : System.IEquatable<Meziantou.Framework.AnsiTextProcessor.AnsiText>
         {
-            public string Text { get => throw null; init { } }
             public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.AnsiTextProcessor.AnsiTextRun> Runs { get => throw null; init { } }
+            public string Text { get => throw null; init { } }
             public AnsiText(string Text, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.AnsiTextProcessor.AnsiTextRun> Runs) { }
-            public override string ToString() => throw null;
-            public static bool operator !=(Meziantou.Framework.AnsiTextProcessor.AnsiText? left, Meziantou.Framework.AnsiTextProcessor.AnsiText? right) => throw null;
-            public static bool operator ==(Meziantou.Framework.AnsiTextProcessor.AnsiText? left, Meziantou.Framework.AnsiTextProcessor.AnsiText? right) => throw null;
-            public override int GetHashCode() => throw null;
-            public override bool Equals(object? obj) => throw null;
-            public bool Equals(Meziantou.Framework.AnsiTextProcessor.AnsiText? other) => throw null;
             public void Deconstruct(out string Text, out System.Collections.Generic.IReadOnlyList<Meziantou.Framework.AnsiTextProcessor.AnsiTextRun> Runs) => throw null;
+            public bool Equals(Meziantou.Framework.AnsiTextProcessor.AnsiText? other) => throw null;
+            public override bool Equals(object? obj) => throw null;
+            public override int GetHashCode() => throw null;
+            public override string ToString() => throw null;
+            public static bool operator ==(Meziantou.Framework.AnsiTextProcessor.AnsiText? left, Meziantou.Framework.AnsiTextProcessor.AnsiText? right) => throw null;
+            public static bool operator !=(Meziantou.Framework.AnsiTextProcessor.AnsiText? left, Meziantou.Framework.AnsiTextProcessor.AnsiText? right) => throw null;
         }
         public sealed class AnsiTextRun : System.IEquatable<Meziantou.Framework.AnsiTextProcessor.AnsiTextRun>
         {
-            public int Start { get => throw null; init { } }
             public int End { get => throw null; init { } }
+            public int Start { get => throw null; init { } }
             public Meziantou.Framework.AnsiTextProcessor.AnsiStyle Style { get => throw null; init { } }
             public AnsiTextRun(int Start, int End, Meziantou.Framework.AnsiTextProcessor.AnsiStyle Style) { }
-            public override string ToString() => throw null;
-            public static bool operator !=(Meziantou.Framework.AnsiTextProcessor.AnsiTextRun? left, Meziantou.Framework.AnsiTextProcessor.AnsiTextRun? right) => throw null;
-            public static bool operator ==(Meziantou.Framework.AnsiTextProcessor.AnsiTextRun? left, Meziantou.Framework.AnsiTextProcessor.AnsiTextRun? right) => throw null;
-            public override int GetHashCode() => throw null;
-            public override bool Equals(object? obj) => throw null;
-            public bool Equals(Meziantou.Framework.AnsiTextProcessor.AnsiTextRun? other) => throw null;
             public void Deconstruct(out int Start, out int End, out Meziantou.Framework.AnsiTextProcessor.AnsiStyle Style) => throw null;
+            public bool Equals(Meziantou.Framework.AnsiTextProcessor.AnsiTextRun? other) => throw null;
+            public override bool Equals(object? obj) => throw null;
+            public override int GetHashCode() => throw null;
+            public override string ToString() => throw null;
+            public static bool operator ==(Meziantou.Framework.AnsiTextProcessor.AnsiTextRun? left, Meziantou.Framework.AnsiTextProcessor.AnsiTextRun? right) => throw null;
+            public static bool operator !=(Meziantou.Framework.AnsiTextProcessor.AnsiTextRun? left, Meziantou.Framework.AnsiTextProcessor.AnsiTextRun? right) => throw null;
         }
     }
 }

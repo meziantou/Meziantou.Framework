@@ -6,9 +6,9 @@ namespace Meziantou.Framework
 {
     public class TextChunker
     {
+        public static Meziantou.Framework.TextChunker Characters { get => throw null; }
         public static Meziantou.Framework.TextChunker Lines { get => throw null; }
         public static Meziantou.Framework.TextChunker Words { get => throw null; }
-        public static Meziantou.Framework.TextChunker Characters { get => throw null; }
         public virtual System.Collections.Generic.IEnumerable<string> Chunk(System.ReadOnlySpan<char> value) => throw null;
     }
 
@@ -28,26 +28,26 @@ namespace Meziantou.Framework
 
     public readonly struct TextDiffEntry : System.IEquatable<Meziantou.Framework.TextDiffEntry>
     {
-        public Meziantou.Framework.TextDiffOperation Operation { get => throw null; }
-        public string? OldText { get => throw null; }
         public string? NewText { get => throw null; }
+        public string? OldText { get => throw null; }
+        public Meziantou.Framework.TextDiffOperation Operation { get => throw null; }
         public string Text { get => throw null; }
         public TextDiffEntry(Meziantou.Framework.TextDiffOperation operation, string text) { }
         public TextDiffEntry(Meziantou.Framework.TextDiffOperation operation, string? oldText, string? newText) { }
         public bool Equals(Meziantou.Framework.TextDiffEntry other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.TextDiffEntry left, Meziantou.Framework.TextDiffEntry right) => throw null;
         public static bool operator !=(Meziantou.Framework.TextDiffEntry left, Meziantou.Framework.TextDiffEntry right) => throw null;
-        public override string ToString() => throw null;
     }
 
     public sealed class TextDiffHierarchyEntry
     {
-        public Meziantou.Framework.TextDiffHierarchyOperation Operation { get => throw null; }
-        public string? OldText { get => throw null; }
-        public string? NewText { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.TextDiffHierarchyEntry> Children { get => throw null; }
+        public string? NewText { get => throw null; }
+        public string? OldText { get => throw null; }
+        public Meziantou.Framework.TextDiffHierarchyOperation Operation { get => throw null; }
         public TextDiffHierarchyEntry(Meziantou.Framework.TextDiffHierarchyOperation operation, string? oldText, string? newText, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.TextDiffHierarchyEntry>? children = null) { }
     }
 
@@ -77,8 +77,8 @@ namespace Meziantou.Framework
         public Meziantou.Framework.TextDiffAlgorithm Algorithm { get => throw null; set { } }
         public Meziantou.Framework.TextChunker Chunker { get => throw null; set { } }
         public bool IgnoreCase { get => throw null; set { } }
-        public bool IgnoreWhitespace { get => throw null; set { } }
         public bool IgnoreEndOfLine { get => throw null; set { } }
+        public bool IgnoreWhitespace { get => throw null; set { } }
     }
 
     public sealed class TextDiffResult

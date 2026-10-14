@@ -6,190 +6,190 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
 {
     public sealed class AssemblyLoadContextSnapshot
     {
-        public string? Name { get => throw null; }
-        public bool IsCollectible { get => throw null; }
         public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.AssemblySnapshot> Assemblies { get => throw null; }
+        public bool IsCollectible { get => throw null; }
+        public string? Name { get => throw null; }
     }
 
     public sealed class AssemblySnapshot
     {
-        public string? Name { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? CultureInfo { get => throw null; }
+        public System.Reflection.AssemblyNameFlags Flags { get => throw null; }
         public string? Location { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.ModuleSnapshot> Modules { get => throw null; }
+        public string? Name { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<byte>? PublicKeyToken { get => throw null; }
         public bool ReflectionOnly { get => throw null; }
         public System.Version? Version { get => throw null; }
-        public System.Reflection.AssemblyNameFlags Flags { get => throw null; }
-        public System.Collections.Immutable.ImmutableArray<byte>? PublicKeyToken { get => throw null; }
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? CultureInfo { get => throw null; }
-        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.ModuleSnapshot> Modules { get => throw null; }
     }
 
     public sealed class ConsoleSnapshot
     {
-        public bool IsOutputRedirected { get => throw null; }
-        public bool IsErrorRedirected { get => throw null; }
-        public bool IsInputRedirected { get => throw null; }
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot? OutEncoding { get => throw null; }
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot? InputEncoding { get => throw null; }
+        public System.ConsoleColor? BackgroundColor { get => throw null; }
         public int BufferHeight { get => throw null; }
         public int BufferWidth { get => throw null; }
+        public System.ConsoleColor? ForegroundColor { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot? InputEncoding { get => throw null; }
+        public bool IsErrorRedirected { get => throw null; }
+        public bool IsInputRedirected { get => throw null; }
+        public bool IsOutputRedirected { get => throw null; }
         public int LargestWindowHeight { get => throw null; }
         public int LargestWindowWidth { get => throw null; }
-        public int WindowHeight { get => throw null; }
-        public int WindowWidth { get => throw null; }
-        public int WindowTop { get => throw null; }
-        public int WindowLeft { get => throw null; }
-        public System.ConsoleColor? ForegroundColor { get => throw null; }
-        public System.ConsoleColor? BackgroundColor { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot? OutEncoding { get => throw null; }
         public string? Title { get => throw null; }
+        public int WindowHeight { get => throw null; }
+        public int WindowLeft { get => throw null; }
+        public int WindowTop { get => throw null; }
+        public int WindowWidth { get => throw null; }
     }
 
     public sealed class ContextSnapshotBuilder
     {
         public const string RedactedValue = "***";
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddValue(string key, object? value) => throw null;
-        public System.Collections.Generic.IReadOnlyDictionary<string, object?> BuildSnapshot() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddDefault() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCurrentProcess() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCpu() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddProcessorCount() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddSecurityProviders() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddPowerManagement() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddHypervisor() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddLocalTimeZone() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddOperatingSystem() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddDotnetRuntime() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddUser() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCurrentDirectory() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddNewLine() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddMachineName() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddGarbageCollector() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddDrives() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddSpecialFolderPaths() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddConsole() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddAssemblyLoadContexts() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddThreadPool() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCulture() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddRuntimeFeatures() => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCommonAppContext() => throw null;
         public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddAppContextData() => throw null;
-        public static bool IsSecretEnvironmentVariableName(string name) => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddAssemblyLoadContexts() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCommonAppContext() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddConsole() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCpu() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCulture() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCurrentDirectory() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCurrentProcess() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddDefault() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddDotnetRuntime() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddDrives() => throw null;
         public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddEnvironmentVariables(System.EnvironmentVariableTarget target = System.EnvironmentVariableTarget.Process) => throw null;
         public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddEnvironmentVariables(System.EnvironmentVariableTarget target, System.Func<string, bool> shouldRedact) => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddGarbageCollector() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddHypervisor() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddLocalTimeZone() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddMachineName() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddNewLine() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddOperatingSystem() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddPowerManagement() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddProcessorCount() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddRuntimeFeatures() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddSecurityProviders() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddSpecialFolderPaths() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddThreadPool() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddUser() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddValue(string key, object? value) => throw null;
+        public System.Collections.Generic.IReadOnlyDictionary<string, object?> BuildSnapshot() => throw null;
+        public static bool IsSecretEnvironmentVariableName(string name) => throw null;
     }
 
     public sealed class CpuSnapshot
     {
-        public string? ProcessorName { get => throw null; }
-        public int? PhysicalProcessorCount { get => throw null; }
-        public int? PhysicalCoreCount { get => throw null; }
-        public int? LogicalCoreCount { get => throw null; }
-        public double? NominalFrequency { get => throw null; }
-        public double? MinFrequency { get => throw null; }
-        public double? MaxFrequency { get => throw null; }
         public Meziantou.Framework.Diagnostics.ContextSnapshot.HardwareIntrinsicsSnapshot? HardwareIntrinsics { get => throw null; }
+        public int? LogicalCoreCount { get => throw null; }
+        public double? MaxFrequency { get => throw null; }
+        public double? MinFrequency { get => throw null; }
+        public double? NominalFrequency { get => throw null; }
+        public int? PhysicalCoreCount { get => throw null; }
+        public int? PhysicalProcessorCount { get => throw null; }
+        public string? ProcessorName { get => throw null; }
     }
 
     public sealed class CultureInfoSnapshot
     {
-        public string Name { get => throw null; }
         public bool IsReadOnly { get => throw null; }
+        public string Name { get => throw null; }
     }
 
     public sealed class CultureSnapshot
     {
-        public bool GlobalizationInvariant { get => throw null; }
-        public bool? UsePredefinedCulturesOnly { get => throw null; }
         public Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? CurrentCulture { get => throw null; }
         public Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? CurrentUICulture { get => throw null; }
         public Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? DefaultThreadCurrentCulture { get => throw null; }
         public Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? DefaultThreadCurrentUICulture { get => throw null; }
+        public bool GlobalizationInvariant { get => throw null; }
+        public bool? UsePredefinedCulturesOnly { get => throw null; }
     }
 
     public sealed class CurrentProcessSnapshot : Meziantou.Framework.Diagnostics.ContextSnapshot.ProcessSnapshot
     {
         public string CommandLine { get => throw null; }
-        public string? ProcessPath { get => throw null; }
-        public System.Runtime.InteropServices.Architecture ProcessArchitecture { get => throw null; }
         public bool IsPrivilegedProcess { get => throw null; }
+        public System.Runtime.InteropServices.Architecture ProcessArchitecture { get => throw null; }
+        public string? ProcessPath { get => throw null; }
     }
 
     public sealed class DotnetRuntimeSnapshot
     {
-        public string? RuntimeIdentifier { get => throw null; }
         public string? FrameworkDescription { get => throw null; }
         public bool IsMono { get => throw null; }
+        public string? RuntimeIdentifier { get => throw null; }
     }
 
     public sealed class DriveSnapshot
     {
-        public string? Name { get => throw null; }
+        public long AvailableFreeSpace { get => throw null; }
         public string? DriveFormat { get => throw null; }
         public System.IO.DriveType DriveType { get => throw null; }
-        public string? VolumeLabel { get => throw null; }
-        public long AvailableFreeSpace { get => throw null; }
+        public bool IsReady { get => throw null; }
+        public string? Name { get => throw null; }
+        public string? RootDirectory { get => throw null; }
         public long TotalFreeSpace { get => throw null; }
         public long TotalSize { get => throw null; }
-        public bool IsReady { get => throw null; }
-        public string? RootDirectory { get => throw null; }
+        public string? VolumeLabel { get => throw null; }
     }
 
     public sealed class EncodingSnapshot
     {
+        public bool IsReadOnly { get => throw null; }
         public string Name { get => throw null; }
         public string WebName { get => throw null; }
-        public bool IsReadOnly { get => throw null; }
     }
 
     public sealed class GarbageCollectorSnapshot
     {
+        public System.Collections.Immutable.ImmutableDictionary<string, object> ConfigurationVariables { get => throw null; }
         public int MaxGeneration { get => throw null; }
         public long TotalAllocatedBytes { get => throw null; }
         public long TotalMemory { get => throw null; }
         public System.TimeSpan TotalPauseDuration { get => throw null; }
-        public System.Collections.Immutable.ImmutableDictionary<string, object> ConfigurationVariables { get => throw null; }
     }
 
     public sealed class HardwareIntrinsicsSnapshot
     {
-        public int VectorLength { get => throw null; }
-        public bool IsVector64HardwareAccelerated { get => throw null; }
+        public bool IsArmAdvSimdSupported { get => throw null; }
+        public bool IsArmAesSupported { get => throw null; }
+        public bool IsArmBaseSupported { get => throw null; }
+        public bool IsArmCrc32Supported { get => throw null; }
+        public bool IsArmDpSupported { get => throw null; }
+        public bool IsArmRdmSupported { get => throw null; }
+        public bool IsArmSha1Supported { get => throw null; }
+        public bool IsArmSha256Supported { get => throw null; }
         public bool IsVector128HardwareAccelerated { get => throw null; }
         public bool IsVector256HardwareAccelerated { get => throw null; }
         public bool IsVector512HardwareAccelerated { get => throw null; }
-        public bool IsX86Avx512FSupported { get => throw null; }
-        public bool IsX86Avx512FVLSupported { get => throw null; }
+        public bool IsVector64HardwareAccelerated { get => throw null; }
+        public bool IsWasmBaseSupported { get => throw null; }
+        public bool IsWasmPackedSimdSupported { get => throw null; }
+        public bool IsX86AesSupported { get => throw null; }
+        public bool IsX86Avx2Supported { get => throw null; }
         public bool IsX86Avx512BWSupported { get => throw null; }
         public bool IsX86Avx512CDSupported { get => throw null; }
         public bool IsX86Avx512DQSupported { get => throw null; }
+        public bool IsX86Avx512FSupported { get => throw null; }
+        public bool IsX86Avx512FVLSupported { get => throw null; }
         public bool IsX86Avx512VbmiSupported { get => throw null; }
-        public bool IsWasmBaseSupported { get => throw null; }
-        public bool IsWasmPackedSimdSupported { get => throw null; }
-        public bool IsX86BaseSupported { get => throw null; }
-        public bool IsX86SseSupported { get => throw null; }
-        public bool IsX86Sse2Supported { get => throw null; }
-        public bool IsX86Sse3Supported { get => throw null; }
-        public bool IsX86Ssse3Supported { get => throw null; }
-        public bool IsX86Sse41Supported { get => throw null; }
-        public bool IsX86Sse42Supported { get => throw null; }
         public bool IsX86AvxSupported { get => throw null; }
-        public bool IsX86Avx2Supported { get => throw null; }
-        public bool IsX86AesSupported { get => throw null; }
+        public bool IsX86AvxVnniSupported { get => throw null; }
+        public bool IsX86BaseSupported { get => throw null; }
         public bool IsX86Bmi1Supported { get => throw null; }
         public bool IsX86Bmi2Supported { get => throw null; }
         public bool IsX86FmaSupported { get => throw null; }
         public bool IsX86LzcntSupported { get => throw null; }
         public bool IsX86PclmulqdqSupported { get => throw null; }
         public bool IsX86PopcntSupported { get => throw null; }
-        public bool IsX86AvxVnniSupported { get => throw null; }
         public bool IsX86SerializeSupported { get => throw null; }
-        public bool IsArmBaseSupported { get => throw null; }
-        public bool IsArmAdvSimdSupported { get => throw null; }
-        public bool IsArmAesSupported { get => throw null; }
-        public bool IsArmCrc32Supported { get => throw null; }
-        public bool IsArmDpSupported { get => throw null; }
-        public bool IsArmRdmSupported { get => throw null; }
-        public bool IsArmSha1Supported { get => throw null; }
-        public bool IsArmSha256Supported { get => throw null; }
+        public bool IsX86Sse2Supported { get => throw null; }
+        public bool IsX86Sse3Supported { get => throw null; }
+        public bool IsX86Sse41Supported { get => throw null; }
+        public bool IsX86Sse42Supported { get => throw null; }
+        public bool IsX86SseSupported { get => throw null; }
+        public bool IsX86Ssse3Supported { get => throw null; }
+        public int VectorLength { get => throw null; }
     }
 
     public sealed class HypervisorSnapshot
@@ -204,13 +204,6 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
 
     public sealed class OperatingSystemSnapshot
     {
-        public System.Runtime.InteropServices.Architecture OSArchitecture { get => throw null; }
-        public System.PlatformID Platform { get => throw null; }
-        public System.Version? Version { get => throw null; }
-        public string? ServicePack { get => throw null; }
-        public int? WindowsUpdateBuildRevision { get => throw null; }
-        public string? LinuxOsVersion { get => throw null; }
-        public bool IsWindows { get => throw null; }
         public bool IsAndroid { get => throw null; }
         public bool IsBrowser { get => throw null; }
         public bool IsFreeBSD { get => throw null; }
@@ -218,62 +211,69 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
         public bool IsLinux { get => throw null; }
         public bool IsMacCatalyst { get => throw null; }
         public bool IsTvOS { get => throw null; }
-        public bool IsWatchOS { get => throw null; }
         public bool IsWasi { get => throw null; }
+        public bool IsWatchOS { get => throw null; }
+        public bool IsWindows { get => throw null; }
+        public string? LinuxOsVersion { get => throw null; }
+        public System.Runtime.InteropServices.Architecture OSArchitecture { get => throw null; }
+        public System.PlatformID Platform { get => throw null; }
+        public string? ServicePack { get => throw null; }
+        public System.Version? Version { get => throw null; }
+        public int? WindowsUpdateBuildRevision { get => throw null; }
     }
 
     public sealed class PowerManagementSnapshot
     {
-        public System.Guid Id { get => throw null; }
         public string? FriendlyName { get => throw null; }
+        public System.Guid Id { get => throw null; }
     }
 
     public sealed class ProcessModuleSnapshot
     {
-        public string? ModuleName { get => throw null; }
         public string? FileName { get => throw null; }
-        public string? ProductVersion { get => throw null; }
         public string? FileVersion { get => throw null; }
+        public string? ModuleName { get => throw null; }
+        public string? ProductVersion { get => throw null; }
     }
 
     public class ProcessSnapshot
     {
+        public int HandleCount { get => throw null; }
         public int Id { get => throw null; }
-        public string ProcessName { get => throw null; }
-        public System.DateTime StartTime { get => throw null; }
         public Meziantou.Framework.Diagnostics.ContextSnapshot.ProcessModuleSnapshot? MainModule { get => throw null; }
         public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.ProcessModuleSnapshot> Modules { get => throw null; }
-        public System.TimeSpan UserProcessorTime { get => throw null; }
-        public System.TimeSpan TotalProcessorTime { get => throw null; }
-        public System.TimeSpan PrivilegedProcessorTime { get => throw null; }
-        public int HandleCount { get => throw null; }
-        public long WorkingSet64 { get => throw null; }
-        public long VirtualMemorySize64 { get => throw null; }
-        public long PrivateMemorySize64 { get => throw null; }
+        public long NonpagedSystemMemorySize64 { get => throw null; }
         public long PagedMemorySize64 { get => throw null; }
         public long PagedSystemMemorySize64 { get => throw null; }
-        public long NonpagedSystemMemorySize64 { get => throw null; }
-        public long PeakWorkingSet64 { get => throw null; }
-        public long PeakVirtualMemorySize64 { get => throw null; }
         public long PeakPagedMemorySize64 { get => throw null; }
+        public long PeakVirtualMemorySize64 { get => throw null; }
+        public long PeakWorkingSet64 { get => throw null; }
         public System.Diagnostics.ProcessPriorityClass PriorityClass { get => throw null; }
+        public long PrivateMemorySize64 { get => throw null; }
+        public System.TimeSpan PrivilegedProcessorTime { get => throw null; }
+        public string ProcessName { get => throw null; }
+        public System.DateTime StartTime { get => throw null; }
+        public System.TimeSpan TotalProcessorTime { get => throw null; }
+        public System.TimeSpan UserProcessorTime { get => throw null; }
+        public long VirtualMemorySize64 { get => throw null; }
+        public long WorkingSet64 { get => throw null; }
     }
 
     public sealed class SecurityProviderSnapshot
     {
         public string? Name { get => throw null; }
         public string? Path { get => throw null; }
-        public string? Status { get => throw null; }
         public string? State { get => throw null; }
         public string? StateTimestamp { get => throw null; }
+        public string? Status { get => throw null; }
     }
 
     public sealed class SecurityProvidersSnapshot
     {
-        public string? HealthStatus { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.SecurityProviderSnapshot> AntiSpyware { get => throw null; }
         public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.SecurityProviderSnapshot> Antivirus { get => throw null; }
         public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.SecurityProviderSnapshot> Firewall { get => throw null; }
-        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.SecurityProviderSnapshot> AntiSpyware { get => throw null; }
+        public string? HealthStatus { get => throw null; }
     }
 
     public sealed class SpecialFolderSnapshot
@@ -329,27 +329,27 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
 
     public sealed class ThreadPoolSnapshot
     {
-        public int ThreadCount { get => throw null; }
-        public int AvailableWorkerThreadCount { get => throw null; }
         public int AvailableCompletionPortThreadCount { get => throw null; }
-        public int MinWorkerThreadCount { get => throw null; }
+        public int AvailableWorkerThreadCount { get => throw null; }
+        public int MaxCompletionPortThreadCount { get => throw null; }
         public int MaxWorkerThreadCount { get => throw null; }
         public int MinCompletionPortThreadCount { get => throw null; }
-        public int MaxCompletionPortThreadCount { get => throw null; }
+        public int MinWorkerThreadCount { get => throw null; }
+        public int ThreadCount { get => throw null; }
     }
 
     public sealed class TimeZoneSnapshot
     {
+        public System.TimeSpan BaseUtcOffset { get => throw null; }
         public string Id { get => throw null; }
         public string StandardName { get => throw null; }
-        public System.TimeSpan BaseUtcOffset { get => throw null; }
         public bool SupportsDaylightSavingTime { get => throw null; }
     }
 
     public sealed class UserSnapshot
     {
-        public string UserName { get => throw null; }
         public string UserDomainName { get => throw null; }
         public bool UserInteractive { get => throw null; }
+        public string UserName { get => throw null; }
     }
 }

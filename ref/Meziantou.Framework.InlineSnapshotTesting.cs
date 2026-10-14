@@ -23,33 +23,33 @@ namespace Meziantou.Framework.InlineSnapshotTesting
     public static class HumanReadableSerializerScrubExtensions
     {
         public static void ScrubGuid(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
+        public static void ScrubJsonValue(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string jsonPath, System.Func<System.Text.Json.Nodes.JsonNode, System.Text.Json.Nodes.JsonNode?> scrubber) { }
+        public static void ScrubJsonValue(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string jsonPath, System.Func<System.Text.Json.Nodes.JsonNode, string?> scrubber) { }
         public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
         public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Collections.Generic.IEqualityComparer<T>? comparer) { }
-        public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<T, string> scrubber) { }
         public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<T, int, string> scrubber) { }
+        public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<T, string> scrubber) { }
         public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<T, int, string> scrubber, System.Collections.Generic.IEqualityComparer<T>? comparer) { }
         public static void ScrubXmlAttribute(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string xpath, System.Func<System.Xml.Linq.XAttribute, string?> scrubber) { }
         public static void ScrubXmlAttribute(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string xpath, System.Xml.IXmlNamespaceResolver? nsResolver, System.Func<System.Xml.Linq.XAttribute, string?> scrubber) { }
-        public static void ScrubXmlNode(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string xpath, System.Func<System.Xml.Linq.XNode, System.Xml.Linq.XNode?> scrubber) { }
         public static void ScrubXmlNode(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string xpath, System.Action<System.Xml.Linq.XNode> scrubber) { }
+        public static void ScrubXmlNode(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string xpath, System.Func<System.Xml.Linq.XNode, System.Xml.Linq.XNode?> scrubber) { }
         public static void ScrubXmlNode(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string xpath, System.Xml.IXmlNamespaceResolver? nsResolver, System.Func<System.Xml.Linq.XNode, System.Xml.Linq.XNode?> scrubber) { }
-        public static void ScrubJsonValue(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string jsonPath, System.Func<System.Text.Json.Nodes.JsonNode, string?> scrubber) { }
-        public static void ScrubJsonValue(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string jsonPath, System.Func<System.Text.Json.Nodes.JsonNode, System.Text.Json.Nodes.JsonNode?> scrubber) { }
-        public static void UseRelativeTimeSpan(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.TimeSpan origin) { }
         public static void UseRelativeDateTime(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.DateTime origin) { }
         public static void UseRelativeDateTimeOffset(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.DateTimeOffset origin) { }
+        public static void UseRelativeTimeSpan(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.TimeSpan origin) { }
     }
 
     public static class InlineSnapshot
     {
         public static void RegisterSourceRootMapping(string mappedPath, string realPath) { }
-        public static Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSettings(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings? settings) => throw null;
-        public static Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSettings(System.Action<Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings>? configure) => throw null;
-        public static Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSerializer(Meziantou.Framework.InlineSnapshotTesting.Serialization.SnapshotSerializer serializer) => throw null;
-        public static Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSerializer(Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? options) => throw null;
-        public static Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSerializer(System.Action<Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions>? configure) => throw null;
         public static void Validate(object? subject, string? expected = null, [System.Runtime.CompilerServices.CallerFilePath] string? filePath = null, [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = -1) { }
         public static void Validate(object? subject, Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings? settings, string? expected, [System.Runtime.CompilerServices.CallerFilePath] string? filePath = null, [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = -1) { }
+        public static Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSerializer(Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? options) => throw null;
+        public static Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSerializer(Meziantou.Framework.InlineSnapshotTesting.Serialization.SnapshotSerializer serializer) => throw null;
+        public static Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSerializer(System.Action<Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions>? configure) => throw null;
+        public static Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSettings(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings? settings) => throw null;
+        public static Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSettings(System.Action<Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings>? configure) => throw null;
     }
 
     [System.AttributeUsage(System.AttributeTargets.Method)]
@@ -67,11 +67,11 @@ namespace Meziantou.Framework.InlineSnapshotTesting
 
     public readonly struct InlineSnapshotBuilder
     {
-        public Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSettings(System.Action<Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings>? configure) => throw null;
-        public Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSerializer(Meziantou.Framework.InlineSnapshotTesting.Serialization.SnapshotSerializer serializer) => throw null;
-        public Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSerializer(Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? options) => throw null;
-        public Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSerializer(System.Action<Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions>? configure) => throw null;
         public void Validate(object? subject, string? expected = null, [System.Runtime.CompilerServices.CallerFilePath] string? filePath = null, [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = -1) { }
+        public Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSerializer(Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? options) => throw null;
+        public Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSerializer(Meziantou.Framework.InlineSnapshotTesting.Serialization.SnapshotSerializer serializer) => throw null;
+        public Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSerializer(System.Action<Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions>? configure) => throw null;
+        public Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder WithSettings(System.Action<Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings>? configure) => throw null;
     }
 
     public class InlineSnapshotException : System.Exception
@@ -82,27 +82,27 @@ namespace Meziantou.Framework.InlineSnapshotTesting
 
     public sealed class InlineSnapshotSettings : System.IEquatable<Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings>
     {
-        public static Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings Default { get => throw null; set { } }
-        public string? Indentation { get => throw null; set { } }
-        public string? EndOfLine { get => throw null; set { } }
-        public System.Text.Encoding? FileEncoding { get => throw null; set { } }
-        public bool AutoDetectContinuousEnvironment { get => throw null; set { } }
         public Meziantou.Framework.InlineSnapshotTesting.CSharpStringFormats AllowedStringFormats { get => throw null; set { } }
-        public Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy SnapshotUpdateStrategy { get => throw null; set { } }
-        public Meziantou.Framework.InlineSnapshotTesting.Serialization.SnapshotSerializer SnapshotSerializer { get => throw null; set { } }
-        public Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer SnapshotComparer { get => throw null; set { } }
+        public bool AutoDetectContinuousEnvironment { get => throw null; set { } }
+        public static Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings Default { get => throw null; set { } }
+        public string? EndOfLine { get => throw null; set { } }
         public Meziantou.Framework.InlineSnapshotTesting.AssertionMessageFormatter ErrorMessageFormatter { get => throw null; set { } }
-        public System.Collections.Generic.IList<Meziantou.Framework.InlineSnapshotTesting.Scrubber> Scrubbers { get => throw null; }
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.InlineSnapshotTesting.MergeTool>? MergeTools { get => throw null; set { } }
-        public bool ValidateSourceFilePathUsingPdbInfoWhenAvailable { get => throw null; set { } }
-        public bool ValidateLineNumberUsingPdbInfoWhenAvailable { get => throw null; set { } }
+        public System.Text.Encoding? FileEncoding { get => throw null; set { } }
         public bool ForceUpdateSnapshots { get => throw null; set { } }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings? left, Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings? left, Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public string? Indentation { get => throw null; set { } }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.InlineSnapshotTesting.MergeTool>? MergeTools { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.InlineSnapshotTesting.Scrubber> Scrubbers { get => throw null; }
+        public Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer SnapshotComparer { get => throw null; set { } }
+        public Meziantou.Framework.InlineSnapshotTesting.Serialization.SnapshotSerializer SnapshotSerializer { get => throw null; set { } }
+        public Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy SnapshotUpdateStrategy { get => throw null; set { } }
+        public bool ValidateLineNumberUsingPdbInfoWhenAvailable { get => throw null; set { } }
+        public bool ValidateSourceFilePathUsingPdbInfoWhenAvailable { get => throw null; set { } }
         public bool Equals(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings? left, Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings? left, Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings? right) => throw null;
     }
 
     public static class InlineSnapshotSettingsCloneExtensions
@@ -137,17 +137,21 @@ namespace Meziantou.Framework.InlineSnapshotTesting
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool BeyondCompare { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool Cursor { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool DeltaWalker { get => throw null; }
+        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool DiffToolFromEnvironmentVariable { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool Diffinity { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool ExamDiff { get => throw null; }
+        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool GitDiffTool { get => throw null; }
+        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool GitMergeTool { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool Guiffy { get => throw null; }
-        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool Kaleidoscope { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool KDiff3 { get => throw null; }
+        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool Kaleidoscope { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool Meld { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool MsExcelDiff { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool MsWordDiff { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool Neovim { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool P4Merge { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool Rider { get => throw null; }
+        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool RiderIfCurrentProcess { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool SublimeMerge { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool TkDiff { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool TortoiseGitIDiff { get => throw null; }
@@ -157,15 +161,11 @@ namespace Meziantou.Framework.InlineSnapshotTesting
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool Vim { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool VisualStudio { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool VisualStudioCode { get => throw null; }
-        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool VisualStudioMerge { get => throw null; }
-        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool WinMerge { get => throw null; }
-        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool RiderIfCurrentProcess { get => throw null; }
-        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool VisualStudioIfCurrentProcess { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool VisualStudioCodeIfCurrentProcess { get => throw null; }
+        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool VisualStudioIfCurrentProcess { get => throw null; }
+        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool VisualStudioMerge { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.MergeTool VisualStudioMergeIfCurrentProcess { get => throw null; }
-        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool DiffToolFromEnvironmentVariable { get => throw null; }
-        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool GitDiffTool { get => throw null; }
-        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool GitMergeTool { get => throw null; }
+        public static Meziantou.Framework.InlineSnapshotTesting.MergeTool WinMerge { get => throw null; }
         public abstract Meziantou.Framework.InlineSnapshotTesting.MergeToolResult? Start(string currentFilePath, string newFilePath);
     }
 
@@ -184,23 +184,23 @@ namespace Meziantou.Framework.InlineSnapshotTesting
     public abstract class SnapshotComparer
     {
         public static Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer Default { get => throw null; }
-        public virtual string? NormalizeValue(string? value) => throw null;
         public abstract bool AreEqual(string? actual, string? expected);
+        public virtual string? NormalizeValue(string? value) => throw null;
     }
 
     public abstract class SnapshotUpdateStrategy
     {
+        public static Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy Default { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy Disallow { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy MergeTool { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy MergeToolSync { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy Overwrite { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy OverwriteWithoutFailure { get => throw null; }
-        public static Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy Default { get => throw null; }
         public virtual bool ReuseTemporaryFile { get => throw null; }
         public abstract bool CanUpdateSnapshot(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, string path, string? expectedSnapshot, string? actualSnapshot);
-        public abstract void UpdateFile(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, string targetFile, string tempFile);
         public abstract bool MustReportError(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, string path);
         public override string ToString() => throw null;
+        public abstract void UpdateFile(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, string targetFile, string tempFile);
     }
 }
 namespace Meziantou.Framework.InlineSnapshotTesting.Serialization

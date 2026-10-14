@@ -276,7 +276,13 @@ internal static class Vp8LTransforms
         var distanceToTop = AbsoluteDifference(left, topLeft, 0) + AbsoluteDifference(left, topLeft, 8) + AbsoluteDifference(left, topLeft, 16) + AbsoluteDifference(left, topLeft, 24);
         return distanceToLeft < distanceToTop ? left : top;
 
-        static int AbsoluteDifference(uint a, uint b, int shift) => Math.Abs((int)((a >> shift) & 0xFF) - (int)((b >> shift) & 0xFF));
+        // Branch-free: the sign of the difference is a mask (Math.Abs compiles to unpredictable branches here)
+        static int AbsoluteDifference(uint a, uint b, int shift)
+        {
+            var difference = (int)((a >> shift) & 0xFF) - (int)((b >> shift) & 0xFF);
+            var sign = difference >> 31;
+            return (difference + sign) ^ sign;
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

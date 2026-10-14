@@ -139,6 +139,63 @@ public sealed class HevcForwardTransformTests
     }
 
     [Fact]
+    public void TheBasesOfTheEvenCoefficientsAreSymmetricAndTheOthersAntisymmetric()
+    {
+        // The even and odd decomposition of the forward transform relies on it: the value of the coefficient k at the sample
+        // nTbS - 1 - i is ( -1 )^k times its value at the sample i
+        for (var log2TrafoSize = 2; log2TrafoSize <= 5; log2TrafoSize++)
+        {
+            var nTbS = 1 << log2TrafoSize;
+            var basis = HevcForwardTransform.GetDctBasis(log2TrafoSize);
+            for (var k = 0; k < nTbS; k++)
+            {
+                for (var i = 0; i < nTbS; i++)
+                {
+                    var mirrored = basis[(k * nTbS) + nTbS - 1 - i];
+                    Assert.Equal(basis[(k * nTbS) + i], (k & 1) is 0 ? mirrored : -mirrored);
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    public void TheEvenAndOddDecompositionGivesTheFullMatrixProducts(int bitDepth)
+    {
+        var random = new Random(bitDepth);
+        var maxValue = (1 << bitDepth) - 1;
+        for (var log2TrafoSize = 2; log2TrafoSize <= 5; log2TrafoSize++)
+        {
+            var count = 1 << (log2TrafoSize << 1);
+            var residual = new int[count];
+            var expected = new int[count];
+            var actual = new int[count];
+            for (var iteration = 0; iteration < 200; iteration++)
+            {
+                // Random residuals, sparse ones, constant ones and the extremes of the bit depth
+                var kind = iteration % 5;
+                for (var i = 0; i < count; i++)
+                {
+                    residual[i] = kind switch
+                    {
+                        0 => random.Next(-maxValue, maxValue + 1),
+                        1 => random.Next(8) is 0 ? random.Next(-maxValue, maxValue + 1) : 0,
+                        2 => iteration % 2 is 0 ? maxValue : -maxValue,
+                        3 => random.Next(2) is 0 ? maxValue : -maxValue,
+                        _ => random.Next(-4, 5),
+                    };
+                }
+
+                HevcForwardTransform.ForwardFullMatrix(residual, expected, log2TrafoSize, HevcForwardTransform.GetDctBasis(log2TrafoSize), bitDepth);
+                HevcForwardTransform.Forward(residual, actual, log2TrafoSize, trType: 0, bitDepth);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
     public void TheCoefficientsHaveTheEnergyOfTheResidualTimesTheGain()
     {
         // 2^( 30 - 2 * bitDepth - 2 * Log2( nTbS ) ): 2^10 for a 4x4 block of 8-bit samples, 2^-4 for a 32x32 block of

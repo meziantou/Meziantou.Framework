@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -49,15 +50,81 @@ internal static class HevcForwardTransform
     /// <param name="log2TrafoSize">The base 2 logarithm of <c>nTbS</c>: 2 to 5.</param>
     /// <param name="trType">The transform type: 1 for the discrete sine transform of a 4x4 block, otherwise 0.</param>
     /// <param name="bitDepth">The bit depth of the samples.</param>
+    [SkipLocalsInit]
     public static void Forward(ReadOnlySpan<int> residual, Span<int> coefficients, int log2TrafoSize, int trType, int bitDepth)
     {
         Debug.Assert(log2TrafoSize is >= 2 and <= 5);
         Debug.Assert(trType is 0 || log2TrafoSize is 2);
-        var nTbS = 1 << log2TrafoSize;
-        ReadOnlySpan<int> basis = trType is 1 ? DstBasis : DctBases[log2TrafoSize - 2];
+        if (trType is 1)
+        {
+            ForwardFullMatrix(residual, coefficients, log2TrafoSize, DstBasis, bitDepth);
+            return;
+        }
 
-        // The rows: the horizontal coefficient k of each row of the residual. The sums are exact: a residual sample has
-        // at most 14 bits, a value of a basis 20 bits, and a row at most 32 samples
+        // The basis of an even coefficient k is symmetric and the one of an odd coefficient antisymmetric, exactly (the
+        // tests check it): the products of the samples i and nTbS - 1 - i share their basis value, so that each half of
+        // the coefficients is the product of half of the bases by the sums or by the differences of the pairs of samples.
+        // The sums of products are the same integers as those of the full matrix products (ForwardFullMatrix).
+        var nTbS = 1 << log2TrafoSize;
+        var half = nTbS >> 1;
+        ReadOnlySpan<int> basis = DctBases[log2TrafoSize - 2];
+
+        // The rows: the horizontal coefficient k of each row of the residual. The sums are exact: a residual sample is the
+        // difference of two samples of at most 16 bits, a value of a basis has 20 bits, and a row at most 32 samples. Every
+        // value is written before it is read
+        Span<long> intermediate = unsafe(stackalloc long[nTbS * nTbS]);
+        Span<int> sums = unsafe(stackalloc int[half]);
+        Span<int> differences = unsafe(stackalloc int[half]);
+        for (var y = 0; y < nTbS; y++)
+        {
+            var row = residual.Slice(y * nTbS, nTbS);
+            for (var i = 0; i < half; i++)
+            {
+                Debug.Assert(Math.Abs(row[i]) <= ushort.MaxValue && Math.Abs(row[nTbS - 1 - i]) <= ushort.MaxValue);
+                sums[i] = row[i] + row[nTbS - 1 - i];
+                differences[i] = row[i] - row[nTbS - 1 - i];
+            }
+
+            var output = intermediate.Slice(y * nTbS, nTbS);
+            for (var k = 0; k < nTbS; k += 2)
+            {
+                output[k] = Dot(sums, basis.Slice(k * nTbS, half));
+                output[k + 1] = Dot(differences, basis.Slice((k + 1) * nTbS, half));
+            }
+        }
+
+        // The columns, then the scale: the bases have BasisBits fractional bits and a factor 64 * 64 * nTbS each, and the
+        // inverse process divides by 2^( 27 - bitDepth )
+        var shift = (2 * BasisBits) + (2 * log2TrafoSize) + bitDepth - 3;
+        Span<long> columnSums = unsafe(stackalloc long[half]);
+        Span<long> columnDifferences = unsafe(stackalloc long[half]);
+        for (var k = 0; k < nTbS; k++)
+        {
+            for (var y = 0; y < half; y++)
+            {
+                var top = intermediate[(y * nTbS) + k];
+                var bottom = intermediate[((nTbS - 1 - y) * nTbS) + k];
+                columnSums[y] = top + bottom;
+                columnDifferences[y] = top - bottom;
+            }
+
+            for (var j = 0; j < nTbS; j += 2)
+            {
+                coefficients[(j * nTbS) + k] = Scale(Dot(columnSums, basis.Slice(j * nTbS, half)), shift);
+                coefficients[((j + 1) * nTbS) + k] = Scale(Dot(columnDifferences, basis.Slice((j + 1) * nTbS, half)), shift);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The transform of <see cref="Forward"/> as two full matrix products: the transform of the discrete sine transform,
+    /// and the reference of the even and odd decomposition of the other ones.
+    /// </summary>
+    internal static void ForwardFullMatrix(ReadOnlySpan<int> residual, Span<int> coefficients, int log2TrafoSize, ReadOnlySpan<int> basis, int bitDepth)
+    {
+        var nTbS = 1 << log2TrafoSize;
+
+        // The rows: the horizontal coefficient k of each row of the residual
         Span<long> intermediate = stackalloc long[nTbS * nTbS];
         for (var y = 0; y < nTbS; y++)
         {
@@ -68,8 +135,7 @@ internal static class HevcForwardTransform
             }
         }
 
-        // The columns, then the scale: the bases have BasisBits fractional bits and a factor 64 * 64 * nTbS each, and the
-        // inverse process divides by 2^( 27 - bitDepth )
+        // The columns, then the scale
         var shift = (2 * BasisBits) + (2 * log2TrafoSize) + bitDepth - 3;
         Span<long> column = stackalloc long[nTbS];
         for (var k = 0; k < nTbS; k++)
@@ -81,11 +147,16 @@ internal static class HevcForwardTransform
 
             for (var j = 0; j < nTbS; j++)
             {
-                var value = Round(Dot(column, basis.Slice(j * nTbS, nTbS)), shift);
-                coefficients[(j * nTbS) + k] = (int)Math.Clamp(value, HevcInverseTransform.CoeffMin, HevcInverseTransform.CoeffMax);
+                coefficients[(j * nTbS) + k] = Scale(Dot(column, basis.Slice(j * nTbS, nTbS)), shift);
             }
         }
     }
+
+    /// <summary>Returns the forward basis of the discrete cosine transform of a size: the value of the coefficient <c>k</c> at the sample <c>i</c> is at <c>( k * nTbS ) + i</c>.</summary>
+    internal static ReadOnlySpan<int> GetDctBasis(int log2TrafoSize) => DctBases[log2TrafoSize - 2];
+
+    /// <summary>Returns the forward basis of the discrete sine transform of a 4x4 block.</summary>
+    internal static ReadOnlySpan<int> GetDstBasis() => DstBasis;
 
     /// <summary>
     /// Scales the residual samples of a transform block that skips the transform into scaled transform coefficients
@@ -191,6 +262,8 @@ internal static class HevcForwardTransform
 
         return sum;
     }
+
+    private static int Scale(long sum, int shift) => (int)Math.Clamp(Round(sum, shift), HevcInverseTransform.CoeffMin, HevcInverseTransform.CoeffMax);
 
     // To the nearest integer, halves away from zero: the transform of the opposite of a residual is the opposite of its
     // transform

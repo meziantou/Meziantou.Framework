@@ -517,24 +517,34 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
     private ParseStatus ReadBinaryRaster(ReadOnlySpan<byte> buffer, ref int consumed)
     {
         var storedRowLength = _header.StoredRowLength;
-        while (_rowIndex < _header.Height)
+
+        // One lease of the frame for the rows of this call, taken when the first of them is complete
+        var lease = default(PixelLease);
+        try
         {
-            var remaining = buffer[consumed..];
-            if (remaining.IsEmpty)
-                return ParseStatus.NeedMoreData(1);
+            while (_rowIndex < _header.Height)
+            {
+                var remaining = buffer[consumed..];
+                if (remaining.IsEmpty)
+                    return ParseStatus.NeedMoreData(1);
 
-            var take = Math.Min(remaining.Length, storedRowLength - _storedFilled);
-            remaining[..take].CopyTo(_storedRow!.Span[_storedFilled..]);
-            _storedFilled += take;
-            consumed += take;
-            if (_storedFilled < storedRowLength)
-                continue;
+                var take = Math.Min(remaining.Length, storedRowLength - _storedFilled);
+                remaining[..take].CopyTo(_storedRow!.Span[_storedFilled..]);
+                _storedFilled += take;
+                consumed += take;
+                if (_storedFilled < storedRowLength)
+                    continue;
 
-            _storedFilled = 0;
-            EmitRow();
+                _storedFilled = 0;
+                EmitRow(ref lease);
+            }
+
+            return ParseStatus.Complete;
         }
-
-        return ParseStatus.Complete;
+        finally
+        {
+            lease.Dispose();
+        }
     }
 
     private ParseStatus ReadPlainRaster(ReadOnlySpan<byte> buffer, bool isEndOfInput, ref int consumed)
@@ -661,11 +671,30 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
 
     private void EmitRow()
     {
+        var lease = default(PixelLease);
+        try
+        {
+            EmitRow(ref lease);
+        }
+        finally
+        {
+            lease.Dispose();
+        }
+    }
+
+    /// <summary>Emits the stored row through a lease of the frame, taken on the first row a parser call emits.</summary>
+    private void EmitRow(scoped ref PixelLease lease)
+    {
         if (_walk == StructureWalk.Decode)
         {
             var source = _sourceRow!.Span[..(_header.Width * PixelFormats.GetBytesPerPixel(_header.PixelFormat))];
             _expander!.ExpandRow(_storedRow!.Span[.._header.StoredRowLength], source);
-            _decoder!.WriteRow(_rowIndex, source);
+            if (!lease.IsActive)
+            {
+                lease = _decoder!.LeaseRows();
+            }
+
+            _decoder!.WriteRow(lease, _rowIndex, source);
         }
 
         _rowIndex++;

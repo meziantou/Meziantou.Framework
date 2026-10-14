@@ -269,6 +269,9 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
         var pixel = _pixel;
         var x = _x;
         var i = consumed;
+
+        // One lease of the frame for the rows of this call, taken when the first of them is complete
+        var lease = default(PixelLease);
         try
         {
             while (true)
@@ -284,7 +287,12 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
 
                 if (x == width)
                 {
-                    _decoder!.WriteRow(_y, row);
+                    if (!lease.IsActive)
+                    {
+                        lease = _decoder!.LeaseRows();
+                    }
+
+                    _decoder!.WriteRow(lease, _y, row);
                     _y++;
                     x = 0;
                     if (_y == Height)
@@ -391,6 +399,7 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
         }
         finally
         {
+            lease.Dispose();
             _pixel = pixel;
             _x = x;
             Advance(ref consumed, i - consumed);

@@ -1,5 +1,7 @@
+using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -308,49 +310,94 @@ internal sealed class TiffBlockReader : IDisposable
     {
         var rowLength = _page.BlockRowLength;
         var samplesPerPixel = _page.SamplesPerPixel;
+        var is8Bit = _page.BitsPerSample == 8;
+        var bigEndian = _page.IsBigEndian;
         for (var row = 0; row < rowCount; row++)
         {
             var line = block.Slice(row * rowLength, rowLength);
-            if (_page.BitsPerSample == 8)
+            if (is8Bit)
             {
-                for (var i = samplesPerPixel; i < line.Length; i++)
-                {
-                    line[i] += line[i - samplesPerPixel];
-                }
+                // Each sample adds the sample of the same channel on its left: the PNG Sub filter with one pixel of samples
+                PngFilters.Unfilter(PngFilters.Sub, line, line, samplesPerPixel);
             }
             else
             {
-                // 16-bit samples are stored in the byte order of the file; the differences are between the 16-bit values
-                var count = line.Length / 2;
-                for (var i = samplesPerPixel; i < count; i++)
-                {
-                    var previous = ReadSample(line, i - samplesPerPixel);
-                    WriteSample(line, i, (ushort)(ReadSample(line, i) + previous));
-                }
+                UndoDifferencing16(line, samplesPerPixel, bigEndian);
             }
         }
     }
 
-    private ushort ReadSample(ReadOnlySpan<byte> line, int index)
+    /// <summary>
+    /// Undoes the horizontal differencing of one row of 16-bit samples, stored in the byte order of the file: each sample
+    /// adds the sample of the same channel on its left, modulo 2^16.
+    /// </summary>
+    /// <remarks>
+    /// With 128-bit hardware vectors, pixels of one to four samples are reconstructed one pixel per step in 16-bit lanes
+    /// (the bytes of big-endian samples are swapped around the addition); the bytes after the last whole vector go through
+    /// <see cref="UndoDifferencing16Scalar(Span{byte}, int, bool)"/>, the reference.
+    /// </remarks>
+    internal static void UndoDifferencing16(Span<byte> line, int samplesPerPixel, bool bigEndian)
     {
-        var offset = index * 2;
-        return _page.IsBigEndian
-            ? (ushort)((line[offset] << 8) | line[offset + 1])
-            : (ushort)((line[offset + 1] << 8) | line[offset]);
+        var start = 0;
+        var pixelBytes = samplesPerPixel * sizeof(ushort);
+        if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian && samplesPerPixel is >= 1 and <= 4 && line.Length >= Vector128<byte>.Count)
+        {
+            var swap = Vector128.Create((byte)1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
+            var left = Vector128<ushort>.Zero;
+            var last = line.Length - Vector128<byte>.Count;
+            for (; start <= last; start += pixelBytes)
+            {
+                var samples = Vector128.Create(line[start..]);
+                if (bigEndian)
+                {
+                    samples = Vector128.Shuffle(samples, swap);
+                }
+
+                left += samples.AsUInt16();
+                var pixel = bigEndian ? Vector128.Shuffle(left.AsByte(), swap) : left.AsByte();
+                var target = line[start..];
+                switch (pixelBytes)
+                {
+                    case 2:
+                        BinaryPrimitives.WriteUInt16LittleEndian(target, pixel.AsUInt16().ToScalar());
+                        break;
+                    case 4:
+                        BinaryPrimitives.WriteUInt32LittleEndian(target, pixel.AsUInt32().ToScalar());
+                        break;
+                    case 6:
+                        BinaryPrimitives.WriteUInt32LittleEndian(target, pixel.AsUInt32().ToScalar());
+                        BinaryPrimitives.WriteUInt16LittleEndian(target[4..], pixel.AsUInt16().GetElement(2));
+                        break;
+                    default:
+                        BinaryPrimitives.WriteUInt64LittleEndian(target, pixel.AsUInt64().ToScalar());
+                        break;
+                }
+            }
+        }
+
+        UndoDifferencing16Scalar(line, samplesPerPixel, bigEndian, start / sizeof(ushort));
     }
 
-    private void WriteSample(Span<byte> line, int index, ushort value)
+    /// <summary>The sample-at-a-time reference of <see cref="UndoDifferencing16"/>.</summary>
+    internal static void UndoDifferencing16Scalar(Span<byte> line, int samplesPerPixel, bool bigEndian)
+        => UndoDifferencing16Scalar(line, samplesPerPixel, bigEndian, start: 0);
+
+    /// <summary>Reconstructs the samples of a row from <paramref name="start"/> (a pixel boundary); the samples before it are already reconstructed.</summary>
+    private static void UndoDifferencing16Scalar(Span<byte> line, int samplesPerPixel, bool bigEndian, int start)
     {
-        var offset = index * 2;
-        if (_page.IsBigEndian)
+        var count = line.Length / 2;
+        for (var i = Math.Max(start, samplesPerPixel); i < count; i++)
         {
-            line[offset] = (byte)(value >> 8);
-            line[offset + 1] = (byte)value;
-        }
-        else
-        {
-            line[offset] = (byte)value;
-            line[offset + 1] = (byte)(value >> 8);
+            var offset = i * 2;
+            var previousOffset = (i - samplesPerPixel) * 2;
+            if (bigEndian)
+            {
+                BinaryPrimitives.WriteUInt16BigEndian(line[offset..], (ushort)(BinaryPrimitives.ReadUInt16BigEndian(line[offset..]) + BinaryPrimitives.ReadUInt16BigEndian(line[previousOffset..])));
+            }
+            else
+            {
+                BinaryPrimitives.WriteUInt16LittleEndian(line[offset..], (ushort)(BinaryPrimitives.ReadUInt16LittleEndian(line[offset..]) + BinaryPrimitives.ReadUInt16LittleEndian(line[previousOffset..])));
+            }
         }
     }
 

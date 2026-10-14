@@ -304,6 +304,45 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void TiffSixteenBitDifferencingMatchesTheScalarReference()
+    {
+        var random = new Random(41);
+        foreach (var samplesPerPixel in new[] { 1, 2, 3, 4, 5 })
+        {
+            foreach (var pixels in new[] { 1, 2, 3, 5, 8, 9, 16, 17, 33, 100 })
+            {
+                foreach (var bigEndian in new[] { false, true })
+                {
+                    var line = new byte[pixels * samplesPerPixel * 2];
+                    for (var round = 0; round < 4; round++)
+                    {
+                        // Random differences, and extremes whose sums wrap around
+                        random.NextBytes(line);
+                        if (round == 1)
+                        {
+                            line.AsSpan().Fill(0xFF);
+                        }
+                        else if (round == 2)
+                        {
+                            for (var i = 0; i < line.Length; i++)
+                            {
+                                line[i] = (i & 2) == 0 ? (byte)0xFF : (byte)0x80;
+                            }
+                        }
+
+                        var expected = line.ToArray();
+                        var actual = line.ToArray();
+                        TiffBlockReader.UndoDifferencing16Scalar(expected, samplesPerPixel, bigEndian);
+                        TiffBlockReader.UndoDifferencing16(actual, samplesPerPixel, bigEndian);
+                        Assert.Equal(expected, actual);
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegInverseDctMatchesTheScalarReferenceBitForBit()
     {
         var random = new Random(20);

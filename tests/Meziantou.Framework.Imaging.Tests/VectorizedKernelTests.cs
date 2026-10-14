@@ -2700,6 +2700,52 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1RestorationSearchSumsMatchTheScalarReferences()
+    {
+        // Rows of every length around the vector size, of random and extreme 12-bit samples, and filtered rows of values
+        // up to the range of the horizontal Wiener filter of 12-bit samples
+        var random = new Random(11);
+        int[] lengths = [0, 1, 3, 4, 5, 7, 8, 9, 63, 64, 65, 256, 300];
+        foreach (var length in lengths)
+        {
+            for (var round = 0; round < 6; round++)
+            {
+                var row = new ushort[length + 6];
+                var target = new ushort[length];
+                for (var i = 0; i < row.Length; i++)
+                {
+                    row[i] = round % 2 == 0 ? (ushort)random.Next(4096) : (ushort)(random.Next(2) * 4095);
+                }
+
+                for (var i = 0; i < target.Length; i++)
+                {
+                    target[i] = round % 2 == 0 ? (ushort)random.Next(4096) : (ushort)(random.Next(2) * 4095);
+                }
+
+                var expected = new long[9];
+                var actual = new long[9];
+                expected.AsSpan().Fill(round);
+                actual.AsSpan().Fill(round);
+                Av1RestorationSearch.AccumulateHorizontalScalar(row, target, expected);
+                Av1RestorationSearch.AccumulateHorizontal(row, target, actual);
+                Assert.Equal(expected, actual);
+
+                var stride = length + random.Next(3);
+                var rows = new int[(7 * stride) + 1];
+                for (var i = 0; i < rows.Length; i++)
+                {
+                    rows[i] = round % 2 == 0 ? random.Next(-(1 << 22), 1 << 22) : (random.Next(2) == 0 ? -(1 << 22) : (1 << 22) - 1);
+                }
+
+                Av1RestorationSearch.AccumulateVerticalScalar(rows, stride, target, expected);
+                Av1RestorationSearch.AccumulateVertical(rows, stride, target, actual);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1EncoderKernelsMatchTheScalarReferences()
     {
         // Rows of every length around the vector sizes, longer than a chunk of the 32-bit sums, of random and extreme 12-bit

@@ -50,6 +50,11 @@ internal static class IccBlackPoint
     public static IccStage? CreateCompensation(double sourceLightness, IccProfileModel destination, IccRenderingIntent intent)
         => GetDestinationLightness(destination, intent) is { } destinationLightness ? CreateCompensation(sourceLightness, destinationLightness) : null;
 
+    /// <summary>Creates the compensation stage on CIEXYZ relative to D50, for a destination whose black is no light: a display described by a CICP color space.</summary>
+    /// <returns>The stage, or <see langword="null"/> when the black of the source is no light either.</returns>
+    public static IccStage? CreateCompensationToBlack(IccProfileModel source, IccRenderingIntent intent)
+        => CreateCompensation(GetBlackPoint(source, intent).L, destinationLightness: 0);
+
     private static IccMatrixStage? CreateCompensation(double sourceLightness, double destinationLightness)
     {
         var sourceBlack = DecodeLightness(sourceLightness);

@@ -52,7 +52,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// <b>Linear light.</b> When the paint is combined in linear light (<see cref="DrawingSource.Transfer"/>), every
 /// color sample of the paint and of the pixel is decoded by the function of those transfer characteristics
-/// (<see cref="CicpTransfer"/>; sRGB for an image that declares no function), the
+/// (<see cref="CicpTransfer"/>; sRGB for an image that declares no function), or by the tone curve of its channel in
+/// the ICC profile of the image (<see cref="DrawingSource.Curves"/>), the
 /// blend mode and the operator are applied to the decoded colors with the formulas above, in double precision, and
 /// the color of the result is encoded and rounded to a sample as <c>floor(M v + 1/2 + 2^-20)</c>. The alpha is not a
 /// color: with <c>k = q / Q</c> and the factors as fractions of one, <c>S = k fa sa</c>,
@@ -194,7 +195,7 @@ internal static class DrawingKernels
     internal static void Composite<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst = false)
         where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
     {
-        if (source.Transfer != 0)
+        if (source.IsLinearLight)
         {
             CompositeLinear(samples, channels, coverage, source, isBlueFirst);
             return;
@@ -454,7 +455,30 @@ internal static class DrawingKernels
         var maxSample = int.CreateTruncating(TSample.MaxValue);
         var max = (double)maxSample;
         var transfer = source.Transfer;
-        var decode = maxSample == byte.MaxValue ? CicpTransfer.GetDecode8(transfer) : CicpTransfer.GetDecode16(transfer);
+        var curves = source.Curves;
+
+        // The light of every sample, for red (or gray), green and blue: one function of the transfer characteristics,
+        // or the tone curve of each channel of an ICC profile
+        ReadOnlySpan<double> decodeRed;
+        ReadOnlySpan<double> decodeGreen;
+        ReadOnlySpan<double> decodeBlue;
+        if (curves is null)
+        {
+            decodeRed = decodeGreen = decodeBlue = maxSample == byte.MaxValue ? CicpTransfer.GetDecode8(transfer) : CicpTransfer.GetDecode16(transfer);
+        }
+        else if (maxSample == byte.MaxValue)
+        {
+            decodeRed = curves.GetDecode8(0);
+            decodeGreen = curves.GetDecode8(1);
+            decodeBlue = curves.GetDecode8(2);
+        }
+        else
+        {
+            decodeRed = curves.GetDecode16(0);
+            decodeGreen = curves.GetDecode16(1);
+            decodeBlue = curves.GetDecode16(2);
+        }
+
         var colorChannels = channels == 4 ? 3 : channels;
         var mode = source.Mode;
         var blend = source.Blend;
@@ -504,17 +528,17 @@ internal static class DrawingKernels
 
             if (colorChannels == 1)
             {
-                s[0] = s[1] = s[2] = decode[paint[0]];
-                d[0] = d[1] = d[2] = decode[int.CreateTruncating(pixel[0])];
+                s[0] = s[1] = s[2] = decodeRed[paint[0]];
+                d[0] = d[1] = d[2] = decodeRed[int.CreateTruncating(pixel[0])];
             }
             else
             {
-                s[0] = decode[paint[red]];
-                s[1] = decode[paint[1]];
-                s[2] = decode[paint[blue]];
-                d[0] = decode[int.CreateTruncating(pixel[red])];
-                d[1] = decode[int.CreateTruncating(pixel[1])];
-                d[2] = decode[int.CreateTruncating(pixel[blue])];
+                s[0] = decodeRed[paint[red]];
+                s[1] = decodeGreen[paint[1]];
+                s[2] = decodeBlue[paint[blue]];
+                d[0] = decodeRed[int.CreateTruncating(pixel[red])];
+                d[1] = decodeGreen[int.CreateTruncating(pixel[1])];
+                d[2] = decodeBlue[int.CreateTruncating(pixel[blue])];
             }
 
             var sourceAlpha = paintAlpha / max;
@@ -552,13 +576,13 @@ internal static class DrawingKernels
                 // No alpha to store: the color of the result over black
                 if (colorChannels == 1)
                 {
-                    pixel[0] = ToSample((s[0] * sourceWeight) + (d[0] * destinationWeight), max, transfer);
+                    pixel[0] = ToSample((s[0] * sourceWeight) + (d[0] * destinationWeight), max, transfer, curves, 0);
                 }
                 else
                 {
-                    pixel[red] = ToSample((s[0] * sourceWeight) + (d[0] * destinationWeight), max, transfer);
-                    pixel[1] = ToSample((s[1] * sourceWeight) + (d[1] * destinationWeight), max, transfer);
-                    pixel[blue] = ToSample((s[2] * sourceWeight) + (d[2] * destinationWeight), max, transfer);
+                    pixel[red] = ToSample((s[0] * sourceWeight) + (d[0] * destinationWeight), max, transfer, curves, 0);
+                    pixel[1] = ToSample((s[1] * sourceWeight) + (d[1] * destinationWeight), max, transfer, curves, 1);
+                    pixel[blue] = ToSample((s[2] * sourceWeight) + (d[2] * destinationWeight), max, transfer, curves, 2);
                 }
 
                 continue;
@@ -576,16 +600,16 @@ internal static class DrawingKernels
                 continue;
             }
 
-            pixel[red] = ToSample(((s[0] * sourceWeight) + (d[0] * destinationWeight)) / total, max, transfer);
-            pixel[1] = ToSample(((s[1] * sourceWeight) + (d[1] * destinationWeight)) / total, max, transfer);
-            pixel[blue] = ToSample(((s[2] * sourceWeight) + (d[2] * destinationWeight)) / total, max, transfer);
+            pixel[red] = ToSample(((s[0] * sourceWeight) + (d[0] * destinationWeight)) / total, max, transfer, curves, 0);
+            pixel[1] = ToSample(((s[1] * sourceWeight) + (d[1] * destinationWeight)) / total, max, transfer, curves, 1);
+            pixel[blue] = ToSample(((s[2] * sourceWeight) + (d[2] * destinationWeight)) / total, max, transfer, curves, 2);
             pixel[3] = TSample.CreateTruncating(alpha >= max ? max : alpha);
         }
 
         // The encoding is clipped to the samples, and a value that is not a number is zero
-        static TSample ToSample(double linear, double max, byte transfer)
+        static TSample ToSample(double linear, double max, byte transfer, LinearLightCurves? curves, int channel)
         {
-            var encoded = CicpTransfer.Encode(transfer, linear);
+            var encoded = curves is null ? CicpTransfer.Encode(transfer, linear) : curves.Encode(channel, linear);
             var rounded = Math.Floor((encoded * max) + 0.5 + (1.0 / 1048576));
             return TSample.CreateTruncating(rounded >= max ? max : rounded > 0 ? rounded : 0);
         }

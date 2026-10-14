@@ -126,11 +126,10 @@ internal static class PublicApiModelBuilder
     private static string BuildAssemblyAttributesSource(IEnumerable<CustomAttributeData> attributes)
     {
         var sb = new StringBuilder();
-        foreach (var attribute in attributes.Where(IsRequiresPreviewFeaturesAttribute))
+        foreach (var attribute in SortAttributes(attributes.Where(IsRequiresPreviewFeaturesAttribute)))
         {
             sb.Append("[assembly: ");
-            sb.Append(BuildAttributeName(attribute.AttributeType));
-            sb.Append(BuildAttributeArguments(attribute));
+            sb.Append(attribute);
             sb.AppendLine("]");
         }
 
@@ -204,45 +203,42 @@ internal static class PublicApiModelBuilder
 
     private static void AppendMembers(StringBuilder sb, Type type, int indentationLevel, bool isUnionDeclaration)
     {
-        var members = new List<string>();
+        var members = new List<(MemberSortKey SortKey, string Text)>();
 
         foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
                      .Where(IsExternallyVisible)
-                     .Where(static field => !field.IsSpecialName)
-                     .OrderBy(static field => field.MetadataToken))
+                     .Where(static field => !field.IsSpecialName))
         {
-            members.Add(BuildField(field, indentationLevel));
+            members.Add((new MemberSortKey(MemberSortKind.Field, field.Name), BuildField(field, indentationLevel)));
         }
 
         foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
-                     .Where(IsExternallyVisible)
-                     .OrderBy(static property => property.MetadataToken))
+                     .Where(IsExternallyVisible))
         {
             if (isUnionDeclaration && IsGeneratedUnionValueProperty(property))
                 continue;
 
-            members.Add(BuildProperty(property, indentationLevel));
+            var indexParameters = GetIndexParameters(property);
+            var sortKey = new MemberSortKey(MemberSortKind.Property, property.Name, parameterCount: indexParameters.Length, signature: GetSignatureSortText(indexParameters));
+            members.Add((sortKey, BuildProperty(property, indentationLevel)));
         }
 
         foreach (var @event in type.GetEvents(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
-                     .Where(IsExternallyVisible)
-                     .OrderBy(static @event => @event.MetadataToken))
+                     .Where(IsExternallyVisible))
         {
-            members.Add(BuildEvent(@event, indentationLevel));
+            members.Add((new MemberSortKey(MemberSortKind.Event, @event.Name), BuildEvent(@event, indentationLevel)));
         }
 
-        // Constructors and methods are written in metadata order
-        var methodMembers = new List<(int MetadataToken, string Text)>();
         foreach (var constructor in type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
                      .Where(IsExternallyVisible))
         {
             if (isUnionDeclaration && IsGeneratedUnionCaseConstructor(constructor))
                 continue;
 
-            var constructorText = BuildConstructor(constructor, indentationLevel);
+            var constructorText = BuildConstructor(constructor, indentationLevel, out var sortKey);
             if (constructorText is not null)
             {
-                methodMembers.Add((constructor.MetadataToken, constructorText));
+                members.Add((sortKey, constructorText));
             }
         }
 
@@ -260,20 +256,34 @@ internal static class PublicApiModelBuilder
             if (extensionPropertyAccessors.Contains(method))
                 continue;
 
-            methodMembers.Add((method.MetadataToken, BuildMethod(method, indentationLevel)));
+            var methodText = BuildMethod(method, indentationLevel, out var sortKey);
+            members.Add((sortKey, methodText));
         }
 
-        members.AddRange(methodMembers.OrderBy(static member => member.MetadataToken).Select(static member => member.Text));
-
-        foreach (var extensionPropertyBlock in extensionPropertyBlocks.OrderBy(static block => block.Order))
+        // The members are sorted as the metadata reader does, so the output does not depend on the order of the declarations.
+        // The members that the sort key cannot tell apart (e.g. methods that only differ by a custom modifier) are sorted by text.
+        foreach (var (_, text) in members.OrderBy(static member => member.SortKey, MemberSortKey.Comparer).ThenBy(static member => member.Text, StringComparer.Ordinal))
         {
-            members.Add(extensionPropertyBlock.Content);
+            sb.Append(text);
         }
 
-        for (var i = 0; i < members.Count; i++)
+        foreach (var extensionPropertyBlock in extensionPropertyBlocks
+                     .OrderBy(static block => block.ReceiverType, StringComparer.Ordinal)
+                     .ThenBy(static block => block.PropertyName, StringComparer.Ordinal)
+                     .ThenBy(static block => block.Content, StringComparer.Ordinal))
         {
-            sb.Append(members[i]);
+            sb.Append(extensionPropertyBlock.Content);
         }
+    }
+
+    private static ParameterInfo[] GetIndexParameters(PropertyInfo property)
+    {
+        return property.GetMethod?.GetParameters() ?? property.SetMethod?.GetParameters().SkipLast(1).ToArray() ?? [];
+    }
+
+    private static string GetSignatureSortText(ParameterInfo[] parameters)
+    {
+        return string.Join(", ", parameters.Select(static parameter => BuildParameterDeclaration(parameter, isExtensionReceiver: false).SortText));
     }
 
     private static string BuildDelegate(Type type, int indentationLevel)
@@ -305,12 +315,13 @@ internal static class PublicApiModelBuilder
         AppendIndentedLine(sb, indentationLevel, $"{GetTypeAccessibility(type)}{(HidesInheritedMember(type) ? " new" : string.Empty)} enum {EscapeIdentifier(type.Name)}{baseTypeSuffix}");
         AppendIndentedLine(sb, indentationLevel, "{");
 
+        // Sorted by value, then by name, as the metadata reader does
         var fields = type.GetFields(BindingFlags.Public | BindingFlags.Static)
-            .OrderBy(static field => field.MetadataToken)
-            .ToArray();
-        foreach (var field in fields)
+            .Select(static field => (Field: field, Value: field.GetRawConstantValue()))
+            .Order(Comparer<(FieldInfo Field, object? Value)>.Create(static (x, y) => PublicApiOrdering.CompareEnumMembers(x.Value, x.Field.Name, y.Value, y.Field.Name)));
+        foreach (var (field, rawValue) in fields)
         {
-            var value = Convert.ChangeType(field.GetRawConstantValue(), baseType, System.Globalization.CultureInfo.InvariantCulture);
+            var value = Convert.ChangeType(rawValue, baseType, System.Globalization.CultureInfo.InvariantCulture);
             AppendIndentedLine(sb, indentationLevel + 1, $"{EscapeIdentifier(field.Name)} = {FormatConstant(value)},");
         }
 
@@ -452,7 +463,7 @@ internal static class PublicApiModelBuilder
             isSetUnsafe = false;
         }
 
-        var indexParameters = property.GetMethod?.GetParameters() ?? property.SetMethod?.GetParameters().SkipLast(1).ToArray() ?? [];
+        var indexParameters = GetIndexParameters(property);
         var explicitInterfaceQualifier = isExplicitInterfaceImplementation ? GetExplicitInterfaceQualifier(property.Name) : string.Empty;
         var propertyName = indexParameters.Length > 0
             ? $"{explicitInterfaceQualifier}this[{string.Join(", ", indexParameters.Select(static parameter => BuildParameter(parameter, isExtensionReceiver: false)))}]"
@@ -487,16 +498,16 @@ internal static class PublicApiModelBuilder
 
     private static void AppendAccessorFlowAttributes(StringBuilder sb, IList<CustomAttributeData> propertyAttributes, IList<CustomAttributeData> accessorAttributes, int indentationLevel, string firstAttributeName, string secondAttributeName)
     {
-        foreach (var attribute in accessorAttributes)
+        var attributes = accessorAttributes.Where(attribute =>
         {
             var fullName = attribute.AttributeType.FullName;
-            if (fullName != firstAttributeName && fullName != secondAttributeName)
-                continue;
+            return (fullName == firstAttributeName || fullName == secondAttributeName) &&
+                   !propertyAttributes.Any(propertyAttribute => propertyAttribute.AttributeType.FullName == fullName);
+        });
 
-            if (propertyAttributes.Any(propertyAttribute => propertyAttribute.AttributeType.FullName == fullName))
-                continue;
-
-            AppendIndentedLine(sb, indentationLevel, BuildAttribute(attribute));
+        foreach (var attribute in SortAttributes(attributes))
+        {
+            AppendIndentedLine(sb, indentationLevel, "[" + attribute + "]");
         }
     }
 
@@ -547,7 +558,7 @@ internal static class PublicApiModelBuilder
         return sb.ToString();
     }
 
-    private static string? BuildConstructor(ConstructorInfo constructor, int indentationLevel)
+    private static string? BuildConstructor(ConstructorInfo constructor, int indentationLevel, out MemberSortKey sortKey)
     {
         var sb = new StringBuilder();
         AppendAttributes(sb, constructor.CustomAttributes, indentationLevel);
@@ -559,6 +570,7 @@ internal static class PublicApiModelBuilder
         var typeName = EscapeIdentifier(RemoveGenericArity(constructor.DeclaringType!.Name));
         var parametersList = constructor.GetParameters();
         var parameters = parametersList.Select(static parameter => BuildParameterDeclaration(parameter, isExtensionReceiver: false)).ToArray();
+        sortKey = new MemberSortKey(MemberSortKind.Constructor, metadataName: string.Empty, parameterCount: parameters.Length, signature: GetSignatureSortText(parameters));
         var requiresNullableDisableDirective = parametersList.Any(static parameter => RequiresNullableDisableDirective(parameter));
         var initializer = BuildConstructorInitializer(constructor);
         // A parameterless constructor requiring an unsafe context is not equivalent to the implicit one as it doesn't satisfy the new() constraint
@@ -575,13 +587,20 @@ internal static class PublicApiModelBuilder
         return sb.ToString();
     }
 
-    private static string BuildMethod(MethodInfo method, int indentationLevel)
+    private static string BuildMethod(MethodInfo method, int indentationLevel, out MemberSortKey sortKey)
     {
         var sb = new StringBuilder();
         var isDestructor = IsDestructor(method);
         var isExplicitInterfaceImplementation = IsExplicitInterfaceImplementation(method);
         AppendAttributes(sb, method.CustomAttributes, indentationLevel);
         AppendReturnAttributes(sb, method, indentationLevel);
+
+        var isExtensionMethod = IsExtensionMethod(method);
+        var parameters = method.GetParameters().Select((parameter, index) => BuildParameterDeclaration(parameter, isExtensionMethod && index == 0)).ToArray();
+        var sortKind = isDestructor
+            ? MemberSortKind.Destructor
+            : IsOperatorMethod(method) ? PublicApiOrdering.GetOperatorSortKind(method.Name) : MemberSortKind.Method;
+        sortKey = new MemberSortKey(sortKind, method.Name, method.GetGenericArguments().Length, parameters.Length, GetSignatureSortText(parameters), FormatReturnTypeParts(method.ReturnParameter).Type);
 
         if (isDestructor)
         {
@@ -594,8 +613,6 @@ internal static class PublicApiModelBuilder
         var methodName = isExplicitInterfaceImplementation
             ? BuildExplicitInterfaceMethodName(method.Name)
             : EscapeIdentifier(method.Name);
-        var isExtensionMethod = IsExtensionMethod(method);
-        var parameters = method.GetParameters().Select((parameter, index) => BuildParameterDeclaration(parameter, isExtensionMethod && index == 0)).ToArray();
         var genericArguments = BuildGenericArguments(method);
         var isOverride = method.GetBaseDefinition() != method;
         var constraints = isExplicitInterfaceImplementation || isOverride
@@ -702,7 +719,8 @@ internal static class PublicApiModelBuilder
         if (baseConstructors.Count == 0 || baseConstructors.Any(static ctor => ctor.GetParameters().Length == 0))
             return string.Empty;
 
-        var selectedConstructor = baseConstructors[0];
+        // The selected constructor must not depend on the order of the declarations
+        var selectedConstructor = baseConstructors.MinBy(GetBaseConstructorSortKey, Comparer<(bool RequiresVariable, int ParameterCount, string Signature)>.Create(PublicApiOrdering.CompareBaseConstructors))!;
         var arguments = string.Join(", ", selectedConstructor.GetParameters().Select(static parameter =>
         {
             var parameterType = parameter.ParameterType.IsByRef
@@ -711,6 +729,13 @@ internal static class PublicApiModelBuilder
             return "default(" + FormatType(parameterType) + ")";
         }));
         return " : base(" + arguments + ")";
+    }
+
+    private static (bool RequiresVariable, int ParameterCount, string Signature) GetBaseConstructorSortKey(ConstructorInfo constructor)
+    {
+        var parameters = constructor.GetParameters();
+        var requiresVariable = parameters.Any(static parameter => PublicApiOrdering.RequiresVariable(GetRefKindSortText(parameter)));
+        return (requiresVariable, parameters.Length, GetSignatureSortText(parameters));
     }
 
     private static string BuildMethodBody(MethodInfo method)
@@ -955,31 +980,15 @@ internal static class PublicApiModelBuilder
             sb.Append("this ");
         }
 
-        // The [In] and [Out] attributes can also be set on parameters that are not passed by reference (e.g. arrays in interop signatures)
-        var isOut = parameter.ParameterType.IsByRef && parameter.IsOut && !parameter.IsIn;
-        if (IsScopedParameter(parameter) && !isOut && !IsParamsParameter(parameter))
+        var refKind = GetRefKindSortText(parameter);
+        if (IsScopedParameter(parameter) && refKind != "out " && !IsParamsParameter(parameter))
         {
             sb.Append("scoped ");
         }
 
-        if (isOut)
+        if (refKind.Length > 0)
         {
-            sb.Append("out ");
-        }
-        else if (parameter.ParameterType.IsByRef)
-        {
-            if (IsRefReadOnlyParameter(parameter))
-            {
-                sb.Append("ref readonly ");
-            }
-            else if (IsInParameter(parameter))
-            {
-                sb.Append("in ");
-            }
-            else
-            {
-                sb.Append("ref ");
-            }
+            sb.Append(refKind);
         }
         else if (IsParamsParameter(parameter))
         {
@@ -988,7 +997,8 @@ internal static class PublicApiModelBuilder
 
         var parameterType = parameter.ParameterType.IsByRef ? parameter.ParameterType.GetElementType()! : parameter.ParameterType;
         var parameterNullability = new NullabilityInfoContext().Create(parameter);
-        sb.Append(FormatType(parameterType, parameterNullability, CreateTypeAnnotations(parameter)));
+        var parameterTypeText = FormatType(parameterType, parameterNullability, CreateTypeAnnotations(parameter));
+        sb.Append(parameterTypeText);
         sb.Append(' ');
         sb.Append(EscapeIdentifier(parameter.Name ?? "value"));
 
@@ -998,7 +1008,28 @@ internal static class PublicApiModelBuilder
             sb.Append(FormatDefaultValue(parameterType, parameter.DefaultValue));
         }
 
-        return new ParameterDeclaration(sb.ToString(), RequiresNullableDirectives(parameterType, parameterNullability));
+        return new ParameterDeclaration(sb.ToString(), RequiresNullableDirectives(parameterType, parameterNullability), refKind + parameterTypeText);
+    }
+
+    // The modifier of a parameter passed by reference, followed by a space. It is the same text as PublicApiOrdering.GetRefKindSortText.
+    private static string GetRefKindSortText(ParameterInfo parameter)
+    {
+        if (!parameter.ParameterType.IsByRef)
+            return string.Empty;
+
+        // The [In] and [Out] attributes can also be set on parameters that are not passed by reference (e.g. arrays in interop signatures)
+        if (parameter.IsOut && !parameter.IsIn)
+            return "out ";
+
+        if (IsRefReadOnlyParameter(parameter))
+            return "ref readonly ";
+
+        return IsInParameter(parameter) ? "in " : "ref ";
+    }
+
+    private static string GetSignatureSortText(ParameterDeclaration[] parameters)
+    {
+        return string.Join(", ", parameters.Select(static parameter => parameter.SortText));
     }
 
     private static string BuildParameter(ParameterInfo parameter, bool isExtensionReceiver)
@@ -1115,16 +1146,17 @@ internal static class PublicApiModelBuilder
             var key = (receiverType, propertyName);
             if (!blocks.TryGetValue(key, out var block))
             {
-                block = new ExtensionPropertyBuilderReflection(receiverParameter, propertyName, Getter: null, Setter: null, Order: method.MetadataToken);
+                block = new ExtensionPropertyBuilderReflection(receiverParameter, propertyName, Getter: null, Setter: null);
             }
 
+            // The receiver is the one of the getter when there is one
             if (accessorType == "get")
             {
-                blocks[key] = block with { Getter = method, Order = Math.Min(block.Order, method.MetadataToken) };
+                blocks[key] = block with { Getter = method, ReceiverParameter = receiverParameter };
             }
             else
             {
-                blocks[key] = block with { Setter = method, Order = Math.Min(block.Order, method.MetadataToken) };
+                blocks[key] = block with { Setter = method };
             }
         }
 
@@ -1134,7 +1166,7 @@ internal static class PublicApiModelBuilder
             if (block.Getter is null && block.Setter is null)
                 continue;
 
-            var content = BuildExtensionPropertyBlock(block, indentationLevel);
+            var content = BuildExtensionPropertyBlock(block, indentationLevel, out var receiverTypeText);
             var accessors = new List<MethodInfo>();
             if (block.Getter is not null)
             {
@@ -1146,7 +1178,7 @@ internal static class PublicApiModelBuilder
                 accessors.Add(block.Setter);
             }
 
-            result.Add(new ExtensionPropertyBlockReflection(content, accessors, block.Order));
+            result.Add(new ExtensionPropertyBlockReflection(content, accessors, receiverTypeText, block.PropertyName));
         }
 
         return result;
@@ -1190,7 +1222,7 @@ internal static class PublicApiModelBuilder
         return false;
     }
 
-    private static string BuildExtensionPropertyBlock(ExtensionPropertyBuilderReflection block, int indentationLevel)
+    private static string BuildExtensionPropertyBlock(ExtensionPropertyBuilderReflection block, int indentationLevel, out string receiverTypeText)
     {
         var sb = new StringBuilder();
         var receiverParameter = block.ReceiverParameter;
@@ -1198,7 +1230,7 @@ internal static class PublicApiModelBuilder
         var receiverType = receiverParameter.ParameterType.IsByRef
             ? receiverParameter.ParameterType.GetElementType()!
             : receiverParameter.ParameterType;
-        var receiverTypeText = FormatType(receiverType, receiverNullability, CreateTypeAnnotations(receiverParameter));
+        receiverTypeText = FormatType(receiverType, receiverNullability, CreateTypeAnnotations(receiverParameter));
         var receiverName = EscapeIdentifier(receiverParameter.Name ?? "value");
 
         string propertyType;
@@ -1297,21 +1329,26 @@ internal static class PublicApiModelBuilder
 
     private static string FormatReturnType(ParameterInfo returnParameter)
     {
+        var (refKind, type) = FormatReturnTypeParts(returnParameter);
+        return refKind + type;
+    }
+
+    // The modifier of a value returned by reference, followed by a space, and the type of the value
+    private static (string RefKind, string Type) FormatReturnTypeParts(ParameterInfo returnParameter)
+    {
         var returnType = returnParameter.ParameterType;
         if (!returnType.IsByRef)
         {
             var returnNullability = new NullabilityInfoContext().Create(returnParameter);
-            return FormatType(returnType, returnNullability, CreateTypeAnnotations(returnParameter));
+            return (string.Empty, FormatType(returnType, returnNullability, CreateTypeAnnotations(returnParameter)));
         }
 
         var elementType = returnType.GetElementType()!;
         var returnNullabilityInfo = new NullabilityInfoContext().Create(returnParameter);
         var elementNullability = returnNullabilityInfo.ElementType;
         var elementAnnotations = CreateTypeAnnotations(returnParameter);
-        if (returnParameter.GetRequiredCustomModifiers().Any(static modifier => modifier.FullName == "System.Runtime.InteropServices.InAttribute"))
-            return "ref readonly " + FormatType(elementType, elementNullability, elementAnnotations);
-
-        return "ref " + FormatType(elementType, elementNullability, elementAnnotations);
+        var isReadOnly = returnParameter.GetRequiredCustomModifiers().Any(static modifier => modifier.FullName == "System.Runtime.InteropServices.InAttribute");
+        return (isReadOnly ? "ref readonly " : "ref ", FormatType(elementType, elementNullability, elementAnnotations));
     }
 
     private static string BuildAccessorModifier(MethodInfo accessor, MethodInfo representativeAccessor)
@@ -1447,13 +1484,25 @@ internal static class PublicApiModelBuilder
             }
 
             var constraintTypes = genericArgument.GetGenericParameterConstraints();
+            var typeConstraints = new List<string>();
+            var isFirstConstraintBaseType = false;
             for (var i = 0; i < constraintTypes.Length; i++)
             {
                 if (hasStructConstraint && constraintTypes[i] == typeof(ValueType))
                     continue;
 
-                values.Add(FormatType(constraintTypes[i], nullabilityInfo: null, CreateConstraintAnnotations(genericArgument, i, constraintTypes.Length)));
+                if (typeConstraints.Count == 0)
+                {
+                    isFirstConstraintBaseType = !constraintTypes[i].IsInterface && !constraintTypes[i].IsGenericParameter;
+                }
+
+                typeConstraints.Add(FormatType(constraintTypes[i], nullabilityInfo: null, CreateConstraintAnnotations(genericArgument, i, constraintTypes.Length)));
             }
+
+            // The base type constraint must be the first one in C#. The other constraints are sorted, as the metadata reader does.
+            var baseTypeCount = isFirstConstraintBaseType ? 1 : 0;
+            values.AddRange(typeConstraints.Take(baseTypeCount));
+            values.AddRange(typeConstraints.Skip(baseTypeCount).Order(StringComparer.Ordinal));
 
             if (genericParameterAttributes.HasFlag(GenericParameterAttributes.DefaultConstructorConstraint) && !hasStructConstraint)
             {
@@ -1995,26 +2044,27 @@ internal static class PublicApiModelBuilder
 
     private static void AppendAttributes(StringBuilder sb, IEnumerable<CustomAttributeData> attributes, int indentationLevel)
     {
-        foreach (var attribute in attributes.Where(ShouldIncludeAttribute))
+        foreach (var attribute in SortAttributes(attributes.Where(ShouldIncludeAttribute)))
         {
-            AppendIndentedLine(sb, indentationLevel, BuildAttribute(attribute));
+            AppendIndentedLine(sb, indentationLevel, "[" + attribute + "]");
         }
     }
 
     private static void AppendReturnAttributes(StringBuilder sb, MethodInfo method, int indentationLevel)
     {
-        foreach (var attribute in method.ReturnParameter.CustomAttributes.Where(ShouldIncludeAttribute))
+        foreach (var attribute in SortAttributes(method.ReturnParameter.CustomAttributes.Where(ShouldIncludeAttribute)))
         {
-            AppendIndentedLine(sb, indentationLevel, "[return: " + BuildAttributeName(attribute.AttributeType) + BuildAttributeArguments(attribute) + "]");
+            AppendIndentedLine(sb, indentationLevel, "[return: " + attribute + "]");
         }
     }
 
     private static void AppendInlineAttributes(StringBuilder sb, IEnumerable<CustomAttributeData> attributes)
     {
-        foreach (var attribute in attributes.Where(ShouldIncludeAttribute))
+        foreach (var attribute in SortAttributes(attributes.Where(ShouldIncludeAttribute)))
         {
-            sb.Append(BuildAttribute(attribute));
-            sb.Append(' ');
+            sb.Append('[');
+            sb.Append(attribute);
+            sb.Append("] ");
         }
     }
 
@@ -2075,9 +2125,12 @@ internal static class PublicApiModelBuilder
         return attributes.Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.RequiredMemberAttribute");
     }
 
-    private static string BuildAttribute(CustomAttributeData attribute)
+    // The attributes without the brackets, sorted as the metadata reader does, so the output does not depend on the order of the declarations
+    private static IEnumerable<string> SortAttributes(IEnumerable<CustomAttributeData> attributes)
     {
-        return "[" + BuildAttributeName(attribute.AttributeType) + BuildAttributeArguments(attribute) + "]";
+        return attributes
+            .Select(static attribute => BuildAttributeName(attribute.AttributeType) + BuildAttributeArguments(attribute))
+            .Order(PublicApiOrdering.AttributeComparer);
     }
 
     private static string BuildAttributeName(Type attributeType)
@@ -2098,7 +2151,7 @@ internal static class PublicApiModelBuilder
 
         var values = new List<string>(attribute.ConstructorArguments.Count + attribute.NamedArguments.Count);
         values.AddRange(attribute.ConstructorArguments.Select(FormatAttributeArgument));
-        values.AddRange(attribute.NamedArguments.Select(FormatNamedAttributeArgument));
+        values.AddRange(attribute.NamedArguments.OrderBy(static argument => argument.MemberName, StringComparer.Ordinal).Select(FormatNamedAttributeArgument));
         return "(" + string.Join(", ", values) + ")";
     }
 
@@ -2703,7 +2756,10 @@ internal static class PublicApiModelBuilder
 
     private readonly record struct EnumMember(ulong Value, string Name);
 
-    private sealed record ParameterDeclaration(string Text, bool RequiresNullableDirectives);
-    private sealed record ExtensionPropertyBuilderReflection(ParameterInfo ReceiverParameter, string PropertyName, MethodInfo? Getter, MethodInfo? Setter, int Order);
-    private sealed record ExtensionPropertyBlockReflection(string Content, IReadOnlyList<MethodInfo> Accessors, int Order);
+    // SortText is the modifier (ref, in...) and the type of the parameter, as compared by MemberSortKey
+    private sealed record ParameterDeclaration(string Text, bool RequiresNullableDirectives, string SortText);
+    private sealed record ExtensionPropertyBuilderReflection(ParameterInfo ReceiverParameter, string PropertyName, MethodInfo? Getter, MethodInfo? Setter);
+
+    // The blocks are sorted by the type of the receiver, then by the name of the property
+    private sealed record ExtensionPropertyBlockReflection(string Content, IReadOnlyList<MethodInfo> Accessors, string ReceiverType, string PropertyName);
 }

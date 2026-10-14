@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Drawing;
@@ -535,7 +536,7 @@ public readonly ref struct DrawingCanvas
     /// <summary>Paints the glyphs of a text layout.</summary>
     /// <param name="brush">The paint.</param>
     /// <param name="layout">The text, laid out.</param>
-    /// <param name="origin">The position of the top-left corner of the layout; the first baseline is <see cref="TextLayout.Baseline"/> below it.</param>
+    /// <param name="origin">The position of the top-left corner of the layout; the first baseline is <see cref="TextLayout.Baseline"/> below it, or on its right for a vertical layout.</param>
     /// <remarks>
     /// The glyphs are one shape: where they overlap, the brush is applied once. The call allocates nothing once the
     /// working storage of the canvas has grown to the largest glyph. Glyphs are not snapped to the pixel grid.
@@ -577,7 +578,7 @@ public readonly ref struct DrawingCanvas
     /// <summary>Paints the outlines of the glyphs of a text layout with a pen.</summary>
     /// <param name="pen">The stroke.</param>
     /// <param name="layout">The text, laid out.</param>
-    /// <param name="origin">The position of the top-left corner of the layout; the first baseline is <see cref="TextLayout.Baseline"/> below it.</param>
+    /// <param name="origin">The position of the top-left corner of the layout; the first baseline is <see cref="TextLayout.Baseline"/> below it, or on its right for a vertical layout.</param>
     /// <remarks>The strokes of all the outlines are one shape: where they overlap, the brush of the pen is applied once.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="pen"/> or <paramref name="layout"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
@@ -590,7 +591,7 @@ public readonly ref struct DrawingCanvas
     /// <summary>Paints the glyphs of a text layout along a path.</summary>
     /// <param name="brush">The paint of the spans that have none.</param>
     /// <param name="layout">The text, laid out.</param>
-    /// <param name="path">The path the text follows: the horizontal axis of the layout, with its first baseline on it.</param>
+    /// <param name="path">The path the text follows: the horizontal axis of the layout, with its first baseline on it. A vertical layout follows it from the top of its lines, with the central baseline of its first line on it.</param>
     /// <param name="options">Where the text is on the path, or <see langword="null"/> for <see cref="TextPathOptions.Default"/>.</param>
     /// <remarks>
     /// <para>
@@ -613,7 +614,7 @@ public readonly ref struct DrawingCanvas
     /// <summary>Paints the outlines of the glyphs of a text layout along a path, with a pen.</summary>
     /// <param name="pen">The stroke.</param>
     /// <param name="layout">The text, laid out.</param>
-    /// <param name="path">The path the text follows: the horizontal axis of the layout, with its first baseline on it.</param>
+    /// <param name="path">The path the text follows: the horizontal axis of the layout, with its first baseline on it. A vertical layout follows it from the top of its lines, with the central baseline of its first line on it.</param>
     /// <param name="options">Where the text is on the path, or <see langword="null"/> for <see cref="TextPathOptions.Default"/>.</param>
     /// <remarks>The text is placed as by <see cref="FillText(Brush, TextLayout, VectorPath, TextPathOptions?)"/>.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="pen"/>, <paramref name="layout"/> or <paramref name="path"/> is <see langword="null"/>.</exception>
@@ -831,7 +832,8 @@ public readonly ref struct DrawingCanvas
     /// <remarks>
     /// <para>
     /// Everything the callback draws is drawn as it would be without the transformation, then transformed: shapes,
-    /// strokes (the pen is transformed with the path it strokes: a scaling makes it wider, and stretches its dashes),
+    /// strokes (the pen is transformed with the path it strokes: a scaling makes it wider, and stretches its dashes,
+    /// unless <see cref="Pen.ScalesWithTransform"/> is off: the pen then strokes the transformed path, as wide as it is),
     /// the gradients and the images of the brushes, images, texts with the paints of their spans and the glyphs a font
     /// draws with its own colors, the paths of the clips, and the offset and the blur of a shadow. This is what
     /// <see cref="VectorPath.Transform"/> does to a path, for any drawing: a text along a diagonal, or a drawing made
@@ -1165,6 +1167,97 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void BlurBackdrop(double blur) => GetSession().BlurBackdrop(blur);
 
+    /// <summary>Runs a callback whose drawings get new colors, as a whole, before they are drawn on the canvas: a photograph in gray levels, an icon in another color, a drawing that is dimmed.</summary>
+    /// <remarks>
+    /// <para>
+    /// The drawings are made on a layer (see <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode)"/>).
+    /// When the callback returns, each pixel of the layer gets the color <paramref name="matrix"/> gives it from its
+    /// own color and alpha, then the layer is drawn on the canvas. The matrix is applied to the stored samples of
+    /// the layer, with straight alpha: 8-bit samples on a canvas of 8-bit colors, 16-bit samples otherwise (see
+    /// <see cref="ColorMatrix"/> for the arithmetic).
+    /// </para>
+    /// <para>
+    /// The matrix applies to every pixel the clip can show, also those the callback did not draw on, which are
+    /// transparent black: a matrix that gives an alpha to a transparent pixel (a constant in its last row) paints
+    /// them.
+    /// </para>
+    /// </remarks>
+    /// <param name="matrix">The matrix.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="matrix"/> or <paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Filter(ColorMatrix matrix, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(matrix);
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushFilter(matrix);
+        var isDrawn = false;
+        try
+        {
+            action(this);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings get new colors before they are drawn on the canvas, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="matrix">The matrix.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Filter(ColorMatrix, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="matrix"/> or <paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Filter<TState>(ColorMatrix matrix, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(matrix);
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushFilter(matrix);
+        var isDrawn = false;
+        try
+        {
+            action(this, state);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Gives new colors to what is already drawn, where the clip lets a drawing through: the background of a dialog that is dimmed, a region that is shown in gray levels or inverted.</summary>
+    /// <remarks>
+    /// <para>
+    /// Each pixel of the canvas (of the layer, inside <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode)"/>)
+    /// is replaced by the color <paramref name="matrix"/> gives it from its own color and alpha. Without a clip, every
+    /// pixel is; inside <see cref="Clip(VectorPath, DrawingAction, FillRule)"/>, only the inside of the clip is, and
+    /// a pixel on its edge in proportion to the area of it that is inside.
+    /// </para>
+    /// <para>
+    /// The matrix is applied to the stored samples of the pixels, at their precision (see <see cref="ColorMatrix"/>
+    /// for the arithmetic and for the pixel formats without alpha or without colors). A pixel on the edge of a clip
+    /// is replaced as a paint drawn with <see cref="CompositeMode.Source"/> replaces it. This is not a drawing: the
+    /// blend mode and the operator of a brush do not apply, and neither does the opacity of a layer the canvas is not
+    /// inside.
+    /// </para>
+    /// </remarks>
+    /// <param name="matrix">The matrix.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="matrix"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void FilterBackdrop(ColorMatrix matrix) => GetSession().FilterBackdrop(matrix);
+
     /// <summary>Runs a callback whose drawings are drawn with a shadow inside them: the shadow cast on them by what is around them, for a shape that looks cut out or pressed in.</summary>
     /// <remarks>
     /// <para>
@@ -1307,13 +1400,16 @@ public readonly ref struct DrawingCanvas
     /// <para>
     /// With <see cref="CompositingSpace.LinearSrgb"/>, the samples of a paint and of the pixels it is drawn on are
     /// converted to linear light with the transfer function of the image (sRGB, unless the image declares another
-    /// one: see <see cref="CompositingSpace.LinearSrgb"/>), combined (coverage, opacity, blend mode and operator, with
-    /// the formulas of the stored values), and the result is converted back. The edge between two colors, a translucent
-    /// paint and the blur of a shadow then mix light as light mixes: red over green goes through a yellow instead of
-    /// a dark olive, and white text on black keeps its weight. The alpha is not a color and is combined as it is.
+    /// one or has an ICC profile with tone curves of its own: see <see cref="CompositingSpace.LinearSrgb"/>),
+    /// combined (coverage, opacity, blend mode and operator, with the formulas of the stored values), and the result
+    /// is converted back. The edge between two colors, a translucent paint and the blur of a shadow then mix light as
+    /// light mixes: red over green goes through a yellow instead of a dark olive, and white text on black keeps its
+    /// weight. <see cref="Blur(double, DrawingAction)"/> and <see cref="BlurBackdrop(double)"/> blur light too. The
+    /// alpha is not a color and is combined as it is.
     /// </para>
     /// <para>
-    /// The colors of the brushes are still sample values in the color space of the image; a gradient mixes its stops
+    /// The colors of the brushes are still sample values in the color space of the image, unless
+    /// <see cref="PaintProfile(IccProfile, DrawingAction, IccColorTransformOptions)"/> says otherwise; a gradient mixes its stops
     /// as its <see cref="GradientBrush.ColorSpace"/> says, and an image is interpolated on its stored values. Layers
     /// hold samples of the image too: a drawing made on a layer is combined in linear light on the layer, and the
     /// layer on the canvas. The arithmetic is in double precision, and uses the power function of the platform: a
@@ -1326,7 +1422,8 @@ public readonly ref struct DrawingCanvas
     /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="space"/> is not a defined <see cref="CompositingSpace"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="CompositingSpace.LinearSrgb"/> is requested for an image whose ICC profile is not recognized as sRGB, or whose transfer characteristics are reserved. The callback is not run.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="CompositingSpace.LinearSrgb"/> is requested for an image whose ICC profile has no tone curve for each channel, or whose transfer characteristics are reserved. The callback is not run.</exception>
+    /// <exception cref="ImageResourceLimitException">The tables of the tone curves of the ICC profile of the image would exceed the allocation limit. The callback is not run.</exception>
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void Compositing(CompositingSpace space, DrawingAction action)
@@ -1352,7 +1449,8 @@ public readonly ref struct DrawingCanvas
     /// <remarks>See <see cref="Compositing(CompositingSpace, DrawingAction)"/>.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="space"/> is not a defined <see cref="CompositingSpace"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="CompositingSpace.LinearSrgb"/> is requested for an image whose ICC profile is not recognized as sRGB, or whose transfer characteristics are reserved. The callback is not run.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="CompositingSpace.LinearSrgb"/> is requested for an image whose ICC profile has no tone curve for each channel, or whose transfer characteristics are reserved. The callback is not run.</exception>
+    /// <exception cref="ImageResourceLimitException">The tables of the tone curves of the ICC profile of the image would exceed the allocation limit. The callback is not run.</exception>
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void Compositing<TState>(CompositingSpace space, TState state, DrawingAction<TState> action)
@@ -1368,6 +1466,93 @@ public readonly ref struct DrawingCanvas
         finally
         {
             session.RestoreCompositingSpace(previous);
+        }
+    }
+
+    /// <summary>Runs a callback whose paint colors are colors of an ICC profile: they are converted to the color space of the image before they are painted.</summary>
+    /// <remarks>
+    /// <para>
+    /// Without this, the color of a paint is taken as sample values of the image, whatever its color space: the red
+    /// (255, 0, 0) is the most saturated red of the image, which is not the same color on an sRGB image and on a
+    /// Display P3 or an Adobe RGB one. Inside the callback, a color is a color of <paramref name="profile"/>
+    /// (<see cref="IccProfile.Srgb"/> for the colors of CSS, of a design tool or of <see cref="Colors"/>), and the
+    /// image gets the samples that show that color: those of its own ICC profile
+    /// (<see cref="ImageMetadata.IccProfile"/>), else of its CICP color description
+    /// (<see cref="ImageMetadata.Cicp"/>), else of sRGB, for which the colors of <see cref="IccProfile.Srgb"/> are
+    /// not changed.
+    /// </para>
+    /// <para>
+    /// The colors that are converted are those the caller gives: the color of a <see cref="SolidBrush"/>, the stops
+    /// of a gradient, the color of a shadow and of <see cref="Clear(Rgba64)"/>, and the brushes of a text. A gradient
+    /// that mixes its stops in linear light or in Oklab mixes the colors as they are given, then converts each color
+    /// it obtains; one that mixes encoded values mixes the converted stops. A color outside the color space of the
+    /// image is clipped, component by component. The alpha of a color is not converted.
+    /// </para>
+    /// <para>
+    /// What is already samples of an image is not converted: the images that are drawn
+    /// (<see cref="DrawImage(ImageFrame, PointD, double)"/>, <see cref="ImageBrush"/>: convert them with
+    /// <see cref="ImageProcessingExtensions.ConvertColorProfile(Image, IccProfile, IccColorTransformOptions?, CancellationToken)"/>
+    /// first), the glyphs a font draws with its own colors, and the constants of a <see cref="ColorMatrix"/>. On a
+    /// grayscale image, a color becomes the gray level that has its luminance, as a conversion to a gray profile
+    /// gives it, and not the luma of its samples. The
+    /// conversion is the one of <see cref="IccColorTransform"/>, in double precision: it uses the functions of the
+    /// platform, and a sample within about 1e-12 of a rounding boundary can differ by one from a platform to another.
+    /// </para>
+    /// </remarks>
+    /// <param name="profile">The profile of the colors of the paints: an RGB profile.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="options">The options of the conversion, or <see langword="null"/> for <see cref="IccColorTransformOptions.Default"/>. Its tone mapping is not used.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="profile"/> or <paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidImageContentException">A profile is malformed. The callback is not run.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">
+    /// <paramref name="profile"/> is not an RGB profile, a profile is not supported in its role, the color space of
+    /// the image is ambiguous or unknown, or its samples are high dynamic range ones (PQ, HLG), among which the light
+    /// of the white of a paint is not chosen implicitly. The callback is not run.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void PaintProfile(IccProfile profile, DrawingAction action, IccColorTransformOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var previous = session.SetPaintProfile(profile, options);
+        try
+        {
+            action(this);
+        }
+        finally
+        {
+            session.RestorePaintProfile(previous);
+        }
+    }
+
+    /// <summary>Runs a callback whose paint colors are colors of an ICC profile, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="profile">The profile of the colors of the paints: an RGB profile.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="options">The options of the conversion, or <see langword="null"/> for <see cref="IccColorTransformOptions.Default"/>.</param>
+    /// <remarks>See <see cref="PaintProfile(IccProfile, DrawingAction, IccColorTransformOptions)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="profile"/> or <paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidImageContentException">A profile is malformed. The callback is not run.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A profile is not supported in its role, or the color space of the image is unknown, ambiguous or of a high dynamic range. The callback is not run.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void PaintProfile<TState>(IccProfile profile, TState state, DrawingAction<TState> action, IccColorTransformOptions? options = null)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var previous = session.SetPaintProfile(profile, options);
+        try
+        {
+            action(this, state);
+        }
+        finally
+        {
+            session.RestorePaintProfile(previous);
         }
     }
 

@@ -114,8 +114,9 @@ public sealed class GitHubActionsScanner : DependencyScanner
                 yaml.ReportDockerImage(this, usesValue, DockerPrefix.Length);
             }
             // use: action@v1
-            // Local actions and reusable workflows (uses: ./.github/actions/local) are part of the repository, not dependencies
-            else if (!value.StartsWith("./", StringComparison.Ordinal) && !value.StartsWith("../", StringComparison.Ordinal))
+            // Local actions and reusable workflows (uses: ./.github/actions/local, or uses: $/actions/local which is resolved
+            // at the running commit) are part of the repository, not dependencies
+            else if (!value.StartsWith("./", StringComparison.Ordinal) && !value.StartsWith("../", StringComparison.Ordinal) && !value.StartsWith("$/", StringComparison.Ordinal))
             {
                 yaml.ReportDependencyWithSeparator(this, usesValue, DependencyType.GitHubActions, '@');
             }

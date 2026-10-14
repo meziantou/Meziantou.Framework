@@ -31,7 +31,7 @@ internal sealed partial class DrawingSession
         var surface = _colorSurface ??= new ColorSurface(_image.Owner.Scope);
         for (var run = 0; run < layout.RunCount; run++)
         {
-            layout.GetRun(run, out var face, out var scale, out var start, out var count, out var runBrush);
+            layout.GetRun(run, out var face, out var scale, out var start, out var count, out var runBrush, out var isSideways);
             var mode = (layout.GetBrush(runBrush) ?? brush).CompositeMode;
             var blend = (layout.GetBrush(runBrush) ?? brush).BlendMode;
             var isForegroundSet = false;
@@ -43,9 +43,9 @@ internal sealed partial class DrawingSession
                 Affine2D placement;
                 if (measure is null)
                 {
-                    placement = layout.GetGlyphTransform(i, scale, originX, originY);
+                    placement = layout.GetGlyphTransform(i, scale, isSideways, originX, originY);
                 }
-                else if (!layout.TryGetGlyphTransformOnPath(i, scale, measure, options!, out placement))
+                else if (!layout.TryGetGlyphTransformOnPath(i, scale, isSideways, measure, options!, out placement))
                 {
                     continue;
                 }
@@ -204,7 +204,7 @@ internal sealed partial class DrawingSession
                 colors = colors.Slice(skipped * 4, coverage.Length * 4);
             }
 
-            var source = new DrawingSource(colors, mode, blend, _transfer);
+            var source = new DrawingSource(colors, mode, blend, _transfer, _curves);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], surface.Top + row, x, coverage, source);

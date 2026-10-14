@@ -28,6 +28,9 @@ internal sealed class FontInstance
     /// <summary>Gets the scalars of the store of the <c>HVAR</c> table.</summary>
     public double[] AdvanceScalars { get; set; } = [];
 
+    /// <summary>Gets or sets the scalar of each region of the variation store of the vertical metrics (<c>VVAR</c>).</summary>
+    public double[] VerticalScalars { get; set; } = [];
+
     /// <summary>Gets the scalars of the store of the <c>GDEF</c> table, which the positions of the <c>GPOS</c> table refer to.</summary>
     public double[] LayoutScalars { get; set; } = [];
 

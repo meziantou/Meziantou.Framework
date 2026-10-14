@@ -68,6 +68,35 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>New colors for an image, for a part of it, and for a drawing.</summary>
+    // begin-snippet: color-matrix
+    public static void ApplyColorFilters(string photoPath, string iconPath, string outputPath)
+    {
+        using var photo = Image.Load(photoPath);
+        using var icon = Image.Load(iconPath);
+
+        // Matrices are immutable: create them once. Two matrices become one, which is applied once per pixel
+        var warm = ColorMatrix.CreateSaturation(0.6).Then(ColorMatrix.CreateSepia(0.4)).Then(ColorMatrix.CreateContrast(1.1));
+        var dim = ColorMatrix.CreateBrightness(0.5);
+        var accent = ColorMatrix.CreateTint(Colors.Gold);
+
+        // The whole image, every frame of it
+        photo.ApplyColorMatrix(warm);
+
+        photo.Draw(canvas =>
+        {
+            // What is already drawn, inside a clip: the lower third of the photo is darker
+            var band = new Rectangle(0, canvas.Height * 2 / 3, canvas.Width, canvas.Height - (canvas.Height * 2 / 3));
+            canvas.Clip(band, clipped => clipped.FilterBackdrop(dim));
+
+            // What a callback draws: the icon keeps its shape and its transparency, and gets one color
+            canvas.Filter(accent, tinted => tinted.DrawImage(icon.Frames[0], new PointD(8, band.Y + 8)));
+        });
+
+        photo.Save(outputPath);
+    }
+    // end-snippet
+
     /// <summary>Drawing: gradients, a disk, a filled and stroked curve and a frame on a new image.</summary>
     // begin-snippet: draw-shapes
     public static void DrawLandscape(string outputPath)
@@ -178,6 +207,66 @@ internal static class Examples
                 _ = route.TryGetPointAtDistance(length * i / 4, out var milestone, out _);
                 canvas.FillCircle(Colors.Crimson, milestone, 4);
             }
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>Colors of sRGB drawn on an image of another color space.</summary>
+    // begin-snippet: draw-color-managed
+    public static void DrawBrandColors(string inputPath, string outputPath)
+    {
+        // A photograph whose ICC profile is not the one of sRGB (Display P3, Adobe RGB): its samples are not sRGB colors
+        using var image = Image.Load(inputPath);
+        var brand = Rgba32.ParseHex("#E63946");
+        var label = new RectangleD(8, 8, 96, 24);
+        var outline = new Pen(Colors.White, 2);
+
+        image.Draw(canvas =>
+        {
+            // The colors of the callback are colors of sRGB: they are converted to the color space of the image, so
+            // that the banner has the color its hexadecimal value means, whatever the profile of the photograph
+            canvas.PaintProfile(IccProfile.Srgb, managed =>
+            {
+                managed.FillRoundedRectangle(brand, label, 6);
+                managed.StrokeRoundedRectangle(outline, label, 6);
+            });
+        });
+
+        // The profile of the photograph is kept: the file still says what its samples are
+        image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>A shape with round corners, and its outline moved outward and inward.</summary>
+    // begin-snippet: draw-sticker
+    public static void DrawSticker(string outputPath)
+    {
+        // A star: a point above the center, at the radius of a tip or of a notch, turned by a tenth of a turn each time
+        var center = new PointD(60, 62);
+        var points = new PointD[10];
+        for (var i = 0; i < points.Length; i++)
+        {
+            points[i] = AffineTransform.CreateRotation(i * 36, center).Transform(new PointD(center.X, center.Y - (i % 2 == 0 ? 44 : 20)));
+        }
+
+        // Its corners become arcs of a circle of radius 4
+        var star = new VectorPathBuilder().AddPolygon(points).Build().RoundCorners(4);
+
+        // The outline of the star 6 pixels further out, with round corners: the white border of a sticker
+        var border = star.Offset(6, LineJoin.Round);
+
+        // And 5 pixels further in: a line that follows the shape, inside it
+        var seam = new Pen(new Rgba32(255, 255, 255, 170), 1.5) { DashPattern = [4, 3] };
+        var inner = star.Offset(-5, LineJoin.Round);
+
+        using var image = new Image<Rgba32>(120, 120);
+        image.Draw(canvas =>
+        {
+            canvas.Shadow(new Rgba32(0, 0, 0, 90), new PointD(0, 2), 3, shadowed => shadowed.Fill(Colors.White, border));
+            canvas.Fill(Colors.Goldenrod, star);
+            canvas.Stroke(seam, inner);
         });
 
         image.Save(outputPath);
@@ -1141,6 +1230,69 @@ internal static class Examples
             });
         });
 
+        image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>A title fitted to a box, with a highlighted word, an outlined word and an icon in the line.</summary>
+    // begin-snippet: draw-fitted-text
+    public static double DrawTitleCard(string fontPath, string iconPath, string outputPath)
+    {
+        var font = Font.Load(fontPath);
+        using var icon = Image.Load(iconPath);
+        using var image = new Image<Rgba32>(320, 120, Rgba32.ParseHex("#14213D"));
+
+        // The styles: a word on a background, a word with a contour around its letters, and the rest
+        var title = new TextStyle(font, 64) { Brush = new SolidBrush(Colors.White) };
+        var highlight = new TextStyle(font, 64) { Brush = new SolidBrush(Rgba32.ParseHex("#14213D")), BackgroundBrush = new SolidBrush(Rgba32.ParseHex("#FCA311")) };
+        var contour = new TextStyle(font, 64) { Brush = new SolidBrush(Colors.White), Outline = new Pen(Rgba32.ParseHex("#FCA311"), 2) { Alignment = PenAlignment.Outside, LineJoin = LineJoin.Round } };
+
+        // Room for the icon in the line, as tall as a capital letter and standing on the baseline
+        var capHeight = font.GetMetrics(64).CapHeight;
+        var text = new RichTextBuilder()
+            .AppendPlaceholder(capHeight, capHeight, capHeight, title)
+            .Append(" Draw ", title)
+            .Append("more", highlight)
+            .Append(" with ", title)
+            .Append("less", contour)
+            .Build();
+
+        // The largest size at which the text fits the card, less its margins: every length of the styles has it
+        var box = new RectangleD(16, 12, image.Width - 32, image.Height - 24);
+        var layout = TextLayout.CreateToFit(text, box.Width, box.Height, new TextLayoutOptions { Alignment = TextAlignment.Center });
+        var origin = new PointD(box.X, box.Y + ((box.Height - layout.Height) / 2));
+
+        image.Draw(canvas =>
+        {
+            canvas.FillText(Colors.White, layout, origin);
+
+            // What the placeholder made room for, where the layout put it
+            var place = layout.Placeholders[0];
+            canvas.DrawImage(icon.Frames[0], new RectangleD(origin.X + place.X, origin.Y + place.Y, place.Width, place.Height), ImageSampling.Smooth);
+        });
+
+        image.Save(outputPath);
+        return layout.Scale;
+    }
+    // end-snippet
+
+    /// <summary>Text in vertical lines: Japanese set from the top to the bottom, in columns that go to the left.</summary>
+    // begin-snippet: draw-vertical-text
+    public static void DrawVerticalText(string fontPath, string outputPath)
+    {
+        var style = new TextStyle(Font.Load(fontPath), 24);
+
+        // Lines go down and follow each other to the left, and are wrapped at the height of the layout. The ideographs
+        // and the kana are upright, with the vertical forms the font has for the brackets and the punctuation; the
+        // Latin letters are on their side.
+        var layout = TextLayout.Create(
+            "「日本語」のテキスト。ABC 東京、日本。",
+            style,
+            new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, MaxHeight = 160 });
+
+        // The layout is as wide as its columns: the first one is on its right
+        using var image = new Image<Rgba32>((int)Math.Ceiling(layout.Width) + 20, 180, new Rgba32(255, 255, 255));
+        image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(10, 10)));
         image.Save(outputPath);
     }
     // end-snippet

@@ -16,14 +16,17 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </list>
 /// Supported: baseline (SOF0), extended sequential (SOF1, or SOF9 with arithmetic coding) and progressive (SOF2, or
 /// SOF10 with arithmetic coding) frames of 8-bit or
-/// 12-bit samples with 1, 3 or 4 components (a 4-component frame is CMYK or YCCK: it is identified here, and decoded only
+/// 12-bit samples, and lossless frames (SOF3, Huffman coded) of 2-bit to 16-bit samples, with 1, 3 or 4 components (a
+/// 4-component frame is CMYK or YCCK: it is identified here, and decoded only
 /// with a color conversion, see <see cref="JpegDecoder"/>). A baseline frame only has 8-bit samples by definition; a
 /// 12-bit one is read as an extended sequential frame, as common decoders do. Recognized and rejected with
-/// <see cref="UnsupportedImageFeatureException"/>: lossless (SOF3, SOF11), hierarchical (SOF5-7, SOF13-15, DHP, EXP),
-/// JPEG-LS, other precisions than 8 and 12 bits, DNL-defined heights, other component counts and sampling factors that do not divide the largest factors.
+/// <see cref="UnsupportedImageFeatureException"/>: arithmetic-coded lossless frames (SOF11), hierarchical (SOF5-7, SOF13-15, DHP, EXP),
+/// JPEG-LS, other precisions than 8 and 12 bits of the frames that are not lossless, DNL-defined heights, other component counts and sampling factors that do not divide the largest factors.
 /// Malformed or misplaced markers and segments, a missing frame header or scan, interleaved scans of more than 10 blocks
 /// per MCU, progressive scans with invalid spectral selection, successive approximation or coefficient progression (see
-/// <see cref="ValidateProgressiveScan"/>), and truncation (including a missing EOI) are
+/// <see cref="ValidateProgressiveScan"/>), a lossless frame whose precision is not between 2 and 16 bits, lossless scans
+/// with an invalid predictor or point transform (see <see cref="ValidateLosslessScan"/>), and truncation (including a
+/// missing EOI) are
 /// <see cref="InvalidImageContentException"/>. Table contents (DQT/DHT/DAC) are validated by the decoder only.
 /// </remarks>
 internal sealed class JpegStructureParser : ImageParser<ImageInfo>
@@ -31,8 +34,10 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     private const byte MarkerSof0 = 0xC0;
     private const byte MarkerSof1 = 0xC1;
     private const byte MarkerSof2 = 0xC2;
+    private const byte MarkerSof3 = 0xC3;
     private const byte MarkerSof9 = 0xC9;
     private const byte MarkerSof10 = 0xCA;
+    private const byte MarkerSof11 = 0xCB;
     private const byte MarkerDht = 0xC4;
     private const byte MarkerJpg = 0xC8;
     private const byte MarkerDac = 0xCC;
@@ -97,8 +102,8 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     }
 
     /// <summary>
-    /// Gets the SOF marker of the frame (0xC0 baseline, 0xC1 extended sequential, 0xC2 progressive, 0xC9 and 0xCA the same
-    /// two with arithmetic coding), or 0 before the frame header.
+    /// Gets the SOF marker of the frame (0xC0 baseline, 0xC1 extended sequential, 0xC2 progressive, 0xC3 lossless, 0xC9 and
+    /// 0xCA the extended sequential and progressive ones with arithmetic coding), or 0 before the frame header.
     /// </summary>
     public byte FrameMarker { get; private set; }
 
@@ -107,7 +112,13 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     /// <summary>Gets a value indicating whether the scans are arithmetic coded rather than Huffman coded.</summary>
     public bool IsArithmetic => FrameMarker is MarkerSof9 or MarkerSof10;
 
-    /// <summary>Gets the number of bits of a sample (8 or 12), or 0 before the frame header.</summary>
+    /// <summary>
+    /// Gets a value indicating whether the frame is lossless (T.81 Annex H): its scans code the samples themselves, from
+    /// their prediction, instead of the coefficients of their transform.
+    /// </summary>
+    public bool IsLossless => FrameMarker == MarkerSof3;
+
+    /// <summary>Gets the number of bits of a sample (8 or 12, or 2 to 16 for a lossless frame), or 0 before the frame header.</summary>
     public int Precision { get; private set; }
 
     public int Width { get; private set; }
@@ -342,13 +353,14 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
             case MarkerSof0:
             case MarkerSof1:
             case MarkerSof2:
+            case MarkerSof3:
             case MarkerSof9:
             case MarkerSof10:
                 ProcessFrameHeader(marker, payload);
                 break;
 
-            case 0xC3 or 0xCB:
-                throw Unsupported("Lossless JPEG (SOF3, SOF11) is not supported.", "JPEG lossless");
+            case MarkerSof11:
+                throw Unsupported("Lossless JPEG with arithmetic coding (SOF11) is not supported.", "JPEG lossless with arithmetic coding");
 
             case 0xC5 or 0xC6 or 0xC7 or 0xCD or 0xCE or 0xCF or MarkerDhp or MarkerExp:
                 throw Unsupported("Hierarchical JPEG is not supported.", "JPEG hierarchical");
@@ -458,7 +470,12 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         if (width == 0)
             throw Invalid("The JPEG frame width is zero.");
 
-        if (precision is not (8 or 12))
+        if (marker == MarkerSof3)
+        {
+            if (precision is < 2 or > 16)
+                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The precision of the lossless JPEG frame is {precision} bits; it must be between 2 and 16."));
+        }
+        else if (precision is not (8 or 12))
             throw Unsupported(string.Create(CultureInfo.InvariantCulture, $"{precision}-bit JPEG precision is not supported (only 8-bit and 12-bit samples)."), "JPEG " + precision.ToString(CultureInfo.InvariantCulture) + "-bit precision");
 
         if (height == 0)
@@ -537,6 +554,28 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         {
             ValidateProgressiveScan(payload, count);
         }
+        else if (IsLossless)
+        {
+            ValidateLosslessScan(payload, count);
+        }
+    }
+
+    /// <summary>
+    /// Validates the parameters of a scan of a lossless frame (ITU-T T.81 B.2.3 and H.1.2): <c>Ss</c> selects a predictor,
+    /// 1 to 7 (0 is for the differential frames of the hierarchical mode), and <c>Al</c> is the point transform, which
+    /// leaves at least one bit of the samples. <c>Se</c> and <c>Ah</c> have no meaning and are ignored, like the
+    /// parameters of the scans of a sequential frame.
+    /// </summary>
+    private void ValidateLosslessScan(ReadOnlySpan<byte> payload, int count)
+    {
+        var parameters = payload[(1 + (2 * count))..];
+        var predictor = parameters[0];
+        var pointTransform = parameters[2] & 0x0F;
+        if (predictor is < 1 or > 7)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG lossless scan selects the predictor {predictor}; it must be between 1 and 7."));
+
+        if (pointTransform >= Precision)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The point transform of the JPEG lossless scan ({pointTransform}) leaves no bit of the {Precision}-bit samples."));
     }
 
     /// <summary>

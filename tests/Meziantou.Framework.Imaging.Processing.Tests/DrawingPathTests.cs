@@ -1621,6 +1621,312 @@ public sealed class DrawingPathTests
         }
     }
 
+    [Fact]
+    public void TheClosestPointOfAPathIsOnItsChordsWithItsDistanceAlongThePath()
+    {
+        // Two sides of a square: the nearest point of a side, of the corner, or of an end
+        var corner = new VectorPathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).Build();
+        AssertClosest(corner, new PointD(4, 3), new PointD(4, 0), 4);
+        AssertClosest(corner, new PointD(4, -3), new PointD(4, 0), 4);
+        AssertClosest(corner, new PointD(12, 5), new PointD(10, 5), 15);
+        AssertClosest(corner, new PointD(13, -4), new PointD(10, 0), 10);
+        AssertClosest(corner, new PointD(-3, -4), new PointD(0, 0), 0);
+        AssertClosest(corner, new PointD(20, 20), new PointD(10, 10), 20);
+        AssertClosest(corner, new PointD(10, 7), new PointD(10, 7), 17);
+
+        // As near to both sides: the first one along the path
+        AssertClosest(corner, new PointD(5, 5), new PointD(5, 0), 5);
+        AssertClosest(corner.Reverse(), new PointD(5, 5), new PointD(10, 5), 5);
+
+        // A closed contour has the segment that closes it, and the contours follow each other without the gap
+        // between them: 20 for the two sides, then the diagonal from its end
+        var triangle = new VectorPathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).Close().Build();
+        AssertClosest(triangle, new PointD(4, 5), new PointD(4.5, 4.5), 20 + (5.5 * Math.Sqrt(2)));
+        var two = new VectorPathBuilder().MoveTo(0, 0).LineTo(10, 0).MoveTo(0, 5).LineTo(10, 5).Build();
+        AssertClosest(two, new PointD(3, 4), new PointD(3, 5), 13);
+        AssertClosest(two, new PointD(3, 2), new PointD(3, 0), 3);
+
+        // A curve is its chords: the point is within 1/16 of a pixel of the circle, and the distance of the arc
+        var circle = new VectorPathBuilder().AddCircle(new PointD(50, 50), 40).Build();
+        Assert.True(circle.TryGetClosestPoint(new PointD(50, 150), out var bottom, out var quarter));
+        Assert.Equal(50, bottom.X, 0.0625);
+        Assert.Equal(90, bottom.Y, 0.0625);
+        Assert.Equal(Math.PI * 20, quarter, 0.1);
+        Assert.True(circle.TryGetClosestPoint(new PointD(50, 52), out var inside, out _));
+        Assert.InRange(inside.DistanceTo(new PointD(50, 50)), 40 - 0.0625, 40);
+
+        // The point at a distance is the nearest point to itself, at that distance
+        var curve = new VectorPathBuilder().MoveTo(2, 9).CubicBezierTo(3, -4, 9, 16, 13, 2).LineTo(20, 2).Build();
+        var length = curve.GetLength();
+        for (var i = 0; i <= 16; i++)
+        {
+            Assert.True(curve.TryGetPointAtDistance(length * i / 16, out var point, out _));
+            Assert.True(curve.TryGetClosestPoint(point, out var closest, out var distance));
+            Assert.Equal(point.X, closest.X, 1e-9);
+            Assert.Equal(point.Y, closest.Y, 1e-9);
+            Assert.Equal(length * i / 16, distance, 1e-9);
+        }
+
+        // A path without length has no point; a position that is not one is rejected
+        Assert.False(new VectorPathBuilder().Build().TryGetClosestPoint(new PointD(1, 1), out var none, out var zero));
+        Assert.Equal(default, none);
+        Assert.Equal(0, zero);
+        Assert.False(new VectorPathBuilder().MoveTo(3, 3).LineTo(3, 3).Build().TryGetClosestPoint(new PointD(1, 1), out _, out _));
+        Assert.Throws<ArgumentException>(() => corner.TryGetClosestPoint(new PointD(double.NaN, 0), out _, out _));
+        Assert.Throws<ArgumentException>(() => corner.TryGetClosestPoint(new PointD(0, double.PositiveInfinity), out _, out _));
+
+        static void AssertClosest(VectorPath path, PointD point, PointD expected, double expectedDistance)
+        {
+            Assert.True(path.TryGetClosestPoint(point, out var closest, out var distance));
+            Assert.Equal(expected.X, closest.X, 1e-12);
+            Assert.Equal(expected.Y, closest.Y, 1e-12);
+            Assert.Equal(expectedDistance, distance, 1e-12);
+        }
+    }
+
+    [Fact]
+    public void RoundedCornersAreArcsOfACircleThatTouchesBothSides()
+    {
+        // A rectangle gets the corners of a rounded rectangle: each corner is cut 2 from its vertex, and the contour
+        // starts where the arc of its first corner ends
+        var rectangle = new VectorPathBuilder().AddRectangle(new RectangleD(1, 1, 6, 5)).Build();
+        var rounded = rectangle.RoundCorners(2);
+        Assert.Equal(new RectangleD(1, 1, 6, 5), rounded.GetTightBounds());
+        Assert.Equal(
+            ["MoveTo (3, 1)", "LineTo (5, 1)", "ArcTo (7, 3)", "LineTo (7, 4)", "ArcTo (5, 6)", "LineTo (3, 6)", "ArcTo (1, 4)", "LineTo (1, 3)", "ArcTo (3, 1)", "Close"],
+            Describe(rounded));
+        Assert.All(rounded.EnumerateSegments().Where(segment => segment.Kind == PathSegmentKind.ArcTo), arc =>
+        {
+            Assert.Equal(2, arc.RadiusX, 1e-12);
+            Assert.Equal(2, arc.RadiusY, 1e-12);
+            Assert.True(arc.IsClockwise);
+            Assert.False(arc.IsLargeArc);
+        });
+        AssertClosePixels(canvas => canvas.Fill(White, new VectorPathBuilder().AddRoundedRectangle(new RectangleD(1, 1, 6, 5), 2).Build()), canvas => canvas.Fill(White, rounded));
+
+        // The other way around, the arcs turn the other way
+        Assert.All(rectangle.Reverse().RoundCorners(2).EnumerateSegments().Where(segment => segment.Kind == PathSegmentKind.ArcTo), arc => Assert.False(arc.IsClockwise));
+        AssertClosePixels(canvas => canvas.Fill(White, rounded), canvas => canvas.Fill(White, rectangle.Reverse().RoundCorners(2)));
+
+        // A radius that is too large for a side is the one that reaches the middle of the shorter side: a square
+        // becomes a circle, and the two corners of a side share its middle, exactly
+        var square = new VectorPathBuilder().AddRectangle(new RectangleD(1, 1, 6, 6)).Build();
+        Assert.Equal(["MoveTo (4, 1)", "ArcTo (7, 4)", "ArcTo (4, 7)", "ArcTo (1, 4)", "ArcTo (4, 1)", "Close"], Describe(square.RoundCorners(100)));
+        AssertClosePixels(canvas => canvas.FillCircle(White, new PointD(4, 4), 3), canvas => canvas.Fill(White, square.RoundCorners(100)));
+        AssertClosePixels(canvas => canvas.Fill(White, new VectorPathBuilder().AddRoundedRectangle(new RectangleD(1, 1, 6, 5), 2.5).Build()), canvas => canvas.Fill(White, rectangle.RoundCorners(100)));
+
+        // The circle touches both sides at r tan(turn / 2) from the vertex: 3 for a radius of 4 in the corner of a
+        // 3-4-5 triangle whose sides make an angle of 2 atan(4 / 3) there... the right angle is cut at 4, and the
+        // center of each arc is at the radius from both sides
+        var triangle = new VectorPathBuilder().MoveTo(0, 0).LineTo(40, 0).LineTo(0, 30).Close().Build();
+        var soft = triangle.RoundCorners(4);
+        var segments = soft.EnumerateSegments().ToArray();
+        Assert.Equal(PathSegmentKind.MoveTo, segments[0].Kind);
+        Assert.Equal(new PointD(4, 0), segments[0].Point);
+        var arcs = segments.Where(segment => segment.Kind == PathSegmentKind.ArcTo).ToArray();
+        Assert.All(arcs, arc => Assert.Equal(4, arc.RadiusX, 1e-9));
+
+        // Inside the triangle, the circle of radius 4 that touches the two sides of the right angle has its center
+        // at (4, 4): the arc of that corner ends at (4, 0) and starts at (0, 4)
+        Assert.Equal(new PointD(4, 0), arcs[^1].Point);
+        Assert.Contains(segments, segment => segment.Kind == PathSegmentKind.LineTo && segment.Point == new PointD(0, 4));
+        Assert.True(soft.Contains(new PointD(2, 2)));
+        Assert.False(soft.Contains(new PointD(0.5, 0.5)));
+        Assert.False(soft.Contains(new PointD(38, 0.5)));
+        Assert.True(soft.Contains(new PointD(20, 1)));
+
+        // Every point of the result is in the triangle, and at the radius from its three corners' circles or on its sides
+        Assert.All(Flatten(soft), point =>
+        {
+            Assert.InRange(point.X, -1e-9, 40);
+            Assert.InRange(point.Y, -1e-9, 30);
+            Assert.InRange((point.X / 40) + (point.Y / 30), 0, 1 + 1e-9);
+        });
+
+        // An open contour keeps its ends, and what is not a corner between two straight segments is kept: a curve,
+        // a turn back, a segment that goes on
+        var open = new VectorPathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).Build();
+        Assert.Equal(["MoveTo (0, 0)", "LineTo (7, 0)", "ArcTo (10, 3)"], Describe(open.RoundCorners(3))[..3]);
+        Assert.Equal(new PointD(10, 10), open.RoundCorners(3).EnumerateSegments().Last().Point);
+        var kept = new VectorPathBuilder().MoveTo(0, 0).LineTo(10, 0).QuadraticBezierTo(15, 0, 15, 5).LineTo(15, 10).LineTo(15, 20).LineTo(15, 12).Build();
+        Assert.Equal(Describe(kept), Describe(kept.RoundCorners(2)));
+        var ellipse = new VectorPathBuilder().AddEllipse(new PointD(5, 5), 4, 2).AddEllipse(new PointD(5, 5), 4, 2, 30).AddArc(new PointD(3, 3), 2, 2, 0, 200).Build();
+        Assert.Equal(ellipse.ToSvgPathData(), ellipse.RoundCorners(1).ToSvgPathData());
+
+        // A contour that ends where it started, then is closed, has a corner there too
+        var explicitly = new VectorPathBuilder().MoveTo(1, 1).LineTo(7, 1).LineTo(7, 6).LineTo(1, 6).LineTo(1, 1).Close().Build();
+        AssertClosePixels(canvas => canvas.Fill(White, rounded), canvas => canvas.Fill(White, explicitly.RoundCorners(2)));
+
+        // The stroke of the result has no spike where two arcs meet
+        using (var image = new Image<Gray8>(16, 16, new Gray8(0)))
+        {
+            var pen = new Pen(White, 2);
+            image.Draw(canvas => canvas.Stroke(pen, new VectorPathBuilder().AddRectangle(new RectangleD(4, 4, 8, 8)).Build().RoundCorners(100)), Ct);
+            var samples = DrawingTestSupport.ReadSamples(image.Frames[0]);
+            Assert.Equal(0, samples[0]);
+            Assert.Equal(0, samples[(1 * 16) + 8]);
+            Assert.Equal(0, samples[(8 * 16) + 1]);
+            Assert.Equal(Math.PI * (25 - 9), samples.Sum() / 255.0, 0.5);
+        }
+
+        // Nothing to round
+        Assert.Same(rectangle, rectangle.RoundCorners(0));
+        var empty = new VectorPathBuilder().Build();
+        Assert.Same(empty, empty.RoundCorners(3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => rectangle.RoundCorners(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => rectangle.RoundCorners(16777217));
+        Assert.Throws<ArgumentException>(() => rectangle.RoundCorners(double.NaN));
+
+        static string[] Describe(VectorPath path) => [.. path.EnumerateSegments().Select(segment => segment.Kind is PathSegmentKind.Close ? "Close" : string.Create(CultureInfo.InvariantCulture, $"{segment.Kind} ({Math.Round(segment.Point.X, 9, MidpointRounding.AwayFromZero)}, {Math.Round(segment.Point.Y, 9, MidpointRounding.AwayFromZero)})"))];
+    }
+
+    [Fact]
+    public void AnOffsetPathIsTheOutlineOfItsAreaMovedByADistance()
+    {
+        // With miter corners, a rectangle stays a rectangle, larger or smaller by the distance on every side
+        var rectangle = new VectorPathBuilder().AddRectangle(new RectangleD(10, 10, 20, 10)).Build();
+        Assert.Equal("M8 8 L32 8 L32 22 L8 22 Z", rectangle.Offset(2).ToSvgPathData());
+        Assert.Equal("M12 12 L28 12 L28 18 L12 18 Z", rectangle.Offset(-2).ToSvgPathData());
+        Assert.Equal("M10 10 L30 10 L30 20 L10 20 Z", rectangle.Offset(0).ToSvgPathData());
+        Assert.Equal("M8 8 L32 8 L32 22 L8 22 Z", rectangle.Reverse().Offset(2).ToSvgPathData());
+
+        // Bevel corners are cut, and round ones are within the distance of the corner
+        Assert.Equal("M10 8 L30 8 L32 10 L32 20 L30 22 L10 22 L8 20 L8 10 Z", rectangle.Offset(2, LineJoin.Bevel).ToSvgPathData());
+        var round = rectangle.Offset(4, LineJoin.Round);
+        Assert.Equal(RectangleD.FromLTRB(6, 6, 34, 24), round.GetTightBounds());
+        Assert.Equal((28 * 18) - ((4 - Math.PI) * 16), GetArea(round), 0.5);
+        Assert.False(round.Contains(new PointD(6.5, 6.5)));
+        Assert.True(round.Contains(new PointD(7.5, 7.5)));
+
+        // A miter longer than the limit allows is beveled: a corner of 30 degrees has a miter of 1 / sin(15 degrees) =
+        // 3.86 times the width. The tip of the miter is 2 / sin(15 degrees) from the corner, along its bisector; the
+        // bevel goes from 2 above the corner to 2 along the normal of the other side, (1, sqrt(3)) from the corner.
+        var wedge = new VectorPathBuilder().MoveTo(0, 0).LineTo(40, 0).LineTo(40 - (40 * Math.Cos(Math.PI / 6)), 40 * Math.Sin(Math.PI / 6)).Close().Build().Transform(AffineTransform.CreateTranslation(20, 20));
+        Assert.Equal(60 + (2 / Math.Tan(Math.PI / 12)), wedge.Offset(2, LineJoin.Miter, miterLimit: 4).GetTightBounds().Right, 0.01);
+        Assert.Equal(61, wedge.Offset(2, LineJoin.Miter, miterLimit: 3).GetTightBounds().Right, 0.01);
+        Assert.Equal(61, wedge.Offset(2, LineJoin.Bevel).GetTightBounds().Right, 0.01);
+
+        // A hole gets smaller when the shape grows and larger when it shrinks, whatever the rule that makes it a hole
+        var frame = new VectorPathBuilder().AddRectangle(new RectangleD(0, 0, 30, 30)).AddRectangle(new RectangleD(10, 10, 10, 10)).Build().Transform(AffineTransform.CreateTranslation(5, 5));
+        Assert.Equal("M3 3 L37 3 L37 37 L3 37 Z M17 17 L17 23 L23 23 L23 17 Z", frame.Offset(2, fillRule: FillRule.EvenOdd).ToSvgPathData());
+        Assert.Equal("M7 7 L33 7 L33 33 L7 33 Z M13 13 L13 27 L27 27 L27 13 Z", frame.Offset(-2, fillRule: FillRule.EvenOdd).ToSvgPathData());
+        Assert.Equal("M0 0 L40 0 L40 40 L0 40 Z", frame.Offset(5, fillRule: FillRule.EvenOdd).ToSvgPathData());
+        Assert.True(frame.Offset(-5, fillRule: FillRule.EvenOdd).IsEmpty);
+
+        // The contours inside the area are no part of its boundary: with the non-zero rule, the inner square is
+        // filled, and the shape shrinks as the outer square does
+        Assert.Equal("M7 7 L33 7 L33 33 L7 33 Z", frame.Offset(-2).ToSvgPathData());
+
+        // Two shapes that overlap are moved as the one shape they fill: the notch between them has no band cut in it
+        var cross = new VectorPathBuilder().AddRectangle(new RectangleD(20, 10, 10, 30)).AddRectangle(new RectangleD(10, 20, 30, 10)).Build();
+        Assert.Equal("M22 12 L28 12 L28 22 L38 22 L38 28 L28 28 L28 38 L22 38 L22 28 L12 28 L12 22 L22 22 Z", cross.Offset(-2).ToSvgPathData());
+        Assert.Equal(cross.Simplify().Offset(3).ToSvgPathData(), cross.Offset(3).ToSvgPathData());
+
+        // Each bar is 16 by 36 once it has grown by 3, and they share a square of 16
+        Assert.Equal(500, GetArea(cross), 0.01);
+        Assert.Equal((2 * 16 * 36) - (16 * 16), GetArea(cross.Offset(3)), 0.01);
+
+        // A shape that grows, then shrinks by as much, comes back; one that shrinks loses what is too narrow
+        Assert.Equal(cross.Simplify().ToSvgPathData(), cross.Offset(3).Offset(-3).ToSvgPathData());
+        Assert.Equal("M24 14 L26 14 L26 24 L36 24 L36 26 L26 26 L26 36 L24 36 L24 26 L14 26 L14 24 L24 24 Z", cross.Offset(-4).ToSvgPathData());
+        Assert.True(cross.Offset(-5).IsEmpty);
+        Assert.True(cross.Offset(-7).IsEmpty);
+
+        // With round corners, what is left of the middle of the cross is what is further than the distance from
+        // the four notches: the bars are gone, the middle is not
+        var middle = cross.Offset(-5, LineJoin.Round);
+        Assert.True(middle.Contains(new PointD(25, 25)));
+        Assert.False(middle.Contains(new PointD(25, 15)));
+        Assert.InRange(GetArea(middle), 1, 100 - (25 * Math.PI) + 1);
+
+        // A curve stays round, whatever the join: a small circle that grows a lot is a circle, not the polygon of
+        // its chords with pointed corners
+        var dot = new VectorPathBuilder().AddCircle(new PointD(40, 40), 2).Build();
+        foreach (var join in new[] { LineJoin.Miter, LineJoin.Round, LineJoin.Bevel })
+        {
+            var grown = dot.Offset(30, join);
+            Assert.All(Flatten(grown), point => Assert.InRange(Math.Sqrt(((point.X - 40) * (point.X - 40)) + ((point.Y - 40) * (point.Y - 40))), 32 - 0.13, 32 + 0.01));
+            Assert.Equal(Math.PI * 32 * 32, GetArea(grown), 16.0);
+        }
+
+        Assert.Equal(Math.PI * 15 * 15, GetArea(new VectorPathBuilder().AddCircle(new PointD(40, 40), 20).Build().Offset(-5)), 3.0);
+
+        // A rounded rectangle keeps its round corners and gets the corner radius plus the distance
+        var card = new VectorPathBuilder().AddRoundedRectangle(new RectangleD(20, 20, 30, 20), 4).Build();
+        Assert.Equal(GetArea(new VectorPathBuilder().AddRoundedRectangle(new RectangleD(14, 14, 42, 32), 10).Build()), GetArea(card.Offset(6)), 1.5);
+        Assert.Equal(GetArea(new VectorPathBuilder().AddRoundedRectangle(new RectangleD(22, 22, 26, 16), 2).Build()), GetArea(card.Offset(-2)), 1.0);
+
+        // An open contour is closed as when it is filled; a path that fills nothing has no outline
+        Assert.Equal("M8 8 L32 8 L32 22 L8 22 Z", new VectorPathBuilder().MoveTo(10, 10).LineTo(30, 10).LineTo(30, 20).LineTo(10, 20).Build().Offset(2).ToSvgPathData());
+        Assert.True(new VectorPathBuilder().MoveTo(2, 2).LineTo(8, 8).Build().Offset(3).IsEmpty);
+        Assert.True(new VectorPathBuilder().Build().Offset(3).IsEmpty);
+
+        Assert.Throws<ArgumentException>(() => rectangle.Offset(double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => rectangle.Offset(16777217));
+        Assert.Throws<ArgumentOutOfRangeException>(() => rectangle.Offset(-16777217));
+        Assert.Throws<ArgumentOutOfRangeException>(() => rectangle.Offset(16777216));
+        Assert.Throws<ArgumentOutOfRangeException>(() => rectangle.Offset(1, (LineJoin)3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => rectangle.Offset(1, miterLimit: 0.5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => rectangle.Offset(1, miterLimit: double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => rectangle.Offset(1, fillRule: (FillRule)2));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => rectangle.Offset(1, cancellationToken: canceled.Token));
+
+        static double GetArea(VectorPath path)
+        {
+            using var image = new Image<Gray16>(80, 80, new Gray16(0));
+            image.Draw(canvas => canvas.Fill(White, path), Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]).Sum(sample => (long)sample) / 65535.0;
+        }
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void AnOffsetPathContainsWhatIsWithinTheDistanceOfTheShape(int seed)
+    {
+        // Random polygons, moved outward and inward with round corners: a point is inside the result when it is
+        // within the distance of the shape, or further than the distance from what is outside the shape
+        var random = new Random(seed);
+        var builder = new VectorPathBuilder();
+        for (var shape = 0; shape < 3; shape++)
+        {
+            var points = new PointD[3 + random.Next(4)];
+            for (var i = 0; i < points.Length; i++)
+            {
+                points[i] = new PointD(10 + (random.NextDouble() * 40), 10 + (random.NextDouble() * 40));
+            }
+
+            builder.AddPolygon(points);
+        }
+
+        var path = builder.Build();
+        var outline = path.Simplify();
+        const double Distance = 3;
+        var larger = path.Offset(Distance, LineJoin.Round);
+        var smaller = path.Offset(-Distance, LineJoin.Round);
+        var edges = Flatten(outline);
+        Assert.NotEmpty(edges);
+        for (var i = 0; i < 2000; i++)
+        {
+            var point = new PointD(random.NextDouble() * 60, random.NextDouble() * 60);
+            var isInside = path.Contains(point);
+            Assert.True(outline.TryGetClosestPoint(point, out var closest, out _));
+            var distance = point.DistanceTo(closest);
+
+            // A point too near the boundary of the result is left out: the chords of its round corners are within
+            // 1/16 of a pixel of them
+            if (Math.Abs(distance - Distance) < 0.07)
+                continue;
+
+            Assert.Equal(isInside || distance < Distance, larger.Contains(point));
+            Assert.Equal(isInside && distance > Distance, smaller.Contains(point));
+        }
+    }
+
     private static void AssertRectangle(RectangleD expected, RectangleD actual, double tolerance)
     {
         Assert.Equal(expected.Left, actual.Left, tolerance);

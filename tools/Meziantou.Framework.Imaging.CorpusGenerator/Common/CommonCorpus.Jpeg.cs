@@ -105,6 +105,7 @@ internal static partial class CommonCorpus
             0xC3 => "lossless",
             0xC9 => "arithmetic-sequential",
             0xCA => "arithmetic-progressive",
+            0xCB => "lossless-arithmetic",
             _ => "sof-0x" + info.Sof.ToString("X2", System.Globalization.CultureInfo.InvariantCulture),
         };
         features.Add("jpeg.process=" + sofName);
@@ -141,6 +142,17 @@ internal static partial class CommonCorpus
             features.Add("jpeg.scanComponents=" + string.Join(',', info.ScanComponents));
         if (info.Sof is 0xC2 or 0xCA)
             features.AddRange(ProgressiveFeatures(info));
+        if (info.Sof is 0xC3 or 0xCB)
+        {
+            // A lossless scan selects a predictor with Ss and gives its point transform in Al (T.81 B.2.3)
+            foreach (var scan in info.ScanParameters)
+            {
+                features.Add("jpeg.predictor=" + Str(scan.Start));
+                if (scan.Low != 0)
+                    features.Add("jpeg.pointTransform=" + Str(scan.Low));
+            }
+        }
+
         if (info.Quantization16)
             features.Add("jpeg.quantization=16-bit");
         if (info.Restart != 0)
@@ -185,6 +197,55 @@ internal static partial class CommonCorpus
         if (low.Values.Any(value => value != 0))
             features.Add("jpeg.progressive=partial");
         return features;
+    }
+
+    /// <summary>The chroma upsampling of libjpeg-turbo's default ("fancy") decoding, which the library follows: the sample of
+    /// a subsampled plane for one pixel. Factor 2 horizontally: (3 s[j] + s[j - 1] + 1) >> 2 for the left pixel of a sample
+    /// and (3 s[j] + s[j + 1] + 2) >> 2 for the right one; factor 2 vertically: (3 near + far + 1) >> 2 for the upper row of
+    /// a sample (far is the row above) and (3 near + far + 2) >> 2 for the lower one; both: the column sums 3 near + far,
+    /// then (3 c[j] + c[j - 1] + 8) >> 4 and (3 c[j] + c[j + 1] + 7) >> 4. The edges are replicated. Any other factor, and
+    /// a horizontal factor of 2 on a plane of at most 2 samples, replicate the samples.</summary>
+    public static int JpegUpsample(int[] plane, int width, int height, int horizontal, int vertical, int x, int y)
+    {
+        int Sample(int column, int row) => plane[(Math.Clamp(row, 0, height - 1) * width) + Math.Clamp(column, 0, width - 1)];
+        if (horizontal == 1 && vertical == 1)
+            return Sample(x, y);
+
+        if (horizontal == 2 && width <= 2)
+            return Sample(x / horizontal, y / vertical);
+
+        if (vertical == 2 && horizontal <= 2)
+        {
+            var row = y / 2;
+            var far = y % 2 == 0 ? row - 1 : row + 1;
+            if (horizontal == 1)
+                return ((3 * Sample(x, row)) + Sample(x, far) + (y % 2 == 0 ? 1 : 2)) >> 2;
+
+            var column = x / 2;
+            var neighbor = x % 2 == 0 ? column - 1 : column + 1;
+            var near = (3 * Sample(column, row)) + Sample(column, far);
+            var other = (3 * Sample(neighbor, row)) + Sample(neighbor, far);
+            return ((3 * near) + other + (x % 2 == 0 ? 8 : 7)) >> 4;
+        }
+
+        if (vertical == 1 && horizontal == 2)
+        {
+            var column = x / 2;
+            var neighbor = x % 2 == 0 ? column - 1 : column + 1;
+            return ((3 * Sample(column, y)) + Sample(neighbor, y) + (x % 2 == 0 ? 1 : 2)) >> 2;
+        }
+
+        return Sample(x / horizontal, y / vertical);
+    }
+
+    /// <summary>The JFIF full-range conversion of 8-bit YCbCr samples to RGB, with the coefficients 1.402, 0.34414, 0.71414
+    /// and 1.772 in 16-bit fixed point (arithmetic shifts: rounding to nearest, ties upward), as libjpeg-turbo and the
+    /// library compute it.</summary>
+    public static (int R, int G, int B) JpegYCbCrToRgb(int y, int cb, int cr)
+    {
+        cb -= 128;
+        cr -= 128;
+        return (Clamp8(y + (((91881 * cr) + 32768) >> 16)), Clamp8(y + (((-22554 * cb) - (46802 * cr) + 32768) >> 16)), Clamp8(y + (((116130 * cb) + 32768) >> 16)));
     }
 
     /// <summary>bytes.decode("ascii", "replace").</summary>

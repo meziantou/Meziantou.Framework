@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -16,8 +17,19 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// In linear light, every paint is combined with the pixels by <see cref="DrawingKernels"/> on the values the
 /// transfer function of the image decodes its samples to (<see cref="Image.GetLinearLightTransfer"/>: sRGB unless the
-/// image declares another function): the shapes, the images, the layers when they are drawn on what is under them,
-/// and the shadows. The layers and the tiles of the patterns hold samples of the image: they have its function.
+/// image declares another function), or the tone curves of its ICC profile when the profile is not the one of sRGB
+/// (<see cref="LinearLightCurves"/>): the shapes, the images, the layers when they are drawn on what is under them,
+/// the shadows, and the blurs, which then add light. The layers and the tiles of the patterns hold samples of the
+/// image: they have its function.
+/// </para>
+/// <para>
+/// <b>Paint colors.</b> Inside <see cref="DrawingCanvas.PaintProfile(IccProfile, DrawingAction, IccColorTransformOptions)"/>,
+/// the colors that the caller gives are colors of a profile: the color of a solid brush, the stops of a gradient, the
+/// color of a shadow and the color the canvas is cleared with go through <see cref="PaintColorConverter"/> before
+/// they are converted to the pixel format. A gradient that mixes its stops in linear light or in Oklab mixes the
+/// colors as they are given, and converts each color it obtains. What already is samples of an image is not
+/// converted: the images that are drawn, the tiles of the patterns (whose drawings were), the layers, and the colors
+/// a font gives to its glyphs.
 /// </para>
 /// </remarks>
 internal sealed partial class DrawingSession
@@ -26,13 +38,27 @@ internal sealed partial class DrawingSession
 
     private bool _isAliased;
     // The transfer characteristics whose function decodes the samples to the light they are combined in, or 0 when
-    // they are combined as they are stored
+    // they are combined as they are stored, or when the tone curves of an ICC profile decode them
     private byte _transfer;
     private CompositingSpace _compositingSpace;
 
     // The transfer characteristics of the image for linear light, once they are known: 0 for samples that already are
-    // linear light, which are combined as they are
+    // linear light, which are combined as they are, and for those that the curves of an ICC profile decode
     private byte? _imageTransfer;
+
+    // The tone curves of the ICC profile of the image, when they are what decodes its samples to linear light, and
+    // those the draw calls use: the same ones in linear light, none otherwise
+    private LinearLightCurves? _imageCurves;
+    private LinearLightCurves? _curves;
+    private bool _ownsImageCurves;
+
+    // The image whose color space the samples that are drawn have: the image that is drawn on, also for the session
+    // that draws the tile of one of its patterns
+    private Image? _colorImage;
+
+    // The conversion that brings the colors of the paints to the color space of the image, or none when the paints
+    // are sample values of the image
+    private IccPipeline? _paintPipeline;
 
     /// <summary>Turns antialiasing on or off for the draw calls that follow.</summary>
     /// <returns>Whether antialiasing was on.</returns>
@@ -54,21 +80,25 @@ internal sealed partial class DrawingSession
     /// <summary>Sets the space in which the paints of the draw calls that follow are combined with the pixels.</summary>
     /// <returns>The space that was set.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The space is not defined.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">Linear light is requested for an image whose ICC profile is not recognized as sRGB, or whose transfer characteristics have no function.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">Linear light is requested for an image whose ICC profile has no tone curve per channel, or whose transfer characteristics have no function.</exception>
+    /// <exception cref="ImageResourceLimitException">The tables of the tone curves of the profile exceed the allocation limit.</exception>
     public CompositingSpace SetCompositingSpace(CompositingSpace space)
     {
         if (space is not (CompositingSpace.Encoded or CompositingSpace.LinearSrgb))
             throw new ArgumentOutOfRangeException(nameof(space), space, "The compositing space is not valid.");
 
         _cancellationToken.ThrowIfCancellationRequested();
-        if (space == CompositingSpace.LinearSrgb)
+        if (space == CompositingSpace.LinearSrgb && _imageTransfer is null)
         {
-            _imageTransfer ??= _image.GetLinearLightTransfer("compositing", "composite");
+            // The tone curves of a profile that is not the one of sRGB, or else the function the image declares
+            var image = _colorImage ?? _image;
+            _imageCurves = image.CreateLinearLightCurves();
+            _ownsImageCurves = _imageCurves is not null;
+            _imageTransfer = _imageCurves is null ? image.GetLinearLightTransfer("compositing", "composite") : (byte)0;
         }
 
         var previous = _compositingSpace;
-        _compositingSpace = space;
-        _transfer = space == CompositingSpace.LinearSrgb ? _imageTransfer.GetValueOrDefault() : (byte)0;
+        RestoreCompositingSpace(space);
         return previous;
     }
 
@@ -79,7 +109,41 @@ internal sealed partial class DrawingSession
     public void RestoreCompositingSpace(CompositingSpace space)
     {
         _compositingSpace = space;
-        _transfer = space == CompositingSpace.LinearSrgb ? _imageTransfer.GetValueOrDefault() : (byte)0;
+        var isLinear = space == CompositingSpace.LinearSrgb;
+        _transfer = isLinear ? _imageTransfer.GetValueOrDefault() : (byte)0;
+        _curves = isLinear ? _imageCurves : null;
+    }
+
+    /// <summary>Says that the colors of the paints of the draw calls that follow are colors of a profile: they are converted to the color space of the image.</summary>
+    /// <returns>The conversion that was set, to give back to <see cref="RestorePaintProfile"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="profile"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidImageContentException">A profile is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A profile is not supported in its role, or the color space of the image is unknown, ambiguous or of a high dynamic range.</exception>
+    public IccPipeline? SetPaintProfile(IccProfile profile, IccColorTransformOptions? options)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        _cancellationToken.ThrowIfCancellationRequested();
+        var pipeline = (_colorImage ?? _image).CreatePaintPipeline(profile, options ?? IccColorTransformOptions.Default);
+        var previous = _paintPipeline;
+        _paintPipeline = pipeline;
+        return previous;
+    }
+
+    /// <summary>Sets the conversion of the paints back to what <see cref="SetPaintProfile"/> returned.</summary>
+    public void RestorePaintProfile(IccPipeline? previous) => _paintPipeline = previous;
+
+    /// <summary>Gets the color a paint has in the color space of the image.</summary>
+    private Rgba64 ToImageColor(Rgba64 color) => PaintColorConverter.Convert(_paintPipeline, color);
+
+    private void DisposeRendering()
+    {
+        if (_ownsImageCurves)
+        {
+            _imageCurves?.Dispose();
+        }
+
+        _imageCurves = null;
+        _curves = null;
     }
 
     /// <summary>Makes the coverages of a run all or nothing, into the row of the session.</summary>

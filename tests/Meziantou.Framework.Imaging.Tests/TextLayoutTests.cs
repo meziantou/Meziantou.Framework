@@ -1,5 +1,6 @@
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -27,7 +28,29 @@ public sealed class TextLayoutTests
     /// </summary>
     private static Font Extended { get; } = CreateExtended();
 
+    /// <summary>
+    /// The boxes font with characters that are upright in a vertical line: the ideographs one, two and three drawn as
+    /// A, B and C, and the ideographic comma as the hyphen. The left corner bracket, drawn as B, is upright only with
+    /// a vertical form, which the font does not have. The Hebrew letters alef and bet are drawn as C and A. The font
+    /// has no vertical metrics: an upright glyph advances by the ascent and the descent, 16 pixels, and is centered
+    /// in that advance and on its line.
+    /// </summary>
+    private static Font Ideographs { get; } = CreateIdeographs();
+
     private static TextStyle Style { get; } = new(Boxes, 16);
+
+    private static Font CreateIdeographs()
+    {
+        var builder = FontSamples.Boxes();
+        builder.CharacterMap[0x4E00] = FontSamples.BoxA;
+        builder.CharacterMap[0x4E8C] = FontSamples.BoxB;
+        builder.CharacterMap[0x4E09] = FontSamples.BoxC;
+        builder.CharacterMap[0x3001] = FontSamples.HyphenGlyph;
+        builder.CharacterMap[0x300C] = FontSamples.BoxB;
+        builder.CharacterMap[0x05D0] = FontSamples.BoxC;
+        builder.CharacterMap[0x05D1] = FontSamples.BoxA;
+        return FontTestSupport.Load(builder);
+    }
 
     private static Font CreateExtended()
     {
@@ -679,6 +702,9 @@ public sealed class TextLayoutTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { FirstLineIndent = double.PositiveInfinity });
         Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { Alignment = (TextAlignment)4 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { Direction = (TextDirection)3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { WritingMode = (TextWritingMode)3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { WritingMode = (TextWritingMode)(-1) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { Orientation = (TextOrientation)3 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { Wrapping = (TextWrapping)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { WordBreak = (TextWordBreak)3 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { LineBreak = (TextLineBreak)3 });
@@ -896,6 +922,336 @@ public sealed class TextLayoutTests
         Assert.Equal([new RectangleD(0, 0, 4, 16)], ligature.GetSelectionRectangles(1, 1));
     }
 
+    [Fact]
+    public void AVerticalLineSetsUprightCharactersOneUnderTheOther()
+    {
+        // The line is 16 pixels wide, the ascent and the descent of the font, and its baseline is in its middle.
+        // Each ideograph advances by 16 pixels and is centered in them: there is no kerning between upright glyphs.
+        var style = new TextStyle(Ideographs, 16);
+        var layout = TextLayout.Create("\u4E00\u4E8C\u4E09", style, Vertical());
+        Assert.Equal(16, layout.Width);
+        Assert.Equal(48, layout.Height);
+        Assert.Equal(8, layout.Baseline);
+        Assert.Equal(new[] { new TextLine(0, 3, 0, 0, 16, 48, 8, false) }, layout.Lines);
+        Assert.Equal(RectangleD.FromLTRB(2, 2, 14, 48), layout.InkBounds);
+        AssertRectangles(layout, new PointD(3, 1), UprightA(0, 0), UprightB(0, 16), UprightC(0, 32));
+
+        // The ideographic comma is upright too, and a line of one column is the same whatever side lines go to
+        layout = TextLayout.Create("\u4E00\u3001", style, Vertical(mode: TextWritingMode.VerticalLeftToRight));
+        Assert.Equal(new[] { new TextLine(0, 2, 0, 0, 16, 32, 8, false) }, layout.Lines);
+        AssertRectangles(layout, new PointD(0, 0), UprightA(0, 0), (new RectangleD(5, 23, 6, 2), null));
+
+        // The path of the text is what is drawn
+        var path = TextLayout.Create("\u4E00\u4E8C", style, Vertical()).ToPath(new PointD(3, 1));
+        Assert.Equal(
+            Render(120, 70, canvas =>
+            {
+                canvas.FillRectangle(White, new RectangleD(5, 3, 12, 12));
+                canvas.FillRectangle(White, new RectangleD(8, 21, 6, 8));
+            }),
+            Render(120, 70, canvas => canvas.Fill(White, path)));
+    }
+
+    [Fact]
+    public void TheCharactersOfAVerticalLineAreUprightOrOnTheirSide()
+    {
+        // Latin letters are on their side: the line "AB" of a horizontal layout, with its kerning, turned a quarter
+        // of a turn clockwise, its baseline 5 pixels on the left of the middle of the line
+        var style = new TextStyle(Ideographs, 16);
+        var layout = TextLayout.Create("AB", style, Vertical());
+        Assert.Equal(16, layout.Width);
+        Assert.Equal(22, layout.Height);
+        Assert.Equal(RectangleD.FromLTRB(3, 2, 15, 21), layout.InkBounds);
+        AssertRectangles(layout, new PointD(0, 0), SidewaysA(0, 0), SidewaysB(0, 14));
+
+        // Both in one line: each one advances down the line
+        layout = TextLayout.Create("\u4E00A\u4E8C", style, Vertical());
+        Assert.Equal(48, layout.Height);
+        AssertRectangles(layout, new PointD(2, 1), UprightA(0, 0), SidewaysA(0, 16), UprightB(0, 32));
+
+        // A bracket is upright with the vertical form of its font: without one, it is on its side
+        layout = TextLayout.Create("\u300C", style, Vertical());
+        Assert.Equal(8, layout.Height);
+        AssertRectangles(layout, new PointD(0, 0), SidewaysB(0, 0));
+
+        // Every character upright, or every character on its side
+        layout = TextLayout.Create("AB", style, Vertical(orientation: TextOrientation.Upright));
+        Assert.Equal(32, layout.Height);
+        AssertRectangles(layout, new PointD(0, 0), UprightA(0, 0), UprightB(0, 16));
+        layout = TextLayout.Create("\u4E00\u4E8C", style, Vertical(orientation: TextOrientation.Sideways));
+        Assert.Equal(22, layout.Height);
+        AssertRectangles(layout, new PointD(0, 0), SidewaysA(0, 0), SidewaysB(0, 14));
+
+        // Right-to-left text is on its side and reads from the bottom of the line; upright, it reads from the top
+        layout = TextLayout.Create("\u05D0\u05D1", style, Vertical());
+        AssertRectangles(layout, new PointD(0, 0), SidewaysA(0, 0), SidewaysC(0, 16));
+        layout = TextLayout.Create("\u05D0\u05D1", style, Vertical(orientation: TextOrientation.Upright));
+        AssertRectangles(layout, new PointD(0, 0), UprightC(0, 0), UprightA(0, 16));
+
+        // The orientation is not used in a horizontal layout
+        layout = TextLayout.Create("\u4E00\u4E8C", style, new TextLayoutOptions { Orientation = TextOrientation.Sideways });
+        Assert.Equal(22, layout.Width);
+        Assert.Equal(16, layout.Height);
+        AssertRectangles(layout, new PointD(0, 0), A(0, 0), B(14, 0));
+    }
+
+    [Fact]
+    public void VerticalLinesFollowEachOtherToTheLeftOrToTheRight()
+    {
+        // The first line is the rightmost one, and the baseline of the layout is the one of that line
+        var style = new TextStyle(Ideographs, 16);
+        var layout = TextLayout.Create("\u4E00\u4E8C\n\u4E09", style, Vertical());
+        Assert.Equal(32, layout.Width);
+        Assert.Equal(32, layout.Height);
+        Assert.Equal(24, layout.Baseline);
+        Assert.Equal(new[] { new TextLine(0, 3, 16, 0, 16, 32, 8, false), new TextLine(3, 1, 0, 0, 16, 16, 8, false) }, layout.Lines);
+        AssertRectangles(layout, new PointD(1, 2), UprightA(16, 0), UprightB(16, 16), UprightC(0, 0));
+
+        // Or the leftmost one
+        layout = TextLayout.Create("\u4E00\u4E8C\n\u4E09", style, Vertical(mode: TextWritingMode.VerticalLeftToRight));
+        Assert.Equal(32, layout.Width);
+        Assert.Equal(8, layout.Baseline);
+        Assert.Equal(new[] { new TextLine(0, 3, 0, 0, 16, 32, 8, false), new TextLine(3, 1, 16, 0, 16, 16, 8, false) }, layout.Lines);
+        AssertRectangles(layout, new PointD(1, 2), UprightA(0, 0), UprightB(0, 16), UprightC(16, 0));
+
+        // Lines are wrapped at the height of the layout: two ideographs and a space are 40 pixels. The space that ends
+        // a wrapped line hangs.
+        layout = TextLayout.Create("\u4E00\u4E00 \u4E00\u4E00 \u4E00\u4E00", style, Vertical(maxHeight: 40));
+        Assert.Equal(3, layout.LineCount);
+        Assert.Equal(48, layout.Width);
+        Assert.Equal(32, layout.Height);
+        Assert.Equal(new TextLine(0, 3, 32, 0, 16, 32, 8, false), layout.Lines[0]);
+        Assert.Equal(new TextLine(6, 2, 0, 0, 16, 32, 8, false), layout.Lines[2]);
+        AssertRectangles(layout, new PointD(0, 0), UprightA(32, 0), UprightA(32, 16), UprightA(16, 0), UprightA(16, 16), UprightA(0, 0), UprightA(0, 16));
+        Assert.Equal(2, TextLayout.Create("\u4E00\u4E00 \u4E00\u4E00 \u4E00\u4E00", style, Vertical(maxHeight: 72)).LineCount);
+
+        // And aligned in it, from their top
+        layout = TextLayout.Create("\u4E00\u4E00\n\u4E00", style, Vertical(maxHeight: 40, alignment: TextAlignment.End));
+        Assert.Equal(new[] { new TextLine(0, 3, 16, 8, 16, 32, 8, false), new TextLine(3, 1, 0, 24, 16, 16, 8, false) }, layout.Lines);
+        AssertRectangles(layout, new PointD(0, 0), UprightA(16, 8), UprightA(16, 24), UprightA(0, 24));
+        layout = TextLayout.Create("\u4E00", style, Vertical(maxHeight: 40, alignment: TextAlignment.Center));
+        AssertRectangles(layout, new PointD(0, 0), UprightA(0, 12));
+
+        // The width is the room the lines must fit: the text is cut after the last line that does
+        layout = TextLayout.Create("\u4E00\n\u4E8C\n\u4E09", style, Vertical(maxWidth: 40));
+        Assert.Equal(2, layout.LineCount);
+        Assert.True(layout.IsTruncated);
+        Assert.Equal(32, layout.Width);
+
+        // A line that is not wrapped is trimmed at the height of the layout: the ellipsis is set as the text it ends
+        var trimmed = new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, MaxHeight = 40, Wrapping = TextWrapping.NoWrap, Trimming = TextTrimming.Character, Ellipsis = "\u3001" };
+        layout = TextLayout.Create("\u4E00\u4E00\u4E00\u4E00", style, trimmed);
+        Assert.True(layout.IsTruncated);
+        Assert.Equal(32, layout.Height);
+        AssertRectangles(layout, new PointD(0, 0), UprightA(0, 0), (new RectangleD(5, 23, 6, 2), null));
+
+        // A text is scaled to fit a box: four ideographs are 16 by 64 pixels
+        layout = TextLayout.CreateToFit("\u4E00\u4E00\u4E00\u4E00", style, 16, 32, Vertical());
+        Assert.Equal(0.5, layout.Scale);
+        Assert.Equal(8, layout.Width);
+        Assert.Equal(32, layout.Height);
+    }
+
+    [Fact]
+    public void AVerticalLineOfTextOnItsSideIsAHorizontalLineTurned()
+    {
+        // Everything a line has is turned with it: its glyphs, its decorations, its background, its alignment, the
+        // order of right-to-left text. The lines of the horizontal layout go down and those of the vertical layout
+        // to the left: the vertical layout is the horizontal one turned a quarter of a turn clockwise.
+        var decorated = new TextStyle(Ideographs, 16) { Decorations = TextDecorations.Underline | TextDecorations.Overline | TextDecorations.Strikethrough, Brush = Red, BackgroundBrush = Blue };
+        var plain = new TextStyle(Ideographs, 16);
+        var large = new TextStyle(Ideographs, 32) { Outline = new Pen(Blue, 2) };
+        var text = new RichTextBuilder().Append("AB BA ", plain).Append("AC", decorated).Append(" \u05D0\u05D1 B\nA", plain).Append("B", large).AppendPlaceholder(10, 6, 4, plain).Append(" \u4E00\u4E8C", plain).Build();
+        foreach (var (length, alignment, indent, lineHeight, direction) in ((double, TextAlignment, double, double?, TextDirection)[])
+            [
+                (double.PositiveInfinity, TextAlignment.Start, 0, null, TextDirection.Auto),
+                (60, TextAlignment.Start, 0, null, TextDirection.Auto),
+                (80, TextAlignment.End, 0, null, TextDirection.Auto),
+                (80, TextAlignment.Center, 8, null, TextDirection.Auto),
+                (80, TextAlignment.Justify, 0, 40, TextDirection.Auto),
+                (60, TextAlignment.Start, 0, null, TextDirection.RightToLeft),
+            ])
+        {
+            var horizontal = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = length, Alignment = alignment, FirstLineIndent = indent, LineHeight = lineHeight, Direction = direction });
+            var vertical = TextLayout.Create(text, new TextLayoutOptions
+            {
+                WritingMode = TextWritingMode.VerticalRightToLeft,
+                Orientation = TextOrientation.Sideways,
+                MaxHeight = length,
+                Alignment = alignment,
+                FirstLineIndent = indent,
+                LineHeight = lineHeight,
+                Direction = direction,
+            });
+            Assert.Equal(horizontal.Height, vertical.Width);
+            Assert.Equal(horizontal.Width, vertical.Height);
+            Assert.Equal(horizontal.LineCount, vertical.LineCount);
+            Assert.Equal(RectangleD.FromLTRB(horizontal.Height - horizontal.InkBounds.Bottom, horizontal.InkBounds.Left, horizontal.Height - horizontal.InkBounds.Top, horizontal.InkBounds.Right), vertical.InkBounds);
+            for (var i = 0; i < horizontal.LineCount; i++)
+            {
+                var line = horizontal.Lines[i];
+                Assert.Equal(new TextLine(line.Start, line.Length, horizontal.Height - line.Y - line.Height, line.X, line.Height, line.Width, vertical.Lines[i].Baseline, line.IsRightToLeft), vertical.Lines[i]);
+            }
+
+            Assert.Equal(
+                horizontal.Placeholders.Select(rectangle => new RectangleD(horizontal.Height - rectangle.Bottom, rectangle.X, rectangle.Height, rectangle.Width)),
+                vertical.Placeholders);
+
+            const int Width = 200;
+            const int Height = 180;
+            var expected = TurnClockwise(Render(Width, Height, canvas => canvas.FillText(White, horizontal, new PointD(4, 6))), Width, Height);
+            Assert.Contains(expected, sample => sample != 0);
+            Assert.Equal(expected, Render(Height, Width, canvas => canvas.FillText(White, vertical, new PointD(Height - 6 - vertical.Width, 4))));
+
+            // The positions of the text are turned too
+            for (var index = 0; index <= text.Text.Length; index++)
+            {
+                var caret = horizontal.GetCaretRectangle(index);
+                Assert.Equal(new RectangleD(horizontal.Height - caret.Bottom, caret.X, caret.Height, 0), vertical.GetCaretRectangle(index));
+            }
+
+            Assert.Equal(
+                horizontal.GetSelectionRectangles(2, text.Text.Length - 4).Select(rectangle => new RectangleD(horizontal.Height - rectangle.Bottom, rectangle.X, rectangle.Height, rectangle.Width)),
+                vertical.GetSelectionRectangles(2, text.Text.Length - 4));
+            for (var y = -3.5; y < horizontal.Height + 4; y += 5)
+            {
+                for (var x = -3.5; x < horizontal.Width + 4; x += 5)
+                {
+                    Assert.Equal(horizontal.HitTest(new PointD(x, y)), vertical.HitTest(new PointD(horizontal.Height - y, x)));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void ThePositionsOfAVerticalTextAreDownItsLines()
+    {
+        var style = new TextStyle(Ideographs, 16);
+        var layout = TextLayout.Create("\u4E00\u4E8C\n\u4E09", style, Vertical());
+
+        // The first line is the column from 16 to 32, and the second one the column from 0 to 16
+        Assert.Equal(new TextHit(0, 0, 1, isTrailing: false, isInside: true), layout.HitTest(new PointD(31, 0)));
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: false, isInside: true), layout.HitTest(new PointD(24, 20)));
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: true, isInside: true), layout.HitTest(new PointD(16, 28)));
+        Assert.Equal(new TextHit(1, 3, 1, isTrailing: false, isInside: true), layout.HitTest(new PointD(15.9, 4)));
+        Assert.Equal(new TextHit(1, 3, 1, isTrailing: true, isInside: false), layout.HitTest(new PointD(8, 30)));
+        Assert.Equal(new TextHit(0, 0, 1, isTrailing: false, isInside: false), layout.HitTest(new PointD(40, 4)));
+        Assert.Equal(new TextHit(1, 3, 1, isTrailing: false, isInside: false), layout.HitTest(new PointD(-5, 4)));
+        Assert.Equal(new TextHit(0, 0, 1, isTrailing: false, isInside: false), layout.HitTest(new PointD(24, -2)));
+
+        // A caret lies across its line, and a selection covers its characters down the line
+        Assert.Equal(new RectangleD(16, 0, 16, 0), layout.GetCaretRectangle(0));
+        Assert.Equal(new RectangleD(16, 16, 16, 0), layout.GetCaretRectangle(1));
+        Assert.Equal(new RectangleD(16, 32, 16, 0), layout.GetCaretRectangle(2));
+        Assert.Equal(new RectangleD(0, 0, 16, 0), layout.GetCaretRectangle(3));
+        Assert.Equal(new RectangleD(0, 16, 16, 0), layout.GetCaretRectangle(4));
+        Assert.Equal([new RectangleD(16, 0, 16, 32)], layout.GetSelectionRectangles(0, 2));
+        Assert.Equal([new RectangleD(16, 16, 16, 16), new RectangleD(0, 0, 16, 16)], layout.GetSelectionRectangles(1, 3));
+        Assert.Empty(layout.GetSelectionRectangles(1, 0));
+
+        // With lines that go to the right, the first line is the column from 0 to 16
+        layout = TextLayout.Create("\u4E00\u4E8C\n\u4E09", style, Vertical(mode: TextWritingMode.VerticalLeftToRight));
+        Assert.Equal(new TextHit(0, 1, 1, isTrailing: false, isInside: true), layout.HitTest(new PointD(8, 20)));
+        Assert.Equal(new TextHit(1, 3, 1, isTrailing: false, isInside: true), layout.HitTest(new PointD(16, 4)));
+        Assert.Equal(new TextHit(1, 3, 1, isTrailing: false, isInside: false), layout.HitTest(new PointD(40, 4)));
+        Assert.Equal(new RectangleD(0, 16, 16, 0), layout.GetCaretRectangle(1));
+        Assert.Equal(new RectangleD(16, 0, 16, 0), layout.GetCaretRectangle(3));
+        Assert.Equal([new RectangleD(0, 16, 16, 16), new RectangleD(16, 0, 16, 16)], layout.GetSelectionRectangles(1, 3));
+    }
+
+    [Fact]
+    public void AVerticalLineHasDecorationsBackgroundsAndPlaceholders()
+    {
+        // The underline is on the left of the line, where it is under the text that is on its side: 2 pixels after
+        // the baseline of that text, which is 5 pixels on the left of the middle of the line. The strikethrough of
+        // upright text is in the middle of the line. The background is the whole line.
+        var layout = TextLayout.Create("\u4E8C", new TextStyle(Ideographs, 16) { Decorations = TextDecorations.Underline }, Vertical());
+        AssertRectangles(layout, new PointD(4, 2), UprightB(0, 0), (new RectangleD(0, 0, 1, 16), null));
+        layout = TextLayout.Create("\u4E8C", new TextStyle(Ideographs, 16) { Decorations = TextDecorations.Strikethrough }, Vertical());
+        AssertRectangles(layout, new PointD(4, 2), UprightB(0, 0), (new RectangleD(7.5, 0, 1, 16), null));
+        layout = TextLayout.Create("\u4E8C\u4E00", new TextStyle(Ideographs, 16) { BackgroundBrush = Blue, Brush = Red }, Vertical());
+        AssertRectangles(layout, new PointD(4, 2), (new RectangleD(0, 0, 16, 32), Blue), (UprightB(0, 0).Rectangle, Red), (UprightA(0, 16).Rectangle, Red));
+
+        // A placeholder takes its height down the line and is centered on it; a wide one widens its line
+        var style = new TextStyle(Ideographs, 16);
+        var text = new RichTextBuilder().Append("\u4E00", style).AppendPlaceholder(10, 6, 0, style).Append("\u4E8C", style).Build();
+        layout = TextLayout.Create(text, Vertical());
+        Assert.Equal(16, layout.Width);
+        Assert.Equal(38, layout.Height);
+        Assert.Equal([new RectangleD(3, 16, 10, 6)], layout.Placeholders);
+        AssertRectangles(layout, new PointD(0, 0), UprightA(0, 0), UprightB(0, 22));
+        text = new RichTextBuilder().Append("\u4E00", style).AppendPlaceholder(24, 6, 0, style).Build();
+        layout = TextLayout.Create(text, Vertical());
+        Assert.Equal(24, layout.Width);
+        Assert.Equal(12, layout.Baseline);
+        Assert.Equal([new RectangleD(0, 16, 24, 6)], layout.Placeholders);
+        AssertRectangles(layout, new PointD(0, 0), UprightA(4, 0));
+    }
+
+    [Fact]
+    public void AVerticalTextFollowsAPathFromItsTop()
+    {
+        // Down a vertical line, the text is the one drawn at a point: the path is the baseline of the first line,
+        // in the middle of it, and the lines that follow are on its left
+        var style = new TextStyle(Ideographs, 16) { Decorations = TextDecorations.Underline, BackgroundBrush = Blue };
+        var down = new VectorPathBuilder().MoveTo(60, 5).LineTo(60, 70).Build();
+        foreach (var orientation in (TextOrientation[])[TextOrientation.Mixed, TextOrientation.Upright, TextOrientation.Sideways])
+        {
+            var layout = TextLayout.Create("\u4E00A\u4E8C\n\u4E09B", style, Vertical(orientation: orientation));
+            var expected = Render(120, 70, canvas => canvas.FillText(White, layout, new PointD(60 - layout.Baseline, 5)));
+            Assert.Contains(expected, sample => sample != 0);
+            Assert.Equal(expected, Render(120, 70, canvas => canvas.FillText(White, layout, down)));
+
+            // Aligned at the end of the path, the text ends there
+            var end = Render(120, 70, canvas => canvas.FillText(White, layout, new PointD(60 - layout.Baseline, 70 - layout.Height)));
+            Assert.Equal(end, Render(120, 70, canvas => canvas.FillText(White, layout, down, new TextPathOptions { Alignment = TextPathAlignment.End })));
+        }
+
+        // Along a line that goes to the right, the text is turned with its line: a quarter of a turn counterclockwise
+        var upright = TextLayout.Create("\u4E00\u4E8C", new TextStyle(Ideographs, 16), Vertical());
+        var right = new VectorPathBuilder().MoveTo(10, 30).LineTo(110, 30).Build();
+        Assert.Equal(
+            Render(120, 70, canvas =>
+            {
+                canvas.FillRectangle(White, new RectangleD(12, 24, 12, 12));
+                canvas.FillRectangle(White, new RectangleD(30, 27, 8, 6));
+            }),
+            Render(120, 70, canvas => canvas.FillText(White, upright, right)));
+    }
+
+    [Fact]
+    public void AFontSetsItsVerticalFormsAndItsVerticalMetrics()
+    {
+        // In this font, the brackets, the comma, the full stop and the long vowel mark have vertical forms: they
+        // are upright, as the ideographs are, and its Latin letters are on their side
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans-cjk" / "NotoSansCJKjp-Regular.subset.otf");
+        var style = new TextStyle(font, 16);
+        const string Japanese = "\u300C\u65E5\u672C\u300D\u3001\u30FC\u3002";
+        var mixed = RenderVertical(TextLayout.Create(Japanese, style, Vertical()));
+        Assert.Contains(mixed, sample => sample != 0);
+        Assert.Equal(RenderVertical(TextLayout.Create(Japanese, style, Vertical(orientation: TextOrientation.Upright))), mixed);
+        Assert.NotEqual(RenderVertical(TextLayout.Create(Japanese, style, Vertical(orientation: TextOrientation.Sideways))), mixed);
+
+        mixed = RenderVertical(TextLayout.Create("ABC", style, Vertical()));
+        Assert.Equal(RenderVertical(TextLayout.Create("ABC", style, Vertical(orientation: TextOrientation.Sideways))), mixed);
+        Assert.NotEqual(RenderVertical(TextLayout.Create("ABC", style, Vertical(orientation: TextOrientation.Upright))), mixed);
+
+        // The vertical forms are a feature of the font, which a style can turn off: the glyphs of a horizontal line
+        // are then set upright
+        var withoutForms = TextLayout.Create(Japanese, new TextStyle(font, 16) { Features = [new FontFeature("vert", 0)] }, Vertical(orientation: TextOrientation.Upright));
+        Assert.NotEqual(RenderVertical(TextLayout.Create(Japanese, style, Vertical(orientation: TextOrientation.Upright))), RenderVertical(withoutForms));
+
+        // Every glyph advances by one em, the advance height of the font, and the line is as wide as its line height
+        var layout = TextLayout.Create(Japanese, style, Vertical());
+        var horizontal = TextLayout.Create(Japanese, style);
+        Assert.Equal(7 * 16, layout.Height);
+        Assert.Equal(horizontal.Height, layout.Width);
+        Assert.Equal(horizontal.Height / 2, layout.Baseline);
+        Assert.False(layout.HasMissingGlyphs);
+
+        static int[] RenderVertical(TextLayout layout) => Render(60, 140, canvas => canvas.FillText(White, layout, new PointD(10, 5)));
+    }
+
     private static (RectangleD Rectangle, Brush? Brush) A(double x, double y) => (new RectangleD(x + 2, y + 1, 12, 12), null);
 
     private static (RectangleD Rectangle, Brush? Brush) B(double x, double y) => (new RectangleD(x + 1, y + 5, 6, 8), null);
@@ -903,6 +1259,44 @@ public sealed class TextLayoutTests
     private static (RectangleD Rectangle, Brush? Brush) C(double x, double y) => (new RectangleD(x, y, 12, 16), null);
 
     private static (RectangleD Rectangle, Brush? Brush) Hyphen(double x, double y) => (new RectangleD(x + 1, y + 8, 6, 2), null);
+
+    private static TextLayoutOptions Vertical(
+        TextWritingMode mode = TextWritingMode.VerticalRightToLeft,
+        TextOrientation orientation = TextOrientation.Mixed,
+        double maxHeight = double.PositiveInfinity,
+        double maxWidth = double.PositiveInfinity,
+        TextAlignment alignment = TextAlignment.Start)
+        => new() { WritingMode = mode, Orientation = orientation, MaxHeight = maxHeight, MaxWidth = maxWidth, Alignment = alignment };
+
+    /// <summary>The glyph A upright in a vertical line, from the left of the line and from where the pen is down the line.</summary>
+    private static (RectangleD Rectangle, Brush? Brush) UprightA(double x, double y) => (new RectangleD(x + 2, y + 2, 12, 12), null);
+
+    private static (RectangleD Rectangle, Brush? Brush) UprightB(double x, double y) => (new RectangleD(x + 5, y + 4, 6, 8), null);
+
+    private static (RectangleD Rectangle, Brush? Brush) UprightC(double x, double y) => (new RectangleD(x + 2, y, 12, 16), null);
+
+    /// <summary>The glyph A on its side in a vertical line, from the left of the line and from where the pen is down the line.</summary>
+    private static (RectangleD Rectangle, Brush? Brush) SidewaysA(double x, double y) => (new RectangleD(x + 3, y + 2, 12, 12), null);
+
+    private static (RectangleD Rectangle, Brush? Brush) SidewaysB(double x, double y) => (new RectangleD(x + 3, y + 1, 8, 6), null);
+
+    private static (RectangleD Rectangle, Brush? Brush) SidewaysC(double x, double y) => (new RectangleD(x, y, 16, 12), null);
+
+    /// <summary>Turns the samples of an image a quarter of a turn clockwise: the pixel (x, y) becomes the pixel (height - 1 - y, x).</summary>
+    private static int[] TurnClockwise(int[] samples, int width, int height)
+    {
+        var channels = samples.Length / (width * height);
+        var result = new int[samples.Length];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                samples.AsSpan(((y * width) + x) * channels, channels).CopyTo(result.AsSpan(((x * height) + (height - 1 - y)) * channels, channels));
+            }
+        }
+
+        return result;
+    }
 
     /// <summary>
     /// Asserts that a layout paints exactly the given rectangles of whole pixels, each with its brush or, without one,

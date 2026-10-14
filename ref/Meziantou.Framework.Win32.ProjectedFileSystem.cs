@@ -13,8 +13,8 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
     public sealed class Notification
     {
-        public string? Path { get => throw null; }
         public Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_NOTIFY_TYPES NotificationType { get => throw null; }
+        public string? Path { get => throw null; }
         public Notification(Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_NOTIFY_TYPES notificationType) { }
         public Notification(string? path, Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_NOTIFY_TYPES notificationType) { }
     }
@@ -73,36 +73,36 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
     [System.Runtime.Versioning.SupportedOSPlatform("windows10.0.17763")]
     public abstract class ProjectedFileSystemBase : System.IDisposable
     {
-        public string RootFolder { get => throw null; }
         protected int BufferSize { get => throw null; set { } }
+        public string RootFolder { get => throw null; }
         protected ProjectedFileSystemBase(string rootFolder) { }
-        public void Start(Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemStartOptions? options) { }
-        public static Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_FILE_STATE GetOnDiskFileState(string path) => throw null;
-        protected void ClearNegativePathCache() { }
-        protected bool DeleteFile(string relativePath, Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_UPDATE_TYPES updateFlags, out Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_UPDATE_FAILURE_CAUSES failureReason) => throw null;
-        public void Stop() { }
-        protected static bool FileNameMatch(string fileName, string pattern) => throw null;
         protected static bool AreFileNamesEqual(string fileName1, string fileName2) => throw null;
+        protected void ClearNegativePathCache() { }
         protected static int CompareFileName(string fileName1, string fileName2) => throw null;
-        protected abstract System.Threading.Tasks.ValueTask<System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemEntry>> GetEntriesAsync(string path);
-        protected virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemEntry?> GetEntryAsync(string path) => throw null;
-        protected abstract System.Threading.Tasks.ValueTask<System.IO.Stream?> OpenReadAsync(string path);
+        protected bool DeleteFile(string relativePath, Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_UPDATE_TYPES updateFlags, out Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_UPDATE_FAILURE_CAUSES failureReason) => throw null;
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        protected static bool FileNameMatch(string fileName, string pattern) => throw null;
+        protected abstract System.Threading.Tasks.ValueTask<System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemEntry>> GetEntriesAsync(string path);
+        protected virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemEntry?> GetEntryAsync(string path) => throw null;
+        public static Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_FILE_STATE GetOnDiskFileState(string path) => throw null;
+        protected abstract System.Threading.Tasks.ValueTask<System.IO.Stream?> OpenReadAsync(string path);
+        public void Start(Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemStartOptions? options) { }
+        public void Stop() { }
     }
 
     public sealed class ProjectedFileSystemEntry
     {
         public bool IsDirectory { get => throw null; }
-        public string Name { get => throw null; }
         public int Length { get => throw null; }
-        public static Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemEntry File(string name, int length) => throw null;
+        public string Name { get => throw null; }
         public static Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemEntry Directory(string name) => throw null;
+        public static Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemEntry File(string name, int length) => throw null;
     }
 
     public sealed class ProjectedFileSystemStartOptions
     {
-        public bool UseNegativePathCache { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.Win32.ProjectedFileSystem.Notification> Notifications { get => throw null; }
+        public bool UseNegativePathCache { get => throw null; set { } }
     }
 }

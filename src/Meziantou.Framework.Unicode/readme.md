@@ -78,6 +78,7 @@ UnicodeProperties.GetLineBreakClass(0x00A0);         // Glue
 UnicodeProperties.GetGraphemeClusterBreak(0x200D);   // ZWJ
 UnicodeProperties.GetWordBreak('_');                 // ExtendNumLet
 UnicodeProperties.GetEastAsianWidth(0x4E00);         // Wide
+UnicodeProperties.GetVerticalOrientation(0x300C);    // TransformedRotated
 UnicodeProperties.GetJoiningType(0x0628);            // DualJoining
 UnicodeProperties.GetIndicSyllabicCategory(0x094D);  // Virama
 UnicodeProperties.IsDefaultIgnorable(0x00AD);        // true

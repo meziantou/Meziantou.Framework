@@ -653,6 +653,58 @@ public sealed class VectorPathBuilder
         SetCurrentPoint(x, y);
     }
 
+    /// <summary>Adds an element of a path as it is stored: the coordinates are those of a path, which validated them.</summary>
+    /// <param name="command">The element: a curve, an arc or an ellipse.</param>
+    /// <param name="coordinates">Its coordinates.</param>
+    internal void AppendElement(PathCommand command, ReadOnlySpan<double> coordinates)
+    {
+        switch (command)
+        {
+            case PathCommand.QuadraticTo or PathCommand.CubicTo:
+                BeginSegment();
+                _commands.Add(command);
+                for (var i = 0; i < coordinates.Length; i += 2)
+                {
+                    AppendPoint(coordinates[i], coordinates[i + 1]);
+                }
+
+                SetCurrentPoint(coordinates[^2], coordinates[^1]);
+                break;
+
+            case PathCommand.Arc or PathCommand.ArcContinuation:
+                BeginSegment();
+                AppendArc(new ArcPiece(coordinates, command == PathCommand.ArcContinuation));
+                break;
+
+            case PathCommand.Ellipse:
+                _commands.Add(command);
+                _points.AddRange(coordinates);
+                Include(coordinates[0] - coordinates[2], coordinates[1] - coordinates[3]);
+                Include(coordinates[0] + coordinates[2], coordinates[1] + coordinates[3]);
+                _startX = coordinates[0] + coordinates[2];
+                _startY = coordinates[1];
+                _hasCurrentPoint = true;
+                EndContour();
+                break;
+
+            case PathCommand.EllipseAxes:
+                _commands.Add(command);
+                _points.AddRange(coordinates);
+                var extentX = Math.Abs(coordinates[2]) + Math.Abs(coordinates[4]);
+                var extentY = Math.Abs(coordinates[3]) + Math.Abs(coordinates[5]);
+                Include(coordinates[0] - extentX, coordinates[1] - extentY);
+                Include(coordinates[0] + extentX, coordinates[1] + extentY);
+                _startX = coordinates[0] + coordinates[2];
+                _startY = coordinates[1] + coordinates[3];
+                _hasCurrentPoint = true;
+                EndContour();
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(command), command, "The element is not a curve, an arc or an ellipse.");
+        }
+    }
+
     /// <summary>Makes sure a contour is open at the current point before a segment is appended.</summary>
     private void BeginSegment()
     {

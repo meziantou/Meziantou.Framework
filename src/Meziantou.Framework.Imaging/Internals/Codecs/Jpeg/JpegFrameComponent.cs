@@ -8,14 +8,20 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 /// <remarks>
 /// The plane holds whole bands of <c>8 * V</c> sample rows (one MCU row of an interleaved scan, or one block row of a
-/// single-component frame) of <c>McusX * H * 8</c> samples. A streaming plane keeps a ring of at most three bands (the band
+/// single-component frame) of <c>McusX * H * 8</c> samples. The data unit of a lossless frame is one sample instead of a
+/// block of 8 by 8 (T.81 H.1.1): its bands have <c>V</c> rows of <c>McusX * H</c> samples. A streaming plane keeps a ring of at most three bands (the band
 /// being written, the band waiting for its lower context row, and the band providing the upper context row); a full plane
 /// keeps every band (frames coded in several sequential scans). A sample is a byte, or 16 bits in native byte order when
-/// the precision of the frame is above 8 bits.
+/// the precision of the frame is not 8 bits.
 /// <para>
 /// Progressive frames also keep the quantized coefficients of every block of the padded block grid (<c>McusX * H</c> by
 /// <c>McusY * V</c> blocks, 64 16-bit values each in natural order) until the end of the image: a later scan may refine any
 /// coefficient of any block, so progressive reconstruction needs this whole-image state.
+/// </para>
+/// <para>
+/// Lossless frames keep the lines of one MCU row as they are decoded (<see cref="Differences"/>): the differences, then
+/// the samples they reconstruct before the point transform is undone, and the last line of the previous MCU row, which
+/// predicts the first one.
 /// </para>
 /// </remarks>
 internal sealed class JpegFrameComponent : IDisposable
@@ -24,12 +30,21 @@ internal sealed class JpegFrameComponent : IDisposable
     private int _bandCount;
     private PooledBuffer? _coefficients;
     private int _coefficientBlocksPerLine;
+    private PooledBuffer? _differences;
 
-    public JpegFrameComponent(int index, byte id, int horizontalSampling, int verticalSampling, int quantizationTable, int precision)
+    /// <param name="index">The index of the component in the frame header.</param>
+    /// <param name="id">The component identifier.</param>
+    /// <param name="horizontalSampling">The horizontal sampling factor.</param>
+    /// <param name="verticalSampling">The vertical sampling factor.</param>
+    /// <param name="quantizationTable">The quantization table selector.</param>
+    /// <param name="precision">The number of bits of a sample.</param>
+    /// <param name="dataUnitSize">The number of samples of a side of a data unit: 8 (a block), or 1 for a lossless frame (a sample).</param>
+    public JpegFrameComponent(int index, byte id, int horizontalSampling, int verticalSampling, int quantizationTable, int precision, int dataUnitSize = 8)
     {
         Index = index;
         Id = id;
         Precision = precision;
+        DataUnitSize = dataUnitSize;
         HorizontalSampling = horizontalSampling;
         VerticalSampling = verticalSampling;
         QuantizationTable = quantizationTable;
@@ -47,8 +62,14 @@ internal sealed class JpegFrameComponent : IDisposable
 
     public int QuantizationTable { get; }
 
-    /// <summary>Gets the number of bits of a sample (8 or 12).</summary>
+    /// <summary>Gets the number of bits of a sample (8 or 12, or 2 to 16 for a lossless frame).</summary>
     public int Precision { get; }
+
+    /// <summary>Gets a value indicating whether a sample of the plane is 16 bits wide (<see cref="DeepSamples"/>) rather than a byte.</summary>
+    public bool HasDeepSamples => Precision != 8;
+
+    /// <summary>Gets the number of samples of a side of a data unit: 8 (a block), or 1 for a lossless frame (a sample).</summary>
+    public int DataUnitSize { get; }
 
     /// <summary>Gets the number of samples per row: <c>ceil(X * H / Hmax)</c>.</summary>
     public int Width { get; private set; }
@@ -62,17 +83,17 @@ internal sealed class JpegFrameComponent : IDisposable
     /// <summary>Gets <c>Vmax / V</c>: the vertical upsampling factor.</summary>
     public int VerticalRatio { get; private set; }
 
-    /// <summary>Gets the number of blocks per row of a non-interleaved scan: <c>ceil(Width / 8)</c>.</summary>
-    public int BlocksPerLine => (Width + 7) / 8;
+    /// <summary>Gets the number of data units per row of a non-interleaved scan: <c>ceil(Width / 8)</c> blocks, or <c>Width</c> samples for a lossless frame.</summary>
+    public int BlocksPerLine => (Width + DataUnitSize - 1) / DataUnitSize;
 
-    /// <summary>Gets the number of block rows of a non-interleaved scan: <c>ceil(Height / 8)</c>.</summary>
-    public int BlocksPerColumn => (Height + 7) / 8;
+    /// <summary>Gets the number of rows of data units of a non-interleaved scan: <c>ceil(Height / 8)</c> block rows, or <c>Height</c> lines for a lossless frame.</summary>
+    public int BlocksPerColumn => (Height + DataUnitSize - 1) / DataUnitSize;
 
     /// <summary>Gets the distance between two sample rows of the plane, in samples.</summary>
     public int Stride { get; private set; }
 
-    /// <summary>Gets the number of sample rows of one band: <c>8 * V</c>.</summary>
-    public int BandRows => 8 * VerticalSampling;
+    /// <summary>Gets the number of sample rows of one band: <c>8 * V</c>, or <c>V</c> for a lossless frame.</summary>
+    public int BandRows => DataUnitSize * VerticalSampling;
 
     /// <summary>
     /// Gets a value indicating whether every sample of the component was decoded (its sequential scan ended), or, for a
@@ -89,7 +110,7 @@ internal sealed class JpegFrameComponent : IDisposable
     /// <summary>Gets the samples of the plane (bands in ring order), for a precision of 8 bits.</summary>
     public byte[] Samples => (_plane ?? throw new InvalidOperationException("The JPEG component plane is not allocated.")).RawBuffer;
 
-    /// <summary>Gets the samples of the plane (bands in ring order), for a precision above 8 bits.</summary>
+    /// <summary>Gets the samples of the plane (bands in ring order), for a precision other than 8 bits.</summary>
     public Span<ushort> DeepSamples => unsafe(MemoryMarshal.Cast<byte, ushort>((_plane ?? throw new InvalidOperationException("The JPEG component plane is not allocated.")).RawBuffer.AsSpan()));
 
     public void SetGeometry(int frameWidth, int frameHeight, int maxHorizontal, int maxVertical)
@@ -107,8 +128,8 @@ internal sealed class JpegFrameComponent : IDisposable
     /// <param name="limits">The limits (for the overflow report).</param>
     public void AllocatePlane(AllocationScope scope, int mcusX, int bandCount, ImageResourceLimits limits)
     {
-        var stride = (long)mcusX * HorizontalSampling * 8;
-        var length = stride * BandRows * bandCount * (Precision > 8 ? sizeof(ushort) : 1);
+        var stride = (long)mcusX * HorizontalSampling * DataUnitSize;
+        var length = stride * BandRows * bandCount * (HasDeepSamples ? sizeof(ushort) : 1);
         if (stride > int.MaxValue || length > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(limits);
 
@@ -132,6 +153,27 @@ internal sealed class JpegFrameComponent : IDisposable
         _coefficients = scope.Rent((int)length, AllocationKind.DecoderState, clear: true);
         _coefficientBlocksPerLine = (int)blocksPerLine;
     }
+
+    /// <summary>
+    /// Allocates the lines of one MCU row of a lossless frame, after the plane: <c>V + 1</c> lines of <see cref="Stride"/>
+    /// 16-bit values.
+    /// </summary>
+    /// <param name="scope">The scope charged with the lines (decoder state).</param>
+    /// <param name="limits">The limits (for the overflow report).</param>
+    public void AllocateDifferences(AllocationScope scope, ImageResourceLimits limits)
+    {
+        var length = (long)Stride * (VerticalSampling + 1) * sizeof(ushort);
+        if (length > CheckedSizes.MaxBufferLength)
+            throw CheckedSizes.CreateOverflowException(limits);
+
+        _differences = scope.Rent((int)length, AllocationKind.DecoderState, clear: false);
+    }
+
+    /// <summary>
+    /// Gets the lines of the MCU row of a lossless frame that is being decoded, <see cref="Stride"/> values each: the last
+    /// line of the previous MCU row first, then the <c>V</c> lines of this one.
+    /// </summary>
+    public Span<ushort> Differences => unsafe(MemoryMarshal.Cast<byte, ushort>((_differences ?? throw new InvalidOperationException("The JPEG component differences are not allocated.")).RawBuffer.AsSpan()));
 
     /// <summary>Gets the 64 coefficients (natural order) of a block of the coefficient grid.</summary>
     /// <param name="blockRow">The block row.</param>
@@ -162,13 +204,15 @@ internal sealed class JpegFrameComponent : IDisposable
     /// <summary>Gets a sample row, at most <see cref="Width"/> valid samples.</summary>
     public ReadOnlySpan<byte> GetRow(int row) => Samples.AsSpan(GetRowOffset(row), Width);
 
-    /// <summary>Gets a sample row of a precision above 8 bits, at most <see cref="Width"/> valid samples.</summary>
+    /// <summary>Gets a sample row of a precision other than 8 bits, at most <see cref="Width"/> valid samples.</summary>
     public ReadOnlySpan<ushort> GetDeepRow(int row) => DeepSamples.Slice(GetRowOffset(row), Width);
 
     public void Dispose()
     {
         _plane?.Dispose();
         _plane = null;
+        _differences?.Dispose();
+        _differences = null;
         ReleaseCoefficients();
     }
 }

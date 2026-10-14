@@ -9,19 +9,19 @@ namespace Meziantou.Framework.Win32
     {
         public Meziantou.Framework.Win32.JournalData Data { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.ChangeJournalEntry> Entries { get => throw null; }
-        public static Meziantou.Framework.Win32.ChangeJournal Open(System.IO.DriveInfo driveInfo) => throw null;
-        public static Meziantou.Framework.Win32.ChangeJournal Open(System.IO.DriveInfo driveInfo, bool unprivileged) => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.ChangeJournalEntry> GetEntries(Meziantou.Framework.Win32.ChangeReason reasonFilter, bool returnOnlyOnClose, System.TimeSpan timeout) => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.ChangeJournalEntry> GetEntries(Meziantou.Framework.Win32.Usn currentUSN, Meziantou.Framework.Win32.ChangeReason reasonFilter, bool returnOnlyOnClose, System.TimeSpan timeout) => throw null;
-        public static Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3 GetEntry(string path) => throw null;
-        public static Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3 GetEntry(Microsoft.Win32.SafeHandles.SafeFileHandle handle) => throw null;
-        public void RefreshJournalData() { }
-        public void Dispose() { }
+        public void Create(long maximumSize, long allocationDelta) { }
+        public void Create(ulong maximumSize, ulong allocationDelta) { }
         public void Delete() { }
         public void Delete(bool waitForCompletion) { }
-        public void Create(ulong maximumSize, ulong allocationDelta) { }
-        public void Create(long maximumSize, long allocationDelta) { }
+        public void Dispose() { }
         public void EnableTrackModifiedRanges(ulong chunkSize, long fileSizeThreshold) { }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.ChangeJournalEntry> GetEntries(Meziantou.Framework.Win32.ChangeReason reasonFilter, bool returnOnlyOnClose, System.TimeSpan timeout) => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.ChangeJournalEntry> GetEntries(Meziantou.Framework.Win32.Usn currentUSN, Meziantou.Framework.Win32.ChangeReason reasonFilter, bool returnOnlyOnClose, System.TimeSpan timeout) => throw null;
+        public static Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3 GetEntry(Microsoft.Win32.SafeHandles.SafeFileHandle handle) => throw null;
+        public static Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3 GetEntry(string path) => throw null;
+        public static Meziantou.Framework.Win32.ChangeJournal Open(System.IO.DriveInfo driveInfo) => throw null;
+        public static Meziantou.Framework.Win32.ChangeJournal Open(System.IO.DriveInfo driveInfo, bool unprivileged) => throw null;
+        public void RefreshJournalData() { }
     }
 
     public abstract class ChangeJournalEntry
@@ -32,34 +32,34 @@ namespace Meziantou.Framework.Win32
 
     public readonly struct ChangeJournalEntryExtent
     {
-        public long Offset { get => throw null; }
         public long Length { get => throw null; }
+        public long Offset { get => throw null; }
         public override string ToString() => throw null;
     }
 
     public sealed class ChangeJournalEntryVersion2or3 : Meziantou.Framework.Win32.ChangeJournalEntry
     {
-        public Meziantou.Framework.Win32.FileIdentifier ReferenceNumber { get => throw null; }
-        public Meziantou.Framework.Win32.FileIdentifier ParentReferenceNumber { get => throw null; }
-        public Meziantou.Framework.Win32.Usn UniqueSequenceNumber { get => throw null; }
-        public System.DateTime TimeStamp { get => throw null; }
-        public Meziantou.Framework.Win32.ChangeReason Reason { get => throw null; }
-        public Meziantou.Framework.Win32.SourceInformation Source { get => throw null; }
-        public uint SecurityId { get => throw null; }
         public System.IO.FileAttributes Attributes { get => throw null; }
         public string Name { get => throw null; }
+        public Meziantou.Framework.Win32.FileIdentifier ParentReferenceNumber { get => throw null; }
+        public Meziantou.Framework.Win32.ChangeReason Reason { get => throw null; }
+        public Meziantou.Framework.Win32.FileIdentifier ReferenceNumber { get => throw null; }
+        public uint SecurityId { get => throw null; }
+        public Meziantou.Framework.Win32.SourceInformation Source { get => throw null; }
+        public System.DateTime TimeStamp { get => throw null; }
+        public Meziantou.Framework.Win32.Usn UniqueSequenceNumber { get => throw null; }
         public override string ToString() => throw null;
     }
 
     public sealed class ChangeJournalEntryVersion4 : Meziantou.Framework.Win32.ChangeJournalEntry
     {
-        public Meziantou.Framework.Win32.FileIdentifier ReferenceNumber { get => throw null; }
-        public Meziantou.Framework.Win32.FileIdentifier ParentReferenceNumber { get => throw null; }
-        public Meziantou.Framework.Win32.Usn UniqueSequenceNumber { get => throw null; }
-        public Meziantou.Framework.Win32.ChangeReason Reason { get => throw null; }
-        public Meziantou.Framework.Win32.SourceInformation Source { get => throw null; }
-        public uint RemainingExtents { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Win32.ChangeJournalEntryExtent> Extents { get => throw null; }
+        public Meziantou.Framework.Win32.FileIdentifier ParentReferenceNumber { get => throw null; }
+        public Meziantou.Framework.Win32.ChangeReason Reason { get => throw null; }
+        public Meziantou.Framework.Win32.FileIdentifier ReferenceNumber { get => throw null; }
+        public uint RemainingExtents { get => throw null; }
+        public Meziantou.Framework.Win32.SourceInformation Source { get => throw null; }
+        public Meziantou.Framework.Win32.Usn UniqueSequenceNumber { get => throw null; }
     }
 
     [System.Flags]
@@ -72,29 +72,29 @@ namespace Meziantou.Framework.Win32
     [System.Flags]
     public enum ChangeReason : uint
     {
-        BasicInfoChange = 32768U,
-        Close = 2147483648U,
-        CompressionChange = 131072U,
-        DataExtend = 2U,
         DataOverwrite = 1U,
+        DataExtend = 2U,
         DataTruncation = 4U,
-        ExtendedAttributesChange = 1024U,
-        EncryptionChange = 262144U,
+        NamedDataOverwrite = 16U,
+        NamedDataExtend = 32U,
+        NamedDataTruncation = 64U,
         FileCreate = 256U,
         FileDelete = 512U,
-        HardLinkChange = 65536U,
-        IndexableChange = 16384U,
-        IntegrityChange = 8388608U,
-        NamedDataExtend = 32U,
-        NamedDataOverwrite = 16U,
-        NamedDataTruncation = 64U,
-        ObjectIDChange = 524288U,
-        RenameNewName = 8192U,
-        RenameOldName = 4096U,
-        ReparsePointChange = 1048576U,
+        ExtendedAttributesChange = 1024U,
         SecurityChange = 2048U,
+        RenameOldName = 4096U,
+        RenameNewName = 8192U,
+        IndexableChange = 16384U,
+        BasicInfoChange = 32768U,
+        HardLinkChange = 65536U,
+        CompressionChange = 131072U,
+        EncryptionChange = 262144U,
+        ObjectIDChange = 524288U,
+        ReparsePointChange = 1048576U,
         StreamChange = 2097152U,
         TransactedChange = 4194304U,
+        IntegrityChange = 8388608U,
+        Close = 2147483648U,
         All = 2164260727U,
     }
 
@@ -102,12 +102,12 @@ namespace Meziantou.Framework.Win32
     {
         public FileIdentifier(System.UInt128 value) { }
         public FileIdentifier(ulong value) { }
-        [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
-        public static Meziantou.Framework.Win32.FileIdentifier FromFile(string path) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
-        public static Meziantou.Framework.Win32.FileIdentifier FromFile(Microsoft.Win32.SafeHandles.SafeFileHandle handle) => throw null;
         public bool Equals(Meziantou.Framework.Win32.FileIdentifier other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
+        public static Meziantou.Framework.Win32.FileIdentifier FromFile(Microsoft.Win32.SafeHandles.SafeFileHandle handle) => throw null;
+        [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
+        public static Meziantou.Framework.Win32.FileIdentifier FromFile(string path) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Win32.FileIdentifier left, Meziantou.Framework.Win32.FileIdentifier right) => throw null;
@@ -116,17 +116,17 @@ namespace Meziantou.Framework.Win32
 
     public sealed class JournalData
     {
-        public bool IsActive { get => throw null; }
-        public ulong ID { get => throw null; }
-        public Meziantou.Framework.Win32.Usn FirstUSN { get => throw null; }
-        public Meziantou.Framework.Win32.Usn NextUSN { get => throw null; }
-        public Meziantou.Framework.Win32.Usn LowestValidUSN { get => throw null; }
-        public Meziantou.Framework.Win32.Usn MaximumUSN { get => throw null; }
-        public ulong MaximumSize { get => throw null; }
         public ulong AllocationDelta { get => throw null; }
-        public ushort MinSupportedMajorVersion { get => throw null; }
-        public ushort MaxSupportedMajorVersion { get => throw null; }
+        public Meziantou.Framework.Win32.Usn FirstUSN { get => throw null; }
         public Meziantou.Framework.Win32.ChangeJournalFlags Flags { get => throw null; }
+        public ulong ID { get => throw null; }
+        public bool IsActive { get => throw null; }
+        public Meziantou.Framework.Win32.Usn LowestValidUSN { get => throw null; }
+        public ushort MaxSupportedMajorVersion { get => throw null; }
+        public ulong MaximumSize { get => throw null; }
+        public Meziantou.Framework.Win32.Usn MaximumUSN { get => throw null; }
+        public ushort MinSupportedMajorVersion { get => throw null; }
+        public Meziantou.Framework.Win32.Usn NextUSN { get => throw null; }
         public ulong RangeTrackChunkSize { get => throw null; }
         public long RangeTrackFileSizeThreshold { get => throw null; }
     }
@@ -143,21 +143,21 @@ namespace Meziantou.Framework.Win32
 
     public readonly struct Usn : System.IComparable, System.IComparable<Meziantou.Framework.Win32.Usn>, System.IEquatable<Meziantou.Framework.Win32.Usn>
     {
-        public static Meziantou.Framework.Win32.Usn Zero { get => throw null; }
         public long Value { get => throw null; }
+        public static Meziantou.Framework.Win32.Usn Zero { get => throw null; }
         public Usn(long value) { }
-        public override string ToString() => throw null;
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.Win32.Usn other) => throw null;
-        public override int GetHashCode() => throw null;
         public int CompareTo(Meziantou.Framework.Win32.Usn other) => throw null;
         public int CompareTo(object? obj) => throw null;
+        public bool Equals(Meziantou.Framework.Win32.Usn other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Win32.Usn usn1, Meziantou.Framework.Win32.Usn usn2) => throw null;
-        public static bool operator !=(Meziantou.Framework.Win32.Usn usn1, Meziantou.Framework.Win32.Usn usn2) => throw null;
-        public static bool operator <=(Meziantou.Framework.Win32.Usn usn1, Meziantou.Framework.Win32.Usn usn2) => throw null;
-        public static bool operator >=(Meziantou.Framework.Win32.Usn usn1, Meziantou.Framework.Win32.Usn usn2) => throw null;
-        public static bool operator <(Meziantou.Framework.Win32.Usn usn1, Meziantou.Framework.Win32.Usn usn2) => throw null;
         public static bool operator >(Meziantou.Framework.Win32.Usn usn1, Meziantou.Framework.Win32.Usn usn2) => throw null;
+        public static bool operator >=(Meziantou.Framework.Win32.Usn usn1, Meziantou.Framework.Win32.Usn usn2) => throw null;
+        public static bool operator !=(Meziantou.Framework.Win32.Usn usn1, Meziantou.Framework.Win32.Usn usn2) => throw null;
+        public static bool operator <(Meziantou.Framework.Win32.Usn usn1, Meziantou.Framework.Win32.Usn usn2) => throw null;
+        public static bool operator <=(Meziantou.Framework.Win32.Usn usn1, Meziantou.Framework.Win32.Usn usn2) => throw null;
         public static implicit operator Meziantou.Framework.Win32.Usn(long value) => throw null;
     }
 }

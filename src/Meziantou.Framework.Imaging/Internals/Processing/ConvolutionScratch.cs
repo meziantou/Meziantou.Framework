@@ -23,9 +23,13 @@ internal sealed class ConvolutionScratch : IDisposable
     }
 
     /// <summary>Gets the accumulator of one output row (not padded).</summary>
-    public Span<double> Accumulator => Buffer.Slice((_ringSize + (2 * _haloSize)) * _paddedLength, _rowLength);
+    public Span<double> Accumulator => Buffer.Slice(AccumulatorOffset, _rowLength);
 
-    private Span<double> Buffer => unsafe(MemoryMarshal.Cast<byte, double>((_buffer ?? throw new ObjectDisposedException(nameof(ConvolutionScratch))).Span));
+    /// <summary>Gets the position of <see cref="Accumulator"/> in <see cref="Buffer"/>.</summary>
+    public int AccumulatorOffset => (_ringSize + (2 * _haloSize)) * _paddedLength;
+
+    /// <summary>Gets the rows and the accumulator, at the positions that the <c>Get...Offset</c> methods give.</summary>
+    public Span<double> Buffer => unsafe(MemoryMarshal.Cast<byte, double>((_buffer ?? throw new ObjectDisposedException(nameof(ConvolutionScratch))).Span));
 
     /// <summary>Rents the buffers of a worker; nothing stays charged on failure.</summary>
     /// <param name="scope">The image scope.</param>
@@ -44,13 +48,22 @@ internal sealed class ConvolutionScratch : IDisposable
     }
 
     /// <summary>Gets the padded working row of image row <paramref name="y"/>, which is inside the band.</summary>
-    public Span<double> GetRingRow(int y) => Buffer.Slice(y % _ringSize * _paddedLength, _paddedLength);
+    public Span<double> GetRingRow(int y) => Buffer.Slice(GetRingRowOffset(y), _paddedLength);
 
     /// <summary>Gets a padded working row read above the band: 0 is the farthest one, the halo size above the first row of the band.</summary>
-    public Span<double> GetTopHalo(int index) => Buffer.Slice((_ringSize + index) * _paddedLength, _paddedLength);
+    public Span<double> GetTopHalo(int index) => Buffer.Slice(GetTopHaloOffset(index), _paddedLength);
 
     /// <summary>Gets a padded working row read below the band: 0 is the nearest one, right after the last row of the band.</summary>
-    public Span<double> GetBottomHalo(int index) => Buffer.Slice((_ringSize + _haloSize + index) * _paddedLength, _paddedLength);
+    public Span<double> GetBottomHalo(int index) => Buffer.Slice(GetBottomHaloOffset(index), _paddedLength);
+
+    /// <summary>Gets the position of <see cref="GetRingRow"/> in <see cref="Buffer"/>.</summary>
+    public int GetRingRowOffset(int y) => y % _ringSize * _paddedLength;
+
+    /// <summary>Gets the position of <see cref="GetTopHalo"/> in <see cref="Buffer"/>.</summary>
+    public int GetTopHaloOffset(int index) => (_ringSize + index) * _paddedLength;
+
+    /// <summary>Gets the position of <see cref="GetBottomHalo"/> in <see cref="Buffer"/>.</summary>
+    public int GetBottomHaloOffset(int index) => (_ringSize + _haloSize + index) * _paddedLength;
 
     public void Dispose()
     {

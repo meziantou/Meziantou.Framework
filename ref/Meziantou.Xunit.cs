@@ -6,13 +6,13 @@ namespace Meziantou.Xunit
 {
     public abstract class ConditionalTestAttributeBase : global::Xunit.v3.BeforeAfterTestAttribute
     {
-        public Meziantou.Xunit.TestOperatingSystems OperatingSystem { get => throw null; set { } }
-        public Meziantou.Xunit.TestGlobalizationMode GlobalizationMode { get => throw null; set { } }
         public Meziantou.Xunit.ContinuousIntegrationEnvironments ContinuousIntegration { get => throw null; set { } }
-        public Meziantou.Xunit.WindowsGroups WindowsGroup { get => throw null; set { } }
+        public Meziantou.Xunit.TestGlobalizationMode GlobalizationMode { get => throw null; set { } }
         protected abstract bool InvertCondition { get; }
-        protected ConditionalTestAttributeBase(Meziantou.Xunit.TestOperatingSystems operatingSystem) { }
+        public Meziantou.Xunit.TestOperatingSystems OperatingSystem { get => throw null; set { } }
+        public Meziantou.Xunit.WindowsGroups WindowsGroup { get => throw null; set { } }
         protected ConditionalTestAttributeBase(Meziantou.Xunit.TestGlobalizationMode globalizationMode) { }
+        protected ConditionalTestAttributeBase(Meziantou.Xunit.TestOperatingSystems operatingSystem) { }
         protected ConditionalTestAttributeBase(Meziantou.Xunit.WindowsGroups windowsGroup) { }
         protected ConditionalTestAttributeBase(Meziantou.Xunit.TestOperatingSystems operatingSystem, Meziantou.Xunit.TestGlobalizationMode globalizationMode) { }
         public override void Before(System.Reflection.MethodInfo methodUnderTest, global::Xunit.v3.IXunitTest test) { }
@@ -29,8 +29,8 @@ namespace Meziantou.Xunit
     public sealed class RunIfAttribute : Meziantou.Xunit.ConditionalTestAttributeBase
     {
         protected override bool InvertCondition { get => throw null; }
-        public RunIfAttribute(Meziantou.Xunit.TestOperatingSystems operatingSystem) { }
         public RunIfAttribute(Meziantou.Xunit.TestGlobalizationMode globalizationMode) { }
+        public RunIfAttribute(Meziantou.Xunit.TestOperatingSystems operatingSystem) { }
         public RunIfAttribute(Meziantou.Xunit.WindowsGroups windowsGroup) { }
         public RunIfAttribute(Meziantou.Xunit.TestOperatingSystems operatingSystem, Meziantou.Xunit.TestGlobalizationMode globalizationMode) { }
     }
@@ -39,8 +39,8 @@ namespace Meziantou.Xunit
     public sealed class SkipIfAttribute : Meziantou.Xunit.ConditionalTestAttributeBase
     {
         protected override bool InvertCondition { get => throw null; }
-        public SkipIfAttribute(Meziantou.Xunit.TestOperatingSystems operatingSystem) { }
         public SkipIfAttribute(Meziantou.Xunit.TestGlobalizationMode globalizationMode) { }
+        public SkipIfAttribute(Meziantou.Xunit.TestOperatingSystems operatingSystem) { }
         public SkipIfAttribute(Meziantou.Xunit.WindowsGroups windowsGroup) { }
         public SkipIfAttribute(Meziantou.Xunit.TestOperatingSystems operatingSystem, Meziantou.Xunit.TestGlobalizationMode globalizationMode) { }
     }

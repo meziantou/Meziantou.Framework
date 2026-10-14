@@ -350,6 +350,20 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   writes and djxl rebuilds), and any other unused table is refused. cjxl refuses a slot that is used again for other
   values between two scans, which the library writes and djxl rebuilds. The JPEG entropy coding shares `JpegBitWriter` and `JpegHuffmanEncoder` with the JPEG
   encoder: there is still one JPEG implementation of each direction of pixels, and one of coefficients.
+- **Lossless JPEG** (`JpegLosslessScanDecoder`, T.81 Annex H, SOF3). It is the sequential decoder with a data unit of
+  one sample instead of a block (`JpegFrameComponent.DataUnitSize`): the same scan structure, restart handling, planes,
+  band ring and row writers, so an MCU row is `Vmax` lines. A scan decoder keeps the differences of an MCU row and
+  reconstructs its lines when the row is complete, from the last line of the previous row
+  (`JpegFrameComponent.Differences`); the samples are predicted from one another before the point transform is
+  undone, and the planes hold them after. The samples that do not have 8 bits (lossless frames have 2 to 16) go
+  through `JpegDeepRowWriter`, whose arithmetic must hold 16-bit samples. A sample that does not fit in the precision
+  of its frame is an error, not a wrap: a conforming encoder never codes one. Reference decoders: libjpeg-turbo for
+  the files `cjpeg -lossless` writes (it refuses to convert the colors of a lossless YCbCr file), FFmpeg for the YCbCr
+  files its `ljpeg` encoder writes (with its BGR pixel formats it writes a frame of 9-bit samples that are not the
+  pixels: such a file is read as what its frame header says, or rejected when a sample does not fit), and FFmpeg
+  9.0.2 misreads the category 16.
+  Apple ImageIO does not read lossless files reliably. The process with arithmetic coding (SOF11) is not decoded: no
+  tool at hand writes or reads it.
 - **JPEG 2000** (`Internals/Codecs/Jpeg2000`). Written from Rec. ITU-T T.800 (Part 1) and T.814 (Part 15, the
   high-throughput block coder, `Jpeg2000/Ht`); OpenJPEG, OpenJPH and FFmpeg are test oracles only. The structure parser
   reads the boxes of a file and gives the codestream to `Jpeg2000CodestreamWalker`, which asks for whole marker
@@ -403,7 +417,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   are written from TIFF 6.0 and ITU-T T.4 and T.6; the code words of `TiffCcittCodes` are transcribed from the
   recommendations, and the tests compare strips with code words spelled out from the same tables. A JPEG strip is
   decoded by `JpegDecoder` given a `JpegSampleReceiver` and written by the session of `JpegEncoderCodec`: there is no
-  second JPEG implementation, and the page says what the components are. The layouts of `TiffEncoder` store a page
+  second JPEG implementation, and the page says what the components are. `BitsPerSample` is the precision of the
+  datastreams of a JPEG page (8 bits, 12 bits, or 8 to 16 bits when they are lossless): the decoder of a datastream
+  tells its precision (`JpegSampleReceiver.OnFrame`) and hands over its samples of more than 8 bits scaled to 16 bits
+  (`OnDeepRow`), so a decoded block holds samples of `TiffPage.DecodedBitsPerSample` bits, in the byte order of the
+  file like the other 16-bit samples. The layouts of `TiffEncoder` store a page
   exactly or reject it before writing anything of it (`TiffDocumentWriter.PreparePage`): no setting makes them lossy.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
@@ -479,6 +497,18 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     `GradientColorSpace` other than `Encoded`, the stops stay 16-bit sRGB colors, are mixed in linear light or in
     Oklab (`SrgbTransfer`, `Math.Cbrt`: the one place of the drawing code that uses functions of the platform), and
     the 16-bit result is converted like a brush color; the color of a stop is always written as it is.
+- `PaintProfile` is the one way a color profile reaches a drawing: the colors the caller gives go through
+  `PaintColorConverter` (the pipeline of `Image.CreatePaintPipeline`, whose destination is the profile of the image,
+  or its CICP color space through `IccPipeline.Create(IccProfile, CicpColorSpace, ...)`) before `ConvertDrawingColor`.
+  What is samples of an image already is never converted (drawn images, layers, tiles, color glyphs). Linear light
+  with an ICC profile that is not sRGB uses the tone curves of the profile (`LinearLightCurves`, tables charged to
+  the scope, carried by `DrawingSource.Curves`). The session that draws the tile of a pattern has another image:
+  it takes the color space, the curves and the pipeline of the session it comes from (`_colorImage`), never those
+  of the tile.
+- A color matrix (`ColorMatrixKernel`) is applied to stored samples at their precision, with additions and
+  multiplications only; a pixel that is covered entirely is stored as computed (`Write`), so that
+  `CreateGrayscale()` is `Grayscale()` bit for bit, and only a pixel on the edge of a clip goes through the
+  `Source` operator.
 - Only `+ - * /` and `Math.Sqrt` in the geometry (no trigonometry, no fused multiply-add), and every order that
   influences a sum is total (events and crossings are sorted with a tie-break): results must not depend on the
   platform, the framework version or a sorting algorithm.
@@ -506,6 +536,15 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   the grid moves apart, and would leave cracks in the outline; that cut must shorten the segment, or three close
   vertices cut each other without end (the pass and growth limits are only a safety net). The result is canonical
   (contours from their top-left vertex, in the order of their first edge): tests compare path data.
+- `Offset` (`PathOffsetter`) is two runs of the combiner around a stroke: the outline of the area, the stroke of that
+  outline by a pen twice as wide as the distance, and their union or their difference. The outline is what is
+  stroked, never the path: a contour inside the area is no part of its boundary, and its stroke would cut a band in
+  a shape that shrinks. The outline has lost the `smooth` flags of the flattening, so the vertices a curve was cut
+  at are found again by their position on the grid (`VertexCollector`) and joined round, or a small circle that
+  grows a lot becomes the polygon of its chords with a miter at each vertex. `RoundCorners` (`PathCornerRounder`)
+  works on the elements, exactly, and only between two straight segments: the point two corners share on a segment
+  (its middle) is computed once, since two points a few units of the last place apart would be a segment the stroker
+  turns into a spike. `TryGetClosestPoint` (`ClosestPointSink`) walks the chords like the other queries.
 - `SvgPathData` reads and writes the path data of SVG. Reading goes through the builder (an arc is `ArcTo`), writing
   through `EnumerateSegments`; numbers are parsed and formatted by the runtime with the invariant culture (correctly
   rounded on every platform). The reader rejects the whole text on an error, with its position.
@@ -543,7 +582,9 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   weights are those of `GaussianKernel`, shared with `GaussianBlur`: computed without `Math.Exp`.
 - The transformation of the canvas (`DrawingSession.Transforms.cs`) is applied where a shape becomes edges, not where
   it is described: `BeginFill` wraps the fill sink in a `TransformSink`, the `Stroker` transforms the vertices of its
-  pieces (`SetOutput`: the path is stroked in the coordinates of the drawing, so the pen is transformed with it), and
+  pieces (`SetOutput`: the path is stroked in the coordinates of the drawing, so the pen is transformed with it; a pen
+  whose `ScalesWithTransform` is off gets a `TransformSink` before its dasher and its markers instead, and strokes in
+  pixels as it does without transformation), and
   the evaluators of the brushes get the transformation of the brush followed by the one of the canvas (`ToCanvas`).
   The flatteners read `PathSink.Scale` of the sink they emit to, and cut curves that much finer; it is 1 without
   transformation, where nothing may change (every product by it is exact). What is given in pixels must use
@@ -680,8 +721,49 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   sweep, so overlaps are painted once. TrueType and CFF outlines turn in opposite directions: `Emit` reverses the
   edges of a glyph whose signed area is negative (`EdgeBuilder.NegateDirections`), otherwise overlapping glyphs of two
   conventions would cancel under the nonzero rule; decorations are emitted in the same orientation. A layout of several
-  paints prepares every shape before painting the first one (`DrawingSession.Prepare`), which keeps "every rental
-  happens before the first pixel write".
+  parts (paints, backgrounds, pens of the styles, color glyphs) is drawn twice by `DrawingSession.FillTextParts`: a
+  first time with `_isPreparing`, where `Render` rents everything and paints nothing, then for real, which keeps
+  "every rental happens before the first pixel write". Add a part to `DrawTextParts`, never a second prepare path.
+- **What a style adds around its glyphs.** A background (`TextStyle.BackgroundBrush`) is a `DecorationRectangle` per
+  line and per style, as tall as the primary font of the style, painted before every glyph of the layout; the pen
+  of a style (`TextStyle.Outline`) is an index in `GlyphRun.Outline`, and `Emit` with that index sends its glyphs
+  only, to a stroke, after every fill. Neither is an outline of the text (`ToPath`, `StrokeText`).
+- **A placeholder is a tabulation with a size**: one item of one character (U+FFFC, which the Unicode algorithms
+  already treat as an object: a line can end on both sides of it), no glyph, an advance, and a line that is as tall
+  as it needs. Its rectangle is recorded by `Finish` where the glyphs are placed. The layout holds no image: a
+  layout is immutable and outlives any image.
+- **A fitted text is laid out at a scale** (`TextLayout.CreateToFit`): the engine multiplies every length of the
+  styles by `_scale` (`GetSize`), and takes its box as arguments instead of the options. Read a size through
+  `GetSize`, never `style.Size`, or a fitted text mixes two sizes.
+- **A vertical layout is a horizontal layout, turned at the very end** (`TextLayoutOptions.WritingMode`,
+  `VerticalLayoutData`). The engine works in the coordinates of a line for every writing mode: `u` along the line
+  from its top and `v` across the lines, from the side the ascent of text on its side points to. Itemizing, line
+  breaking, alignment, justification, trimming, decorations and hit boxes do not know about the writing mode; the
+  engine only swaps the two limits of the box (`_maxWidth` is the inline limit) and, in `Finish`, turns each line:
+  the point `(u, v)` of a line is drawn at `(lineRight - (v - line.Y), u)`. Do not add a second code path for vertical
+  lines in a step of the engine: express it in the coordinates of the line.
+  - What is drawn at a point is stored turned (`Positions`, `Decorations`, `Backgrounds`, `Placeholders`, `Lines`,
+    `Width`, `Height`). What works along a line keeps the coordinates of the line in `TextLayoutData.Vertical`: the
+    lines, the positions, the decorations and the backgrounds that a text on a path follows, and the lines that the
+    hit boxes are relative to. `HitTest`, `GetCaretRectangle` and `GetSelectionRectangles` work on those and map
+    their result per line (`GetLineRectangle`).
+  - **Upright or on its side** is decided per grapheme cluster in `Itemize` (`IsUpright`: UAX #50 through
+    `UnicodeProperties.GetVerticalOrientation`; a `Tr` character is upright when the `vert` feature of the font
+    changes its glyph, which is probed once per glyph and cached). The orientation is part of an item: an upright
+    item is shaped vertically (`TextShaper.Shape(..., isVertical: true)`), an item on its side horizontally. An
+    upright cluster at an odd bidirectional level gets the next even level, so that upright text always reads from
+    the top; `TextOrientation.Upright` clears every level.
+  - **A sideways run only differs by the transformation of its glyphs** (`GlyphRun.IsSideways`,
+    `Affine2D.ForSidewaysGlyph`, always through `GlyphRun.GetTransform`): its advances, offsets, kerning and shear
+    are those of horizontal text. An upright glyph uses the transformation of a horizontal glyph, at the position
+    its vertical origin gives.
+  - **The baseline.** With `Mixed` and `Upright`, the line has a central baseline (`_hasCentralBaseline`): it is
+    symmetric around it, upright glyphs are centered on it by their vertical origins, and an item on its side is
+    shifted by `(ascent - descent) / 2` (`PlacedGlyph.BaselineShift`). With `Sideways`, the line keeps the
+    alphabetic baseline and the metrics of a horizontal line: the layout is exactly the horizontal one turned a
+    quarter of a turn clockwise, which is what `AVerticalLineOfTextOnItsSideIsAHorizontalLineTurned` asserts for
+    the pixels, the lines, the carets, the selections and the hit tests. Keep that property: it is the cheapest
+    test of everything that is turned.
 - **Text on a path** (`TextLayout.EmitOnPath`, `PathMeasure`). The path is flattened by `PathFlattener` into chords;
   `PathMeasure` keeps each chord with its unit direction and the distance of its start. A glyph is placed rigidly at the
   anchor of its cluster (`TextLayoutData.Anchors`: the middle of the advance of the cluster, so a base and its marks,
@@ -818,6 +900,17 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 - **Variation sequences.** A selector after a character whose sequence the font has (format 14 of `cmap`, with a
   glyph of its own or with the default one) leaves the buffer in `MapGlyphs`: emoji fonts list every emoji with
   U+FE0F, and a selector that stayed would be a glyph the reference shaper does not have.
+- **Vertical shaping** (`isVertical`) is what the reference shaper does for the direction `ttb`, and is checked
+  against it by the vectors that have a `direction` in the corpus. The initial positions are an advance of minus the
+  advance height and an offset of minus the vertical origin (`FontFace.GetAdvanceHeight`, `GetVerticalOrigin`); the
+  engine turns them into an advance down the line. Rules no specification states, found by comparing: the origin is
+  half of the advance width, and `VORG`, or the top of the glyph plus the top side bearing of `vmtx`, or the top of
+  the glyph plus half of what the ascent and the descent have more than its height (an arithmetic shift, so it
+  rounds down); a glyph without outline is an empty box at the origin; a font without `vmtx` advances by the ascent
+  plus the descent of the horizontal line. Only `vert` is added to the features that do not depend on the direction,
+  and it is looked for in every script of the table; the joining of Arabic and Syriac, the `kern` table and the
+  marks placed from the shapes of the glyphs are for horizontal text only. In `GPOS`, the advance of a value record
+  is `YAdvance`, subtracted.
 - **Fonts without layout tables.** Three fallbacks, each for a font that has no table (or no script) for what it
   replaces, each compared with the reference shaper on synthetic fonts of the corpus and on random texts:
   - `ArabicShaper.ApplyPresentationForms`: the forms and the lam-alef ligatures from the characters of the Arabic
@@ -962,7 +1055,9 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   sources give, after downloading them from the addresses the command names.
 - **TIFF has no corpus.** The decoder tests assemble files (`TiffFileBuilder`) whose compressed strips never come from
   the library: the reference encoders of the tests (`TiffReferenceCodecs`), the examples of the specifications, fax
-  strips written by libtiff and kept as literals, and JPEG datastreams of `JpegTestImage`. The encoder tests compare
+  strips written by libtiff and kept as literals, and JPEG datastreams of `JpegTestImage` and `JpegLosslessTestImage`
+  (libtiff writes pages of 12-bit JPEG samples, `tiffcp -c jpeg` on a 12-bit page, which make a local oracle: it loses
+  the last sample of a row of odd width, so use even widths). The encoder tests compare
   small strips with the bytes the specifications give, and the interop tests decode every compression and layout with
   FFmpeg or Apple ImageIO (the JPEG pages, which FFmpeg does not read), and the pages FFmpeg writes with the library.
 - **CMYK JPEG fixtures.** A four-component JPEG file is an `unsupported` fixture (identified, rejected by a load
@@ -975,6 +1070,15 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   cross-check is FFmpeg on the file `jpegtran` rewrites with Huffman codes (the same coefficients), so the fixtures with
   chroma subsampling have even dimensions. The unit tests decode the streams of the test-side arithmetic encoder
   (`JpegTestArithmeticCoder`), itself checked against `djpeg` when it was written.
+- **Lossless JPEG fixtures.** A file `cjpeg -lossless` writes expects the pattern given to `cjpeg`: `djpeg` and FFmpeg
+  must both decode exactly that, and a recipe declares the files FFmpeg misreads with the reason (the generator fails
+  when a declared disagreement disappears). The YCbCr files come from FFmpeg's `ljpeg` encoder and expect the planes
+  FFmpeg decodes, upsampled and converted by the generator with the rules the DCT fixtures compare with `djpeg`
+  (`CommonCorpus.JpegUpsample`, `JpegYCbCrToRgb`): change these with the row writers, never one without the other.
+  The unit tests decode the streams of the test-side encoder (`JpegLosslessTestImage`), written one sample at a time
+  from Annex H. After a change to the lossless decoder, also compare it with `djpeg` on generated files of every
+  precision, predictor, point transform and restart interval (a scratch loop over `cjpeg -precision P -lossless
+  psv,Pt -restart N`): the corpus only holds a few of them.
 - **12-bit JPEG fixtures.** `cjpeg -precision 12` writes them and `djpeg` gives their 12-bit samples, which the
   generator scales to 16 bits like the library; the errors are on the 8-bit scale, so three units of a 12-bit sample
   count as one. FFmpeg and Apple ImageIO upsample their chroma very differently and neither reads 12-bit RGB samples as

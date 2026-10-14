@@ -7,10 +7,10 @@ namespace Meziantou.Framework.TaggedValues
     [System.AttributeUsage(System.AttributeTargets.Assembly | System.AttributeTargets.Property | System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true, Inherited = false)]
     public sealed class ValueTagAttribute : System.Attribute
     {
+        public string? Key { get => throw null; set { } }
+        public string? MemberName { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> Tags { get => throw null; }
         public System.Type? Type { get => throw null; }
-        public string? MemberName { get => throw null; }
-        public string? Key { get => throw null; set { } }
         public string? Value { get => throw null; set { } }
         public ValueTagAttribute(params string[] tags) { }
         public ValueTagAttribute(System.Type type, string memberName, params string[] tags) { }

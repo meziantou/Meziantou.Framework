@@ -6,29 +6,29 @@ namespace Meziantou.Framework.DependencyScanning
 {
     public ref struct CandidateFileContext
     {
-        public System.ReadOnlySpan<char> RootDirectory { get => throw null; }
         public System.ReadOnlySpan<char> Directory { get => throw null; }
         public System.ReadOnlySpan<char> FileName { get => throw null; }
         public System.ReadOnlySpan<char> RelativeDirectory { get => throw null; }
+        public System.ReadOnlySpan<char> RootDirectory { get => throw null; }
         public CandidateFileContext(System.ReadOnlySpan<char> rootDirectory, System.ReadOnlySpan<char> directory, System.ReadOnlySpan<char> fileName) { }
-        public bool HasFileName(string fileName, bool ignoreCase) => throw null;
-        public bool HasExtension(string extension, bool ignoreCase) => throw null;
         public bool HasExtension(System.ReadOnlySpan<string> extensions, bool ignoreCase) => throw null;
+        public bool HasExtension(string extension, bool ignoreCase) => throw null;
+        public bool HasFileName(string fileName, bool ignoreCase) => throw null;
     }
 
     public sealed class Dependency
     {
-        public string? Name { get => throw null; }
-        public string? Version { get => throw null; }
-        public Meziantou.Framework.DependencyScanning.DependencyType Type { get => throw null; }
-        public Meziantou.Framework.DependencyScanning.Location? NameLocation { get => throw null; }
-        public Meziantou.Framework.DependencyScanning.Location? VersionLocation { get => throw null; }
-        public System.Collections.Generic.ISet<string> Tags { get => throw null; }
         public System.Collections.Generic.IDictionary<string, object?> Metadata { get => throw null; }
+        public string? Name { get => throw null; }
+        public Meziantou.Framework.DependencyScanning.Location? NameLocation { get => throw null; }
+        public System.Collections.Generic.ISet<string> Tags { get => throw null; }
+        public Meziantou.Framework.DependencyScanning.DependencyType Type { get => throw null; }
+        public string? Version { get => throw null; }
+        public Meziantou.Framework.DependencyScanning.Location? VersionLocation { get => throw null; }
         public Dependency(string? name, string? version, Meziantou.Framework.DependencyScanning.DependencyType type, Meziantou.Framework.DependencyScanning.Location? nameLocation, Meziantou.Framework.DependencyScanning.Location? versionLocation) { }
+        public override string ToString() => throw null;
         public System.Threading.Tasks.Task UpdateNameAsync(string newValue, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task UpdateVersionAsync(string newValue, System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public override string ToString() => throw null;
     }
 
     public delegate void DependencyFound(Meziantou.Framework.DependencyScanning.Dependency dependency);
@@ -36,17 +36,17 @@ namespace Meziantou.Framework.DependencyScanning
     public abstract class DependencyScanner
     {
         protected internal abstract System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get; }
+        public abstract System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context);
         public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanDirectoryAsync(string path, Meziantou.Framework.DependencyScanning.ScannerOptions? options, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task ScanDirectoryAsync(string path, Meziantou.Framework.DependencyScanning.ScannerOptions? options, Meziantou.Framework.DependencyScanning.DependencyFound onDependencyFound, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanFileAsync(string rootDirectory, string filePath, Meziantou.Framework.DependencyScanning.ScannerOptions? options, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanFileAsync(string rootDirectory, string filePath, byte[] content, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanFileAsync(string rootDirectory, string filePath, byte[] content, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DependencyScanning.DependencyScanner>? scanners, System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanFileAsync(string rootDirectory, string filePath, Meziantou.Framework.DependencyScanning.ScannerOptions? options, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanFilesAsync(string rootDirectory, System.Collections.Generic.IEnumerable<string> filePaths, Meziantou.Framework.DependencyScanning.ScannerOptions? options, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task ScanFilesAsync(string rootDirectory, System.Collections.Generic.IEnumerable<string> filePaths, Meziantou.Framework.DependencyScanning.ScannerOptions? options, Meziantou.Framework.DependencyScanning.DependencyFound onDependencyFound, System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public bool ShouldScanFile(System.ReadOnlySpan<char> rootDirectory, System.ReadOnlySpan<char> fullPath) => throw null;
         public bool ShouldScanFile(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
+        public bool ShouldScanFile(System.ReadOnlySpan<char> rootDirectory, System.ReadOnlySpan<char> fullPath) => throw null;
         protected abstract bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context);
-        public abstract System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context);
     }
 
     public class DependencyScannerException : System.Exception
@@ -89,9 +89,9 @@ namespace Meziantou.Framework.DependencyScanning
 
     public interface IFileSystem
     {
+        System.Collections.Generic.IEnumerable<string> GetFiles(string path, string pattern, System.IO.SearchOption searchOptions);
         System.IO.Stream OpenRead(string path);
         System.IO.Stream OpenReadWrite(string path);
-        System.Collections.Generic.IEnumerable<string> GetFiles(string path, string pattern, System.IO.SearchOption searchOptions);
     }
 
     public interface ILocationLineInfo
@@ -102,12 +102,12 @@ namespace Meziantou.Framework.DependencyScanning
 
     public abstract class Location
     {
-        protected Meziantou.Framework.DependencyScanning.IFileSystem FileSystem { get => throw null; }
         public string FilePath { get => throw null; }
+        protected Meziantou.Framework.DependencyScanning.IFileSystem FileSystem { get => throw null; }
         public abstract bool IsUpdatable { get; }
         protected Location(Meziantou.Framework.DependencyScanning.IFileSystem fileSystem, string filePath) { }
-        public System.Threading.Tasks.Task UpdateAsync(string? oldValue, string newValue, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task UpdateAsync(string newValue, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task UpdateAsync(string? oldValue, string newValue, System.Threading.CancellationToken cancellationToken = default) => throw null;
         protected internal abstract System.Threading.Tasks.Task UpdateCoreAsync(string? oldValue, string newValue, System.Threading.CancellationToken cancellationToken);
     }
 
@@ -119,26 +119,26 @@ namespace Meziantou.Framework.DependencyScanning
 
     public readonly struct ScanFileContext : System.IAsyncDisposable
     {
-        public string FullPath { get => throw null; }
-        public System.IO.Stream Content { get => throw null; }
         public System.Threading.CancellationToken CancellationToken { get => throw null; }
+        public System.IO.Stream Content { get => throw null; }
         public Meziantou.Framework.DependencyScanning.IFileSystem FileSystem { get => throw null; }
+        public string FullPath { get => throw null; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
         public void ReportDependency(Meziantou.Framework.DependencyScanning.DependencyScanner scanner, string? name, string? version, Meziantou.Framework.DependencyScanning.DependencyType type, Meziantou.Framework.DependencyScanning.Location? nameLocation, Meziantou.Framework.DependencyScanning.Location? versionLocation) { }
         public void ReportDependency(Meziantou.Framework.DependencyScanning.DependencyScanner scanner, string? name, string? version, Meziantou.Framework.DependencyScanning.DependencyType type, Meziantou.Framework.DependencyScanning.Location? nameLocation, Meziantou.Framework.DependencyScanning.Location? versionLocation, System.ReadOnlySpan<string> tags, System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> metadata) { }
-        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
     }
 
     public sealed class ScannerOptions
     {
-        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.DependencyScanning.DependencyScanner> Scanners { get => throw null; set { } }
-        public bool RecurseSubdirectories { get => throw null; set { } }
-        public Meziantou.Framework.DependencyScanning.FileSystemEntryPredicate? ShouldRecursePredicate { get => throw null; set { } }
-        public Meziantou.Framework.DependencyScanning.FileSystemEntryPredicate? ShouldScanFilePredicate { get => throw null; set { } }
-        public Meziantou.Framework.DependencyScanning.FileScanFailed? OnFileScanFailed { get => throw null; set { } }
         public int DegreeOfParallelism { get => throw null; set { } }
+        public System.Collections.Immutable.ImmutableHashSet<Meziantou.Framework.DependencyScanning.DependencyType> ExcludedDependencyTypes { get => throw null; set { } }
         public Meziantou.Framework.DependencyScanning.IFileSystem FileSystem { get => throw null; set { } }
         public System.Collections.Immutable.ImmutableHashSet<Meziantou.Framework.DependencyScanning.DependencyType> IncludedDependencyTypes { get => throw null; set { } }
-        public System.Collections.Immutable.ImmutableHashSet<Meziantou.Framework.DependencyScanning.DependencyType> ExcludedDependencyTypes { get => throw null; set { } }
+        public Meziantou.Framework.DependencyScanning.FileScanFailed? OnFileScanFailed { get => throw null; set { } }
+        public bool RecurseSubdirectories { get => throw null; set { } }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.DependencyScanning.DependencyScanner> Scanners { get => throw null; set { } }
+        public Meziantou.Framework.DependencyScanning.FileSystemEntryPredicate? ShouldRecursePredicate { get => throw null; set { } }
+        public Meziantou.Framework.DependencyScanning.FileSystemEntryPredicate? ShouldScanFilePredicate { get => throw null; set { } }
     }
 }
 namespace Meziantou.Framework.DependencyScanning.Scanners
@@ -146,36 +146,50 @@ namespace Meziantou.Framework.DependencyScanning.Scanners
     public sealed class AgentPluginDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class AzureDevOpsScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class CargoDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
+    }
+
+    public sealed class CargoLockFileDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
+    {
+        protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
+        public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class ComposerDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
+    }
+
+    public sealed class ComposerLockFileDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
+    {
+        protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
+        public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class DockerComposeDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class DockerfileDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
@@ -188,136 +202,171 @@ namespace Meziantou.Framework.DependencyScanning.Scanners
     public sealed class DotNetFileBasedAppDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class DotNetGlobalJsonDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class DotNetToolManifestDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
+    }
+
+    public sealed class GitHubActionsLockFileDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
+    {
+        protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
+        public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class GitHubActionsScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class GitSubmoduleDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class GoModuleDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
+    }
+
+    public sealed class GoSumDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
+    {
+        protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
+        public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class HelmChartDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
+    }
+
+    public sealed class HelmChartLockFileDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
+    {
+        protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
+        public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class JavaDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class KubernetesDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class MsBuildReferencesDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
+    }
+
+    public sealed class NpmLockFileDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
+    {
+        protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
+        public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class NpmPackageJsonDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class NuGetLockFileDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class NuSpecDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class PackagesConfigDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         public bool SearchForReferencesInAssociatedCsprojFiles { get => throw null; set { } }
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class ProjectAssetsDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class ProjectJsonDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
+    }
+
+    public sealed class PythonLockFileDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
+    {
+        protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
+        public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class PythonProjectDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class PythonRequirementsDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class RegexScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
-        protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        public System.Text.RegularExpressions.Regex? Regex { get => throw null; set { } }
         public Meziantou.Framework.DependencyScanning.DependencyType DependencyType { get => throw null; set { } }
         public Meziantou.Framework.Globbing.GlobCollection? FilePatterns { get => throw null; set { } }
+        public System.Text.RegularExpressions.Regex? Regex { get => throw null; set { } }
+        protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
         protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
@@ -325,21 +374,35 @@ namespace Meziantou.Framework.DependencyScanning.Scanners
     public sealed class RenovateExtendsDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class RubyGemDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
+    }
+
+    public sealed class RubyGemLockFileDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
+    {
+        protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
+        public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 
     public sealed class SwiftPackageDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
-        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
+    }
+
+    public sealed class SwiftPackageLockFileDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
+    {
+        protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
+        public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
     }
 }

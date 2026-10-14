@@ -37,16 +37,16 @@ namespace Meziantou.Framework
 
     public sealed class HtmlToMarkdownOptions
     {
+        public char CodeBlockFenceCharacter { get => throw null; set { } }
+        public Meziantou.Framework.CodeBlockStyle CodeBlockStyle { get => throw null; set { } }
+        public Meziantou.Framework.EmojiShortcodeMode EmojiShortcodeMode { get => throw null; set { } }
         public Meziantou.Framework.EmphasisMarker EmphasisMarker { get => throw null; set { } }
         public Meziantou.Framework.HeadingStyle HeadingStyle { get => throw null; set { } }
-        public Meziantou.Framework.CodeBlockStyle CodeBlockStyle { get => throw null; set { } }
-        public char CodeBlockFenceCharacter { get => throw null; set { } }
-        public char UnorderedListMarker { get => throw null; set { } }
-        public string ThematicBreak { get => throw null; set { } }
         public Meziantou.Framework.LineBreakStyle LineBreakStyle { get => throw null; set { } }
-        public bool UseSimplePunctuation { get => throw null; set { } }
-        public Meziantou.Framework.EmojiShortcodeMode EmojiShortcodeMode { get => throw null; set { } }
+        public string ThematicBreak { get => throw null; set { } }
         public Meziantou.Framework.UnknownElementHandling UnknownElementHandling { get => throw null; set { } }
+        public char UnorderedListMarker { get => throw null; set { } }
+        public bool UseSimplePunctuation { get => throw null; set { } }
     }
 
     public enum LineBreakStyle

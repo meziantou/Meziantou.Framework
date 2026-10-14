@@ -183,6 +183,49 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void ApplyColorFiltersRecolorsAnImageAPartOfItAndADrawing()
+    {
+        var photoPath = GetPath("plain.png");
+        using (var photo = new Image<Rgba32>(60, 60, new Rgba32(200, 100, 40)))
+        {
+            photo.Save(photoPath);
+        }
+
+        // An icon: a black square of 8 pixels in a transparent image of 16
+        var iconPath = GetPath("square.png");
+        using (var icon = new Image<Rgba32>(16, 16))
+        {
+            icon.Draw(canvas => canvas.FillRectangle(Colors.Black, new Rectangle(4, 4, 8, 8)));
+            icon.Save(iconPath);
+        }
+
+        var output = GetPath("filtered.png");
+        Examples.ApplyColorFilters(photoPath, iconPath, output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(60, 60), image.Size);
+        var frame = image.Frames[0];
+
+        // The whole photo has new colors: less vivid, so its red and its blue are nearer to each other
+        var top = frame[30, 10];
+        Assert.Equal(top, frame[5, 39]);
+        Assert.NotEqual(new Rgba32(200, 100, 40), top);
+        Assert.True(top.R > top.G && top.G > top.B);
+        Assert.True(top.R - top.B < 160);
+
+        // The lower third is half as bright: each sample is halved, halves upward
+        var bottom = frame[50, 50];
+        Assert.Equal(new Rgba32((byte)((top.R + 1) / 2), (byte)((top.G + 1) / 2), (byte)((top.B + 1) / 2)), bottom);
+        Assert.Equal(bottom, frame[5, 40]);
+
+        // The icon is at (8, 48): its square is gold, and what is transparent around it shows the photo
+        Assert.Equal(Colors.Gold, frame[16, 56]);
+        Assert.Equal(Colors.Gold, frame[12, 52]);
+        Assert.Equal(bottom, frame[9, 49]);
+        Assert.Equal(bottom, frame[22, 58]);
+    }
+
+    [Fact]
     public void DrawGlassPanelBlursWhatIsBehindThePanelOnly()
     {
         // A photo of stripes of one pixel: as sharp as a picture gets
@@ -390,6 +433,83 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.InRange(sumY / inked, 85, 115);
         Assert.True(frame[150, 100].R >= background.R);
         Assert.True(lowerLeft > 0 && upperLeft > 0);
+    }
+
+    [Fact]
+    public void DrawBrandColorsConvertsThePaintsToTheProfileOfTheImage()
+    {
+        // A photograph with the profile of a wider color space
+        var profile = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        var photoPath = GetPath("wide.png");
+        using (var photo = new Image<Rgb24>(120, 60, new Rgb24(10, 120, 60)))
+        {
+            photo.Metadata.IccProfile = profile;
+            photo.Save(photoPath);
+        }
+
+        var output = GetPath("brand.png");
+        Examples.DrawBrandColors(photoPath, output);
+
+        using var image = Image.Load<Rgb24>(output);
+        Assert.NotNull(image.Metadata.IccProfile);
+        Assert.Equal(profile.Data, image.Metadata.IccProfile.Data);
+
+        // Inside the banner, the samples are those that show the sRGB color #E63946 in the color space of the image:
+        // less saturated samples than (230, 57, 70), since the primaries of the image are more saturated
+        byte[] expected = [0xE6, 0x39, 0x46];
+        IccColorTransform.Create(IccProfile.Srgb, profile).Convert(expected, expected);
+        var banner = image.Frames[0][50, 20];
+        Assert.InRange(banner.R, expected[0] - 1, expected[0] + 1);
+        Assert.InRange(banner.G, expected[1] - 1, expected[1] + 1);
+        Assert.InRange(banner.B, expected[2] - 1, expected[2] + 1);
+        Assert.True(banner.R < 0xE6 && banner.G > 0x39);
+
+        // White is the white of both color spaces, and the photograph is untouched around the banner
+        Assert.Equal(new Rgb24(255, 255, 255), image.Frames[0][50, 8]);
+        Assert.Equal(new Rgb24(10, 120, 60), image.Frames[0][110, 50]);
+    }
+
+    [Fact]
+    public void DrawStickerGrowsAndShrinksTheOutlineOfAStar()
+    {
+        var output = GetPath("sticker.png");
+        Examples.DrawSticker(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(120, 120), image.Size);
+        var frame = image.Frames[0];
+
+        // The tip of the star is at (60, 18). Rounded, it is the arc of a circle of radius 4 whose center is at
+        // 4 / sin(18 degrees) = 12.9 from the tip: the star starts at 26.9, and its border 6 before, at 20.9
+        Assert.Equal(Colors.Goldenrod, frame[60, 62]);
+        Assert.Equal(Colors.Goldenrod, frame[60, 29]);
+        Assert.Equal(Colors.White, frame[60, 23]);
+        Assert.NotEqual(Colors.White, frame[60, 18]);
+        Assert.Equal(0, frame[2, 2].A);
+        Assert.Equal(0, frame[117, 3].A);
+
+        // The shadow of the border is around it and under it: black, and translucent. The seam is a lighter line
+        // inside the star.
+        var shadow = 0;
+        var lighter = 0;
+        for (var y = 0; y < 120; y++)
+        {
+            for (var x = 0; x < 120; x++)
+            {
+                var pixel = frame[x, y];
+                if (pixel is { R: 0, G: 0, B: 0, A: > 0 and <= 90 })
+                {
+                    shadow++;
+                }
+                else if (pixel.A == 255 && pixel != Colors.White && pixel != Colors.Goldenrod && pixel.B > Colors.Goldenrod.B)
+                {
+                    lighter++;
+                }
+            }
+        }
+
+        Assert.InRange(shadow, 200, 6000);
+        Assert.InRange(lighter, 80, 2000);
     }
 
     [Fact]
@@ -1273,6 +1393,128 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.True(black > 500, $"Only {black} pixels are black");
         Assert.True(red > 20, $"Only {red} pixels are red");
         Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][5, 5]);
+    }
+
+    [Fact]
+    public void DrawVerticalTextSetsColumnsFromTheRight()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans-cjk" / "NotoSansCJKjp-Regular.subset.otf";
+        var output = GetPath("vertical.png");
+        Examples.DrawVerticalText(fontPath, output);
+
+        // The font has every character of the text; 18 characters of 24 pixels and 4 narrower ones do not fit one
+        // column of 160 pixels: there are several, each as wide as a line of the font is tall
+        var font = Font.Load(fontPath);
+        var layout = TextLayout.Create(
+            "\u300C\u65E5\u672C\u8A9E\u300D\u306E\u30C6\u30AD\u30B9\u30C8\u3002ABC \u6771\u4EAC\u3001\u65E5\u672C\u3002",
+            new TextStyle(font, 24),
+            new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, MaxHeight = 160 });
+        Assert.False(layout.HasMissingGlyphs);
+        Assert.InRange(layout.LineCount, 3, 4);
+        var lineWidth = TextLayout.Create("\u65E5", font, 24).Height;
+        Assert.Equal(layout.LineCount * lineWidth, layout.Width, 1e-9);
+        Assert.InRange(layout.Height, 120, 160);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size((int)Math.Ceiling(layout.Width) + 20, 180), image.Size);
+
+        // The first column is the rightmost one and is full; the last one is the leftmost one and is shorter: there
+        // is ink at the bottom of the first one, and none at the bottom of the last one
+        var first = layout.Lines[0];
+        var last = layout.Lines[^1];
+        Assert.True(first.X > last.X);
+        Assert.True(first.Height > last.Height + 24);
+        Assert.True(CountInk(first, 96, 150) > 20);
+        Assert.Equal(0, CountInk(last, (int)Math.Ceiling(last.Height) + 12, 170));
+        Assert.True(CountInk(last, 10, 40) > 20);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][5, 5]);
+
+        int CountInk(TextLine line, int top, int bottom)
+        {
+            var count = 0;
+            for (var y = top; y < bottom; y++)
+            {
+                for (var x = (int)(10 + line.X); x < (int)(10 + line.X + line.Width); x++)
+                {
+                    count += image.Frames[0][x, y] == new Rgba32(0, 0, 0) ? 1 : 0;
+                }
+            }
+
+            return count;
+        }
+    }
+
+    [Fact]
+    public void DrawTitleCardFitsItsTextAndLeavesRoomForItsIcon()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var iconPath = GetPath("dot.png");
+        var green = new Rgba32(0, 200, 80);
+        using (var icon = new Image<Rgba32>(32, 32, green))
+        {
+            icon.Save(iconPath);
+        }
+
+        var output = GetPath("title.png");
+        var scale = Examples.DrawTitleCard(fontPath, iconPath, output);
+
+        // At 64 pixels per em the title is wider than the card: it is made smaller, and still fills the width
+        Assert.InRange(scale, 0.2, 0.95);
+        var font = Font.Load(fontPath);
+        var style = new TextStyle(font, 64);
+        var capHeight = font.GetMetrics(64).CapHeight;
+        var text = new RichTextBuilder().AppendPlaceholder(capHeight, capHeight, capHeight, style).Append(" Draw more with less", style).Build();
+        var layout = TextLayout.CreateToFit(text, 288, 96, new TextLayoutOptions { Alignment = TextAlignment.Center });
+        Assert.Equal(layout.Scale, scale, 1e-9);
+        Assert.False(layout.HasMissingGlyphs);
+        Assert.False(layout.IsTruncated);
+        Assert.InRange(layout.Width, 200, 288);
+        Assert.InRange(layout.Height, 20, 96);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(320, 120), image.Size);
+        var frame = image.Frames[0];
+        var background = Rgba32.ParseHex("#14213D");
+        var orange = Rgba32.ParseHex("#FCA311");
+        Assert.Equal(background, frame[2, 2]);
+        Assert.Equal(background, frame[317, 117]);
+
+        // The icon is where the layout left room for it, as tall as a capital letter
+        var place = layout.Placeholders[0];
+        var originY = 12 + ((96 - layout.Height) / 2);
+        Assert.Equal(green, frame[(int)(16 + place.X + (place.Width / 2)), (int)(originY + place.Y + (place.Height / 2))]);
+        Assert.Equal(capHeight * scale, place.Height, 1e-9);
+
+        // The highlighted word is on its orange background, the last word has an orange contour, and the letters
+        // of both are there
+        var orangePixels = 0;
+        var whitePixels = 0;
+        var darkOnOrange = 0;
+        for (var y = 0; y < 120; y++)
+        {
+            for (var x = 0; x < 320; x++)
+            {
+                var pixel = frame[x, y];
+                orangePixels += pixel == orange ? 1 : 0;
+                whitePixels += pixel == Colors.White ? 1 : 0;
+                darkOnOrange += pixel == background && x > 0 && x < 319 && frame[x - 1, y] != background && y > 12 && y < 108 && IsNearOrange(frame, x, y, orange) ? 1 : 0;
+            }
+        }
+
+        Assert.InRange(orangePixels, 300, 20000);
+        Assert.InRange(whitePixels, 300, 20000);
+        Assert.InRange(darkOnOrange, 20, 20000);
+
+        static bool IsNearOrange(ImageFrame<Rgba32> frame, int x, int y, Rgba32 orange)
+        {
+            for (var dx = -6; dx <= 6; dx++)
+            {
+                if (x + dx is >= 0 and < 320 && frame[x + dx, y] == orange)
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     [Fact]

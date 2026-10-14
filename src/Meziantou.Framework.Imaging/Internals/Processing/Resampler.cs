@@ -450,6 +450,100 @@ internal static class Resampler
         }
     }
 
+    /// <summary>
+    /// Sets <paramref name="length"/> values of <paramref name="buffer"/> at <paramref name="accumulatorOffset"/> to the sum of
+    /// the rows of <paramref name="buffer"/> at <paramref name="offsets"/> times their <paramref name="weights"/>, or adds that
+    /// sum to them when <paramref name="accumulate"/> is set: the operations of <see cref="SetScaled"/> with the first row
+    /// (<see cref="AddScaled"/> when accumulating) then of <see cref="AddScaled"/> with each next one, in that order for every
+    /// sample, but summed in registers for a block of samples instead of one pass over the accumulator per row.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static void SetWeightedSum(Span<double> buffer, int accumulatorOffset, int length, ReadOnlySpan<int> offsets, ReadOnlySpan<double> weights, bool accumulate)
+    {
+        Debug.Assert(offsets.Length == weights.Length && offsets.Length > 0);
+        Debug.Assert(accumulatorOffset + length <= buffer.Length);
+        foreach (var offset in offsets)
+        {
+            Debug.Assert(offset >= 0 && offset + length <= buffer.Length && (offset + length <= accumulatorOffset || offset >= accumulatorOffset + length));
+        }
+
+        var i = 0;
+        ref var start = ref unsafe(MemoryMarshal.GetReference(buffer));
+        if (Vector256.IsHardwareAccelerated)
+        {
+            for (; i + 16 <= length; i += 16)
+            {
+                ref var target = ref unsafe(Unsafe.Add(ref start, accumulatorOffset + i));
+                var sum0 = accumulate ? unsafe(Vector256.LoadUnsafe(ref target)) : Vector256<double>.Zero;
+                var sum1 = accumulate ? unsafe(Vector256.LoadUnsafe(ref target, 4)) : Vector256<double>.Zero;
+                var sum2 = accumulate ? unsafe(Vector256.LoadUnsafe(ref target, 8)) : Vector256<double>.Zero;
+                var sum3 = accumulate ? unsafe(Vector256.LoadUnsafe(ref target, 12)) : Vector256<double>.Zero;
+                var w = Vector256.Create(weights[0]);
+                ref var row = ref unsafe(Unsafe.Add(ref start, offsets[0] + i));
+                sum0 += w * unsafe(Vector256.LoadUnsafe(ref row));
+                sum1 += w * unsafe(Vector256.LoadUnsafe(ref row, 4));
+                sum2 += w * unsafe(Vector256.LoadUnsafe(ref row, 8));
+                sum3 += w * unsafe(Vector256.LoadUnsafe(ref row, 12));
+                for (var t = 1; t < offsets.Length; t++)
+                {
+                    w = Vector256.Create(weights[t]);
+                    row = ref unsafe(Unsafe.Add(ref start, offsets[t] + i));
+                    sum0 += w * unsafe(Vector256.LoadUnsafe(ref row));
+                    sum1 += w * unsafe(Vector256.LoadUnsafe(ref row, 4));
+                    sum2 += w * unsafe(Vector256.LoadUnsafe(ref row, 8));
+                    sum3 += w * unsafe(Vector256.LoadUnsafe(ref row, 12));
+                }
+
+                unsafe { sum0.StoreUnsafe(ref target); }
+                unsafe { sum1.StoreUnsafe(ref target, 4); }
+                unsafe { sum2.StoreUnsafe(ref target, 8); }
+                unsafe { sum3.StoreUnsafe(ref target, 12); }
+            }
+        }
+        else if (Vector128.IsHardwareAccelerated)
+        {
+            for (; i + 8 <= length; i += 8)
+            {
+                ref var target = ref unsafe(Unsafe.Add(ref start, accumulatorOffset + i));
+                var sum0 = accumulate ? unsafe(Vector128.LoadUnsafe(ref target)) : Vector128<double>.Zero;
+                var sum1 = accumulate ? unsafe(Vector128.LoadUnsafe(ref target, 2)) : Vector128<double>.Zero;
+                var sum2 = accumulate ? unsafe(Vector128.LoadUnsafe(ref target, 4)) : Vector128<double>.Zero;
+                var sum3 = accumulate ? unsafe(Vector128.LoadUnsafe(ref target, 6)) : Vector128<double>.Zero;
+                var w = Vector128.Create(weights[0]);
+                ref var row = ref unsafe(Unsafe.Add(ref start, offsets[0] + i));
+                sum0 += w * unsafe(Vector128.LoadUnsafe(ref row));
+                sum1 += w * unsafe(Vector128.LoadUnsafe(ref row, 2));
+                sum2 += w * unsafe(Vector128.LoadUnsafe(ref row, 4));
+                sum3 += w * unsafe(Vector128.LoadUnsafe(ref row, 6));
+                for (var t = 1; t < offsets.Length; t++)
+                {
+                    w = Vector128.Create(weights[t]);
+                    row = ref unsafe(Unsafe.Add(ref start, offsets[t] + i));
+                    sum0 += w * unsafe(Vector128.LoadUnsafe(ref row));
+                    sum1 += w * unsafe(Vector128.LoadUnsafe(ref row, 2));
+                    sum2 += w * unsafe(Vector128.LoadUnsafe(ref row, 4));
+                    sum3 += w * unsafe(Vector128.LoadUnsafe(ref row, 6));
+                }
+
+                unsafe { sum0.StoreUnsafe(ref target); }
+                unsafe { sum1.StoreUnsafe(ref target, 2); }
+                unsafe { sum2.StoreUnsafe(ref target, 4); }
+                unsafe { sum3.StoreUnsafe(ref target, 6); }
+            }
+        }
+
+        for (; i < length; i++)
+        {
+            var sum = (accumulate ? buffer[accumulatorOffset + i] : 0d) + (weights[0] * buffer[offsets[0] + i]);
+            for (var t = 1; t < offsets.Length; t++)
+            {
+                sum += weights[t] * buffer[offsets[t] + i];
+            }
+
+            buffer[accumulatorOffset + i] = sum;
+        }
+    }
+
     /// <summary>Adds <c>weight * row</c> to the accumulator, sample by sample (vectorized when supported; the same operations).</summary>
     [MethodImpl(MethodImplOptions.NoInlining)]
     internal static void AddScaled(Span<double> accumulator, ReadOnlySpan<double> row, double weight)

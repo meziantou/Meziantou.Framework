@@ -611,9 +611,15 @@ internal static partial class GoldenCorpus
                 new Obj { ["exception"] = "UnsupportedImageFeatureException", ["format"] = "Jpeg", ["feature"] = feature },
                 features: CommonCorpus.JpegInspect(data).Features, notes: notes);
 
+        // The lossless process with arithmetic coding (SOF11): no tool at hand writes one, so the frame marker of a
+        // Huffman-coded lossless file is modified by hand. The frame header is enough to reject the file
         img = CommonCorpus.PatternDetailColor(12, 8, 21);
-        (data, var encodeCommand) = CjpegEncode(c, "lossless", img, ["-lossless", "1"]);
-        Add("invalid/jpeg/lossless", data, [encodeCommand], "JPEG lossless", "Lossless JPEG (SOF3) is out of scope.", parameters: new Obj { ["width"] = 12, ["height"] = 8 });
+        (data, var encodeCommand) = CjpegEncode(c, "lossless-arithmetic", img, ["-lossless", "1"]);
+        var losslessSof = JpegSegments(data).First(p => p.Kind == 0xC3);
+        data = (byte[])data.Clone();
+        data[losslessSof.Start + 1] = 0xCB;
+        Add("invalid/jpeg/lossless-arithmetic", data, [encodeCommand, "replace the frame marker SOF3 by SOF11"], "JPEG lossless with arithmetic coding",
+            "The lossless process with arithmetic coding (SOF11, T.81 H.1.2.3) is not decoded; the Huffman-coded one (SOF3) is.", parameters: new Obj { ["width"] = 12, ["height"] = 8 });
 
         // The DCT processes of ITU-T T.81 have 8-bit or 12-bit samples: any other precision is rejected. cjpeg does not
         // write one, so the frame header of a valid 12-bit file is modified by hand

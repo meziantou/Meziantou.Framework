@@ -132,7 +132,7 @@ internal sealed partial class DrawingSession
         level.Blend = BlendMode.Normal;
         level.Effect = isInner ? LayerEffect.InnerShadow : LayerEffect.Shadow;
         level.IsLuminanceMask = false;
-        level.ShadowColor = color;
+        level.ShadowColor = ToImageColor(color);
         level.ShadowOffsetX = offset.X;
         level.ShadowOffsetY = offset.Y;
         level.BlurSigma = sigma;
@@ -208,6 +208,10 @@ internal sealed partial class DrawingSession
 
                     case LayerEffect.Blur:
                         BlurLayer(level);
+                        break;
+
+                    case LayerEffect.ColorMatrix:
+                        FilterLayer(level);
                         break;
                 }
 
@@ -298,6 +302,7 @@ internal sealed partial class DrawingSession
         _layers.Clear();
         DisposeShadows();
         DisposeBlur();
+        DisposeFilters();
     }
 
     /// <summary>What changes the pixels of a layer, or is drawn with it, when it ends.</summary>
@@ -307,6 +312,7 @@ internal sealed partial class DrawingSession
         Shadow,
         InnerShadow,
         Blur,
+        ColorMatrix,
     }
 
     /// <summary>A layer of the stack: its image, what was drawn on before it started, and how it is drawn when it ends.</summary>
@@ -340,6 +346,9 @@ internal sealed partial class DrawingSession
         public double ShadowOffsetX { get; set; }
 
         public double ShadowOffsetY { get; set; }
+
+        /// <summary>Gets or sets the color matrix the pixels of the layer go through when it ends.</summary>
+        public ColorMatrix? Matrix { get; set; }
 
         /// <summary>Gets or sets the standard deviation of the blur of the shadow of the layer, or of the layer itself.</summary>
         public double BlurSigma { get; set; }

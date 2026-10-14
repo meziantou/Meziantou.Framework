@@ -6,36 +6,36 @@ namespace Meziantou.Framework.Http.Caching
 {
     public sealed class HttpCachePersistenceEntry
     {
-        public bool SecondaryKeyMatchNone { get => throw null; set { } }
-        public System.Collections.Generic.Dictionary<string, string>? SecondaryKeyHeaders { get => throw null; set { } }
+        public System.TimeSpan AgeValue { get => throw null; set { } }
+        public string? ETag { get => throw null; set { } }
+        public System.DateTimeOffset? Expires { get => throw null; set { } }
+        public bool Immutable { get => throw null; set { } }
+        public bool IsUnusableWhenStale { get => throw null; }
+        public System.DateTimeOffset? LastModified { get => throw null; set { } }
+        public System.TimeSpan? MaxAge { get => throw null; set { } }
+        public bool MustRevalidate { get => throw null; set { } }
+        public bool NoTransform { get => throw null; set { } }
         public string? NoVarySearch { get => throw null; set { } }
         public string? NormalizedQuery { get => throw null; set { } }
-        public System.DateTimeOffset RequestTime { get => throw null; set { } }
-        public System.DateTimeOffset ResponseTime { get => throw null; set { } }
-        public System.DateTimeOffset ResponseDate { get => throw null; set { } }
-        public System.TimeSpan AgeValue { get => throw null; set { } }
-        public System.TimeSpan? MaxAge { get => throw null; set { } }
-        public System.TimeSpan? SharedMaxAge { get => throw null; set { } }
-        public System.DateTimeOffset? Expires { get => throw null; set { } }
-        public bool MustRevalidate { get => throw null; set { } }
-        public bool ProxyRevalidate { get => throw null; set { } }
-        public bool ResponseNoCache { get => throw null; set { } }
-        public bool Public { get => throw null; set { } }
         public bool Private { get => throw null; set { } }
-        public bool NoTransform { get => throw null; set { } }
-        public bool Immutable { get => throw null; set { } }
-        public System.TimeSpan? StaleIfError { get => throw null; set { } }
-        public string? ETag { get => throw null; set { } }
-        public System.DateTimeOffset? LastModified { get => throw null; set { } }
+        public bool ProxyRevalidate { get => throw null; set { } }
+        public bool Public { get => throw null; set { } }
+        public System.DateTimeOffset RequestTime { get => throw null; set { } }
+        public System.DateTimeOffset ResponseDate { get => throw null; set { } }
+        public bool ResponseNoCache { get => throw null; set { } }
+        public System.DateTimeOffset ResponseTime { get => throw null; set { } }
+        public System.Collections.Generic.Dictionary<string, string>? SecondaryKeyHeaders { get => throw null; set { } }
+        public bool SecondaryKeyMatchNone { get => throw null; set { } }
         public System.ReadOnlyMemory<byte> SerializedResponse { get => throw null; set { } }
-        public bool IsUnusableWhenStale { get => throw null; }
+        public System.TimeSpan? SharedMaxAge { get => throw null; set { } }
+        public System.TimeSpan? StaleIfError { get => throw null; set { } }
         public Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry Clone() => throw null;
-        public System.TimeSpan GetFreshnessLifetime() => throw null;
-        public System.TimeSpan GetCurrentAge(System.DateTimeOffset now) => throw null;
-        public System.DateTimeOffset GetStaleTime() => throw null;
-        public bool IsObsolete(System.DateTimeOffset now) => throw null;
         public string ComputeSecondaryKeyHash() => throw null;
+        public System.TimeSpan GetCurrentAge(System.DateTimeOffset now) => throw null;
+        public System.TimeSpan GetFreshnessLifetime() => throw null;
+        public System.DateTimeOffset GetStaleTime() => throw null;
         public static bool HasSameSecondaryKey(Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry left, Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry right) => throw null;
+        public bool IsObsolete(System.DateTimeOffset now) => throw null;
     }
 
     public sealed class HttpCachingDelegateHandler : System.Net.Http.DelegatingHandler
@@ -48,17 +48,17 @@ namespace Meziantou.Framework.Http.Caching
 
     public sealed class HttpCachingOptions
     {
-        public System.TimeProvider TimeProvider { get => throw null; set { } }
         public long? MaximumResponseSize { get => throw null; set { } }
         public System.Action<System.Exception>? OnStoreError { get => throw null; set { } }
         public System.Func<System.Net.Http.HttpResponseMessage, bool>? ShouldCacheResponse { get => throw null; set { } }
+        public System.TimeProvider TimeProvider { get => throw null; set { } }
     }
 
     public interface IHttpCacheStore
     {
         System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry>> GetEntriesAsync(string primaryKey, System.Threading.CancellationToken cancellationToken);
-        System.Threading.Tasks.ValueTask SetEntryAsync(string primaryKey, Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry entry, System.Threading.CancellationToken cancellationToken);
-        System.Threading.Tasks.ValueTask RemoveEntriesAsync(string primaryKey, System.Threading.CancellationToken cancellationToken);
         public System.Threading.Tasks.ValueTask PruneObsoleteEntriesAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        System.Threading.Tasks.ValueTask RemoveEntriesAsync(string primaryKey, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask SetEntryAsync(string primaryKey, Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry entry, System.Threading.CancellationToken cancellationToken);
     }
 }

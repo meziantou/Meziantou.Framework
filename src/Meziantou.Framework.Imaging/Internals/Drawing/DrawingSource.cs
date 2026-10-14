@@ -9,22 +9,24 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 internal readonly ref struct DrawingSource
 {
-    public DrawingSource(DrawingColor color, CompositeMode mode = CompositeMode.SourceOver, BlendMode blend = BlendMode.Normal, byte transfer = 0)
+    public DrawingSource(DrawingColor color, CompositeMode mode = CompositeMode.SourceOver, BlendMode blend = BlendMode.Normal, byte transfer = 0, LinearLightCurves? curves = null)
     {
         Color = color;
         Colors = default;
         Mode = mode;
         Blend = blend;
         Transfer = transfer;
+        Curves = curves;
     }
 
-    public DrawingSource(ReadOnlySpan<ushort> colors, CompositeMode mode = CompositeMode.SourceOver, BlendMode blend = BlendMode.Normal, byte transfer = 0)
+    public DrawingSource(ReadOnlySpan<ushort> colors, CompositeMode mode = CompositeMode.SourceOver, BlendMode blend = BlendMode.Normal, byte transfer = 0, LinearLightCurves? curves = null)
     {
         Color = default;
         Colors = colors;
         Mode = mode;
         Blend = blend;
         Transfer = transfer;
+        Curves = curves;
     }
 
     /// <summary>Gets the color of every pixel when <see cref="Colors"/> is empty.</summary>
@@ -44,4 +46,13 @@ internal readonly ref struct DrawingSource
     /// light they are combined in, or 0 when they are combined as they are stored.
     /// </summary>
     public byte Transfer { get; }
+
+    /// <summary>
+    /// Gets the tone curves of the ICC profile of the image, which decode the samples to the linear light they are
+    /// combined in, or <see langword="null"/> when <see cref="Transfer"/> says how they are combined.
+    /// </summary>
+    public LinearLightCurves? Curves { get; }
+
+    /// <summary>Gets a value indicating whether the paint is combined with the pixels in linear light.</summary>
+    public bool IsLinearLight => Transfer != 0 || Curves is not null;
 }

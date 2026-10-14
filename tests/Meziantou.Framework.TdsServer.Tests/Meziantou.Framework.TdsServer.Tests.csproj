@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
-    <PackageReference Include="Microsoft.SqlServer.Management.SqlParser" Version="180.7.0" />
+    <PackageReference Include="Microsoft.SqlServer.Management.SqlParser" Version="180.9.0" />
     <ProjectReference Include="../../src/Meziantou.Framework.TdsServer/Meziantou.Framework.TdsServer.csproj" />
   </ItemGroup>
 

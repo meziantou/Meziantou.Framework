@@ -26,6 +26,25 @@ internal sealed class TextLayoutData
 
     public required DecorationRectangle[] Decorations { get; init; }
 
+    /// <summary>Gets the rectangles painted behind the text of the styles that have a background, with their paint.</summary>
+    public required DecorationRectangle[] Backgrounds { get; init; }
+
+    /// <summary>Gets the pens that stroke the glyphs of the runs that have an outline.</summary>
+    public required Pen[] Outlines { get; init; }
+
+    /// <summary>Gets the rectangle of each placeholder of the text, in the order of the text; empty for one the layout does not hold.</summary>
+    public required RectangleD[] Placeholders { get; init; }
+
+    /// <summary>Gets what the lengths of the styles were multiplied by.</summary>
+    public required double Scale { get; init; }
+
+    /// <summary>
+    /// Gets what a vertical layout is before it is turned, or <see langword="null"/> for a horizontal layout: its
+    /// lines as the lines of a horizontal text, which the positions of the text are found on and a path is followed
+    /// with.
+    /// </summary>
+    public VerticalLayoutData? Vertical { get; init; }
+
     public required TextLine[] Lines { get; init; }
 
     public required double Width { get; init; }

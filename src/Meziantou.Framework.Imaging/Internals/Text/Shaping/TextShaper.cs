@@ -32,6 +32,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// slash, and for positioning <c>abvm</c>, <c>blwm</c>, <c>mark</c>, <c>mkmk</c>, <c>curs</c>, <c>dist</c>,
 /// <c>kern</c>.
 /// </para>
+/// <para>
+/// A run of a vertical line whose glyphs are upright is shaped from the top to the bottom: each glyph advances by
+/// minus its advance height and is placed by minus its vertical origin, so that its origin is at the top of its
+/// advance, in the middle of its width. The feature of such a run is <c>vert</c>, with those that do not depend on the
+/// direction (<c>ccmp</c>, <c>locl</c>, <c>rlig</c>, <c>abvm</c>, <c>blwm</c>, <c>mark</c>, <c>mkmk</c>); the letters
+/// of the scripts that join are not joined, and neither the legacy kerning table nor the marks placed from the shapes
+/// of the glyphs are used.
+/// </para>
 /// </remarks>
 internal static class TextShaper
 {
@@ -63,6 +71,7 @@ internal static class TextShaper
     // lookups are applied before every other one, whatever their place in the lookup list.
     private static readonly uint Rvrn = ShapingFeature.ToTag("rvrn");
     private static readonly uint Mark = ShapingFeature.ToTag("mark");
+    private static readonly uint Vert = ShapingFeature.ToTag("vert");
     private static readonly uint Cfar = ShapingFeature.ToTag("cfar");
 
     private static readonly uint[] LeftToRightFeatures = [ShapingFeature.ToTag("ltra"), ShapingFeature.ToTag("ltrm")];
@@ -74,6 +83,14 @@ internal static class TextShaper
         ShapingFeature.ToTag("mark"), ShapingFeature.ToTag("mkmk"), ShapingFeature.ToTag("rlig"),
         ShapingFeature.ToTag("calt"), ShapingFeature.ToTag("clig"), ShapingFeature.ToTag("curs"), ShapingFeature.ToTag("dist"),
         Kern, ShapingFeature.ToTag("liga"), ShapingFeature.ToTag("rclt"), Rvrn,
+    ];
+
+    // The features of a vertical line: those that do not depend on the direction, and the vertical forms. The other
+    // vertical features (alternate metrics, kerning, rotated forms) are applied when the caller asks for them.
+    private static readonly uint[] VerticalFeatures =
+    [
+        ShapingFeature.ToTag("abvm"), ShapingFeature.ToTag("blwm"), ShapingFeature.ToTag("ccmp"), ShapingFeature.ToTag("locl"),
+        ShapingFeature.ToTag("mark"), ShapingFeature.ToTag("mkmk"), ShapingFeature.ToTag("rlig"), Rvrn, Vert,
     ];
 
     // The features that place marks.
@@ -98,9 +115,18 @@ internal static class TextShaper
     /// <param name="languages">The OpenType tags of the language of the run, by order of preference: the language system of the first one the font has for the script is used; empty for the default language system.</param>
     /// <param name="isRightToLeft"><see langword="true"/> when the run is laid out from right to left.</param>
     /// <param name="features">The features to turn on or off, besides the default ones.</param>
+    /// <param name="isVertical">
+    /// <see langword="true"/> when the run is laid out from top to bottom, its glyphs upright. The glyphs then have
+    /// their vertical forms (the <c>vert</c> feature, wherever the font has it, in the place of the features of a
+    /// horizontal line: <c>calt</c>, <c>clig</c>, <c>curs</c>, <c>dist</c>, <c>kern</c>, <c>liga</c>, <c>rclt</c>),
+    /// a vertical advance (<see cref="GlyphPosition.YAdvance"/>, negative since the y axis of a font goes up) and
+    /// no horizontal one, and an offset from the pen to their horizontal origin: the opposite of their vertical
+    /// origin (<see cref="FontFace.GetVerticalOrigin"/>). A vertical run is never right to left.
+    /// </param>
+    /// <param name="scratch">The working storage that measures the outlines of a font without vertical origins, or <see langword="null"/> when the run is horizontal.</param>
     /// <exception cref="InvalidImageContentException">A layout table of the font is malformed.</exception>
     /// <exception cref="ImageResourceLimitException">The glyphs exceed <see cref="ImageResourceLimits.MaxTextGlyphs"/>.</exception>
-    public static void Shape(GlyphBuffer buffer, FontFace face, UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, ReadOnlySpan<ShapingFeature> features)
+    public static void Shape(GlyphBuffer buffer, FontFace face, UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, ReadOnlySpan<ShapingFeature> features, bool isVertical = false, GlyphScratch? scratch = null)
     {
         buffer.StartShaping();
         SetCharacterProperties(buffer);
@@ -114,6 +140,13 @@ internal static class TextShaper
         scripts = scripts[..OpenTypeScript.GetTags(script, scripts)];
         var scriptTag = face.Gsub?.FindScriptTag(face.GsubData.Span, scripts) ?? 0;
         var shaper = GetShaper(script, scriptTag);
+
+        // The letters of Arabic and of Syriac join along a horizontal line only: upright, each one is on its own
+        if (isVertical && shaper == ScriptShaperKind.Arabic)
+        {
+            shaper = ScriptShaperKind.Default;
+        }
+
         var shaperPlan = shaper switch
         {
             ScriptShaperKind.Arabic => ArabicShaper.GetPlan(script, face.Gsub is { } substitutions && HasFeature(substitutions, face.GsubData.Span, scripts, languages, ArabicShaper.RequiredAlternates)),
@@ -163,7 +196,7 @@ internal static class TextShaper
         applier.SetGlyphClasses();
         var hasFractions = false;
         var hasStretching = false;
-        var lookups = face.Gsub is { } gsub ? CollectLookups(gsub, face.GsubData.Span, scripts, languages, isRightToLeft, plan, shaperPlan, coordinates, out hasFractions, out _) : [];
+        var lookups = face.Gsub is { } gsub ? CollectLookups(gsub, face.GsubData.Span, scripts, languages, isRightToLeft, isVertical, plan, shaperPlan, coordinates, out hasFractions, out _) : [];
         SetMasks(buffer, plan, hasFractions, shaper, script);
         // A font of Arabic made before OpenType Layout has no substitution for the script: its letters take their forms
         // from the presentation forms it has as characters.
@@ -250,7 +283,18 @@ internal static class TextShaper
         var positions = buffer.Positions;
         for (var i = 0; i < info.Length; i++)
         {
-            positions[i].XAdvance = info[i].ShaperData is > 0 and <= SpaceEm5 ? GetSpaceAdvance(face, info[i].ShaperData) : face.GetAdvanceWidth(info[i].Glyph);
+            if (isVertical)
+            {
+                // The pen is on the vertical origin of the glyph, and moves down by its advance height
+                face.GetVerticalOrigin(info[i].Glyph, scratch, out var originX, out var originY);
+                positions[i].YAdvance = -(info[i].ShaperData is > 0 and <= SpaceEm5 ? GetSpaceAdvance(face, info[i].ShaperData, isVertical: true) : face.GetAdvanceHeight(info[i].Glyph));
+                positions[i].XOffset = -originX;
+                positions[i].YOffset = -originY;
+            }
+            else
+            {
+                positions[i].XAdvance = info[i].ShaperData is > 0 and <= SpaceEm5 ? GetSpaceAdvance(face, info[i].ShaperData) : face.GetAdvanceWidth(info[i].Glyph);
+            }
         }
 
         // Myanmar and the universal model: the marks have no advance before the font places them, so that what it adds
@@ -267,7 +311,9 @@ internal static class TextShaper
                 if (info[i].IsMark)
                 {
                     positions[i].XOffset -= marksAreMovedBack ? positions[i].XAdvance : 0;
+                    positions[i].YOffset -= marksAreMovedBack ? positions[i].YAdvance : 0;
                     positions[i].XAdvance = 0;
+                    positions[i].YAdvance = 0;
                 }
             }
         }
@@ -275,15 +321,16 @@ internal static class TextShaper
         var hasKerningFeature = false;
         if (face.Gpos is { } gpos)
         {
-            var positioningLookups = CollectLookups(gpos, face.GposData.Span, scripts, languages, isRightToLeft, plan, shaperPlan, coordinates, out _, out hasKerningFeature);
-            applier.Begin(gpos, face.GposData, isPositioning: true, isRightToLeft);
+            var positioningLookups = CollectLookups(gpos, face.GposData.Span, scripts, languages, isRightToLeft, isVertical, plan, shaperPlan, coordinates, out _, out hasKerningFeature);
+            applier.Begin(gpos, face.GposData, isPositioning: true, isRightToLeft, isVertical);
             foreach (var lookup in positioningLookups)
             {
                 applier.ApplyLookup(lookup.Index, lookup.Mask, lookup.Flags & ~ShaperFeatureFlags.PerSyllable);
             }
         }
 
-        if (!hasKerningFeature && face.HasLegacyKerning && (!plan.TryGetMask(Kern, out var kerningMask) || kerningMask != 0))
+        // The pairs of the kerning table are those of a horizontal line
+        if (!isVertical && !hasKerningFeature && face.HasLegacyKerning && (!plan.TryGetMask(Kern, out var kerningMask) || kerningMask != 0))
         {
             ApplyLegacyKerning(buffer, face, isRightToLeft);
         }
@@ -299,9 +346,11 @@ internal static class TextShaper
                 if (marksAreMovedBack)
                 {
                     positions[i].XOffset -= positions[i].XAdvance;
+                    positions[i].YOffset -= positions[i].YAdvance;
                 }
 
                 positions[i].XAdvance = 0;
+                positions[i].YAdvance = 0;
             }
 
             if (info[i].IsIgnorable)
@@ -313,7 +362,7 @@ internal static class TextShaper
         // A font without positioning table places no mark: the marks are placed from the shapes of the glyphs. The
         // fonts of the scripts that have a model of their own draw their marks where they belong, and those of Thai
         // have the marks of each place as glyphs of their own.
-        if (face.Gpos is null && shaper is ScriptShaperKind.Default or ScriptShaperKind.Arabic or ScriptShaperKind.Hebrew)
+        if (!isVertical && face.Gpos is null && shaper is ScriptShaperKind.Default or ScriptShaperKind.Arabic or ScriptShaperKind.Hebrew)
         {
             FallbackMarkPositioner.Apply(buffer, face, isRightToLeft);
         }
@@ -799,10 +848,10 @@ internal static class TextShaper
         };
     }
 
-    private static int GetSpaceAdvance(FontFace face, int kind)
+    private static int GetSpaceAdvance(FontFace face, int kind, bool isVertical = false)
     {
         var em = face.UnitsPerEm;
-        var space = face.GetAdvanceWidth(face.MapCodePoint(' '));
+        var space = isVertical ? face.GetAdvanceHeight(face.MapCodePoint(' ')) : face.GetAdvanceWidth(face.MapCodePoint(' '));
         switch (kind)
         {
             case SpaceEm:
@@ -835,7 +884,7 @@ internal static class TextShaper
                 {
                     var glyph = face.MapCodePoint(digit);
                     if (glyph != 0)
-                        return face.GetAdvanceWidth(glyph);
+                        return (isVertical ? face.GetAdvanceHeight(glyph) : face.GetAdvanceWidth(glyph));
                 }
 
                 return space;
@@ -844,7 +893,7 @@ internal static class TextShaper
                 {
                     var glyph = face.MapCodePoint('.');
                     glyph = glyph != 0 ? glyph : face.MapCodePoint(',');
-                    return glyph != 0 ? face.GetAdvanceWidth(glyph) : space;
+                    return glyph != 0 ? (isVertical ? face.GetAdvanceHeight(glyph) : face.GetAdvanceWidth(glyph)) : space;
                 }
 
             case SpaceNarrow:
@@ -980,6 +1029,7 @@ internal static class TextShaper
         ReadOnlySpan<uint> scripts,
         ReadOnlySpan<uint> languages,
         bool isRightToLeft,
+        bool isVertical,
         FeaturePlan plan,
         ShaperPlan shaper,
         ReadOnlySpan<int> coordinates,
@@ -990,18 +1040,21 @@ internal static class TextShaper
         hasKerning = false;
         var lookups = new List<PlannedLookup>();
         var system = table.FindLanguageSystem(data, scripts, languages);
-        if (system == 0)
-            return lookups;
 
         // The features an instance of a variable font replaces. The conditions are also tested for the default
         // instance: a range can contain it.
         var substitutions = table.FindFeatureSubstitutions(data, coordinates);
+        if (system == 0)
+        {
+            AddVerticalForms(table, data, isVertical, hasVerticalForms: false, plan, shaper, lookups, substitutions);
+            return lookups;
+        }
 
         // The feature the language system requires is applied with the features of its name, or else first.
         var required = LayoutTable.GetRequiredFeature(data, system);
         if (required != LayoutTable.NoFeature && table.GetFeatureTag(data, required) is not 0 and var requiredTag)
         {
-            var stage = GetStage(requiredTag, plan, shaper, isRightToLeft, out var flags, out _);
+            var stage = GetStage(requiredTag, plan, shaper, isRightToLeft, isVertical, out var flags, out _);
             AddLookups(table, data, required, GlobalMask, lookups, substitutions, stage < 0 ? 0 : stage, flags);
         }
 
@@ -1010,13 +1063,17 @@ internal static class TextShaper
         var hasFrac = false;
         var hasNumr = false;
         var hasDnom = false;
+        var hasVerticalForms = false;
         for (var i = 0; i < count; i++)
         {
             var tag = table.GetFeatureTag(data, LayoutTable.GetFeatureIndex(data, system, i));
             hasFrac |= tag == Frac;
             hasNumr |= tag == Numr;
             hasDnom |= tag == Dnom;
+            hasVerticalForms |= tag == Vert;
         }
+
+        AddVerticalForms(table, data, isVertical, hasVerticalForms, plan, shaper, lookups, substitutions);
 
         hasFractions = hasFrac || (hasNumr && hasDnom);
         for (var i = 0; i < count; i++)
@@ -1026,7 +1083,7 @@ internal static class TextShaper
             if (tag == 0)
                 continue;
 
-            var stage = GetStage(tag, plan, shaper, isRightToLeft, out var flags, out var shaperMask);
+            var stage = GetStage(tag, plan, shaper, isRightToLeft, isVertical, out var flags, out var shaperMask);
             if (plan.TryGetMask(tag, out var mask))
             {
                 // A feature the caller names: it applies where its value is not zero.
@@ -1043,7 +1100,7 @@ internal static class TextShaper
                     AddLookups(table, data, feature, tag == Frac ? FractionMask : tag == Numr ? NumeratorMask : DenominatorMask, lookups, substitutions, stage, flags);
                 }
             }
-            else if (isRightToLeft && tag == Rtlm)
+            else if (isRightToLeft && !isVertical && tag == Rtlm)
             {
                 AddLookups(table, data, feature, MirrorMask, lookups, substitutions, stage, flags);
             }
@@ -1079,9 +1136,10 @@ internal static class TextShaper
     /// <param name="plan">The features the caller sets.</param>
     /// <param name="shaper">The features of the shaping model of the script.</param>
     /// <param name="isRightToLeft">The direction of the run.</param>
+    /// <param name="isVertical">Whether the run is a vertical line of upright glyphs.</param>
     /// <param name="flags">How the feature is applied.</param>
     /// <param name="mask">The bits of the glyphs the feature applies to, when the caller does not set it.</param>
-    private static int GetStage(uint tag, FeaturePlan plan, ShaperPlan shaper, bool isRightToLeft, out ShaperFeatureFlags flags, out uint mask)
+    private static int GetStage(uint tag, FeaturePlan plan, ShaperPlan shaper, bool isRightToLeft, bool isVertical, out ShaperFeatureFlags flags, out uint mask)
     {
         flags = ShaperFeatureFlags.None;
         mask = GlobalMask;
@@ -1099,7 +1157,7 @@ internal static class TextShaper
             return feature.Stage;
         }
 
-        if (tag == Frac || tag == Numr || tag == Dnom || (isRightToLeft ? RightToLeftFeatures : LeftToRightFeatures).AsSpan().Contains(tag))
+        if (tag == Frac || tag == Numr || tag == Dnom || (!isVertical && (isRightToLeft ? RightToLeftFeatures : LeftToRightFeatures).AsSpan().Contains(tag)))
             return 1;
 
         // A zero width joiner between a letter and a mark keeps the mark from being placed on the letter.
@@ -1111,7 +1169,33 @@ internal static class TextShaper
         if (plan.TryGetMask(tag, out _))
             return shaper.FinalStage;
 
-        return DefaultFeatures.AsSpan().Contains(tag) && !shaper.IsDisabled(tag) ? shaper.FinalStage : -1;
+        return (isVertical ? VerticalFeatures : DefaultFeatures).AsSpan().Contains(tag) && !shaper.IsDisabled(tag) ? shaper.FinalStage : -1;
+    }
+
+    /// <summary>
+    /// Adds the lookups of the vertical forms of a font that does not list them for the script and the language of a
+    /// vertical run: the first feature of that name in the font, whatever lists it. Fonts list it under a few scripts
+    /// only, and a vertical line has characters of any of them.
+    /// </summary>
+    private static void AddVerticalForms(LayoutTable table, ReadOnlySpan<byte> data, bool isVertical, bool hasVerticalForms, FeaturePlan plan, ShaperPlan shaper, List<PlannedLookup> lookups, int substitutions)
+    {
+        if (!isVertical || hasVerticalForms)
+            return;
+
+        var mask = GlobalMask;
+        if (plan.TryGetMask(Vert, out var callerMask))
+        {
+            if (callerMask == 0)
+                return;
+
+            mask = callerMask;
+        }
+
+        var feature = table.FindFeature(data, Vert);
+        if (feature != LayoutTable.NoFeature)
+        {
+            AddLookups(table, data, feature, mask, lookups, substitutions, shaper.FinalStage, ShaperFeatureFlags.None);
+        }
     }
 
     private static void AddLookups(LayoutTable table, ReadOnlySpan<byte> data, int feature, uint mask, List<PlannedLookup> lookups, int substitutions, int stage, ShaperFeatureFlags flags)

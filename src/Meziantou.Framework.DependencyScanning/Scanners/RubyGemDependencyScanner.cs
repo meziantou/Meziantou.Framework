@@ -4,11 +4,10 @@ using Meziantou.Framework.DependencyScanning.Locations;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-/// <summary>Scans Ruby Gemfiles, gemspecs, and Bundler lockfiles for RubyGems dependencies.</summary>
+/// <summary>Scans Ruby Gemfiles and gemspecs for RubyGems dependencies.</summary>
 /// <remarks>
 /// A gem declared with several requirements, such as <c>gem "rails", "~> 7.0", "&gt;= 7.0.1"</c>, is reported with the requirements
-/// joined by <c>", "</c> and a version location that is not updatable. The platform of a lockfile entry, such as <c>x86_64-linux</c>
-/// in <c>nokogiri (1.15.0-x86_64-linux)</c>, is available in <see cref="Dependency.Metadata"/> under the <c>platform</c> key.
+/// joined by <c>", "</c> and a version location that is not updatable.
 /// </remarks>
 public sealed partial class RubyGemDependencyScanner : DependencyScanner
 {
@@ -19,24 +18,10 @@ public sealed partial class RubyGemDependencyScanner : DependencyScanner
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
         return context.HasFileName("Gemfile", ignoreCase: false)
-            || context.HasFileName("Gemfile.lock", ignoreCase: false)
             || context.HasExtension(".gemspec", ignoreCase: false);
     }
 
     public override async ValueTask ScanAsync(ScanFileContext context)
-    {
-        var fileName = Path.GetFileName(context.FullPath);
-        if (string.Equals(fileName, "Gemfile.lock", StringComparison.Ordinal))
-        {
-            await ScanLockFileAsync(context).ConfigureAwait(false);
-        }
-        else
-        {
-            await ScanManifestAsync(context).ConfigureAwait(false);
-        }
-    }
-
-    private async ValueTask ScanManifestAsync(ScanFileContext context)
     {
         using var reader = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
         var text = await reader.ReadToEndAsync(context.CancellationToken).ConfigureAwait(false);
@@ -200,39 +185,6 @@ public sealed partial class RubyGemDependencyScanner : DependencyScanner
         return TextLocation.FromIndex(context.FileSystem, context.FullPath, lineMap, token.ContentStart, token.ContentEnd - token.ContentStart);
     }
 
-    private async ValueTask ScanLockFileAsync(ScanFileContext context)
-    {
-        using var reader = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
-        var lineNumber = 0;
-        string? line;
-        while ((line = await reader.ReadLineAsync(context.CancellationToken).ConfigureAwait(false)) is not null)
-        {
-            lineNumber++;
-            var match = LockDependencyRegex().Match(line);
-            if (!match.Success)
-                continue;
-
-            // The version is not updatable as Bundler resolves it from the Gemfile and may check its checksum.
-            // A gem with native extensions has one entry per platform, which Bundler writes as version-platform.
-            var name = match.Groups["name"];
-            var platform = match.Groups["platform"];
-            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, lineNumber, name.Index + 1, name.Length);
-            if (platform.Success)
-            {
-                context.ReportDependency(this, name.Value, match.Groups["version"].Value, DependencyType.RubyGem, nameLocation, new NonUpdatableLocation(context),
-                    tags: [], metadata: [KeyValuePair.Create<string, object?>("platform", platform.Value)]);
-            }
-            else
-            {
-                context.ReportDependency(this, name.Value, match.Groups["version"].Value, DependencyType.RubyGem, nameLocation, new NonUpdatableLocation(context));
-            }
-        }
-    }
-
     [GeneratedRegex("""^[A-Za-z0-9][A-Za-z0-9_.-]*$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
     private static partial Regex GemNameRegex();
-
-    // Bundler splits the version and the platform on the first '-'
-    [GeneratedRegex("""^ {4}(?<name>[A-Za-z0-9][A-Za-z0-9_.-]*) \((?<version>[^-)]+)(?:-(?<platform>[^)]+))?\)$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
-    private static partial Regex LockDependencyRegex();
 }

@@ -176,6 +176,33 @@ internal sealed class IccProfileModel
         throw Invalid("the profile has no lookup table ('A2B0') to convert its device values to the profile connection space.");
     }
 
+    /// <summary>
+    /// Gets the tone curves that relate the channels of the profile to linear light: the three curves of a
+    /// matrix-based profile (red, green, blue; annex F.3), or the curve of a monochrome profile (annex F.2).
+    /// </summary>
+    /// <exception cref="InvalidImageContentException">A curve is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The profile has no tone curve per channel: it describes its colors with lookup tables only.</exception>
+    public IccCurve[] GetToneCurves()
+    {
+        if (ChannelCount == 1 && IccReader.TryGetTag(_data.Span, IccReader.TagGrayCurve, out _))
+            return [ReadCurve(IccReader.TagGrayCurve)];
+
+        if (ChannelCount == 3 && IccReader.TryGetTag(_data.Span, IccReader.TagRedCurve, out _) && IccReader.TryGetTag(_data.Span, IccReader.TagGreenCurve, out _) && IccReader.TryGetTag(_data.Span, IccReader.TagBlueCurve, out _))
+        {
+            var red = ReadCurve(IccReader.TagRedCurve);
+
+            // The three tags of most profiles are one curve: its tables are then computed once
+            IccReader.TryGetTag(_data.Span, IccReader.TagRedCurve, out var redTag);
+            IccReader.TryGetTag(_data.Span, IccReader.TagGreenCurve, out var greenTag);
+            IccReader.TryGetTag(_data.Span, IccReader.TagBlueCurve, out var blueTag);
+            var green = redTag.SequenceEqual(greenTag) ? red : ReadCurve(IccReader.TagGreenCurve);
+            var blue = redTag.SequenceEqual(blueTag) ? red : greenTag.SequenceEqual(blueTag) ? green : ReadCurve(IccReader.TagBlueCurve);
+            return [red, green, blue];
+        }
+
+        throw Unsupported("has no tone curve for each of its channels (it describes its colors with lookup tables only), so its samples have no linear light to be combined in.", "Linear light of an ICC profile without tone curves");
+    }
+
     /// <summary>Appends the stages converting CIEXYZ of the connection space to normalized device values.</summary>
     /// <param name="stages">The stages of the conversion.</param>
     /// <param name="intent">The rendering intent selecting the tag (ICC.1:2022 section 8.10.2).</param>

@@ -8,8 +8,9 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// joins at the vertices and by the caps at the ends of open contours. The vertices that the library creates when it
 /// approximates a curve are always joined with <see cref="Drawing.LineJoin.Round"/>, so that a wide curved stroke stays
 /// smooth; <see cref="LineJoin"/> applies to the vertices of the path itself. <see cref="Alignment"/> moves the stroke
-/// to one side of the path, and <see cref="StartMarker"/> and <see cref="EndMarker"/> draw a shape at the ends of open
-/// contours.
+/// to one side of the path, <see cref="StartMarker"/> and <see cref="EndMarker"/> draw a shape at the ends of open
+/// contours, and <see cref="ScalesWithTransform"/> says whether a transformation of the canvas enlarges the pen with
+/// the path.
 /// </remarks>
 public sealed class Pen
 {
@@ -202,6 +203,30 @@ public sealed class Pen
     /// </summary>
     /// <remarks>See <see cref="StartMarker"/>.</remarks>
     public LineMarker? EndMarker { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the transformation of the canvas applies to the pen as it applies to the path.
+    /// Defaults to <see langword="true"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// With <see langword="true"/>, a stroke drawn inside <see cref="DrawingCanvas.Transform(AffineTransform, DrawingAction)"/>
+    /// is the stroke of the path as it is given, transformed: a scaling makes the stroke wider, and a scaling that is
+    /// not the same along both axes makes it wider in one direction than in the other.
+    /// </para>
+    /// <para>
+    /// With <see langword="false"/>, the path is transformed first and the pen strokes the result: <see cref="Width"/>,
+    /// the lengths of <see cref="DashPattern"/> and <see cref="DashOffset"/> are pixels of the canvas whatever the
+    /// transformation, the joins and the caps keep their shape, and the markers keep their size and are turned to the
+    /// direction the path has on the canvas. This is the pen of a chart, of a map or of an icon that is drawn in
+    /// coordinates of its own: its lines are as wide at every scale.
+    /// </para>
+    /// <para>
+    /// Without transformation of the canvas the value changes nothing, and <see cref="VectorPath.Widen"/>, which has
+    /// no canvas, does not use it.
+    /// </para>
+    /// </remarks>
+    public bool ScalesWithTransform { get; init; } = true;
 
     /// <summary>Gets a value indicating whether a shape is drawn at an end of the open contours.</summary>
     internal bool HasMarkers => StartMarker is not null || EndMarker is not null;

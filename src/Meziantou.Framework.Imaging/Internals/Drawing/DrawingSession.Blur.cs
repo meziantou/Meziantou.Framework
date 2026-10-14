@@ -241,11 +241,7 @@ internal sealed partial class DrawingSession
                     continue;
 
                 any = true;
-                var weight = weights[tap];
-                for (var i = 0; i < blurred.Length; i++)
-                {
-                    sums[i] += weight * blurred[i];
-                }
+                BlurKernels.Accumulate(sums, weights[tap], blurred);
             }
 
             if (!any)
@@ -328,29 +324,7 @@ internal sealed partial class DrawingSession
         if (!any)
             return false;
 
-        var last = source.Length - 1;
-        for (var x = 0; x < blurred.Length / 4; x++)
-        {
-            double red = 0, green = 0, blue = 0, alpha = 0;
-            var first = firstColumn + x;
-            for (var tap = 0; tap < weights.Length; tap++)
-            {
-                var index = first + tap;
-                var entry = premultiplied.Slice((index < 0 ? 0 : index > last ? last : index) * 4, 4);
-                var weight = weights[tap];
-                red += weight * entry[0];
-                green += weight * entry[1];
-                blue += weight * entry[2];
-                alpha += weight * entry[3];
-            }
-
-            var output = blurred.Slice(x * 4, 4);
-            output[0] = (float)red;
-            output[1] = (float)green;
-            output[2] = (float)blue;
-            output[3] = (float)alpha;
-        }
-
+        BlurKernels.BlurRow(premultiplied[..(source.Length * 4)], weights, firstColumn, blurred);
         return true;
     }
 

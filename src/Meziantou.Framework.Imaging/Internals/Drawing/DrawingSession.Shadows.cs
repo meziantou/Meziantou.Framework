@@ -133,19 +133,7 @@ internal sealed partial class DrawingSession
             if (hasOpacity[row] == 0)
                 continue;
 
-            var output = rows.Slice(row * width, width);
-            for (var x = 0; x < width; x++)
-            {
-                var sum = 0d;
-                var first = originX + x;
-                for (var tap = 0; tap < taps; tap++)
-                {
-                    var index = first + tap;
-                    sum += horizontal[tap] * alpha[index < 0 ? 0 : index >= layerWidth ? layerWidth - 1 : index];
-                }
-
-                output[x] = (float)sum;
-            }
+            BlurKernels.BlurValues(alpha, horizontal, originX, rows.Slice(row * width, width));
         }
 
         if (!isInner && !_thumbnailRemoved)
@@ -178,12 +166,7 @@ internal sealed partial class DrawingSession
                     continue;
 
                 any = true;
-                var weight = vertical[tap];
-                var source = rows.Slice(row * width, width);
-                for (var x = 0; x < width; x++)
-                {
-                    sums[x] += weight * source[x];
-                }
+                BlurKernels.Accumulate(sums, vertical[tap], rows.Slice(row * width, width));
             }
 
             if (!any)

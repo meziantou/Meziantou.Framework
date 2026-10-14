@@ -824,6 +824,50 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingBlurSumsMatchTheScalarReference()
+    {
+        var random = new Random(20261015);
+        int[] lengths = [1, 2, 3, 4, 5, 7, 8, 9, 16, 33, 100];
+        int[] tapCounts = [1, 2, 3, 4, 7, 13, 38];
+        foreach (var length in lengths)
+        {
+            foreach (var taps in tapCounts)
+            {
+                var weights = Enumerable.Range(0, taps).Select(_ => random.NextDouble() / taps).ToArray();
+                for (var round = 0; round < 6; round++)
+                {
+                    // Rows that start before, at and after the first pixel, and that end beyond the last one
+                    var firstColumn = random.Next(-taps - 2, Math.Max(1, length - taps + 3));
+                    var count = random.Next(1, length + taps + 4);
+                    var values = Enumerable.Range(0, length).Select(_ => random.Next(4) == 0 ? 0 : random.Next(3) == 0 ? 1 : random.NextDouble()).ToArray();
+                    var premultiplied = Enumerable.Range(0, length * 4).Select(_ => random.Next(4) == 0 ? 0 : random.NextDouble() * 65535).ToArray();
+
+                    var expected = new float[count * 4];
+                    var actual = new float[count * 4];
+                    BlurKernels.BlurRowScalar(premultiplied, weights, firstColumn, expected);
+                    BlurKernels.BlurRow(premultiplied, weights, firstColumn, actual);
+                    Assert.Equal(expected, actual);
+
+                    expected = new float[count];
+                    actual = new float[count];
+                    BlurKernels.BlurValuesScalar(values, weights, firstColumn, expected);
+                    BlurKernels.BlurValues(values, weights, firstColumn, actual);
+                    Assert.Equal(expected, actual);
+
+                    var row = Enumerable.Range(0, count * 4).Select(_ => (float)(random.NextDouble() * 70000)).ToArray();
+                    var expectedSums = Enumerable.Range(0, count * 4).Select(_ => random.NextDouble() * 1000).ToArray();
+                    var actualSums = (double[])expectedSums.Clone();
+                    var weight = weights[round % taps];
+                    BlurKernels.AccumulateScalar(expectedSums, weight, row);
+                    BlurKernels.Accumulate(actualSums, weight, row);
+                    Assert.Equal(expectedSums, actualSums);
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void PixelConversionsMatchTheScalarReference()
     {
         CheckConversionsFrom<Rgba32>();

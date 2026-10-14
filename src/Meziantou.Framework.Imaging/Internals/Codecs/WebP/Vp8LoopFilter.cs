@@ -193,11 +193,11 @@ internal static class Vp8LoopFilter
     }
 
     // The pixels p3 to q3 of the positions of the edge are 8 vectors of 16 bytes, one byte per position: rows of the plane for
-    // a horizontal edge, columns for a vertical one (two 8 x 8 transpositions of the rows of 8 pixels across the edge)
+    // a horizontal edge, columns for a vertical one (the rows of 8 pixels across the edge are transposed as two 8 x 8 blocks,
+    // rows 0-7 in the low halves of the vectors and rows 8-15 in the high halves)
     private static void EdgeVector(Span<byte> plane, int offset, int step, int along, int count, int edgeLimit, int interior, int hevThreshold, bool macroblock)
     {
         _ = GetEdgeOrigin(plane, offset, step, along, count, 4);
-        Span<ulong> columns = stackalloc ulong[16];
         Vector128<byte> p3, p2, p1, p0, q0, q1, q2, q3;
         if (along is 1)
         {
@@ -212,22 +212,24 @@ internal static class Vp8LoopFilter
         }
         else
         {
-            // columns[ k ] holds the pixel k of the rows 0 to 7, columns[ 8 + k ] the one of the rows 8 to 15
-            for (var i = 0; i < count; i++)
-            {
-                columns[i] = BinaryPrimitives.ReadUInt64LittleEndian(plane.Slice(offset - 4 + (i * along), 8));
-            }
-
-            Transpose8x8(columns[..8]);
-            Transpose8x8(columns[8..]);
-            p3 = Vector128.Create(columns[0], columns[8]).AsByte();
-            p2 = Vector128.Create(columns[1], columns[9]).AsByte();
-            p1 = Vector128.Create(columns[2], columns[10]).AsByte();
-            p0 = Vector128.Create(columns[3], columns[11]).AsByte();
-            q0 = Vector128.Create(columns[4], columns[12]).AsByte();
-            q1 = Vector128.Create(columns[5], columns[13]).AsByte();
-            q2 = Vector128.Create(columns[6], columns[14]).AsByte();
-            q3 = Vector128.Create(columns[7], columns[15]).AsByte();
+            var start = offset - 4;
+            var r0 = LoadRows(plane, start, along, 0, count);
+            var r1 = LoadRows(plane, start, along, 1, count);
+            var r2 = LoadRows(plane, start, along, 2, count);
+            var r3 = LoadRows(plane, start, along, 3, count);
+            var r4 = LoadRows(plane, start, along, 4, count);
+            var r5 = LoadRows(plane, start, along, 5, count);
+            var r6 = LoadRows(plane, start, along, 6, count);
+            var r7 = LoadRows(plane, start, along, 7, count);
+            Transpose8x8(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+            p3 = r0.AsByte();
+            p2 = r1.AsByte();
+            p1 = r2.AsByte();
+            p0 = r3.AsByte();
+            q0 = r4.AsByte();
+            q1 = r5.AsByte();
+            q2 = r6.AsByte();
+            q3 = r7.AsByte();
         }
 
         var limits = new FilterLimits(edgeLimit, interior, hevThreshold, macroblock);
@@ -267,17 +269,25 @@ internal static class Vp8LoopFilter
         }
 
         // The rows are written whole: p3 and q3 keep their values
-        Split(p2, columns, 1);
-        Split(p1, columns, 2);
-        Split(p0, columns, 3);
-        Split(q0, columns, 4);
-        Split(q1, columns, 5);
-        Split(q2, columns, 6);
-        Transpose8x8(columns[..8]);
-        Transpose8x8(columns[8..]);
-        for (var i = 0; i < count; i++)
         {
-            BinaryPrimitives.WriteUInt64LittleEndian(plane.Slice(offset - 4 + (i * along), 8), columns[i]);
+            var r0 = p3.AsUInt64();
+            var r1 = p2.AsUInt64();
+            var r2 = p1.AsUInt64();
+            var r3 = p0.AsUInt64();
+            var r4 = q0.AsUInt64();
+            var r5 = q1.AsUInt64();
+            var r6 = q2.AsUInt64();
+            var r7 = q3.AsUInt64();
+            Transpose8x8(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+            var start = offset - 4;
+            StoreRows(r0, plane, start, along, 0, count);
+            StoreRows(r1, plane, start, along, 1, count);
+            StoreRows(r2, plane, start, along, 2, count);
+            StoreRows(r3, plane, start, along, 3, count);
+            StoreRows(r4, plane, start, along, 4, count);
+            StoreRows(r5, plane, start, along, 5, count);
+            StoreRows(r6, plane, start, along, 6, count);
+            StoreRows(r7, plane, start, along, 7, count);
         }
 
         static Vector128<byte> Load(ReadOnlySpan<byte> plane, int offset, int count)
@@ -295,10 +305,24 @@ internal static class Vp8LoopFilter
             }
         }
 
-        static void Split(Vector128<byte> value, Span<ulong> columns, int k)
+        // The 8 pixels of row i (low half) and of row 8 + i (high half, zero when the edge has 8 positions)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<ulong> LoadRows(ReadOnlySpan<byte> plane, int start, int along, int i, int count)
         {
-            columns[k] = value.AsUInt64().GetElement(0);
-            columns[8 + k] = value.AsUInt64().GetElement(1);
+            var low = BinaryPrimitives.ReadUInt64LittleEndian(plane.Slice(start + (i * along), 8));
+            return count is 16
+                ? Vector128.Create(low, BinaryPrimitives.ReadUInt64LittleEndian(plane.Slice(start + ((8 + i) * along), 8)))
+                : Vector128.CreateScalar(low);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void StoreRows(Vector128<ulong> value, Span<byte> plane, int start, int along, int i, int count)
+        {
+            BinaryPrimitives.WriteUInt64LittleEndian(plane.Slice(start + (i * along), 8), value.GetElement(0));
+            if (count is 16)
+            {
+                BinaryPrimitives.WriteUInt64LittleEndian(plane.Slice(start + ((8 + i) * along), 8), value.GetElement(1));
+            }
         }
 
         static Vector128<short> Widen(Vector128<byte> value, bool upper) => (upper ? Vector128.WidenUpper(value) : Vector128.WidenLower(value)).AsInt16();
@@ -306,38 +330,34 @@ internal static class Vp8LoopFilter
         static Vector128<byte> Narrow(Vector128<short> low, Vector128<short> high) => Vector128.Narrow(low.AsUInt16(), high.AsUInt16());
     }
 
-    // Transposes 8 x 8 bytes, a row per value (its byte k is the column k): exchanges the bytes, then the pairs of bytes,
-    // then the groups of 4 bytes, between the rows and the columns
-    private static void Transpose8x8(Span<ulong> rows)
+    // Transposes two 8 x 8 blocks of bytes at once, one in each 64-bit half: a row per value (its byte k is the column k).
+    // Exchanges the bytes, then the pairs of bytes, then the groups of 4 bytes, between the rows and the columns
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Transpose8x8(ref Vector128<ulong> r0, ref Vector128<ulong> r1, ref Vector128<ulong> r2, ref Vector128<ulong> r3, ref Vector128<ulong> r4, ref Vector128<ulong> r5, ref Vector128<ulong> r6, ref Vector128<ulong> r7)
     {
         const ulong Mask1 = 0x00FF00FF00FF00FF;
         const ulong Mask2 = 0x0000FFFF0000FFFF;
         const ulong Mask4 = 0x00000000FFFFFFFF;
-        for (var i = 0; i < 8; i += 2)
-        {
-            var a = rows[i];
-            var b = rows[i + 1];
-            rows[i] = (a & Mask1) | ((b & Mask1) << 8);
-            rows[i + 1] = ((a >> 8) & Mask1) | (b & ~Mask1);
-        }
+        Exchange(ref r0, ref r1, Mask1, 8);
+        Exchange(ref r2, ref r3, Mask1, 8);
+        Exchange(ref r4, ref r5, Mask1, 8);
+        Exchange(ref r6, ref r7, Mask1, 8);
+        Exchange(ref r0, ref r2, Mask2, 16);
+        Exchange(ref r1, ref r3, Mask2, 16);
+        Exchange(ref r4, ref r6, Mask2, 16);
+        Exchange(ref r5, ref r7, Mask2, 16);
+        Exchange(ref r0, ref r4, Mask4, 32);
+        Exchange(ref r1, ref r5, Mask4, 32);
+        Exchange(ref r2, ref r6, Mask4, 32);
+        Exchange(ref r3, ref r7, Mask4, 32);
 
-        for (var i = 0; i < 8; i += 4)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Exchange(ref Vector128<ulong> a, ref Vector128<ulong> b, ulong mask, int shift)
         {
-            for (var j = i; j < i + 2; j++)
-            {
-                var a = rows[j];
-                var b = rows[j + 2];
-                rows[j] = (a & Mask2) | ((b & Mask2) << 16);
-                rows[j + 2] = ((a >> 16) & Mask2) | (b & ~Mask2);
-            }
-        }
-
-        for (var j = 0; j < 4; j++)
-        {
-            var a = rows[j];
-            var b = rows[j + 4];
-            rows[j] = (a & Mask4) | ((b & Mask4) << 32);
-            rows[j + 4] = ((a >> 32) & Mask4) | (b & ~Mask4);
+            var m = Vector128.Create(mask);
+            var first = (a & m) | ((b & m) << shift);
+            b = ((a >> shift) & m) | Vector128.AndNot(b, m);
+            a = first;
         }
     }
 

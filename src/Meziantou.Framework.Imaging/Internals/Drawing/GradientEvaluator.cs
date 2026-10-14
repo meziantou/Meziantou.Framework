@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Drawing;
 
@@ -45,9 +46,16 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
 {
     /// <summary>
     /// The values kept for each stop: offset, alpha, three color samples in the pixel format, then the alpha and the
-    /// three components in the color space of the gradient, from 0 to 1.
+    /// three components in the color space of the gradient, from 0 to 1, then the three color samples multiplied by the
+    /// alpha, and the differences to the next stop: of the premultiplied samples, of the offset and of the alpha.
     /// </summary>
-    private const int ValuesPerStop = 9;
+    private const int ValuesPerStop = 17;
+
+    // Where the values computed from a stop and the next one are, among those of the stop
+    private const int Premultiplied = 9;
+    private const int PremultipliedStep = 12;
+    private const int OffsetStep = 15;
+    private const int AlphaStep = 16;
 
     /// <summary>The tie bias of the rounding rule shared with the resampler and the convolver.</summary>
     private const double RoundingOffset = 0.5 + (1.0 / 1048576);
@@ -57,6 +65,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     private int _stopCapacity;
     private PooledBuffer? _colors;
     private PooledBuffer? _samples;
+    private PooledBuffer? _parameters;
     private GradientBrush? _brush;
     private ImageFrame? _frame;
     private IccPipeline? _paintPipeline;
@@ -124,6 +133,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         }
 
         _colors ??= ResampleWeights.Rent<ushort>(_scope, 4L * width);
+        _parameters ??= ResampleWeights.Rent<double>(_scope, width);
         _colorSpace = brush.ColorSpace;
         _brush = brush;
         _frame = frame;
@@ -152,6 +162,27 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             {
                 ToColorSpace(stops[i].Color, entry[5..]);
             }
+        }
+
+        // What the interpolation between two stops computes for every pixel, computed once: the same products and
+        // differences
+        for (var i = 0; i < stops.Length; i++)
+        {
+            var entry = values.Slice(i * ValuesPerStop, ValuesPerStop);
+            entry[Premultiplied] = entry[2] * entry[1];
+            entry[Premultiplied + 1] = entry[3] * entry[1];
+            entry[Premultiplied + 2] = entry[4] * entry[1];
+        }
+
+        for (var i = 0; i + 1 < stops.Length; i++)
+        {
+            var entry = values.Slice(i * ValuesPerStop, ValuesPerStop);
+            var next = values.Slice((i + 1) * ValuesPerStop, ValuesPerStop);
+            entry[PremultipliedStep] = next[Premultiplied] - entry[Premultiplied];
+            entry[PremultipliedStep + 1] = next[Premultiplied + 1] - entry[Premultiplied + 1];
+            entry[PremultipliedStep + 2] = next[Premultiplied + 2] - entry[Premultiplied + 2];
+            entry[OffsetStep] = next[0] - entry[0];
+            entry[AlphaStep] = next[1] - entry[1];
         }
 
         _isTransparent = transparent;
@@ -238,18 +269,27 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             return colors;
         }
 
-        var centerY = y + 0.5;
+        var parameters = unsafe(MemoryMarshal.Cast<byte, double>(_parameters!.Span))[..count];
+        GetParameters(y, x, parameters);
+        var firstOffset = stops[0];
+        var index = 0;
         for (var i = 0; i < count; i++)
         {
-            var t = GetParameter(x + i + 0.5, centerY);
+            var t = parameters[i];
             var output = colors.Slice(i * 4, 4);
-            if (t < stops[0])
+            if (t < firstOffset)
             {
                 WriteStop(stops, 0, output);
                 continue;
             }
 
-            var index = 0;
+            // The last stop whose offset is not greater than the parameter. The offsets increase: the search goes on
+            // from the stop of the previous pixel when its offset is not greater either, and starts again otherwise.
+            if (stops[index * ValuesPerStop] > t)
+            {
+                index = 0;
+            }
+
             while (index < last && stops[(index + 1) * ValuesPerStop] <= t)
             {
                 index++;
@@ -262,9 +302,8 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             }
 
             var from = stops.Slice(index * ValuesPerStop, ValuesPerStop);
-            var to = stops.Slice((index + 1) * ValuesPerStop, ValuesPerStop);
-            var u = (t - from[0]) / (to[0] - from[0]);
-            var alpha = from[1] + (u * (to[1] - from[1]));
+            var u = (t - from[0]) / from[OffsetStep];
+            var alpha = from[1] + (u * from[AlphaStep]);
             var roundedAlpha = Round(alpha);
             if (roundedAlpha == 0)
             {
@@ -272,12 +311,9 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                 continue;
             }
 
-            for (var c = 0; c < 3; c++)
-            {
-                var start = from[2 + c] * from[1];
-                output[c] = Round((start + (u * ((to[2 + c] * to[1]) - start))) / alpha);
-            }
-
+            output[0] = Round((from[Premultiplied] + (u * from[PremultipliedStep])) / alpha);
+            output[1] = Round((from[Premultiplied + 1] + (u * from[PremultipliedStep + 1])) / alpha);
+            output[2] = Round((from[Premultiplied + 2] + (u * from[PremultipliedStep + 2])) / alpha);
             output[3] = roundedAlpha;
         }
 
@@ -308,6 +344,8 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         _stops?.Dispose();
         _colors?.Dispose();
         _samples?.Dispose();
+        _parameters?.Dispose();
+        _parameters = null;
         _stops = null;
         _colors = null;
         _samples = null;
@@ -315,8 +353,101 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         _frame = null;
     }
 
+    /// <summary>Gets the parameters of the centers of a run of pixels, brought into the range of the stops by the spread mode: those of <see cref="GetParameter"/>.</summary>
+    private void GetParameters(int y, int x, Span<double> parameters)
+    {
+        var centerY = y + 0.5;
+        if (_kind == GradientKind.Linear && !_hasTransform)
+        {
+            var along = (centerY - _originY) * _axisY;
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                var px = (x + i + 0.5) - _originX;
+                parameters[i] = ((px * _axisX) + along) / _divisor;
+            }
+        }
+        else if (_kind == GradientKind.Radial && !_hasTransform)
+        {
+            var py = centerY - _originY;
+            var squared = py * py;
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                var px = (x + i + 0.5) - _originX;
+                parameters[i] = Math.Sqrt((px * px) + squared) / _divisor;
+            }
+        }
+        else
+        {
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                parameters[i] = GetParameter(x + i + 0.5, centerY);
+            }
+
+            return;
+        }
+
+        switch (_spreadMode)
+        {
+            case GradientSpreadMode.Repeat:
+                foreach (ref var t in parameters)
+                {
+                    t -= Math.Floor(t);
+                }
+
+                break;
+
+            case GradientSpreadMode.Reflect:
+                foreach (ref var t in parameters)
+                {
+                    t -= 2 * Math.Floor(t / 2);
+                    if (t > 1)
+                    {
+                        t = 2 - t;
+                    }
+                }
+
+                break;
+
+            default:
+                foreach (ref var t in parameters)
+                {
+                    t = t < 0 ? 0 : t > 1 ? 1 : t;
+                }
+
+                break;
+        }
+    }
+
     /// <summary>Gets the parameter of the center of a pixel, brought into the range of the stops by the spread mode.</summary>
     private double GetParameter(double centerX, double centerY)
+    {
+        var t = GetUnspreadParameter(centerX, centerY);
+        switch (_spreadMode)
+        {
+            case GradientSpreadMode.Repeat:
+                t -= Math.Floor(t);
+                break;
+
+            case GradientSpreadMode.Reflect:
+                t -= 2 * Math.Floor(t / 2);
+                if (t > 1)
+                {
+                    t = 2 - t;
+                }
+
+                break;
+
+            default:
+                t = t < 0 ? 0 : t > 1 ? 1 : t;
+                break;
+        }
+
+        return t;
+    }
+
+    /// <summary>Gets the parameter of the center of a pixel, before the spread mode.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private double GetUnspreadParameter(double centerX, double centerY)
     {
         double px;
         var py = centerY - _originY;
@@ -358,26 +489,6 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                 var angle = DeterministicAngle.Atan2(py, px) - _axisX;
                 angle -= 2 * Math.Floor(angle / 2);
                 t = angle / _divisor;
-                break;
-        }
-
-        switch (_spreadMode)
-        {
-            case GradientSpreadMode.Repeat:
-                t -= Math.Floor(t);
-                break;
-
-            case GradientSpreadMode.Reflect:
-                t -= 2 * Math.Floor(t / 2);
-                if (t > 1)
-                {
-                    t = 2 - t;
-                }
-
-                break;
-
-            default:
-                t = t < 0 ? 0 : t > 1 ? 1 : t;
                 break;
         }
 

@@ -438,7 +438,7 @@ internal sealed class Vp8Encoder : IDisposable
         {
             var blockOffset = offset + ((block >> 2) * 4 * stride) + ((block & 3) * 4);
             GetResidual(source, recon, stride, blockOffset, residual);
-            Vp8ForwardTransforms.ForwardDct(residual, coefficients.Slice(block * 16, 16));
+            Vp8ForwardTransforms.ForwardDctColumns(residual, coefficients.Slice(block * 16, 16));
             dc[block] = coefficients[block * 16];
         }
 
@@ -526,12 +526,13 @@ internal sealed class Vp8Encoder : IDisposable
             for (var mode = 0; mode < modeCount; mode++)
             {
                 Vp8Reconstruction.PredictSubBlock(edge, mode, pixels);
+                // Column-major residuals (ForwardDctColumns)
                 for (var i = 0; i < 16; i++)
                 {
-                    residual[i] = sourcePixels[i] - pixels[i];
+                    residual[((i & 3) * 4) + (i >> 2)] = sourcePixels[i] - pixels[i];
                 }
 
-                Vp8ForwardTransforms.ForwardDct(residual, coefficients);
+                Vp8ForwardTransforms.ForwardDctColumns(residual, coefficients);
                 Quantize(coefficients, trial, _q.YDc, _q.YAc, first: 0);
                 Dequantize(trial, dequantized, _q.YDc, _q.YAc);
                 Vp8Transforms.InverseDctAdd(dequantized, pixels, 4);
@@ -587,7 +588,7 @@ internal sealed class Vp8Encoder : IDisposable
                 var blockOffset = offset + ((block >> 1) * 4 * stride) + ((block & 1) * 4);
                 var blockLevels = levels.Slice(((plane * 4) + block) * 16, 16);
                 GetResidual(source, recon, stride, blockOffset, residual);
-                Vp8ForwardTransforms.ForwardDct(residual, coefficients);
+                Vp8ForwardTransforms.ForwardDctColumns(residual, coefficients);
                 Quantize(coefficients, blockLevels, _q.UVDc, _q.UVAc, first: 0);
                 bits += TokenBits(blockLevels, 0, 2, above[block & 1] + left[block >> 1]);
                 above[block & 1] = left[block >> 1] = HasLevels(blockLevels, 0) ? (byte)1 : (byte)0;
@@ -608,7 +609,7 @@ internal sealed class Vp8Encoder : IDisposable
             for (var x = 0; x < 4; x++)
             {
                 var position = offset + (y * stride) + x;
-                residual[(y * 4) + x] = source[position] - prediction[position];
+                residual[(x * 4) + y] = source[position] - prediction[position];
             }
         }
     }

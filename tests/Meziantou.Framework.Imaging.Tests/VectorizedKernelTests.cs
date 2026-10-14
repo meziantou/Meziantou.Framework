@@ -1989,6 +1989,7 @@ public sealed class VectorizedKernelTests
     {
         var random = new Random(603);
         var residual = new int[16];
+        var columns = new int[16];
         var expected = new int[16];
         var actual = new int[16];
         for (var round = 0; round < 200_000; round++)
@@ -2007,6 +2008,13 @@ public sealed class VectorizedKernelTests
 
             Vp8ForwardTransforms.ForwardDctReference(residual, expected);
             Vp8ForwardTransforms.ForwardDct(residual, actual);
+            Assert.Equal(expected, actual);
+            for (var i = 0; i < 16; i++)
+            {
+                columns[((i & 3) * 4) + (i >> 2)] = residual[i];
+            }
+
+            Vp8ForwardTransforms.ForwardDctColumns(columns, actual);
             Assert.Equal(expected, actual);
         }
     }

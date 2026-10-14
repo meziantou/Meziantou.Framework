@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -164,13 +165,17 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
     }
 
     // The passes that use the arithmetic decoder work on a copy of it, so that its registers stay in processor registers;
-    // the copy is stored back at the end of the pass
+    // the copy is stored back at the end of the pass. The flags, the coefficients and the contexts are addressed through
+    // references: every index is within the code-block and its border, and every context comes from the tables
     private void DecodeSignificancePropagation(Span<int> samples, Span<uint> flags, ReadOnlySpan<byte> zeroCoding, int plane)
     {
         var width = _width;
         var height = _height;
         var stripeStride = _stripeStride;
-        var contexts = _contexts;
+        ref var flagStart = ref unsafe(MemoryMarshal.GetReference(flags));
+        ref var sampleStart = ref unsafe(MemoryMarshal.GetReference(samples));
+        ref var contexts = ref unsafe(MemoryMarshal.GetArrayDataReference(_contexts));
+        ref var zeroCodingContexts = ref unsafe(MemoryMarshal.GetReference(zeroCoding));
         var mq = _mq;
         for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
         {
@@ -179,25 +184,26 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
             {
                 // A column without an insignificant coefficient that has a significant neighbor is not coded: coding a
                 // coefficient of the column only changes the neighbors of the others
-                var column = first + (x * 4);
-                if (!Jpeg2000Tier1Tables.HasSignificanceCandidate(flags, column))
+                ref var column = ref unsafe(Unsafe.Add(ref flagStart, first + (x * 4)));
+                if (!Jpeg2000Tier1Tables.HasSignificanceCandidate(ref column))
                     continue;
 
                 for (var row = 0; row < rows; row++)
                 {
-                    var index = column + row;
-                    var flag = flags[index];
+                    ref var flag = ref unsafe(Unsafe.Add(ref column, row));
+                    var value = flag;
 
                     // An insignificant coefficient with a significant neighbor
-                    if ((flag & Significant) != 0 || (flag & NeighborMask) == 0)
+                    if ((value & Significant) != 0 || (value & NeighborMask) == 0)
                         continue;
 
-                    if (mq.Decode(ref contexts[zeroCoding[(int)(flag & NeighborMask)]]) != 0)
+                    if (mq.Decode(ref unsafe(Unsafe.Add(ref contexts, Unsafe.Add(ref zeroCodingContexts, (int)(value & NeighborMask))))) != 0)
                     {
-                        SetSignificant(samples, flags, x, stripe, row, index, DecodeSign(ref mq, contexts, flag), plane);
+                        var negative = DecodeSign(ref mq, ref contexts, value);
+                        SetSignificant(ref unsafe(Unsafe.Add(ref sampleStart, ((stripe + row) * width) + x)), ref flag, row, negative, plane);
                     }
 
-                    flags[index] |= Visited;
+                    flag |= Visited;
                 }
             }
         }
@@ -210,28 +216,29 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
         var width = _width;
         var height = _height;
         var stripeStride = _stripeStride;
+        ref var flagStart = ref unsafe(MemoryMarshal.GetReference(flags));
+        ref var sampleStart = ref unsafe(MemoryMarshal.GetReference(samples));
         for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
         {
             var rows = Math.Min(4, height - stripe);
             for (var x = 0; x < width; x++)
             {
-                var column = first + (x * 4);
-                if (!Jpeg2000Tier1Tables.HasSignificanceCandidate(flags, column))
+                ref var column = ref unsafe(Unsafe.Add(ref flagStart, first + (x * 4)));
+                if (!Jpeg2000Tier1Tables.HasSignificanceCandidate(ref column))
                     continue;
 
                 for (var row = 0; row < rows; row++)
                 {
-                    var index = column + row;
-                    var flag = flags[index];
+                    ref var flag = ref unsafe(Unsafe.Add(ref column, row));
                     if ((flag & Significant) != 0 || (flag & NeighborMask) == 0)
                         continue;
 
                     if (ReadRawBit() != 0)
                     {
-                        SetSignificant(samples, flags, x, stripe, row, index, ReadRawBit() != 0, plane);
+                        SetSignificant(ref unsafe(Unsafe.Add(ref sampleStart, ((stripe + row) * width) + x)), ref flag, row, ReadRawBit() != 0, plane);
                     }
 
-                    flags[index] |= Visited;
+                    flag |= Visited;
                 }
             }
         }
@@ -243,31 +250,33 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
         var height = _height;
         var stripeStride = _stripeStride;
         var step = 1 << plane;
-        var contexts = _contexts;
+        ref var flagStart = ref unsafe(MemoryMarshal.GetReference(flags));
+        ref var sampleStart = ref unsafe(MemoryMarshal.GetReference(samples));
+        ref var contexts = ref unsafe(MemoryMarshal.GetArrayDataReference(_contexts));
         var mq = _mq;
         for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
         {
             var rows = Math.Min(4, height - stripe);
             for (var x = 0; x < width; x++)
             {
-                var column = first + (x * 4);
-                if (!Jpeg2000Tier1Tables.HasRefinementCandidate(flags, column))
+                ref var column = ref unsafe(Unsafe.Add(ref flagStart, first + (x * 4)));
+                if (!Jpeg2000Tier1Tables.HasRefinementCandidate(ref column))
                     continue;
 
                 for (var row = 0; row < rows; row++)
                 {
-                    var index = column + row;
-                    var flag = flags[index];
+                    ref var flag = ref unsafe(Unsafe.Add(ref column, row));
+                    var value = flag;
 
                     // A coefficient that was significant before this bit-plane
-                    if ((flag & (Significant | Visited)) != Significant)
+                    if ((value & (Significant | Visited)) != Significant)
                         continue;
 
                     // Table D.4
-                    var context = (flag & Refined) != 0 ? ContextMagnitude + 2 : (flag & NeighborMask) != 0 ? ContextMagnitude + 1 : ContextMagnitude;
-                    ref var sample = ref samples[((stripe + row) * width) + x];
-                    sample += mq.Decode(ref contexts[context]) != 0 ? step : -step;
-                    flags[index] = flag | Refined;
+                    var context = (value & Refined) != 0 ? ContextMagnitude + 2 : (value & NeighborMask) != 0 ? ContextMagnitude + 1 : ContextMagnitude;
+                    ref var sample = ref unsafe(Unsafe.Add(ref sampleStart, ((stripe + row) * width) + x));
+                    sample += mq.Decode(ref unsafe(Unsafe.Add(ref contexts, context))) != 0 ? step : -step;
+                    flag = value | Refined;
                 }
             }
         }
@@ -281,25 +290,26 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
         var height = _height;
         var stripeStride = _stripeStride;
         var step = 1 << plane;
+        ref var flagStart = ref unsafe(MemoryMarshal.GetReference(flags));
+        ref var sampleStart = ref unsafe(MemoryMarshal.GetReference(samples));
         for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
         {
             var rows = Math.Min(4, height - stripe);
             for (var x = 0; x < width; x++)
             {
-                var column = first + (x * 4);
-                if (!Jpeg2000Tier1Tables.HasRefinementCandidate(flags, column))
+                ref var column = ref unsafe(Unsafe.Add(ref flagStart, first + (x * 4)));
+                if (!Jpeg2000Tier1Tables.HasRefinementCandidate(ref column))
                     continue;
 
                 for (var row = 0; row < rows; row++)
                 {
-                    var index = column + row;
-                    var flag = flags[index];
+                    ref var flag = ref unsafe(Unsafe.Add(ref column, row));
                     if ((flag & (Significant | Visited)) != Significant)
                         continue;
 
-                    ref var sample = ref samples[((stripe + row) * width) + x];
+                    ref var sample = ref unsafe(Unsafe.Add(ref sampleStart, ((stripe + row) * width) + x));
                     sample += ReadRawBit() != 0 ? step : -step;
-                    flags[index] = flag | Refined;
+                    flag |= Refined;
                 }
             }
         }
@@ -310,44 +320,50 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
         var width = _width;
         var height = _height;
         var stripeStride = _stripeStride;
-        var contexts = _contexts;
+        ref var flagStart = ref unsafe(MemoryMarshal.GetReference(flags));
+        ref var sampleStart = ref unsafe(MemoryMarshal.GetReference(samples));
+        ref var contexts = ref unsafe(MemoryMarshal.GetArrayDataReference(_contexts));
+        ref var zeroCodingContexts = ref unsafe(MemoryMarshal.GetReference(zeroCoding));
         var mq = _mq;
         for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
         {
             var rows = Math.Min(4, height - stripe);
             for (var x = 0; x < width; x++)
             {
-                var column = first + (x * 4);
+                ref var column = ref unsafe(Unsafe.Add(ref flagStart, first + (x * 4)));
                 var row = 0;
-                if (rows == 4 && Jpeg2000Tier1Tables.IsRunLengthColumn(flags, column))
+                if (rows == 4 && Jpeg2000Tier1Tables.IsRunLengthColumn(ref column))
                 {
                     // D.3.4: the four coefficients of the column are insignificant and have no significant neighbor
-                    if (mq.Decode(ref contexts[ContextRunLength]) == 0)
+                    if (mq.Decode(ref unsafe(Unsafe.Add(ref contexts, ContextRunLength))) == 0)
                         continue;
 
-                    ref var uniform = ref contexts[ContextUniform];
+                    ref var uniform = ref unsafe(Unsafe.Add(ref contexts, ContextUniform));
                     row = mq.Decode(ref uniform) << 1;
                     row |= mq.Decode(ref uniform);
-                    SetSignificant(samples, flags, x, stripe, row, column + row, DecodeSign(ref mq, contexts, flags[column + row]), plane);
+                    ref var flag = ref unsafe(Unsafe.Add(ref column, row));
+                    var negative = DecodeSign(ref mq, ref contexts, flag);
+                    SetSignificant(ref unsafe(Unsafe.Add(ref sampleStart, ((stripe + row) * width) + x)), ref flag, row, negative, plane);
                     row++;
                 }
-                else if (!Jpeg2000Tier1Tables.HasCleanupCandidate(flags, column))
+                else if (!Jpeg2000Tier1Tables.HasCleanupCandidate(ref column))
                 {
                     // Every coefficient of the column is significant or was coded by the significance propagation pass
-                    Jpeg2000Tier1Tables.ClearVisited(flags, column);
+                    Jpeg2000Tier1Tables.ClearVisited(ref column);
                     continue;
                 }
 
                 for (; row < rows; row++)
                 {
-                    var index = column + row;
-                    var flag = flags[index];
-                    if ((flag & (Significant | Visited)) == 0 && mq.Decode(ref contexts[zeroCoding[(int)(flag & NeighborMask)]]) != 0)
+                    ref var flag = ref unsafe(Unsafe.Add(ref column, row));
+                    var value = flag;
+                    if ((value & (Significant | Visited)) == 0 && mq.Decode(ref unsafe(Unsafe.Add(ref contexts, Unsafe.Add(ref zeroCodingContexts, (int)(value & NeighborMask))))) != 0)
                     {
-                        SetSignificant(samples, flags, x, stripe, row, index, DecodeSign(ref mq, contexts, flag), plane);
+                        var negative = DecodeSign(ref mq, ref contexts, value);
+                        SetSignificant(ref unsafe(Unsafe.Add(ref sampleStart, ((stripe + row) * width) + x)), ref flag, row, negative, plane);
                     }
 
-                    flags[index] &= ~Visited;
+                    flag &= ~Visited;
                 }
             }
         }
@@ -356,18 +372,18 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool DecodeSign(ref Jpeg2000MqDecoder mq, byte[] contexts, uint flag)
+    private static bool DecodeSign(ref Jpeg2000MqDecoder mq, ref byte contexts, uint flag)
     {
         var entry = Jpeg2000Tier1Tables.GetSignContext(flag);
-        var bit = mq.Decode(ref contexts[entry & 0x7F]);
+        var bit = mq.Decode(ref unsafe(Unsafe.Add(ref contexts, entry & 0x7F)));
         return (bit ^ (entry >> 7)) != 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void SetSignificant(Span<int> samples, Span<uint> flags, int x, int stripe, int row, int index, bool negative, int plane)
+    private void SetSignificant(ref int sample, ref uint flag, int row, bool negative, int plane)
     {
         var value = 3u << plane;
-        samples[((stripe + row) * _width) + x] = (int)(negative ? value | SignBit : value);
-        Jpeg2000Tier1Tables.SetSignificantInStripes(flags, index, row, _stripeStride, negative, updateNorth: !(_isVerticallyCausal && row == 0));
+        sample = (int)(negative ? value | SignBit : value);
+        Jpeg2000Tier1Tables.SetSignificantInStripes(ref flag, row, _stripeStride, negative, updateNorth: !(_isVerticallyCausal && row == 0));
     }
 }

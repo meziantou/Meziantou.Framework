@@ -9,12 +9,12 @@ namespace Meziantou.Framework.SnapshotTesting
         public static void ScrubGuid(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
         public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
         public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Collections.Generic.IEqualityComparer<T>? comparer) { }
-        public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<T, string> scrubber) { }
         public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<T, int, string> scrubber) { }
+        public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<T, string> scrubber) { }
         public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<T, int, string> scrubber, System.Collections.Generic.IEqualityComparer<T>? comparer) { }
-        public static void UseRelativeTimeSpan(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.TimeSpan origin) { }
         public static void UseRelativeDateTime(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.DateTime origin) { }
         public static void UseRelativeDateTimeOffset(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.DateTimeOffset origin) { }
+        public static void UseRelativeTimeSpan(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.TimeSpan origin) { }
     }
 
     public interface ISnapshotComparer
@@ -37,9 +37,9 @@ namespace Meziantou.Framework.SnapshotTesting
 
     public sealed class ImageComparisonSettings
     {
-        public float? SimilarityThreshold { get => throw null; set { } }
         public int? DHashThreshold { get => throw null; set { } }
         public int? PHashThreshold { get => throw null; set { } }
+        public float? SimilarityThreshold { get => throw null; set { } }
     }
 
     public abstract class MergeTool
@@ -48,17 +48,21 @@ namespace Meziantou.Framework.SnapshotTesting
         public static Meziantou.Framework.SnapshotTesting.MergeTool BeyondCompare { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool Cursor { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool DeltaWalker { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.MergeTool DiffToolFromEnvironmentVariable { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool Diffinity { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool ExamDiff { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.MergeTool GitDiffTool { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.MergeTool GitMergeTool { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool Guiffy { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.MergeTool Kaleidoscope { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool KDiff3 { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.MergeTool Kaleidoscope { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool Meld { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool MsExcelDiff { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool MsWordDiff { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool Neovim { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool P4Merge { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool Rider { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.MergeTool RiderIfCurrentProcess { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool SublimeMerge { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool TkDiff { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool TortoiseGitIDiff { get => throw null; }
@@ -68,15 +72,11 @@ namespace Meziantou.Framework.SnapshotTesting
         public static Meziantou.Framework.SnapshotTesting.MergeTool Vim { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool VisualStudio { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool VisualStudioCode { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.MergeTool VisualStudioMerge { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.MergeTool WinMerge { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.MergeTool RiderIfCurrentProcess { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.MergeTool VisualStudioIfCurrentProcess { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool VisualStudioCodeIfCurrentProcess { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.MergeTool VisualStudioIfCurrentProcess { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.MergeTool VisualStudioMerge { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.MergeTool VisualStudioMergeIfCurrentProcess { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.MergeTool DiffToolFromEnvironmentVariable { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.MergeTool GitDiffTool { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.MergeTool GitMergeTool { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.MergeTool WinMerge { get => throw null; }
         public abstract Meziantou.Framework.SnapshotTesting.MergeToolResult? Start(string currentFilePath, string newFilePath);
     }
 
@@ -118,12 +118,12 @@ namespace Meziantou.Framework.SnapshotTesting
     public sealed class SnapshotComparerCollection : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.SnapshotTesting.SnapshotType, Meziantou.Framework.SnapshotTesting.ISnapshotComparer>>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
-        public void Set(Meziantou.Framework.SnapshotTesting.SnapshotType type, Meziantou.Framework.SnapshotTesting.ISnapshotComparer comparer) { }
-        public Meziantou.Framework.SnapshotTesting.ISnapshotComparer Get(Meziantou.Framework.SnapshotTesting.SnapshotType type) => throw null;
-        public bool Remove(Meziantou.Framework.SnapshotTesting.SnapshotType type) => throw null;
         public void Clear() { }
+        public Meziantou.Framework.SnapshotTesting.ISnapshotComparer Get(Meziantou.Framework.SnapshotTesting.SnapshotType type) => throw null;
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.SnapshotTesting.SnapshotType, Meziantou.Framework.SnapshotTesting.ISnapshotComparer>> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Remove(Meziantou.Framework.SnapshotTesting.SnapshotType type) => throw null;
+        public void Set(Meziantou.Framework.SnapshotTesting.SnapshotType type, Meziantou.Framework.SnapshotTesting.ISnapshotComparer comparer) { }
     }
 
     public static class SnapshotComparerCollectionImageComparerExtensions
@@ -133,16 +133,16 @@ namespace Meziantou.Framework.SnapshotTesting
 
     public sealed class SnapshotData : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotData>
     {
-        public string? Extension { get => throw null; init { } }
         public byte[] Data { get => throw null; init { } }
+        public string? Extension { get => throw null; init { } }
         public SnapshotData(string? Extension, byte[] Data) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotData? left, Meziantou.Framework.SnapshotTesting.SnapshotData? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotData? left, Meziantou.Framework.SnapshotTesting.SnapshotData? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotData? other) => throw null;
         public void Deconstruct(out string? Extension, out byte[] Data) => throw null;
+        public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotData? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotData? left, Meziantou.Framework.SnapshotTesting.SnapshotData? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotData? left, Meziantou.Framework.SnapshotTesting.SnapshotData? right) => throw null;
     }
 
     public class SnapshotException : System.Exception
@@ -153,47 +153,47 @@ namespace Meziantou.Framework.SnapshotTesting
 
     public sealed class SnapshotFile : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotFile>
     {
-        public Meziantou.Framework.FullPath FilePath { get => throw null; init { } }
         public Meziantou.Framework.SnapshotTesting.SnapshotData Data { get => throw null; init { } }
+        public Meziantou.Framework.FullPath FilePath { get => throw null; init { } }
         public SnapshotFile(Meziantou.Framework.FullPath FilePath, Meziantou.Framework.SnapshotTesting.SnapshotData Data) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotFile? left, Meziantou.Framework.SnapshotTesting.SnapshotFile? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotFile? left, Meziantou.Framework.SnapshotTesting.SnapshotFile? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotFile? other) => throw null;
         public void Deconstruct(out Meziantou.Framework.FullPath FilePath, out Meziantou.Framework.SnapshotTesting.SnapshotData Data) => throw null;
+        public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotFile? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotFile? left, Meziantou.Framework.SnapshotTesting.SnapshotFile? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotFile? left, Meziantou.Framework.SnapshotTesting.SnapshotFile? right) => throw null;
     }
 
     public static class SnapshotNamingStrategies
     {
-        public static Meziantou.Framework.SnapshotTesting.SnapshotNamingStrategy TestName { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotNamingStrategy ClassName_TestName { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotNamingStrategy FullName { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotNamingStrategy TestName { get => throw null; }
     }
 
     public delegate string SnapshotNamingStrategy(Meziantou.Framework.SnapshotTesting.SnapshotPathContext context);
 
     public sealed class SnapshotPathContext : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotPathContext>
     {
-        public Meziantou.Framework.FullPath SourceFilePath { get => throw null; init { } }
         public string? ClassName { get => throw null; init { } }
-        public string MethodName { get => throw null; init { } }
-        public string? MemberName { get => throw null; init { } }
-        public int LineNumber { get => throw null; init { } }
-        public Meziantou.Framework.SnapshotTesting.SnapshotType Type { get => throw null; init { } }
-        public int Index { get => throw null; init { } }
         public string? Extension { get => throw null; init { } }
-        public Meziantou.Framework.SnapshotTesting.SnapshotTestContext? TestContext { get => throw null; init { } }
+        public int Index { get => throw null; init { } }
+        public int LineNumber { get => throw null; init { } }
+        public string? MemberName { get => throw null; init { } }
+        public string MethodName { get => throw null; init { } }
         public Meziantou.Framework.SnapshotTesting.SnapshotSettings Settings { get => throw null; init { } }
         public int SnapshotCount { get => throw null; init { } }
+        public Meziantou.Framework.FullPath SourceFilePath { get => throw null; init { } }
+        public Meziantou.Framework.SnapshotTesting.SnapshotTestContext? TestContext { get => throw null; init { } }
+        public Meziantou.Framework.SnapshotTesting.SnapshotType Type { get => throw null; init { } }
         public SnapshotPathContext(Meziantou.Framework.FullPath SourceFilePath, string? ClassName, string MethodName, int LineNumber, Meziantou.Framework.SnapshotTesting.SnapshotType Type, int Index, string? Extension, Meziantou.Framework.SnapshotTesting.SnapshotTestContext? TestContext, Meziantou.Framework.SnapshotTesting.SnapshotSettings Settings, int SnapshotCount = 1, string? MemberName = null) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotPathContext? left, Meziantou.Framework.SnapshotTesting.SnapshotPathContext? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotPathContext? left, Meziantou.Framework.SnapshotTesting.SnapshotPathContext? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
         public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotPathContext? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotPathContext? left, Meziantou.Framework.SnapshotTesting.SnapshotPathContext? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotPathContext? left, Meziantou.Framework.SnapshotTesting.SnapshotPathContext? right) => throw null;
     }
 
     public delegate Meziantou.Framework.FullPath SnapshotPathStrategy(Meziantou.Framework.SnapshotTesting.SnapshotPathContext context);
@@ -202,11 +202,11 @@ namespace Meziantou.Framework.SnapshotTesting
     {
         public int Count { get => throw null; }
         public void Add(Meziantou.Framework.SnapshotTesting.ISnapshotSerializer serializer) { }
-        public bool Remove(Meziantou.Framework.SnapshotTesting.ISnapshotSerializer serializer) => throw null;
         public void Clear() { }
-        public Meziantou.Framework.SnapshotTesting.SerializedSnapshot Serialize(Meziantou.Framework.SnapshotTesting.SnapshotType type, object? value) => throw null;
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.SnapshotTesting.ISnapshotSerializer> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Remove(Meziantou.Framework.SnapshotTesting.ISnapshotSerializer serializer) => throw null;
+        public Meziantou.Framework.SnapshotTesting.SerializedSnapshot Serialize(Meziantou.Framework.SnapshotTesting.SnapshotType type, object? value) => throw null;
     }
 
     public static class SnapshotSerializerCollectionGifSerializerExtensions
@@ -221,23 +221,23 @@ namespace Meziantou.Framework.SnapshotTesting
 
     public sealed class SnapshotSettings : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotSettings>
     {
-        public static Meziantou.Framework.SnapshotTesting.SnapshotSettings Default { get => throw null; set { } }
         public bool AutoDetectContinuousEnvironment { get => throw null; set { } }
-        public bool ForceUpdateSnapshots { get => throw null; set { } }
-        public Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy SnapshotUpdateStrategy { get => throw null; set { } }
-        public int MaxSnapshotFileNameLength { get => throw null; set { } }
-        public Meziantou.Framework.SnapshotTesting.SnapshotPathStrategy SnapshotPathStrategy { get => throw null; set { } }
-        public Meziantou.Framework.SnapshotTesting.SnapshotNamingStrategy SnapshotNamingStrategy { get => throw null; set { } }
-        public Meziantou.Framework.SnapshotTesting.SnapshotSerializerCollection Serializers { get => throw null; }
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.SnapshotTesting.MergeTool>? MergeTools { get => throw null; set { } }
         public Meziantou.Framework.SnapshotTesting.SnapshotComparerCollection Comparers { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotSettings Default { get => throw null; set { } }
+        public bool ForceUpdateSnapshots { get => throw null; set { } }
+        public int MaxSnapshotFileNameLength { get => throw null; set { } }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.SnapshotTesting.MergeTool>? MergeTools { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.SnapshotTesting.Scrubber> Scrubbers { get => throw null; }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotSettings? left, Meziantou.Framework.SnapshotTesting.SnapshotSettings? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotSettings? left, Meziantou.Framework.SnapshotTesting.SnapshotSettings? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public Meziantou.Framework.SnapshotTesting.SnapshotSerializerCollection Serializers { get => throw null; }
+        public Meziantou.Framework.SnapshotTesting.SnapshotNamingStrategy SnapshotNamingStrategy { get => throw null; set { } }
+        public Meziantou.Framework.SnapshotTesting.SnapshotPathStrategy SnapshotPathStrategy { get => throw null; set { } }
+        public Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy SnapshotUpdateStrategy { get => throw null; set { } }
         public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotSettings? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotSettings? left, Meziantou.Framework.SnapshotTesting.SnapshotSettings? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotSettings? left, Meziantou.Framework.SnapshotTesting.SnapshotSettings? right) => throw null;
     }
 
     public static class SnapshotSettingsCloneExtensions
@@ -247,8 +247,8 @@ namespace Meziantou.Framework.SnapshotTesting
 
     public static class SnapshotSettingsHumanReadableSerializerExtensions
     {
-        public static void ConfigureHumanReadableSerializer(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.Action<Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions>? options) { }
         public static void AddConverter(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, Meziantou.Framework.HumanReadable.HumanReadableConverter converter) { }
+        public static void ConfigureHumanReadableSerializer(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.Action<Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions>? options) { }
     }
 
     public static class SnapshotSettingsScrubberExtensions
@@ -267,41 +267,41 @@ namespace Meziantou.Framework.SnapshotTesting
 
     public sealed class SnapshotTestContext : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotTestContext>
     {
-        public string? TestName { get => throw null; init { } }
-        public System.Collections.Generic.IReadOnlyDictionary<string, string?>? Metadata { get => throw null; init { } }
         public string? ClassName { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyDictionary<string, string?>? Metadata { get => throw null; init { } }
         public string? MethodName { get => throw null; init { } }
+        public string? TestName { get => throw null; init { } }
         public SnapshotTestContext(string? TestName = null, System.Collections.Generic.IReadOnlyDictionary<string, string?>? Metadata = null) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotTestContext? left, Meziantou.Framework.SnapshotTesting.SnapshotTestContext? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotTestContext? left, Meziantou.Framework.SnapshotTesting.SnapshotTestContext? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotTestContext? other) => throw null;
         public void Deconstruct(out string? TestName, out System.Collections.Generic.IReadOnlyDictionary<string, string?>? Metadata) => throw null;
+        public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotTestContext? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotTestContext? left, Meziantou.Framework.SnapshotTesting.SnapshotTestContext? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotTestContext? left, Meziantou.Framework.SnapshotTesting.SnapshotTestContext? right) => throw null;
     }
 
     public sealed class SnapshotType : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotType>
     {
-        public static Meziantou.Framework.SnapshotTesting.SnapshotType None { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.SnapshotType Default { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.SnapshotType Png { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.SnapshotType Svg { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Bmp { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.SnapshotType Jpeg { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.SnapshotType Tiff { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.SnapshotType Webp { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.SnapshotType Gif { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.SnapshotType Ico { get => throw null; }
-        public string Type { get => throw null; }
-        public string? MimeType { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType Default { get => throw null; }
         public string? DisplayName { get => throw null; }
         public string FileExtension { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.SnapshotType Create(string type, string? mimeType, string? displayName) => throw null;
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType Gif { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType Ico { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType Jpeg { get => throw null; }
+        public string? MimeType { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType None { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType Png { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType Svg { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType Tiff { get => throw null; }
+        public string Type { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType Webp { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Create(string? name) => throw null;
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType Create(string type, string? mimeType, string? displayName) => throw null;
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.SnapshotTesting.SnapshotType? other) => throw null;
-        public override int GetHashCode() => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotType? left, Meziantou.Framework.SnapshotTesting.SnapshotType? right) => throw null;
         public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotType? left, Meziantou.Framework.SnapshotTesting.SnapshotType? right) => throw null;
         public static implicit operator Meziantou.Framework.SnapshotTesting.SnapshotType(string? name) => throw null;
@@ -309,31 +309,31 @@ namespace Meziantou.Framework.SnapshotTesting
 
     public sealed class SnapshotUpdateFile : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotUpdateFile>
     {
-        public string VerifiedFilePath { get => throw null; init { } }
         public string ActualFilePath { get => throw null; init { } }
+        public string VerifiedFilePath { get => throw null; init { } }
         public SnapshotUpdateFile(string VerifiedFilePath, string ActualFilePath) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotUpdateFile? left, Meziantou.Framework.SnapshotTesting.SnapshotUpdateFile? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotUpdateFile? left, Meziantou.Framework.SnapshotTesting.SnapshotUpdateFile? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotUpdateFile? other) => throw null;
         public void Deconstruct(out string VerifiedFilePath, out string ActualFilePath) => throw null;
+        public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotUpdateFile? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotUpdateFile? left, Meziantou.Framework.SnapshotTesting.SnapshotUpdateFile? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotUpdateFile? left, Meziantou.Framework.SnapshotTesting.SnapshotUpdateFile? right) => throw null;
     }
 
     public abstract class SnapshotUpdateStrategy
     {
+        public static Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy Default { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy Disallow { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy MergeTool { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy MergeToolSync { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy Overwrite { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy OverwriteWithoutFailure { get => throw null; }
-        public static Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy Default { get => throw null; }
         public virtual bool ReuseTemporaryFile { get => throw null; }
         public abstract bool CanUpdateSnapshot(Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, string path, string? expectedSnapshot, string? actualSnapshot);
-        public virtual void UpdateFiles(Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.SnapshotTesting.SnapshotUpdateFile> filesToUpdate, System.Collections.Generic.IReadOnlyList<string> filesToDelete) { }
-        public abstract void UpdateFile(Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, string verifiedFilePath, string actualFilePath);
         public abstract bool MustReportError(Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, string path);
         public override string ToString() => throw null;
+        public abstract void UpdateFile(Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, string verifiedFilePath, string actualFilePath);
+        public virtual void UpdateFiles(Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.SnapshotTesting.SnapshotUpdateFile> filesToUpdate, System.Collections.Generic.IReadOnlyList<string> filesToDelete) { }
     }
 }

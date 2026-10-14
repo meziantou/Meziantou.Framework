@@ -6,37 +6,37 @@ namespace Meziantou.Framework.TemporaryContainers
 {
     public sealed class BindMount : Meziantou.Framework.TemporaryContainers.IMount, System.IEquatable<Meziantou.Framework.TemporaryContainers.BindMount>
     {
+        string Meziantou.Framework.TemporaryContainers.IMount.ContainerPath { get => throw null; }
+        public bool ReadOnly { get => throw null; init { } }
         public string Source { get => throw null; init { } }
         public string Target { get => throw null; init { } }
-        public bool ReadOnly { get => throw null; init { } }
-        string Meziantou.Framework.TemporaryContainers.IMount.ContainerPath { get => throw null; }
         public BindMount(string Source, string Target, bool ReadOnly = false) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.TemporaryContainers.BindMount? left, Meziantou.Framework.TemporaryContainers.BindMount? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.TemporaryContainers.BindMount? left, Meziantou.Framework.TemporaryContainers.BindMount? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.TemporaryContainers.BindMount? other) => throw null;
         public void Deconstruct(out string Source, out string Target, out bool ReadOnly) => throw null;
+        public bool Equals(Meziantou.Framework.TemporaryContainers.BindMount? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.TemporaryContainers.BindMount? left, Meziantou.Framework.TemporaryContainers.BindMount? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.TemporaryContainers.BindMount? left, Meziantou.Framework.TemporaryContainers.BindMount? right) => throw null;
     }
 
     public sealed class ContainerCleanupOptions
     {
-        public Meziantou.Framework.TemporaryContainers.ContainerCleanupScope Scope { get => throw null; set { } }
-        public System.TimeSpan MinimumAge { get => throw null; set { } }
         public bool IncludeContainers { get => throw null; set { } }
         public bool IncludeImages { get => throw null; set { } }
-        public bool IncludeVolumes { get => throw null; set { } }
         public bool IncludeReusedResources { get => throw null; set { } }
+        public bool IncludeVolumes { get => throw null; set { } }
+        public System.TimeSpan MinimumAge { get => throw null; set { } }
+        public Meziantou.Framework.TemporaryContainers.ContainerCleanupScope Scope { get => throw null; set { } }
     }
 
     public sealed class ContainerCleanupResult
     {
+        public System.Collections.Generic.IReadOnlyList<System.Exception> Errors { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> RemovedContainers { get => throw null; }
+        public int RemovedCount { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> RemovedImages { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> RemovedVolumes { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<System.Exception> Errors { get => throw null; }
-        public int RemovedCount { get => throw null; }
     }
 
     public enum ContainerCleanupScope
@@ -57,28 +57,28 @@ namespace Meziantou.Framework.TemporaryContainers
 
     public class ContainerDefinition
     {
-        public Meziantou.Framework.TemporaryContainers.ImageSource Image { get => throw null; set { } }
-        public Meziantou.Framework.TemporaryContainers.ContainerRuntime Runtime { get => throw null; set { } }
-        public Meziantou.Framework.TemporaryContainers.PullPolicy PullPolicy { get => throw null; set { } }
-        public string? Name { get => throw null; set { } }
-        public string? ReuseId { get => throw null; set { } }
-        public string? Hostname { get => throw null; set { } }
-        public string? User { get => throw null; set { } }
-        public string? WorkingDirectory { get => throw null; set { } }
-        public System.TimeSpan StartupTimeout { get => throw null; set { } }
-        public Meziantou.Framework.TemporaryContainers.ContainerCommandCollection Entrypoint { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.ContainerCommandCollection Command { get => throw null; }
+        public Meziantou.Framework.TemporaryContainers.ContainerCommandCollection Entrypoint { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.ContainerEnvironmentCollection Environment { get => throw null; }
-        public Meziantou.Framework.TemporaryContainers.ContainerLabelCollection Labels { get => throw null; }
-        public Meziantou.Framework.TemporaryContainers.ContainerPortCollection Ports { get => throw null; }
-        public Meziantou.Framework.TemporaryContainers.ContainerMountCollection Mounts { get => throw null; }
-        public Meziantou.Framework.TemporaryContainers.ContainerWaitStrategyCollection WaitStrategies { get => throw null; }
-        public Meziantou.Framework.TemporaryContainers.ContainerNetworkOptions Network { get => throw null; }
-        public Meziantou.Framework.TemporaryContainers.ContainerResourceOptions Resources { get => throw null; }
-        public Meziantou.Framework.TemporaryContainers.ContainerLoggingOptions Logging { get => throw null; }
+        public string? Hostname { get => throw null; set { } }
+        public Meziantou.Framework.TemporaryContainers.ImageSource Image { get => throw null; set { } }
         public bool IsReadOnly { get => throw null; }
-        public ContainerDefinition(Meziantou.Framework.TemporaryContainers.ImageSource image) { }
+        public Meziantou.Framework.TemporaryContainers.ContainerLabelCollection Labels { get => throw null; }
+        public Meziantou.Framework.TemporaryContainers.ContainerLoggingOptions Logging { get => throw null; }
+        public Meziantou.Framework.TemporaryContainers.ContainerMountCollection Mounts { get => throw null; }
+        public string? Name { get => throw null; set { } }
+        public Meziantou.Framework.TemporaryContainers.ContainerNetworkOptions Network { get => throw null; }
+        public Meziantou.Framework.TemporaryContainers.ContainerPortCollection Ports { get => throw null; }
+        public Meziantou.Framework.TemporaryContainers.PullPolicy PullPolicy { get => throw null; set { } }
+        public Meziantou.Framework.TemporaryContainers.ContainerResourceOptions Resources { get => throw null; }
+        public string? ReuseId { get => throw null; set { } }
+        public Meziantou.Framework.TemporaryContainers.ContainerRuntime Runtime { get => throw null; set { } }
+        public System.TimeSpan StartupTimeout { get => throw null; set { } }
+        public string? User { get => throw null; set { } }
+        public Meziantou.Framework.TemporaryContainers.ContainerWaitStrategyCollection WaitStrategies { get => throw null; }
+        public string? WorkingDirectory { get => throw null; set { } }
         public ContainerDefinition(Meziantou.Framework.TemporaryContainers.ContainerDefinition other) { }
+        public ContainerDefinition(Meziantou.Framework.TemporaryContainers.ImageSource image) { }
         public virtual Meziantou.Framework.TemporaryContainers.TemporaryContainer CreateContainer() => throw null;
     }
 
@@ -110,49 +110,49 @@ namespace Meziantou.Framework.TemporaryContainers
     {
         public int Count { get => throw null; }
         public void Add(string name, string value) { }
-        public bool Remove(string name) => throw null;
         public bool Contains(string name) => throw null;
-        public string? GetValue(string name) => throw null;
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, string>> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public string? GetValue(string name) => throw null;
+        public bool Remove(string name) => throw null;
     }
 
     public sealed class ContainerInfo : System.IEquatable<Meziantou.Framework.TemporaryContainers.ContainerInfo>
     {
+        public int? ExitCode { get => throw null; init { } }
+        public System.DateTimeOffset? FinishedAt { get => throw null; init { } }
+        public string? IPAddress { get => throw null; init { } }
         public required string Id { get => throw null; init { } }
-        public required string Name { get => throw null; init { } }
         public string? Image { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyDictionary<string, string> Labels { get => throw null; init { } }
+        public required string Name { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyDictionary<int, int> Ports { get => throw null; init { } }
+        public System.DateTimeOffset? StartedAt { get => throw null; init { } }
         public Meziantou.Framework.TemporaryContainers.ContainerState State { get => throw null; init { } }
         public string? Status { get => throw null; init { } }
-        public System.DateTimeOffset? StartedAt { get => throw null; init { } }
-        public System.DateTimeOffset? FinishedAt { get => throw null; init { } }
-        public int? ExitCode { get => throw null; init { } }
-        public string? IPAddress { get => throw null; init { } }
-        public System.Collections.Generic.IReadOnlyDictionary<int, int> Ports { get => throw null; init { } }
-        public System.Collections.Generic.IReadOnlyDictionary<string, string> Labels { get => throw null; init { } }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.TemporaryContainers.ContainerInfo? left, Meziantou.Framework.TemporaryContainers.ContainerInfo? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.TemporaryContainers.ContainerInfo? left, Meziantou.Framework.TemporaryContainers.ContainerInfo? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
         public bool Equals(Meziantou.Framework.TemporaryContainers.ContainerInfo? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.TemporaryContainers.ContainerInfo? left, Meziantou.Framework.TemporaryContainers.ContainerInfo? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.TemporaryContainers.ContainerInfo? left, Meziantou.Framework.TemporaryContainers.ContainerInfo? right) => throw null;
     }
 
     public sealed class ContainerLabelCollection : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
         public void Add(string name, string value) { }
-        public bool Remove(string name) => throw null;
         public bool Contains(string name) => throw null;
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, string>> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Remove(string name) => throw null;
     }
 
     public sealed class ContainerLoggingOptions
     {
-        public Microsoft.Extensions.Logging.ILogger? Logger { get => throw null; set { } }
-        public bool CaptureStandardOutput { get => throw null; set { } }
         public bool CaptureStandardError { get => throw null; set { } }
+        public bool CaptureStandardOutput { get => throw null; set { } }
+        public Microsoft.Extensions.Logging.ILogger? Logger { get => throw null; set { } }
     }
 
     public sealed class ContainerMountCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.TemporaryContainers.IMount>, System.Collections.IEnumerable
@@ -160,93 +160,93 @@ namespace Meziantou.Framework.TemporaryContainers
         public int Count { get => throw null; }
         public void Add(Meziantou.Framework.TemporaryContainers.IMount mount) { }
         public void AddBindMount(string hostPath, string containerPath, bool readOnly = false) { }
-        public void AddVolume(string volumeName, string containerPath) { }
-        public void AddVolume(string volumeName, string containerPath, bool readOnly) { }
-        public void AddVolume(Meziantou.Framework.TemporaryContainers.TemporaryVolume volume, string containerPath, bool readOnly = false) { }
         public void AddTmpfs(string containerPath) { }
+        public void AddVolume(string volumeName, string containerPath) { }
+        public void AddVolume(Meziantou.Framework.TemporaryContainers.TemporaryVolume volume, string containerPath, bool readOnly = false) { }
+        public void AddVolume(string volumeName, string containerPath, bool readOnly) { }
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.TemporaryContainers.IMount> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
     public sealed class ContainerNetworkOptions
     {
-        public string? Network { get => throw null; set { } }
         public string? Alias { get => throw null; set { } }
+        public string? Network { get => throw null; set { } }
     }
 
     public sealed class ContainerPort : System.IEquatable<Meziantou.Framework.TemporaryContainers.ContainerPort>
     {
         public const string DefaultHostIp = "127.0.0.1";
+        public string HostIp { get => throw null; init { } }
         public int? HostPort { get => throw null; init { } }
         public int Port { get => throw null; init { } }
-        public string HostIp { get => throw null; init { } }
-        public ContainerPort(int? HostPort, int Port) { }
         public ContainerPort(int containerPort) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.TemporaryContainers.ContainerPort? left, Meziantou.Framework.TemporaryContainers.ContainerPort? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.TemporaryContainers.ContainerPort? left, Meziantou.Framework.TemporaryContainers.ContainerPort? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.TemporaryContainers.ContainerPort? other) => throw null;
+        public ContainerPort(int? HostPort, int Port) { }
         public void Deconstruct(out int? HostPort, out int Port) => throw null;
+        public bool Equals(Meziantou.Framework.TemporaryContainers.ContainerPort? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.TemporaryContainers.ContainerPort? left, Meziantou.Framework.TemporaryContainers.ContainerPort? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.TemporaryContainers.ContainerPort? left, Meziantou.Framework.TemporaryContainers.ContainerPort? right) => throw null;
     }
 
     public sealed class ContainerPortCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.TemporaryContainers.ContainerPort>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
+        public void Add(Meziantou.Framework.TemporaryContainers.ContainerPort port) { }
         public void Add(int containerPort) { }
         public void Add(int hostPort, int containerPort) { }
-        public void Add(Meziantou.Framework.TemporaryContainers.ContainerPort port) { }
-        public bool Remove(int containerPort) => throw null;
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.TemporaryContainers.ContainerPort> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Remove(int containerPort) => throw null;
     }
 
     public sealed class ContainerReaper : System.IAsyncDisposable
     {
-        public string SessionId { get => throw null; }
         public string ContainerId { get => throw null; }
+        public string SessionId { get => throw null; }
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
     }
 
     public sealed class ContainerReaperOptions
     {
-        public Meziantou.Framework.TemporaryContainers.ImageSource Image { get => throw null; set { } }
-        public string? SocketPath { get => throw null; set { } }
         public System.TimeSpan ConnectionTimeout { get => throw null; set { } }
+        public Meziantou.Framework.TemporaryContainers.ImageSource Image { get => throw null; set { } }
         public System.TimeSpan ReconnectionTimeout { get => throw null; set { } }
+        public string? SocketPath { get => throw null; set { } }
     }
 
     public sealed class ContainerResourceOptions
     {
-        public long? MemoryLimit { get => throw null; set { } }
         public double? CpuLimit { get => throw null; set { } }
+        public long? MemoryLimit { get => throw null; set { } }
         public bool ReadOnlyRootFilesystem { get => throw null; set { } }
     }
 
     public abstract class ContainerRuntime
     {
+        public static Meziantou.Framework.TemporaryContainers.ContainerRuntime AppleContainer { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Auto { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Docker { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime DockerApi { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Podman { get => throw null; }
-        public static Meziantou.Framework.TemporaryContainers.ContainerRuntime AppleContainer { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Wslc { get => throw null; }
         public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerCleanupResult> CleanupAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerCleanupResult> CleanupAsync(Meziantou.Framework.TemporaryContainers.ContainerCleanupOptions options, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public virtual System.Threading.Tasks.Task<bool> IsSupportedAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public override string ToString() => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerReaper> StartReaperAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerReaper> StartReaperAsync(Meziantou.Framework.TemporaryContainers.ContainerReaperOptions options, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public override string ToString() => throw null;
     }
 
     public sealed class ContainerRuntimeException : System.Exception
     {
-        public Meziantou.Framework.TemporaryContainers.ContainerRuntime? Runtime { get => throw null; }
         public string? Command { get => throw null; }
         public int ExitCode { get => throw null; }
-        public string? StandardOutput { get => throw null; }
+        public Meziantou.Framework.TemporaryContainers.ContainerRuntime? Runtime { get => throw null; }
         public string? StandardError { get => throw null; }
+        public string? StandardOutput { get => throw null; }
         public System.Net.HttpStatusCode? StatusCode { get => throw null; }
         public ContainerRuntimeException(string message) { }
         public ContainerRuntimeException(string message, System.Exception innerException) { }
@@ -273,25 +273,25 @@ namespace Meziantou.Framework.TemporaryContainers
     public sealed class ExecOptions
     {
         public System.Collections.Generic.IList<string> Command { get => throw null; set { } }
-        public string? WorkingDirectory { get => throw null; set { } }
-        public string? User { get => throw null; set { } }
         public System.Collections.Generic.IDictionary<string, string> Environment { get => throw null; }
         public Meziantou.Framework.InputSource? StandardInput { get => throw null; set { } }
+        public string? User { get => throw null; set { } }
+        public string? WorkingDirectory { get => throw null; set { } }
     }
 
     public sealed class ExecResult : System.IEquatable<Meziantou.Framework.TemporaryContainers.ExecResult>
     {
         public int ExitCode { get => throw null; init { } }
-        public string StandardOutput { get => throw null; init { } }
         public string StandardError { get => throw null; init { } }
+        public string StandardOutput { get => throw null; init { } }
         public ExecResult(int ExitCode, string StandardOutput, string StandardError) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.TemporaryContainers.ExecResult? left, Meziantou.Framework.TemporaryContainers.ExecResult? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.TemporaryContainers.ExecResult? left, Meziantou.Framework.TemporaryContainers.ExecResult? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.TemporaryContainers.ExecResult? other) => throw null;
         public void Deconstruct(out int ExitCode, out string StandardOutput, out string StandardError) => throw null;
+        public bool Equals(Meziantou.Framework.TemporaryContainers.ExecResult? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.TemporaryContainers.ExecResult? left, Meziantou.Framework.TemporaryContainers.ExecResult? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.TemporaryContainers.ExecResult? left, Meziantou.Framework.TemporaryContainers.ExecResult? right) => throw null;
     }
 
     public interface IMount
@@ -306,34 +306,34 @@ namespace Meziantou.Framework.TemporaryContainers
     public closed class ImageSource : System.IEquatable<Meziantou.Framework.TemporaryContainers.ImageSource>
     {
         protected virtual System.Type EqualityContract { get => throw null; }
-        public static implicit operator Meziantou.Framework.TemporaryContainers.ImageSource(string name) => throw null;
-        public static Meziantou.Framework.TemporaryContainers.ImageSource FromRegistry(string name) => throw null;
-        public static Meziantou.Framework.TemporaryContainers.ImageSource FromDockerfile(string dockerfilePath, string? contextDirectory = null) => throw null;
-        public static Meziantou.Framework.TemporaryContainers.ImageSource FromArchive(string archivePath) => throw null;
-        public static Meziantou.Framework.TemporaryContainers.ImageSource FromExisting(string imageId) => throw null;
-        public override string ToString() => throw null;
-        protected virtual bool PrintMembers(System.Text.StringBuilder builder) => throw null;
-        public static bool operator !=(Meziantou.Framework.TemporaryContainers.ImageSource? left, Meziantou.Framework.TemporaryContainers.ImageSource? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.TemporaryContainers.ImageSource? left, Meziantou.Framework.TemporaryContainers.ImageSource? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public virtual bool Equals(Meziantou.Framework.TemporaryContainers.ImageSource? other) => throw null;
         protected ImageSource(Meziantou.Framework.TemporaryContainers.ImageSource original) { }
+        public virtual bool Equals(Meziantou.Framework.TemporaryContainers.ImageSource? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.ImageSource FromArchive(string archivePath) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.ImageSource FromDockerfile(string dockerfilePath, string? contextDirectory = null) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.ImageSource FromExisting(string imageId) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.ImageSource FromRegistry(string name) => throw null;
+        public override int GetHashCode() => throw null;
+        protected virtual bool PrintMembers(System.Text.StringBuilder builder) => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.TemporaryContainers.ImageSource? left, Meziantou.Framework.TemporaryContainers.ImageSource? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.TemporaryContainers.ImageSource? left, Meziantou.Framework.TemporaryContainers.ImageSource? right) => throw null;
+        public static implicit operator Meziantou.Framework.TemporaryContainers.ImageSource(string name) => throw null;
     }
 
     public sealed class LogEntry : System.IEquatable<Meziantou.Framework.TemporaryContainers.LogEntry>
     {
-        public Meziantou.Framework.TemporaryContainers.LogStream Stream { get => throw null; init { } }
         public string Message { get => throw null; init { } }
+        public Meziantou.Framework.TemporaryContainers.LogStream Stream { get => throw null; init { } }
         public System.DateTimeOffset? Timestamp { get => throw null; init { } }
         public LogEntry(Meziantou.Framework.TemporaryContainers.LogStream Stream, string Message, System.DateTimeOffset? Timestamp) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.TemporaryContainers.LogEntry? left, Meziantou.Framework.TemporaryContainers.LogEntry? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.TemporaryContainers.LogEntry? left, Meziantou.Framework.TemporaryContainers.LogEntry? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.TemporaryContainers.LogEntry? other) => throw null;
         public void Deconstruct(out Meziantou.Framework.TemporaryContainers.LogStream Stream, out string Message, out System.DateTimeOffset? Timestamp) => throw null;
+        public bool Equals(Meziantou.Framework.TemporaryContainers.LogEntry? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.TemporaryContainers.LogEntry? left, Meziantou.Framework.TemporaryContainers.LogEntry? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.TemporaryContainers.LogEntry? left, Meziantou.Framework.TemporaryContainers.LogEntry? right) => throw null;
     }
 
     public enum LogStream
@@ -349,8 +349,8 @@ namespace Meziantou.Framework.TemporaryContainers
 
     public sealed class MongoDbContainerDefinition : Meziantou.Framework.TemporaryContainers.ContainerDefinition
     {
-        public string RootUsername { get => throw null; set { } }
         public string RootPassword { get => throw null; set { } }
+        public string RootUsername { get => throw null; set { } }
         public override Meziantou.Framework.TemporaryContainers.MongoDbContainer CreateContainer() => throw null;
     }
 
@@ -395,65 +395,65 @@ namespace Meziantou.Framework.TemporaryContainers
 
     public class TemporaryContainer : System.IAsyncDisposable
     {
+        public Meziantou.Framework.TemporaryContainers.ContainerDefinition Definition { get => throw null; }
         public string Id { get => throw null; }
         public string Name { get => throw null; }
-        public Meziantou.Framework.TemporaryContainers.ContainerDefinition Definition { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.ContainerRuntime Runtime { get => throw null; }
-        public System.Threading.Tasks.Task EnsureCreatedAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public System.Threading.Tasks.Task WaitUntilReadyAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public int GetMappedPort(int containerPort) => throw null;
-        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ExecResult> ExecAsync(System.Action<Meziantou.Framework.TemporaryContainers.ExecOptions> configure, System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenReadAsync(string path, System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public System.Threading.Tasks.Task WriteFileAsync(string path, System.IO.Stream content, System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public System.Threading.Tasks.Task CopyToContainerAsync(string source, string destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task CopyFromContainerAsync(string source, string destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerInfo> InspectAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public System.Threading.Tasks.Task RestartAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public System.Threading.Tasks.Task PauseAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public System.Threading.Tasks.Task UnpauseAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public System.Threading.Tasks.Task KillAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task CopyToContainerAsync(string source, string destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task DeleteAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+        public System.Threading.Tasks.Task EnsureCreatedAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ExecResult> ExecAsync(System.Action<Meziantou.Framework.TemporaryContainers.ExecOptions> configure, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task<bool> ExistsAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.TemporaryContainers.LogEntry> GetLogsAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public int GetMappedPort(int containerPort) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerInfo> InspectAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task KillAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenReadAsync(string path, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task PauseAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task RestartAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task UnpauseAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task WaitUntilReadyAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task WriteFileAsync(string path, System.IO.Stream content, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class TemporaryVolume : System.IAsyncDisposable
     {
-        public string Name { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.VolumeDefinition Definition { get => throw null; }
+        public string Name { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.ContainerRuntime Runtime { get => throw null; }
-        public System.Threading.Tasks.Task EnsureCreatedAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public System.Threading.Tasks.Task<bool> ExistsAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task DeleteAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+        public System.Threading.Tasks.Task EnsureCreatedAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<bool> ExistsAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class TmpfsMount : Meziantou.Framework.TemporaryContainers.IMount, System.IEquatable<Meziantou.Framework.TemporaryContainers.TmpfsMount>
     {
-        public string Target { get => throw null; init { } }
         string Meziantou.Framework.TemporaryContainers.IMount.ContainerPath { get => throw null; }
+        public string Target { get => throw null; init { } }
         public TmpfsMount(string Target) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.TemporaryContainers.TmpfsMount? left, Meziantou.Framework.TemporaryContainers.TmpfsMount? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.TemporaryContainers.TmpfsMount? left, Meziantou.Framework.TemporaryContainers.TmpfsMount? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.TemporaryContainers.TmpfsMount? other) => throw null;
         public void Deconstruct(out string Target) => throw null;
+        public bool Equals(Meziantou.Framework.TemporaryContainers.TmpfsMount? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.TemporaryContainers.TmpfsMount? left, Meziantou.Framework.TemporaryContainers.TmpfsMount? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.TemporaryContainers.TmpfsMount? left, Meziantou.Framework.TemporaryContainers.TmpfsMount? right) => throw null;
     }
 
     public sealed class VolumeDefinition
     {
-        public Meziantou.Framework.TemporaryContainers.ContainerRuntime Runtime { get => throw null; set { } }
-        public string? Name { get => throw null; set { } }
         public string? Driver { get => throw null; set { } }
-        public string? ReuseId { get => throw null; set { } }
-        public Meziantou.Framework.TemporaryContainers.ContainerLabelCollection Labels { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.VolumeDriverOptionCollection DriverOptions { get => throw null; }
         public bool IsReadOnly { get => throw null; }
+        public Meziantou.Framework.TemporaryContainers.ContainerLabelCollection Labels { get => throw null; }
+        public string? Name { get => throw null; set { } }
+        public string? ReuseId { get => throw null; set { } }
+        public Meziantou.Framework.TemporaryContainers.ContainerRuntime Runtime { get => throw null; set { } }
         public VolumeDefinition(Meziantou.Framework.TemporaryContainers.VolumeDefinition other) { }
         public Meziantou.Framework.TemporaryContainers.TemporaryVolume CreateVolume() => throw null;
     }
@@ -462,33 +462,33 @@ namespace Meziantou.Framework.TemporaryContainers
     {
         public int Count { get => throw null; }
         public void Add(string name, string value) { }
-        public bool Remove(string name) => throw null;
         public bool Contains(string name) => throw null;
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, string>> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Remove(string name) => throw null;
     }
 
     public sealed class VolumeMount : Meziantou.Framework.TemporaryContainers.IMount, System.IEquatable<Meziantou.Framework.TemporaryContainers.VolumeMount>
     {
-        public string Name { get => throw null; init { } }
-        public string Target { get => throw null; init { } }
-        public bool ReadOnly { get => throw null; init { } }
         string Meziantou.Framework.TemporaryContainers.IMount.ContainerPath { get => throw null; }
+        public string Name { get => throw null; init { } }
+        public bool ReadOnly { get => throw null; init { } }
+        public string Target { get => throw null; init { } }
         public VolumeMount(string Name, string Target, bool ReadOnly = false) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.TemporaryContainers.VolumeMount? left, Meziantou.Framework.TemporaryContainers.VolumeMount? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.TemporaryContainers.VolumeMount? left, Meziantou.Framework.TemporaryContainers.VolumeMount? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.TemporaryContainers.VolumeMount? other) => throw null;
         public void Deconstruct(out string Name, out string Target, out bool ReadOnly) => throw null;
+        public bool Equals(Meziantou.Framework.TemporaryContainers.VolumeMount? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.TemporaryContainers.VolumeMount? left, Meziantou.Framework.TemporaryContainers.VolumeMount? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.TemporaryContainers.VolumeMount? left, Meziantou.Framework.TemporaryContainers.VolumeMount? right) => throw null;
     }
 
     public static class Wait
     {
-        public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForPort(int containerPort) => throw null;
-        public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForLogMessage(string substring, int occurrences = 1) => throw null;
-        public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForLogMessage(System.Text.RegularExpressions.Regex pattern, int occurrences = 1) => throw null;
         public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForDelay(System.TimeSpan delay) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForLogMessage(System.Text.RegularExpressions.Regex pattern, int occurrences = 1) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForLogMessage(string substring, int occurrences = 1) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForPort(int containerPort) => throw null;
     }
 }

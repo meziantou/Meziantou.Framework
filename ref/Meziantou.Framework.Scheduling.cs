@@ -15,49 +15,49 @@ namespace Meziantou.Framework.Scheduling
         , System.IParsable<Meziantou.Framework.Scheduling.CronExpression>, System.ISpanParsable<Meziantou.Framework.Scheduling.CronExpression>
     #endif
     {
-        public static Meziantou.Framework.Scheduling.CronExpression Parse(string expression) => throw null;
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? expression, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.CronExpression? cronExpression) => throw null;
-        public static Meziantou.Framework.Scheduling.CronExpression Parse(System.ReadOnlySpan<char> expression) => throw null;
-        public static bool TryParse(System.ReadOnlySpan<char> expression, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.CronExpression? cronExpression) => throw null;
-        public override string ToString() => throw null;
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Scheduling.CronExpression? other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
-        public static bool operator ==(Meziantou.Framework.Scheduling.CronExpression? left, Meziantou.Framework.Scheduling.CronExpression? right) => throw null;
-        public static bool operator !=(Meziantou.Framework.Scheduling.CronExpression? left, Meziantou.Framework.Scheduling.CronExpression? right) => throw null;
         public System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrences(System.DateTime startDate) => throw null;
         public System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(System.DateTime startDate, System.TimeZoneInfo timeZone) => throw null;
         public System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(System.DateTimeOffset startDate, System.TimeZoneInfo timeZone) => throw null;
+        public static Meziantou.Framework.Scheduling.CronExpression Parse(System.ReadOnlySpan<char> expression) => throw null;
+        public static Meziantou.Framework.Scheduling.CronExpression Parse(string expression) => throw null;
+        public override string ToString() => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> expression, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.CronExpression? cronExpression) => throw null;
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? expression, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.CronExpression? cronExpression) => throw null;
+        public static bool operator ==(Meziantou.Framework.Scheduling.CronExpression? left, Meziantou.Framework.Scheduling.CronExpression? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Scheduling.CronExpression? left, Meziantou.Framework.Scheduling.CronExpression? right) => throw null;
     }
 
     public sealed class Event
     {
-        public string? Id { get => throw null; set { } }
-        public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> IdParameters { get => throw null; }
-        public string? Summary { get => throw null; set { } }
-        public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> SummaryParameters { get => throw null; }
-        public string? Description { get => throw null; set { } }
-        public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> DescriptionParameters { get => throw null; }
-        public Meziantou.Framework.Scheduling.Organizer? Organizer { get => throw null; set { } }
+        public System.Collections.Generic.IDictionary<string, string> AdditionalProperties { get => throw null; }
         public System.Collections.Generic.IList<Meziantou.Framework.Scheduling.Attendee> Attendees { get => throw null; }
         public System.DateTime Created { get => throw null; set { } }
         public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> CreatedParameters { get => throw null; }
-        public System.DateTime LastModified { get => throw null; set { } }
-        public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> LastModifiedParameters { get => throw null; }
         public System.DateTime DateTimeStamp { get => throw null; set { } }
         public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> DateTimeStampParameters { get => throw null; }
-        public System.DateTime Start { get => throw null; set { } }
-        public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> StartParameters { get => throw null; }
+        public string? Description { get => throw null; set { } }
+        public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> DescriptionParameters { get => throw null; }
         public System.DateTime End { get => throw null; set { } }
         public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> EndParameters { get => throw null; }
+        public string? Id { get => throw null; set { } }
+        public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> IdParameters { get => throw null; }
         public bool IsAllDay { get => throw null; set { } }
-        public System.TimeZoneInfo? TimeZone { get => throw null; set { } }
+        public System.DateTime LastModified { get => throw null; set { } }
+        public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> LastModifiedParameters { get => throw null; }
+        public Meziantou.Framework.Scheduling.Organizer? Organizer { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.Scheduling.InternetCalendarProperty> RawProperties { get => throw null; }
         public Meziantou.Framework.Scheduling.RecurrenceRule? RecurrenceRule { get => throw null; set { } }
         public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> RecurrenceRuleParameters { get => throw null; }
+        public System.DateTime Start { get => throw null; set { } }
+        public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> StartParameters { get => throw null; }
         public Meziantou.Framework.Scheduling.EventStatus? Status { get => throw null; set { } }
         public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> StatusParameters { get => throw null; }
-        public System.Collections.Generic.IDictionary<string, string> AdditionalProperties { get => throw null; }
-        public System.Collections.Generic.IList<Meziantou.Framework.Scheduling.InternetCalendarProperty> RawProperties { get => throw null; }
+        public string? Summary { get => throw null; set { } }
+        public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> SummaryParameters { get => throw null; }
+        public System.TimeZoneInfo? TimeZone { get => throw null; set { } }
     }
 
     public enum EventStatus
@@ -75,21 +75,21 @@ namespace Meziantou.Framework.Scheduling
     public sealed class InternetCalendar
     {
         public System.Collections.Generic.IDictionary<string, string> AdditionalProperties { get => throw null; }
-        public System.Collections.Generic.IList<Meziantou.Framework.Scheduling.InternetCalendarProperty> RawProperties { get => throw null; }
         public System.Collections.Generic.IList<Meziantou.Framework.Scheduling.Event> Events { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.Scheduling.InternetCalendarProperty> RawProperties { get => throw null; }
         public string Version { get => throw null; set { } }
-        public void ToIcs(System.IO.Stream stream) { }
-        public void ToIcs(System.IO.TextWriter writer) { }
-        public string ToIcs() => throw null;
-        public static Meziantou.Framework.Scheduling.InternetCalendar Parse(string ics) => throw null;
-        public static Meziantou.Framework.Scheduling.InternetCalendar Parse(System.ReadOnlySpan<char> ics) => throw null;
         public static Meziantou.Framework.Scheduling.InternetCalendar Parse(System.IO.Stream stream) => throw null;
         public static Meziantou.Framework.Scheduling.InternetCalendar Parse(System.IO.TextReader reader) => throw null;
+        public static Meziantou.Framework.Scheduling.InternetCalendar Parse(System.ReadOnlySpan<char> ics) => throw null;
+        public static Meziantou.Framework.Scheduling.InternetCalendar Parse(string ics) => throw null;
+        public string ToIcs() => throw null;
+        public void ToIcs(System.IO.Stream stream) { }
+        public void ToIcs(System.IO.TextWriter writer) { }
         public static bool TryParse(System.ReadOnlySpan<char> ics, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.InternetCalendar? calendar) => throw null;
-        public static bool TryParse(System.ReadOnlySpan<char> ics, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.InternetCalendar? calendar, out string? error) => throw null;
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? ics, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.InternetCalendar? calendar) => throw null;
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? ics, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.InternetCalendar? calendar, out string? error) => throw null;
         public static bool TryParse(System.IO.TextReader reader, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.InternetCalendar? calendar, out string? error) => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> ics, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.InternetCalendar? calendar, out string? error) => throw null;
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? ics, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.InternetCalendar? calendar, out string? error) => throw null;
     }
 
     public sealed class InternetCalendarProperty
@@ -104,8 +104,8 @@ namespace Meziantou.Framework.Scheduling
     public sealed class InternetCalendarUserAddress
     {
         public System.Uri Uri { get => throw null; }
-        public InternetCalendarUserAddress(string email) { }
         public InternetCalendarUserAddress(System.Uri uri) { }
+        public InternetCalendarUserAddress(string email) { }
         public override string ToString() => throw null;
     }
 
@@ -119,43 +119,43 @@ namespace Meziantou.Framework.Scheduling
     {
         public static readonly System.DayOfWeek DefaultFirstDayOfWeek;
         public const string DefaultFirstDayOfWeekString = "MO";
-        public System.DateTime? EndDate { get => throw null; set { } }
-        public int? Occurrences { get => throw null; set { } }
-        public int Interval { get => throw null; set { } }
-        public System.DayOfWeek WeekStart { get => throw null; set { } }
-        public System.Collections.Generic.IList<int>? BySeconds { get => throw null; set { } }
-        public System.Collections.Generic.IList<int>? ByMinutes { get => throw null; set { } }
         public System.Collections.Generic.IList<int>? ByHours { get => throw null; set { } }
-        public System.Collections.Generic.IList<int> ByMonths { get => throw null; set { } }
+        public System.Collections.Generic.IList<int>? ByMinutes { get => throw null; set { } }
         public System.Collections.Generic.IList<int> ByMonthDays { get => throw null; set { } }
+        public System.Collections.Generic.IList<int> ByMonths { get => throw null; set { } }
+        public System.Collections.Generic.IList<int>? BySeconds { get => throw null; set { } }
         public System.Collections.Generic.IList<int>? BySetPositions { get => throw null; set { } }
+        public System.DateTime? EndDate { get => throw null; set { } }
+        public int Interval { get => throw null; set { } }
         public bool IsForever { get => throw null; }
+        public int? Occurrences { get => throw null; set { } }
         public abstract string Text { get; }
-        public static Meziantou.Framework.Scheduling.RecurrenceRule Parse(string rrule) => throw null;
-        public static Meziantou.Framework.Scheduling.RecurrenceRule Parse(System.ReadOnlySpan<char> rrule) => throw null;
-        public static bool TryParse(System.ReadOnlySpan<char> rrule, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.RecurrenceRule? recurrenceRule) => throw null;
-        public static bool TryParse(System.ReadOnlySpan<char> rrule, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.RecurrenceRule? recurrenceRule, out string? error) => throw null;
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? rrule, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.RecurrenceRule? recurrenceRule) => throw null;
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? rrule, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.RecurrenceRule? recurrenceRule, out string? error) => throw null;
+        public System.DayOfWeek WeekStart { get => throw null; set { } }
         public virtual System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrences(System.DateTime startDate) => throw null;
         public virtual System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(System.DateTime startDate, System.TimeZoneInfo timeZone) => throw null;
         public System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(System.DateTimeOffset startDate, System.TimeZoneInfo timeZone) => throw null;
         protected abstract System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrencesInternal(System.DateTime startDate);
+        public static Meziantou.Framework.Scheduling.RecurrenceRule Parse(System.ReadOnlySpan<char> rrule) => throw null;
+        public static Meziantou.Framework.Scheduling.RecurrenceRule Parse(string rrule) => throw null;
         public override string ToString() => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> rrule, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.RecurrenceRule? recurrenceRule) => throw null;
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? rrule, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.RecurrenceRule? recurrenceRule) => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> rrule, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.RecurrenceRule? recurrenceRule, out string? error) => throw null;
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? rrule, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.RecurrenceRule? recurrenceRule, out string? error) => throw null;
     }
 
     public static class RecurrenceRuleExtensions
     {
         public static System.DateTime? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTime startDate) => throw null;
         public static System.DateTimeOffset? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTimeOffset startDate) => throw null;
-        public static System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTime startDate, System.TimeZoneInfo timeZone) => throw null;
-        public static System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTimeOffset startDate, System.TimeZoneInfo timeZone) => throw null;
-        public static System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTime startDate, string timeZoneId) => throw null;
-        public static System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTimeOffset startDate, string timeZoneId) => throw null;
         public static System.DateTimeOffset? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTime startDate, System.TimeZoneInfo timeZone) => throw null;
-        public static System.DateTimeOffset? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTimeOffset startDate, System.TimeZoneInfo timeZone) => throw null;
         public static System.DateTimeOffset? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTime startDate, string timeZoneId) => throw null;
+        public static System.DateTimeOffset? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTimeOffset startDate, System.TimeZoneInfo timeZone) => throw null;
         public static System.DateTimeOffset? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTimeOffset startDate, string timeZoneId) => throw null;
+        public static System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTime startDate, System.TimeZoneInfo timeZone) => throw null;
+        public static System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTime startDate, string timeZoneId) => throw null;
+        public static System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTimeOffset startDate, System.TimeZoneInfo timeZone) => throw null;
+        public static System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTimeOffset startDate, string timeZoneId) => throw null;
     }
 
     public static class RecurrenceRuleHumanizerExtensions

@@ -7,155 +7,155 @@ namespace Meziantou.Framework.FixedStringBuilder
     [System.Runtime.CompilerServices.InterpolatedStringHandler]
     public struct FixedStringBuilder16 : Meziantou.Framework.FixedStringBuilder.IFixedString, Meziantou.Framework.FixedStringBuilder.IFixedString<Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16>, System.IEquatable<Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16>, System.IFormattable, System.ISpanFormattable
     {
-        public static int MaxLength { get => throw null; }
         public readonly int Length { get => throw null; }
-        public FixedStringBuilder16(int literalLength, int formattedCount) { }
+        public static int MaxLength { get => throw null; }
         public FixedStringBuilder16(string value) { }
-        public void Clear() { }
-        public void Clear(bool zeroBuffer) { }
-        public void AppendLiteral(System.ReadOnlySpan<char> value) { }
-        public void AppendFormatted(string value) { }
-        public void AppendFormatted(string value, string? format) { }
-        public void AppendFormatted(string value, int alignment) { }
-        public void AppendFormatted(string value, int alignment, string? format) { }
+        public FixedStringBuilder16(int literalLength, int formattedCount) { }
         public void AppendFormatted(System.ReadOnlySpan<char> value) { }
-        public void AppendFormatted(System.ReadOnlySpan<char> value, string? format) { }
+        public void AppendFormatted(string value) { }
         public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, string? format) { }
+        public void AppendFormatted(string value, int alignment) { }
+        public void AppendFormatted(string value, string? format) { }
         public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment, string? format) { }
+        public void AppendFormatted(string value, int alignment, string? format) { }
         public void AppendFormatted<T>(T value) { }
-        public void AppendFormatted<T>(T value, string? format) { }
         public void AppendFormatted<T>(T value, int alignment) { }
+        public void AppendFormatted<T>(T value, string? format) { }
         public void AppendFormatted<T>(T value, int alignment, string? format) { }
-        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 other) => throw null;
-        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 other, System.StringComparison comparison) => throw null;
-        public static bool operator ==(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 right) => throw null;
-        public static bool operator !=(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 right) => throw null;
-        public readonly override bool Equals(object? obj) => throw null;
-        public readonly override int GetHashCode() => throw null;
+        public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         [System.Diagnostics.CodeAnalysis.UnscopedRef]
         public readonly System.ReadOnlySpan<char> AsSpan() => throw null;
+        public void Clear() { }
+        public void Clear(bool zeroBuffer) { }
+        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 other) => throw null;
+        public readonly override bool Equals(object? obj) => throw null;
+        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 other, System.StringComparison comparison) => throw null;
+        public readonly override int GetHashCode() => throw null;
         System.Span<char> Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => throw null;
-        public static implicit operator Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16(string value) => throw null;
         public readonly override string ToString() => throw null;
         public readonly string ToString(string? format, System.IFormatProvider? formatProvider) => throw null;
         public readonly bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) => throw null;
+        public static bool operator ==(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 right) => throw null;
+        public static bool operator !=(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 right) => throw null;
+        public static implicit operator Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16(string value) => throw null;
     }
 
     [System.Runtime.CompilerServices.InterpolatedStringHandler]
     public struct FixedStringBuilder32 : Meziantou.Framework.FixedStringBuilder.IFixedString, Meziantou.Framework.FixedStringBuilder.IFixedString<Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32>, System.IEquatable<Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32>, System.IFormattable, System.ISpanFormattable
     {
-        public static int MaxLength { get => throw null; }
         public readonly int Length { get => throw null; }
-        public FixedStringBuilder32(int literalLength, int formattedCount) { }
+        public static int MaxLength { get => throw null; }
         public FixedStringBuilder32(string value) { }
-        public void Clear() { }
-        public void Clear(bool zeroBuffer) { }
-        public void AppendLiteral(System.ReadOnlySpan<char> value) { }
-        public void AppendFormatted(string value) { }
-        public void AppendFormatted(string value, string? format) { }
-        public void AppendFormatted(string value, int alignment) { }
-        public void AppendFormatted(string value, int alignment, string? format) { }
+        public FixedStringBuilder32(int literalLength, int formattedCount) { }
         public void AppendFormatted(System.ReadOnlySpan<char> value) { }
-        public void AppendFormatted(System.ReadOnlySpan<char> value, string? format) { }
+        public void AppendFormatted(string value) { }
         public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, string? format) { }
+        public void AppendFormatted(string value, int alignment) { }
+        public void AppendFormatted(string value, string? format) { }
         public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment, string? format) { }
+        public void AppendFormatted(string value, int alignment, string? format) { }
         public void AppendFormatted<T>(T value) { }
-        public void AppendFormatted<T>(T value, string? format) { }
         public void AppendFormatted<T>(T value, int alignment) { }
+        public void AppendFormatted<T>(T value, string? format) { }
         public void AppendFormatted<T>(T value, int alignment, string? format) { }
-        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 other) => throw null;
-        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 other, System.StringComparison comparison) => throw null;
-        public static bool operator ==(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 right) => throw null;
-        public static bool operator !=(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 right) => throw null;
-        public readonly override bool Equals(object? obj) => throw null;
-        public readonly override int GetHashCode() => throw null;
+        public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         [System.Diagnostics.CodeAnalysis.UnscopedRef]
         public readonly System.ReadOnlySpan<char> AsSpan() => throw null;
+        public void Clear() { }
+        public void Clear(bool zeroBuffer) { }
+        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 other) => throw null;
+        public readonly override bool Equals(object? obj) => throw null;
+        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 other, System.StringComparison comparison) => throw null;
+        public readonly override int GetHashCode() => throw null;
         System.Span<char> Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => throw null;
-        public static implicit operator Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32(string value) => throw null;
         public readonly override string ToString() => throw null;
         public readonly string ToString(string? format, System.IFormatProvider? formatProvider) => throw null;
         public readonly bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) => throw null;
+        public static bool operator ==(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 right) => throw null;
+        public static bool operator !=(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 right) => throw null;
+        public static implicit operator Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32(string value) => throw null;
     }
 
     [System.Runtime.CompilerServices.InterpolatedStringHandler]
     public struct FixedStringBuilder64 : Meziantou.Framework.FixedStringBuilder.IFixedString, Meziantou.Framework.FixedStringBuilder.IFixedString<Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64>, System.IEquatable<Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64>, System.IFormattable, System.ISpanFormattable
     {
-        public static int MaxLength { get => throw null; }
         public readonly int Length { get => throw null; }
-        public FixedStringBuilder64(int literalLength, int formattedCount) { }
+        public static int MaxLength { get => throw null; }
         public FixedStringBuilder64(string value) { }
-        public void Clear() { }
-        public void Clear(bool zeroBuffer) { }
-        public void AppendLiteral(System.ReadOnlySpan<char> value) { }
-        public void AppendFormatted(string value) { }
-        public void AppendFormatted(string value, string? format) { }
-        public void AppendFormatted(string value, int alignment) { }
-        public void AppendFormatted(string value, int alignment, string? format) { }
+        public FixedStringBuilder64(int literalLength, int formattedCount) { }
         public void AppendFormatted(System.ReadOnlySpan<char> value) { }
-        public void AppendFormatted(System.ReadOnlySpan<char> value, string? format) { }
+        public void AppendFormatted(string value) { }
         public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, string? format) { }
+        public void AppendFormatted(string value, int alignment) { }
+        public void AppendFormatted(string value, string? format) { }
         public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment, string? format) { }
+        public void AppendFormatted(string value, int alignment, string? format) { }
         public void AppendFormatted<T>(T value) { }
-        public void AppendFormatted<T>(T value, string? format) { }
         public void AppendFormatted<T>(T value, int alignment) { }
+        public void AppendFormatted<T>(T value, string? format) { }
         public void AppendFormatted<T>(T value, int alignment, string? format) { }
-        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 other) => throw null;
-        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 other, System.StringComparison comparison) => throw null;
-        public static bool operator ==(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 right) => throw null;
-        public static bool operator !=(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 right) => throw null;
-        public readonly override bool Equals(object? obj) => throw null;
-        public readonly override int GetHashCode() => throw null;
+        public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         [System.Diagnostics.CodeAnalysis.UnscopedRef]
         public readonly System.ReadOnlySpan<char> AsSpan() => throw null;
+        public void Clear() { }
+        public void Clear(bool zeroBuffer) { }
+        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 other) => throw null;
+        public readonly override bool Equals(object? obj) => throw null;
+        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 other, System.StringComparison comparison) => throw null;
+        public readonly override int GetHashCode() => throw null;
         System.Span<char> Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => throw null;
-        public static implicit operator Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64(string value) => throw null;
         public readonly override string ToString() => throw null;
         public readonly string ToString(string? format, System.IFormatProvider? formatProvider) => throw null;
         public readonly bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) => throw null;
+        public static bool operator ==(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 right) => throw null;
+        public static bool operator !=(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 right) => throw null;
+        public static implicit operator Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64(string value) => throw null;
     }
 
     [System.Runtime.CompilerServices.InterpolatedStringHandler]
     public struct FixedStringBuilder8 : Meziantou.Framework.FixedStringBuilder.IFixedString, Meziantou.Framework.FixedStringBuilder.IFixedString<Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8>, System.IEquatable<Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8>, System.IFormattable, System.ISpanFormattable
     {
-        public static int MaxLength { get => throw null; }
         public readonly int Length { get => throw null; }
-        public FixedStringBuilder8(int literalLength, int formattedCount) { }
+        public static int MaxLength { get => throw null; }
         public FixedStringBuilder8(string value) { }
-        public void Clear() { }
-        public void Clear(bool zeroBuffer) { }
-        public void AppendLiteral(System.ReadOnlySpan<char> value) { }
-        public void AppendFormatted(string value) { }
-        public void AppendFormatted(string value, string? format) { }
-        public void AppendFormatted(string value, int alignment) { }
-        public void AppendFormatted(string value, int alignment, string? format) { }
+        public FixedStringBuilder8(int literalLength, int formattedCount) { }
         public void AppendFormatted(System.ReadOnlySpan<char> value) { }
-        public void AppendFormatted(System.ReadOnlySpan<char> value, string? format) { }
+        public void AppendFormatted(string value) { }
         public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, string? format) { }
+        public void AppendFormatted(string value, int alignment) { }
+        public void AppendFormatted(string value, string? format) { }
         public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment, string? format) { }
+        public void AppendFormatted(string value, int alignment, string? format) { }
         public void AppendFormatted<T>(T value) { }
-        public void AppendFormatted<T>(T value, string? format) { }
         public void AppendFormatted<T>(T value, int alignment) { }
+        public void AppendFormatted<T>(T value, string? format) { }
         public void AppendFormatted<T>(T value, int alignment, string? format) { }
-        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 other) => throw null;
-        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 other, System.StringComparison comparison) => throw null;
-        public static bool operator ==(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 right) => throw null;
-        public static bool operator !=(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 right) => throw null;
-        public readonly override bool Equals(object? obj) => throw null;
-        public readonly override int GetHashCode() => throw null;
+        public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         [System.Diagnostics.CodeAnalysis.UnscopedRef]
         public readonly System.ReadOnlySpan<char> AsSpan() => throw null;
+        public void Clear() { }
+        public void Clear(bool zeroBuffer) { }
+        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 other) => throw null;
+        public readonly override bool Equals(object? obj) => throw null;
+        public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 other, System.StringComparison comparison) => throw null;
+        public readonly override int GetHashCode() => throw null;
         System.Span<char> Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => throw null;
-        public static implicit operator Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8(string value) => throw null;
         public readonly override string ToString() => throw null;
         public readonly string ToString(string? format, System.IFormatProvider? formatProvider) => throw null;
         public readonly bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) => throw null;
+        public static bool operator ==(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 right) => throw null;
+        public static bool operator !=(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 right) => throw null;
+        public static implicit operator Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8(string value) => throw null;
     }
 
     public interface IFixedString : System.IFormattable, System.ISpanFormattable
     {
-        static int MaxLength { get; }
         int Length { get; }
+        static int MaxLength { get; }
         void Clear();
         void Clear(bool zeroBuffer);
         System.Span<char> GetUnsafeFullSpan();

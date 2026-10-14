@@ -49,4 +49,7 @@ public abstract class PublicApiMember : PublicApiSymbol
 
     /// <summary>Gets the interface members implemented explicitly by this member, as recorded in the <c>MethodImpl</c> metadata table.</summary>
     public ImmutableArray<PublicApiMemberReference> ExplicitInterfaceImplementations { get; }
+
+    // The position of the member among the members of its declaring type
+    internal MemberSortKey SortKey => field ??= PublicApiOrdering.GetMemberSortKey(this);
 }

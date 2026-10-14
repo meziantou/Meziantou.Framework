@@ -9,16 +9,16 @@ namespace Meziantou.Framework
         public string BackgroundColor { get => throw null; }
         public string ForegroundColor { get => throw null; }
         public AvatarColorPair(string backgroundColor, string foregroundColor) { }
-        #nullable disable
-        public override string ToString() => throw null;
-        #nullable restore
-        public static bool operator !=(Meziantou.Framework.AvatarColorPair left, Meziantou.Framework.AvatarColorPair right) => throw null;
-        public static bool operator ==(Meziantou.Framework.AvatarColorPair left, Meziantou.Framework.AvatarColorPair right) => throw null;
-        public override int GetHashCode() => throw null;
+        public bool Equals(Meziantou.Framework.AvatarColorPair other) => throw null;
         #nullable disable
         public override bool Equals(object obj) => throw null;
         #nullable restore
-        public bool Equals(Meziantou.Framework.AvatarColorPair other) => throw null;
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.AvatarColorPair left, Meziantou.Framework.AvatarColorPair right) => throw null;
+        public static bool operator !=(Meziantou.Framework.AvatarColorPair left, Meziantou.Framework.AvatarColorPair right) => throw null;
     }
 
     public static class AvatarGenerator
@@ -30,10 +30,10 @@ namespace Meziantou.Framework
     public class AvatarOptions
     {
         public const int DefaultSize = 64;
-        public System.Collections.Generic.IList<Meziantou.Framework.AvatarColorPair> Palette { get => throw null; }
-        public string? Bigram { get => throw null; set { } }
         public string? AccessibleLabel { get => throw null; set { } }
+        public string? Bigram { get => throw null; set { } }
         public bool IsDecorative { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.AvatarColorPair> Palette { get => throw null; }
         public Meziantou.Framework.AvatarShape Shape { get => throw null; set { } }
         public int Size { get => throw null; set { } }
     }

@@ -9,11 +9,11 @@ namespace Meziantou.Framework.Win32
     {
         public static Meziantou.Framework.Win32.AmsiContext Create(string applicationName) => throw null;
         public Meziantou.Framework.Win32.AmsiSession CreateSession() => throw null;
-        public bool IsMalware(string payload, string contentName) => throw null;
-        public bool IsMalware(byte[] payload, string contentName) => throw null;
-        public Meziantou.Framework.Win32.AmsiResult Scan(string payload, string contentName) => throw null;
-        public Meziantou.Framework.Win32.AmsiResult Scan(byte[] payload, string contentName) => throw null;
         public void Dispose() { }
+        public bool IsMalware(byte[] payload, string contentName) => throw null;
+        public bool IsMalware(string payload, string contentName) => throw null;
+        public Meziantou.Framework.Win32.AmsiResult Scan(byte[] payload, string contentName) => throw null;
+        public Meziantou.Framework.Win32.AmsiResult Scan(string payload, string contentName) => throw null;
     }
 
     public enum AmsiResult
@@ -27,18 +27,18 @@ namespace Meziantou.Framework.Win32
 
     public static class AmsiResultExtensions
     {
-        public static bool IsMalware(this Meziantou.Framework.Win32.AmsiResult result) => throw null;
         public static bool IsBlockedByAdmin(this Meziantou.Framework.Win32.AmsiResult result) => throw null;
+        public static bool IsMalware(this Meziantou.Framework.Win32.AmsiResult result) => throw null;
         public static bool ShouldBlock(this Meziantou.Framework.Win32.AmsiResult result) => throw null;
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows10.0.10240")]
     public sealed class AmsiSession : System.IDisposable
     {
-        public bool IsMalware(string payload, string contentName) => throw null;
-        public bool IsMalware(byte[] payload, string contentName) => throw null;
-        public Meziantou.Framework.Win32.AmsiResult Scan(string payload, string contentName) => throw null;
-        public Meziantou.Framework.Win32.AmsiResult Scan(byte[] payload, string contentName) => throw null;
         public void Dispose() { }
+        public bool IsMalware(byte[] payload, string contentName) => throw null;
+        public bool IsMalware(string payload, string contentName) => throw null;
+        public Meziantou.Framework.Win32.AmsiResult Scan(byte[] payload, string contentName) => throw null;
+        public Meziantou.Framework.Win32.AmsiResult Scan(string payload, string contentName) => throw null;
     }
 }

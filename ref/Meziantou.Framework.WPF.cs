@@ -6,21 +6,21 @@ namespace Meziantou.Framework.WPF
 {
     public sealed class BooleanToValueConverter : System.Windows.Data.IValueConverter
     {
-        public object? TrueValue { get => throw null; set { } }
         public object? FalseValue { get => throw null; set { } }
         public object? NullValue { get => throw null; set { } }
+        public object? TrueValue { get => throw null; set { } }
         public object? Convert(object? value, System.Type targetType, object? parameter, System.Globalization.CultureInfo? culture) => throw null;
         public object? ConvertBack(object? value, System.Type targetType, object? parameter, System.Globalization.CultureInfo? culture) => throw null;
     }
 
     public static class DelegateCommand
     {
-        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action? execute) => throw null;
         public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action<object?>? execute) => throw null;
-        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action? execute, System.Func<bool>? canExecute) => throw null;
-        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action<object?>? execute, System.Func<object?, bool>? canExecute) => throw null;
+        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action? execute) => throw null;
         public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<System.Threading.Tasks.Task>? execute) => throw null;
         public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<object?, System.Threading.Tasks.Task>? execute) => throw null;
+        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action<object?>? execute, System.Func<object?, bool>? canExecute) => throw null;
+        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action? execute, System.Func<bool>? canExecute) => throw null;
         public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<System.Threading.Tasks.Task>? execute, System.Func<bool>? canExecute) => throw null;
         public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<object?, System.Threading.Tasks.Task>? execute, System.Func<object?, bool>? canExecute) => throw null;
     }
@@ -56,8 +56,8 @@ namespace Meziantou.Framework.WPF
         public string Name { get => throw null; }
         public object Value { get => throw null; }
         public LocalizedEnumValue(System.Enum value) { }
-        public LocalizedEnumValue(System.Enum value, string name) { }
         public LocalizedEnumValue(System.Enum value, System.ComponentModel.DataAnnotations.DisplayAttribute displayAttribute) { }
+        public LocalizedEnumValue(System.Enum value, string name) { }
         public override string ToString() => throw null;
     }
 

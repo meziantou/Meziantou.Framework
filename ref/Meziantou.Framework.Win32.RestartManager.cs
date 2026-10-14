@@ -7,24 +7,24 @@ namespace Meziantou.Framework.Win32
     [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
     public sealed class RestartManager : System.IDisposable
     {
-        public string SessionKey { get => throw null; }
         public Meziantou.Framework.Win32.RestartManagerRebootReason RebootReason { get => throw null; }
+        public string SessionKey { get => throw null; }
+        public void CancelCurrentTask() { }
         public static Meziantou.Framework.Win32.RestartManager CreateSession() => throw null;
+        public void Dispose() { }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Win32.RestartManagerProcessInfo> GetLockingProcesses() => throw null;
+        public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetProcessesLockingFile(string path) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetProcessesLockingFiles(string[] paths) => throw null;
+        public System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetProcessesLockingResources() => throw null;
+        public static bool IsFileLocked(string path) => throw null;
+        public bool IsResourcesLocked() => throw null;
         public static Meziantou.Framework.Win32.RestartManager JoinSession(string sessionKey) => throw null;
         public void RegisterFile(string path) { }
         public void RegisterFiles(string[] paths) { }
-        public bool IsResourcesLocked() => throw null;
-        public System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetProcessesLockingResources() => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Win32.RestartManagerProcessInfo> GetLockingProcesses() => throw null;
-        public void Shutdown(Meziantou.Framework.Win32.RestartManagerShutdownType action) { }
-        public void Shutdown(Meziantou.Framework.Win32.RestartManagerShutdownType action, Meziantou.Framework.Win32.RestartManagerWriteStatusCallback? statusCallback) { }
         public void Restart() { }
         public void Restart(Meziantou.Framework.Win32.RestartManagerWriteStatusCallback? statusCallback) { }
-        public void CancelCurrentTask() { }
-        public void Dispose() { }
-        public static bool IsFileLocked(string path) => throw null;
-        public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetProcessesLockingFile(string path) => throw null;
-        public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetProcessesLockingFiles(string[] paths) => throw null;
+        public void Shutdown(Meziantou.Framework.Win32.RestartManagerShutdownType action) { }
+        public void Shutdown(Meziantou.Framework.Win32.RestartManagerShutdownType action, Meziantou.Framework.Win32.RestartManagerWriteStatusCallback? statusCallback) { }
     }
 
     [System.Flags]
@@ -55,14 +55,14 @@ namespace Meziantou.Framework.Win32
     [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
     public sealed class RestartManagerProcessInfo
     {
-        public int ProcessId { get => throw null; }
-        public System.DateTime StartTime { get => throw null; }
         public string ApplicationName { get => throw null; }
-        public string ServiceShortName { get => throw null; }
         public Meziantou.Framework.Win32.RestartManagerApplicationType ApplicationType { get => throw null; }
+        public bool IsRestartable { get => throw null; }
+        public int ProcessId { get => throw null; }
+        public string ServiceShortName { get => throw null; }
+        public System.DateTime StartTime { get => throw null; }
         public Meziantou.Framework.Win32.RestartManagerApplicationStatus Status { get => throw null; }
         public int TerminalServicesSessionId { get => throw null; }
-        public bool IsRestartable { get => throw null; }
     }
 
     [System.Flags]

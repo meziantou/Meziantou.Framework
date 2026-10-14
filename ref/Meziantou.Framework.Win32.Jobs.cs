@@ -16,12 +16,12 @@ namespace Meziantou.Framework.Win32
 
     public sealed class JobIoRateLimits
     {
+        public uint BaseIoSize { get => throw null; set { } }
         public Meziantou.Framework.Win32.JobIoRateFlags ControlFlags { get => throw null; set { } }
-        public long MaxIops { get => throw null; set { } }
         public long MaxBandwidth { get => throw null; set { } }
+        public long MaxIops { get => throw null; set { } }
         public long ReservationIops { get => throw null; set { } }
         public string? VolumeName { get => throw null; set { } }
-        public uint BaseIoSize { get => throw null; set { } }
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
@@ -30,95 +30,95 @@ namespace Meziantou.Framework.Win32
         public bool CreatedNew { get => throw null; }
         public JobObject(string? name) { }
         public JobObject(string? name, bool inheritHandle) { }
-        public static Meziantou.Framework.Win32.JobObject Open(Meziantou.Framework.Win32.JobObjectAccessRights desiredAccess, bool inherited, string name) => throw null;
-        public static bool TryOpen(Meziantou.Framework.Win32.JobObjectAccessRights desiredAccess, bool inherited, string name, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Win32.JobObject? jobObject) => throw null;
-        public void Dispose() { }
-        public void Terminate() { }
-        public void Terminate(int exitCode) { }
         public void AssignProcess(System.Diagnostics.Process process) { }
         public void AssignProcess(nint processHandle) { }
-        public void SetLimits(Meziantou.Framework.Win32.JobObjectLimits limits) { }
-        public void SetUIRestrictions(Meziantou.Framework.Win32.JobObjectUILimit limits) { }
-        public void SetCpuRateHardCap(int cpuRate) { }
-        public Meziantou.Framework.Win32.JobObjectCpuHardCap GetCpuRateHardCap() => throw null;
         public void DisableCpuRateHardCap() { }
-        public void SetCpuRateWeight(int weight) { }
-        public void SetCpuRate(int minRate, int maxRate) { }
-        public void SetNetRateLimits(ulong maxBandwidth) { }
-        public void SetSecurityLimits(Meziantou.Framework.Win32.JobObjectSecurityLimit securityLimit) { }
-        [System.Runtime.Versioning.SupportedOSPlatform("windows10.0.10240")]
-        public void SetIoLimits(Meziantou.Framework.Win32.JobIoRateLimits limits) { }
+        public void Dispose() { }
         public Meziantou.Framework.Win32.JobObjectBasicAccountingInformation GetBasicAccountingInformation() => throw null;
         public Meziantou.Framework.Win32.JobObjectBasicAndIoAccountingInformation GetBasicAndIoAccountingInformation() => throw null;
+        public Meziantou.Framework.Win32.JobObjectCpuHardCap GetCpuRateHardCap() => throw null;
         public Meziantou.Framework.Win32.JobObjectMemoryAccountingInformation GetMemoryAccountingInformation() => throw null;
         public bool IsAssignedToProcess(System.Diagnostics.Process process) => throw null;
+        public static Meziantou.Framework.Win32.JobObject Open(Meziantou.Framework.Win32.JobObjectAccessRights desiredAccess, bool inherited, string name) => throw null;
+        public void SetCpuRate(int minRate, int maxRate) { }
+        public void SetCpuRateHardCap(int cpuRate) { }
+        public void SetCpuRateWeight(int weight) { }
+        [System.Runtime.Versioning.SupportedOSPlatform("windows10.0.10240")]
+        public void SetIoLimits(Meziantou.Framework.Win32.JobIoRateLimits limits) { }
+        public void SetLimits(Meziantou.Framework.Win32.JobObjectLimits limits) { }
+        public void SetNetRateLimits(ulong maxBandwidth) { }
+        public void SetSecurityLimits(Meziantou.Framework.Win32.JobObjectSecurityLimit securityLimit) { }
+        public void SetUIRestrictions(Meziantou.Framework.Win32.JobObjectUILimit limits) { }
+        public void Terminate() { }
+        public void Terminate(int exitCode) { }
+        public static bool TryOpen(Meziantou.Framework.Win32.JobObjectAccessRights desiredAccess, bool inherited, string name, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Win32.JobObject? jobObject) => throw null;
     }
 
     [System.Flags]
     public enum JobObjectAccessRights
     {
-        Delete = 65536,
-        ReadControl = 131072,
-        WriteDAC = 262144,
-        WriteOwner = 524288,
-        Synchronize = 1048576,
         AssignProcess = 1,
         SetAttributes = 2,
         Query = 4,
         Terminate = 8,
         SetSecurityAttributes = 16,
         Impersonate = 32,
+        Delete = 65536,
+        ReadControl = 131072,
+        WriteDAC = 262144,
+        WriteOwner = 524288,
+        Synchronize = 1048576,
         AllAccess = 2031679,
     }
 
     public sealed class JobObjectBasicAccountingInformation : System.IEquatable<Meziantou.Framework.Win32.JobObjectBasicAccountingInformation>
     {
-        public required System.TimeSpan TotalUserTime { get => throw null; init { } }
-        public required System.TimeSpan TotalKernelTime { get => throw null; init { } }
-        public required System.TimeSpan ThisPeriodTotalUserTime { get => throw null; init { } }
+        public required uint ActiveProcesses { get => throw null; init { } }
         public required System.TimeSpan ThisPeriodTotalKernelTime { get => throw null; init { } }
+        public required System.TimeSpan ThisPeriodTotalUserTime { get => throw null; init { } }
+        public required System.TimeSpan TotalKernelTime { get => throw null; init { } }
         public required uint TotalPageFaultCount { get => throw null; init { } }
         public required uint TotalProcesses { get => throw null; init { } }
-        public required uint ActiveProcesses { get => throw null; init { } }
         public required uint TotalTerminatedProcesses { get => throw null; init { } }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.Win32.JobObjectBasicAccountingInformation? left, Meziantou.Framework.Win32.JobObjectBasicAccountingInformation? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.Win32.JobObjectBasicAccountingInformation? left, Meziantou.Framework.Win32.JobObjectBasicAccountingInformation? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public required System.TimeSpan TotalUserTime { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.Win32.JobObjectBasicAccountingInformation? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Win32.JobObjectBasicAccountingInformation? left, Meziantou.Framework.Win32.JobObjectBasicAccountingInformation? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Win32.JobObjectBasicAccountingInformation? left, Meziantou.Framework.Win32.JobObjectBasicAccountingInformation? right) => throw null;
     }
 
     public sealed class JobObjectBasicAndIoAccountingInformation : System.IEquatable<Meziantou.Framework.Win32.JobObjectBasicAndIoAccountingInformation>
     {
         public required Meziantou.Framework.Win32.JobObjectBasicAccountingInformation BasicInfo { get => throw null; init { } }
         public required Meziantou.Framework.Win32.JobObjectIoCounters IoInfo { get => throw null; init { } }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.Win32.JobObjectBasicAndIoAccountingInformation? left, Meziantou.Framework.Win32.JobObjectBasicAndIoAccountingInformation? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.Win32.JobObjectBasicAndIoAccountingInformation? left, Meziantou.Framework.Win32.JobObjectBasicAndIoAccountingInformation? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
         public bool Equals(Meziantou.Framework.Win32.JobObjectBasicAndIoAccountingInformation? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Win32.JobObjectBasicAndIoAccountingInformation? left, Meziantou.Framework.Win32.JobObjectBasicAndIoAccountingInformation? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Win32.JobObjectBasicAndIoAccountingInformation? left, Meziantou.Framework.Win32.JobObjectBasicAndIoAccountingInformation? right) => throw null;
     }
 
     public readonly struct JobObjectCpuHardCap : System.IEquatable<Meziantou.Framework.Win32.JobObjectCpuHardCap>
     {
         public bool Enabled { get => throw null; init { } }
+        public int MaxRate { get => throw null; init { } }
+        public int MinRate { get => throw null; init { } }
         public Meziantou.Framework.Win32.JobObjectCpuRateControlMode Mode { get => throw null; init { } }
         public int Rate { get => throw null; init { } }
         public int Weight { get => throw null; init { } }
-        public int MinRate { get => throw null; init { } }
-        public int MaxRate { get => throw null; init { } }
-        #nullable disable
-        public override string ToString() => throw null;
-        #nullable restore
-        public static bool operator !=(Meziantou.Framework.Win32.JobObjectCpuHardCap left, Meziantou.Framework.Win32.JobObjectCpuHardCap right) => throw null;
-        public static bool operator ==(Meziantou.Framework.Win32.JobObjectCpuHardCap left, Meziantou.Framework.Win32.JobObjectCpuHardCap right) => throw null;
-        public override int GetHashCode() => throw null;
+        public bool Equals(Meziantou.Framework.Win32.JobObjectCpuHardCap other) => throw null;
         #nullable disable
         public override bool Equals(object obj) => throw null;
         #nullable restore
-        public bool Equals(Meziantou.Framework.Win32.JobObjectCpuHardCap other) => throw null;
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Win32.JobObjectCpuHardCap left, Meziantou.Framework.Win32.JobObjectCpuHardCap right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Win32.JobObjectCpuHardCap left, Meziantou.Framework.Win32.JobObjectCpuHardCap right) => throw null;
     }
 
     public enum JobObjectCpuRateControlMode
@@ -131,18 +131,18 @@ namespace Meziantou.Framework.Win32
 
     public sealed class JobObjectIoCounters : System.IEquatable<Meziantou.Framework.Win32.JobObjectIoCounters>
     {
-        public required ulong ReadOperationCount { get => throw null; init { } }
-        public required ulong WriteOperationCount { get => throw null; init { } }
         public required ulong OtherOperationCount { get => throw null; init { } }
-        public required ulong ReadTransferCount { get => throw null; init { } }
-        public required ulong WriteTransferCount { get => throw null; init { } }
         public required ulong OtherTransferCount { get => throw null; init { } }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.Win32.JobObjectIoCounters? left, Meziantou.Framework.Win32.JobObjectIoCounters? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.Win32.JobObjectIoCounters? left, Meziantou.Framework.Win32.JobObjectIoCounters? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public required ulong ReadOperationCount { get => throw null; init { } }
+        public required ulong ReadTransferCount { get => throw null; init { } }
+        public required ulong WriteOperationCount { get => throw null; init { } }
+        public required ulong WriteTransferCount { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.Win32.JobObjectIoCounters? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Win32.JobObjectIoCounters? left, Meziantou.Framework.Win32.JobObjectIoCounters? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Win32.JobObjectIoCounters? left, Meziantou.Framework.Win32.JobObjectIoCounters? right) => throw null;
     }
 
     [System.Flags]
@@ -157,29 +157,29 @@ namespace Meziantou.Framework.Win32
 
     public sealed class JobObjectLimits
     {
-        public Meziantou.Framework.Win32.JobObjectLimitFlags Flags { get => throw null; set { } }
-        public long? PerProcessUserTimeLimit { get => throw null; set { } }
-        public long? PerJobUserTimeLimit { get => throw null; set { } }
-        public nuint? MinimumWorkingSetSize { get => throw null; set { } }
-        public nuint? MaximumWorkingSetSize { get => throw null; set { } }
         public uint? ActiveProcessLimit { get => throw null; set { } }
         public nuint? Affinity { get => throw null; set { } }
-        public uint? PriorityClass { get => throw null; set { } }
-        public uint? SchedulingClass { get => throw null; set { } }
-        public nuint? ProcessMemoryLimit { get => throw null; set { } }
+        public Meziantou.Framework.Win32.JobObjectLimitFlags Flags { get => throw null; set { } }
         public nuint? JobMemoryLimit { get => throw null; set { } }
+        public nuint? MaximumWorkingSetSize { get => throw null; set { } }
+        public nuint? MinimumWorkingSetSize { get => throw null; set { } }
+        public long? PerJobUserTimeLimit { get => throw null; set { } }
+        public long? PerProcessUserTimeLimit { get => throw null; set { } }
+        public uint? PriorityClass { get => throw null; set { } }
+        public nuint? ProcessMemoryLimit { get => throw null; set { } }
+        public uint? SchedulingClass { get => throw null; set { } }
     }
 
     public sealed class JobObjectMemoryAccountingInformation : System.IEquatable<Meziantou.Framework.Win32.JobObjectMemoryAccountingInformation>
     {
-        public required ulong PeakProcessMemoryUsed { get => throw null; init { } }
         public required ulong PeakJobMemoryUsed { get => throw null; init { } }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.Win32.JobObjectMemoryAccountingInformation? left, Meziantou.Framework.Win32.JobObjectMemoryAccountingInformation? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.Win32.JobObjectMemoryAccountingInformation? left, Meziantou.Framework.Win32.JobObjectMemoryAccountingInformation? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public required ulong PeakProcessMemoryUsed { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.Win32.JobObjectMemoryAccountingInformation? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Win32.JobObjectMemoryAccountingInformation? left, Meziantou.Framework.Win32.JobObjectMemoryAccountingInformation? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Win32.JobObjectMemoryAccountingInformation? left, Meziantou.Framework.Win32.JobObjectMemoryAccountingInformation? right) => throw null;
     }
 
     [System.Flags]

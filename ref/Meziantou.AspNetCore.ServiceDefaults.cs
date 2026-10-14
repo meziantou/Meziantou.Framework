@@ -27,8 +27,8 @@ namespace Meziantou.AspNetCore.ServiceDefaults
 
     public sealed class MeziantouOpenApiConfiguration
     {
-        public bool Enabled { get => throw null; set { } }
         public System.Action<Microsoft.AspNetCore.OpenApi.OpenApiOptions>? ConfigureOpenApi { get => throw null; set { } }
+        public bool Enabled { get => throw null; set { } }
         [System.Diagnostics.CodeAnalysis.StringSyntax("Route")]
         public string RoutePattern { get => throw null; set { } }
     }
@@ -42,22 +42,22 @@ namespace Meziantou.AspNetCore.ServiceDefaults
 
     public static class MeziantouServiceDefaults
     {
+        public static void MapMeziantouDefaultEndpoints(this Microsoft.AspNetCore.Builder.WebApplication app) { }
         public static TBuilder TryUseMeziantouConventions<TBuilder>(this TBuilder builder, System.Action<Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaultsOptions>? configure = null) where TBuilder : Microsoft.Extensions.Hosting.IHostApplicationBuilder => throw null;
         public static TBuilder UseMeziantouConventions<TBuilder>(this TBuilder builder, System.Action<Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaultsOptions>? configure = null) where TBuilder : Microsoft.Extensions.Hosting.IHostApplicationBuilder => throw null;
-        public static void MapMeziantouDefaultEndpoints(this Microsoft.AspNetCore.Builder.WebApplication app) { }
     }
 
     public sealed class MeziantouServiceDefaultsOptions
     {
-        public bool ValidateDependencyContainersOnStartup { get => throw null; set { } }
+        public Meziantou.AspNetCore.ServiceDefaults.MeziantouAntiForgeryConfiguration AntiForgery { get => throw null; }
+        public Meziantou.AspNetCore.ServiceDefaults.MeziantouCachingConfiguration Caching { get => throw null; }
+        public System.Action<System.Text.Json.JsonSerializerOptions>? ConfigureJsonOptions { get => throw null; set { } }
+        public Meziantou.AspNetCore.ServiceDefaults.MeziantouForwardedHeadersConfiguration ForwardedHeaders { get => throw null; }
         public Meziantou.AspNetCore.ServiceDefaults.MeziantouHttpsConfiguration Https { get => throw null; }
         public Meziantou.AspNetCore.ServiceDefaults.MeziantouOpenApiConfiguration OpenApi { get => throw null; }
         public Meziantou.AspNetCore.ServiceDefaults.MeziantouOpenTelemetryConfiguration OpenTelemetry { get => throw null; }
-        public System.Action<System.Text.Json.JsonSerializerOptions>? ConfigureJsonOptions { get => throw null; set { } }
-        public Meziantou.AspNetCore.ServiceDefaults.MeziantouAntiForgeryConfiguration AntiForgery { get => throw null; }
         public Meziantou.AspNetCore.ServiceDefaults.MeziantouStaticAssetsConfiguration StaticAssets { get => throw null; }
-        public Meziantou.AspNetCore.ServiceDefaults.MeziantouForwardedHeadersConfiguration ForwardedHeaders { get => throw null; }
-        public Meziantou.AspNetCore.ServiceDefaults.MeziantouCachingConfiguration Caching { get => throw null; }
+        public bool ValidateDependencyContainersOnStartup { get => throw null; set { } }
     }
 
     public sealed class MeziantouStaticAssetsConfiguration

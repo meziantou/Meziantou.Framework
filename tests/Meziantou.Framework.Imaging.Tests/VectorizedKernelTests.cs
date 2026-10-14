@@ -268,6 +268,30 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegDequantizationMatchesTheScalarReference()
+    {
+        var random = new Random(21);
+        var coefficients = new short[64];
+        var quantization = new double[64];
+        for (var round = 0; round < 2_000; round++)
+        {
+            // Every magnitude of a coefficient and of a 16-bit quantization value, and the extremes of both
+            for (var i = 0; i < 64; i++)
+            {
+                coefficients[i] = round % 5 == 0 ? (random.Next(2) == 0 ? short.MinValue : short.MaxValue) : (short)random.Next(short.MinValue, short.MaxValue + 1);
+                quantization[i] = round % 7 == 0 ? ushort.MaxValue : random.Next(1, ushort.MaxValue + 1);
+            }
+
+            var expected = new double[64];
+            var actual = new double[64];
+            JpegIdct.DequantizeScalar(coefficients, quantization, expected);
+            JpegIdct.Dequantize(coefficients, quantization, actual);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
     public void JpegSparseBlocksAreTheTopLeftQuadrant()
     {
         var coefficients = new short[64];

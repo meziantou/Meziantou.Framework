@@ -138,6 +138,51 @@ internal static class JpegIdct
         }
     }
 
+    /// <summary>Dequantizes the coefficients of a block: <c>block[i] = coefficients[i] * (double)quantization[i]</c>, exactly.</summary>
+    /// <param name="coefficients">The 64 quantized coefficients.</param>
+    /// <param name="quantization">The 64 quantization values, as doubles.</param>
+    /// <param name="block">The 64 dequantized coefficients.</param>
+    /// <remarks>
+    /// With 128-bit hardware vectors, the coefficients are widened and converted two at a time; every conversion is exact
+    /// and the product is the same IEEE multiplication, so the values are identical.
+    /// </remarks>
+    public static void Dequantize(ReadOnlySpan<short> coefficients, ReadOnlySpan<double> quantization, Span<double> block)
+    {
+        if (!Vector128.IsHardwareAccelerated)
+        {
+            DequantizeScalar(coefficients, quantization, block);
+            return;
+        }
+
+        // Bounds are checked once here; the loop below uses unchecked references
+        ref var source = ref unsafe(MemoryMarshal.GetReference(coefficients[..64]));
+        ref var scales = ref unsafe(MemoryMarshal.GetReference(quantization[..64]));
+        ref var destination = ref unsafe(MemoryMarshal.GetReference(block[..64]));
+        for (var i = 0; i < 64; i += 8)
+        {
+            var (low, high) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref source, (nuint)i)));
+            Store(Vector128.WidenLower(low), ref scales, ref destination, i);
+            Store(Vector128.WidenUpper(low), ref scales, ref destination, i + 2);
+            Store(Vector128.WidenLower(high), ref scales, ref destination, i + 4);
+            Store(Vector128.WidenUpper(high), ref scales, ref destination, i + 6);
+        }
+
+        static void Store(Vector128<long> values, ref double scales, ref double destination, int index)
+        {
+            var product = Vector128.ConvertToDouble(values) * unsafe(Vector128.LoadUnsafe(ref scales, (nuint)index));
+            unsafe { product.StoreUnsafe(ref destination, (nuint)index); }
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="Dequantize"/>.</summary>
+    internal static void DequantizeScalar(ReadOnlySpan<short> coefficients, ReadOnlySpan<double> quantization, Span<double> block)
+    {
+        for (var i = 0; i < 64; i++)
+        {
+            block[i] = coefficients[i] * quantization[i];
+        }
+    }
+
     /// <summary>
     /// Gets a value indicating whether the natural indexes of the non-zero coefficients of a block, ORed together, are all in
     /// the top-left 4x4 corner: row and column below 4 (bits 5 and 2 clear).

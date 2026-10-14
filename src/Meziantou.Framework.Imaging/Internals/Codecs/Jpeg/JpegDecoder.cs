@@ -657,11 +657,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver
 
         _writer = CreateRowWriter(scope);
         var block = new double[64];
+        var scales = new double[64];
         for (var row = 0; row < _mcusY; row++)
         {
             foreach (var component in _components)
             {
-                TransformBlockRows(component, row, block);
+                TransformBlockRows(component, row, block, scales);
             }
 
             if (row > 0)
@@ -675,9 +676,14 @@ internal sealed class JpegDecoder : JpegDecodeObserver
     }
 
     /// <summary>Dequantizes and transforms the blocks of one MCU row of a component into its sample plane.</summary>
-    private static void TransformBlockRows(JpegFrameComponent component, int mcuRow, double[] block)
+    private static void TransformBlockRows(JpegFrameComponent component, int mcuRow, double[] block, double[] scales)
     {
         var quantization = component.LatchedQuantization!;
+        for (var i = 0; i < 64; i++)
+        {
+            scales[i] = quantization[i];
+        }
+
         var stride = component.Stride;
         var precision = component.Precision;
         for (var blockRow = mcuRow * component.VerticalSampling; blockRow < (mcuRow + 1) * component.VerticalSampling; blockRow++)
@@ -702,10 +708,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
                     continue;
                 }
 
-                for (var i = 0; i < 64; i++)
-                {
-                    block[i] = coefficients[i] * (double)quantization[i];
-                }
+                JpegIdct.Dequantize(coefficients, scales, block);
 
                 if (precision > 8)
                 {

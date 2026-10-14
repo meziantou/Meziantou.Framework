@@ -2978,6 +2978,58 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPLosslessTransformsMatchTheScalarReferences()
+    {
+        // Every predictor mode (14 and 15 included) on tiles of every size, with random, extreme and nearly flat pixels so that
+        // the clamps and the select ties are taken; color transforms with every sign; widths around the vector size
+        var random = new Random(4051);
+        for (var round = 0; round < 1500; round++)
+        {
+            var width = round < 100 ? 1 + (round % 50) : random.Next(1, 140);
+            var height = random.Next(1, 6);
+            var sizeBits = random.Next(2, 6);
+            var pixels = new uint[width * height];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                pixels[i] = (round % 4) switch
+                {
+                    0 => (uint)random.Next() ^ ((uint)random.Next() << 16),
+                    1 => random.Next(2) == 0 ? 0u : 0xFFFFFFFFu,
+                    2 => 0x80808080u + (uint)random.Next(-2, 3),
+                    _ => (uint)(random.Next(0x100) * 0x01010101) ^ (uint)random.Next(0, 4),
+                };
+            }
+
+            var tilesWidth = (width + (1 << sizeBits) - 1) >> sizeBits;
+            var tilesHeight = (height + (1 << sizeBits) - 1) >> sizeBits;
+            var tiles = new uint[tilesWidth * tilesHeight];
+            for (var i = 0; i < tiles.Length; i++)
+            {
+                tiles[i] = (uint)random.Next() ^ ((uint)random.Next() << 16);
+            }
+
+            var expected = pixels.ToArray();
+            var actual = pixels.ToArray();
+            Vp8LTransforms.InversePredictorScalar(expected, width, height, sizeBits, tiles, tilesWidth);
+            Vp8LTransforms.InversePredictor(actual, width, height, sizeBits, tiles, tilesWidth);
+            Assert.Equal(expected, actual);
+
+            expected = pixels.ToArray();
+            actual = pixels.ToArray();
+            Vp8LTransforms.InverseColorTransformScalar(expected, width, height, sizeBits, tiles, tilesWidth);
+            Vp8LTransforms.InverseColorTransform(actual, width, height, sizeBits, tiles, tilesWidth);
+            Assert.Equal(expected, actual);
+
+            expected = pixels.ToArray();
+            actual = pixels.ToArray();
+            Vp8LTransforms.AddGreenScalar(expected);
+            Vp8LTransforms.AddGreen(actual);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void ChecksumsMatchTheByteAtATimeReferences()
     {
         // Published check values: CRC-32 of "123456789" is 0xCBF43926, Adler-32 of "Wikipedia" is 0x11E60398

@@ -6,12 +6,12 @@ namespace Meziantou.AspNetCore.Components
 {
     public class AnchorNavigation : Microsoft.AspNetCore.Components.ComponentBase, System.IAsyncDisposable
     {
-        #nullable disable
-        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
-        #nullable restore
         protected override void OnInitialized() { }
         protected override System.Threading.Tasks.Task OnAfterRenderAsync(bool firstRender) => throw null;
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+        #nullable disable
+        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
+        #nullable restore
     }
 
     public sealed class ClipboardService
@@ -33,12 +33,12 @@ namespace Meziantou.AspNetCore.Components
         public System.Linq.Expressions.Expression<System.Func<TRowData, object>>? Expression { get => throw null; set { } }
         public string? Format { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.RenderFragment<TRowData>? ChildContent { get => throw null; set { } }
-        #nullable disable
-        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
-        #nullable restore
         protected override void OnInitialized() { }
         public void Dispose() { }
         protected override void OnParametersSet() { }
+        #nullable disable
+        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
+        #nullable restore
     }
 
     public class DataGrid<TRowData> : Microsoft.AspNetCore.Components.ComponentBase
@@ -76,10 +76,10 @@ namespace Meziantou.AspNetCore.Components
         public bool EnableFieldValidation { get => throw null; set { } }
         public string? EditorClass { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.RenderFragment<Meziantou.AspNetCore.Components.GenericFormField<TModel>>? FieldTemplate { get => throw null; set { } }
+        protected override void OnParametersSet() { }
         #nullable disable
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
         #nullable restore
-        protected override void OnParametersSet() { }
     }
 
     public sealed class InfiniteScrollingItemsProviderRequest
@@ -97,14 +97,14 @@ namespace Meziantou.AspNetCore.Components
         public Microsoft.AspNetCore.Components.RenderFragment<T>? ItemTemplate { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.RenderFragment? LoadingTemplate { get => throw null; set { } }
         public string LastItemIndicatorElement { get => throw null; set { } }
-        #nullable disable
-        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
-        #nullable restore
         public System.Threading.Tasks.Task LoadMoreItems() => throw null;
         public System.Threading.Tasks.Task RefreshDataAsync() => throw null;
         protected override void OnParametersSet() { }
         protected override System.Threading.Tasks.Task OnAfterRenderAsync(bool firstRender) => throw null;
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+        #nullable disable
+        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
+        #nullable restore
     }
 
     public class InputDateTime<TValue> : Microsoft.AspNetCore.Components.Forms.InputDate<TValue>
@@ -180,10 +180,10 @@ namespace Meziantou.AspNetCore.Components
         public Microsoft.AspNetCore.Components.RenderFragment<T>? ItemTemplate { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.RenderFragment? ItemSeparatorTemplate { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.RenderFragment? EmptyTemplate { get => throw null; set { } }
+        protected override void OnParametersSet() { }
         #nullable disable
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
         #nullable restore
-        protected override void OnParametersSet() { }
     }
 
     public sealed class TimeZoneService : System.IAsyncDisposable

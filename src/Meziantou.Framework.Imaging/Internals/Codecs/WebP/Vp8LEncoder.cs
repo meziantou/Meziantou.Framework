@@ -317,10 +317,13 @@ internal sealed class Vp8LEncoder : IDisposable
         var tilesY = Vp8LDecoder.DivRoundUp(height, bits);
         var elements = RentPixels((long)tilesX * tilesY);
         var histogram = new int[256];
+        var fixedHistogram = new int[256];
         var tileSize = 1 << (2 * bits);
         var green = new int[tileSize];
         var red = new int[tileSize];
         var blue = new int[tileSize];
+        var movingValues = new int[tileSize];
+        var movingMultipliers = new int[tileSize];
         for (var ty = 0; ty < tilesY; ty++)
         {
             _cancellationToken.ThrowIfCancellationRequested();
@@ -344,15 +347,15 @@ internal sealed class Vp8LEncoder : IDisposable
                 }
 
                 // Green to red first (red only depends on it), then green to blue, then red to blue on the result
-                var greenToRed = SearchColorElement(red.AsSpan(0, count), green.AsSpan(0, count), histogram);
-                var greenToBlue = SearchColorElement(blue.AsSpan(0, count), green.AsSpan(0, count), histogram);
+                var greenToRed = SearchColorElement(red.AsSpan(0, count), green.AsSpan(0, count), histogram, fixedHistogram, movingValues, movingMultipliers);
+                var greenToBlue = SearchColorElement(blue.AsSpan(0, count), green.AsSpan(0, count), histogram, fixedHistogram, movingValues, movingMultipliers);
                 for (var i = 0; i < count; i++)
                 {
                     blue[i] = (blue[i] - Vp8LTransforms.ColorTransformDelta(greenToBlue, (sbyte)green[i])) & 0xFF;
                     red[i] = (sbyte)red[i];
                 }
 
-                var redToBlue = SearchColorElement(blue.AsSpan(0, count), red.AsSpan(0, count), histogram);
+                var redToBlue = SearchColorElement(blue.AsSpan(0, count), red.AsSpan(0, count), histogram, fixedHistogram, movingValues, movingMultipliers);
                 elements[(ty * tilesX) + tx] = 0xFF000000u | ((uint)(byte)redToBlue << 16) | ((uint)(byte)greenToBlue << 8) | (byte)greenToRed;
                 for (var y = y0; y < y1; y++)
                 {
@@ -375,16 +378,36 @@ internal sealed class Vp8LEncoder : IDisposable
     /// (the color transform of one channel by one signed channel): a coarse search, then a refinement around the best value;
     /// ties keep the value searched first (zero first).
     /// </summary>
-    private static sbyte SearchColorElement(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] histogram)
+    private static sbyte SearchColorElement(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] histogram, int[] fixedHistogram, int[] movingValues, int[] movingMultipliers)
     {
+        // The values whose multiplier is zero fall in the same bin whatever t: they are counted once, and every candidate
+        // starts from their histogram (the counts, hence the costs, are the ones of counting every value)
+        Array.Clear(fixedHistogram);
+        multipliers = multipliers[..values.Length];
+        var moving = 0;
+        for (var i = 0; i < values.Length; i++)
+        {
+            if (multipliers[i] == 0)
+            {
+                fixedHistogram[values[i] & 0xFF]++;
+            }
+            else
+            {
+                movingValues[moving] = values[i];
+                movingMultipliers[moving] = multipliers[i];
+                moving++;
+            }
+        }
+
+        var search = new ElementSearch(movingValues.AsSpan(0, moving), movingMultipliers.AsSpan(0, moving), fixedHistogram, histogram, values.Length);
         var best = 0;
-        var bestCost = ElementCost(values, multipliers, histogram, 0);
+        var bestCost = search.Cost(0);
         for (var t = -96; t <= 96; t += 8)
         {
             if (t == 0)
                 continue;
 
-            var cost = ElementCost(values, multipliers, histogram, t);
+            var cost = search.Cost(t);
             if (cost < bestCost)
             {
                 bestCost = cost;
@@ -398,7 +421,7 @@ internal sealed class Vp8LEncoder : IDisposable
             if (t == center || t is < -128 or > 127)
                 continue;
 
-            var cost = ElementCost(values, multipliers, histogram, t);
+            var cost = search.Cost(t);
             if (cost < bestCost)
             {
                 bestCost = cost;
@@ -409,16 +432,23 @@ internal sealed class Vp8LEncoder : IDisposable
         return (sbyte)best;
     }
 
-    private static double ElementCost(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] histogram, int t)
+    /// <summary>The cost of the values of a channel transformed by <c>t</c>: the zero-multiplier histogram plus the other values.</summary>
+    private readonly ref struct ElementSearch(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] fixedHistogram, int[] histogram, int count)
     {
-        Array.Clear(histogram);
-        multipliers = multipliers[..values.Length];
-        for (var i = 0; i < values.Length; i++)
-        {
-            histogram[(values[i] - ((t * multipliers[i]) >> 5)) & 0xFF]++;
-        }
+        private readonly ReadOnlySpan<int> _values = values;
+        private readonly ReadOnlySpan<int> _multipliers = multipliers;
 
-        return Entropy(histogram, values.Length);
+        public double Cost(int t)
+        {
+            fixedHistogram.CopyTo(histogram);
+            var factors = _multipliers[.._values.Length];
+            for (var i = 0; i < _values.Length; i++)
+            {
+                histogram[(_values[i] - ((t * factors[i]) >> 5)) & 0xFF]++;
+            }
+
+            return Entropy(histogram, count);
+        }
     }
 
     /// <summary>The Shannon cost in bits of the symbols of <paramref name="histogram"/> (<paramref name="count"/> in total).</summary>

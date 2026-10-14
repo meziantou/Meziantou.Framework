@@ -187,8 +187,20 @@ internal static class Vp8Reconstruction
     /// <param name="macroblockAboveRight">For the right sub-block column, the macroblock's above-right pixels; otherwise empty (the above-right pixels are read from the plane).</param>
     public static void PredictSubBlock(Span<byte> plane, int stride, int offset, int px, int py, ReadOnlySpan<byte> macroblockAboveRight, int mode)
     {
-        // Edge: E[0..3] = L3..L0, E[4] = P (above-left), E[5..8] = A0..A3, E[9..12] = above-right
         Span<byte> e = stackalloc byte[13];
+        GetSubBlockEdge(plane, stride, offset, px, py, macroblockAboveRight, e);
+        Span<byte> b = stackalloc byte[16];
+        PredictSubBlock(e, mode, b);
+        for (var y = 0; y < 4; y++)
+        {
+            b.Slice(y * 4, 4).CopyTo(plane.Slice(offset + (y * stride), 4));
+        }
+    }
+
+    /// <summary>Gets the 13 edge pixels of a sub-block (see <see cref="PredictSubBlock(Span{byte}, int, int, int, int, ReadOnlySpan{byte}, int)"/>) for <see cref="PredictSubBlock(ReadOnlySpan{byte}, int, Span{byte})"/>.</summary>
+    public static void GetSubBlockEdge(ReadOnlySpan<byte> plane, int stride, int offset, int px, int py, ReadOnlySpan<byte> macroblockAboveRight, Span<byte> e)
+    {
+        // Edge: E[0..3] = L3..L0, E[4] = P (above-left), E[5..8] = A0..A3, E[9..12] = above-right
         for (var i = 0; i < 4; i++)
         {
             e[3 - i] = px > 0 ? plane[offset + (i * stride) - 1] : (byte)129;
@@ -210,13 +222,6 @@ internal static class Vp8Reconstruction
             {
                 e[9 + i] = py > 0 ? plane[offset - stride + 4 + i] : (byte)127;
             }
-        }
-
-        Span<byte> b = stackalloc byte[16];
-        PredictSubBlock(e, mode, b);
-        for (var y = 0; y < 4; y++)
-        {
-            b.Slice(y * 4, 4).CopyTo(plane.Slice(offset + (y * stride), 4));
         }
     }
 

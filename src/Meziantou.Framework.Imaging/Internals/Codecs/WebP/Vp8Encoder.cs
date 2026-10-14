@@ -501,6 +501,9 @@ internal sealed class Vp8Encoder : IDisposable
         Span<short> best = stackalloc short[16];
         Span<short> dequantized = stackalloc short[16];
         Span<byte> bestPixels = stackalloc byte[16];
+        Span<byte> edge = stackalloc byte[13];
+        Span<byte> sourcePixels = stackalloc byte[16];
+        Span<byte> pixels = stackalloc byte[16];
         var modeCount = _effort >= 4 ? 10 : 6;
         var total = 0.0;
         for (var block = 0; block < 16; block++)
@@ -514,21 +517,37 @@ internal sealed class Vp8Encoder : IDisposable
             var modeCosts = BModeCosts.AsSpan(((modesAbove[bx] * 10) + modesLeft[by]) * 10, 10);
             var bestCost = double.MaxValue;
             var bestMode = 0;
+
+            // The edge and the source of the block do not change while its modes are tried: every mode is predicted,
+            // reconstructed and measured in local 4x4 buffers, and only the best reconstruction is written to the plane
+            Vp8Reconstruction.GetSubBlockEdge(recon, stride, blockOffset, px, py, bx == 3 ? aboveRight : default, edge);
+            CopyBlock(source, stride, blockOffset, sourcePixels, 4);
             for (var mode = 0; mode < modeCount; mode++)
             {
-                Vp8Reconstruction.PredictSubBlock(recon, stride, blockOffset, px, py, bx == 3 ? aboveRight : default, mode);
-                GetResidual(source, recon, stride, blockOffset, residual);
+                Vp8Reconstruction.PredictSubBlock(edge, mode, pixels);
+                for (var i = 0; i < 16; i++)
+                {
+                    residual[i] = sourcePixels[i] - pixels[i];
+                }
+
                 Vp8ForwardTransforms.ForwardDct(residual, coefficients);
                 Quantize(coefficients, trial, _q.YDc, _q.YAc, first: 0);
                 Dequantize(trial, dequantized, _q.YDc, _q.YAc);
-                Vp8Transforms.InverseDctAdd(dequantized, recon[blockOffset..], stride);
-                var cost = Distortion(source, recon, stride, blockOffset, 4) + (_lambda * (TokenBits(trial, 0, 3, context) + modeCosts[mode]));
+                Vp8Transforms.InverseDctAdd(dequantized, pixels, 4);
+                var distortion = Distortion(sourcePixels, pixels, 4, 0, 4);
+
+                // The token bits are not negative and the operations are monotonic: when the cost without them is not below
+                // the best cost, the full cost is not either, and the mode cannot be chosen
+                if (distortion + (_lambda * modeCosts[mode]) >= bestCost)
+                    continue;
+
+                var cost = distortion + (_lambda * (TokenBits(trial, 0, 3, context) + modeCosts[mode]));
                 if (cost < bestCost)
                 {
                     bestCost = cost;
                     bestMode = mode;
                     trial.CopyTo(best);
-                    CopyBlock(recon, stride, blockOffset, bestPixels, 4);
+                    pixels.CopyTo(bestPixels);
                 }
             }
 

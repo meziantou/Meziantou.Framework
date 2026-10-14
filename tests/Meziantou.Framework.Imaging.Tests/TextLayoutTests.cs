@@ -1343,4 +1343,16 @@ public sealed class TextLayoutTests
         Assert.Equal(112, layout.Lines[149].Width);
         Assert.Equal(149 * 12, layout.Lines[149].Start);
     }
+
+    [Fact]
+    public void ALineThatEndsWithManySpacesIsCutOnceItsSpacesAreKnown()
+    {
+        // The first line is "AB" (22 pixels: 16 and 8, kerned by 2) and 200 spaces that hang; the part of the text the
+        // line is cut from is long enough for the start of the next part to be measured before it is shaped again.
+        var text = "AB" + new string(' ', 200) + "AB AB";
+        var layout = TextLayout.Create(text, new TextStyle(Boxes, 16), new TextLayoutOptions { MaxWidth = 1000 });
+        Assert.Equal(
+            new[] { new TextLine(0, 202, 0, 0, 22, 16, 13, false), new TextLine(202, 5, 0, 16, 52, 16, 13, false) },
+            layout.Lines);
+    }
 }

@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -25,6 +26,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal static class Convolver
 {
+    // The largest number of taps whose positions, weights and rows are kept on the stack (16 KB) to be summed a block at a time
+    private const int MaxBlockedTaps = 1024;
+
+    // The largest number of rows that the taps summed in one pass over the accumulator read
+    private const int MaxRowsPerPass = 4;
+
     private static readonly AsyncLocal<Action<int, bool>?> TestBandObserverValue = new();
 
     /// <summary>Gets or sets a test hook called when a row band starts (<see langword="true"/>) and ends, on the worker thread.</summary>
@@ -119,6 +126,13 @@ internal static class Convolver
         var centerY = plan.CenterY;
         var channels = plan.Channels;
         var accumulator = scratch.Accumulator;
+
+        // The taps of a row are summed a block of samples at a time (Resampler.SetWeightedSum) when the kernel is small enough
+        // for their list to be on the stack; otherwise, and for the scalar reference of the tests, a row is added per tap
+        var blocked = !Resampler.TestForceScalar && (Vector128.IsHardwareAccelerated || Vector256.IsHardwareAccelerated) && kernelWidth * kernelHeight <= MaxBlockedTaps;
+        Span<int> tapOffsets = stackalloc int[blocked ? kernelWidth * kernelHeight : 0];
+        Span<double> tapWeights = stackalloc double[blocked ? kernelWidth * kernelHeight : 0];
+        Span<int> tapRows = stackalloc int[blocked ? kernelWidth * kernelHeight : 0];
         var next = start; // the next row of the band to load into the ring
         for (var y = start; y < end; y++)
         {
@@ -135,29 +149,16 @@ internal static class Convolver
                 LoadRow<TSample>(storage, next, plan, scratch.GetRingRow(next));
             }
 
+            // The taps of the row, in the order of the kernel: the position in the scratch of the row they read, shifted by
+            // the kernel column (the padded row starts centerX pixels left of the image), and their weight
+            var buffer = scratch.Buffer;
+            var count = 0;
             var empty = true;
             for (var j = 0; j < kernelHeight; j++)
             {
-                var source = y + j - centerY;
-                ReadOnlySpan<double> row;
-                if (source < start)
-                {
-                    if (plan.MapRow(source) < 0)
-                        continue;
-
-                    row = scratch.GetTopHalo(source - (start - centerY));
-                }
-                else if (source >= end)
-                {
-                    if (plan.MapRow(source) < 0)
-                        continue;
-
-                    row = scratch.GetBottomHalo(source - end);
-                }
-                else
-                {
-                    row = scratch.GetRingRow(source);
-                }
+                var rowOffset = GetRowOffset(plan, scratch, y + j - centerY, start, end);
+                if (rowOffset < 0)
+                    continue;
 
                 var kernelRow = weights.Slice(j * kernelWidth, kernelWidth);
                 for (var i = 0; i < kernelWidth; i++)
@@ -166,22 +167,50 @@ internal static class Convolver
                     if (weight == 0)
                         continue;
 
-                    // The padded row starts centerX pixels left of the image: its slice at i is the row shifted by i - centerX
-                    var shifted = row.Slice(i * channels, accumulator.Length);
-                    if (empty)
+                    var offset = rowOffset + (i * channels);
+                    if (blocked)
+                    {
+                        tapOffsets[count] = offset;
+                        tapWeights[count] = weight;
+                        tapRows[count] = j;
+                        count++;
+                    }
+                    else if (empty)
                     {
                         // 0 + w0 x0 written directly (no separate clearing pass)
-                        Resampler.SetScaled(accumulator, shifted, weight);
+                        Resampler.SetScaled(accumulator, buffer.Slice(offset, accumulator.Length), weight);
                         empty = false;
                     }
                     else
                     {
-                        Resampler.AddScaled(accumulator, shifted, weight);
+                        Resampler.AddScaled(accumulator, buffer.Slice(offset, accumulator.Length), weight);
                     }
                 }
             }
 
-            if (empty)
+            if (count is not 0)
+            {
+                // The taps are summed by groups that read at most MaxRowsPerPass rows (the prefetching of the processor follows
+                // a limited number of streams), each group adding to the sums of the previous ones
+                var first = 0;
+                var rows = 1;
+                for (var t = 1; t <= count; t++)
+                {
+                    if (t < count && tapRows[t] == tapRows[t - 1])
+                        continue;
+
+                    if (t < count && rows < MaxRowsPerPass)
+                    {
+                        rows++;
+                        continue;
+                    }
+
+                    Resampler.SetWeightedSum(buffer, scratch.AccumulatorOffset, accumulator.Length, tapOffsets[first..t], tapWeights[first..t], accumulate: first is not 0);
+                    first = t;
+                    rows = 1;
+                }
+            }
+            else if (empty)
             {
                 accumulator.Clear();
             }
@@ -190,6 +219,18 @@ internal static class Convolver
         }
 
         observer?.Invoke(band, false);
+    }
+
+    // The position in the scratch of the working row of image row source, or -1 when the edge mode reads no row there
+    private static int GetRowOffset(ConvolutionPlan plan, ConvolutionScratch scratch, int source, int start, int end)
+    {
+        if (source < start)
+            return plan.MapRow(source) < 0 ? -1 : scratch.GetTopHaloOffset(source - (start - plan.CenterY));
+
+        if (source >= end)
+            return plan.MapRow(source) < 0 ? -1 : scratch.GetBottomHaloOffset(source - end);
+
+        return scratch.GetRingRowOffset(source);
     }
 
     /// <summary>

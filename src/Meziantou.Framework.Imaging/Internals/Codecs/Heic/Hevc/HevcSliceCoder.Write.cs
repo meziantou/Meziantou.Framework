@@ -863,6 +863,7 @@ internal ref partial struct HevcSliceCoder
                 first = lastScanPos - 1;
             }
 
+            ReadOnlySpan<byte> sigCtxs = SigCtxTable.AsSpan(GetSigCtxIndex(log2TrafoSize, cIdx, scanIdx, (xS | yS) is not 0, prevCsbf), 16);
             for (var n = first; n >= 0; n--)
             {
                 if (n is 0 && inferSbDcSigCoeffFlag)
@@ -872,7 +873,7 @@ internal ref partial struct HevcSliceCoder
                     break;
                 }
 
-                var sigCtx = GetSigCtx(log2TrafoSize, cIdx, scanIdx, xS, yS, HevcScanOrder.X(positionScan[n]), HevcScanOrder.Y(positionScan[n]), prevCsbf);
+                int sigCtx = sigCtxs[n];
                 var sigCoeffFlag = subBlock[n] is not 0;
                 sink.EncodeDecision(ref contexts[HevcContextLayout.SigCoeffFlag + (cIdx is 0 ? sigCtx : 27 + sigCtx)], sigCoeffFlag ? 1 : 0);
                 if (sigCoeffFlag)

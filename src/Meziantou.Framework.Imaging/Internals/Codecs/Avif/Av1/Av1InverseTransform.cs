@@ -9,6 +9,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 internal static class Av1InverseTransform
 {
+    // cos128( angle ) of section 7.13.2.1 for the angles 0 to 255, the values of angle & 255
+    private static readonly int[] Cos128Values = CreateCos128Values();
+
     /// <summary>The one-dimensional transform of the rows or of the columns of a transform type.</summary>
     internal enum Kind
     {
@@ -47,17 +50,20 @@ internal static class Av1InverseTransform
         var rowKind = GetRowKind(txType);
         var colKind = GetColumnKind(txType);
 
+        // Every step of the transforms maps zero to zero (Round2( 0, n ) is 0, and so are the clamps, the rotations and the
+        // identity of 0): a row of zero coefficients transforms to zeros, and so does a column of zeros
         Span<int> t = stackalloc int[Math.Max(w, h)];
+        var lastRow = -1;
         for (var i = 0; i < h; i++)
         {
             var row = residual.Slice(i * w, w);
-            if (i >= th)
+            if (i >= th || !dequant.Slice(i * tw, tw).ContainsAnyExcept(0))
             {
-                // A row of zero coefficients transforms to zeros
                 row.Clear();
                 continue;
             }
 
+            lastRow = i;
             var line = t[..w];
             dequant.Slice(i * tw, tw).CopyTo(line);
             line[tw..].Clear();
@@ -82,6 +88,33 @@ internal static class Av1InverseTransform
             {
                 row[j] = Math.Clamp(Round2(line[j], rowShift), colMin, colMax);
             }
+        }
+
+        if (lastRow < 0)
+            return;
+
+        if (lastRow is 0 && !residual[..w].ContainsAnyExcept(residual[0]))
+        {
+            // Only the first row is not zero and its samples are equal (the DC coefficient of a DCT row): every column has the
+            // same input, so every row of the result is one value
+            var column = t[..h];
+            column.Clear();
+            column[0] = residual[0];
+            if (lossless)
+            {
+                InverseWalshHadamard(column, 0);
+            }
+            else
+            {
+                Apply(colKind, column, log2H, colClampRange);
+            }
+
+            for (var i = 0; i < h; i++)
+            {
+                residual.Slice(i * w, w).Fill(Round2(column[i], colShift));
+            }
+
+            return;
         }
 
         for (var j = 0; j < w; j++)
@@ -143,13 +176,13 @@ internal static class Av1InverseTransform
     /// <summary>The inverse DCT of 2^<paramref name="n"/> points, 2 to 6 (section 7.13.2.3).</summary>
     internal static void InverseDct(Span<int> t, int n, int r)
     {
-        // Section 7.13.2.2 "Inverse DCT array permutation process"
+        // Section 7.13.2.2 "Inverse DCT array permutation process": the bit reversal is its own inverse, so it is a set of swaps
         var length = 1 << n;
-        Span<int> copy = stackalloc int[length];
-        t[..length].CopyTo(copy);
         for (var i = 0; i < length; i++)
         {
-            t[i] = copy[BitReverse(n, i)];
+            var j = BitReverse(n, i);
+            if (j > i)
+                (t[i], t[j]) = (t[j], t[i]);
         }
 
         if (n is 6)
@@ -656,29 +689,33 @@ internal static class Av1InverseTransform
         t[b] = (int)Math.Clamp((long)x - y, min, max);
     }
 
-    private static int Cos128(int angle)
-    {
-        var angle2 = angle & 255;
-        return angle2 switch
-        {
-            <= 64 => Av1Tables.Cos128Lookup[angle2],
-            <= 128 => -Av1Tables.Cos128Lookup[128 - angle2],
-            <= 192 => -Av1Tables.Cos128Lookup[angle2 - 128],
-            _ => Av1Tables.Cos128Lookup[256 - angle2],
-        };
-    }
+    private static int Cos128(int angle) => Cos128Values[angle & 255];
 
-    private static int BitReverse(int numBits, int x)
+    private static int[] CreateCos128Values()
     {
-        var result = 0;
-        for (var i = 0; i < numBits; i++)
+        var values = new int[256];
+        for (var angle = 0; angle < values.Length; angle++)
         {
-            var bit = (x >> i) & 1;
-            result += bit << (numBits - 1 - i);
+            values[angle] = angle switch
+            {
+                <= 64 => Av1Tables.Cos128Lookup[angle],
+                <= 128 => -Av1Tables.Cos128Lookup[128 - angle],
+                <= 192 => -Av1Tables.Cos128Lookup[angle - 128],
+                _ => Av1Tables.Cos128Lookup[256 - angle],
+            };
         }
 
-        return result;
+        return values;
     }
+
+    // The low numBits bits of x in the reverse order: the reversal of the 6 bits of x, whose top bits are zero, shifted
+    private static int BitReverse(int numBits, int x) => BitReverse6[x] >> (6 - numBits);
+
+    private static ReadOnlySpan<byte> BitReverse6 =>
+    [
+        0, 32, 16, 48, 8, 40, 24, 56, 4, 36, 20, 52, 12, 44, 28, 60, 2, 34, 18, 50, 10, 42, 26, 58, 6, 38, 22, 54, 14, 46, 30, 62,
+        1, 33, 17, 49, 9, 41, 25, 57, 5, 37, 21, 53, 13, 45, 29, 61, 3, 35, 19, 51, 11, 43, 27, 59, 7, 39, 23, 55, 15, 47, 31, 63,
+    ];
 
     private static int Round2(long value, int bits) => bits is 0 ? (int)value : (int)((value + (1L << (bits - 1))) >> bits);
 }

@@ -172,6 +172,69 @@ public sealed class Av1InverseTransformTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void TransformFollowsTheTwoDimensionalProcessOnSparseBlocks()
+    {
+        // Transform skips the rows of zero coefficients and transforms a single column when only the first row is not zero and
+        // its samples are equal: it must give the result of the process of section 7.13.3 applied to every row and column
+        var random = new Random(71302);
+        for (var txSz = 0; txSz < Av1Constants.TxSizesAll; txSz++)
+        {
+            var log2W = Av1Tables.TxWidthLog2[txSz];
+            var log2H = Av1Tables.TxHeightLog2[txSz];
+            var tw = Math.Min(32, 1 << log2W);
+            var th = Math.Min(32, 1 << log2H);
+            for (var txType = 0; txType < Av1Constants.TxTypes; txType++)
+            {
+                if (!IsSupported(Av1InverseTransform.GetRowKind(txType), log2W) || !IsSupported(Av1InverseTransform.GetColumnKind(txType), log2H))
+                    continue;
+
+                foreach (var lossless in txSz is Av1Constants.Tx4x4 ? new[] { false, true } : [false])
+                {
+                    foreach (var bitDepth in new[] { 8, 12 })
+                    {
+                        for (var pattern = 0; pattern < 8; pattern++)
+                        {
+                            var dequant = new int[tw * th];
+                            var constant = random.Next(-3000, 3001);
+                            for (var i = 0; i < dequant.Length; i++)
+                            {
+                                var row = i / tw;
+                                var column = i % tw;
+                                dequant[i] = pattern switch
+                                {
+                                    0 => 0,
+                                    1 => i is 0 ? constant : 0, // DC only
+                                    2 => row is 0 ? constant : 0, // a constant first row
+                                    3 => row is 0 ? random.Next(-3000, 3001) : 0, // the first row only
+                                    4 => column is 0 ? random.Next(-3000, 3001) : 0, // the first column only
+                                    5 => row % 3 is 1 ? random.Next(-3000, 3001) : 0, // rows of zeros between rows of coefficients
+                                    6 => row == th - 1 && column is 0 ? constant : 0, // only the last row
+                                    _ => random.Next(4) is 0 ? random.Next(-3000, 3001) : 0,
+                                };
+                            }
+
+                            var expected = TransformEveryRowAndColumn(dequant, txSz, txType, lossless, bitDepth);
+                            var actual = new int[expected.Length];
+                            Array.Fill(actual, int.MinValue);
+                            Av1InverseTransform.Transform(dequant, actual, txSz, txType, lossless, bitDepth);
+                            Assert.True(expected.AsSpan().SequenceEqual(actual), $"Transform size {txSz}, type {txType}, lossless {lossless}, {bitDepth}-bit, pattern {pattern}.");
+                        }
+                    }
+                }
+            }
+        }
+
+        // The ADST has 4 to 16 points and the identity 4 to 32 (section 7.13.3)
+        static bool IsSupported(Av1InverseTransform.Kind kind, int n) => kind switch
+        {
+            Av1InverseTransform.Kind.Adst => n <= 4,
+            Av1InverseTransform.Kind.Identity => n <= 5,
+            _ => true,
+        };
+    }
+
+    [Fact]
     public void FourPointDctMatchesItsDefinition()
     {
         // x[n] = sum over k of c(k) * T[k] * cos(pi * (2n + 1) * k / 8), with c(0) = 1 / sqrt(2) and c(k) = 1 otherwise.
@@ -247,6 +310,79 @@ public sealed class Av1InverseTransformTests
                 Assert.Equal(Math.Sign(amplitude), Math.Sign(values[0]));
             }
         }
+    }
+
+    /// <summary>
+    /// The 2D inverse transform process of section 7.13.3, step by step: every row, then every column, with the one-dimensional
+    /// transforms of <see cref="Av1InverseTransform"/>.
+    /// </summary>
+    private static int[] TransformEveryRowAndColumn(int[] dequant, int txSz, int txType, bool lossless, int bitDepth)
+    {
+        var log2W = Av1Tables.TxWidthLog2[txSz];
+        var log2H = Av1Tables.TxHeightLog2[txSz];
+        var w = 1 << log2W;
+        var h = 1 << log2H;
+        var tw = Math.Min(32, w);
+        var th = Math.Min(32, h);
+        var rowShift = lossless ? 0 : Av1Tables.TransformRowShift[txSz];
+        var colShift = lossless ? 0 : 4;
+        var rowClampRange = bitDepth + 8;
+        var colClampRange = Math.Max(bitDepth + 6, 16);
+        var residual = new int[w * h];
+        var t = new int[64];
+        for (var i = 0; i < h; i++)
+        {
+            for (var j = 0; j < w; j++)
+            {
+                t[j] = i < th && j < tw ? dequant[(i * tw) + j] : 0;
+                if (Math.Abs(log2W - log2H) is 1)
+                    t[j] = Round2(t[j] * 2896L, 12);
+            }
+
+            Transform1D(t.AsSpan(0, w), Av1InverseTransform.GetRowKind(txType), log2W, rowClampRange, shift: 2);
+            for (var j = 0; j < w; j++)
+            {
+                residual[(i * w) + j] = Math.Clamp(Round2(t[j], rowShift), -(1 << (colClampRange - 1)), (1 << (colClampRange - 1)) - 1);
+            }
+        }
+
+        for (var j = 0; j < w; j++)
+        {
+            for (var i = 0; i < h; i++)
+            {
+                t[i] = residual[(i * w) + j];
+            }
+
+            Transform1D(t.AsSpan(0, h), Av1InverseTransform.GetColumnKind(txType), log2H, colClampRange, shift: 0);
+            for (var i = 0; i < h; i++)
+            {
+                residual[(i * w) + j] = Round2(t[i], colShift);
+            }
+        }
+
+        return residual;
+
+        void Transform1D(Span<int> values, Av1InverseTransform.Kind kind, int n, int r, int shift)
+        {
+            if (lossless)
+            {
+                Av1InverseTransform.InverseWalshHadamard(values, shift);
+            }
+            else if (kind is Av1InverseTransform.Kind.Dct)
+            {
+                Av1InverseTransform.InverseDct(values, n, r);
+            }
+            else if (kind is Av1InverseTransform.Kind.Adst)
+            {
+                Av1InverseTransform.InverseAdst(values, n, r);
+            }
+            else
+            {
+                Av1InverseTransform.InverseIdentity(values, n);
+            }
+        }
+
+        static int Round2(long value, int bits) => bits is 0 ? (int)value : (int)((value + (1L << (bits - 1))) >> bits);
     }
 
     /// <summary>

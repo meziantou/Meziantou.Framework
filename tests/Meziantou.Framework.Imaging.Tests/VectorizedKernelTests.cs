@@ -421,9 +421,10 @@ public sealed class VectorizedKernelTests
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void ConvolutionVectorizedRowsMatchTheScalarLoops(PixelFormat format, ConvolutionEdgeMode mode, ConvolutionWorkingSpace workingSpace, bool preserveAlpha)
     {
-        // Row lengths that are and are not multiples of the vector width, and kernels wider or taller than the image
+        // Row lengths that are and are not multiples of the vector width, kernels wider or taller than the image, and kernels
+        // of more taps than are summed a block of samples at a time
         var random = new Random((int)format);
-        (int Width, int Height, int KernelWidth, int KernelHeight)[] cases = [(37, 23, 3, 3), (37, 23, 5, 7), (5, 64, 9, 1), (64, 5, 1, 9), (1, 9, 3, 5), (2, 2, 7, 7), (101, 77, 3, 3)];
+        (int Width, int Height, int KernelWidth, int KernelHeight)[] cases = [(37, 23, 3, 3), (37, 23, 5, 7), (5, 64, 9, 1), (64, 5, 1, 9), (1, 9, 3, 5), (2, 2, 7, 7), (101, 77, 3, 3), (70, 9, 61, 1), (9, 70, 1, 61), (40, 30, 31, 31), (21, 19, 33, 33)];
         foreach (var (width, height, kernelWidth, kernelHeight) in cases)
         {
             var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
@@ -781,6 +782,230 @@ public sealed class VectorizedKernelTests
             Av1Cdef.FilterInteriorRowsScalar(expected, window, Stride, width, height, offsets, priStr, secStr, priShift, secShift, priTap0, priTap1, 2, 1);
             Av1Cdef.FilterInteriorRows(actual, window, Stride, width, height, offsets, priStr, secStr, priShift, secShift, priTap0, priTap1, 2, 1);
             Assert.Equal(expected, actual);
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1LoopRestorationFiltersMatchTheScalarReferences(int bitDepth)
+    {
+        // Blocks of every width around the vector size up to the largest one, on a padded source of random, extreme, flat and
+        // ramp samples, with Wiener coefficients and self-guided weights over their whole coded range and every self-guided set
+        var random = new Random(bitDepth);
+        var maxSample = (1 << bitDepth) - 1;
+        var scratch = new int[Av1LoopRestoration.ScratchLength];
+        var vectorScratch = new int[Av1LoopRestoration.ScratchLength];
+        const int Padding = Av1LoopRestoration.Padding;
+        int[] widths = [1, 4, 7, 8, 9, 15, 16, 17, 31, 33, 63, Av1LoopRestoration.MaxBlockWidth];
+        for (var round = 0; round < 240; round++)
+        {
+            var w = widths[round % widths.Length];
+            var h = (round % 3) switch
+            {
+                0 => Av1LoopRestoration.MaxBlockHeight,
+                1 => random.Next(1, 9),
+                _ => random.Next(1, Av1LoopRestoration.MaxBlockHeight + 1),
+            };
+            var sourceStride = w + (2 * Padding) + random.Next(3);
+            var source = new ushort[(h + (2 * Padding)) * sourceStride];
+            for (var i = 0; i < source.Length; i++)
+            {
+                source[i] = (round % 4) switch
+                {
+                    0 => (ushort)random.Next(maxSample + 1),
+                    1 => (ushort)(random.Next(2) * maxSample),
+                    2 => (ushort)Math.Clamp((maxSample / 2) + random.Next(-3, 4), 0, maxSample),
+                    _ => (ushort)Math.Clamp((i % sourceStride * maxSample / sourceStride) + random.Next(-8, 9), 0, maxSample),
+                };
+            }
+
+            var unit = new sbyte[10];
+            for (var pass = 0; pass < 2; pass++)
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    unit[1 + (3 * pass) + i] = (sbyte)random.Next(Av1Tables.WienerTapsMin[i], Av1Tables.WienerTapsMax[i] + 1);
+                }
+            }
+
+            unit[7] = (sbyte)(round % 16);
+            unit[8] = (sbyte)random.Next(Av1Tables.SgrprojXqdMin[0], Av1Tables.SgrprojXqdMax[0] + 1);
+            unit[9] = (sbyte)random.Next(Av1Tables.SgrprojXqdMin[1], Av1Tables.SgrprojXqdMax[1] + 1);
+
+            var destinationStride = w + random.Next(3);
+            var sourceOffset = (Padding * sourceStride) + Padding;
+            var expected = new ushort[h * destinationStride];
+            var actual = new ushort[h * destinationStride];
+            Av1LoopRestoration.ApplyWienerScalar(source, sourceStride, sourceOffset, expected, destinationStride, w, h, unit, bitDepth, scratch);
+            FillWithGarbage(vectorScratch);
+            Av1LoopRestoration.ApplyWiener(source, sourceStride, sourceOffset, actual, destinationStride, w, h, unit, bitDepth, vectorScratch);
+            Assert.True(expected.AsSpan().SequenceEqual(actual), $"Wiener filter, {w}x{h}, round {round}.");
+
+            Av1LoopRestoration.ApplySelfGuidedScalar(source, sourceStride, sourceOffset, expected, destinationStride, w, h, unit, bitDepth, scratch);
+            FillWithGarbage(vectorScratch);
+            Av1LoopRestoration.ApplySelfGuided(source, sourceStride, sourceOffset, actual, destinationStride, w, h, unit, bitDepth, vectorScratch);
+            Assert.True(expected.AsSpan().SequenceEqual(actual), $"Self-guided filter, set {unit[7]}, {w}x{h}, round {round}.");
+        }
+
+        // The vector paths must not read scratch entries they did not write
+        void FillWithGarbage(int[] values)
+        {
+            for (var i = 0; i < values.Length; i++)
+            {
+                values[i] = random.Next(int.MinValue, int.MaxValue);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(2, 0)]
+    [InlineData(2, 1)]
+    [InlineData(3, 0)]
+    [InlineData(4, 0)]
+    [InlineData(5, 0)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HevcInverseTransformMatchesTheScalarReference(int log2TrafoSize, int trType)
+    {
+        // Blocks of zeros, a DC coefficient, a few low frequencies, sparse and dense blocks, with coefficients over the whole
+        // range of CoeffMinY to CoeffMaxY
+        var random = new Random((log2TrafoSize * 10) + trType);
+        var nTbS = 1 << log2TrafoSize;
+        var scratch = new int[nTbS * nTbS];
+        for (var round = 0; round < 1000; round++)
+        {
+            var block = new int[nTbS * nTbS];
+            for (var i = 0; i < block.Length; i++)
+            {
+                var row = i / nTbS;
+                var column = i % nTbS;
+                block[i] = (round % 6) switch
+                {
+                    0 => 0,
+                    1 => i is 0 ? random.Next(HevcInverseTransform.CoeffMin, HevcInverseTransform.CoeffMax + 1) : 0,
+                    2 => row < 2 && column < 2 ? random.Next(-512, 513) : 0,
+                    3 => random.Next(5) is 0 ? random.Next(-64, 65) : 0,
+                    4 => random.Next(2) is 0 ? (random.Next(2) is 0 ? HevcInverseTransform.CoeffMin : HevcInverseTransform.CoeffMax) : 0,
+                    _ => random.Next(HevcInverseTransform.CoeffMin, HevcInverseTransform.CoeffMax + 1),
+                };
+            }
+
+            var expected = (int[])block.Clone();
+            HevcInverseTransform.TransformScalar(expected, log2TrafoSize, trType, scratch);
+            Array.Fill(scratch, int.MinValue);
+            HevcInverseTransform.Transform(block, log2TrafoSize, trType, scratch);
+            Assert.Equal(expected, block);
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [InlineData(16)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HevcSampleAdaptiveOffsetRowsMatchTheScalarReferences(int bitDepth)
+    {
+        // Runs of every length around the vector size, with random, flat (equal neighbours) and extreme samples, and offsets of
+        // the whole range of SaoOffsetVal (31 << ( bitDepth - 10 ) at most)
+        var random = new Random(bitDepth);
+        var maxValue = (1 << bitDepth) - 1;
+        var maxOffset = 31 << Math.Max(0, bitDepth - 10);
+        for (var round = 0; round < 2000; round++)
+        {
+            var length = random.Next(1, 70);
+            var samples = new ushort[length];
+            var neighbours0 = new ushort[length];
+            var neighbours1 = new ushort[length];
+            foreach (var values in new[] { samples, neighbours0, neighbours1 })
+            {
+                for (var i = 0; i < length; i++)
+                {
+                    values[i] = (round % 3) switch
+                    {
+                        0 => (ushort)random.Next(maxValue + 1),
+                        1 => (ushort)((maxValue / 2) + random.Next(-1, 2)),
+                        _ => (ushort)(random.Next(2) * maxValue),
+                    };
+                }
+            }
+
+            int[] offsets = [random.Next(-maxOffset, maxOffset + 1), random.Next(-maxOffset, maxOffset + 1), round % 4 is 0 ? 0 : random.Next(-maxOffset, maxOffset + 1), random.Next(-maxOffset, maxOffset + 1), random.Next(-maxOffset, maxOffset + 1)];
+            var expected = new ushort[length];
+            var actual = new ushort[length];
+            HevcSampleAdaptiveOffset.EdgeOffsetRowScalar(samples, neighbours0, neighbours1, expected, offsets, maxValue);
+            HevcSampleAdaptiveOffset.EdgeOffsetRow(samples, neighbours0, neighbours1, actual, offsets, maxValue);
+            Assert.Equal(expected, actual);
+
+            offsets[0] = 0;
+            var saoLeftClass = random.Next(32);
+            HevcSampleAdaptiveOffset.BandOffsetRowScalar(samples, expected, bitDepth - 5, saoLeftClass, offsets, maxValue);
+            HevcSampleAdaptiveOffset.BandOffsetRow(samples, actual, bitDepth - 5, saoLeftClass, offsets, maxValue);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPLoopFilterMatchesTheScalarReference()
+    {
+        // Frames of 4x4 blocks of a random level each, with small or large variations inside them: the edges between the blocks
+        // take every branch of the filters (not filtered, high edge variance, flat), at every level and sharpness
+        var random = new Random(6386);
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        for (var round = 0; round < 200; round++)
+        {
+            var width = random.Next(1, 72);
+            var height = random.Next(1, 72);
+            var mbWidth = (width + 15) >> 4;
+            var mbHeight = (height + 15) >> 4;
+            using var expected = Vp8Planes.Create(scope, width, height);
+            using var actual = Vp8Planes.Create(scope, width, height);
+            var noise = (round % 4) switch
+            {
+                0 => 1,
+                1 => 3,
+                2 => 8,
+                _ => 40,
+            };
+            foreach (var (plane, stride) in new[] { (0, expected.YStride), (1, expected.UVStride), (2, expected.UVStride) })
+            {
+                var samples = plane switch
+                {
+                    0 => expected.Y,
+                    1 => expected.U,
+                    _ => expected.V,
+                };
+                var blocksPerRow = (stride >> 2) + 1;
+                var blockLevels = new int[(((samples.Length / stride) >> 2) + 1) * blocksPerRow];
+                for (var i = 0; i < blockLevels.Length; i++)
+                {
+                    blockLevels[i] = random.Next(256);
+                }
+
+                for (var i = 0; i < samples.Length; i++)
+                {
+                    samples[i] = (byte)Math.Clamp(blockLevels[(((i / stride) >> 2) * blocksPerRow) + ((i % stride) >> 2)] + random.Next(-noise, noise + 1), 0, 255);
+                }
+            }
+
+            expected.Y.CopyTo(actual.Y);
+            expected.U.CopyTo(actual.U);
+            expected.V.CopyTo(actual.V);
+            var filterInfo = new byte[mbWidth * mbHeight];
+            for (var i = 0; i < filterInfo.Length; i++)
+            {
+                filterInfo[i] = (byte)(random.Next(64) | (random.Next(2) << 7));
+            }
+
+            var sharpness = random.Next(8);
+            Vp8LoopFilter.ApplyScalar(expected, filterInfo, mbWidth, mbHeight, simple: false, sharpness);
+            Vp8LoopFilter.Apply(actual, filterInfo, mbWidth, mbHeight, simple: false, sharpness);
+            Assert.True(expected.Y.SequenceEqual(actual.Y), $"Luma of a {width}x{height} frame, round {round}.");
+            Assert.True(expected.U.SequenceEqual(actual.U), $"Cb of a {width}x{height} frame, round {round}.");
+            Assert.True(expected.V.SequenceEqual(actual.V), $"Cr of a {width}x{height} frame, round {round}.");
         }
     }
 

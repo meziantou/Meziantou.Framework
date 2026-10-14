@@ -163,6 +163,18 @@ internal sealed class HevcCabacDecoder
     public int DecodeBypassBits(int count)
     {
         Debug.Assert(count is >= 0 and <= 31);
+        if (_extraBits >= count)
+        {
+            // The bins are the binary digits of ivlOffset / ivlCurrRange once the count bits are read into ivlOffset: each
+            // bypass bin doubles ivlOffset, adds a bit, and subtracts ivlCurrRange when it is not smaller. ivlOffset stays
+            // below ivlCurrRange, so the quotient has count bits.
+            var shift = _extraBits - count;
+            var quotient = (_offset >> shift) / _range;
+            _offset -= (quotient * _range) << shift;
+            _extraBits = shift;
+            return (int)quotient;
+        }
+
         var value = 0;
         for (var i = 0; i < count; i++)
         {

@@ -162,8 +162,17 @@ internal sealed class PaletteQuantizer : IDisposable
         var sums = unsafe(MemoryMarshal.Cast<byte, long>(state.Slice(SumsOffset, Buckets * 3 * sizeof(long))));
         var exact = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(ExactOffset, ExactSlots * sizeof(int))));
         var exactCounts = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(ExactCountsOffset, ExactSlots * sizeof(int))));
-        foreach (var key in keys)
+        // A run of equal keys is counted at once: every count and sum it changes grows by the length of the run
+        for (var i = 0; i < keys.Length;)
         {
+            var key = keys[i];
+            var run = 1;
+            while (i + run < keys.Length && keys[i + run] == key)
+            {
+                run++;
+            }
+
+            i += run;
             if (key == TransparentKey)
             {
                 _hasTransparency = true;
@@ -171,10 +180,10 @@ internal sealed class PaletteQuantizer : IDisposable
             }
 
             var bucket = GetBucket(key);
-            counts[bucket]++;
-            sums[3 * bucket] += (key >> 16) & 0xFF;
-            sums[(3 * bucket) + 1] += (key >> 8) & 0xFF;
-            sums[(3 * bucket) + 2] += key & 0xFF;
+            counts[bucket] += run;
+            sums[3 * bucket] += ((key >> 16) & 0xFF) * run;
+            sums[(3 * bucket) + 1] += ((key >> 8) & 0xFF) * run;
+            sums[(3 * bucket) + 2] += (key & 0xFF) * run;
             if (_exactOverflow)
                 continue;
 
@@ -196,7 +205,7 @@ internal sealed class PaletteQuantizer : IDisposable
                 _exactCount++;
             }
 
-            exactCounts[slot]++;
+            exactCounts[slot] += run;
         }
     }
 

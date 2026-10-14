@@ -53,12 +53,28 @@ internal sealed class PaletteRowMapper : IDisposable
     /// <param name="transparentIndex">The index written for transparent pixels (unused when the row has none).</param>
     public void MapRow(PaletteQuantizer quantizer, ReadOnlySpan<int> keys, Span<byte> indices, int transparentIndex)
     {
+        // A key equal to the previous one maps to the same entry: Map is a function of the key, and the entry it remembers
+        // to bound the next search is the one it returned
+        var lastKey = PaletteQuantizer.TransparentKey;
+        var lastIndex = 0;
         if (!_dither || quantizer.IsExact)
         {
             for (var x = 0; x < _width; x++)
             {
                 var key = keys[x];
-                indices[x] = key == PaletteQuantizer.TransparentKey ? (byte)transparentIndex : (byte)quantizer.Map(key);
+                if (key == PaletteQuantizer.TransparentKey)
+                {
+                    indices[x] = (byte)transparentIndex;
+                    continue;
+                }
+
+                if (key != lastKey)
+                {
+                    lastKey = key;
+                    lastIndex = quantizer.Map(key);
+                }
+
+                indices[x] = (byte)lastIndex;
             }
 
             return;
@@ -82,7 +98,14 @@ internal sealed class PaletteRowMapper : IDisposable
             var r = Math.Clamp(((key >> 16) & 0xFF) + ((current[offset] + 8) >> 4), 0, 255);
             var g = Math.Clamp(((key >> 8) & 0xFF) + ((current[offset + 1] + 8) >> 4), 0, 255);
             var b = Math.Clamp((key & 0xFF) + ((current[offset + 2] + 8) >> 4), 0, 255);
-            var index = quantizer.Map((r << 16) | (g << 8) | b);
+            var color24 = (r << 16) | (g << 8) | b;
+            if (color24 != lastKey)
+            {
+                lastKey = color24;
+                lastIndex = quantizer.Map(color24);
+            }
+
+            var index = lastIndex;
             indices[x] = (byte)index;
             var color = palette[index];
             Spread(current, next, offset, 0, r - ((color >> 16) & 0xFF));

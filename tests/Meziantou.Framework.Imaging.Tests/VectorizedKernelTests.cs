@@ -868,6 +868,52 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingColorMatrixMatchesTheScalarReference()
+    {
+        var random = new Random(20261016);
+        var matrices = new List<ColorMatrix>
+        {
+            ColorMatrix.CreateGrayscale(),
+            ColorMatrix.CreateSepia(0.7),
+            ColorMatrix.CreateHueRotation(77),
+            ColorMatrix.CreateInvert(),
+            ColorMatrix.CreateOpacity(0.37),
+
+            // Sums beyond the samples, infinite ones, and sums that are not numbers
+            new([3, -2, 0.5, 1, -0.25, -1, 0, 0, 0, 1.5, 1e300, 1e300, 0, 0, 0, 1e308, -1e308, 1e308, -1e308, 0]),
+        };
+        for (var i = 0; i < 30; i++)
+        {
+            matrices.Add(new ColorMatrix(Enumerable.Range(0, 20).Select(_ => (random.NextDouble() * 4) - 2).ToArray()));
+        }
+
+        CheckColorMatrix<Rgba32>(random, matrices, 4);
+        CheckColorMatrix<Bgra32>(random, matrices, 4);
+        CheckColorMatrix<Rgb24>(random, matrices, 3);
+        CheckColorMatrix<Rgba64>(random, matrices, 8);
+        CheckColorMatrix<Gray8>(random, matrices, 1);
+        CheckColorMatrix<Gray16>(random, matrices, 2);
+
+        static void CheckColorMatrix<TPixel>(Random random, List<ColorMatrix> matrices, int bytesPerPixel)
+            where TPixel : unmanaged
+        {
+            foreach (var matrix in matrices)
+            {
+                var count = random.Next(1, 40);
+                var x = random.Next(0, 3);
+                var row = new byte[(count + x) * bytesPerPixel];
+                random.NextBytes(row);
+                var expected = new ushort[count * 4];
+                var actual = new ushort[count * 4];
+                ColorMatrixKernel.ApplyScalar<TPixel>(row, x, matrix, expected);
+                ColorMatrixKernel.ApplyVector<TPixel>(row, x, matrix, actual);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
     public void PixelConversionsMatchTheScalarReference()
     {
         CheckConversionsFrom<Rgba32>();

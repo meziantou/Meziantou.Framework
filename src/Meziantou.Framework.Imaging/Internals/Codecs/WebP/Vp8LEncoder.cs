@@ -1376,6 +1376,7 @@ internal sealed class Vp8LEncoder : IDisposable
                 Try(pixels, position, _width, maxLength, ref bestLength, ref bestDistance);
             }
 
+            var previous = _previous;
             var candidate = _head[Hash(position)];
             while (candidate != uint.MaxValue && chainDepth-- > 0 && bestLength < maxLength)
             {
@@ -1384,12 +1385,13 @@ internal sealed class Vp8LEncoder : IDisposable
                     break;
 
                 Try(pixels, position, distance, maxLength, ref bestLength, ref bestDistance);
-                candidate = _previous[(int)candidate];
+                candidate = previous[(int)candidate];
             }
 
             return (bestLength, bestDistance);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Try(ReadOnlySpan<uint> pixels, int position, int distance, int maxLength, ref int bestLength, ref int bestDistance)
         {
             if (distance <= 0 || distance > position || distance > MaxDistance || bestLength >= maxLength)

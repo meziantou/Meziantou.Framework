@@ -206,18 +206,12 @@ internal static class JpegXlModularEncoder
             var values = residuals.Span[..channel.Samples.Length];
             ComputeResiduals(channel, predictors[c], values, scope);
             var count = c == firstRowChannel ? channel.Width : values.Length;
-            foreach (var value in values[..count])
-            {
-                stream.Add(contexts[c], value);
-            }
+            stream.AddRange(contexts[c], values[..count]);
 
             if (c == firstRowChannel && values.Length > count)
             {
                 ComputeResiduals(channel, predictors[^1], values, scope);
-                foreach (var value in values[count..])
-                {
-                    stream.Add(contexts[^1], value);
-                }
+                stream.AddRange(contexts[^1], values[count..]);
             }
         }
 

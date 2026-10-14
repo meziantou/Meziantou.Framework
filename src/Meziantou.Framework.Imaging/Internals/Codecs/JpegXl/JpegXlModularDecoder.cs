@@ -11,6 +11,7 @@ internal static class JpegXlModularDecoder
     private const int FirstReferenceProperty = 16;
     private const int PropertiesPerReference = 4;
     private const int MaxPropertyCount = 256;
+    private const int MaxLeafTableLength = 2048;
 
     /// <summary>Reads a sub-bitstream into the channels of <paramref name="image"/>.</summary>
     /// <param name="reader">The reader.</param>
@@ -184,6 +185,12 @@ internal static class JpegXlModularDecoder
         // The properties of the previous channels are computed a row at a time, all the references of a column together
         var referenceStride = found * PropertiesPerReference;
         using var referenceProperties = found > 0 && !isSingleLeaf ? Av1PooledArray<int>.Rent(scope, (long)width * referenceStride, clear: false) : null;
+
+        // A tree whose decisions all test one property of the sample and its neighbors is a function of that property: a
+        // table gives the leaf of each value between the smallest split value and the largest one plus one, which also
+        // stand for the values below and above them
+        Span<int> leafTable = isSingleLeaf ? default : stackalloc int[MaxLeafTableLength];
+        var leaves = leafTable[..FillLeafTable(nodes, leafTable, out var tableProperty, out var tableLow)];
         var samples = channel.Samples;
         for (var y = 0; y < height; y++)
         {
@@ -248,7 +255,31 @@ internal static class JpegXlModularDecoder
                 }
 
                 var leafIndex = 0;
-                if (!isSingleLeaf)
+                if (!leaves.IsEmpty)
+                {
+                    var value = tableProperty switch
+                    {
+                        2 => y,
+                        3 => x,
+                        4 => (int)Math.Abs(top),
+                        5 => (int)Math.Abs(left),
+                        6 => (int)top,
+                        7 => (int)left,
+                        8 => (int)(left - properties[9]),
+                        9 => (int)(left + top - topLeft),
+                        10 => (int)(left - topLeft),
+                        11 => (int)(topLeft - top),
+                        12 => (int)(top - topRight),
+                        13 => (int)(top - topTop),
+                        14 => (int)(left - leftLeft),
+                        _ => weightedProperty,
+                    };
+
+                    // The property 8 is the difference with the property 9 of the previous sample
+                    properties[9] = (int)(left + top - topLeft);
+                    leafIndex = leaves[(int)(Math.Clamp(value, tableLow, (long)tableLow + leaves.Length - 1) - tableLow)];
+                }
+                else if (!isSingleLeaf)
                 {
                     properties[3] = x;
                     properties[4] = (int)Math.Abs(top);
@@ -282,6 +313,55 @@ internal static class JpegXlModularDecoder
                 weighted?.Update(sample, x, y);
             }
         }
+    }
+
+    /// <summary>
+    /// Fills the table of the leaves of a tree whose decisions all test the same property, one of those computed from the
+    /// position and the neighbors of a sample (2 to 15), when the split values span fewer values than the table holds: the
+    /// entry i is the leaf of the value <paramref name="low"/> + i, the first entry is also the leaf of the smaller values
+    /// and the last one of the larger values.
+    /// </summary>
+    /// <returns>The number of entries, or 0 when the tree is not of that kind.</returns>
+    private static int FillLeafTable(ReadOnlySpan<JpegXlMaTreeNode> nodes, Span<int> leaves, out int property, out int low)
+    {
+        property = -1;
+        low = 0;
+        long smallest = long.MaxValue;
+        long largest = long.MinValue;
+        foreach (ref readonly var node in nodes)
+        {
+            if (node.IsLeaf)
+                continue;
+
+            if (property >= 0 && node.Property != property)
+                return 0;
+
+            property = node.Property;
+            smallest = Math.Min(smallest, node.ValueOrOffset);
+            largest = Math.Max(largest, node.ValueOrOffset);
+        }
+
+        // A value above the largest split value is greater than all of them: it has the leaf of the largest one plus one
+        var length = largest + 2 - smallest;
+        if (property is < 2 or >= FirstReferenceProperty || length > leaves.Length)
+            return 0;
+
+        low = (int)smallest;
+        leaves = leaves[..(int)length];
+        for (var i = 0; i < leaves.Length; i++)
+        {
+            var value = smallest + i;
+            var index = 0;
+            while (!nodes[index].IsLeaf)
+            {
+                ref readonly var decision = ref nodes[index];
+                index = value > decision.ValueOrOffset ? decision.LeftOrContext : decision.RightOrPredictor;
+            }
+
+            leaves[i] = index;
+        }
+
+        return leaves.Length;
     }
 
     /// <summary>

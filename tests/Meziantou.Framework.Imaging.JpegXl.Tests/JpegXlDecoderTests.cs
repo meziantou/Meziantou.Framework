@@ -602,10 +602,10 @@ public sealed class JpegXlDecoderTests
     }
 
     /// <summary>
-    /// A Modular sub-bitstream whose tree is drawn at random (the first 14 seeds: one leaf with each predictor) is decoded
-    /// like a transcription of the section H.3 of the standard does: every sample computes the properties, walks the tree and
-    /// predicts from its neighbors, at the edges of channels of 1 to 40 samples, with the previous channels of the same size
-    /// as the source of the properties from 16 on.
+    /// A Modular sub-bitstream whose tree is drawn at random (the first 14 seeds: one leaf with each predictor; the next 14:
+    /// decisions on one property, 2 to 15) is decoded like a transcription of the section H.3 of the standard does: every
+    /// sample computes the properties, walks the tree and predicts from its neighbors, at the edges of channels of 1 to 40
+    /// samples, with the previous channels of the same size as the source of the properties from 16 on.
     /// </summary>
     [Theory]
     [MemberData(nameof(ModularTreeSeeds))]
@@ -631,7 +631,8 @@ public sealed class JpegXlDecoderTests
         }
         else
         {
-            BuildTree(random, nodes, sizes.Length);
+            // Then trees whose decisions all test the same property, of the sample and its neighbors, then any
+            BuildTree(random, nodes, sizes.Length, seed < JpegXlMaTree.PredictorCount + 14 ? seed - JpegXlMaTree.PredictorCount + 2 : -1);
         }
 
         var leafCount = 0;
@@ -784,7 +785,7 @@ public sealed class JpegXlDecoderTests
             return samples;
         }
 
-        static void BuildTree(Random random, List<JpegXlMaTreeNode> nodes, int channelCount)
+        static void BuildTree(Random random, List<JpegXlMaTreeNode> nodes, int channelCount, int onlyProperty)
         {
             // Breadth first: each queued node keeps the range of values its ancestors leave to each property
             var queue = new Queue<(int Index, int Depth, Dictionary<int, (int Low, int High)> Ranges)>();
@@ -792,7 +793,7 @@ public sealed class JpegXlDecoderTests
             queue.Enqueue((0, 0, []));
             while (queue.TryDequeue(out var item))
             {
-                var property = random.Next(4) switch
+                var property = onlyProperty >= 0 ? onlyProperty : random.Next(4) switch
                 {
                     0 => random.Next(16),
                     1 => 16 + random.Next(4 * channelCount),

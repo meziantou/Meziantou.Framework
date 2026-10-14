@@ -30,9 +30,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// <see cref="ConvertRowScalar{TSource, TDestination}(ReadOnlySpan{TSource}, Span{TDestination}, Rgba64?, ImageFormat)"/> is the numerical
 /// reference: vectorized kernels must produce bit-identical results and are tested against it. With 128-bit hardware
-/// vectors, the conversions that only move bytes (channel order, alpha added or dropped, gray replicated, 8-bit samples
-/// to 16 bits), the reduction of 16-bit samples to 8 bits and the search for a non-opaque pixel process 16 bytes at a
-/// time.
+/// vectors, every pair of formats and the search for a non-opaque pixel process 16 bytes at a time: byte moves (channel
+/// order, alpha added or dropped, gray replicated, 8-bit samples to 16 bits), the reduction of 16-bit samples to 8 bits,
+/// luma and flattening use integer forms (or a <see cref="float"/> division that is checked or corrected) that give the
+/// results of the scalar formulas for every input.
 /// Source and destination rows must not overlap, unless they start at the same address and the two formats have the same
 /// size (in-place conversion, for example <see cref="Rgba32"/> to <see cref="Bgra32"/>).
 /// </para>
@@ -94,9 +95,8 @@ internal static class PixelConverter
                 throw CreateNonOpaqueException(sourceFormat, destinationFormat, index, format);
         }
 
-        // The conversions that only move bytes are done 16 bytes at a time; flattening is arithmetic
         var flattens = removesAlpha && background is not null;
-        var done = useVectors && !flattens ? ConvertVector(source, destination) : 0;
+        var done = useVectors ? ConvertVector(source, destination, flattens ? background : null) : 0;
         ConvertCore(source[done..], destination[done..], flattens ? background : null);
     }
 
@@ -396,16 +396,22 @@ internal static class PixelConverter
     }
 
     /// <summary>
-    /// Converts the leading pixels of a row for the pairs of formats whose conversion only moves bytes (channel order, added
-    /// opaque alpha, dropped alpha, replicated gray, 8-bit samples repeated into 16 bits) or reduces 16-bit samples to 8
-    /// bits (<see cref="To8BitVector"/>), 16 bytes at a time.
+    /// Converts the leading pixels of a row with 128-bit vectors: the conversions that only move bytes (channel order, added
+    /// opaque alpha, dropped alpha, replicated gray, 8-bit samples repeated into 16 bits), reduce 16-bit samples to 8 bits
+    /// (<see cref="To8BitVector"/>), compute luma (<see cref="Luma8Vector"/>, <see cref="Luma16Vector"/>) or flatten
+    /// (<see cref="Flatten8Vector"/>, <see cref="Flatten16Vector"/>).
     /// </summary>
+    /// <param name="source">The source pixels.</param>
+    /// <param name="destination">The destination pixels.</param>
+    /// <param name="background">The background to flatten onto (alpha is removed and pixels may be non-opaque), or <see langword="null"/>.</param>
     /// <returns>The number of pixels converted; the scalar reference converts the others.</returns>
     /// <remarks>
-    /// Alpha is only dropped once the caller has checked that it is opaque (or that discarding it is the conversion). A
-    /// vector that holds 12 meaningful bytes is read or written as 16 bytes while 16 bytes remain in the row.
+    /// Without a background, alpha is only dropped once the caller has checked that it is opaque. A vector that holds 12
+    /// meaningful bytes is read or written as 16 bytes while 16 bytes remain in the row. Flattening applies to every pixel:
+    /// for an opaque pixel it gives the sample back (<c>(s * max + max / 2) / max = s</c>), as the scalar reference that
+    /// skips opaque pixels.
     /// </remarks>
-    private static int ConvertVector<TSource, TDestination>(ReadOnlySpan<TSource> source, Span<TDestination> destination)
+    private static int ConvertVector<TSource, TDestination>(ReadOnlySpan<TSource> source, Span<TDestination> destination, Rgba64? background)
         where TSource : unmanaged
         where TDestination : unmanaged
     {
@@ -417,6 +423,25 @@ internal static class PixelConverter
         var destinationIs32 = typeof(TDestination) == typeof(Rgba32) || typeof(TDestination) == typeof(Bgra32);
         var swaps = (typeof(TSource) == typeof(Bgra32)) != (typeof(TDestination) == typeof(Bgra32));
         var opaque = Vector128.Create(0xFF000000u).AsByte();
+
+        // The background at the source precision, in the order of the source components (and 0 for alpha)
+        var flattens = background is not null;
+        Vector128<ushort> background8 = default;
+        Vector128<uint> background16 = default;
+        if (background is { } color)
+        {
+            if (typeof(TSource) == typeof(Rgba64))
+            {
+                background16 = Vector128.Create(color.R, color.G, color.B, 0u);
+            }
+            else
+            {
+                var (first, third) = typeof(TSource) == typeof(Bgra32) ? (color.B, color.R) : (color.R, color.B);
+                var (c0, c1, c2) = ((ushort)To8Bit(first), (ushort)To8Bit(color.G), (ushort)To8Bit(third));
+                background8 = Vector128.Create(c0, c1, c2, 0, c0, c1, c2, 0);
+            }
+        }
+
         if (sourceIs32 && destinationIs32)
         {
             // Rgba32 <-> Bgra32: red and blue are exchanged
@@ -445,7 +470,11 @@ internal static class PixelConverter
                 : Vector128.Create((byte)0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 0xFF, 0xFF, 0xFF, 0xFF);
             for (; i + 6 <= length; i += 4)
             {
-                unsafe { Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)(4 * i)), order).StoreUnsafe(ref output, (nuint)(3 * i)); }
+                var pixels = unsafe(Vector128.LoadUnsafe(ref input, (nuint)(4 * i)));
+                if (flattens)
+                    pixels = Flatten8Vector(pixels, background8);
+
+                unsafe { Vector128.Shuffle(pixels, order).StoreUnsafe(ref output, (nuint)(3 * i)); }
             }
         }
         else if (IsGray<TSource>() && (typeof(TDestination) == typeof(Rgb24) || destinationIs32))
@@ -486,7 +515,7 @@ internal static class PixelConverter
             var order = Vector128.Create((byte)0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 0xFF, 0xFF, 0xFF, 0xFF);
             for (; i + 6 <= length; i += 4)
             {
-                var pixels = Narrow8Bit(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(8 * i))).AsUInt16(), unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 16))).AsUInt16());
+                var pixels = Narrow8Bit(LoadRgba64(ref input, i, flattens, background16), LoadRgba64(ref input, i + 2, flattens, background16));
                 unsafe { Vector128.Shuffle(pixels, order).StoreUnsafe(ref output, (nuint)(3 * i)); }
             }
         }
@@ -554,10 +583,10 @@ internal static class PixelConverter
             var high = Vector128.Create((byte)8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15);
             for (; i <= end; i += 16)
             {
-                var y0 = Luma8Vector(LoadPixels32<TSource>(ref input, i), typeof(TSource) == typeof(Bgra32)).AsUInt32();
-                var y1 = Luma8Vector(LoadPixels32<TSource>(ref input, i + 4), typeof(TSource) == typeof(Bgra32)).AsUInt32();
-                var y2 = Luma8Vector(LoadPixels32<TSource>(ref input, i + 8), typeof(TSource) == typeof(Bgra32)).AsUInt32();
-                var y3 = Luma8Vector(LoadPixels32<TSource>(ref input, i + 12), typeof(TSource) == typeof(Bgra32)).AsUInt32();
+                var y0 = Luma8Vector(LoadPixels32<TSource>(ref input, i, flattens, background8), typeof(TSource) == typeof(Bgra32)).AsUInt32();
+                var y1 = Luma8Vector(LoadPixels32<TSource>(ref input, i + 4, flattens, background8), typeof(TSource) == typeof(Bgra32)).AsUInt32();
+                var y2 = Luma8Vector(LoadPixels32<TSource>(ref input, i + 8, flattens, background8), typeof(TSource) == typeof(Bgra32)).AsUInt32();
+                var y3 = Luma8Vector(LoadPixels32<TSource>(ref input, i + 12, flattens, background8), typeof(TSource) == typeof(Bgra32)).AsUInt32();
                 var gray = Vector128.Narrow(Vector128.Narrow(y0, y1), Vector128.Narrow(y2, y3));
                 if (typeof(TDestination) == typeof(Gray8))
                 {
@@ -575,10 +604,10 @@ internal static class PixelConverter
         {
             for (; i + 16 <= length; i += 16)
             {
-                var y0 = Luma16Vector(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(8 * i))), unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 16))));
-                var y1 = Luma16Vector(unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 32))), unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 48))));
-                var y2 = Luma16Vector(unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 64))), unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 80))));
-                var y3 = Luma16Vector(unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 96))), unsafe(Vector128.LoadUnsafe(ref input, (nuint)((8 * i) + 112))));
+                var y0 = Luma16Vector(LoadRgba64(ref input, i, flattens, background16), LoadRgba64(ref input, i + 2, flattens, background16));
+                var y1 = Luma16Vector(LoadRgba64(ref input, i + 4, flattens, background16), LoadRgba64(ref input, i + 6, flattens, background16));
+                var y2 = Luma16Vector(LoadRgba64(ref input, i + 8, flattens, background16), LoadRgba64(ref input, i + 10, flattens, background16));
+                var y3 = Luma16Vector(LoadRgba64(ref input, i + 12, flattens, background16), LoadRgba64(ref input, i + 14, flattens, background16));
                 var gray0 = Vector128.Narrow(y0, y1);
                 var gray1 = Vector128.Narrow(y2, y3);
                 if (typeof(TDestination) == typeof(Gray8))
@@ -596,9 +625,12 @@ internal static class PixelConverter
         return i;
     }
 
-    /// <summary>Loads 4 pixels of an 8-bit color format as 4 lanes of 32 bits whose bytes 0, 1 and 2 are the color components in memory order.</summary>
+    /// <summary>
+    /// Loads 4 pixels of an 8-bit color format as 4 lanes of 32 bits whose bytes 0, 1 and 2 are the color components in
+    /// memory order, flattened onto <paramref name="background"/> when <paramref name="flattens"/>.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Vector128<byte> LoadPixels32<TSource>(ref byte input, int index)
+    private static Vector128<byte> LoadPixels32<TSource>(ref byte input, int index, bool flattens, Vector128<ushort> background)
     {
         if (typeof(TSource) == typeof(Rgb24))
         {
@@ -607,7 +639,78 @@ internal static class PixelConverter
             return Vector128.Shuffle(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(3 * index))), order);
         }
 
-        return unsafe(Vector128.LoadUnsafe(ref input, (nuint)(4 * index)));
+        var pixels = unsafe(Vector128.LoadUnsafe(ref input, (nuint)(4 * index)));
+        return flattens ? Flatten8Vector(pixels, background) : pixels;
+    }
+
+    /// <summary>Loads 2 <see cref="Rgba64"/> pixels, flattened onto <paramref name="background"/> when <paramref name="flattens"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<ushort> LoadRgba64(ref byte input, int index, bool flattens, Vector128<uint> background)
+    {
+        var pixels = unsafe(Vector128.LoadUnsafe(ref input, (nuint)(8 * index))).AsUInt16();
+        return flattens ? Flatten16Vector(pixels, background) : pixels;
+    }
+
+    /// <summary>
+    /// Flattens 4 straight-alpha pixels of 8-bit samples onto an opaque background, with the result of
+    /// <see cref="Flatten(uint, uint, uint, uint)"/>: <c>(s * a + bg * (255 - a) + 127) / 255</c>.
+    /// </summary>
+    /// <param name="pixels">4 pixels of 4 bytes, alpha last.</param>
+    /// <param name="background">The background components of 2 pixels, in the order of the pixel bytes, with 0 for alpha.</param>
+    /// <returns>The flattened pixels; their alpha byte is meaningless.</returns>
+    /// <remarks><c>s * a + bg * (255 - a)</c> is at most 255 * 255, so it fits in 16 bits (<see cref="DivideBy255Vector"/>).</remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector128<byte> Flatten8Vector(Vector128<byte> pixels, Vector128<ushort> background)
+    {
+        var alpha = Vector128.Shuffle(pixels, Vector128.Create((byte)3, 3, 3, 3, 7, 7, 7, 7, 11, 11, 11, 11, 15, 15, 15, 15));
+        var (lower, upper) = Vector128.Widen(pixels);
+        var (lowerAlpha, upperAlpha) = Vector128.Widen(alpha);
+        var max = Vector128.Create((ushort)byte.MaxValue);
+        var flattenedLower = DivideBy255Vector((lower * lowerAlpha) + (background * (max - lowerAlpha)));
+        var flattenedUpper = DivideBy255Vector((upper * upperAlpha) + (background * (max - upperAlpha)));
+        return Vector128.Narrow(flattenedLower, flattenedUpper);
+    }
+
+    /// <summary>
+    /// Computes <c>(x + 127) / 255</c> on every lane, for <c>x</c> up to 255 * 255: <c>t = x + 128</c>,
+    /// <c>(t + (t &gt;&gt; 8)) &gt;&gt; 8</c> (checked exhaustively by the tests), which does not overflow 16 bits.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector128<ushort> DivideBy255Vector(Vector128<ushort> value)
+    {
+        var biased = value + Vector128.Create((ushort)128);
+        return Vector128.ShiftRightLogical(biased + Vector128.ShiftRightLogical(biased, 8), 8);
+    }
+
+    /// <summary>
+    /// Flattens 2 straight-alpha <see cref="Rgba64"/> pixels onto an opaque background, with the result of
+    /// <see cref="Flatten(uint, uint, uint, uint)"/>: <c>(s * a + bg * (65535 - a) + 32767) / 65535</c>.
+    /// </summary>
+    /// <param name="pixels">2 pixels.</param>
+    /// <param name="background">The background components (red, green, blue and 0 for alpha).</param>
+    /// <returns>The flattened pixels; their alpha is meaningless.</returns>
+    /// <remarks><c>s * a + bg * (65535 - a)</c> is at most 65535 * 65535, so it fits in 32 bits (<see cref="DivideBy65535Vector"/>).</remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector128<ushort> Flatten16Vector(Vector128<ushort> pixels, Vector128<uint> background)
+    {
+        var alpha = Vector128.Shuffle(pixels.AsByte(), Vector128.Create((byte)6, 7, 6, 7, 6, 7, 6, 7, 14, 15, 14, 15, 14, 15, 14, 15)).AsUInt16();
+        var (first, second) = Vector128.Widen(pixels);
+        var (firstAlpha, secondAlpha) = Vector128.Widen(alpha);
+        var max = Vector128.Create((uint)ushort.MaxValue);
+        var flattenedFirst = DivideBy65535Vector((first * firstAlpha) + (background * (max - firstAlpha)));
+        var flattenedSecond = DivideBy65535Vector((second * secondAlpha) + (background * (max - secondAlpha)));
+        return Vector128.Narrow(flattenedFirst, flattenedSecond);
+    }
+
+    /// <summary>
+    /// Computes <c>(x + 32767) / 65535</c> on every lane, for <c>x</c> up to 65535 * 65535: <c>t = x + 32768</c>,
+    /// <c>(t + (t &gt;&gt; 16)) &gt;&gt; 16</c>, which does not overflow 32 bits (at most 4,294,934,528).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector128<uint> DivideBy65535Vector(Vector128<uint> value)
+    {
+        var biased = value + Vector128.Create(32768u);
+        return Vector128.ShiftRightLogical(biased + Vector128.ShiftRightLogical(biased, 16), 16);
     }
 
     /// <summary>
@@ -651,7 +754,7 @@ internal static class PixelConverter
     /// scalar reference has no effect; <see cref="DivideBy10000ExactVector"/> divides it.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Vector128<uint> Luma16Vector(Vector128<byte> first, Vector128<byte> second)
+    private static Vector128<uint> Luma16Vector(Vector128<ushort> first, Vector128<ushort> second)
     {
         var redBlue = Vector128.Narrow(first.AsUInt32(), second.AsUInt32()).AsInt32();
         var greenAlpha = Vector128.Narrow(Vector128.ShiftRightLogical(first.AsUInt32(), 16), Vector128.ShiftRightLogical(second.AsUInt32(), 16)).AsInt32();

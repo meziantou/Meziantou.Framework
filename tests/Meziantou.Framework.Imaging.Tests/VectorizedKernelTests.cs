@@ -522,10 +522,41 @@ public sealed class VectorizedKernelTests
             CheckExactDivision(value);
         }
 
+        // Every 8-bit flattening sum (s * a + bg * (255 - a) <= 255 * 255), rounded division by 255
+        for (var value = 0; value <= 255 * 255; value += 8)
+        {
+            var quotients = PixelConverter.DivideBy255Vector(Vector128.Create((ushort)value, (ushort)(value + 1), (ushort)(value + 2), (ushort)(value + 3), (ushort)(value + 4), (ushort)(value + 5), (ushort)(value + 6), (ushort)(value + 7)));
+            for (var lane = 0; lane < 8; lane++)
+            {
+                if (value + lane <= 255 * 255 && quotients[lane] != (value + lane + 127) / 255)
+                    Assert.Fail($"Wrong quotient for {value + lane}: {quotients[lane]}");
+            }
+        }
+
+        // 16-bit flattening sums (up to 65535 * 65535): the values around every multiple of 65535 and of every half-way
+        // point, where the rounded quotient changes, and a stride over the range
+        for (var multiple = 0L; multiple <= 65535; multiple++)
+        {
+            CheckDivisionBy65535(Math.Max((multiple * 65535) - 2, 0));
+            CheckDivisionBy65535(Math.Min((multiple * 65535) + 32765, (65535L * 65535) - 3));
+        }
+
+        for (var value = 0L; value <= (65535L * 65535) - 3; value += 65521)
+        {
+            CheckDivisionBy65535(value);
+        }
+
         static void CheckExactDivision(int value)
         {
             var quotients = PixelConverter.DivideBy10000ExactVector(Vector128.Create(value, value + 1, value + 2, value + 3));
             if (quotients != Vector128.Create(value / 10000, (value + 1) / 10000, (value + 2) / 10000, (value + 3) / 10000))
+                Assert.Fail($"Wrong quotient from {value}: {quotients}");
+        }
+
+        static void CheckDivisionBy65535(long value)
+        {
+            var quotients = PixelConverter.DivideBy65535Vector(Vector128.Create((uint)value, (uint)(value + 1), (uint)(value + 2), (uint)(value + 3)));
+            if (quotients != Vector128.Create((uint)((value + 32767) / 65535), (uint)((value + 32768) / 65535), (uint)((value + 32769) / 65535), (uint)((value + 32770) / 65535)))
                 Assert.Fail($"Wrong quotient from {value}: {quotients}");
         }
     }

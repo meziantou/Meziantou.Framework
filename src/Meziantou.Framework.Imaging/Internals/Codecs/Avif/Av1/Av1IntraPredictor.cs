@@ -400,14 +400,14 @@ internal static class Av1IntraPredictor
                 {
                     var strength = GetEdgeFilterStrength(w, h, filterType, pAngle - 90);
                     var numPx = Math.Min(w, maxX - x + 1) + (pAngle < 90 ? h : 0) + 1;
-                    FilterEdge(above, numPx, strength);
+                    FilterEdge(above, numPx, strength, vectorized);
                 }
 
                 if (haveLeft)
                 {
                     var strength = GetEdgeFilterStrength(w, h, filterType, pAngle - 180);
                     var numPx = Math.Min(h, maxY - y + 1) + (pAngle > 180 ? w : 0) + 1;
-                    FilterEdge(left, numPx, strength);
+                    FilterEdge(left, numPx, strength, vectorized);
                 }
             }
 
@@ -810,7 +810,7 @@ internal static class Av1IntraPredictor
     }
 
     // Section 7.11.2.12 "Intra edge filter process": filters entries -1 to size - 2 of the edge
-    private static void FilterEdge(Edge buffer, int size, int strength)
+    private static void FilterEdge(Edge buffer, int size, int strength, bool vectorized)
     {
         if (strength is 0)
             return;
@@ -822,17 +822,46 @@ internal static class Av1IntraPredictor
         }
 
         var kernel = Av1Tables.IntraEdgeKernel.Slice((strength - 1) * Av1Constants.IntraEdgeTaps, Av1Constants.IntraEdgeTaps);
-        for (var i = 1; i < size; i++)
+        var i0 = 1;
+        if (vectorized && size >= 8)
         {
-            var s = 0;
-            for (var j = 0; j < Av1Constants.IntraEdgeTaps; j++)
+            // The outputs 2 to size - 3 read the entries i - 2 to i + 2, which need no clamping: 4 outputs at a time
+            var k0 = Vector128.Create((int)kernel[0]);
+            var k1 = Vector128.Create((int)kernel[1]);
+            var k2 = Vector128.Create((int)kernel[2]);
+            var k3 = Vector128.Create((int)kernel[3]);
+            var k4 = Vector128.Create((int)kernel[4]);
+            var rounding = Vector128.Create(8);
+            var output = buffer.From(0);
+            buffer[0] = FilterEdgeSample(edge, kernel, 1);
+            var i = 2;
+            for (; i + 4 <= size - 2; i += 4)
             {
-                var k = Math.Clamp(i - 2 + j, 0, size - 1);
-                s += kernel[j] * edge[k];
+                var sum = (k0 * Vector128.Create(edge[(i - 2)..])) + (k1 * Vector128.Create(edge[(i - 1)..])) + (k2 * Vector128.Create(edge[i..]))
+                    + (k3 * Vector128.Create(edge[(i + 1)..])) + (k4 * Vector128.Create(edge[(i + 2)..]));
+                ((sum + rounding) >> 4).CopyTo(output[(i - 1)..]);
             }
 
-            buffer[i - 1] = (s + 8) >> 4;
+            i0 = i;
         }
+
+        for (var i = i0; i < size; i++)
+        {
+            buffer[i - 1] = FilterEdgeSample(edge, kernel, i);
+        }
+    }
+
+    // The output i of the intra edge filter, from the unfiltered entries
+    private static int FilterEdgeSample(ReadOnlySpan<int> edge, ReadOnlySpan<byte> kernel, int i)
+    {
+        var s = 0;
+        for (var j = 0; j < Av1Constants.IntraEdgeTaps; j++)
+        {
+            var k = Math.Clamp(i - 2 + j, 0, edge.Length - 1);
+            s += kernel[j] * edge[k];
+        }
+
+        return (s + 8) >> 4;
     }
 
     private static int Round2(int value, int bits) => (value + (1 << (bits - 1))) >> bits;

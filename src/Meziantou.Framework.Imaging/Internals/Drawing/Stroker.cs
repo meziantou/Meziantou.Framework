@@ -21,6 +21,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// a piece, so the others are not tested.
 /// </para>
 /// <para>
+/// A part of a round join or cap whose triangle (its ends and the meeting point of their tangents) has a box outside
+/// the frame is replaced by its chord, whatever its size: what is between them is not seen. A cap of a very wide pen
+/// far from the frame is a few chords instead of thousands.
+/// </para>
+/// <para>
 /// A vertex flagged as smooth was created by flattening a curve: it is joined with a round join whatever the pen says,
 /// because the stroke of a smooth curve has no corner there.
 /// </para>
@@ -455,7 +460,7 @@ internal sealed class Stroker : PathSink
             scale = _pieceView.GetScale(Math.Min(x0, Math.Min(x1, tx)), Math.Min(y0, Math.Min(y1, ty)), Math.Max(x0, Math.Max(x1, tx)), Math.Max(y0, Math.Max(y1, ty)));
         }
 
-        if (depth >= PathFlattener.MaxArcDepth || !(_halfWidth * scale * (1 - (length / 2)) > PathFlattener.Tolerance))
+        if (depth >= PathFlattener.MaxArcDepth || !(_halfWidth * scale * (1 - (length / 2)) > PathFlattener.Tolerance) || IsArcOutsideFrame(centerX, centerY, ux, uy, vx, vy, mx, my, length))
         {
             PieceLineTo(centerX + (_halfWidth * vx), centerY + (_halfWidth * vy));
             return;
@@ -465,6 +470,45 @@ internal sealed class Stroker : PathSink
         my /= length;
         AddArc(centerX, centerY, ux, uy, mx, my, depth + 1);
         AddArc(centerX, centerY, mx, my, vx, vy, depth + 1);
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether an arc of a join or a cap is outside the frame: the triangle of its ends and of
+    /// the meeting point of their tangents, which contains the arc and its chord, has a box on the canvas that misses the
+    /// frame. Its chord then gives the same pixels: what is between them is not seen. A cap of a very wide pen far from
+    /// the frame is not cut finely.
+    /// </summary>
+    private bool IsArcOutsideFrame(double centerX, double centerY, double ux, double uy, double vx, double vy, double mx, double my, double length)
+    {
+        if (_edges is null || _isProjectiveOutput)
+            return false;
+
+        var toTangents = 2 * _halfWidth / (length * length);
+        var minX = double.PositiveInfinity;
+        var minY = double.PositiveInfinity;
+        var maxX = double.NegativeInfinity;
+        var maxY = double.NegativeInfinity;
+        for (var corner = 0; corner < 3; corner++)
+        {
+            var (x, y) = corner switch
+            {
+                0 => (centerX + (_halfWidth * ux), centerY + (_halfWidth * uy)),
+                1 => (centerX + (_halfWidth * vx), centerY + (_halfWidth * vy)),
+                _ => (centerX + (mx * toTangents), centerY + (my * toTangents)),
+            };
+
+            if (_hasOutputTransform)
+            {
+                (x, y) = (_outputTransform.TransformX(x, y), _outputTransform.TransformY(x, y));
+            }
+
+            minX = Math.Min(minX, x);
+            minY = Math.Min(minY, y);
+            maxX = Math.Max(maxX, x);
+            maxY = Math.Max(maxY, y);
+        }
+
+        return maxX < 0 || maxY < 0 || minX > _edges.Width || minY > _edges.Height;
     }
 
     private void BeginPiece(double x, double y)

@@ -1511,7 +1511,8 @@ public static void MarkAnimation(string inputPath, string outputPath)
   contours over the same half of a pixel cover half of it, not all of it. A pixel that is not covered is left
   untouched, bit for bit.
 - **Curves.** Curves, ellipses, arcs, round joins and round caps are replaced by chords that stay within 1/16 of a pixel of
-  them. The vertices of the chords are not part of the contract.
+  them. A part of a round join or cap whose box is outside the canvas may be replaced by a single chord: what is between
+  them is not seen. The vertices of the chords are not part of the contract.
 - **Colors.** Brush colors are sample values in the color space of the image: no color profile is applied, unless
   `PaintProfile` gives one. A color of a profile is its 16-bit red, green and blue values converted as
   `IccColorTransform` converts them, from the profile to the ICC profile of the image, or to its CICP color space (the

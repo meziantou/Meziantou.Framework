@@ -518,6 +518,18 @@ public sealed class DrawingStrokeTests
             AssertGray8(image, [[255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255]]);
         }
 
+        // Round caps 16 million pixels wide on the dashes that reach the canvas, their centers far from it: only the
+        // parts of their circles near the canvas are cut finely (cut finely everywhere, the 20,000 dashes before the
+        // one that covers the canvas take minutes)
+        using (var image = NewBlack(4, 3))
+        {
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token);
+            budget.CancelAfter(TimeSpan.FromSeconds(60));
+            var pen = new Pen(White, 16777216) { DashPattern = [400, 20], LineCap = LineCap.Round };
+            image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(-16777216, 8388598), new PointD(16777216, 8388598)), budget.Token);
+            AssertGray8(image, [[255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255]]);
+        }
+
         // Far from the canvas across the line, nothing is cut at all
         using (var image = NewBlack(4, 3))
         {

@@ -270,7 +270,54 @@ internal sealed class JpegRowWriter : JpegBandWriter
     }
 
     /// <summary>Interleaves three planes whose samples are stored as they are displayed.</summary>
-    private static void Interleave(ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third, Span<byte> destination)
+    internal static void Interleave(ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third, Span<byte> destination)
+    {
+        var done = UseVectors ? InterleaveVector(first, second, third, destination) : 0;
+        InterleaveScalar(first[done..], second[done..], third[done..], destination[(3 * done)..]);
+    }
+
+    /// <summary>Interleaves the samples of whole 16-sample groups with byte shuffles.</summary>
+    /// <returns>The number of samples of each plane interleaved.</returns>
+    private static int InterleaveVector(ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third, Span<byte> destination)
+    {
+        ref var firstStart = ref unsafe(MemoryMarshal.GetReference(first));
+        ref var secondStart = ref unsafe(MemoryMarshal.GetReference(second));
+        ref var thirdStart = ref unsafe(MemoryMarshal.GetReference(third));
+        ref var destinationStart = ref unsafe(MemoryMarshal.GetReference(destination));
+        var length = Math.Min(Math.Min(first.Length, Math.Min(second.Length, third.Length)), destination.Length / 3);
+        var x = 0;
+        for (; x + 16 <= length; x += 16)
+        {
+            Interleave16(
+                unsafe(Vector128.LoadUnsafe(ref firstStart, (nuint)x)),
+                unsafe(Vector128.LoadUnsafe(ref secondStart, (nuint)x)),
+                unsafe(Vector128.LoadUnsafe(ref thirdStart, (nuint)x)),
+                ref unsafe(Unsafe.Add(ref destinationStart, 3 * x)));
+        }
+
+        return x;
+    }
+
+    /// <summary>Writes 16 interleaved triples (48 bytes): each output byte comes from one of the three vectors (an index of 0xFF selects zero).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Interleave16(Vector128<byte> r, Vector128<byte> g, Vector128<byte> b, ref byte output)
+    {
+        var out0 = Vector128.Shuffle(r, Vector128.Create((byte)0, 0xFF, 0xFF, 1, 0xFF, 0xFF, 2, 0xFF, 0xFF, 3, 0xFF, 0xFF, 4, 0xFF, 0xFF, 5))
+            | Vector128.Shuffle(g, Vector128.Create((byte)0xFF, 0, 0xFF, 0xFF, 1, 0xFF, 0xFF, 2, 0xFF, 0xFF, 3, 0xFF, 0xFF, 4, 0xFF, 0xFF))
+            | Vector128.Shuffle(b, Vector128.Create((byte)0xFF, 0xFF, 0, 0xFF, 0xFF, 1, 0xFF, 0xFF, 2, 0xFF, 0xFF, 3, 0xFF, 0xFF, 4, 0xFF));
+        var out1 = Vector128.Shuffle(r, Vector128.Create((byte)0xFF, 0xFF, 6, 0xFF, 0xFF, 7, 0xFF, 0xFF, 8, 0xFF, 0xFF, 9, 0xFF, 0xFF, 10, 0xFF))
+            | Vector128.Shuffle(g, Vector128.Create((byte)5, 0xFF, 0xFF, 6, 0xFF, 0xFF, 7, 0xFF, 0xFF, 8, 0xFF, 0xFF, 9, 0xFF, 0xFF, 10))
+            | Vector128.Shuffle(b, Vector128.Create((byte)0xFF, 5, 0xFF, 0xFF, 6, 0xFF, 0xFF, 7, 0xFF, 0xFF, 8, 0xFF, 0xFF, 9, 0xFF, 0xFF));
+        var out2 = Vector128.Shuffle(r, Vector128.Create((byte)0xFF, 11, 0xFF, 0xFF, 12, 0xFF, 0xFF, 13, 0xFF, 0xFF, 14, 0xFF, 0xFF, 15, 0xFF, 0xFF))
+            | Vector128.Shuffle(g, Vector128.Create((byte)0xFF, 0xFF, 11, 0xFF, 0xFF, 12, 0xFF, 0xFF, 13, 0xFF, 0xFF, 14, 0xFF, 0xFF, 15, 0xFF))
+            | Vector128.Shuffle(b, Vector128.Create((byte)10, 0xFF, 0xFF, 11, 0xFF, 0xFF, 12, 0xFF, 0xFF, 13, 0xFF, 0xFF, 14, 0xFF, 0xFF, 15));
+        unsafe { out0.StoreUnsafe(ref output); }
+        unsafe { out1.StoreUnsafe(ref output, 16); }
+        unsafe { out2.StoreUnsafe(ref output, 32); }
+    }
+
+    /// <summary>The scalar reference of <see cref="Interleave"/>.</summary>
+    internal static void InterleaveScalar(ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third, Span<byte> destination)
     {
         for (var x = 0; x < first.Length; x++)
         {
@@ -366,20 +413,7 @@ internal sealed class JpegRowWriter : JpegBandWriter
             var g = Vector128.Narrow(green0, green1);
             var b = Vector128.Narrow(blue0, blue1);
 
-            // Interleaved R, G, B: each output byte comes from one of the three vectors (an index of 0xFF selects zero)
-            var out0 = Vector128.Shuffle(r, Vector128.Create((byte)0, 0xFF, 0xFF, 1, 0xFF, 0xFF, 2, 0xFF, 0xFF, 3, 0xFF, 0xFF, 4, 0xFF, 0xFF, 5))
-                | Vector128.Shuffle(g, Vector128.Create((byte)0xFF, 0, 0xFF, 0xFF, 1, 0xFF, 0xFF, 2, 0xFF, 0xFF, 3, 0xFF, 0xFF, 4, 0xFF, 0xFF))
-                | Vector128.Shuffle(b, Vector128.Create((byte)0xFF, 0xFF, 0, 0xFF, 0xFF, 1, 0xFF, 0xFF, 2, 0xFF, 0xFF, 3, 0xFF, 0xFF, 4, 0xFF));
-            var out1 = Vector128.Shuffle(r, Vector128.Create((byte)0xFF, 0xFF, 6, 0xFF, 0xFF, 7, 0xFF, 0xFF, 8, 0xFF, 0xFF, 9, 0xFF, 0xFF, 10, 0xFF))
-                | Vector128.Shuffle(g, Vector128.Create((byte)5, 0xFF, 0xFF, 6, 0xFF, 0xFF, 7, 0xFF, 0xFF, 8, 0xFF, 0xFF, 9, 0xFF, 0xFF, 10))
-                | Vector128.Shuffle(b, Vector128.Create((byte)0xFF, 5, 0xFF, 0xFF, 6, 0xFF, 0xFF, 7, 0xFF, 0xFF, 8, 0xFF, 0xFF, 9, 0xFF, 0xFF));
-            var out2 = Vector128.Shuffle(r, Vector128.Create((byte)0xFF, 11, 0xFF, 0xFF, 12, 0xFF, 0xFF, 13, 0xFF, 0xFF, 14, 0xFF, 0xFF, 15, 0xFF, 0xFF))
-                | Vector128.Shuffle(g, Vector128.Create((byte)0xFF, 0xFF, 11, 0xFF, 0xFF, 12, 0xFF, 0xFF, 13, 0xFF, 0xFF, 14, 0xFF, 0xFF, 15, 0xFF))
-                | Vector128.Shuffle(b, Vector128.Create((byte)10, 0xFF, 0xFF, 11, 0xFF, 0xFF, 12, 0xFF, 0xFF, 13, 0xFF, 0xFF, 14, 0xFF, 0xFF, 15));
-            ref var output = ref unsafe(Unsafe.Add(ref destinationStart, 3 * x));
-            unsafe { out0.StoreUnsafe(ref output); }
-            unsafe { out1.StoreUnsafe(ref output, 16); }
-            unsafe { out2.StoreUnsafe(ref output, 32); }
+            Interleave16(r, g, b, ref unsafe(Unsafe.Add(ref destinationStart, 3 * x)));
         }
 
         return x;

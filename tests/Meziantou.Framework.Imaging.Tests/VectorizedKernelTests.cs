@@ -346,6 +346,27 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegPlaneInterleavingMatchesTheScalarReference()
+    {
+        var random = new Random(422);
+        for (var length = 0; length < 100; length++)
+        {
+            var first = new byte[length];
+            var second = new byte[length];
+            var third = new byte[length];
+            random.NextBytes(first);
+            random.NextBytes(second);
+            random.NextBytes(third);
+            var expected = new byte[3 * length];
+            var actual = new byte[3 * length];
+            JpegRowWriter.InterleaveScalar(first, second, third, expected);
+            JpegRowWriter.Interleave(first, second, third, actual);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegUpsamplingMatchesTheScalarReference()
     {
         var random = new Random(420);

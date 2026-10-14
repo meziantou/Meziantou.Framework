@@ -1054,6 +1054,64 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlVerticalUnsqueezeMatchesTheScalarReference()
+    {
+        var random = new Random(191);
+        for (var round = 0; round < 3000; round++)
+        {
+            // Monotonic and non-monotonic neighborhoods, equal values, and 32-bit extremes whose sums need 64 bits
+            var length = round < 80 ? round : random.Next(1, 200);
+            var rows = new int[4][];
+            for (var r = 0; r < 4; r++)
+            {
+                rows[r] = new int[length];
+            }
+
+            for (var x = 0; x < length; x++)
+            {
+                switch (round % 5)
+                {
+                    case 0:
+                        var start = random.Next(-1000, 1000);
+                        var step = random.Next(-40, 41);
+                        rows[0][x] = start;
+                        rows[1][x] = start + step + random.Next(-3, 4);
+                        rows[2][x] = start + (2 * step) + random.Next(-3, 4);
+                        break;
+
+                    case 1:
+                        rows[0][x] = rows[1][x] = rows[2][x] = random.Next(-5, 5);
+                        break;
+
+                    case 2:
+                        rows[0][x] = random.Next(2) == 0 ? int.MaxValue - random.Next(3) : int.MinValue + random.Next(3);
+                        rows[1][x] = random.Next(int.MinValue, int.MaxValue);
+                        rows[2][x] = random.Next(2) == 0 ? int.MaxValue : int.MinValue;
+                        break;
+
+                    default:
+                        rows[0][x] = random.Next(-300, 300);
+                        rows[1][x] = random.Next(-300, 300);
+                        rows[2][x] = random.Next(-300, 300);
+                        break;
+                }
+
+                rows[3][x] = round % 5 == 2 ? random.Next(int.MinValue, int.MaxValue) : random.Next(-50, 50);
+            }
+
+            var expectedFirst = new int[length];
+            var expectedSecond = new int[length];
+            var actualFirst = new int[length];
+            var actualSecond = new int[length];
+            JpegXlModularTransform.UnsqueezeRowsScalar(rows[0], rows[1], rows[2], rows[3], expectedFirst, expectedSecond);
+            JpegXlModularTransform.UnsqueezeRows(rows[0], rows[1], rows[2], rows[3], actualFirst, actualSecond);
+            Assert.Equal(expectedFirst, actualFirst);
+            Assert.Equal(expectedSecond, actualSecond);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegXlCanvasRowsMatchTheScalarReference()
     {
         var random = new Random(189);

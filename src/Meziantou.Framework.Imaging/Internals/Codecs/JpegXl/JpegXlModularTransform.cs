@@ -1,3 +1,5 @@
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -783,14 +785,7 @@ internal sealed class JpegXlModularTransform
             var first = output.GetRow(y << 1);
             var second = output.GetRow((y << 1) + 1);
             var previous = y > 0 ? output.GetRow((y << 1) - 1) : averages;
-            for (var x = 0; x < averages.Length; x++)
-            {
-                long current = averages[x];
-                var difference = residuals[x] + GetSmoothTendency(previous[x], current, nextAverages[x]);
-                var value = current + (difference / 2);
-                first[x] = (int)value;
-                second[x] = (int)(value - difference);
-            }
+            UnsqueezeRows(previous, averages, nextAverages, residuals, first, second);
         }
 
         if ((output.Height & 1) != 0)
@@ -799,6 +794,78 @@ internal sealed class JpegXlModularTransform
         }
 
         average.TakeFrom(output);
+    }
+
+    /// <summary>
+    /// Computes two rows of a channel from the row of averages between them, the residuals, the row above them and the next
+    /// row of averages, four samples at a time: each lane computes in 64 bits what <see cref="UnsqueezeRowsScalar"/> computes,
+    /// the two cases of the tendency being selections, and the division by 12 rounded toward zero being a division of
+    /// doubles, which is exact on these 36-bit values.
+    /// </summary>
+    internal static void UnsqueezeRows(ReadOnlySpan<int> previous, ReadOnlySpan<int> averages, ReadOnlySpan<int> nextAverages, ReadOnlySpan<int> residuals, Span<int> first, Span<int> second)
+    {
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            for (; x <= averages.Length - 4; x += 4)
+            {
+                var (beforeLow, beforeHigh) = Vector128.Widen(Vector128.Create(previous.Slice(x, 4)));
+                var (averageLow, averageHigh) = Vector128.Widen(Vector128.Create(averages.Slice(x, 4)));
+                var (nextLow, nextHigh) = Vector128.Widen(Vector128.Create(nextAverages.Slice(x, 4)));
+                var (residualLow, residualHigh) = Vector128.Widen(Vector128.Create(residuals.Slice(x, 4)));
+                var differenceLow = residualLow + GetSmoothTendency(beforeLow, averageLow, nextLow);
+                var differenceHigh = residualHigh + GetSmoothTendency(beforeHigh, averageHigh, nextHigh);
+                var valueLow = averageLow + HalfTowardZero(differenceLow);
+                var valueHigh = averageHigh + HalfTowardZero(differenceHigh);
+                Vector128.Narrow(valueLow, valueHigh).CopyTo(first.Slice(x, 4));
+                Vector128.Narrow(valueLow - differenceLow, valueHigh - differenceHigh).CopyTo(second.Slice(x, 4));
+            }
+        }
+
+        UnsqueezeRowsScalar(previous, averages, nextAverages, residuals, first, second, x);
+
+        static Vector128<long> HalfTowardZero(Vector128<long> value) => Vector128.ShiftRightArithmetic(value + Vector128.ShiftRightLogical(value, 63), 1);
+    }
+
+    /// <summary>The scalar reference of <see cref="UnsqueezeRows"/>, from the sample <paramref name="start"/> on.</summary>
+    internal static void UnsqueezeRowsScalar(ReadOnlySpan<int> previous, ReadOnlySpan<int> averages, ReadOnlySpan<int> nextAverages, ReadOnlySpan<int> residuals, Span<int> first, Span<int> second, int start = 0)
+    {
+        for (var x = start; x < averages.Length; x++)
+        {
+            long current = averages[x];
+            var difference = residuals[x] + GetSmoothTendency(previous[x], current, nextAverages[x]);
+            var value = current + (difference / 2);
+            first[x] = (int)value;
+            second[x] = (int)(value - difference);
+        }
+    }
+
+    /// <summary><see cref="GetSmoothTendency(long, long, long)"/> on two lanes, both cases computed and selected.</summary>
+    private static Vector128<long> GetSmoothTendency(Vector128<long> before, Vector128<long> average, Vector128<long> next)
+    {
+        // 4 before - 3 next - average, then plus or minus 6, divided by 12 rounded toward zero
+        var numerator = (before << 2) - ((next << 1) + next) - average;
+        var six = Vector128.Create(6L);
+        var decreasing = DivideBy12(numerator + six);
+        var increasing = DivideBy12(numerator - six);
+        var beforeGap = (before - average) << 1;
+        var nextGap = (average - next) << 1;
+        var one = Vector128<long>.One;
+
+        // Decreasing: limited by the gaps on both sides
+        decreasing = Vector128.ConditionalSelect(Vector128.GreaterThan(decreasing - (decreasing & one), beforeGap), beforeGap + one, decreasing);
+        decreasing = Vector128.ConditionalSelect(Vector128.GreaterThan(decreasing + (decreasing & one), nextGap), nextGap, decreasing);
+
+        // Increasing: the same, with the other signs
+        increasing = Vector128.ConditionalSelect(Vector128.LessThan(increasing + (increasing & one), beforeGap), beforeGap - one, increasing);
+        increasing = Vector128.ConditionalSelect(Vector128.LessThan(increasing - (increasing & one), nextGap), nextGap, increasing);
+
+        var isDecreasing = Vector128.GreaterThanOrEqual(before, average) & Vector128.GreaterThanOrEqual(average, next);
+        var isIncreasing = Vector128.LessThanOrEqual(before, average) & Vector128.LessThanOrEqual(average, next);
+        var result = Vector128.ConditionalSelect(isIncreasing, increasing, Vector128<long>.Zero);
+        return Vector128.ConditionalSelect(isDecreasing, decreasing, result);
+
+        static Vector128<long> DivideBy12(Vector128<long> value) => Vector128.ConvertToInt64(Vector128.ConvertToDouble(value) / Vector128.Create(12.0));
     }
 
     /// <summary>The expected difference of two samples from their average and the neighboring ones, when they are monotonic (section H.6.2.2).</summary>

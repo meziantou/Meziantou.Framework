@@ -14,6 +14,7 @@ Run("apng", SmokeTests.Apng);
 Run("gif", SmokeTests.Gif);
 Run("jpeg", SmokeTests.Jpeg);
 Run("jpeg-cmyk", SmokeTests.CmykJpegConversion);
+Run("jpeg-lossless", SmokeTests.LosslessJpeg);
 Run("webp", SmokeTests.WebP);
 Run("qoi", SmokeTests.Qoi);
 Run("bmp", SmokeTests.Bmp);

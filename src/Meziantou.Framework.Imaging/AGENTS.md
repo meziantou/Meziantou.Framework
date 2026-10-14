@@ -350,6 +350,20 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   writes and djxl rebuilds), and any other unused table is refused. cjxl refuses a slot that is used again for other
   values between two scans, which the library writes and djxl rebuilds. The JPEG entropy coding shares `JpegBitWriter` and `JpegHuffmanEncoder` with the JPEG
   encoder: there is still one JPEG implementation of each direction of pixels, and one of coefficients.
+- **Lossless JPEG** (`JpegLosslessScanDecoder`, T.81 Annex H, SOF3). It is the sequential decoder with a data unit of
+  one sample instead of a block (`JpegFrameComponent.DataUnitSize`): the same scan structure, restart handling, planes,
+  band ring and row writers, so an MCU row is `Vmax` lines. A scan decoder keeps the differences of an MCU row and
+  reconstructs its lines when the row is complete, from the last line of the previous row
+  (`JpegFrameComponent.Differences`); the samples are predicted from one another before the point transform is
+  undone, and the planes hold them after. The samples that do not have 8 bits (lossless frames have 2 to 16) go
+  through `JpegDeepRowWriter`, whose arithmetic must hold 16-bit samples. A sample that does not fit in the precision
+  of its frame is an error, not a wrap: a conforming encoder never codes one. Reference decoders: libjpeg-turbo for
+  the files `cjpeg -lossless` writes (it refuses to convert the colors of a lossless YCbCr file), FFmpeg for the YCbCr
+  files its `ljpeg` encoder writes (with its BGR pixel formats it writes a frame of 9-bit samples that are not the
+  pixels: such a file is read as what its frame header says, or rejected when a sample does not fit), and FFmpeg
+  9.0.2 misreads the category 16.
+  Apple ImageIO does not read lossless files reliably. The process with arithmetic coding (SOF11) is not decoded: no
+  tool at hand writes or reads it.
 - **JPEG 2000** (`Internals/Codecs/Jpeg2000`). Written from Rec. ITU-T T.800 (Part 1) and T.814 (Part 15, the
   high-throughput block coder, `Jpeg2000/Ht`); OpenJPEG, OpenJPH and FFmpeg are test oracles only. The structure parser
   reads the boxes of a file and gives the codestream to `Jpeg2000CodestreamWalker`, which asks for whole marker
@@ -403,7 +417,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   are written from TIFF 6.0 and ITU-T T.4 and T.6; the code words of `TiffCcittCodes` are transcribed from the
   recommendations, and the tests compare strips with code words spelled out from the same tables. A JPEG strip is
   decoded by `JpegDecoder` given a `JpegSampleReceiver` and written by the session of `JpegEncoderCodec`: there is no
-  second JPEG implementation, and the page says what the components are. The layouts of `TiffEncoder` store a page
+  second JPEG implementation, and the page says what the components are. `BitsPerSample` is the precision of the
+  datastreams of a JPEG page (8 bits, 12 bits, or 8 to 16 bits when they are lossless): the decoder of a datastream
+  tells its precision (`JpegSampleReceiver.OnFrame`) and hands over its samples of more than 8 bits scaled to 16 bits
+  (`OnDeepRow`), so a decoded block holds samples of `TiffPage.DecodedBitsPerSample` bits, in the byte order of the
+  file like the other 16-bit samples. The layouts of `TiffEncoder` store a page
   exactly or reject it before writing anything of it (`TiffDocumentWriter.PreparePage`): no setting makes them lossy.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
@@ -962,7 +980,9 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   sources give, after downloading them from the addresses the command names.
 - **TIFF has no corpus.** The decoder tests assemble files (`TiffFileBuilder`) whose compressed strips never come from
   the library: the reference encoders of the tests (`TiffReferenceCodecs`), the examples of the specifications, fax
-  strips written by libtiff and kept as literals, and JPEG datastreams of `JpegTestImage`. The encoder tests compare
+  strips written by libtiff and kept as literals, and JPEG datastreams of `JpegTestImage` and `JpegLosslessTestImage`
+  (libtiff writes pages of 12-bit JPEG samples, `tiffcp -c jpeg` on a 12-bit page, which make a local oracle: it loses
+  the last sample of a row of odd width, so use even widths). The encoder tests compare
   small strips with the bytes the specifications give, and the interop tests decode every compression and layout with
   FFmpeg or Apple ImageIO (the JPEG pages, which FFmpeg does not read), and the pages FFmpeg writes with the library.
 - **CMYK JPEG fixtures.** A four-component JPEG file is an `unsupported` fixture (identified, rejected by a load
@@ -975,6 +995,15 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   cross-check is FFmpeg on the file `jpegtran` rewrites with Huffman codes (the same coefficients), so the fixtures with
   chroma subsampling have even dimensions. The unit tests decode the streams of the test-side arithmetic encoder
   (`JpegTestArithmeticCoder`), itself checked against `djpeg` when it was written.
+- **Lossless JPEG fixtures.** A file `cjpeg -lossless` writes expects the pattern given to `cjpeg`: `djpeg` and FFmpeg
+  must both decode exactly that, and a recipe declares the files FFmpeg misreads with the reason (the generator fails
+  when a declared disagreement disappears). The YCbCr files come from FFmpeg's `ljpeg` encoder and expect the planes
+  FFmpeg decodes, upsampled and converted by the generator with the rules the DCT fixtures compare with `djpeg`
+  (`CommonCorpus.JpegUpsample`, `JpegYCbCrToRgb`): change these with the row writers, never one without the other.
+  The unit tests decode the streams of the test-side encoder (`JpegLosslessTestImage`), written one sample at a time
+  from Annex H. After a change to the lossless decoder, also compare it with `djpeg` on generated files of every
+  precision, predictor, point transform and restart interval (a scratch loop over `cjpeg -precision P -lossless
+  psv,Pt -restart N`): the corpus only holds a few of them.
 - **12-bit JPEG fixtures.** `cjpeg -precision 12` writes them and `djpeg` gives their 12-bit samples, which the
   generator scales to 16 bits like the library; the errors are on the 8-bit scale, so three units of a 12-bit sample
   count as one. FFmpeg and Apple ImageIO upsample their chroma very differently and neither reads 12-bit RGB samples as

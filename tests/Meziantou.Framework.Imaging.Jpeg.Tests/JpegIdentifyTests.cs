@@ -69,10 +69,35 @@ public sealed class JpegIdentifyTests
     }
 
     [Theory]
-    [InlineData((byte)0xC3, 3, 8, "JPEG lossless")]
+    [InlineData(2, 1, PixelFormat.Gray16, ImageColorModel.Grayscale)]
+    [InlineData(8, 1, PixelFormat.Gray8, ImageColorModel.Grayscale)]
+    [InlineData(8, 3, PixelFormat.Rgb24, ImageColorModel.YCbCr)]
+    [InlineData(8, 4, PixelFormat.Rgb24, ImageColorModel.Cmyk)]
+    [InlineData(10, 1, PixelFormat.Gray16, ImageColorModel.Grayscale)]
+    [InlineData(12, 3, PixelFormat.Rgba64, ImageColorModel.YCbCr)]
+    [InlineData(16, 1, PixelFormat.Gray16, ImageColorModel.Grayscale)]
+    [InlineData(16, 3, PixelFormat.Rgba64, ImageColorModel.YCbCr)]
+    public void LosslessFramesAreIdentifiedInBothModes(int precision, int components, PixelFormat pixelFormat, ImageColorModel colorModel)
+    {
+        // A lossless frame (SOF3) has samples of 2 to 16 bits: the ones that do not have 8 bits are scaled to 16 bits
+        var data = SyntheticImages.Jpeg(0xC3, components, precision, width: 17, height: 9);
+        foreach (var options in new[] { ImageIdentifyOptions.Default, FullScan })
+        {
+            var info = Image.Identify(data, options);
+            Assert.Equal(ImageFormat.Jpeg, info.Format);
+            Assert.Equal(new Size(17, 9), info.Size);
+            Assert.Equal(pixelFormat, info.PixelFormat);
+            Assert.Equal(colorModel, info.ColorModel);
+            Assert.Equal(precision, info.BitsPerComponent);
+            Assert.Equal(1, info.FrameCount);
+            Assert.False(info.MayHaveTransparency);
+        }
+    }
+
+    [Theory]
     [InlineData((byte)0xC5, 3, 8, "JPEG hierarchical")]
     [InlineData((byte)0xC7, 3, 8, "JPEG hierarchical")]
-    [InlineData((byte)0xCB, 3, 8, "JPEG lossless")]
+    [InlineData((byte)0xCB, 3, 8, "JPEG lossless with arithmetic coding")]
     [InlineData((byte)0xCD, 3, 8, "JPEG hierarchical")]
     [InlineData((byte)0xCF, 3, 8, "JPEG hierarchical")]
     [InlineData((byte)0xC1, 3, 10, "JPEG 10-bit precision")]

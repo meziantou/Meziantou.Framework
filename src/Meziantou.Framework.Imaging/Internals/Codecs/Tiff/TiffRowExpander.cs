@@ -55,7 +55,7 @@ internal sealed class TiffRowExpander : IDisposable
         {
             _grayLookup = CreateGrayLookup(page);
         }
-        else if (page.IsCmyk && page.BitsPerSample == 16)
+        else if (page.IsCmyk && page.DecodedBitsPerSample == 16)
         {
             // Five 16-bit samples per pixel in native byte order: the inks and the alpha sample, opaque when the page has none
             _inks = scope.Rent(checked(_width * 5 * sizeof(ushort)), AllocationKind.DecoderState, clear: false);

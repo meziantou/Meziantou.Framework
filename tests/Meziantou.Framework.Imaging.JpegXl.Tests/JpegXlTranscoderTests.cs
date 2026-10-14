@@ -94,9 +94,9 @@ public sealed class JpegXlTranscoderTests
         using var recompressed = new MemoryStream();
 
         // What a JPEG XL frame cannot hold is refused, never approximated: a sampling factor of 4, a file that changes its
-        // restart interval between scans, arithmetic coding and samples of 12 bits
+        // restart interval between scans, arithmetic coding, samples of 12 bits and lossless frames, which have no coefficient
         if (id is "jpeg/baseline-411-odd" or "jpeg/progressive-411-separate-dc" or "jpeg/progressive-420-odd-restart-rows-deep"
-            || id.Contains("arithmetic", StringComparison.Ordinal) || id.Contains("precision12", StringComparison.Ordinal))
+            || id.Contains("arithmetic", StringComparison.Ordinal) || id.Contains("precision12", StringComparison.Ordinal) || id.Contains("lossless", StringComparison.Ordinal))
         {
             var exception = Assert.Throws<UnsupportedImageFeatureException>(() => JpegXlTranscoder.RecompressJpeg(jpeg, recompressed));
             Assert.Equal(ImageFormat.Jpeg, exception.Format);
@@ -150,7 +150,9 @@ public sealed class JpegXlTranscoderTests
         Assert.Equal(0, output.Length);
         if (loadException is not null)
         {
-            Assert.Equal(loadException.GetType(), recompressException.GetType());
+            // A lossless file is refused for what it is: the defects that only a decoding of its samples finds are not reached
+            var refusedBeforeItsData = id is "invalid/jpeg/lossless-restart-interval-partial-line" or "invalid/jpeg/lossless-truncated-scan";
+            Assert.Equal(refusedBeforeItsData ? typeof(UnsupportedImageFeatureException) : loadException.GetType(), recompressException.GetType());
         }
     }
 

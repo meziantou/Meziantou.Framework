@@ -51,6 +51,7 @@ internal static partial class GoldenCorpus
             BuildGifFfmpegDecoding(corpus);
             BuildGifDecoding(corpus);
             BuildJpeg(corpus);
+            BuildLosslessJpeg(corpus);
             BuildInkJpeg(corpus);
             BuildInvalidJpeg(corpus);
             BuildInvalidProgressiveJpeg(corpus);
@@ -88,10 +89,10 @@ internal static partial class GoldenCorpus
             CorpusDriver.CopyCommittedAv1Vectors(outDir, committed);
         }
 
-        // So are the HEVC conformance vectors, which HevcCorpus generates
-        CorpusDriver.PreserveHevcVectors(outDir, manifest);
+        // So are the color and font sections, and the HEVC conformance vectors, which HevcCorpus generates
         CorpusDriver.PreserveColorSections(outDir, manifest);
         CorpusDriver.PreserveFonts(outDir, manifest);
+        CorpusDriver.PreserveHevcVectors(outDir, manifest);
         CorpusDriver.WriteManifest(outDir, manifest);
         return fixtures.Count;
     }

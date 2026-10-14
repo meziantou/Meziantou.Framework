@@ -11,9 +11,10 @@ internal abstract class JpegSampleReceiver
     /// <param name="width">The width of the frame.</param>
     /// <param name="height">The height of the frame.</param>
     /// <param name="componentCount">The number of components of the frame: 1, 3 or 4.</param>
-    public abstract void OnFrame(int width, int height, int componentCount);
+    /// <param name="precision">The number of bits of a sample: 8 or 12, or 2 to 16 for a lossless frame.</param>
+    public abstract void OnFrame(int width, int height, int componentCount, int precision);
 
-    /// <summary>Receives one row, from the top one down.</summary>
+    /// <summary>Receives one row of a frame of 8-bit samples, from the top one down.</summary>
     /// <param name="y">The index of the row in the frame.</param>
     /// <param name="samples">
     /// The samples of the row, interleaved: one per pixel for one component; red, green and blue for three components
@@ -21,4 +22,12 @@ internal abstract class JpegSampleReceiver
     /// stored samples for four components. The span is only valid during the call.
     /// </param>
     public abstract void OnRow(int y, ReadOnlySpan<byte> samples);
+
+    /// <summary>Receives one row of a frame whose samples do not have 8 bits, from the top one down.</summary>
+    /// <param name="y">The index of the row in the frame.</param>
+    /// <param name="samples">
+    /// The samples of the row, interleaved like the ones of <see cref="OnRow"/>, each scaled from the precision of the
+    /// frame to 16 bits (<see cref="JpegDeepRowWriter"/>), in native byte order. The span is only valid during the call.
+    /// </param>
+    public abstract void OnDeepRow(int y, ReadOnlySpan<ushort> samples);
 }

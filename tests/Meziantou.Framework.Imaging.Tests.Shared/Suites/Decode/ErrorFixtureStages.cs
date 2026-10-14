@@ -62,7 +62,7 @@ internal static class ErrorFixtureStages
         "invalid/gif/empty-logical-screen",
         "invalid/gif/graphic-control-wrong-size",
         "invalid/gif/no-image",
-        "invalid/jpeg/lossless",
+        "invalid/jpeg/lossless-arithmetic",
         "invalid/jpeg/non-integral-sampling",
         "invalid/jpeg/precision-16",
         "limit/jpeg/frame-pixels-excessive",
@@ -257,6 +257,8 @@ internal static class ErrorFixtureStages
         "invalid/gif/lzw-minimum-code-size-12",
         "invalid/gif/missing-trailer",
         "invalid/jpeg/interleaved-scan-too-many-blocks",
+        "invalid/jpeg/lossless-point-transform-8",
+        "invalid/jpeg/lossless-predictor-0",
 
         // Progressive scan parameters and coefficient progression are validated from the scan headers by the walker
         "invalid/jpeg/progressive-invalid-spectral-range",
@@ -393,6 +395,8 @@ internal static class ErrorFixtureStages
         "invalid/jpeg/cmyk-without-adobe-restart",
         "invalid/jpeg/cmyk-ycck-embedded-profile",
         "invalid/jpeg/invalid-huffman-code",
+        "invalid/jpeg/lossless-restart-interval-partial-line",
+        "invalid/jpeg/lossless-truncated-scan",
         "invalid/jpeg/restart-marker-missing",
         "invalid/jpeg/restart-out-of-sequence",
         "invalid/jpeg/truncated-entropy-data",

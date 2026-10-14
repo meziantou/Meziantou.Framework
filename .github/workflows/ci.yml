@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
       - name: Build eng scripts
         run: |
           Get-ChildItem ./eng/*.cs | ForEach-Object {
@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
       - name: Validate generated files and test project TFMs
         run: dotnet run ./eng/update-all.cs
 
@@ -60,11 +60,11 @@ jobs:
           fetch-depth: 0
       - run: git config --global protocol.file.allow always
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
 
       - name: Generate delta build file
         id: build-project
-        uses: ./.github/actions/deltabuild
+        uses: $/.github/actions/deltabuild
         with:
           input-project: eng/build.proj
           output-project: eng/delta.proj
@@ -115,7 +115,7 @@ jobs:
           fetch-depth: 0
       - run: git config --global protocol.file.allow always
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
 
       - name: Compute base commit
         id: base-commit
@@ -135,7 +135,7 @@ jobs:
 
       - name: List affected test projects
         id: affected-tests
-        uses: ./.github/actions/deltabuild
+        uses: $/.github/actions/deltabuild
         with:
           input-project: eng/build.proj
           # This job runs on Linux and feeds every platform, so it must also list the projects
@@ -157,7 +157,7 @@ jobs:
 
       - name: List affected Native AOT projects
         id: affected-aot-projects
-        uses: ./.github/actions/deltabuild
+        uses: $/.github/actions/deltabuild
         with:
           input-project: eng/build.proj
           properties: SkipUnsupportedPlatforms=false
@@ -429,11 +429,11 @@ jobs:
       - run: git config --global protocol.file.allow always
 
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
 
       - name: Generate delta build file
         id: build-project
-        uses: ./.github/actions/deltabuild
+        uses: $/.github/actions/deltabuild
         with:
           input-project: eng/build.proj
           output-project: eng/delta.proj
@@ -480,7 +480,7 @@ jobs:
           # The Wslc tests fail instead of skipping on Windows agents, so this step is what keeps them running
           - name: Setup wslc
             if: startsWith(matrix.runs-on, 'windows') && matrix.test-group.id == 'TemporaryContainers' && steps.build-project.outputs.has-project == 'true'
-            uses: ./.github/actions/setup-wslc
+            uses: $/.github/actions/setup-wslc
 
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
@@ -541,7 +541,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
@@ -554,7 +554,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable.Wpf/Trimmable.Wpf.csproj
 
   # Building a project that sets PublishAot does not compile it ahead of time. Only a published
@@ -575,7 +575,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
       - name: Publish and run the native executable
         env:
           PROJECT: ${{ matrix.aot-project.project }}
@@ -625,7 +625,7 @@ jobs:
           pattern: test-results-*-coverage
           path: test-results
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
 
       - name: Install dotnet-coverage
         run: dotnet tool update --global dotnet-coverage

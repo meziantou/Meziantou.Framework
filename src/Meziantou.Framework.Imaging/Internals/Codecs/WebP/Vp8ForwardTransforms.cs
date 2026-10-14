@@ -75,7 +75,7 @@ internal static class Vp8ForwardTransforms
         var t3 = (outerDifference * c) - (innerDifference * b);
 
         // Transposed: one vector per row y (over u), the temp rows of ForwardDct
-        Transpose(ref t0, ref t1, ref t2, ref t3);
+        Vp8Transforms.Transpose4x4(ref t0, ref t1, ref t2, ref t3);
 
         // Columns: one vector per coefficient row v
         outerSum = t0 + t3;
@@ -106,24 +106,6 @@ internal static class Vp8ForwardTransforms
             var negated = -Vector128.ShiftRightArithmetic(-high + Vector128.ShiftRightArithmetic(half - low, 12), 11);
             return Vector128.ConditionalSelect(negative, negated, positive);
         }
-    }
-
-    // Transposes a 4x4 matrix of rows: 2x2 blocks of lanes are exchanged, then 2x2 blocks of 64-bit halves
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void Transpose(ref Vector128<int> r0, ref Vector128<int> r1, ref Vector128<int> r2, ref Vector128<int> r3)
-    {
-        var odd = Vector128.Create(0, -1, 0, -1);
-        var swapLanes = Vector128.Create(1, 0, 3, 2);
-        var a0 = Vector128.ConditionalSelect(odd, Vector128.Shuffle(r1, swapLanes), r0);
-        var a1 = Vector128.ConditionalSelect(odd, r1, Vector128.Shuffle(r0, swapLanes));
-        var a2 = Vector128.ConditionalSelect(odd, Vector128.Shuffle(r3, swapLanes), r2);
-        var a3 = Vector128.ConditionalSelect(odd, r3, Vector128.Shuffle(r2, swapLanes));
-        var high = Vector128.Create(0L, -1L);
-        var swapHalves = Vector128.Create(1L, 0L);
-        r0 = Vector128.ConditionalSelect(high, Vector128.Shuffle(a2.AsInt64(), swapHalves), a0.AsInt64()).AsInt32();
-        r2 = Vector128.ConditionalSelect(high, a2.AsInt64(), Vector128.Shuffle(a0.AsInt64(), swapHalves)).AsInt32();
-        r1 = Vector128.ConditionalSelect(high, Vector128.Shuffle(a3.AsInt64(), swapHalves), a1.AsInt64()).AsInt32();
-        r3 = Vector128.ConditionalSelect(high, a3.AsInt64(), Vector128.Shuffle(a1.AsInt64(), swapHalves)).AsInt32();
     }
 
     /// <summary>Computes the VP8 DCT coefficients (raster order) of a 4x4 residual block.</summary>

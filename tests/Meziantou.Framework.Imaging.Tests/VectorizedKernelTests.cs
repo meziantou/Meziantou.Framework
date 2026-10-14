@@ -2021,6 +2021,37 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPInverseDctMatchesTheScalarReference()
+    {
+        // Dequantized coefficients of every magnitude (16-bit extremes make the 32-bit products wrap), added to random
+        // predictions in planes of several strides, so that every clamp is taken
+        var random = new Random(605);
+        var block = new short[16];
+        for (var round = 0; round < 100_000; round++)
+        {
+            for (var i = 0; i < block.Length; i++)
+            {
+                block[i] = (round % 4) switch
+                {
+                    0 => (short)random.Next(-2048, 2049),
+                    1 => (short)(random.Next(2) == 0 ? short.MinValue : short.MaxValue),
+                    2 => (short)random.Next(-40, 41),
+                    _ => (short)random.Next(short.MinValue, short.MaxValue + 1),
+                };
+            }
+
+            var stride = 4 + random.Next(0, 6);
+            var expected = new byte[(3 * stride) + 4];
+            random.NextBytes(expected);
+            var actual = expected.ToArray();
+            Vp8Transforms.InverseDctAddFullScalar(block, expected, stride);
+            Vp8Transforms.InverseDctAddFull(block, actual, stride);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void WebPQuantizationMatchesTheDivisions()
     {
         // Every step up to beyond the largest VP8 quantizer step, with every small magnitude, the magnitudes around the

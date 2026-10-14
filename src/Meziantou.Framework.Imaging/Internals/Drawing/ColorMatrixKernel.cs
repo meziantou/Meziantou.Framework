@@ -159,6 +159,13 @@ internal static class ColorMatrixKernel
         static uint OverBlack(uint color, uint alpha, uint max) => ((color * alpha) + (max / 2)) / max;
     }
 
+    /// <summary>Gets a value indicating whether a matrix gives transparent black to a pixel of four samples (color then alpha) that is transparent black.</summary>
+    public static bool KeepsTransparentBlack(ColorMatrix matrix, double max)
+    {
+        var m = matrix.Values;
+        return Row(m, 0, 0, 0, 0, 0, max) == 0 && Row(m, 1, 0, 0, 0, 0, max) == 0 && Row(m, 2, 0, 0, 0, 0, max) == 0 && Row(m, 3, 0, 0, 0, 0, max) == 0;
+    }
+
     private static void Transform(ReadOnlySpan<double> m, double r, double g, double b, double a, double max, Span<ushort> color, bool isBlueFirst)
     {
         var red = Row(m, 0, r, g, b, a, max);

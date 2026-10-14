@@ -205,6 +205,7 @@ internal sealed partial class DrawingSession
             }
 
             var source = new DrawingSource(colors, mode, blend, _transfer, _curves);
+            MarkDrawn(x, surface.Top + row, x + coverage.Length, surface.Top + row + 1);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], surface.Top + row, x, coverage, source);

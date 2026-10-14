@@ -1037,6 +1037,7 @@ internal sealed partial class DrawingSession : IDisposable
             var source = evaluator is null ? new DrawingSource(color, mode, blend, _transfer, _curves)
                 : evaluator.TryGetRowColor(y, x, out var rowColor) ? new DrawingSource(rowColor, mode, blend, _transfer, _curves)
                 : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend, _transfer, _curves);
+            MarkDrawn(x, y, x + coverage.Length, y + 1);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], y, x, coverage, source);

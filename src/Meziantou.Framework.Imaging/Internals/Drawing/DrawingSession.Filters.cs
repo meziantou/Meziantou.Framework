@@ -67,6 +67,7 @@ internal sealed partial class DrawingSession
         }
 
         var area = Rectangle.FromLTRB(left, top, right, bottom);
+        MarkDrawn(area.Left, area.Top, area.Right, area.Bottom);
         for (var i = 0; i < _frames.Length; i++)
         {
             FilterPixels(_frames[i], _storages[i], matrix, area, applyClip: true);
@@ -77,9 +78,16 @@ internal sealed partial class DrawingSession
     private void FilterLayer(LayerLevel level)
     {
         var area = Rectangle.FromLTRB(level.VisibleLeft, level.VisibleTop, level.VisibleRight, level.VisibleBottom);
+        if (ColorMatrixKernel.KeepsTransparentBlack(level.Matrix!, level.Storages![0].BytesPerPixel == 8 ? ushort.MaxValue : byte.MaxValue))
+        {
+            // The pixels that are transparent black stay so: only the others can change
+            area = Rectangle.FromLTRB(Math.Max(area.Left, level.DirtyLeft), Math.Max(area.Top, level.DirtyTop), Math.Min(area.Right, level.DirtyRight), Math.Min(area.Bottom, level.DirtyBottom));
+        }
+
         if (area.Width <= 0 || area.Height <= 0)
             return;
 
+        level.MarkDirty(area.Left, area.Top, area.Right, area.Bottom);
         FilterPixels(level.Frames![0], level.Storages![0], level.Matrix!, area, applyClip: false);
     }
 

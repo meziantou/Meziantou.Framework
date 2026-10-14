@@ -34,6 +34,10 @@ internal static class BenchmarkInputs
     private static readonly Lazy<byte[]> BmpRgbaData = new(() => EncodeRgba32(ServiceRgba32Source, ServiceWidth, ServiceHeight, new BmpEncoder()));
     private static readonly Lazy<byte[]> TgaRgbData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TgaEncoder { Compression = TgaCompression.RunLength }));
     private static readonly Lazy<byte[]> TgaRgbaData = new(() => EncodeRgba32(ServiceRgba32Source, ServiceWidth, ServiceHeight, new TgaEncoder { Compression = TgaCompression.RunLength }));
+    private static readonly Lazy<byte[]> TiffLzwData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TiffEncoder { Compression = TiffCompression.Lzw }));
+    private static readonly Lazy<byte[]> TiffDeflateData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TiffEncoder { Compression = TiffCompression.Deflate }));
+    private static readonly Lazy<byte[]> TiffPredictor8Data = new(() => TiffPredictorInput.Encode(LargeRgb24Bytes.Value, LargeWidth, LargeHeight, samplesPerPixel: 3, bitsPerSample: 8, bigEndian: false));
+    private static readonly Lazy<byte[]> TiffPredictor16Data = new(() => TiffPredictorInput.Encode(unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(LargeRgba64Source.AsSpan())), Large16Width, Large16Height, samplesPerPixel: 4, bitsPerSample: 16, bigEndian: true));
     private static readonly Lazy<byte[]> PnmRgbData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new PnmEncoder()));
     private static readonly Lazy<byte[]> PnmRgbaData = new(() => EncodeRgba32(ServiceRgba32Source, ServiceWidth, ServiceHeight, new PnmEncoder()));
 
@@ -144,6 +148,18 @@ internal static class BenchmarkInputs
 
     /// <summary>Gets the 1024x768 RGBA source encoded as a run-length TGA with eight alpha bits.</summary>
     public static byte[] TgaRgba => TgaRgbaData.Value;
+
+    /// <summary>Gets the 2048x1536 RGB source encoded as an LZW TIFF (<see cref="TiffEncoder"/>, strips of 64 KB, no predictor).</summary>
+    public static byte[] TiffLzw => TiffLzwData.Value;
+
+    /// <summary>Gets the 2048x1536 RGB source encoded as a Deflate TIFF (<see cref="TiffEncoder"/>, strips of 64 KB, no predictor).</summary>
+    public static byte[] TiffDeflate => TiffDeflateData.Value;
+
+    /// <summary>Gets the 2048x1536 RGB source as an uncompressed little-endian TIFF with the horizontal differencing predictor.</summary>
+    public static byte[] TiffPredictor8 => TiffPredictor8Data.Value;
+
+    /// <summary>Gets the 1024x768 RGBA 16-bit source as an uncompressed big-endian TIFF with the horizontal differencing predictor.</summary>
+    public static byte[] TiffPredictor16 => TiffPredictor16Data.Value;
 
     /// <summary>Gets the 2048x1536 RGB source encoded as a binary PPM.</summary>
     public static byte[] PnmRgb => PnmRgbData.Value;

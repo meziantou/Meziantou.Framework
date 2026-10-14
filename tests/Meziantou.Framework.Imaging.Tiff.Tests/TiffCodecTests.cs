@@ -673,6 +673,23 @@ public sealed class TiffCodecTests
     }
 
     [Theory]
+    [InlineData("256 7 258 257", 2, new byte[] { 7, 7 })]
+    [InlineData("256 7 258 257", 3, new byte[] { 7, 7, 7 })]
+    [InlineData("256 7 8 258 257", 3, new byte[] { 7, 8, 7 })]
+    [InlineData("256 7 8 258 260 257", 6, new byte[] { 7, 8, 7, 8, 7, 8 })]
+    [InlineData("256 7 8 258 260 257", 7, new byte[] { 7, 8, 7, 8, 7, 8, 7 })]
+    [InlineData("256 7 8 258 260 256 9 258 257", 9, new byte[] { 7, 8, 7, 8, 7, 8, 7, 9, 9 })]
+    public void LzwStringsAreCopiedAndTheLastOneIsCutAtTheEndOfTheBlock(string codes, int width, byte[] expected)
+    {
+        // Table codes are strings the block already wrote: 258 is the entry being defined (7 7) or an earlier pair (7 8),
+        // 260 is the entry being defined after 258 (7 8 7 8); a string past the end of the block is cut there. After a
+        // clear, 258 is defined again
+        var strip = TiffReferenceCodecs.PackBitString(string.Concat(codes.Split(' ').Select(static code => Convert.ToString(int.Parse(code, CultureInfo.InvariantCulture), 2).PadLeft(9, '0'))));
+        var data = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = width, Height = 1, Compression = 5, EncodedBlocks = [strip], Samples = [] }).Build();
+        Assert.Equal(Grays(expected), Decode<Gray8>(data));
+    }
+
+    [Theory]
     [InlineData(5, 600, 1)]
     [InlineData(5, 5000, 1)]
     [InlineData(5, 20000, 7)]

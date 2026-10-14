@@ -47,6 +47,21 @@ public sealed class BenchmarkWorkloadTests
     }
 
     [Fact]
+    public void TiffInputsDecodeToTheSyntheticSources()
+    {
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffLzw, BenchmarkInputs.LargeRgb24Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffDeflate, BenchmarkInputs.LargeRgb24Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffPredictor8, BenchmarkInputs.LargeRgb24Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffPredictor16, BenchmarkInputs.LargeRgba64Source);
+
+        // The predictor input in the other byte order, and with an odd size
+        var source = BenchmarkPixels.Rgba64(37, 11, seed: 9, alpha: true);
+        var littleEndian = TiffPredictorInput.Encode(unsafe(MemoryMarshal.AsBytes(source.AsSpan())), 37, 11, samplesPerPixel: 4, bitsPerSample: 16, bigEndian: false);
+        WorkloadChecks.RequireLossless(littleEndian, source);
+        Assert.Equal(ImageFormat.Tiff, Image.DetectFormat(littleEndian));
+    }
+
+    [Fact]
     public void TheBaselineJpegInputMatchesTheEncoderModel()
     {
         // The baseline input is the output of the encode workload (2048x1536 Rgb24, quality 85, 4:2:0)

@@ -69,6 +69,11 @@ public sealed class TextLayout
     private readonly ColorGlyph[] _colorGlyphs;
     private readonly int[]? _colorIndexes;
 
+    // The outline of each distinct glyph of a font at a size, as the font gave it when the layout was created, and the
+    // outline of each glyph: drawing the layout replays them instead of decoding the glyphs again.
+    private readonly RecordedOutlines _recordedOutlines;
+    private readonly int[] _outlineIndexes;
+
     // The clusters of each line, from its left, with the characters each one holds: the positions of the text.
     private readonly TextHitBox[] _hitBoxes;
     private readonly int[] _hitBoxStarts;
@@ -108,7 +113,7 @@ public sealed class TextLayout
             HasEmboldenedGlyphs |= run.EmboldenWidth > 0;
         }
 
-        InkBounds = Measure(out _colorGlyphs, out _colorIndexes);
+        InkBounds = Measure(out _colorGlyphs, out _colorIndexes, out _recordedOutlines, out _outlineIndexes);
     }
 
     /// <summary>Gets the width of the text, in pixels: the width of its widest line, with the indent of a first line.</summary>
@@ -407,7 +412,6 @@ public sealed class TextLayout
     /// or stroking a layout of one paint at the same point.
     /// </returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="origin"/> is not finite or is too large.</exception>
-    /// <exception cref="ImageResourceLimitException">Decoding the outlines exceeds the allocation limit.</exception>
     public VectorPath ToPath(PointD origin)
     {
         DrawingGuard.Point(origin, nameof(origin));
@@ -415,14 +419,11 @@ public sealed class TextLayout
         var sink = new GlyphPathBuilderSink(builder);
         foreach (var run in _runs)
         {
-            var face = _fonts[run.Font].Face;
-            var scale = run.Size / face.UnitsPerEm;
-            using var scratch = new GlyphScratch(AllocationScope.Create(face.Data.Configuration, "TextLayout"));
+            var scale = run.Size / _fonts[run.Font].Face.UnitsPerEm;
             for (var i = run.Start; i < run.Start + run.Count; i++)
             {
                 sink.Begin(run.GetTransform(scale, origin.X + _positions[i * 2], origin.Y + _positions[(i * 2) + 1]));
-                var budget = new GlyphBudget(face.Data.Limits);
-                face.DecodeOutline(_glyphs[i], run.Size, sink, scratch, ref budget);
+                _recordedOutlines.Replay(_outlineIndexes[i], sink);
             }
         }
 
@@ -691,7 +692,6 @@ public sealed class TextLayout
     /// <summary>Sends the outlines of the glyphs and of the decorations, placed on the canvas, to the sink of a draw call.</summary>
     /// <param name="target">The sink of the fill or of the stroke.</param>
     /// <param name="glyphSink">The sink that places a glyph.</param>
-    /// <param name="scratch">The working storage of the outlines.</param>
     /// <param name="originX">The horizontal position of the top-left corner of the layout.</param>
     /// <param name="originY">The vertical position of the top-left corner of the layout.</param>
     /// <param name="edges">
@@ -706,7 +706,7 @@ public sealed class TextLayout
     /// </param>
     /// <returns><see langword="true"/> when the stroke of a synthetic bold covers the whole frame: the edges are then meaningless.</returns>
     /// <param name="outline">The pen of <see cref="TextStyle.Outline"/> whose glyphs are sent, without the decorations, or -1 for the glyphs of every run.</param>
-    internal bool Emit(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, double originX, double originY, EdgeBuilder? edges, int brush, bool skipColorGlyphs = false, Stroker? emboldener = null, int outline = -1)
+    internal bool Emit(PathSink target, GlyphPathSink glyphSink, double originX, double originY, EdgeBuilder? edges, int brush, bool skipColorGlyphs = false, Stroker? emboldener = null, int outline = -1)
     {
         var coversFrame = false;
         foreach (var run in _runs)
@@ -714,9 +714,7 @@ public sealed class TextLayout
             if ((brush >= 0 && run.Brush != brush) || (outline >= 0 && run.Outline != outline))
                 continue;
 
-            var face = _fonts[run.Font].Face;
-            var scale = run.Size / face.UnitsPerEm;
-            var limits = face.Data.Limits;
+            var scale = run.Size / _fonts[run.Font].Face.UnitsPerEm;
             var isEmboldened = emboldener is not null && run.EmboldenWidth > 0;
             if (isEmboldened)
             {
@@ -733,8 +731,7 @@ public sealed class TextLayout
                 var first = edges?.Count ?? 0;
                 var transform = run.GetTransform(scale, originX + _positions[i * 2], originY + _positions[(i * 2) + 1]);
                 glyphSink.Begin(target, transform);
-                var budget = new GlyphBudget(limits);
-                face.DecodeOutline(_glyphs[i], run.Size, glyphSink, scratch, ref budget);
+                _recordedOutlines.Replay(_outlineIndexes[i], glyphSink);
 
                 // The contours of the glyph are complete: each one was closed. TrueType and CFF outlines turn in opposite
                 // directions; the ones that turn the other way are reversed.
@@ -747,7 +744,7 @@ public sealed class TextLayout
                 {
                     // The fill of the glyph is complete before the edges of its stroke follow it.
                     target.End();
-                    coversFrame |= Embolden(emboldener!, face, i, run.Size, transform, glyphSink, scratch);
+                    coversFrame |= Embolden(emboldener!, i, transform, glyphSink);
                 }
             }
         }
@@ -803,11 +800,10 @@ public sealed class TextLayout
     /// and the glyph add up, and what is filled is the glyph grown by half the width of the stroke.
     /// </summary>
     /// <returns><see langword="true"/> when a piece of the stroke covers the whole frame.</returns>
-    private bool Embolden(Stroker emboldener, FontFace face, int glyph, double size, in Affine2D transform, GlyphPathSink glyphSink, GlyphScratch scratch)
+    private bool Embolden(Stroker emboldener, int glyph, in Affine2D transform, GlyphPathSink glyphSink)
     {
         glyphSink.Begin(emboldener, transform);
-        var budget = new GlyphBudget(face.Data.Limits);
-        face.DecodeOutline(_glyphs[glyph], size, glyphSink, scratch, ref budget);
+        _recordedOutlines.Replay(_outlineIndexes[glyph], glyphSink);
         emboldener.End();
         return emboldener.CoversFrame;
     }
@@ -831,7 +827,7 @@ public sealed class TextLayout
     /// horizontal path has the points of the same text drawn at a point.
     /// </para>
     /// </remarks>
-    internal bool EmitOnPath(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, PathMeasure measure, TextPathOptions options, EdgeBuilder? edges, int brush, bool skipColorGlyphs = false, Stroker? emboldener = null, int outline = -1)
+    internal bool EmitOnPath(PathSink target, GlyphPathSink glyphSink, PathMeasure measure, TextPathOptions options, EdgeBuilder? edges, int brush, bool skipColorGlyphs = false, Stroker? emboldener = null, int outline = -1)
     {
         var coversFrame = false;
         var length = measure.Length;
@@ -846,9 +842,7 @@ public sealed class TextLayout
             if ((brush >= 0 && run.Brush != brush) || (outline >= 0 && run.Outline != outline))
                 continue;
 
-            var face = _fonts[run.Font].Face;
-            var scale = run.Size / face.UnitsPerEm;
-            var limits = face.Data.Limits;
+            var scale = run.Size / _fonts[run.Font].Face.UnitsPerEm;
             var isEmboldened = emboldener is not null && run.EmboldenWidth > 0;
             if (isEmboldened)
             {
@@ -872,8 +866,7 @@ public sealed class TextLayout
 
                 var first = edges?.Count ?? 0;
                 glyphSink.Begin(target, transform);
-                var budget = new GlyphBudget(limits);
-                face.DecodeOutline(_glyphs[i], run.Size, glyphSink, scratch, ref budget);
+                _recordedOutlines.Replay(_outlineIndexes[i], glyphSink);
                 if (edges is not null && glyphSink.SignedArea < 0)
                 {
                     edges.NegateDirections(first);
@@ -883,7 +876,7 @@ public sealed class TextLayout
                 {
                     // The fill of the glyph is complete before the edges of its stroke follow it.
                     target.End();
-                    coversFrame |= Embolden(emboldener!, face, i, run.Size, transform, glyphSink, scratch);
+                    coversFrame |= Embolden(emboldener!, i, transform, glyphSink);
                 }
             }
         }
@@ -1069,8 +1062,8 @@ public sealed class TextLayout
         return found;
     }
 
-    /// <summary>Decodes each glyph of the layout once, which validates it, and measures what the layout draws.</summary>
-    private RectangleD Measure(out ColorGlyph[] colorGlyphs, out int[]? colorIndexes)
+    /// <summary>Decodes each glyph of the layout once, which validates it, records its outline, and measures what the layout draws.</summary>
+    private RectangleD Measure(out ColorGlyph[] colorGlyphs, out int[]? colorIndexes, out RecordedOutlines recordedOutlines, out int[] outlineIndexes)
     {
         // The display list of each distinct color glyph of a font and a palette.
         var colors = new List<ColorGlyph>();
@@ -1081,9 +1074,11 @@ public sealed class TextLayout
         var right = double.NegativeInfinity;
         var bottom = double.NegativeInfinity;
 
-        // The bounds of each distinct glyph of a font, in font units: four values, or none for a glyph without outline.
-        var bounds = new Dictionary<(int Font, int Glyph, double Size), (double MinX, double MinY, double MaxX, double MaxY)?>();
-        var sink = new GlyphBoundsSink();
+        // The outline and the bounds of each distinct glyph of a font at a size, in font units: four values, or none for a
+        // glyph without outline.
+        var outlines = new Dictionary<(int Font, int Glyph, double Size), (int Outline, (double MinX, double MinY, double MaxX, double MaxY)? Bounds)>();
+        var recorder = new RecordedOutlines.Recorder();
+        outlineIndexes = new int[_glyphs.Length];
         foreach (var run in _runs)
         {
             var face = _fonts[run.Font].Face;
@@ -1091,14 +1086,18 @@ public sealed class TextLayout
             using var scratch = new GlyphScratch(AllocationScope.Create(face.Data.Configuration, "TextLayout"));
             for (var i = run.Start; i < run.Start + run.Count; i++)
             {
-                if (!bounds.TryGetValue((run.Font, _glyphs[i], run.Size), out var glyphBounds))
+                if (!outlines.TryGetValue((run.Font, _glyphs[i], run.Size), out var recorded))
                 {
-                    sink.Reset();
+                    recorder.Begin();
                     var budget = new GlyphBudget(face.Data.Limits);
-                    face.DecodeOutline(_glyphs[i], run.Size, sink, scratch, ref budget);
-                    glyphBounds = sink.IsEmpty ? null : (sink.MinX, sink.MinY, sink.MaxX, sink.MaxY);
-                    bounds.Add((run.Font, _glyphs[i], run.Size), glyphBounds);
+                    face.DecodeOutline(_glyphs[i], run.Size, recorder, scratch, ref budget);
+                    var sink = recorder.Bounds;
+                    recorded = (recorder.End(), sink.IsEmpty ? null : (sink.MinX, sink.MinY, sink.MaxX, sink.MaxY));
+                    outlines.Add((run.Font, _glyphs[i], run.Size), recorded);
                 }
+
+                outlineIndexes[i] = recorded.Outline;
+                var glyphBounds = recorded.Bounds;
 
                 // A glyph the font draws with its own colors: its display list is built once, which validates what it
                 // refers to, and its box replaces the box of its outline.
@@ -1191,6 +1190,7 @@ public sealed class TextLayout
         }
 
         colorGlyphs = [.. colors];
+        recordedOutlines = recorder.Build();
         return left <= right ? RectangleD.FromLTRB(left, top, right, bottom) : RectangleD.Empty;
     }
 }

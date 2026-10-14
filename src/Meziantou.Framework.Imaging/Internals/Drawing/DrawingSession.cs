@@ -626,8 +626,7 @@ internal sealed partial class DrawingSession : IDisposable
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs && !layout.HasBackgrounds && layout.OutlineCount == 0)
         {
             var glyphSink = _glyphSink ??= new GlyphPathSink();
-            var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
-            FillFrameWhenCovered(layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, brush: -1, emboldener: GetEmboldener(layout)));
+            FillFrameWhenCovered(layout.Emit(BeginFill(), glyphSink, origin.X, origin.Y, _edges, brush: -1, emboldener: GetEmboldener(layout)));
             Render(layout.BrushCount == 0 ? brush : layout.GetBrush(0) ?? brush, FillRule.NonZero);
             return;
         }
@@ -662,7 +661,6 @@ internal sealed partial class DrawingSession : IDisposable
     private void DrawTextParts(Brush brush, TextLayout layout, double originX, double originY, PathMeasure? measure, TextPathOptions? options)
     {
         var glyphSink = _glyphSink ??= new GlyphPathSink();
-        var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
         var emboldener = GetEmboldener(layout);
         if (layout.HasBackgrounds)
         {
@@ -688,8 +686,8 @@ internal sealed partial class DrawingSession : IDisposable
         for (var i = 0; i < layout.BrushCount; i++)
         {
             FillFrameWhenCovered(measure is null
-                ? layout.Emit(BeginFill(), glyphSink, scratch, originX, originY, _edges, i, skipColorGlyphs: true, emboldener)
-                : layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options!, _edges, i, skipColorGlyphs: true, emboldener));
+                ? layout.Emit(BeginFill(), glyphSink, originX, originY, _edges, i, skipColorGlyphs: true, emboldener)
+                : layout.EmitOnPath(BeginFill(), glyphSink, measure, options!, _edges, i, skipColorGlyphs: true, emboldener));
             Render(layout.GetBrush(i) ?? brush, FillRule.NonZero);
         }
 
@@ -700,11 +698,11 @@ internal sealed partial class DrawingSession : IDisposable
             var sink = BeginStroke(pen);
             if (measure is null)
             {
-                layout.Emit(sink, glyphSink, scratch, originX, originY, edges: null, brush: -1, skipColorGlyphs: true, outline: i);
+                layout.Emit(sink, glyphSink, originX, originY, edges: null, brush: -1, skipColorGlyphs: true, outline: i);
             }
             else
             {
-                layout.EmitOnPath(sink, glyphSink, scratch, measure, options!, edges: null, brush: -1, skipColorGlyphs: true, outline: i);
+                layout.EmitOnPath(sink, glyphSink, measure, options!, edges: null, brush: -1, skipColorGlyphs: true, outline: i);
             }
 
             RenderStroke(pen);
@@ -717,7 +715,7 @@ internal sealed partial class DrawingSession : IDisposable
         ArgumentNullException.ThrowIfNull(layout);
         DrawingGuard.Point(origin, nameof(origin));
         var sink = BeginStroke(pen);
-        layout.Emit(sink, _glyphSink ??= new GlyphPathSink(), _glyphScratch ??= new GlyphScratch(_image.Owner.Scope), origin.X, origin.Y, edges: null, brush: -1);
+        layout.Emit(sink, _glyphSink ??= new GlyphPathSink(), origin.X, origin.Y, edges: null, brush: -1);
         RenderStroke(pen);
     }
 
@@ -731,8 +729,7 @@ internal sealed partial class DrawingSession : IDisposable
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs && !layout.HasBackgrounds && layout.OutlineCount == 0)
         {
             var glyphSink = _glyphSink ??= new GlyphPathSink();
-            var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
-            FillFrameWhenCovered(layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, brush: -1, emboldener: GetEmboldener(layout)));
+            FillFrameWhenCovered(layout.EmitOnPath(BeginFill(), glyphSink, measure, options, _edges, brush: -1, emboldener: GetEmboldener(layout)));
             Render(layout.BrushCount == 0 ? brush : layout.GetBrush(0) ?? brush, FillRule.NonZero);
             return;
         }
@@ -747,7 +744,7 @@ internal sealed partial class DrawingSession : IDisposable
         ArgumentNullException.ThrowIfNull(path);
         var measure = Measure(path);
         var sink = BeginStroke(pen);
-        layout.EmitOnPath(sink, _glyphSink ??= new GlyphPathSink(), _glyphScratch ??= new GlyphScratch(_image.Owner.Scope), measure, options ?? TextPathOptions.Default, edges: null, brush: -1);
+        layout.EmitOnPath(sink, _glyphSink ??= new GlyphPathSink(), measure, options ?? TextPathOptions.Default, edges: null, brush: -1);
         RenderStroke(pen);
     }
 

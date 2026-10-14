@@ -1013,6 +1013,47 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlIntegerRowsMatchTheScalarReference()
+    {
+        var random = new Random(188);
+        for (var round = 0; round < 1500; round++)
+        {
+            // Samples in range, out of range on both sides, and other bit depths (scaled, never vectorized)
+            var width = round < 80 ? round : random.Next(1, 200);
+            var max = round % 5 == 4 ? (1 << random.Next(1, 17)) - 1 : byte.MaxValue;
+            var alphaMax = (round % 3) switch
+            {
+                0 => 0,
+                1 => byte.MaxValue,
+                _ => (1 << random.Next(1, 17)) - 1,
+            };
+            int Sample(int largest) => round % 2 == 0 ? random.Next(largest + 1) : random.Next(-300, largest + 300);
+            var channels = new int[4][];
+            for (var c = 0; c < 4; c++)
+            {
+                channels[c] = new int[width];
+                for (var x = 0; x < width; x++)
+                {
+                    channels[c][x] = Sample(c == 3 ? Math.Max(alphaMax, 1) : max);
+                }
+            }
+
+            var expected = new byte[width * 3];
+            var actual = new byte[width * 3];
+            JpegXlDecoder.WriteRgb24RowScalar(channels[0], channels[1], channels[2], max, expected);
+            JpegXlDecoder.WriteRgb24Row(channels[0], channels[1], channels[2], max, actual);
+            Assert.Equal(expected, actual);
+
+            expected = new byte[width * 4];
+            actual = new byte[width * 4];
+            JpegXlDecoder.WriteRgba32RowScalar(channels[0], channels[1], channels[2], channels[3], max, alphaMax, expected);
+            JpegXlDecoder.WriteRgba32Row(channels[0], channels[1], channels[2], channels[3], max, alphaMax, actual);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegXlColorMatricesMatchTheScalarReferenceBitForBit()
     {
         var random = new Random(185);

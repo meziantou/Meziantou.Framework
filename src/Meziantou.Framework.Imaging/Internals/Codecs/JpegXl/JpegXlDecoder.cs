@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -310,24 +311,11 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
                 }
 
                 case PixelFormat.Rgb24:
-                    for (var x = 0; x < width; x++)
-                    {
-                        row[x * 3] = (byte)Scale(a[x], colorMax, targetMax);
-                        row[(x * 3) + 1] = (byte)Scale(b[x], colorMax, targetMax);
-                        row[(x * 3) + 2] = (byte)Scale(c[x], colorMax, targetMax);
-                    }
-
+                    WriteRgb24Row(a, b, c, colorMax, row);
                     break;
 
                 case PixelFormat.Rgba32:
-                    for (var x = 0; x < width; x++)
-                    {
-                        row[x * 4] = (byte)Scale(a[x], colorMax, targetMax);
-                        row[(x * 4) + 1] = (byte)Scale(b[x], colorMax, targetMax);
-                        row[(x * 4) + 2] = (byte)Scale(c[x], colorMax, targetMax);
-                        row[(x * 4) + 3] = alpha is null ? byte.MaxValue : (byte)Scale(alphaRow[x], alphaMax, targetMax);
-                    }
-
+                    WriteRgba32Row(a, b, c, alphaRow, colorMax, alpha is null ? 0 : alphaMax, row);
                     break;
 
                 default:
@@ -348,6 +336,81 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
             sink.WriteRow(target, y, row);
         }
     }
+
+    /// <summary>
+    /// Writes a row of Rgb24 pixels from three channels whose largest value is <paramref name="max"/>. Samples of 8 bits are
+    /// clamped and packed four pixels at a time; the bytes are those of <see cref="WriteRgb24RowScalar"/>.
+    /// </summary>
+    internal static void WriteRgb24Row(ReadOnlySpan<int> red, ReadOnlySpan<int> green, ReadOnlySpan<int> blue, int max, Span<byte> row)
+    {
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated && max == byte.MaxValue)
+        {
+            // Each pixel packed in an integer, then the fourth byte of each removed: the 16 bytes stored overlap the next pixels,
+            // which the next iteration writes
+            var indices = Vector128.Create((byte)0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 15, 15, 15, 15);
+            for (; x <= red.Length - 4 && (x * 3) + 16 <= row.Length; x += 4)
+            {
+                var pixels = Pack(red.Slice(x, 4), green.Slice(x, 4), blue.Slice(x, 4), Vector128<int>.Zero);
+                Vector128.Shuffle(pixels.AsByte(), indices).CopyTo(row.Slice(x * 3, 16));
+            }
+        }
+
+        WriteRgb24RowScalar(red, green, blue, max, row, x);
+    }
+
+    /// <summary>The scalar reference of <see cref="WriteRgb24Row"/>, from the pixel <paramref name="start"/> on.</summary>
+    internal static void WriteRgb24RowScalar(ReadOnlySpan<int> red, ReadOnlySpan<int> green, ReadOnlySpan<int> blue, int max, Span<byte> row, int start = 0)
+    {
+        for (var x = start; x < red.Length; x++)
+        {
+            row[x * 3] = (byte)Scale(red[x], max, byte.MaxValue);
+            row[(x * 3) + 1] = (byte)Scale(green[x], max, byte.MaxValue);
+            row[(x * 3) + 2] = (byte)Scale(blue[x], max, byte.MaxValue);
+        }
+    }
+
+    /// <summary>
+    /// Writes a row of Rgba32 pixels from three channels whose largest value is <paramref name="max"/> and an alpha channel
+    /// whose largest value is <paramref name="alphaMax"/>, or opaque pixels when <paramref name="alphaMax"/> is 0. Samples of
+    /// 8 bits are clamped and packed four pixels at a time; the bytes are those of <see cref="WriteRgba32RowScalar"/>.
+    /// </summary>
+    internal static void WriteRgba32Row(ReadOnlySpan<int> red, ReadOnlySpan<int> green, ReadOnlySpan<int> blue, ReadOnlySpan<int> alpha, int max, int alphaMax, Span<byte> row)
+    {
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated && max == byte.MaxValue && alphaMax is 0 or byte.MaxValue)
+        {
+            var opaque = Vector128.Create(byte.MaxValue << 24);
+            for (; x <= red.Length - 4; x += 4)
+            {
+                var pixels = alphaMax == 0
+                    ? Pack(red.Slice(x, 4), green.Slice(x, 4), blue.Slice(x, 4), opaque)
+                    : Pack(red.Slice(x, 4), green.Slice(x, 4), blue.Slice(x, 4), Clamp(Vector128.Create(alpha.Slice(x, 4))) << 24);
+                pixels.AsByte().CopyTo(row.Slice(x * 4, 16));
+            }
+        }
+
+        WriteRgba32RowScalar(red, green, blue, alpha, max, alphaMax, row, x);
+    }
+
+    /// <summary>The scalar reference of <see cref="WriteRgba32Row"/>, from the pixel <paramref name="start"/> on.</summary>
+    internal static void WriteRgba32RowScalar(ReadOnlySpan<int> red, ReadOnlySpan<int> green, ReadOnlySpan<int> blue, ReadOnlySpan<int> alpha, int max, int alphaMax, Span<byte> row, int start = 0)
+    {
+        for (var x = start; x < red.Length; x++)
+        {
+            row[x * 4] = (byte)Scale(red[x], max, byte.MaxValue);
+            row[(x * 4) + 1] = (byte)Scale(green[x], max, byte.MaxValue);
+            row[(x * 4) + 2] = (byte)Scale(blue[x], max, byte.MaxValue);
+            row[(x * 4) + 3] = alphaMax == 0 ? byte.MaxValue : (byte)Scale(alpha[x], alphaMax, byte.MaxValue);
+        }
+    }
+
+    /// <summary>Packs four pixels of 8-bit samples, little-endian, red in the lowest byte; <paramref name="high"/> holds the fourth byte.</summary>
+    private static Vector128<int> Pack(ReadOnlySpan<int> red, ReadOnlySpan<int> green, ReadOnlySpan<int> blue, Vector128<int> high)
+        => Clamp(Vector128.Create(red)) | (Clamp(Vector128.Create(green)) << 8) | (Clamp(Vector128.Create(blue)) << 16) | high;
+
+    /// <summary>Clamps four samples to the range of a byte, as <see cref="Scale"/> does when the sample has 8 bits.</summary>
+    private static Vector128<int> Clamp(Vector128<int> value) => Vector128.Min(Vector128.Max(value, Vector128<int>.Zero), Vector128.Create((int)byte.MaxValue));
 
     /// <summary>Writes an image of floating-point samples: they are rounded to the depth of the pixel format.</summary>
     private void WriteCanvas(DecodedFrameSink sink, JpegXlImageHeader header, JpegXlImageBuffer canvas, int colorChannelCount)

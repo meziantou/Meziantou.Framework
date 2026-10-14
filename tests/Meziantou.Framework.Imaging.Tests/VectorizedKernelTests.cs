@@ -2493,6 +2493,56 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1IntraPredictionMatchesTheScalarReference(int bitDepth)
+    {
+        // Every mode, angle delta, recursive filter, block size and edge availability, near the right and bottom limits of
+        // the plane, with and without the edge filter, on random, extreme and flat samples
+        var random = new Random(bitDepth * 31);
+        var maxSample = (1 << bitDepth) - 1;
+        const int Stride = 160;
+        const int Height = 160;
+        for (var round = 0; round < 8000; round++)
+        {
+            var log2W = random.Next(2, 7);
+            var log2H = Math.Clamp(log2W + random.Next(-2, 3), 2, 6);
+            var w = 1 << log2W;
+            var h = 1 << log2H;
+            var x = 4 * random.Next((Stride - w) / 4);
+            var y = 4 * random.Next((Height - h) / 4);
+            var maxX = random.Next(3) == 0 ? Math.Min(Stride - 1, x + random.Next(2 * w)) : Stride - 1;
+            var maxY = random.Next(3) == 0 ? Math.Min(Height - 1, y + random.Next(2 * h)) : Height - 1;
+            var expected = new ushort[Stride * Height];
+            for (var i = 0; i < expected.Length; i++)
+            {
+                expected[i] = (round % 4) switch
+                {
+                    0 => (ushort)random.Next(maxSample + 1),
+                    1 => (ushort)(random.Next(2) * maxSample),
+                    2 => (ushort)Math.Clamp((maxSample / 2) + random.Next(-3, 4), 0, maxSample),
+                    _ => (ushort)Math.Clamp((i % Stride * maxSample / Stride) + random.Next(-8, 9), 0, maxSample),
+                };
+            }
+
+            var mode = random.Next(Av1Constants.PaethPred + 1);
+            var angleDelta = mode is >= Av1Constants.VPred and <= Av1Constants.D67Pred ? random.Next(-3, 4) : 0;
+            var filterIntraMode = w <= 32 && h <= 32 && random.Next(4) == 0 ? random.Next(5) : -1;
+            var parameters = new Av1IntraPredictor.Parameters(bitDepth, mode, angleDelta, filterIntraMode, random.Next(4) != 0, random.Next(2) == 0);
+            var haveLeft = x > 0 && random.Next(5) != 0;
+            var haveAbove = y > 0 && random.Next(5) != 0;
+            var haveAboveRight = haveAbove && random.Next(2) == 0;
+            var haveBelowLeft = haveLeft && random.Next(2) == 0;
+            var actual = expected.ToArray();
+            Av1IntraPredictor.PredictScalar(expected, Stride, x, y, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, parameters);
+            Av1IntraPredictor.Predict(actual, Stride, x, y, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, parameters);
+            Assert.True(expected.AsSpan().SequenceEqual(actual), $"Round {round}: {w}x{h} at ({x}, {y}), {parameters}, left {haveLeft}, above {haveAbove}, limits ({maxX}, {maxY}).");
+        }
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1ForwardTransformMatchesTheScalarReference()

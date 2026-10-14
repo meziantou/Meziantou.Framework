@@ -914,6 +914,49 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingCoverageProductsMatchTheScalarReference()
+    {
+        const uint Full = CoverageRasterizer.FullCoverage;
+        var random = new Random(20261017);
+        uint Coverage() => random.Next(5) switch
+        {
+            0 => 0,
+            1 => Full,
+            2 => (uint)random.Next((int)Full - 2, (int)Full),
+            3 => (Full / 2) - 1 + (uint)random.Next(3),
+            _ => (uint)random.Next((int)Full + 1),
+        };
+
+        foreach (var length in new[] { 0, 1, 3, 4, 5, 8, 13, 64, 101 })
+        {
+            for (var round = 0; round < 20; round++)
+            {
+                var coverage = Enumerable.Range(0, length).Select(_ => round == 0 ? 0 : Coverage()).ToArray();
+                var mask = Enumerable.Range(0, length).Select(_ => Coverage()).ToArray();
+                var expected = new uint[length];
+                var actual = new uint[length];
+                Assert.Equal(CoverageKernels.MultiplyScalar(coverage, mask, expected), CoverageKernels.Multiply(coverage, mask, actual));
+                Assert.Equal(expected, actual);
+
+                var opacity = round % 3 == 0 ? Full - 1 : (uint)random.Next((int)Full);
+                CoverageKernels.ScaleScalar(coverage, opacity, expected);
+                CoverageKernels.Scale(coverage, opacity, actual);
+                Assert.Equal(expected, actual);
+
+                Assert.Equal(CoverageKernels.ThresholdScalar(coverage, expected), CoverageKernels.Threshold(coverage, actual));
+                Assert.Equal(expected, actual);
+
+                // In place, as the clip and the opacity use them
+                var inPlace = (uint[])coverage.Clone();
+                CoverageKernels.Multiply(inPlace, mask, inPlace);
+                CoverageKernels.MultiplyScalar(coverage, mask, expected);
+                Assert.Equal(expected, inPlace);
+            }
+        }
+    }
+
+    [Fact]
     public void PixelConversionsMatchTheScalarReference()
     {
         CheckConversionsFrom<Rgba32>();

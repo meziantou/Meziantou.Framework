@@ -34,8 +34,6 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed partial class DrawingSession
 {
-    private const uint HalfCoverage = CoverageRasterizer.FullCoverage / 2;
-
     private bool _isAliased;
     // The transfer characteristics whose function decodes the samples to the light they are combined in, or 0 when
     // they are combined as they are stored, or when the tone curves of an ICC profile decode them
@@ -157,15 +155,5 @@ internal sealed partial class DrawingSession
     }
 
     private static bool RemoveAntialiasing(ReadOnlySpan<uint> coverage, Span<uint> result)
-    {
-        var any = false;
-        for (var i = 0; i < coverage.Length; i++)
-        {
-            var isCovered = coverage[i] >= HalfCoverage;
-            result[i] = isCovered ? CoverageRasterizer.FullCoverage : 0;
-            any |= isCovered;
-        }
-
-        return any;
-    }
+        => CoverageKernels.Threshold(coverage, result);
 }

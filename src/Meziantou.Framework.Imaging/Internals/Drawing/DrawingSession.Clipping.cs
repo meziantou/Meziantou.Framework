@@ -196,11 +196,7 @@ internal sealed partial class DrawingSession
     {
         // The run may already be in that row, after a clip: each value is read before it is written
         var product = unsafe(MemoryMarshal.Cast<byte, uint>(_clipRow!.Span))[..coverage.Length];
-        for (var i = 0; i < coverage.Length; i++)
-        {
-            product[i] = (uint)((((ulong)coverage[i] * opacity) + (CoverageRasterizer.FullCoverage / 2)) >> 16);
-        }
-
+        CoverageKernels.Scale(coverage, opacity, product);
         return product;
     }
 
@@ -210,17 +206,7 @@ internal sealed partial class DrawingSession
     /// <summary>Multiplies coverages: <c>round(a b / 65536)</c>, to nearest with ties upward.</summary>
     /// <returns><see langword="false"/> when every product is zero.</returns>
     private static bool Multiply(ReadOnlySpan<uint> coverage, ReadOnlySpan<uint> mask, Span<uint> product)
-    {
-        var any = false;
-        for (var i = 0; i < coverage.Length; i++)
-        {
-            var value = mask[i] == CoverageRasterizer.FullCoverage ? coverage[i] : (uint)((((ulong)coverage[i] * mask[i]) + (CoverageRasterizer.FullCoverage / 2)) >> 16);
-            product[i] = value;
-            any |= value != 0;
-        }
-
-        return any;
-    }
+        => CoverageKernels.Multiply(coverage, mask, product);
 
     /// <summary>Gets the pixels the current clip can let through, and the depth of the mask that gives their coverage, or -1.</summary>
     private void GetClipBounds(out int left, out int top, out int right, out int bottom, out int maskLevel)

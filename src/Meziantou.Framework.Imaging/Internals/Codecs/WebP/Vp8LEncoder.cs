@@ -598,7 +598,7 @@ internal sealed class Vp8LEncoder : IDisposable
         var tilesX = Vp8LDecoder.DivRoundUp(width, bits);
         var tilesY = Vp8LDecoder.DivRoundUp(height, bits);
         var elements = RentPixels((long)tilesX * tilesY);
-        var histogram = new int[256];
+        var histogram = new int[ElementSearch.Lanes * 256];
         var fixedHistogram = new int[256];
         var tileSize = 1 << (2 * bits);
         var green = new int[tileSize];
@@ -715,21 +715,53 @@ internal sealed class Vp8LEncoder : IDisposable
     }
 
     /// <summary>The cost of the values of a channel transformed by <c>t</c>: the zero-multiplier histogram plus the other values.</summary>
-    private readonly ref struct ElementSearch(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] fixedHistogram, int[] histogram, int count)
+    /// <remarks>
+    /// The values are counted in <see cref="Lanes"/> interleaved histograms (consecutive values often fall in the same bin:
+    /// one histogram would make every increment wait for the previous one), added bin by bin for the entropy.
+    /// </remarks>
+    private readonly ref struct ElementSearch(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] fixedHistogram, int[] histograms, int count)
     {
+        public const int Lanes = 4;
+
         private readonly ReadOnlySpan<int> _values = values;
         private readonly ReadOnlySpan<int> _multipliers = multipliers;
 
         public double Cost(int t)
         {
-            fixedHistogram.CopyTo(histogram);
-            var factors = _multipliers[.._values.Length];
-            for (var i = 0; i < _values.Length; i++)
+            fixedHistogram.CopyTo(histograms, 0);
+            histograms.AsSpan(256).Clear();
+            var samples = _values;
+            var factors = _multipliers[..samples.Length];
+            var h1 = histograms.AsSpan(256, 256);
+            var h2 = histograms.AsSpan(512, 256);
+            var h3 = histograms.AsSpan(768, 256);
+            var h0 = histograms.AsSpan(0, 256);
+            var i = 0;
+            for (; i <= samples.Length - Lanes; i += Lanes)
             {
-                histogram[(_values[i] - ((t * factors[i]) >> 5)) & 0xFF]++;
+                h0[(samples[i] - ((t * factors[i]) >> 5)) & 0xFF]++;
+                h1[(samples[i + 1] - ((t * factors[i + 1]) >> 5)) & 0xFF]++;
+                h2[(samples[i + 2] - ((t * factors[i + 2]) >> 5)) & 0xFF]++;
+                h3[(samples[i + 3] - ((t * factors[i + 3]) >> 5)) & 0xFF]++;
             }
 
-            return Entropy(histogram, count);
+            for (; i < samples.Length; i++)
+            {
+                h0[(samples[i] - ((t * factors[i]) >> 5)) & 0xFF]++;
+            }
+
+            // The entropy of the summed histogram, bin by bin in order (as Entropy)
+            var cost = count * Log2Count(count);
+            for (var bin = 0; bin < 256; bin++)
+            {
+                var value = h0[bin] + h1[bin] + h2[bin] + h3[bin];
+                if (value > 1)
+                {
+                    cost -= value * Log2Count(value);
+                }
+            }
+
+            return cost;
         }
     }
 

@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Formats;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -16,6 +17,84 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
     {
         ArgumentNullException.ThrowIfNull(options);
         return new Session(options);
+    }
+
+    /// <summary>Converts coefficients of the reversible path to the input of the block encoder: the magnitude in the 31 low bits and the sign in the high one.</summary>
+    /// <param name="source">The coefficients.</param>
+    /// <param name="destination">Receives the words; as long as <paramref name="source"/>.</param>
+    internal static void ToSignMagnitude(ReadOnlySpan<int> source, Span<int> destination)
+    {
+        destination = destination[..source.Length];
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            // The sign mask is 0 or -1: (v ^ mask) - mask is |v|, with the sign bit of the mask added
+            for (; i <= source.Length - Vector128<int>.Count; i += Vector128<int>.Count)
+            {
+                var value = Vector128.Create(source[i..]);
+                var sign = Vector128.ShiftRightArithmetic(value, 31);
+                (((value ^ sign) - sign) | (sign & Vector128.Create(int.MinValue))).CopyTo(destination[i..]);
+            }
+        }
+
+        ToSignMagnitudeScalar(source[i..], destination[i..]);
+    }
+
+    /// <summary>The scalar reference of <see cref="ToSignMagnitude"/>.</summary>
+    internal static void ToSignMagnitudeScalar(ReadOnlySpan<int> source, Span<int> destination)
+    {
+        for (var x = 0; x < source.Length; x++)
+        {
+            var value = source[x];
+            destination[x] = value < 0 ? -value | int.MinValue : value;
+        }
+    }
+
+    /// <summary>
+    /// Quantizes coefficients of the irreversible path (equation E-1): the magnitude is divided by the step size and
+    /// truncated, and the sign of a coefficient whose quantized magnitude is not zero is set in the high bit.
+    /// </summary>
+    /// <param name="source">The coefficients.</param>
+    /// <param name="destination">Receives the words; as long as <paramref name="source"/>.</param>
+    /// <param name="step">The step size of the sub-band.</param>
+    internal static void Quantize(ReadOnlySpan<float> source, Span<int> destination, float step)
+    {
+        destination = destination[..source.Length];
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            // The division is the IEEE one, as the scalar one; the truncation of a quotient of 2^31 or more (or of a value
+            // that is not a number), which the conversions may handle differently, is left to the scalar version
+            var steps = Vector128.Create(step);
+            var limit = Vector128.Create(2147483648f);
+            for (; i <= source.Length - Vector128<float>.Count; i += Vector128<float>.Count)
+            {
+                var value = Vector128.Create(source[i..]);
+                var quotient = Vector128.Abs(value) / steps;
+                if (!Vector128.LessThanAll(quotient, limit))
+                {
+                    QuantizeScalar(source.Slice(i, Vector128<float>.Count), destination.Slice(i, Vector128<float>.Count), step);
+                    continue;
+                }
+
+                var magnitude = Vector128.ConvertToInt32(quotient);
+                var negative = Vector128.LessThan(value, Vector128<float>.Zero).AsInt32() & ~Vector128.Equals(magnitude, Vector128<int>.Zero);
+                (magnitude | (negative & Vector128.Create(int.MinValue))).CopyTo(destination[i..]);
+            }
+        }
+
+        QuantizeScalar(source[i..], destination[i..], step);
+    }
+
+    /// <summary>The scalar reference of <see cref="Quantize"/>.</summary>
+    internal static void QuantizeScalar(ReadOnlySpan<float> source, Span<int> destination, float step)
+    {
+        for (var x = 0; x < source.Length; x++)
+        {
+            var value = source[x];
+            var magnitude = (int)(MathF.Abs(value) / step);
+            destination[x] = value < 0 && magnitude != 0 ? magnitude | int.MinValue : magnitude;
+        }
     }
 
     /// <summary>
@@ -476,29 +555,15 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 {
                     for (var y = 0; y < height; y++)
                     {
-                        var source = plane.Slice(origin + (y * stride), width);
-                        var destination = samples.Slice(y * width, width);
-                        for (var x = 0; x < width; x++)
-                        {
-                            var value = source[x];
-                            destination[x] = value < 0 ? -value | int.MinValue : value;
-                        }
+                        ToSignMagnitude(plane.Slice(origin + (y * stride), width), samples.Slice(y * width, width));
                     }
                 }
                 else
                 {
-                    // Equation E-1: the magnitude is divided by the step size and truncated
                     var step = _bandSteps[(GetStepTable(component) * bandCount) + (_band - firstBand)];
                     for (var y = 0; y < height; y++)
                     {
-                        var source = coefficients.Slice(origin + (y * stride), width);
-                        var destination = samples.Slice(y * width, width);
-                        for (var x = 0; x < width; x++)
-                        {
-                            var value = source[x];
-                            var magnitude = (int)(MathF.Abs(value) / step);
-                            destination[x] = value < 0 && magnitude != 0 ? magnitude | int.MinValue : magnitude;
-                        }
+                        Quantize(coefficients.Slice(origin + (y * stride), width), samples.Slice(y * width, width), step);
                     }
                 }
 

@@ -2478,6 +2478,40 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Jpeg2000EncoderQuantizationMatchesTheScalarReferenceBitForBit()
+    {
+        // Coefficients of every magnitude and both zeros, quotients that do not fit in 31 bits, infinities and values that
+        // are not numbers; step sizes from tiny to large
+        var random = new Random(15446);
+        float[] specials = [0f, -0f, 1f, -1f, 0.5f, -0.5f, 2147483520f, -2147483520f, 2147483648f, -3e9f, float.MaxValue, float.MinValue, float.PositiveInfinity, float.NegativeInfinity, float.NaN, float.Epsilon, -float.Epsilon];
+        float[] steps = [1f, 0.5f, 0.013f, 1.7f, 1e-30f, 1e30f, 3.3e-3f];
+        foreach (var length in (int[])[0, 1, 3, 4, 5, 7, 8, 9, 16, 17, 64, 1024])
+        {
+            var integers = new int[length];
+            var singles = new float[length];
+            for (var i = 0; i < length; i++)
+            {
+                integers[i] = random.Next(3) == 0 ? ((int[])[0, 1, -1, int.MinValue, int.MaxValue, int.MinValue + 1])[random.Next(6)] : random.Next(int.MinValue, int.MaxValue);
+                singles[i] = random.Next(4) == 0 ? specials[random.Next(specials.Length)] : NextSingle(random);
+            }
+
+            var expected = new int[length];
+            var actual = new int[length];
+            Jpeg2000EncoderCodec.ToSignMagnitudeScalar(integers, expected);
+            Jpeg2000EncoderCodec.ToSignMagnitude(integers, actual);
+            Assert.Equal(expected, actual);
+
+            foreach (var step in steps)
+            {
+                Jpeg2000EncoderCodec.QuantizeScalar(singles, expected, step);
+                Jpeg2000EncoderCodec.Quantize(singles, actual, step);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Jpeg2000RowPackingMatchesTheScalarReferenceBitForBit()
     {
         // Samples of 8 bits and samples whose high bits the packing drops; rows of the length of a vector and around it,

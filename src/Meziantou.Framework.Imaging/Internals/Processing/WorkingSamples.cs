@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -19,7 +21,19 @@ internal static class WorkingSamples
     /// 0 keeps the encoded values). With <see cref="WorkingAlpha.Premultiplied"/>, colors are multiplied by the alpha sample <c>a</c> (0 to max);
     /// with <see cref="WorkingAlpha.Preserved"/> they are kept straight. In both cases the alpha working sample is <c>a</c>.
     /// </summary>
+    /// <remarks>
+    /// With 128-bit hardware vectors, encoded samples are converted 4 at a time: every sample and product is an integer below
+    /// 2^32, so the conversions and the products are exact and give the doubles of <see cref="LoadScalar"/>.
+    /// </remarks>
     public static void Load<TSample>(ReadOnlySpan<TSample> samples, Span<double> working, WorkingAlpha alpha, byte transfer)
+        where TSample : unmanaged
+    {
+        var done = transfer is 0 && Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar ? LoadVector(samples, working, alpha) : 0;
+        LoadScalar(samples[done..], working[done..], alpha, transfer);
+    }
+
+    /// <summary>The scalar reference of <see cref="Load"/>.</summary>
+    internal static void LoadScalar<TSample>(ReadOnlySpan<TSample> samples, Span<double> working, WorkingAlpha alpha, byte transfer)
         where TSample : unmanaged
     {
         // The tables of the sRGB function are those of SrgbTransfer, whatever the way sRGB is declared
@@ -127,6 +141,62 @@ internal static class WorkingSamples
                 samples[i] = FromInt<TSample>(EncodeColor(values[i], max, transfer));
             }
         }
+    }
+
+    /// <summary>Converts the leading encoded samples 4 at a time (whole pixels when there is alpha).</summary>
+    /// <returns>The number of samples converted, a multiple of 4.</returns>
+    private static int LoadVector<TSample>(ReadOnlySpan<TSample> samples, Span<double> working, WorkingAlpha alpha)
+        where TSample : unmanaged
+    {
+        Debug.Assert(working.Length >= samples.Length);
+        ref var input = ref unsafe(Unsafe.As<TSample, byte>(ref MemoryMarshal.GetReference(samples)));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(working));
+        var length = samples.Length;
+        var i = 0;
+        if (typeof(TSample) == typeof(byte))
+        {
+            for (; i + 16 <= length; i += 16)
+            {
+                var (low, high) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref input, (nuint)i)));
+                var (first, second) = Vector128.Widen(low);
+                var (third, fourth) = Vector128.Widen(high);
+                StoreWorking(first, ref output, i, alpha);
+                StoreWorking(second, ref output, i + 4, alpha);
+                StoreWorking(third, ref output, i + 8, alpha);
+                StoreWorking(fourth, ref output, i + 12, alpha);
+            }
+        }
+        else
+        {
+            for (; i + 8 <= length; i += 8)
+            {
+                var (first, second) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(2 * i))).AsUInt16());
+                StoreWorking(first, ref output, i, alpha);
+                StoreWorking(second, ref output, i + 4, alpha);
+            }
+        }
+
+        return i;
+    }
+
+    /// <summary>Stores 4 samples (one pixel when there is alpha) as working samples: <c>(r a, g a, b a, a)</c> when premultiplied, the samples otherwise.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreWorking(Vector128<uint> samples, ref double output, int index, WorkingAlpha alpha)
+    {
+        // Samples up to 65535 are exact as floats, then as doubles
+        var values = Vector128.ConvertToSingle(samples.AsInt32());
+        var low = Vector128.WidenLower(values);
+        var high = Vector128.WidenUpper(values);
+        if (alpha == WorkingAlpha.Premultiplied)
+        {
+            // (r, g) * (a, a) and (b, a) * (a, 1): exact products of integers (at most 65535 * 65535)
+            var a = Vector128.Create(high.GetElement(1));
+            low *= a;
+            high *= Vector128.ConditionalSelect(Vector128.Create(0, -1L).AsDouble(), Vector128<double>.One, a);
+        }
+
+        unsafe { low.StoreUnsafe(ref output, (nuint)index); }
+        unsafe { high.StoreUnsafe(ref output, (nuint)(index + 2)); }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

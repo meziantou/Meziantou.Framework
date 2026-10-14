@@ -400,6 +400,46 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Theory]
+    [InlineData((int)WorkingAlpha.None)]
+    [InlineData((int)WorkingAlpha.Premultiplied)]
+    [InlineData((int)WorkingAlpha.Preserved)]
+    public void WorkingSampleConversionsMatchTheScalarReference(int alphaMode)
+    {
+        CheckWorkingSamples<byte>((WorkingAlpha)alphaMode, byte.MaxValue);
+        CheckWorkingSamples<ushort>((WorkingAlpha)alphaMode, ushort.MaxValue);
+
+        [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+        static void CheckWorkingSamples<TSample>(WorkingAlpha alpha, int max)
+            where TSample : unmanaged
+        {
+            var random = new Random(max + (int)alpha);
+            for (var pixels = 0; pixels <= 40; pixels++)
+            {
+                // Random samples, with every sample (alpha included) often 0 or the maximum
+                var samples = new TSample[pixels * 4];
+                var values = new int[samples.Length];
+                for (var i = 0; i < samples.Length; i++)
+                {
+                    var value = random.Next(4) switch
+                    {
+                        0 => 0,
+                        1 => max,
+                        _ => random.Next(max + 1),
+                    };
+                    values[i] = value;
+                    samples[i] = typeof(TSample) == typeof(byte) ? (TSample)(object)(byte)value : (TSample)(object)(ushort)value;
+                }
+
+                var expected = new double[samples.Length];
+                var actual = new double[samples.Length];
+                WorkingSamples.LoadScalar<TSample>(samples, expected, alpha, transfer: 0);
+                WorkingSamples.Load<TSample>(samples, actual, alpha, transfer: 0);
+                Assert.Equal(expected.Select(BitConverter.DoubleToInt64Bits), actual.Select(BitConverter.DoubleToInt64Bits));
+            }
+        }
+    }
+
     public static TheoryData<PixelFormat, ConvolutionEdgeMode, ConvolutionWorkingSpace, bool> ConvolutionCases()
     {
         var data = new TheoryData<PixelFormat, ConvolutionEdgeMode, ConvolutionWorkingSpace, bool>();

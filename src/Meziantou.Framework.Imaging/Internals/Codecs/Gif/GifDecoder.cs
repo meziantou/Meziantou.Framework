@@ -1,4 +1,6 @@
+using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -35,8 +37,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// exist for several images or a loop extension (eager loads; reader images carry none).
 /// </description></item>
 /// <item><description>
-/// Memory: the compositor canvas, at most one restore-previous rectangle, the LZW table and two image-width rows (indices and
-/// RGBA), all charged to the operation scope; frames and pixels are charged to the per-input limits before each image.
+/// Memory: the compositor canvas, at most one restore-previous rectangle, the LZW table and one image-width row of indices
+/// (their palette colors are written straight into the canvas), all charged to the operation scope; frames and pixels are charged to the per-input limits before each image.
 /// </description></item>
 /// </list>
 /// </remarks>
@@ -52,7 +54,6 @@ internal sealed class GifDecoder : GifDecodeObserver
     private AnimationCompositor? _compositor;
     private GifLzwDecoder? _lzw;
     private PooledBuffer? _indexRow;
-    private PooledBuffer? _pixelRow;
 
     // Current image
     private bool _imageOpen;
@@ -183,8 +184,6 @@ internal sealed class GifDecoder : GifDecodeObserver
         {
             _indexRow?.Dispose();
             _indexRow = null;
-            _pixelRow?.Dispose();
-            _pixelRow = null;
             _lzw?.Dispose();
             _lzw = null;
             _compositor?.Dispose();
@@ -273,8 +272,6 @@ internal sealed class GifDecoder : GifDecodeObserver
             _indexRow = null;
             _indexRow = _context.Scope.Rent(Math.Max(_width, canvas.Width), AllocationKind.DecoderState, clear: false);
         }
-
-        _pixelRow ??= _context.Scope.Rent(canvas.Width * BytesPerPixel, AllocationKind.DecoderState, clear: false);
     }
 
     private void Decode(ReadOnlySpan<byte> input, scoped in PixelLease canvas)
@@ -307,12 +304,9 @@ internal sealed class GifDecoder : GifDecodeObserver
         var entries = _paletteEntries;
         if (entries < 256)
         {
-            var transparent = _transparentIndex;
-            foreach (var index in indices)
-            {
-                if (index >= entries && index != transparent)
-                    throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The GIF color index {index} is outside the {entries}-entry color table."));
-            }
+            var invalid = FindInvalidIndex(indices, entries, _transparentIndex);
+            if (invalid >= 0)
+                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The GIF color index {indices[invalid]} is outside the {entries}-entry color table."));
         }
 
         var imageRow = _interlaced ? GetInterlacedRow(_height, ref _pass, ref _passRow) : _rowsDone;
@@ -320,16 +314,52 @@ internal sealed class GifDecoder : GifDecodeObserver
         if (!_visible || y < _visibleTop || y >= _visibleBottom)
             return;
 
-        var count = _visibleRight - _visibleLeft;
-        var visible = indices.Slice(_visibleLeft - _left, count);
-        var pixels = unsafe(MemoryMarshal.Cast<byte, uint>(_pixelRow!.RawBuffer.AsSpan(0, count * BytesPerPixel)));
-        var palette = _palette;
-        for (var i = 0; i < visible.Length; i++)
+        var visible = indices.Slice(_visibleLeft - _left, _visibleRight - _visibleLeft);
+        _compositor!.WriteIndexedPixels(canvas, _visibleLeft, y, visible, _palette);
+    }
+
+    /// <summary>
+    /// Finds the first index that has no color: at least <paramref name="entries"/> and not the transparent index.
+    /// With 128-bit hardware vectors, 16 indices are tested at a time; the result equals <see cref="FindInvalidIndexScalar"/>.
+    /// </summary>
+    /// <returns>The position of the first invalid index, or -1.</returns>
+    internal static int FindInvalidIndex(ReadOnlySpan<byte> indices, int entries, int transparentIndex)
+    {
+        var start = 0;
+        if (Vector128.IsHardwareAccelerated && indices.Length >= Vector128<byte>.Count && entries is > 0 and < 256)
         {
-            pixels[i] = palette[visible[i]];
+            var limit = Vector128.Create((byte)(entries - 1));
+            var transparent = Vector128.Create((byte)transparentIndex);
+            var hasTransparent = transparentIndex is >= 0 and < 256;
+            for (; start <= indices.Length - Vector128<byte>.Count; start += Vector128<byte>.Count)
+            {
+                var values = Vector128.Create(indices[start..]);
+                var invalid = Vector128.GreaterThan(values, limit);
+                if (hasTransparent)
+                {
+                    invalid = Vector128.AndNot(invalid, Vector128.Equals(values, transparent));
+                }
+
+                if (invalid != Vector128<byte>.Zero)
+                    return start + BitOperations.TrailingZeroCount(invalid.ExtractMostSignificantBits());
+            }
         }
 
-        _compositor!.WritePixels(canvas, _visibleLeft, y, step: 1, count, unsafe(MemoryMarshal.AsBytes(pixels)));
+        var rest = FindInvalidIndexScalar(indices[start..], entries, transparentIndex);
+        return rest < 0 ? -1 : start + rest;
+    }
+
+    /// <summary>The index-at-a-time reference of <see cref="FindInvalidIndex"/>.</summary>
+    internal static int FindInvalidIndexScalar(ReadOnlySpan<byte> indices, int entries, int transparentIndex)
+    {
+        for (var i = 0; i < indices.Length; i++)
+        {
+            var index = indices[i];
+            if (index >= entries && index != transparentIndex)
+                return i;
+        }
+
+        return -1;
     }
 
     private static InvalidImageContentException Invalid(string message) => new(message, ImageFormat.Gif);

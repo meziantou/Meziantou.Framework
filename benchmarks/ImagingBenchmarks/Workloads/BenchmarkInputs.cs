@@ -22,6 +22,7 @@ internal static class BenchmarkInputs
     private static readonly Lazy<byte[]> InkJpegData = new(() => ProgressiveJpegInput.EncodeInks(LargeRgb24Bytes.Value, LargeWidth, LargeHeight, JpegQuality));
     private static readonly Lazy<byte[]> ServiceJpegData = new(() => EncodeRgb24(BenchmarkPixels.Rgb24(ServiceWidth, ServiceHeight, seed: 5), ServiceWidth, ServiceHeight, JpegEncoder));
     private static readonly Lazy<byte[]> GifData = new(() => EncodeAnimation(new GifEncoder()));
+    private static readonly Lazy<byte[]> TransparentGifData = new(() => EncodeTransparentAnimation(new GifEncoder()));
     private static readonly Lazy<byte[]> ApngData = new(() => EncodeAnimation(new PngEncoder { AnimationMode = PngAnimationMode.Animated }));
     private static readonly Lazy<byte[]> LossyWebPData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, WebPLossyEncoder));
     private static readonly Lazy<byte[]> LosslessWebPData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new WebPEncoder()));
@@ -99,6 +100,12 @@ internal static class BenchmarkInputs
     /// <summary>Gets a 320x240 GIF of 48 frames (default <see cref="GifEncoder"/>: 256 colors, no dithering), 40 ms per frame.</summary>
     public static byte[] Gif => GifData.Value;
 
+    /// <summary>
+    /// Gets a 320x240 GIF of 48 frames (default <see cref="GifEncoder"/>), 40 ms per frame, with a transparent index:
+    /// every frame is composited over the canvas.
+    /// </summary>
+    public static byte[] TransparentGif => TransparentGifData.Value;
+
     /// <summary>Gets a 320x240 APNG of 48 frames (default <see cref="PngEncoder"/>), 40 ms per frame.</summary>
     public static byte[] Apng => ApngData.Value;
 
@@ -172,6 +179,31 @@ internal static class BenchmarkInputs
             image.Dispose();
             throw;
         }
+    }
+
+    private static byte[] EncodeTransparentAnimation(ImageEncoder encoder)
+    {
+        // The animation of CreateAnimation with transparent 16x16 cells in a diagonal pattern
+        using var image = CreateAnimation();
+        foreach (var frame in image.Frames)
+        {
+            frame.ProcessPixelBytes(static pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < pixels.Width; x++)
+                    {
+                        if (((x / 16) + (y / 16)) % 3 == 0)
+                        {
+                            row[(x * 4) + 3] = 0;
+                        }
+                    }
+                }
+            });
+        }
+
+        return Save(image, encoder);
     }
 
     private static byte[] EncodeAnimation(ImageEncoder encoder)

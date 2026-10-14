@@ -224,6 +224,86 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void GifInvalidIndexSearchMatchesTheScalarReference()
+    {
+        var random = new Random(31);
+        foreach (var length in new[] { 0, 1, 15, 16, 17, 31, 32, 33, 64, 100, 257 })
+        {
+            foreach (var entries in new[] { 1, 2, 16, 100, 128, 255, 256 })
+            {
+                foreach (var transparent in new[] { -1, 0, entries - 1, entries, 200, 255 })
+                {
+                    var indices = new byte[length];
+                    for (var round = 0; round < 8; round++)
+                    {
+                        // Valid indices, with zero, one or several invalid ones (the transparent index included)
+                        for (var i = 0; i < length; i++)
+                        {
+                            indices[i] = (byte)random.Next(entries);
+                        }
+
+                        for (var k = 0; k < round % 3 && length > 0; k++)
+                        {
+                            indices[random.Next(length)] = (byte)random.Next(256);
+                        }
+
+                        if (length > 0 && transparent >= 0 && round == 7)
+                        {
+                            indices[random.Next(length)] = (byte)transparent;
+                        }
+
+                        Assert.Equal(GifDecoder.FindInvalidIndexScalar(indices, entries, transparent), GifDecoder.FindInvalidIndex(indices, entries, transparent));
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void AnimationOverRowsMatchTheScalarReference()
+    {
+        var random = new Random(37);
+        foreach (var pixels in new[] { 0, 1, 3, 4, 5, 7, 8, 9, 16, 33, 100 })
+        {
+            for (var round = 0; round < 64; round++)
+            {
+                // Runs of opaque, transparent and translucent pixels over canvases of every kind
+                var source = new byte[pixels * 4];
+                var canvas = new byte[pixels * 4];
+                random.NextBytes(source);
+                random.NextBytes(canvas);
+                var run = 1 + random.Next(8);
+                for (var i = 0; i < pixels; i++)
+                {
+                    var mode = ((i / run) + round) % 4;
+                    source[(i * 4) + 3] = mode switch
+                    {
+                        0 => 0,
+                        1 => byte.MaxValue,
+                        2 => (byte)random.Next(256),
+                        _ => (byte)(random.Next(2) * 255),
+                    };
+
+                    canvas[(i * 4) + 3] = (round % 3) switch
+                    {
+                        0 => 0,
+                        1 => byte.MaxValue,
+                        _ => canvas[(i * 4) + 3],
+                    };
+                }
+
+                var expected = canvas.ToArray();
+                var actual = canvas.ToArray();
+                AnimationCompositor.BlendOverRow8Scalar(source, expected);
+                AnimationCompositor.BlendOverRow8(source, actual);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegInverseDctMatchesTheScalarReferenceBitForBit()
     {
         var random = new Random(20);

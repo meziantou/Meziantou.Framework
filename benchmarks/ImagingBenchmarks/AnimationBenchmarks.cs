@@ -38,6 +38,14 @@ public class AnimationBenchmarks : IDisposable
     }
 
     [Benchmark]
+    [Workload("GIF 320x240x48 with transparency -> Rgba32 (eager, composited over the canvas)", Frames = Frames)]
+    public int LoadTransparentGif()
+    {
+        using var image = Image.Load<Rgba32>(BenchmarkInputs.TransparentGif);
+        return image.Frames.Count;
+    }
+
+    [Benchmark]
     [Workload("APNG 320x240x48 -> Rgba32 (eager, composited)", Frames = Frames)]
     public int LoadApng()
     {

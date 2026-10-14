@@ -935,6 +935,59 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlColorMatricesMatchTheScalarReferenceBitForBit()
+    {
+        var random = new Random(185);
+        for (var round = 0; round < 2000; round++)
+        {
+            var length = round < 100 ? round : random.Next(1, 300);
+            var channels = new float[3][];
+            for (var c = 0; c < 3; c++)
+            {
+                channels[c] = new float[length];
+                for (var i = 0; i < length; i++)
+                {
+                    // XYB and YCbCr ranges, with zeros, signed zeros, values far out of range and subnormal values
+                    channels[c][i] = (round % 5) switch
+                    {
+                        0 => random.Next(2) == 0 ? 0f : -0f,
+                        1 => (float)((random.NextDouble() - 0.5) * 1e5),
+                        2 => (float)random.NextDouble() * 1e-40f,
+                        _ => (float)(random.NextDouble() - 0.5),
+                    };
+                }
+            }
+
+            var matrix = new float[9];
+            for (var i = 0; i < matrix.Length; i++)
+            {
+                matrix[i] = (float)((random.NextDouble() - 0.3) * 12);
+            }
+
+            float[] biasRoot = [(float)random.NextDouble() * 0.2f, (float)random.NextDouble() * 0.2f, (float)random.NextDouble() * 0.2f];
+            float[] bias = [-biasRoot[0] * biasRoot[0] * biasRoot[0], -biasRoot[1] * biasRoot[1] * biasRoot[1], -biasRoot[2] * biasRoot[2] * biasRoot[2]];
+            var expected = Array.ConvertAll(channels, c => c.ToArray());
+            var actual = Array.ConvertAll(channels, c => c.ToArray());
+            JpegXlOutputColor.XybToLinearScalar(expected[0], expected[1], expected[2], matrix, biasRoot, bias);
+            JpegXlOutputColor.XybToLinear(actual[0], actual[1], actual[2], matrix, biasRoot, bias);
+            for (var c = 0; c < 3; c++)
+            {
+                Assert.Equal(Array.ConvertAll(expected[c], BitConverter.SingleToInt32Bits), Array.ConvertAll(actual[c], BitConverter.SingleToInt32Bits));
+            }
+
+            expected = Array.ConvertAll(channels, c => c.ToArray());
+            actual = Array.ConvertAll(channels, c => c.ToArray());
+            JpegXlColorTransform.YCbCrToRgbScalar(expected[0], expected[1], expected[2]);
+            JpegXlColorTransform.YCbCrToRgb(actual[0], actual[1], actual[2]);
+            for (var c = 0; c < 3; c++)
+            {
+                Assert.Equal(Array.ConvertAll(expected[c], BitConverter.SingleToInt32Bits), Array.ConvertAll(actual[c], BitConverter.SingleToInt32Bits));
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegXlGaborishRowsMatchTheScalarReferenceBitForBit()
     {
         var random = new Random(184);

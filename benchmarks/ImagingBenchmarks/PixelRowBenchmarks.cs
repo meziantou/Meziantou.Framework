@@ -70,6 +70,24 @@ public class PixelRowBenchmarks
     [Workload("1920x1080 Rgba64 with transparency -> Gray16 (flattened onto a background, luma)")]
     public int ConvertRgba64ToGray16() => Convert<Rgba64, Gray16>(_rgba64, Flatten);
 
+    [Benchmark]
+    [Workload("1920x1080 Rgba32: clone, then grayscale in place")]
+    public int GrayscaleRgba32()
+    {
+        using var copy = _image.Clone();
+        copy.Grayscale();
+        return copy.Width;
+    }
+
+    [Benchmark]
+    [Workload("1920x1080 Rgb24: clone, then grayscale in place")]
+    public int GrayscaleRgb24()
+    {
+        using var copy = _rgb24.Clone();
+        copy.Grayscale();
+        return copy.Width;
+    }
+
     private static int Convert<TSource, TDestination>(Image<TSource> image, PixelConversionOptions? options)
         where TSource : unmanaged
         where TDestination : unmanaged

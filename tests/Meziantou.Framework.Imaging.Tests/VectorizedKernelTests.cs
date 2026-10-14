@@ -630,6 +630,45 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    public void GrayscaleMatchesTheScalarReference()
+    {
+        CheckGrayscale<Rgba32>();
+        CheckGrayscale<Bgra32>();
+        CheckGrayscale<Rgb24>();
+        CheckGrayscale<Rgba64>();
+
+        [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+        static void CheckGrayscale<TPixel>()
+            where TPixel : unmanaged
+        {
+            var random = new Random(typeof(TPixel).Name.Length);
+            for (var length = 0; length <= 40; length++)
+            {
+                // Random samples, often 0 or the maximum
+                var pixels = new TPixel[length];
+                var bytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(pixels.AsSpan()));
+                random.NextBytes(bytes);
+                for (var i = 0; i < bytes.Length; i++)
+                {
+                    bytes[i] = random.Next(4) switch
+                    {
+                        0 => 0,
+                        1 => 0xFF,
+                        _ => bytes[i],
+                    };
+                }
+
+                var expected = pixels.ToArray();
+                ProcessingKernels.GrayscaleScalar<TPixel>(expected);
+                var done = ProcessingKernels.GrayscaleVector<TPixel>(pixels);
+                Assert.True(Vector128.IsHardwareAccelerated is false || length < 6 || done > 0);
+                ProcessingKernels.GrayscaleScalar(pixels.AsSpan(done));
+                Assert.Equal(unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(expected.AsSpan())).ToArray(), bytes.ToArray());
+            }
+        }
+    }
+
+    [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void RedBlueExchangeMatchesTheScalarReference()
     {

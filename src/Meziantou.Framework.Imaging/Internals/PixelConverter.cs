@@ -754,7 +754,7 @@ internal static class PixelConverter
     /// scalar reference has no effect; <see cref="DivideBy10000ExactVector"/> divides it.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Vector128<uint> Luma16Vector(Vector128<ushort> first, Vector128<ushort> second)
+    internal static Vector128<uint> Luma16Vector(Vector128<ushort> first, Vector128<ushort> second)
     {
         var redBlue = Vector128.Narrow(first.AsUInt32(), second.AsUInt32()).AsInt32();
         var greenAlpha = Vector128.Narrow(Vector128.ShiftRightLogical(first.AsUInt32(), 16), Vector128.ShiftRightLogical(second.AsUInt32(), 16)).AsInt32();

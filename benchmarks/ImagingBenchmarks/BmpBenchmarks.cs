@@ -45,6 +45,14 @@ public class BmpBenchmarks : IDisposable
     }
 
     [Benchmark]
+    [Workload("2048x1536 BMP 8-bit indexed (256 colors) -> Rgb24")]
+    public int DecodeBmpIndexed8()
+    {
+        using var image = Image.Load<Rgb24>(BenchmarkInputs.BmpIndexed8);
+        return image.Width;
+    }
+
+    [Benchmark]
     [Workload("1024x768 BMP 32-bit with an alpha mask -> Rgba32")]
     public int DecodeBmpRgba()
     {

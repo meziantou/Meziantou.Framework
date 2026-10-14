@@ -302,25 +302,13 @@ internal sealed class PngSampleFormat
 
     private void ExpandPalette(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
     {
-        var palette = _palette;
         var depth = BitDepth;
-        var hasAlpha = SourceBytesPerPixel == 4;
-        for (var x = 0; x < width; x++)
-        {
-            var index = ReadPackedSample(scanline, x, depth);
-            if (index >= _paletteCount)
-                throw new InvalidImageContentException(string.Create(CultureInfo.InvariantCulture, $"The palette index {index} is outside the {_paletteCount} PLTE entries."), ImageFormat.Png);
+        var invalid = IndexedPixels.FindIndexOutside(scanline, depth, width, _paletteCount);
+        if (invalid >= 0)
+            throw new InvalidImageContentException(string.Create(CultureInfo.InvariantCulture, $"The palette index {IndexedPixels.ReadIndex(scanline, invalid, depth)} is outside the {_paletteCount} PLTE entries."), ImageFormat.Png);
 
-            var entry = palette.AsSpan(index * 4, 4);
-            if (hasAlpha)
-            {
-                entry.CopyTo(destination[(x * 4)..]);
-            }
-            else
-            {
-                entry[..3].CopyTo(destination[(x * 3)..]);
-            }
-        }
+        // The RGBA entries are packed Rgba32 pixels
+        IndexedPixels.Expand(scanline, depth, width, unsafe(MemoryMarshal.Cast<byte, uint>(_palette.AsSpan())), destination, rgba: SourceBytesPerPixel == 4);
     }
 
     private static void ExpandGrayAlpha8(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)

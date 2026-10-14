@@ -34,6 +34,9 @@ internal static class BenchmarkInputs
     private static readonly Lazy<byte[]> BmpRgbaData = new(() => EncodeRgba32(ServiceRgba32Source, ServiceWidth, ServiceHeight, new BmpEncoder()));
     private static readonly Lazy<byte[]> TgaRgbData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TgaEncoder { Compression = TgaCompression.RunLength }));
     private static readonly Lazy<byte[]> TgaRgbaData = new(() => EncodeRgba32(ServiceRgba32Source, ServiceWidth, ServiceHeight, new TgaEncoder { Compression = TgaCompression.RunLength }));
+    private static readonly Lazy<byte[]> BmpIndexed8Data = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, AllowColorReduction = true }));
+    private static readonly Lazy<byte[]> PngIndexed8Data = new(() => EncodeRgb24(IndexedRgb24Source, LargeWidth, LargeHeight, new PngEncoder { PixelLayout = PngPixelLayout.Indexed }));
+    private static readonly Lazy<byte[]> TiffIndexed8Data = new(() => EncodeRgb24(IndexedRgb24Source, LargeWidth, LargeHeight, new TiffEncoder { PixelLayout = TiffPixelLayout.Indexed }));
     private static readonly Lazy<byte[]> TiffLzwData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TiffEncoder { Compression = TiffCompression.Lzw }));
     private static readonly Lazy<byte[]> TiffDeflateData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TiffEncoder { Compression = TiffCompression.Deflate }));
     private static readonly Lazy<byte[]> TiffDeflateRowStripsData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TiffEncoder { Compression = TiffCompression.Deflate, RowsPerStrip = 1 }));
@@ -149,6 +152,27 @@ internal static class BenchmarkInputs
 
     /// <summary>Gets the 1024x768 RGBA source encoded as a run-length TGA with eight alpha bits.</summary>
     public static byte[] TgaRgba => TgaRgbaData.Value;
+
+    /// <summary>Gets the 2048x1536 RGB source reduced to 256 colors and encoded as an 8-bit indexed BMP.</summary>
+    public static byte[] BmpIndexed8 => BmpIndexed8Data.Value;
+
+    /// <summary>Gets the 256 colors of <see cref="BmpIndexed8"/> as 2048x1536 RGB 8-bit pixels: the source of the other indexed inputs.</summary>
+    public static Rgb24[] IndexedRgb24Source
+    {
+        get
+        {
+            using var image = Image.Load<Rgb24>(BmpIndexed8);
+            var pixels = new Rgb24[image.Width * image.Height];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            return pixels;
+        }
+    }
+
+    /// <summary>Gets <see cref="IndexedRgb24Source"/> encoded as an 8-bit indexed PNG (default compression, adaptive filters).</summary>
+    public static byte[] PngIndexed8 => PngIndexed8Data.Value;
+
+    /// <summary>Gets <see cref="IndexedRgb24Source"/> encoded as an uncompressed 8-bit indexed TIFF.</summary>
+    public static byte[] TiffIndexed8 => TiffIndexed8Data.Value;
 
     /// <summary>Gets the 2048x1536 RGB source encoded as an LZW TIFF (<see cref="TiffEncoder"/>, strips of 64 KB, no predictor).</summary>
     public static byte[] TiffLzw => TiffLzwData.Value;

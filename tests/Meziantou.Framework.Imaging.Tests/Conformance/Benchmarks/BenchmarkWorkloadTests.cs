@@ -63,6 +63,18 @@ public sealed class BenchmarkWorkloadTests
     }
 
     [Fact]
+    public void IndexedInputsDecodeToTheReducedSource()
+    {
+        var source = BenchmarkInputs.IndexedRgb24Source;
+        Assert.HasCountLessThanOrEqual(256, source.Distinct());
+        Assert.Equal(ImageColorModel.Indexed, Image.Identify(BenchmarkInputs.BmpIndexed8).ColorModel);
+        Assert.Equal(ImageColorModel.Indexed, Image.Identify(BenchmarkInputs.PngIndexed8).ColorModel);
+        Assert.Equal(ImageColorModel.Indexed, Image.Identify(BenchmarkInputs.TiffIndexed8).ColorModel);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.PngIndexed8, source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffIndexed8, source);
+    }
+
+    [Fact]
     public void TheBaselineJpegInputMatchesTheEncoderModel()
     {
         // The baseline input is the output of the encode workload (2048x1536 Rgb24, quality 85, 4:2:0)

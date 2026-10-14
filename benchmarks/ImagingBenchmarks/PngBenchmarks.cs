@@ -72,6 +72,14 @@ public class PngBenchmarks : IDisposable
     }
 
     [Benchmark]
+    [Workload("2048x1536 PNG 8-bit indexed (256 colors) -> Rgb24")]
+    public int LoadIndexed8()
+    {
+        using var image = Image.Load<Rgb24>(BenchmarkInputs.PngIndexed8);
+        return image.Width;
+    }
+
+    [Benchmark]
     [Workload("1024x768 Rgba64 -> PNG (adaptive filters, optimal zlib)", ReturnsOutputBytes = true)]
     public long SaveLarge16() => ImageWorkloads.Encode(_large16, new PngEncoder(), _output);
 

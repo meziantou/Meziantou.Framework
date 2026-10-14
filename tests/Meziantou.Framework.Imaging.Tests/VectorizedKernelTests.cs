@@ -304,6 +304,60 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void IndexedRowsMatchTheScalarReferences()
+    {
+        var random = new Random(43);
+        var palette = new uint[256];
+        for (var i = 0; i < palette.Length; i++)
+        {
+            palette[i] = (uint)random.Next() ^ ((uint)random.Next() << 16);
+        }
+
+        foreach (var bits in new[] { 1, 2, 4, 8 })
+        {
+            foreach (var width in new[] { 1, 2, 3, 7, 8, 9, 15, 16, 17, 31, 33, 100 })
+            {
+                var packed = new byte[((width * bits) + 7) / 8];
+                for (var round = 0; round < 8; round++)
+                {
+                    random.NextBytes(packed);
+                    foreach (var rgba in new[] { false, true })
+                    {
+                        var bytesPerPixel = rgba ? 4 : 3;
+
+                        // The bytes after the row must not be written
+                        var expected = new byte[(width * bytesPerPixel) + 5];
+                        var actual = new byte[(width * bytesPerPixel) + 5];
+                        IndexedPixels.ExpandScalar(packed, bits, width, palette, expected, rgba);
+                        IndexedPixels.Expand(packed, bits, width, palette, actual, rgba);
+                        Assert.Equal(expected, actual);
+                    }
+
+                    foreach (var entries in new[] { 1, 2, 3, 15, 16, 100, 255, 256 })
+                    {
+                        var expectedColumn = -1;
+                        for (var x = 0; x < width; x++)
+                        {
+                            if (IndexedPixels.ReadIndex(packed, x, bits) >= entries)
+                            {
+                                expectedColumn = x;
+                                break;
+                            }
+                        }
+
+                        Assert.Equal(expectedColumn, IndexedPixels.FindIndexOutside(packed, bits, width, entries));
+                        if (bits == 8)
+                        {
+                            Assert.Equal(IndexedPixels.FindAtLeastScalar(packed, entries), IndexedPixels.FindAtLeast(packed, entries));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void TiffSixteenBitDifferencingMatchesTheScalarReference()
     {
         var random = new Random(41);

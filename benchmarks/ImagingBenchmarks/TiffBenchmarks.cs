@@ -57,6 +57,14 @@ public class TiffBenchmarks : IDisposable
     }
 
     [Benchmark]
+    [Workload("2048x1536 TIFF 8-bit indexed (256 colors), uncompressed -> Rgb24")]
+    public int DecodeTiffIndexed8()
+    {
+        using var image = Image.Load<Rgb24>(BenchmarkInputs.TiffIndexed8);
+        return image.Width;
+    }
+
+    [Benchmark]
     [Workload("2048x1536 TIFF RGB with the horizontal predictor -> Rgb24")]
     public int DecodeTiffPredictor8()
     {

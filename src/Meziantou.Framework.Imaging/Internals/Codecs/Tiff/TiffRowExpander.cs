@@ -101,7 +101,7 @@ internal sealed class TiffRowExpander : IDisposable
         _inks = null;
     }
 
-    /// <summary>Builds the colors of every index: 3 bytes each, or 4 native 16-bit samples each for a 16-bit color map.</summary>
+    /// <summary>Builds the colors of every index: 4 bytes each (RGB and an unused byte), or 4 native 16-bit samples each for a 16-bit color map.</summary>
     private static PooledBuffer CreatePalette(TiffPage page, AllocationScope scope)
     {
         var count = 1 << page.BitsPerSample;
@@ -122,14 +122,16 @@ internal sealed class TiffRowExpander : IDisposable
         }
         else
         {
-            var buffer = scope.Rent(count * 3, AllocationKind.DecoderState, clear: false);
+            // Packed native-endian Rgba32 pixels for IndexedPixels (the fourth byte is not written to the Rgb24 rows)
+            var buffer = scope.Rent(count * 4, AllocationKind.DecoderState, clear: false);
             var colors = buffer.Span;
             var divisor = page.ColorMapDivisor;
             for (var i = 0; i < count; i++)
             {
-                colors[i * 3] = (byte)(map[i] / divisor);
-                colors[(i * 3) + 1] = (byte)(map[count + i] / divisor);
-                colors[(i * 3) + 2] = (byte)(map[(2 * count) + i] / divisor);
+                colors[i * 4] = (byte)(map[i] / divisor);
+                colors[(i * 4) + 1] = (byte)(map[count + i] / divisor);
+                colors[(i * 4) + 2] = (byte)(map[(2 * count) + i] / divisor);
+                colors[(i * 4) + 3] = byte.MaxValue;
             }
 
             return buffer;
@@ -171,11 +173,8 @@ internal sealed class TiffRowExpander : IDisposable
             return;
         }
 
-        var palette = _palette!.Span;
-        for (var x = 0; x < _width; x++)
-        {
-            palette.Slice(ReadPackedSample(stored, x, bits) * 3, 3).CopyTo(destination[(x * 3)..]);
-        }
+        // The color map has an entry for every index
+        IndexedPixels.Expand(stored, bits, _width, unsafe(MemoryMarshal.Cast<byte, uint>(_palette!.Span)), destination, rgba: false);
     }
 
     private void ExpandPackedGray(ReadOnlySpan<byte> stored, Span<byte> destination)

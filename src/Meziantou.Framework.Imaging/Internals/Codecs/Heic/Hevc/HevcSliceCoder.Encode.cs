@@ -1,3 +1,5 @@
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 // The search of the encoder: the coding quadtree of a coding tree unit, and the coding units coded in intra prediction
@@ -218,18 +220,22 @@ internal ref partial struct HevcSliceCoder
         var candidates = Math.Min(_decisions.IntraCandidates, 35);
         if (candidates < 35)
         {
+            // The neighbouring samples of the block, and their filtered version, are the same for every mode: they are
+            // built once, and each mode is predicted into a scratch block
+            var references = new IntraModeReferences(workspace.IntraScratch, nPbS);
+            GetIntraReferences(plane, 0, xPb, yPb, xPb, yPb, nPbS, references.Unfiltered);
             // Planar, DC, the candidate modes, which are cheap to signal, and some of the angular modes
-            EvaluateIntraLumaMode(HevcConstants.IntraPlanar, plane, source, xPb, yPb, nPbS, candModeList, costs);
-            EvaluateIntraLumaMode(HevcConstants.IntraDc, plane, source, xPb, yPb, nPbS, candModeList, costs);
+            EvaluateIntraLumaMode(HevcConstants.IntraPlanar, ref references, source, xPb, yPb, nPbS, candModeList, costs);
+            EvaluateIntraLumaMode(HevcConstants.IntraDc, ref references, source, xPb, yPb, nPbS, candModeList, costs);
             foreach (var mode in candModeList)
             {
-                EvaluateIntraLumaMode(mode, plane, source, xPb, yPb, nPbS, candModeList, costs);
+                EvaluateIntraLumaMode(mode, ref references, source, xPb, yPb, nPbS, candModeList, costs);
             }
 
             var step = _decisions.IntraModeStep;
             for (var mode = 2; mode <= 34; mode += step)
             {
-                EvaluateIntraLumaMode(mode, plane, source, xPb, yPb, nPbS, candModeList, costs);
+                EvaluateIntraLumaMode(mode, ref references, source, xPb, yPb, nPbS, candModeList, costs);
             }
 
             if (_decisions.IntraModeRefinement)
@@ -239,12 +245,12 @@ internal ref partial struct HevcSliceCoder
                 for (var delta = step >> 1; delta > 0; delta >>= 1)
                 {
                     var center = best;
-                    if (center - delta >= 2 && EvaluateIntraLumaMode(center - delta, plane, source, xPb, yPb, nPbS, candModeList, costs) < costs[best])
+                    if (center - delta >= 2 && EvaluateIntraLumaMode(center - delta, ref references, source, xPb, yPb, nPbS, candModeList, costs) < costs[best])
                     {
                         best = center - delta;
                     }
 
-                    if (center + delta <= 34 && EvaluateIntraLumaMode(center + delta, plane, source, xPb, yPb, nPbS, candModeList, costs) < costs[best])
+                    if (center + delta <= 34 && EvaluateIntraLumaMode(center + delta, ref references, source, xPb, yPb, nPbS, candModeList, costs) < costs[best])
                     {
                         best = center + delta;
                     }
@@ -317,27 +323,89 @@ internal ref partial struct HevcSliceCoder
         return minimum;
     }
 
+    // The neighbouring samples of a luma prediction block whose modes are evaluated, their filtered version once a mode
+    // needs it, and the prediction of the mode being evaluated
+    private ref struct IntraModeReferences
+    {
+        public Span<ushort> Unfiltered;
+        public Span<ushort> Filtered;
+        public Span<ushort> Prediction;
+        public bool HasFiltered;
+
+        public IntraModeReferences(Span<ushort> scratch, int nPbS)
+        {
+            var count = (nPbS * 4) + 1;
+            Unfiltered = scratch[..count];
+            Filtered = scratch.Slice(HevcIntraPredictor.MaxNeighbourCount, count);
+            Prediction = scratch.Slice(2 * HevcIntraPredictor.MaxNeighbourCount, nPbS * nPbS);
+        }
+    }
+
     // The cost of a mode from its prediction as a single block: the sum of the absolute differences with the source, and
     // the size of its syntax elements
-    private long EvaluateIntraLumaMode(int mode, Av1Plane plane, Av1Plane source, int xPb, int yPb, int nPbS, scoped ReadOnlySpan<int> candModeList, scoped Span<long> costs)
+    private long EvaluateIntraLumaMode(int mode, scoped ref IntraModeReferences references, Av1Plane source, int xPb, int yPb, int nPbS, scoped ReadOnlySpan<int> candModeList, scoped Span<long> costs)
     {
         if (costs[mode] is not long.MaxValue)
             return costs[mode];
 
-        PredictIntra(plane, 0, xPb, yPb, xPb, yPb, nPbS, mode);
-        var sad = 0L;
-        for (var y = 0; y < nPbS; y++)
+        // The intra sample prediction of PredictIntra, into the scratch block
+        ReadOnlySpan<ushort> p = references.Unfiltered;
+        if (IsIntraReferenceFiltered(0, nPbS, mode))
         {
-            var predicted = plane.Samples.Slice(((yPb + y) * plane.Stride) + xPb, nPbS);
-            var original = source.Samples.Slice(((yPb + y) * source.Stride) + xPb, nPbS);
-            for (var x = 0; x < nPbS; x++)
+            if (!references.HasFiltered)
             {
-                sad += Math.Abs(original[x] - predicted[x]);
+                FilterIntraReferences(0, nPbS, references.Unfiltered, references.Filtered);
+                references.HasFiltered = true;
+            }
+
+            p = references.Filtered;
+        }
+
+        PredictIntraSamples(0, nPbS, mode, p, references.Prediction, nPbS);
+        var sad = GetSad(references.Prediction, nPbS, source.Samples[((yPb * source.Stride) + xPb)..], source.Stride, nPbS);
+        costs[mode] = _decisions.GetMotionCost(sad, GetIntraLumaPredModeRate(mode, candModeList));
+        return costs[mode];
+    }
+
+    /// <summary>The sum of the absolute differences between two square blocks of samples: 8 samples at a time.</summary>
+    internal static long GetSad(ReadOnlySpan<ushort> first, int firstStride, ReadOnlySpan<ushort> second, int secondStride, int size)
+    {
+        if (!Vector128.IsHardwareAccelerated || size < 8 || size > 32)
+            return GetSadScalar(first, firstStride, second, secondStride, size);
+
+        // At most 32 * 32 differences of 16 bits: the sums fit in 32 bits
+        var sum = Vector128<uint>.Zero;
+        for (var y = 0; y < size; y++)
+        {
+            var firstRow = first.Slice(y * firstStride, size);
+            var secondRow = second.Slice(y * secondStride, size);
+            for (var x = 0; x < size; x += 8)
+            {
+                var a = Vector128.Create(firstRow[x..]);
+                var b = Vector128.Create(secondRow[x..]);
+                var (low, high) = Vector128.Widen(Vector128.Max(a, b) - Vector128.Min(a, b));
+                sum += low + high;
             }
         }
 
-        costs[mode] = _decisions.GetMotionCost(sad, GetIntraLumaPredModeRate(mode, candModeList));
-        return costs[mode];
+        return Vector128.Sum(sum);
+    }
+
+    /// <summary>The sum of <see cref="GetSad"/>, one sample at a time: the reference of the vector path.</summary>
+    internal static long GetSadScalar(ReadOnlySpan<ushort> first, int firstStride, ReadOnlySpan<ushort> second, int secondStride, int size)
+    {
+        var sad = 0L;
+        for (var y = 0; y < size; y++)
+        {
+            var firstRow = first.Slice(y * firstStride, size);
+            var secondRow = second.Slice(y * secondStride, size);
+            for (var x = 0; x < size; x++)
+            {
+                sad += Math.Abs(secondRow[x] - firstRow[x]);
+            }
+        }
+
+        return sad;
     }
 
     // The size of prev_intra_luma_pred_flag and of mpm_idx or rem_intra_luma_pred_mode

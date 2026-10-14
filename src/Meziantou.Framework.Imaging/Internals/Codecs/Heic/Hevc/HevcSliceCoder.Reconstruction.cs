@@ -290,6 +290,29 @@ internal ref partial struct HevcSliceCoder
     [SkipLocalsInit]
     private void PredictIntra(Av1Plane plane, int cIdx, int xTb, int yTb, int xTbY, int yTbY, int nTbS, int predModeIntra)
     {
+        // The filtered samples are all written
+        var count = (nTbS * 4) + 1;
+        Span<ushort> buffer = unsafe(stackalloc ushort[2 * HevcIntraPredictor.MaxNeighbourCount]);
+        var p = buffer[..count];
+        GetIntraReferences(plane, cIdx, xTb, yTb, xTbY, yTbY, nTbS, p);
+
+        // Step 1: the filtering process of neighbouring samples
+        if (IsIntraReferenceFiltered(cIdx, nTbS, predModeIntra))
+        {
+            var filtered = buffer.Slice(HevcIntraPredictor.MaxNeighbourCount, count);
+            FilterIntraReferences(cIdx, nTbS, p, filtered);
+            p = filtered;
+        }
+
+        // Step 2: the intra sample prediction process of the mode
+        var stride = plane.Stride;
+        PredictIntraSamples(cIdx, nTbS, predModeIntra, p, plane.Samples[((yTb * stride) + xTb)..], stride);
+    }
+
+    // The neighbouring samples of a block (clause 8.4.4.2.1), after the reference sample substitution process
+    [SkipLocalsInit]
+    private void GetIntraReferences(Av1Plane plane, int cIdx, int xTb, int yTb, int xTbY, int yTbY, int nTbS, scoped Span<ushort> p)
+    {
         var subWidth = cIdx is 0 ? 1 : _sps.SubWidthC;
         var subHeight = cIdx is 0 ? 1 : _sps.SubHeightC;
 
@@ -299,13 +322,10 @@ internal ref partial struct HevcSliceCoder
         var samples = plane.Samples;
         var stride = plane.Stride;
         var corner = nTbS * 2;
-        var count = (nTbS * 4) + 1;
-        // The samples that are not available are substituted before they are read, and the filtered samples are all
-        // written: only the availability needs to be cleared
-        Span<ushort> buffer = unsafe(stackalloc ushort[2 * HevcIntraPredictor.MaxNeighbourCount]);
+
+        // The samples that are not available are substituted before they are read: only the availability is cleared
         Span<bool> availableBuffer = unsafe(stackalloc bool[HevcIntraPredictor.MaxNeighbourCount]);
-        var p = buffer[..count];
-        var available = availableBuffer[..count];
+        var available = availableBuffer[..p.Length];
         available.Clear();
         var constrainedIntraPred = _pps.ConstrainedIntraPredFlag;
 
@@ -343,22 +363,31 @@ internal ref partial struct HevcSliceCoder
         {
             _tools |= HevcTools.IntraReferenceSubstitution | (constrainedIntraPred ? HevcTools.ConstrainedIntraPred : HevcTools.None);
         }
+    }
 
-        // Step 1: the filtering process of neighbouring samples
+    // Whether the neighbouring samples of a block are filtered for a prediction mode (clause 8.4.4.2.3)
+    private bool IsIntraReferenceFiltered(int cIdx, int nTbS, int predModeIntra)
+    {
         if (_sps.IntraSmoothingDisabledFlag)
         {
             _tools |= HevcTools.IntraSmoothingDisabled;
-        }
-        else if ((cIdx is 0 || _chromaArrayType is 3) && HevcIntraPredictor.GetFilterFlag(predModeIntra, nTbS))
-        {
-            var filtered = buffer.Slice(HevcIntraPredictor.MaxNeighbourCount, count);
-            var biIntFlag = HevcIntraPredictor.Filter(p, filtered, nTbS, _sps.StrongIntraSmoothingEnabledFlag && cIdx is 0, _bitDepth);
-            p = filtered;
-            _tools |= HevcTools.IntraReferenceFiltering | (biIntFlag ? HevcTools.StrongIntraSmoothing : HevcTools.None);
+            return false;
         }
 
-        // Step 2: the intra sample prediction process of the mode
-        var destination = samples[((yTb * stride) + xTb)..];
+        return (cIdx is 0 || _chromaArrayType is 3) && HevcIntraPredictor.GetFilterFlag(predModeIntra, nTbS);
+    }
+
+    // Clause 8.4.4.2.3 "Filtering process of neighbouring samples", for a mode whose filterFlag is 1
+    private void FilterIntraReferences(int cIdx, int nTbS, scoped ReadOnlySpan<ushort> p, scoped Span<ushort> filtered)
+    {
+        var biIntFlag = HevcIntraPredictor.Filter(p, filtered, nTbS, _sps.StrongIntraSmoothingEnabledFlag && cIdx is 0, _bitDepth);
+        _tools |= HevcTools.IntraReferenceFiltering | (biIntFlag ? HevcTools.StrongIntraSmoothing : HevcTools.None);
+    }
+
+    // Step 2 of clause 8.4.4.2.1: the intra sample prediction process of the mode, from the neighbouring samples that apply
+    // to it
+    private void PredictIntraSamples(int cIdx, int nTbS, int predModeIntra, scoped ReadOnlySpan<ushort> p, scoped Span<ushort> destination, int stride)
+    {
         switch (predModeIntra)
         {
             case HevcConstants.IntraPlanar:

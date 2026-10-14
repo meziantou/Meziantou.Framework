@@ -1626,6 +1626,34 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HevcSumOfAbsoluteDifferencesMatchesTheScalarReference()
+    {
+        // Every block size, with strides larger than the blocks, random samples and the extremes of 16-bit samples
+        var random = new Random(9);
+        foreach (var size in new[] { 4, 8, 16, 32 })
+        {
+            for (var round = 0; round < 100; round++)
+            {
+                var max = round % 3 is 0 ? ushort.MaxValue : (1 << (8 + (round % 5))) - 1;
+                var first = new ushort[(size + 3) * size];
+                var second = new ushort[(size + 7) * size];
+                for (var i = 0; i < first.Length; i++)
+                {
+                    first[i] = (ushort)(round % 4 is 0 ? (random.Next(2) is 0 ? 0 : max) : random.Next(max + 1));
+                }
+
+                for (var i = 0; i < second.Length; i++)
+                {
+                    second[i] = (ushort)(round % 4 is 0 ? (random.Next(2) is 0 ? 0 : max) : random.Next(max + 1));
+                }
+
+                Assert.Equal(HevcSliceCoder.GetSadScalar(first, size + 3, second, size + 7, size), HevcSliceCoder.GetSad(first, size + 3, second, size + 7, size));
+            }
+        }
+    }
+
     [Theory]
     [InlineData(8)]
     [InlineData(10)]

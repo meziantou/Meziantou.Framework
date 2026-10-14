@@ -23,6 +23,16 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// the color is the one of the first stop with <see cref="GradientSpreadMode.Pad"/>, and the gradient goes on toward
 /// the point where its circles shrink to nothing with the other spread modes.
 /// </para>
+/// <para>
+/// The two circles can be anywhere, as for <c>createRadialGradient</c> of the HTML canvas: the circles of the
+/// parameters <c>t</c> (all of them, not only those from 0 to 1) whose radius <c>r(t)</c> is not negative form a cone,
+/// and a position has the largest <c>t</c> whose circle goes through it. A position that no such circle goes through
+/// (outside the cone) has no color: nothing is painted there, whatever the spread mode. When the first circle is
+/// inside the second one, every position has a parameter, and this is the gradient described above. Two circles of
+/// the same center and the same radius make no cone: with <see cref="GradientSpreadMode.Pad"/>, the inside of the
+/// circle has the color of the first stop and the rest of the canvas the color of the last one; with the other
+/// spread modes, nothing is painted.
+/// </para>
 /// </remarks>
 public sealed class RadialGradientBrush : GradientBrush
 {
@@ -45,18 +55,15 @@ public sealed class RadialGradientBrush : GradientBrush
     /// <summary>Gets the center of the circle of offset 1; the position of offset 0 unless there is a <see cref="FocalPoint"/>.</summary>
     public PointD Center { get; }
 
-    /// <summary>Gets the position of offset 0: the point the gradient spreads from. Defaults to <see cref="Center"/>.</summary>
+    /// <summary>Gets the position of offset 0: the point the gradient spreads from, or the center of the circle it starts on. Defaults to <see cref="Center"/>.</summary>
     /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">The point, or the circle of <see cref="FocalRadius"/> around it, is not strictly inside the circle of <see cref="Center"/> and <see cref="Radius"/>, or the magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>
     public PointD FocalPoint
     {
         get;
         init
         {
             DrawingGuard.Point(value, nameof(value));
-            if ((value != Center || FocalRadius != 0) && !(value.DistanceTo(Center) + FocalRadius < Radius))
-                throw new ArgumentOutOfRangeException(nameof(value), value, "The focal point must be strictly inside the circle of the gradient.");
-
             field = value;
         }
     }
@@ -66,16 +73,13 @@ public sealed class RadialGradientBrush : GradientBrush
     /// Defaults to 0: the gradient starts at the focal point.
     /// </summary>
     /// <exception cref="ArgumentException">The value is not a finite number.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">The value is negative, or the circle is not strictly inside the circle of <see cref="Center"/> and <see cref="Radius"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative or exceeds 16777216.</exception>
     public double FocalRadius
     {
         get;
         init
         {
             DrawingGuard.Length(value, nameof(value));
-            if (value != 0 && !(FocalPoint.DistanceTo(Center) + value < Radius))
-                throw new ArgumentOutOfRangeException(nameof(value), value, "The circle of the focal point must be strictly inside the circle of the gradient.");
-
             field = value;
         }
     }

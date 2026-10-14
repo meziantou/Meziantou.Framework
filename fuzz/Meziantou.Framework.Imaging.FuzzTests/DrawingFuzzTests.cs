@@ -558,8 +558,13 @@ public sealed class DrawingFuzzTests
         var stops = offsets.Select(offset => new GradientStop(offset, CreateColor(random))).ToArray();
         var spreadMode = (GradientSpreadMode)random.Next(3);
         var transform = random.Chance(25) ? CreateTransform(random, canvas) : AffineTransform.Identity;
-        switch (random.Next(4))
+        switch (random.Next(5))
         {
+            case 4:
+                // Two circles anywhere: a cone, or the same circle twice
+                var first = CreatePoint(random, canvas);
+                return new RadialGradientBrush(random.Chance(10) ? first : CreatePoint(random, canvas), CreateLength(random), stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform, FocalPoint = first, FocalRadius = CreateLength(random) };
+
             case 0:
                 return new LinearGradientBrush(CreatePoint(random, canvas), random.Chance(10) ? default : CreatePoint(random, canvas), stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform };
 

@@ -209,11 +209,11 @@ public sealed class DrawingGradientTests
         using var same = Fill(8, 8, new RadialGradientBrush(new PointD(3.3, 4.1), 5, BlackToWhite) { FocalPoint = new PointD(3.3, 4.1) });
         Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(same.Frames[0]));
 
-        // The focal point must be strictly inside the circle
-        Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 2, BlackToWhite) { FocalPoint = new PointD(6, 4) });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 2, BlackToWhite) { FocalPoint = new PointD(4, 7) });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 0, BlackToWhite) { FocalPoint = new PointD(4, 4.5) });
+        // The focal point can be anywhere: outside the circle, the gradient is a cone (see the tests of cones)
+        Assert.Equal(new PointD(6, 4), new RadialGradientBrush(new PointD(4, 4), 2, BlackToWhite) { FocalPoint = new PointD(6, 4) }.FocalPoint);
+        Assert.Equal(new PointD(4, 4.5), new RadialGradientBrush(new PointD(4, 4), 0, BlackToWhite) { FocalPoint = new PointD(4, 4.5) }.FocalPoint);
         Assert.Throws<ArgumentException>(() => new RadialGradientBrush(new PointD(4, 4), 2, BlackToWhite) { FocalPoint = new PointD(double.NaN, 4) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 2, BlackToWhite) { FocalPoint = new PointD(16777217, 4) });
         Assert.Equal(new PointD(4, 4), new RadialGradientBrush(new PointD(4, 4), 0, BlackToWhite) { FocalPoint = new PointD(4, 4) }.FocalPoint);
     }
 
@@ -233,11 +233,10 @@ public sealed class DrawingGradientTests
         AssertFill(4, 1, new RadialGradientBrush(new PointD(0.5, 0.5), 10, BlackToWhite) { FocalRadius = 2, SpreadMode = GradientSpreadMode.Reflect }, [[64, 32, 0, 32]]);
         AssertFill(4, 1, new RadialGradientBrush(new PointD(0.5, 0.5), 10, BlackToWhite) { FocalRadius = 2, SpreadMode = GradientSpreadMode.Repeat }, [[191, 223, 0, 32]]);
 
-        // The circle of the focal point must be strictly inside the circle of the gradient, in whichever order they are set
-        Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 2, BlackToWhite) { FocalRadius = 2 });
+        // The circle of the focal point can be anywhere, in whichever order they are set; its radius is a length
+        Assert.Equal(2, new RadialGradientBrush(new PointD(4, 4), 2, BlackToWhite) { FocalRadius = 2 }.FocalRadius);
+        Assert.Equal(new PointD(7, 4), new RadialGradientBrush(new PointD(4, 4), 5, BlackToWhite) { FocalRadius = 2, FocalPoint = new PointD(7, 4) }.FocalPoint);
         Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 2, BlackToWhite) { FocalRadius = -1 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 5, BlackToWhite) { FocalPoint = new PointD(7, 4), FocalRadius = 2 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 5, BlackToWhite) { FocalRadius = 2, FocalPoint = new PointD(7, 4) });
         Assert.Throws<ArgumentException>(() => new RadialGradientBrush(new PointD(4, 4), 5, BlackToWhite) { FocalRadius = double.NaN });
         Assert.Equal(1.5, new RadialGradientBrush(new PointD(4, 4), 5, BlackToWhite) { FocalRadius = 1.5, FocalPoint = new PointD(7, 4) }.FocalRadius);
         Assert.Equal(0, new RadialGradientBrush(new PointD(4, 4), 0, BlackToWhite) { FocalRadius = 0 }.FocalRadius);
@@ -293,6 +292,121 @@ public sealed class DrawingGradientTests
 
             Assert.True(between > 0, $"case {index}");
         }
+    }
+
+    [Fact]
+    public void TheCirclesOfTwoCirclesThatAreNotInsideEachOtherMakeACone()
+    {
+        // From the point (0.5, 5.5) to the circle of center (10.5, 5.5) and radius 2: on the row of the axis, the
+        // position x from the point is on the circles of the parameters x / 8 and x / 12 (with e = (10, 0) and g = 2,
+        // a = 96, b = 10 x, c = x^2, the roots are (10 x +- 2 x) / 96), and the larger one is the parameter. Outside the
+        // cone, a pixel has no color: it keeps the gray 50.
+        var brush = new RadialGradientBrush(new PointD(10.5, 5.5), 2, BlackToWhite) { FocalPoint = new PointD(0.5, 5.5) };
+        using var image = new Image<Gray8>(12, 11, new Gray8(50));
+        image.Frames[0].Draw(canvas => canvas.Fill(brush), Ct);
+        var frame = image.Frames[0];
+        Assert.Equal(new[] { 0, 32, 64, 96, 128, 159, 191, 223, 255, 255, 255, 255 }, Enumerable.Range(0, 12).Select(x => (int)frame[x, 5].Value).ToArray());
+        Assert.Equal(new Gray8(50), frame[1, 0]);
+        Assert.Equal(new Gray8(50), frame[0, 4]);
+        Assert.Equal(new Gray8(50), frame[0, 6]);
+
+        // The same with the repeated spread: the cone only, the parameters beyond 1 repeat
+        using var repeated = new Image<Gray8>(12, 1, new Gray8(50));
+        repeated.Frames[0].Draw(canvas => canvas.Fill(new RadialGradientBrush(new PointD(10.5, 0.5), 2, BlackToWhite) { FocalPoint = new PointD(0.5, 0.5), SpreadMode = GradientSpreadMode.Repeat }), Ct);
+        Assert.Equal(new[] { 0, 32, 64, 96, 128, 159, 191, 223, 0, 32, 64, 96 }, Enumerable.Range(0, 12).Select(x => (int)repeated.Frames[0][x, 0].Value).ToArray());
+
+        // The same circle twice: the first stop strictly inside, the last one elsewhere, and nothing without padding.
+        // From the center (3.5, 0.5), the pixels 2, 3 and 4 are less than 2 away.
+        AssertFill(7, 1, new RadialGradientBrush(new PointD(3.5, 0.5), 2, [new GradientStop(0, new Rgba32(100, 100, 100)), new GradientStop(1, new Rgba32(255, 255, 255))]) { FocalRadius = 2 }, [[255, 255, 100, 100, 100, 255, 255]]);
+        AssertFill(7, 1, new RadialGradientBrush(new PointD(3.5, 0.5), 2, BlackToWhite) { FocalRadius = 2, SpreadMode = GradientSpreadMode.Reflect }, [[0, 0, 0, 0, 0, 0, 0]]);
+
+        // Two circles touching inside each other at the left of both: a = 0, one root c / (2 b). From the first circle
+        // (center (2.5, 0.5), radius 2) to the second one (center (4.5, 0.5), radius 4), the position x - 2 from the
+        // first center on the axis has b = 2 (x - 2) + 4 and c = (x - 2)^2 - 4: t = (x - 4) x / (4 x) = (x - 4) / 4 for
+        // x > 0 (at x = 0, b = 0: no circle)
+        using var touching = new Image<Gray8>(9, 1, new Gray8(50));
+        touching.Frames[0].Draw(canvas => canvas.Fill(new RadialGradientBrush(new PointD(4.5, 0.5), 4, BlackToWhite) { FocalPoint = new PointD(2.5, 0.5), FocalRadius = 2 }), Ct);
+        Assert.Equal(new[] { 50, 0, 0, 0, 0, 64, 128, 191, 255 }, Enumerable.Range(0, 9).Select(x => (int)touching.Frames[0][x, 0].Value).ToArray());
+    }
+
+    [Fact]
+    public void APositionOfAConeIsOnTheCircleOfItsLargestParameter()
+    {
+        // Two circles anywhere: a painted position has the largest parameter whose circle goes through it with a radius
+        // that is not negative, and a position that is not painted has none. A black to white gradient on 16-bit gray
+        // pixels gives t within 1/131070; the pixels that are not painted keep 12345.
+        GradientStop[] stops = [new(0, new Rgba64(0, 0, 0)), new(1, new Rgba64(65535, 65535, 65535))];
+        var random = new Random(24680);
+        var painted = 0;
+        var unpainted = 0;
+        for (var index = 0; index < 80; index++)
+        {
+            var center = new PointD(random.NextDouble() * 16, random.NextDouble() * 16);
+            var radius = random.NextDouble() * 12;
+            var focal = new PointD(random.NextDouble() * 16, random.NextDouble() * 16);
+            var focalRadius = random.Next(4) == 0 ? 0 : random.NextDouble() * 12;
+            var brush = new RadialGradientBrush(center, radius, stops) { FocalPoint = focal, FocalRadius = focalRadius };
+            using var image = new Image<Gray16>(16, 16, new Gray16(12345));
+            image.Frames[0].Draw(canvas => canvas.Fill(brush), Ct);
+            for (var y = 0; y < 16; y++)
+            {
+                for (var x = 0; x < 16; x++)
+                {
+                    // |p - c(t)|^2 - r(t)^2, with c(t) = focal + t (center - focal) and r(t) = focalRadius + t (radius -
+                    // focalRadius), is a polynomial of degree 2 in t: its three coefficients from its values at -1, 0 and 1
+                    var position = new PointD(x + 0.5, y + 0.5);
+                    var atZero = Gap(position, 0);
+                    var quadratic = ((Gap(position, 1) + Gap(position, -1)) / 2) - atZero;
+                    var linear = (Gap(position, 1) - Gap(position, -1)) / 2;
+                    var scale = Math.Abs(quadratic) + Math.Abs(linear) + Math.Abs(atZero);
+                    var discriminant = (linear * linear) - (4 * quadratic * atZero);
+                    if (Math.Abs(quadratic) <= 1e-9 * scale || Math.Abs(discriminant) <= 1e-9 * ((linear * linear) + Math.Abs(4 * quadratic * atZero)))
+                        continue;
+
+                    // The parameters whose radius is not negative; a radius of almost zero is a tie that is not decided here
+                    var parameters = new List<double>();
+                    var isTie = false;
+                    if (discriminant > 0)
+                    {
+                        foreach (var root in (double[])[(-linear + Math.Sqrt(discriminant)) / (2 * quadratic), (-linear - Math.Sqrt(discriminant)) / (2 * quadratic)])
+                        {
+                            var circleRadius = focalRadius + (root * (radius - focalRadius));
+                            isTie |= Math.Abs(circleRadius) <= 1e-9 * (radius + focalRadius + 1);
+                            if (circleRadius >= 0)
+                            {
+                                parameters.Add(root);
+                            }
+                        }
+                    }
+
+                    if (isTie)
+                        continue;
+
+                    var value = image.Frames[0][x, y].Value;
+                    if (parameters.Count == 0)
+                    {
+                        Assert.Equal(12345, value, $"case {index}, pixel ({x}, {y}): painted without a parameter");
+                        unpainted++;
+                        continue;
+                    }
+
+                    var expected = Math.Clamp(parameters.Max(), 0, 1) * 65535;
+                    Assert.True(Math.Abs(value - expected) <= 1, $"case {index}, pixel ({x}, {y}): {value}, expected {expected}");
+                    painted++;
+                }
+            }
+
+            double Gap(PointD position, double t)
+            {
+                var circleCenter = focal + ((center - focal) * t);
+                var circleRadius = focalRadius + (t * (radius - focalRadius));
+                var dx = position.X - circleCenter.X;
+                var dy = position.Y - circleCenter.Y;
+                return (dx * dx) + (dy * dy) - (circleRadius * circleRadius);
+            }
+        }
+
+        Assert.True(painted > 1000 && unpainted > 1000, $"{painted} painted, {unpainted} not painted");
     }
 
     [Fact]

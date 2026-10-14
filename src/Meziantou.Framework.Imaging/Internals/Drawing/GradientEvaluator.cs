@@ -18,7 +18,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// which <c>p</c> is on the circle of center <c>f + t e</c> and radius <c>t radius</c>. With a focal radius <c>fr</c>,
 /// <c>g = radius - fr</c>, <c>a = g^2 - |e|^2</c> and <c>b = (d . e) + fr g</c>, the parameter is
 /// <c>(sqrt(b^2 + a (|d|^2 - fr^2)) - b) / a</c>: the <c>t</c> for which <c>p</c> is on the circle of center
-/// <c>f + t e</c> and radius <c>fr + t g</c>, that radius being positive. A sweep gradient has the
+/// <c>f + t e</c> and radius <c>fr + t g</c>, that radius being positive. When the circle of the focal point is not
+/// inside the circle of the gradient, the parameter is the largest root of <c>a t^2 - 2 b t + c = 0</c> with
+/// <c>a = |e|^2 - g^2</c>, <c>b = (d . e) + fr g</c> and <c>c = |d|^2 - fr^2</c> whose radius <c>fr + t g</c> is not negative
+/// (see <see cref="GetConeParameter"/>); a position without such a root has no color. A sweep gradient has the
 /// parameter <c>(angle(p - center) - start) mod 360 / (end - start)</c>, the angle being the one of
 /// <see cref="DeterministicAngle.Atan2"/>. When the brush has a transformation, <c>p</c> is the center of the pixel
 /// brought back through the inverse of that transformation; a transformation without inverse makes a degenerate gradient.
@@ -194,6 +197,18 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                 _divisor = (_axisX * _axisX) + (_axisY * _axisY);
                 break;
 
+            case RadialGradientBrush radial when !IsFirstCircleInside(radial):
+                // Two circles anywhere: the cone of their circles, solved for the largest parameter
+                _kind = GradientKind.Cone;
+                _originX = radial.FocalPoint.X;
+                _originY = radial.FocalPoint.Y;
+                _axisX = radial.Center.X - radial.FocalPoint.X;
+                _axisY = radial.Center.Y - radial.FocalPoint.Y;
+                _focalRadius = radial.FocalRadius;
+                _focalGrowth = radial.Radius - radial.FocalRadius;
+                _divisor = ((_axisX * _axisX) + (_axisY * _axisY)) - (_focalGrowth * _focalGrowth);
+                break;
+
             case RadialGradientBrush radial when radial.FocalRadius != 0:
                 // The circles from the one of the focal point to the one of the gradient
                 _kind = GradientKind.TwoCircles;
@@ -233,7 +248,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                 break;
         }
 
-        _degenerate = !(_divisor > 0);
+        _degenerate = _kind != GradientKind.Cone && !(_divisor > 0);
         _isProjective = false;
         _hasTransform = !transform.IsIdentity;
         if (_hasTransform)
@@ -374,6 +389,13 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                 t = (Math.Sqrt((along * along) + (_divisor * ((px * px) + (py * py)))) - along) / _divisor;
                 break;
 
+            case GradientKind.Cone:
+                t = GetConeParameter(px, py);
+                if (double.IsNaN(t))
+                    return t;
+
+                break;
+
             case GradientKind.TwoCircles:
                 // The circles are inside each other: every position is on one of them, and the root is real. A
                 // rounding that makes it slightly negative under the square root is the position where it is zero.
@@ -410,6 +432,68 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         }
 
         return t;
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the first circle of a radial gradient is inside the second one, as the gradients
+    /// of the first versions of the library required: every position then has a parameter, given by the formulas of
+    /// those versions.
+    /// </summary>
+    private static bool IsFirstCircleInside(RadialGradientBrush radial)
+        => (radial.FocalPoint == radial.Center && radial.FocalRadius == 0) || radial.FocalPoint.DistanceTo(radial.Center) + radial.FocalRadius < radial.Radius;
+
+    /// <summary>
+    /// Gets the parameter of a position relative to the first circle of a cone: the largest <c>t</c> for which the
+    /// position is on the circle of center <c>t e</c> and radius <c>r0 + t g</c>, that radius not being negative; not a
+    /// number when there is none.
+    /// </summary>
+    /// <remarks>
+    /// With <c>a = |e|^2 - g^2</c>, <c>b = p . e + r0 g</c> and <c>c = |p|^2 - r0^2</c>, the parameters are the roots of
+    /// <c>a t^2 - 2 b t + c = 0</c>. Concentric circles have <c>t = (|p| - r0) / g</c>, or, with the same radius, 0
+    /// strictly inside and 1 elsewhere (with the pad spread mode only). Circles that touch inside each other
+    /// (<c>a = 0</c>) have the one root <c>c / (2 b)</c>.
+    /// </remarks>
+    private double GetConeParameter(double px, double py)
+    {
+        var distanceSquared = (px * px) + (py * py);
+        var growth = _focalGrowth;
+        if (_axisX == 0 && _axisY == 0)
+        {
+            if (growth == 0)
+            {
+                // The same circle twice: inside or not, and nothing without padding
+                return _spreadMode == GradientSpreadMode.Pad && _focalRadius > 0 ? (distanceSquared < _focalRadius * _focalRadius ? 0 : 1) : double.NaN;
+            }
+
+            return (Math.Sqrt(distanceSquared) - _focalRadius) / growth;
+        }
+
+        var a = _divisor;
+        var b = ((px * _axisX) + (py * _axisY)) + (_focalRadius * growth);
+        var c = distanceSquared - (_focalRadius * _focalRadius);
+        double t;
+        if (a == 0)
+        {
+            if (b == 0)
+                return double.NaN;
+
+            t = c / (2 * b);
+            return _focalRadius + (t * growth) >= 0 ? t : double.NaN;
+        }
+
+        var discriminant = (b * b) - (a * c);
+        if (!(discriminant >= 0))
+            return double.NaN;
+
+        var root = Math.Sqrt(discriminant);
+        var first = (b + root) / a;
+        var second = (b - root) / a;
+        var larger = Math.Max(first, second);
+        var smaller = Math.Min(first, second);
+        if (_focalRadius + (larger * growth) >= 0)
+            return larger;
+
+        return _focalRadius + (smaller * growth) >= 0 ? smaller : double.NaN;
     }
 
     /// <summary>Computes the colors of a run of pixels of a gradient that mixes its stops in linear light or in Oklab.</summary>
@@ -573,6 +657,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         Radial,
         Focal,
         TwoCircles,
+        Cone,
         Sweep,
     }
 }

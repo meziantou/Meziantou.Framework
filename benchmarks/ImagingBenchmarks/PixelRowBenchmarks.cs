@@ -88,6 +88,24 @@ public class PixelRowBenchmarks
         return copy.Width;
     }
 
+    [Benchmark]
+    [Workload("1920x1080 Rgba32: clone, then rotate by 90 degrees")]
+    public int Rotate90Rgba32()
+    {
+        using var copy = _image.Clone();
+        copy.Rotate(RotateMode.Rotate90);
+        return copy.Width;
+    }
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba64: clone, then rotate by 270 degrees")]
+    public int Rotate270Rgba64()
+    {
+        using var copy = _rgba64.Clone();
+        copy.Rotate(RotateMode.Rotate270);
+        return copy.Width;
+    }
+
     private static int Convert<TSource, TDestination>(Image<TSource> image, PixelConversionOptions? options)
         where TSource : unmanaged
         where TDestination : unmanaged

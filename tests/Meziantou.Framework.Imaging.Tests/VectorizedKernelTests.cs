@@ -630,6 +630,46 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void TransposingOrientationsMatchTheScalarLoops()
+    {
+        // Rotations by a quarter turn and diagonal reflections (with and without mirrors) of sizes that are and are not
+        // multiples of the blocks and of the tiles
+        var random = new Random(90);
+        foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Bgra32, PixelFormat.Rgba64, PixelFormat.Rgb24, PixelFormat.Gray8, PixelFormat.Gray16 })
+        {
+            foreach (var (width, height) in new[] { (1, 1), (3, 5), (4, 4), (7, 9), (33, 31), (64, 40), (70, 101) })
+            {
+                var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
+                random.NextBytes(bytes);
+                foreach (var orientation in new[] { Metadata.ExifOrientation.LeftTop, Metadata.ExifOrientation.RightTop, Metadata.ExifOrientation.RightBottom, Metadata.ExifOrientation.LeftBottom })
+                {
+                    Assert.Equal(Orient(forceScalar: true), Orient(forceScalar: false));
+
+                    byte[] Orient(bool forceScalar)
+                    {
+                        using var image = ImportBytes(format, bytes, width, height);
+                        image.Metadata.Orientation = orientation;
+                        Resampler.TestForceScalar = forceScalar;
+                        try
+                        {
+                            image.AutoOrient();
+                        }
+                        finally
+                        {
+                            Resampler.TestForceScalar = false;
+                        }
+
+                        var result = new byte[bytes.Length];
+                        image.Frames[0].CopyPixelBytesTo(result);
+                        return result;
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void GrayscaleMatchesTheScalarReference()
     {
         CheckGrayscale<Rgba32>();

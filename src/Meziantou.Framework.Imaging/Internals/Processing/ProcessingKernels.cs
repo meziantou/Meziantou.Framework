@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -11,7 +13,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// pixel struct (typed dispatch, no operation objects) and never resample: every destination pixel is a bit-exact copy of
 /// one source pixel, so 16-bit samples and alpha survive unchanged.
 /// </summary>
-/// <remarks>Cancellation is observed between row bands; the callers decide whether a partial result is visible.</remarks>
+/// <remarks>
+/// Cancellation is observed between row bands; the callers decide whether a partial result is visible. With hardware
+/// vectors, quarter turns of 4- and 8-byte pixels transpose square blocks in 128-bit registers and grayscale computes 4
+/// lumas at a time; both give the results of the scalar loops (<c>VectorizedKernelTests</c>).
+/// </remarks>
 internal static class ProcessingKernels
 {
     /// <summary>The side of the square tiles used by transposing kernels (at most 8 KiB of stack for 8-byte pixels).</summary>
@@ -57,6 +63,7 @@ internal static class ProcessingKernels
         // Destination column dx comes from source row sy(dx) and destination row dy from source column sx(dy). Go through
         // square tiles so that each source and destination row is fetched once per tile instead of once per pixel.
         Span<TPixel> tile = stackalloc TPixel[TileSize * TileSize];
+        var transposeBlocks = !Resampler.TestForceScalar && CanTransposeBlocks<TPixel>();
         for (var tileY = 0; tileY < outputHeight; tileY += TileSize)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -64,16 +71,24 @@ internal static class ProcessingKernels
             for (var tileX = 0; tileX < outputWidth; tileX += TileSize)
             {
                 var tileWidth = Math.Min(TileSize, outputWidth - tileX);
-                for (var i = 0; i < tileWidth; i++)
+
+                // Tile row j comes from source column sx(tileY + j) = firstColumn + j * columnStep
+                var firstColumn = region.X + (transform.FlipX ? region.Width - 1 - tileY : tileY);
+                var columnStep = transform.FlipX ? -1 : 1;
+                var i = 0;
+                if (transposeBlocks)
+                {
+                    i = FillTileBlocks(source, tile, region, transform, tileX, tileWidth, tileHeight, firstColumn);
+                }
+
+                for (; i < tileWidth; i++)
                 {
                     var dx = tileX + i;
                     var sy = region.Y + (transform.FlipY ? region.Height - 1 - dx : dx);
                     var row = source.GetRow<TPixel>(sy);
                     for (var j = 0; j < tileHeight; j++)
                     {
-                        var dy = tileY + j;
-                        var sx = region.X + (transform.FlipX ? region.Width - 1 - dy : dy);
-                        tile[(j * TileSize) + i] = row[sx];
+                        tile[(j * TileSize) + i] = row[firstColumn + (j * columnStep)];
                     }
                 }
 
@@ -83,6 +98,117 @@ internal static class ProcessingKernels
                 }
             }
         }
+    }
+
+    /// <summary>Gets a value indicating whether <see cref="FillTileBlocks"/> supports the pixel type on this hardware.</summary>
+    private static bool CanTransposeBlocks<TPixel>()
+        where TPixel : unmanaged
+        => BitConverter.IsLittleEndian && (Unsafe.SizeOf<TPixel>() is 4 or 8) && (AdvSimd.Arm64.IsSupported || Sse2.IsSupported);
+
+    /// <summary>
+    /// Fills the leading columns of a tile by groups of 4 (4-byte pixels) or 2 (8-byte pixels) source rows: square blocks
+    /// of pixels are loaded from the rows, transposed in 128-bit registers and stored to consecutive tile rows (a horizontal
+    /// mirror reverses the pixels of each loaded vector). Every tile pixel is the copy the scalar loop makes.
+    /// </summary>
+    /// <returns>The number of tile columns filled; the rows of the tile beyond the last whole block are filled too.</returns>
+    private static int FillTileBlocks<TPixel>(scoped in PixelLease source, Span<TPixel> tile, Rectangle region, OrientationTransform transform, int tileX, int tileWidth, int tileHeight, int firstColumn)
+        where TPixel : unmanaged
+    {
+        var block = 16 / Unsafe.SizeOf<TPixel>();
+        var blockRows = tileHeight / block * block;
+        ref var tileStart = ref unsafe(Unsafe.As<TPixel, byte>(ref MemoryMarshal.GetReference(tile)));
+        var tileStride = TileSize * Unsafe.SizeOf<TPixel>();
+        var i = 0;
+        for (; i + block <= tileWidth; i += block)
+        {
+            // The source rows of tile columns i to i + block - 1
+            var dx = tileX + i;
+            var sy = region.Y + (transform.FlipY ? region.Height - 1 - dx : dx);
+            var syStep = transform.FlipY ? -1 : 1;
+            var row0 = unsafe(MemoryMarshal.AsBytes(source.GetRow<TPixel>(sy)));
+            var row1 = unsafe(MemoryMarshal.AsBytes(source.GetRow<TPixel>(sy + syStep)));
+            var row2 = block == 4 ? unsafe(MemoryMarshal.AsBytes(source.GetRow<TPixel>(sy + (2 * syStep)))) : default;
+            var row3 = block == 4 ? unsafe(MemoryMarshal.AsBytes(source.GetRow<TPixel>(sy + (3 * syStep)))) : default;
+            for (var j = 0; j < blockRows; j += block)
+            {
+                // Tile rows j to j + block - 1 read the source columns from firstColumn +- j on: the lowest one is loaded
+                // first, and the order of the pixels is reversed for a horizontal mirror
+                var column = transform.FlipX ? firstColumn - j - (block - 1) : firstColumn + j;
+                var offset = column * Unsafe.SizeOf<TPixel>();
+                ref var target = ref unsafe(Unsafe.Add(ref tileStart, (j * tileStride) + (i * Unsafe.SizeOf<TPixel>())));
+                if (block == 4)
+                {
+                    var a = Vector128.Create(row0.Slice(offset, 16)).AsUInt32();
+                    var b = Vector128.Create(row1.Slice(offset, 16)).AsUInt32();
+                    var c = Vector128.Create(row2.Slice(offset, 16)).AsUInt32();
+                    var d = Vector128.Create(row3.Slice(offset, 16)).AsUInt32();
+                    if (transform.FlipX)
+                    {
+                        var reverse = Vector128.Create(3u, 2, 1, 0);
+                        a = Vector128.Shuffle(a, reverse);
+                        b = Vector128.Shuffle(b, reverse);
+                        c = Vector128.Shuffle(c, reverse);
+                        d = Vector128.Shuffle(d, reverse);
+                    }
+
+                    // a0 b0 a1 b1 | a2 b2 a3 b3 | c0 d0 c1 d1 | c2 d2 c3 d3, then the 64-bit halves
+                    var (ab01, ab23) = Interleave32(a, b);
+                    var (cd01, cd23) = Interleave32(c, d);
+                    var (r0, r1) = Interleave64(ab01.AsUInt64(), cd01.AsUInt64());
+                    var (r2, r3) = Interleave64(ab23.AsUInt64(), cd23.AsUInt64());
+                    unsafe { r0.AsByte().StoreUnsafe(ref target); }
+                    unsafe { r1.AsByte().StoreUnsafe(ref target, (nuint)tileStride); }
+                    unsafe { r2.AsByte().StoreUnsafe(ref target, (nuint)(2 * tileStride)); }
+                    unsafe { r3.AsByte().StoreUnsafe(ref target, (nuint)(3 * tileStride)); }
+                }
+                else
+                {
+                    var a = Vector128.Create(row0.Slice(offset, 16)).AsUInt64();
+                    var b = Vector128.Create(row1.Slice(offset, 16)).AsUInt64();
+                    var (r0, r1) = transform.FlipX ? Interleave64(Vector128.Shuffle(a, Vector128.Create(1ul, 0)), Vector128.Shuffle(b, Vector128.Create(1ul, 0))) : Interleave64(a, b);
+                    unsafe { r0.AsByte().StoreUnsafe(ref target); }
+                    unsafe { r1.AsByte().StoreUnsafe(ref target, (nuint)tileStride); }
+                }
+            }
+
+            // The rows of the tile after the last whole block, pixel by pixel
+            for (var k = 0; k < block; k++)
+            {
+                var row = unsafe(MemoryMarshal.Cast<byte, TPixel>(k switch
+                {
+                    0 => row0,
+                    1 => row1,
+                    2 => row2,
+                    _ => row3,
+                }));
+                for (var j = blockRows; j < tileHeight; j++)
+                {
+                    tile[(j * TileSize) + i + k] = row[firstColumn + (transform.FlipX ? -j : j)];
+                }
+            }
+        }
+
+        return i;
+    }
+
+    /// <summary>Interleaves the 32-bit lanes of two vectors: (a0 b0 a1 b1, a2 b2 a3 b3).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<uint> Lower, Vector128<uint> Upper) Interleave32(Vector128<uint> a, Vector128<uint> b)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return (AdvSimd.Arm64.ZipLow(a, b), AdvSimd.Arm64.ZipHigh(a, b));
+
+        return (Sse2.UnpackLow(a, b), Sse2.UnpackHigh(a, b));
+    }
+
+    /// <summary>Interleaves the 64-bit lanes of two vectors: (a0 b0, a1 b1).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<ulong> Lower, Vector128<ulong> Upper) Interleave64(Vector128<ulong> a, Vector128<ulong> b)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return (AdvSimd.Arm64.ZipLow(a, b), AdvSimd.Arm64.ZipHigh(a, b));
+
+        return (Sse2.UnpackLow(a, b), Sse2.UnpackHigh(a, b));
     }
 
     /// <summary>

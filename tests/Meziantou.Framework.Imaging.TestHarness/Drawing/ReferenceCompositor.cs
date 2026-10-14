@@ -58,7 +58,8 @@ public static class ReferenceCompositor
     /// is that result for the part of it the shape covers, and what it was for the rest. Alpha and colors are rounded
     /// to nearest, ties upward. A pixel whose alpha rounds to zero becomes transparent black, or stays as it is when
     /// it was fully transparent. A layout without alpha is opaque before and after: it gets the color multiplied by
-    /// the alpha the result would have.
+    /// the alpha the result would have. <see cref="ReferenceCompositeMode.Plus"/> has the factors 1 and 1, and clips
+    /// the alpha and each color multiplied by its alpha to one.
     /// </remarks>
     /// <param name="destination">The samples of the pixel, in storage order.</param>
     /// <param name="paint">The paint.</param>
@@ -81,6 +82,22 @@ public static class ReferenceCompositor
         Fraction zero = 0;
         var sourceAlpha = new Fraction(paint.Alpha, max);
         var destinationAlpha = layout.HasAlpha ? new Fraction(destination[layout.ColorChannels], max) : one;
+        var kept = (one - covered) * destinationAlpha;
+        var outputAlpha = zero;
+        var premultiplied = new Fraction[layout.ColorChannels];
+        if (mode == ReferenceCompositeMode.Plus)
+        {
+            var sum = sourceAlpha + destinationAlpha;
+            outputAlpha = kept + (covered * (sum > one ? one : sum));
+            for (var c = 0; c < layout.ColorChannels; c++)
+            {
+                var light = (sourceAlpha * paint.Color[c]) + (destinationAlpha * destination[c]);
+                premultiplied[c] = (kept * destination[c]) + (covered * (light > max ? max : light));
+            }
+
+            return Finish(result, destination, premultiplied, outputAlpha, layout);
+        }
+
         var (sourceFactor, destinationFactor) = mode switch
         {
             ReferenceCompositeMode.SourceOver => (one, one - sourceAlpha),
@@ -98,16 +115,21 @@ public static class ReferenceCompositor
         };
 
         // What the pixel keeps of what it was, and what the operator gives where the shape is
-        var kept = (one - covered) * destinationAlpha;
         var fromSource = covered * sourceFactor * sourceAlpha;
         var fromDestination = covered * destinationFactor * destinationAlpha;
-        var outputAlpha = kept + fromSource + fromDestination;
-        var premultiplied = new Fraction[layout.ColorChannels];
+        outputAlpha = kept + fromSource + fromDestination;
         for (var c = 0; c < layout.ColorChannels; c++)
         {
             premultiplied[c] = ((kept + fromDestination) * destination[c]) + (fromSource * paint.Color[c]);
         }
 
+        return Finish(result, destination, premultiplied, outputAlpha, layout);
+    }
+
+    /// <summary>Rounds the result of an operator: its colors multiplied by its alpha, and its alpha.</summary>
+    private static int[] Finish(int[] result, IReadOnlyList<int> destination, Fraction[] premultiplied, Fraction outputAlpha, ReferencePixelLayout layout)
+    {
+        var max = layout.MaxValue;
         if (!layout.HasAlpha)
         {
             for (var c = 0; c < layout.ColorChannels; c++)

@@ -1142,7 +1142,7 @@ public sealed class DrawingSessionTests
                     AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Layer(-0.1, static _ => Assert.Fail("The callback ran.")));
                     AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Layer(1.5, static _ => Assert.Fail("The callback ran.")));
                     AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Layer(double.NaN, 1, static (_, _) => Assert.Fail("The callback ran.")));
-                    AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Layer(1, static _ => Assert.Fail("The callback ran."), (CompositeMode)11));
+                    AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Layer(1, static _ => Assert.Fail("The callback ran."), (CompositeMode)12));
 
                     // A rejected layer leaves the canvas as it was
                     canvas.FillRectangle(White, new Rectangle(0, 0, 1, 1));

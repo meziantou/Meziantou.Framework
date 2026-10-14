@@ -42,6 +42,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// above; <c>S + D</c> never exceeds <c>M^2 Q</c>, so nothing overflows either.
 /// </para>
 /// <para>
+/// <see cref="CompositeMode.Plus"/> clips the sums: the alpha times <c>M Q</c> is
+/// <c>A = q min(sa + da, M) + (Q - q) da</c>, and each color times its alpha, times <c>M^2 Q</c>, is
+/// <c>P = q min(sc sa + dc da, M^2) + (Q - q) dc da</c>; <c>a' = round(A / Q)</c> and <c>c' = round(P / A)</c>, or
+/// <c>round(P / (M Q))</c> for a pixel format without alpha.
+/// </para>
+/// <para>
 /// <b>Blend modes.</b> With a <see cref="BlendMode"/> other than normal, the color of the paint is replaced, pixel by
 /// pixel, before any of the above: with the colors as fractions of one, <c>s' = (1 - da) s + da B(s, d)</c>, where
 /// <c>B</c> is the function of the mode (<see cref="BlendFunctions"/>), computed in double precision and rounded to a
@@ -184,7 +190,7 @@ internal static class DrawingKernels
     /// destination is then 1. With the other operators, a transparent paint erases.
     /// </summary>
     public static bool IsTransparentPaintInert(CompositeMode mode)
-        => mode is CompositeMode.SourceOver or CompositeMode.DestinationOver or CompositeMode.DestinationOut or CompositeMode.SourceAtop or CompositeMode.Xor;
+        => mode is CompositeMode.SourceOver or CompositeMode.DestinationOver or CompositeMode.DestinationOut or CompositeMode.SourceAtop or CompositeMode.Xor or CompositeMode.Plus;
 
     /// <summary>Composites a paint over interleaved samples: 1 (gray), 3 (color) or 4 (color then alpha) per pixel.</summary>
     /// <param name="samples">The samples of the pixels.</param>
@@ -395,6 +401,12 @@ internal static class DrawingKernels
 
             var pixel = samples.Slice(i * channels, channels);
             var destinationAlpha = channels == 4 ? ulong.CreateTruncating(pixel[3]) : max;
+            if (mode == CompositeMode.Plus)
+            {
+                Add(pixel, channels, colorChannels, q, paint, paintAlpha, destinationAlpha, max);
+                continue;
+            }
+
             var (sourceFactor, destinationFactor) = mode switch
             {
                 CompositeMode.Source => (max, 0UL),
@@ -445,6 +457,49 @@ internal static class DrawingKernels
 
             pixel[3] = TSample.CreateTruncating(alpha);
         }
+    }
+
+    /// <summary>Adds a paint to a pixel, both multiplied by their alpha, the sums clipped to one (<see cref="CompositeMode.Plus"/>).</summary>
+    private static void Add<TSample>(Span<TSample> pixel, int channels, int colorChannels, ulong q, ReadOnlySpan<ulong> paint, ulong paintAlpha, ulong destinationAlpha, ulong max)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        const ulong Full = CoverageRasterizer.FullCoverage;
+        var kept = Full - q;
+        if (channels != 4)
+        {
+            // An opaque pixel: the color of the result over black
+            for (var c = 0; c < colorChannels; c++)
+            {
+                var destination = ulong.CreateTruncating(pixel[c]);
+                var premultiplied = (q * Math.Min((paint[c] * paintAlpha) + (destination * max), max * max)) + (kept * destination * max);
+                pixel[c] = TSample.CreateTruncating((premultiplied + (max * Full / 2)) / (max * Full));
+            }
+
+            return;
+        }
+
+        var total = (q * Math.Min(paintAlpha + destinationAlpha, max)) + (kept * destinationAlpha);
+        var alpha = (total + (Full / 2)) / Full;
+        if (alpha == 0)
+        {
+            if (destinationAlpha != 0)
+            {
+                pixel.Clear();
+            }
+
+            return;
+        }
+
+        // Each color times the alpha, times M Q; divided by the alpha times M Q, the color itself
+        var rounding = total / 2;
+        for (var c = 0; c < 3; c++)
+        {
+            var destination = ulong.CreateTruncating(pixel[c]);
+            var premultiplied = (q * Math.Min((paint[c] * paintAlpha) + (destination * destinationAlpha), max * max)) + (kept * destination * destinationAlpha);
+            pixel[c] = TSample.CreateTruncating((premultiplied + rounding) / total);
+        }
+
+        pixel[3] = TSample.CreateTruncating(alpha);
     }
 
     /// <summary>Combines a paint with interleaved samples in the linear light their transfer function decodes them to: any blend mode, any operator.</summary>
@@ -552,6 +607,52 @@ internal static class DrawingKernels
                 }
             }
 
+            // The weights of the color of the paint and of the color of the pixel in the result
+            var covered = q / Full;
+            if (mode == CompositeMode.Plus)
+            {
+                // The sums are clipped to one, where the shape is
+                var sum = Math.Min(sourceAlpha + backdrop, 1);
+                var plusAlpha = (covered * sum) + ((1 - covered) * backdrop);
+                for (var c = 0; c < 3; c++)
+                {
+                    b[c] = (covered * Math.Min((s[c] * sourceAlpha) + (d[c] * backdrop), 1)) + ((1 - covered) * d[c] * backdrop);
+                }
+
+                if (channels != 4)
+                {
+                    if (colorChannels == 1)
+                    {
+                        pixel[0] = ToSample(b[0], max, transfer, curves, 0);
+                    }
+                    else
+                    {
+                        pixel[red] = ToSample(b[0], max, transfer, curves, 0);
+                        pixel[1] = ToSample(b[1], max, transfer, curves, 1);
+                        pixel[blue] = ToSample(b[2], max, transfer, curves, 2);
+                    }
+
+                    continue;
+                }
+
+                var plusRounded = Math.Floor((plusAlpha * max) + 0.5);
+                if (!(plusRounded > 0))
+                {
+                    if (destinationAlpha != 0)
+                    {
+                        pixel.Clear();
+                    }
+
+                    continue;
+                }
+
+                pixel[red] = ToSample(b[0] / plusAlpha, max, transfer, curves, 0);
+                pixel[1] = ToSample(b[1] / plusAlpha, max, transfer, curves, 1);
+                pixel[blue] = ToSample(b[2] / plusAlpha, max, transfer, curves, 2);
+                pixel[3] = TSample.CreateTruncating(plusRounded >= max ? max : plusRounded);
+                continue;
+            }
+
             var (sourceFactor, destinationFactor) = mode switch
             {
                 CompositeMode.Source => (1d, 0d),
@@ -567,8 +668,6 @@ internal static class DrawingKernels
                 _ => (1d, 1 - sourceAlpha),
             };
 
-            // The weights of the color of the paint and of the color of the pixel in the result
-            var covered = q / Full;
             var sourceWeight = covered * sourceFactor * sourceAlpha;
             var destinationWeight = ((1 - covered) * backdrop) + (covered * destinationFactor * backdrop);
             if (channels != 4)

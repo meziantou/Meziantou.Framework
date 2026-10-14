@@ -35,4 +35,7 @@ public enum ReferenceCompositeMode
 
     /// <summary>Nothing.</summary>
     Clear,
+
+    /// <summary>The paint added to the pixel, the sums clipped to one.</summary>
+    Plus,
 }

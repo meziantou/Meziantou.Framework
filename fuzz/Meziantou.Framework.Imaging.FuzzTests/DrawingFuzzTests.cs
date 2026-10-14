@@ -30,6 +30,11 @@ public sealed class DrawingFuzzTests
 {
     private const double MaxCoordinate = 16777216;
 
+    // In perspective, coordinates and lengths of the size of the canvas: a shape of 2^24 pixels whose far end is drawn
+    // at the vanishing point of the canvas is millions of chords and dashes there, which the limits of the image refuse
+    [ThreadStatic]
+    private static bool t_isInPerspective;
+
     [Fact]
     public void RandomDrawingsCompleteAndKeepTheirInvariants()
     {
@@ -318,18 +323,22 @@ public sealed class DrawingFuzzTests
                     }
                     else if (random.Chance(50))
                     {
-                        canvas.Transform(CreateProjectiveTransform(random, canvas), inner => Paint(inner, random, context, depth + 1));
+                        var transform = CreateProjectiveTransform(random, canvas);
+                        PaintInPerspective(inner => inner.Transform(transform, plane => Paint(plane, random, context, depth + 1)), canvas);
                     }
                     else
                     {
                         var center = Transform3D.CreateTranslation(-canvas.Width / 2.0, -canvas.Height / 2.0, 0);
                         var back = Transform3D.CreateTranslation(canvas.Width / 2.0, canvas.Height / 2.0, 0);
-                        // A turn by a multiple of half a turn makes the transformation affine, which rejects what it
-                        // sends beyond the largest coordinate
-                        var angle = CreateAngle(random);
-                        angle += angle % 180 == 0 ? 1 : 0;
+                        // Not a multiple of half a turn, which makes the transformation affine (it rejects what it sends
+                        // beyond the largest coordinate), and not near a quarter turn, which shows the plane from its
+                        // edge: what is long in the plane is then a few pixels long on the canvas, and a dashed path
+                        // millions of dashes
+                        var angle = 1 + (NextDouble(random) * 74);
+                        angle = random.Chance(50) ? angle : -angle;
                         var turn = random.Chance(50) ? Transform3D.CreateRotationX(angle) : Transform3D.CreateRotationY(angle);
-                        canvas.Transform(center.Then(Transform3D.CreatePerspective(10 + (NextDouble(random) * 100))).Then(back), outer => outer.Transform(center.Then(turn).Then(back), inner => Paint(inner, random, context, depth + 1)));
+                        var perspective = center.Then(Transform3D.CreatePerspective(10 + (NextDouble(random) * 100))).Then(back);
+                        PaintInPerspective(outer => outer.Transform(perspective, viewer => viewer.Transform(center.Then(turn).Then(back), plane => Paint(plane, random, context, depth + 1))), canvas);
                     }
 
                     break;
@@ -337,6 +346,20 @@ public sealed class DrawingFuzzTests
                     canvas.Stroke(CreateDashedPen(random, canvas, context), CreatePath(random, canvas));
                     break;
             }
+        }
+    }
+
+    private static void PaintInPerspective(DrawingAction action, DrawingCanvas canvas)
+    {
+        var previous = t_isInPerspective;
+        t_isInPerspective = true;
+        try
+        {
+            action(canvas);
+        }
+        finally
+        {
+            t_isInPerspective = previous;
         }
     }
 
@@ -384,6 +407,7 @@ public sealed class DrawingFuzzTests
     /// <summary>A coordinate: mostly around the canvas, sometimes on a pixel boundary, sometimes far away, sometimes an extreme.</summary>
     private static double CreateCoordinate(FuzzRandom random, int size) => random.Next(20) switch
     {
+        0 or 1 or 2 when t_isInPerspective => (NextDouble(random) - 0.5) * 8 * (size + 1),
         0 => random.Chance(50) ? MaxCoordinate : -MaxCoordinate,
         1 => (NextDouble(random) - 0.5) * 2 * MaxCoordinate,
         2 => (NextDouble(random) - 0.5) * 4000,
@@ -478,6 +502,7 @@ public sealed class DrawingFuzzTests
     private static double CreateLength(FuzzRandom random) => random.Next(12) switch
     {
         0 => 0,
+        1 or 2 when t_isInPerspective => NextDouble(random) * 60,
         1 => MaxCoordinate,
         2 => NextDouble(random) * 5000,
         3 => NextDouble(random) * 1e-6,
@@ -499,7 +524,7 @@ public sealed class DrawingFuzzTests
     private static Brush CreateBrush(FuzzRandom random, DrawingCanvas canvas, FuzzContext context)
     {
         // The operators that never lower the alpha of a pixel, unless the case erases
-        var mode = context.Erases ? (CompositeMode)random.Next(11) : random.Next(6) switch
+        var mode = context.Erases ? (CompositeMode)random.Next(12) : random.Next(6) switch
         {
             0 => CompositeMode.DestinationOver,
             1 => CompositeMode.SourceAtop,

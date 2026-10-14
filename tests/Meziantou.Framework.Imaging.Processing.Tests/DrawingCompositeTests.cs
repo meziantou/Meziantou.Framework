@@ -231,13 +231,38 @@ public sealed class DrawingCompositeTests
         Assert.Equal(new Rgba32(10, 20, 30, 100), Paint(new Rgba32(10, 20, 30, 200), red, HalfPixel, CompositeMode.Clear));
         Assert.Equal(new Rgb24(0, 0, 0), Paint(new Rgb24(10, 20, 30), red, WholePixel, CompositeMode.Clear));
         Assert.Equal(new Rgb24(5, 10, 15), Paint(new Rgb24(10, 20, 30), red, HalfPixel, CompositeMode.Clear));
+
+        // Plus (Fa = 1, Fb = 1, clipped to one): red at 128/255 and blue at 128/255 add up to an opaque pixel whose
+        // colors are 255 * 128 / 255; light added to light saturates; a transparent pixel takes the paint as it is
+        Assert.Equal(new Rgba32(128, 0, 128, 255), Paint(new Rgba32(0, 0, 255, 128), halfRed, WholePixel, CompositeMode.Plus));
+        Assert.Equal(new Rgba32(255, 255, 0), Paint(new Rgba32(0, 255, 0), red, WholePixel, CompositeMode.Plus));
+        Assert.Equal(new Rgba32(255, 255, 255), Paint(new Rgba32(100, 100, 100), new Rgba32(200, 200, 200), WholePixel, CompositeMode.Plus));
+        Assert.Equal(new Rgba32(255, 0, 0, 128), Paint(new Rgba32(9, 9, 9, 0), halfRed, WholePixel, CompositeMode.Plus));
+
+        // Half covered: the sum for half of the pixel, the pixel for the rest. Red: (255 / 2 + 1/2) rounded upward;
+        // blue: 255 in both halves
+        Assert.Equal(new Rgba32(128, 0, 255), Paint(new Rgba32(0, 0, 255), red, HalfPixel, CompositeMode.Plus));
+
+        // Without alpha: 100 + 100 * 51 / 255 = 120, 150 + 20 = 170, and 255 + 20 clipped to 255
+        Assert.Equal(new Rgb24(120, 170, 255), Paint(new Rgb24(100, 150, 255), new Rgba32(100, 100, 100, 51), WholePixel, CompositeMode.Plus));
+
+        // A layer is added to what is under it as a whole
+        using var image = new Image<Rgba32>(2, 1, new Rgba32(0, 200, 0));
+        image.Frames[0].Draw(canvas => canvas.Layer(1, layer => layer.FillRectangle(red, new Rectangle(0, 0, 1, 1)), CompositeMode.Plus), Ct);
+        Assert.Equal(new Rgba32(255, 200, 0), image.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(0, 200, 0), image.Frames[0][1, 0]);
+
+        // In linear light, the light is added: 128 is 0.21586 of the light of 255, twice that is encoded as 175.55
+        using var gray = new Image<Rgba32>(1, 1, new Rgba32(128, 128, 128));
+        gray.Frames[0].Draw(canvas => canvas.Compositing(CompositingSpace.LinearSrgb, linear => linear.Fill(new SolidBrush(new Rgba32(128, 128, 128)) { CompositeMode = CompositeMode.Plus })), Ct);
+        Assert.Equal(new Rgba32(176, 176, 176), gray.Frames[0][0, 0]);
     }
 
     [Fact]
     public void ATransparentPaintWritesNothingWithTheOperatorsThatKeepThePixel()
     {
         var transparent = new Rgba32(200, 200, 200, 0);
-        foreach (var mode in new[] { CompositeMode.SourceOver, CompositeMode.DestinationOver, CompositeMode.DestinationOut, CompositeMode.SourceAtop, CompositeMode.Xor })
+        foreach (var mode in new[] { CompositeMode.SourceOver, CompositeMode.DestinationOver, CompositeMode.DestinationOut, CompositeMode.SourceAtop, CompositeMode.Xor, CompositeMode.Plus })
         {
             Assert.Equal(new Rgba32(1, 2, 3, 4), Paint(new Rgba32(1, 2, 3, 4), transparent, WholePixel, mode));
             Assert.Equal(new Rgba32(1, 2, 3, 0), Paint(new Rgba32(1, 2, 3, 0), transparent, WholePixel, mode));
@@ -258,7 +283,7 @@ public sealed class DrawingCompositeTests
         Assert.Equal(CompositeMode.SourceOver, new SolidBrush(new Rgba32(1, 2, 3)).CompositeMode);
         Assert.Equal(CompositeMode.SourceOver, ((Brush)new Rgba32(1, 2, 3)).CompositeMode);
         Assert.Equal(CompositeMode.Xor, new SolidBrush(new Rgba32(1, 2, 3)) { CompositeMode = CompositeMode.Xor }.CompositeMode);
-        Assert.Throws<ArgumentOutOfRangeException>(() => new SolidBrush(new Rgba32(1, 2, 3)) { CompositeMode = (CompositeMode)11 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SolidBrush(new Rgba32(1, 2, 3)) { CompositeMode = (CompositeMode)12 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new SolidBrush(new Rgba32(1, 2, 3)) { CompositeMode = (CompositeMode)(-1) });
 
         // A gradient and the brush of a pen have one too: a row erased from opaque on its left to untouched on its right.

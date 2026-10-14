@@ -44,7 +44,7 @@ internal sealed partial class DrawingSession
     public void PushLayer(double opacity, CompositeMode mode, BlendMode blend)
     {
         var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
-        if ((uint)mode > (uint)CompositeMode.Clear)
+        if ((uint)mode > (uint)CompositeMode.Plus)
             throw new ArgumentOutOfRangeException(nameof(mode), mode, "The composite mode is not valid.");
 
         if ((uint)blend > (uint)BlendMode.Luminosity)

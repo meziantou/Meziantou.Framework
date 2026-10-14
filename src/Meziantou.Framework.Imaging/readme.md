@@ -1314,8 +1314,9 @@ public static void DrawGlassPanel(string photoPath, string outputPath)
 otherwise. The modes are the compositing operators of Porter and Duff: `Source` replaces the pixels, alpha included (a
 transparent color erases), `DestinationOut` erases them where the paint is opaque (an eraser, with any shape and any
 gradient), `DestinationOver` paints behind them, `DestinationIn` keeps them where the paint is opaque (a mask),
-`SourceIn`, `SourceOut`, `SourceAtop`, `DestinationAtop` and `Xor` combine both, and `Clear` erases whatever the paint
-is. An operator gives the result where a shape covers a pixel entirely; a pixel covered in part is that result for the
+`SourceIn`, `SourceOut`, `SourceAtop`, `DestinationAtop` and `Xor` combine both, `Clear` erases whatever the paint
+is, and `Plus` adds the paint to the pixels, light to light, up to white (`plus-lighter` of CSS, `lighter` of the
+HTML canvas). An operator gives the result where a shape covers a pixel entirely; a pixel covered in part is that result for the
 part that is covered and what it was for the rest, so a pixel the shape does not touch never changes. `canvas.Clear`
 replaces every pixel by a color (`Colors.Transparent` erases the canvas).
 
@@ -1482,7 +1483,8 @@ public static void MarkAnimation(string inputPath, string outputPath)
   boundary can differ by one from a platform to another.
 - **Operators.** The other compositing operators use the same exact arithmetic and the same rounding. A pixel whose
   alpha becomes zero becomes transparent black. A frame without alpha stays opaque: its pixels get the color the result
-  would have over black, so an eraser darkens them.
+  would have over black, so an eraser darkens them. `Plus` clips its sums to one: the alpha of the result is
+  `min(as + ad, 1)`, and each of its colors multiplied by its alpha `min(as sc + ad dc, 1)`.
 - **Blend modes.** With the colors as fractions of one, a paint `s` on a pixel `d` of alpha `ad` takes the color
   `(1 - ad) s + ad B(s, d)`, where `B` is the function of the mode in "Compositing and Blending Level 1" of the W3C. It
   is computed in double precision with additions, multiplications, divisions and square roots only, rounded to the

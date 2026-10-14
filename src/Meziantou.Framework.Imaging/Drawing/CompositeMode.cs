@@ -50,4 +50,12 @@ public enum CompositeMode
 
     /// <summary>The pixel is erased (<c>Fa = 0</c>, <c>Fb = 0</c>). Neither the color nor the alpha of the paint is used: only the shape counts.</summary>
     Clear = 10,
+
+    /// <summary>
+    /// The paint is added to the pixel (<c>Fa = 1</c>, <c>Fb = 1</c>), and the result is clipped to one: its alpha is
+    /// <c>min(as + ad, 1)</c>, and its color multiplied by its alpha <c>min(as source + ad destination, 1)</c>, for each
+    /// color. Light added to light: <c>plus-lighter</c> of CSS, <c>lighter</c> of the HTML canvas, <c>lighter</c> of
+    /// <c>feComposite</c>.
+    /// </summary>
+    Plus = 11,
 }

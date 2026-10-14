@@ -1237,6 +1237,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         DestinationAtop = 8,
         Xor = 9,
         Clear = 10,
+        Plus = 11,
     }
 
     public enum CompositingSpace

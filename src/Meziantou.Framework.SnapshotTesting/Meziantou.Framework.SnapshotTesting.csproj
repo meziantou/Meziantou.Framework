@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.SnapshotTesting.Tests" />
-    <InternalsVisibleTo Include="SnapshotTestingBenchmarks" />
+    <InternalsVisibleTo Include="Meziantou.Framework.SnapshotTesting.Benchmarks" />
   </ItemGroup>
 
   <ItemGroup>

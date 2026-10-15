@@ -25,7 +25,7 @@
       Benchmark workload validation (Conformance/Benchmarks/BenchmarkWorkloadTests): the benchmarked operations and input
       generators are compiled here (they have no BenchmarkDotNet dependency).
     -->
-    <Compile Include="..\..\benchmarks\ImagingBenchmarks\Workloads\*.cs" LinkBase="Conformance\Benchmarks\Workloads" />
+    <Compile Include="..\..\benchmarks\Meziantou.Framework.Imaging.Benchmarks\Workloads\*.cs" LinkBase="Conformance\Benchmarks\Workloads" />
     <!-- The font builder and the synthetic fonts are shared with the corpus generator, which writes these fonts to the corpus -->
     <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\Font*.cs" LinkBase="Shared" />
     <!--

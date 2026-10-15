@@ -92,7 +92,7 @@ jobs:
         if: steps.build-project.outputs.has-project != 'true'
         run: Write-Host "No project was impacted. Skipping build."
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: binlog-analyzers
@@ -508,7 +508,7 @@ jobs:
         run: Get-ChildItem -Recurse "${{ env.TestResultsDirectory }}/" -Filter "*.dmp" | Remove-Item -Force -ErrorAction SilentlyContinue
 
       - parallel:
-          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+          - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
             if: always() && steps.build-project.outputs.has-project == 'true'
             with:
               name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
@@ -521,7 +521,7 @@ jobs:
                 **/*.binlog
                 ${{ env.TestResultsDirectory }}/**/*
                 **/obj/**/GeneratedFiles/**/*.cs
-          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+          - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
             if: always() && steps.build-project.outputs.has-project == 'true' && env.EnableCodeCoverage == 'true'
             with:
               name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
@@ -619,7 +619,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Download test results
         id: download-test-results
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         background: true
         with:
           pattern: test-results-*-coverage
@@ -640,7 +640,7 @@ jobs:
           - name: Merge coverage files (format cobertura)
             if: ${{ hashFiles('test-results/**/*.coverage') != '' }}
             run: dotnet-coverage merge --output test-result.cobertura.xml --output-format cobertura (Get-ChildItem test-results -Recurse -Filter "*.coverage")
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: code-coverage
           if-no-files-found: warn

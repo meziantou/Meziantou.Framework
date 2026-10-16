@@ -1446,6 +1446,13 @@ a dash of length zero is drawn by its caps alone (`[0, 5]` with round caps is a 
 contour continues with the first one, as one dash, when the contour ends in the middle of a dash. Lengths are measured
 along the path as it is drawn, and are not rounded; a pattern must be at least 1/1024 of a pixel long.
 
+**Precision**. On a canvas of 8-bit samples, every draw call rounds its result to 8 bits, and many translucent
+drawings on top of each other, nested layers and filters accumulate those roundings. `canvas.HighPrecision(callback)`
+draws the callback on a copy of the pixels the clip can show with 16-bit samples and alpha (layers started in it have
+16-bit samples too), which starts with the pixels of the canvas and replaces them when the callback returns, as
+`CompositeMode.Source` does through the clip: each color is rounded once. It costs 8 bytes per pixel the clip shows,
+for each frame, while the callback runs; on a canvas of 16-bit samples, the callback draws on the canvas itself.
+
 **Antialiasing and linear light**. `canvas.Antialiasing(false, callback)` draws with hard edges, as browsers do: a
 pixel is painted entirely when its center is inside the shape, and not at all otherwise. An opaque paint then writes its color
 and nothing else, which pixel art, masks of whole pixels and images that keep the colors of a palette need.

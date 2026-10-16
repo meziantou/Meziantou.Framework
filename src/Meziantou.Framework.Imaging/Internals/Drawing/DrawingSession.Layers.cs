@@ -256,6 +256,94 @@ internal sealed partial class DrawingSession
         }
     }
 
+    /// <summary>Gets a value indicating whether the frames that are drawn on have 16-bit samples already.</summary>
+    public bool HasSixteenBitSamples => _frames[0].PixelFormat is PixelFormat.Rgba64 or PixelFormat.Gray16;
+
+    /// <summary>
+    /// Starts a scope whose drawings are made on a copy of the pixels the clip can show with 16-bit samples (a frame for
+    /// each frame that is drawn on), which replaces them when it ends: the colors are rounded to the samples of the
+    /// frames once, by <see cref="CompositeMode.Source"/> through the clip.
+    /// </summary>
+    /// <returns>The session the drawings of the scope are made by.</returns>
+    /// <exception cref="ImageResourceLimitException">The copy exceeds the limits of the image that is drawn on.</exception>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session and the image are owned by the level of the layer, released by PopLayer.")]
+    public DrawingSession PushPrecisionScope()
+    {
+        _cancellationToken.ThrowIfCancellationRequested();
+        GetClipBounds(out var left, out var top, out var right, out var bottom, out _);
+        var isEmpty = !(right > left && bottom > top);
+        var width = isEmpty ? 1 : right - left;
+        var height = isEmpty ? 1 : bottom - top;
+        _image.Configuration.Limits.EnsureCanvasWithinLimits(width, height);
+        var image = new Image<Rgba64>(_image.Configuration, new Size(width, height), _image.Owner.Scope, layoutOptions: null);
+        DrawingSession? session = null;
+        try
+        {
+            var frames = new ImageFrame[_frames.Length];
+            var storages = new PixelStorage[_frames.Length];
+            for (var i = 0; i < frames.Length; i++)
+            {
+                frames[i] = i == 0 ? image.Frames[0] : image.AppendFrameUnchecked();
+                storages[i] = frames[i].GetStorage();
+            }
+
+            // Each copy starts with the pixels of its frame
+            if (!isEmpty)
+            {
+                using var row = ResampleWeights.Rent<Rgba64>(_image.Owner.Scope, width);
+                var pixels = unsafe(MemoryMarshal.Cast<byte, Rgba64>(row.Span))[..width];
+                for (var i = 0; i < frames.Length; i++)
+                {
+                    for (var y = 0; y < height; y++)
+                    {
+                        _frames[i].ReadRgba64(_storages[i], top + y, left, pixels);
+                        var bytes = unsafe(MemoryMarshal.AsBytes(pixels));
+                        bytes.CopyTo(storages[i].GetRowSpanCore(y));
+                    }
+                }
+            }
+
+            session = Begin(image, frames, storages, _cancellationToken);
+            InheritRendering(session);
+            session._originX = _originX + left;
+            session._originY = _originY + top;
+            session._clipsGeometry = _clipsGeometry;
+            session._isLayerFrame = true;
+            var toImage = AffineTransform.CreateTranslation(-left, -top);
+            if (_hasTransform3D)
+            {
+                session.PushTransform(_transform3D.Then(toImage));
+            }
+            else if (_isProjective)
+            {
+                session.PushTransform(_projection.Then(toImage));
+            }
+            else
+            {
+                session.PushTransform(_hasTransform ? _transform.Then(toImage) : toImage);
+            }
+
+            if (_layerDepth == _layers.Count)
+            {
+                _layers.Add(new LayerLevel());
+            }
+
+            var level = _layers[_layerDepth];
+            level.Bounded = new BoundedLayer(image, session, left, top, isEmpty);
+            level.Opacity = CoverageRasterizer.FullCoverage;
+            level.Mode = CompositeMode.Source;
+            level.Blend = BlendMode.Normal;
+            _layerDepth++;
+            return session;
+        }
+        catch
+        {
+            session?.Dispose();
+            image.Dispose();
+            throw;
+        }
+    }
+
     /// <summary>Starts a layer on the pixels the clip can show, and on a margin around them.</summary>
     private LayerLevel PushLayerCore(int margin) => PushLayerCore(margin, frameCount: 1);
 
@@ -317,8 +405,7 @@ internal sealed partial class DrawingSession
                 bounded.Session.Dispose();
                 if (draw && !bounded.IsEmpty && level.Opacity != 0)
                 {
-                    var frame = bounded.Image.Frames[0];
-                    DrawLayerFrame(frame, new Rectangle(bounded.Left, bounded.Top, frame.Width, frame.Height), level, AffineTransform.CreateTranslation(bounded.Left, bounded.Top));
+                    DrawBoundedLayer(bounded, level);
                 }
             }
             finally
@@ -414,6 +501,36 @@ internal sealed partial class DrawingSession
                 _frames = [frames[i]];
                 _storages = [storages[i]];
                 DrawLayerFrame(layerFrames[i], bounds, level);
+            }
+        }
+        finally
+        {
+            _frames = frames;
+            _storages = storages;
+        }
+    }
+
+    /// <summary>Draws the image of a layer of a rectangle at its place: its frame on every frame, or each of its frames on its own.</summary>
+    private void DrawBoundedLayer(BoundedLayer bounded, LayerLevel level)
+    {
+        var layerFrames = bounded.Image.Frames;
+        var placement = AffineTransform.CreateTranslation(bounded.Left, bounded.Top);
+        var bounds = new Rectangle(bounded.Left, bounded.Top, bounded.Image.Width, bounded.Image.Height);
+        if (layerFrames.Count == 1)
+        {
+            DrawLayerFrame(layerFrames[0], bounds, level, placement);
+            return;
+        }
+
+        var frames = _frames;
+        var storages = _storages;
+        try
+        {
+            for (var i = 0; i < frames.Length; i++)
+            {
+                _frames = [frames[i]];
+                _storages = [storages[i]];
+                DrawLayerFrame(layerFrames[i], bounds, level, placement);
             }
         }
         finally

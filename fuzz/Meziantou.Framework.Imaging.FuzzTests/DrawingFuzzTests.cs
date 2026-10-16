@@ -316,8 +316,8 @@ public sealed class DrawingFuzzTests
                     Measure(canvas, random, context);
                     break;
                 case 22:
-                    // A filtered drawing, a layer that holds the pixels of a rectangle, or a layer that starts with the
-                    // filtered backdrop of a rectangle
+                    // A filtered drawing, a layer that holds the pixels of a rectangle, a scope of 16-bit samples, or a
+                    // layer that starts with the filtered backdrop of a rectangle
                     if (depth >= 3)
                     {
                         canvas.Fill(CreateBrush(random, canvas, context));
@@ -329,6 +329,10 @@ public sealed class DrawingFuzzTests
                     else if (random.Chance(40))
                     {
                         canvas.Layer(CreateRectangle(random, canvas), CreateOpacity(random), inner => Paint(inner, random, context, depth + 1), CreateCompositeMode(random, context), (BlendMode)random.Next(16));
+                    }
+                    else if (random.Chance(30))
+                    {
+                        canvas.HighPrecision(inner => Paint(inner, random, context, depth + 1));
                     }
                     else
                     {

@@ -1223,6 +1223,61 @@ public sealed class DrawingSessionTests
     }
 
     [Fact]
+    public void DrawingsInHighPrecisionAreRoundedOnce()
+    {
+        // Ten fills of a translucent color, a layer and a blend mode: on an 8-bit canvas, each draw call rounds to 8 bits;
+        // in high precision, the pixels are those of the same drawings on a 16-bit image, rounded once to the nearest
+        // 8-bit sample (v / 257)
+        DrawingAction drawings = static canvas =>
+        {
+            for (var i = 0; i < 10; i++)
+            {
+                canvas.FillRectangle(new Rgba32(250, 120, 30, 26), new RectangleD(0.5, 0, 6, 4));
+            }
+
+            canvas.Layer(0.35, static layer => layer.FillCircle(new SolidBrush(new Rgba32(20, 90, 250, 200)) { BlendMode = BlendMode.Screen }, new PointD(4, 2), 2.5));
+        };
+
+        using var wide = new Image<Rgba64>(8, 4, new Rgba64(0, 0, 0, 65535));
+        wide.Draw(drawings, Ct);
+        using var precise = new Image<Rgba32>(8, 4, new Rgba32(0, 0, 0));
+        precise.Draw(canvas => canvas.HighPrecision(drawings), Ct);
+        using var plain = new Image<Rgba32>(8, 4, new Rgba32(0, 0, 0));
+        plain.Draw(drawings, Ct);
+        var differs = false;
+        for (var y = 0; y < 4; y++)
+        {
+            for (var x = 0; x < 8; x++)
+            {
+                var source = wide.Frames[0][x, y];
+                var expected = new Rgba32(Round(source.R), Round(source.G), Round(source.B), Round(source.A));
+                Assert.Equal(expected, precise.Frames[0][x, y], message: $"pixel ({x}, {y})");
+                differs |= plain.Frames[0][x, y] != expected;
+            }
+        }
+
+        Assert.True(differs);
+
+        // Through the clip: what it does not show is unchanged, and its edge is blended as a paint of Source would be
+        using var clipped = new Image<Gray8>(8, 1, new Gray8(100));
+        clipped.Draw(canvas => canvas.Clip(new RectangleD(2.5, 0, 3, 1), inner => inner.HighPrecision(static scope => scope.Fill(White))), Ct);
+        Assert.Equal([100, 100, 178, 255, 255, 178, 100, 100], Enumerable.Range(0, 8).Select(x => (int)clipped.Frames[0][x, 0].Value));
+
+        // Each frame starts with its own pixels; a 16-bit canvas is drawn on as it is
+        using var animation = new Image<Rgba32>(2, 1, new Rgba32(255, 0, 0));
+        animation.AppendFrame();
+        animation.Frames[1].Draw(static canvas => canvas.Fill(new Rgba32(0, 0, 255)), Ct);
+        animation.Draw(static canvas => canvas.HighPrecision(static scope => scope.Fill(new Rgba32(255, 255, 255, 128))), Ct);
+        Assert.Equal(new Rgba32(255, 128, 128), animation.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(128, 128, 255), animation.Frames[1][0, 0]);
+        using var sixteen = new Image<Rgba64>(8, 4, new Rgba64(0, 0, 0, 65535));
+        sixteen.Draw(canvas => canvas.HighPrecision(drawings), Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(wide.Frames[0]), DrawingTestSupport.ReadSamples(sixteen.Frames[0]));
+
+        static byte Round(ushort value) => (byte)Math.Floor((value / 257.0) + 0.5);
+    }
+
+    [Fact]
     public void ALayerValidatesItsArgumentsAndIsChargedToTheImage()
     {
         using (var image = new Image<Gray8>(4, 4, new Gray8(0)))

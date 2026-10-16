@@ -1407,6 +1407,8 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void Filter<TState>(Meziantou.Framework.Imaging.ColorMatrix matrix, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void Filter<TState>(Meziantou.Framework.Imaging.Drawing.Filter filter, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void FilterBackdrop(Meziantou.Framework.Imaging.ColorMatrix matrix) { }
+        public void HighPrecision(Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
+        public void HighPrecision<TState>(TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void InnerShadow(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void InnerShadow<TState>(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void Layer(double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) { }

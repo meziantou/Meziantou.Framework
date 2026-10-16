@@ -1861,6 +1861,79 @@ public readonly ref struct DrawingCanvas
         }
     }
 
+    /// <summary>Runs a callback whose drawings are made with 16-bit samples, and rounded to the samples of the canvas once when it returns.</summary>
+    /// <remarks>
+    /// <para>
+    /// On a canvas of 8-bit samples, every draw call rounds its result to 8 bits: many translucent drawings on top of
+    /// each other, layers inside layers and filters accumulate those roundings. Inside the callback, the drawings are
+    /// made on a copy of the pixels the clip can show with 16-bit samples and alpha, which starts with the pixels of the
+    /// canvas; layers started in it have 16-bit samples too. When the callback returns, the copy replaces the pixels as
+    /// <see cref="CompositeMode.Source"/> does, through the clip: each color is rounded once. The coordinates do not
+    /// change. On a canvas of 16-bit samples, the callback draws on the canvas itself.
+    /// </para>
+    /// <para>The copy is rented when the callback starts and released when it returns: 8 bytes per pixel the clip can show, for each frame.</para>
+    /// </remarks>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The copy or the working storage would exceed the allocation limit. The callback is not run.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void HighPrecision(DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        if (session.HasSixteenBitSamples)
+        {
+            action(this);
+            return;
+        }
+
+        var inner = session.PushPrecisionScope();
+        var isDrawn = false;
+        try
+        {
+            action(new DrawingCanvas(inner));
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are made with 16-bit samples, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="HighPrecision(DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The copy or the working storage would exceed the allocation limit. The callback is not run.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void HighPrecision<TState>(TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        if (session.HasSixteenBitSamples)
+        {
+            action(this, state);
+            return;
+        }
+
+        var inner = session.PushPrecisionScope();
+        var isDrawn = false;
+        try
+        {
+            action(new DrawingCanvas(inner), state);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
     /// <summary>Runs a callback whose paints are combined with the pixels in a numeric space, passing caller state to avoid closure allocations.</summary>
     /// <typeparam name="TState">The type of the state.</typeparam>
     /// <param name="space">The space the paints are combined with the pixels in.</param>

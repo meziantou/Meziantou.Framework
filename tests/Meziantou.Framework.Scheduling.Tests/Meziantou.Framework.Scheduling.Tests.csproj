@@ -1,6 +1,8 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
+    <!-- Uses named cultures and time zones -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <!-- Invariant globalization mode only creates the predefined cultures by default, which the culture resolution tests need -->
     <PredefinedCulturesOnly>false</PredefinedCulturesOnly>

@@ -1,6 +1,8 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Removes diacritics by normalizing the text -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>2.0.3</Version>

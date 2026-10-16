@@ -1,6 +1,8 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Resolves time zones from their Windows or IANA ID -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <Description>RecurrenceRule (RFC 5545) and Cron expression parser and evaluator</Description>
     <PackageTags>cron, rrule, recurrence, rfc5545, icalendar, scheduling</PackageTags>

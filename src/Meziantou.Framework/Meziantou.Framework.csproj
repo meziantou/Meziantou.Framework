@@ -1,6 +1,8 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
+    <!-- StringExtensions normalizes and compares strings linguistically, CultureInfoUtilities creates named cultures -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
 

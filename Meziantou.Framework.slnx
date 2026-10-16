@@ -220,6 +220,7 @@
     <Project Path="tests/Meziantou.Framework.FixedStringBuilder.Tests/Meziantou.Framework.FixedStringBuilder.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FullPath.Analyzer.Tests/Meziantou.Framework.FullPath.Analyzer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.GlobalizationSensitivity.Analyzer.Tests/Meziantou.Framework.GlobalizationSensitivity.Analyzer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Globbing.Tests/Meziantou.Framework.Globbing.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Html.Tests/Meziantou.Framework.Html.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Html.Tool.Tests/Meziantou.Framework.Html.Tool.Tests.csproj" />
@@ -351,6 +352,7 @@
     <Project Path="tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj" />
   </Folder>
   <Folder Name="/tools/">
+    <Project Path="tools/Meziantou.Framework.GlobalizationSensitivity.Analyzer/Meziantou.Framework.GlobalizationSensitivity.Analyzer.csproj" />
     <Project Path="tools/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Http.Hsts.Generator/Meziantou.Framework.Http.Hsts.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Imaging.Av1TableExtractor/Meziantou.Framework.Imaging.Av1TableExtractor.csproj" />

@@ -1,8 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
-    <!-- Microsoft.Data.SqlClient and Npgsql need globalization data -->
-    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 

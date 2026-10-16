@@ -829,10 +829,10 @@ internal sealed partial class DrawingSession : IDisposable
             return null;
 
         var stroker = _stroker ??= new Stroker(_edges!);
-        if (_isProjective)
+        if (UsesProjectiveGeometry)
         {
             // The thickness of a glyph is small: its curves are cut for the whole plane
-            stroker.SetOutput(_projectionView.Inflate(0, DrawingGuard.MaxCoordinate));
+            stroker.SetOutput(GeometryView.Inflate(0, DrawingGuard.MaxCoordinate));
         }
         else
         {
@@ -948,7 +948,7 @@ internal sealed partial class DrawingSession : IDisposable
         var isPlacedFirst = IsPlacedBeforeStroke(pen);
         var hasOutputTransform = (_hasTransform || _isProjective) && !isPlacedFirst;
         var scale = hasOutputTransform ? _transformScale : 1;
-        ProjectiveView? projection = hasOutputTransform && _isProjective ? _projectionView.Inflate(0, GetStrokeReach(pen, widthFactor)) : null;
+        ProjectiveView? projection = hasOutputTransform && UsesProjectiveGeometry ? GeometryView.Inflate(0, GetStrokeReach(pen, widthFactor)) : null;
         if (projection is { } outputProjection)
         {
             stroker.SetOutput(outputProjection);
@@ -969,7 +969,7 @@ internal sealed partial class DrawingSession : IDisposable
             {
                 // The dashes are cut in the coordinates of the drawing, where the canvas is the intersection of four
                 // half-planes: those the canvas shows
-                var view = _isProjective ? _projectionView : new ProjectiveView(_transform, -1, -1, Width + 1, Height + 1, reach: 0);
+                var view = GeometryView;
                 dasher.Configure(pen, stroker, view, _cancellationToken, widthFactor);
             }
             else
@@ -989,11 +989,11 @@ internal sealed partial class DrawingSession : IDisposable
             sink = markers;
         }
 
-        if (isPlacedFirst && _isProjective)
+        if (isPlacedFirst && UsesProjectiveGeometry)
         {
             // The path is placed on the canvas and cut where it has no image, as a line: what remains is stroked
             var placed = _strokeProjectiveSink ??= new ProjectiveSink();
-            placed.Configure(sink, _projectionView.Inflate(GetStrokeReach(pen, widthFactor), 0), isPolyline: true);
+            placed.Configure(sink, GeometryView.Inflate(GetStrokeReach(pen, widthFactor), 0), isPolyline: true);
             sink = placed;
         }
         else if (isPlacedFirst)

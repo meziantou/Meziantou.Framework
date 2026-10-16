@@ -2047,7 +2047,21 @@ public sealed class DrawingSessionTests
 
         // The canvas of the callback is the canvas, whatever it is drawn on
         actual.Draw(canvas => canvas.Transform(projective, inner => inner.Shadow(black, default, 1, shadowed => Assert.Equal((32, 28), (shadowed.Width, shadowed.Height)))), Ct);
-    }
+
+        // What the image of the plane enlarges beyond the largest coordinate is cut, as in perspective, not rejected:
+        // a triangle 9 million pixels long, twice as long on the image
+        var triangle = new VectorPathBuilder().MoveTo(0, 0).LineTo(9000000, 0).LineTo(0, 5).Close().Build();
+        using var direct = new Image<Rgba32>(32, 28);
+        using var filtered = new Image<Rgba32>(32, 28);
+        direct.Draw(canvas => canvas.Transform(projective, inner => inner.Fill(White, triangle)), Ct);
+        filtered.Draw(canvas => canvas.Transform(projective, inner => inner.Filter(new BlurFilter(0), layer => layer.Fill(White, triangle))), Ct);
+        left = DrawingTestSupport.ReadSamples(direct.Frames[0]);
+        right = DrawingTestSupport.ReadSamples(filtered.Frames[0]);
+        Assert.Equal(255, left[((5 * 32) + 6) * 4 + 3]);
+        for (var i = 0; i < left.Length; i++)
+        {
+            Assert.InRange(right[i], left[i] - 2, left[i] + 2, message: $"sample {i}");
+        }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Masks

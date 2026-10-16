@@ -26,7 +26,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The paints of the brushes and the images are read through the inverse of the transformation, and what is beyond
 /// the horizon has no color. What has a size in the drawing that is not the size of a shape (the blur and the offset
 /// of a shadow, a blur, the glyphs a font draws with its own colors) is drawn on an image of the plane of the drawing
-/// (<see cref="BeginProjectedScope"/>), then that image is drawn in perspective.
+/// (<see cref="BeginProjectedScope"/>), then that image is drawn in perspective. On that image, the geometry goes
+/// through a <see cref="ProjectiveSink"/> too: what its scale moves beyond the largest coordinate is cut, not rejected.
 /// </para>
 /// <para>
 /// <b>Transformations of space</b> (<see cref="Transform3D"/>) are combined with each other in three dimensions, so
@@ -50,6 +51,10 @@ internal sealed partial class DrawingSession
     private bool _isProjective;
     private ProjectiveTransform _projection;
     private ProjectiveView _projectionView;
+
+    // A session on an image of the plane (BeginProjectedScope): its affine transformation is applied as a projective
+    // one is, the geometry cut at the largest coordinate instead of rejected, as the perspective it stands for does
+    private bool _clipsGeometry;
 
     // The transformation of space the current one comes from, which the next ones are combined with
     private bool _hasTransform3D;
@@ -214,14 +219,20 @@ internal sealed partial class DrawingSession
         return RectangleD.FromLTRB(minX, minY, maxX, maxY);
     }
 
+    /// <summary>Gets a value indicating whether the geometry goes through a <see cref="ProjectiveSink"/>: under a projective transformation, or any transformation of an image of the plane.</summary>
+    private bool UsesProjectiveGeometry => _isProjective || (_clipsGeometry && _hasTransform);
+
+    /// <summary>Gets the transformation of the geometry and the part of the canvas that is seen, when <see cref="UsesProjectiveGeometry"/>.</summary>
+    private ProjectiveView GeometryView => _isProjective ? _projectionView : new ProjectiveView(_transform, -1, -1, Width + 1, Height + 1, reach: 0);
+
     /// <summary>Gets the sink of a fill whose shape is given in the coordinates of the drawing.</summary>
     private PathSink BeginFill()
     {
         var sink = BeginDeviceFill();
-        if (_isProjective)
+        if (UsesProjectiveGeometry)
         {
             var projected = _projectiveSink ??= new ProjectiveSink();
-            projected.Configure(sink, _projectionView, isPolyline: false);
+            projected.Configure(sink, GeometryView, isPolyline: false);
             return projected;
         }
 
@@ -239,7 +250,7 @@ internal sealed partial class DrawingSession
     private void SetDrawingScale(PathSink sink, double reach)
     {
         sink.Scale = _transformScale;
-        sink.Projection = _isProjective ? _projectionView.Inflate(0, reach) : null;
+        sink.Projection = UsesProjectiveGeometry ? GeometryView.Inflate(0, reach) : null;
     }
 
     /// <summary>A transformation of the stack, as it was before the one that follows it started.</summary>

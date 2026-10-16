@@ -89,6 +89,7 @@ internal sealed partial class DrawingSession
             session._imageTransfer = _imageTransfer;
             session._imageCurves = _imageCurves;
             session._paintPipeline = _paintPipeline;
+            session._clipsGeometry = true;
             session.CanvasWidth = CanvasWidth;
             session.CanvasHeight = CanvasHeight;
             session.RestoreCompositingSpace(_compositingSpace);

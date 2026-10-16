@@ -1,5 +1,8 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -14,10 +17,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <c>Math.Cos</c>.
 /// </summary>
 /// <remarks>
-/// With hardware vector support, both passes compute <see cref="Vector{T}.Count"/> outputs at once: each lane performs the
+/// With hardware vector support, both passes compute <see cref="Vector{T}.Count"/> outputs at once (two with
+/// <see cref="Vector128{T}"/>, which keeps the four sums of a row or a column in flight together): each lane performs the
 /// same 8-term sum in the same order as the scalar reference (<see cref="TransformAndQuantizeScalar"/>), without fused
 /// multiply-adds, and the quantization divides and rounds exactly like <see cref="Math.Round(double, MidpointRounding)"/>
-/// (the fraction <c>x - trunc(x)</c> is exact), so the coefficients are identical.
+/// (the fraction <c>x - trunc(x)</c> is exact, or the rounding instruction of Arm64 that rounds ties away from zero), so the
+/// coefficients are identical.
 /// </remarks>
 internal static class JpegForwardDct
 {
@@ -53,7 +58,11 @@ internal static class JpegForwardDct
     /// <param name="coefficients">The 64 quantized coefficients, in zig-zag order.</param>
     public static void TransformAndQuantize(ReadOnlySpan<float> samples, ReadOnlySpan<ushort> quantization, Span<double> scratch, Span<int> coefficients)
     {
-        if (Vector.IsHardwareAccelerated && Vector<double>.Count is 2 or 4 or 8)
+        if (Vector128.IsHardwareAccelerated && Vector<double>.Count == 2)
+        {
+            TransformAndQuantizeVector128(samples, quantization, scratch, coefficients);
+        }
+        else if (Vector.IsHardwareAccelerated && Vector<double>.Count is 2 or 4 or 8)
         {
             TransformAndQuantizeVector(samples, quantization, scratch, coefficients);
         }
@@ -112,7 +121,115 @@ internal static class JpegForwardDct
         }
     }
 
-    private static void TransformAndQuantizeVector(ReadOnlySpan<float> samples, ReadOnlySpan<ushort> quantization, Span<double> scratch, Span<int> coefficients)
+    /// <summary>
+    /// The transform with <see cref="Vector128{T}"/>: the four sums of a row (then of a column) are accumulated together, so
+    /// that their additions overlap, and the quantized coefficients are written at their zig-zag positions directly.
+    /// </summary>
+    internal static void TransformAndQuantizeVector128(ReadOnlySpan<float> samples, ReadOnlySpan<ushort> quantization, Span<double> scratch, Span<int> coefficients)
+    {
+        samples = samples[..64];
+        quantization = quantization[..64];
+        coefficients = coefficients[..64];
+        ref var line = ref unsafe(MemoryMarshal.GetReference(samples));
+        ref var rows = ref unsafe(MemoryMarshal.GetReference(scratch[..64]));
+        ref var transposed = ref unsafe(MemoryMarshal.GetArrayDataReference(TransposedBasis));
+        ref var basis = ref unsafe(MemoryMarshal.GetArrayDataReference(Basis));
+
+        // Rows: rows[y * 8 + u] = sum_x s(x, y) B[u][x], for u = 0-1, 2-3, 4-5 and 6-7
+        for (var y = 0; y < 8; y++)
+        {
+            var sum0 = Vector128<double>.Zero;
+            var sum1 = Vector128<double>.Zero;
+            var sum2 = Vector128<double>.Zero;
+            var sum3 = Vector128<double>.Zero;
+            for (var x = 0; x < 8; x++)
+            {
+                var sample = Vector128.Create((double)unsafe(Unsafe.Add(ref line, (y * 8) + x)));
+                ref var terms = ref unsafe(Unsafe.Add(ref transposed, x * 8));
+                sum0 += sample * Load(ref terms, 0);
+                sum1 += sample * Load(ref terms, 2);
+                sum2 += sample * Load(ref terms, 4);
+                sum3 += sample * Load(ref terms, 6);
+            }
+
+            unsafe { sum0.StoreUnsafe(ref rows, (nuint)(y * 8)); }
+            unsafe { sum1.StoreUnsafe(ref rows, (nuint)((y * 8) + 2)); }
+            unsafe { sum2.StoreUnsafe(ref rows, (nuint)((y * 8) + 4)); }
+            unsafe { sum3.StoreUnsafe(ref rows, (nuint)((y * 8) + 6)); }
+        }
+
+        // Columns: F(u, v) = sum_y rows[y][u] B[v][y], then quantization (natural index v * 8 + u)
+        for (var v = 0; v < 8; v++)
+        {
+            var sum0 = Vector128<double>.Zero;
+            var sum1 = Vector128<double>.Zero;
+            var sum2 = Vector128<double>.Zero;
+            var sum3 = Vector128<double>.Zero;
+            for (var y = 0; y < 8; y++)
+            {
+                var term = Vector128.Create(unsafe(Unsafe.Add(ref basis, (v * 8) + y)));
+                ref var row = ref unsafe(Unsafe.Add(ref rows, y * 8));
+                sum0 += Load(ref row, 0) * term;
+                sum1 += Load(ref row, 2) * term;
+                sum2 += Load(ref row, 4) * term;
+                sum3 += Load(ref row, 6) * term;
+            }
+
+            Quantize(sum0, quantization, (v * 8) + 0, coefficients);
+            Quantize(sum1, quantization, (v * 8) + 2, coefficients);
+            Quantize(sum2, quantization, (v * 8) + 4, coefficients);
+            Quantize(sum3, quantization, (v * 8) + 6, coefficients);
+        }
+
+        static Vector128<double> Load(ref double source, int index) => unsafe(Vector128.LoadUnsafe(ref source, (nuint)index));
+    }
+
+    /// <summary>Quantizes the coefficients of the natural indexes <paramref name="index"/> and <paramref name="index"/> + 1, and writes them at their zig-zag positions.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Quantize(Vector128<double> sum, ReadOnlySpan<ushort> quantization, int index, Span<int> coefficients)
+    {
+        var quotient = sum / Vector128.Create((double)quantization[index], quantization[index + 1]);
+        Vector128<double> rounded;
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            // FRINTA: to nearest, ties away from zero
+            rounded = AdvSimd.Arm64.RoundAwayFromZero(quotient);
+        }
+        else
+        {
+            // trunc(q) plus or minus 1 when the exact fraction reaches one half
+            var half = Vector128.Create(0.5);
+            var truncated = Vector128.Truncate(quotient);
+            var fraction = quotient - truncated;
+            rounded = truncated
+                + Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(fraction, half), Vector128<double>.One, Vector128<double>.Zero)
+                - Vector128.ConditionalSelect(Vector128.LessThanOrEqual(fraction, -half), Vector128<double>.One, Vector128<double>.Zero);
+        }
+
+        // The clamping of the scalar reference, on the integral values: the DC coefficient (index 0) has its own range
+        var minimum = index == 0 ? Vector128.Create((double)MinDc, -MaxAcMagnitude) : Vector128.Create((double)-MaxAcMagnitude);
+        var maximum = index == 0 ? Vector128.Create((double)MaxDc, MaxAcMagnitude) : Vector128.Create((double)MaxAcMagnitude);
+        var integers = Vector128.ConvertToInt64(Vector128.Min(Vector128.Max(rounded, minimum), maximum));
+        var positions = ZigZagPositions;
+        coefficients[positions[index]] = (int)integers.ToScalar();
+        coefficients[positions[index + 1]] = (int)integers.GetElement(1);
+    }
+
+    /// <summary>Gets the zig-zag position of each natural index (the inverse of <see cref="JpegIdct.ZigZag"/>).</summary>
+    private static ReadOnlySpan<byte> ZigZagPositions =>
+    [
+        0, 1, 5, 6, 14, 15, 27, 28,
+        2, 4, 7, 13, 16, 26, 29, 42,
+        3, 8, 12, 17, 25, 30, 41, 43,
+        9, 11, 18, 24, 31, 40, 44, 53,
+        10, 19, 23, 32, 39, 45, 52, 54,
+        20, 22, 33, 38, 46, 51, 55, 60,
+        21, 34, 37, 47, 50, 56, 59, 61,
+        35, 36, 48, 49, 57, 58, 62, 63,
+    ];
+
+    /// <summary>The transform with <see cref="Vector{T}"/>, <see cref="Vector{T}.Count"/> outputs at once.</summary>
+    internal static void TransformAndQuantizeVector(ReadOnlySpan<float> samples, ReadOnlySpan<ushort> quantization, Span<double> scratch, Span<int> coefficients)
     {
         samples = samples[..64];
         quantization = quantization[..64];

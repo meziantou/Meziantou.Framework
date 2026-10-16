@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -61,6 +63,9 @@ internal sealed class Vp8Decoder : IDisposable
 
     private static ReadOnlySpan<sbyte> SegmentTree => [2, 4, -0, -1, -2, -3];
 
+    // The offset of the probabilities of each coefficient position's band (Vp8Tables.Bands x 3 contexts x 11 nodes)
+    private static ReadOnlySpan<byte> BandOffsets => [0, 33, 66, 99, 198, 132, 165, 198, 198, 198, 198, 198, 198, 198, 198, 231, 0];
+
     private readonly AllocationScope _scope;
     private readonly CancellationToken _cancellationToken;
     private readonly byte[] _data;
@@ -74,7 +79,7 @@ internal sealed class Vp8Decoder : IDisposable
     private readonly int[] _referenceDeltas = new int[4];
     private readonly int[] _modeDeltas = new int[4];
     private readonly List<PooledBuffer> _buffers = [];
-    private Vp8BoolDecoder _header = null!;
+    private Vp8BoolDecoder _header;
     private Vp8BoolDecoder[] _partitions = [];
     private bool[] _truncatedPartitions = [];
 
@@ -101,6 +106,14 @@ internal sealed class Vp8Decoder : IDisposable
 
     // Per-macroblock loop-filter information: level (bits 0-5) and the inner-edge flag (bit 7)
     private byte[] _filterInfo = [];
+
+    // Blocks of the current macroblock (bit i: block i, bit 24: Y2) that may have a non-zero coefficient (DC included), that
+    // may have a non-zero AC coefficient, and whose coefficients were written by the token decoder; whether the inverse WHT
+    // wrote the DC of the luma blocks
+    private uint _blocksWithCoefficients;
+    private uint _blocksWithAc;
+    private uint _blocksWritten;
+    private bool _lumaDcWritten;
 
     private Vp8Planes? _planes;
 
@@ -217,12 +230,12 @@ internal sealed class Vp8Decoder : IDisposable
         {
             _cancellationToken.ThrowIfCancellationRequested();
             var partition = mbY & (_partitions.Length - 1);
-            var tokens = _partitions[partition];
+            ref var tokens = ref _partitions[partition];
             Array.Clear(_leftModes);
             Array.Clear(_leftNonZero);
             for (var mbX = 0; mbX < _mbWidth; mbX++)
             {
-                DecodeMacroblock(mbX, mbY, tokens);
+                DecodeMacroblock(mbX, mbY, ref tokens);
             }
 
             // A partition received in part has no byte past what was received: a row that read one is not decoded
@@ -253,7 +266,7 @@ internal sealed class Vp8Decoder : IDisposable
 
     private void ParseFrameHeader()
     {
-        var d = _header;
+        ref var d = ref _header;
         _ = d.ReadBit(); // color space: 0 is BT.601 (the only defined value)
         _ = d.ReadBit(); // clamping type: reconstruction always clamps
         _segmentationEnabled = d.ReadBit() != 0;
@@ -325,7 +338,7 @@ internal sealed class Vp8Decoder : IDisposable
 
     private void ParseQuantizers()
     {
-        var d = _header;
+        ref var d = ref _header;
         var yAc = d.ReadLiteral(7);
         var yDcDelta = d.ReadOptionalSigned(4);
         var y2DcDelta = d.ReadOptionalSigned(4);
@@ -401,9 +414,9 @@ internal sealed class Vp8Decoder : IDisposable
         }
     }
 
-    private void DecodeMacroblock(int mbX, int mbY, Vp8BoolDecoder tokens)
+    private void DecodeMacroblock(int mbX, int mbY, ref Vp8BoolDecoder tokens)
     {
-        var d = _header;
+        ref var d = ref _header;
         var segment = 0;
         if (_updateSegmentMap)
         {
@@ -448,16 +461,19 @@ internal sealed class Vp8Decoder : IDisposable
 
         var uvMode = d.ReadTree(UVModeTree, Vp8Tables.KeyFrameUVModeProbabilities);
 
-        // Residuals
+        // Residuals: the coefficients are all zero here (the blocks written by the previous macroblock were cleared)
         var coefficients = _coefficients.AsSpan();
-        coefficients.Clear();
+        _blocksWithCoefficients = 0;
+        _blocksWithAc = 0;
+        _blocksWritten = 0;
+        _lumaDcWritten = false;
         var hasY2 = yMode != Vp8Tables.BPred;
         var nonZero = false;
         var aboveNonZero = _aboveNonZero.AsSpan(mbX * 9, 9);
         var leftNonZero = _leftNonZero.AsSpan();
         if (!skip)
         {
-            nonZero = DecodeResiduals(tokens, segment, hasY2, aboveNonZero, leftNonZero);
+            nonZero = DecodeResiduals(ref tokens, segment, hasY2, aboveNonZero, leftNonZero);
         }
         else
         {
@@ -487,11 +503,25 @@ internal sealed class Vp8Decoder : IDisposable
         var inner = !hasY2 || nonZero;
         _filterInfo[(mbY * _mbWidth) + mbX] = (byte)(level | (inner ? 0x80 : 0));
 
-        Vp8Reconstruction.ReconstructMacroblock(_planes!, mbX, mbY, _mbWidth, yMode, subModes, uvMode, coefficients);
+        Vp8Reconstruction.ReconstructMacroblock(_planes!, mbX, mbY, _mbWidth, yMode, subModes, uvMode, coefficients, _blocksWithCoefficients, _blocksWithAc);
+
+        // Clear only what was written, for the next macroblock
+        for (var written = _blocksWritten; written != 0; written &= written - 1)
+        {
+            coefficients.Slice(BitOperations.TrailingZeroCount(written) * 16, 16).Clear();
+        }
+
+        if (_lumaDcWritten)
+        {
+            for (var i = 0; i < 16; i++)
+            {
+                coefficients[i * 16] = 0;
+            }
+        }
     }
 
     /// <returns><see langword="true"/> when at least one block has a decoded non-zero coefficient.</returns>
-    private bool DecodeResiduals(Vp8BoolDecoder tokens, int segment, bool hasY2, Span<byte> above, Span<byte> left)
+    private bool DecodeResiduals(ref Vp8BoolDecoder tokens, int segment, bool hasY2, Span<byte> above, Span<byte> left)
     {
         var q = _quantizers[segment];
         var coefficients = _coefficients.AsSpan();
@@ -502,11 +532,31 @@ internal sealed class Vp8Decoder : IDisposable
         {
             // The Y2 block holds the DC of the 16 luma blocks: inverse WHT into coefficient 0 of each block
             var y2 = coefficients.Slice(24 * 16, 16);
-            var eob = DecodeBlock(tokens, 1, above[8] + left[8], 0, y2, q.Y2Dc, q.Y2Ac);
+            var eob = DecodeBlock(ref tokens, 1, above[8] + left[8], 0, y2, q.Y2Dc, q.Y2Ac);
             var hasCoefficients = eob > 0;
             above[8] = left[8] = hasCoefficients ? (byte)1 : (byte)0;
             nonZero |= hasCoefficients;
-            Vp8Transforms.InverseWalshHadamard(y2, coefficients);
+            if (hasCoefficients)
+            {
+                // Without Y2 coefficient the luma DCs stay zero; with a Y2 DC only, the transform gives (dc + 3) >> 3 everywhere
+                if (eob == 1)
+                {
+                    var dc = (short)((y2[0] + 3) >> 3);
+                    for (var i = 0; i < 16; i++)
+                    {
+                        coefficients[i * 16] = dc;
+                    }
+                }
+                else
+                {
+                    Vp8Transforms.InverseWalshHadamard(y2, coefficients);
+                }
+
+                _blocksWritten |= 1u << 24;
+                _blocksWithCoefficients |= 0xFFFF;
+                _lumaDcWritten = true;
+            }
+
             firstCoefficient = 1;
             yType = 0;
         }
@@ -520,10 +570,11 @@ internal sealed class Vp8Decoder : IDisposable
             for (var x = 0; x < 4; x++)
             {
                 var block = coefficients.Slice(((y * 4) + x) * 16, 16);
-                var eob = DecodeBlock(tokens, yType, above[x] + left[y], firstCoefficient, block, q.YDc, q.YAc);
+                var eob = DecodeBlock(ref tokens, yType, above[x] + left[y], firstCoefficient, block, q.YDc, q.YAc);
                 var hasCoefficients = eob > firstCoefficient;
                 above[x] = left[y] = hasCoefficients ? (byte)1 : (byte)0;
                 nonZero |= hasCoefficients;
+                TrackBlock((y * 4) + x, eob, hasCoefficients);
             }
         }
 
@@ -537,10 +588,11 @@ internal sealed class Vp8Decoder : IDisposable
                     var index = 16 + (plane * 4) + (y * 2) + x;
                     var context = 4 + (plane * 2);
                     var block = coefficients.Slice(index * 16, 16);
-                    var eob = DecodeBlock(tokens, 2, above[context + x] + left[context + y], 0, block, q.UVDc, q.UVAc);
+                    var eob = DecodeBlock(ref tokens, 2, above[context + x] + left[context + y], 0, block, q.UVDc, q.UVAc);
                     var hasCoefficients = eob > 0;
                     above[context + x] = left[context + y] = hasCoefficients ? (byte)1 : (byte)0;
                     nonZero |= hasCoefficients;
+                    TrackBlock(index, eob, hasCoefficients);
                 }
             }
         }
@@ -548,78 +600,102 @@ internal sealed class Vp8Decoder : IDisposable
         return nonZero;
     }
 
+    /// <summary>Records which coefficients of a block the token decoder may have made non-zero: only positions before <paramref name="eob"/>.</summary>
+    private void TrackBlock(int index, int eob, bool hasCoefficients)
+    {
+        if (hasCoefficients)
+        {
+            var bit = 1u << index;
+            _blocksWritten |= bit;
+            _blocksWithCoefficients |= bit;
+            if (eob > 1)
+            {
+                _blocksWithAc |= bit;
+            }
+        }
+    }
+
     /// <summary>Decodes the tokens of one block (RFC 6386 section 13) into dequantized coefficients in raster order.</summary>
     /// <returns>The position following the last decoded token (the end-of-block position, or 16).</returns>
-    private int DecodeBlock(Vp8BoolDecoder d, int type, int context, int first, Span<short> block, short dcFactor, short acFactor)
+    private int DecodeBlock(ref Vp8BoolDecoder decoder, int type, int context, int first, Span<short> block, short dcFactor, short acFactor)
     {
-        var probabilities = _tokenProbabilities.AsSpan(type * 8 * 3 * Vp8Tables.TokenNodes, 8 * 3 * Vp8Tables.TokenNodes);
-        var bands = Vp8Tables.Bands;
-        var zigzag = Vp8Tables.Zigzag;
+        // The arithmetic decoder state is held in locals (registers) and stored back on exit. The probabilities are addressed
+        // by reference: type < 4, band < 8 and context < 3 keep every offset inside the 4 x 8 x 3 x 11 table, and the
+        // positions inside the 16-entry block and tables stay below 16 (17 for the band offsets)
+        decoder.Load(out var value, out var range, out var bits);
+        ref var probabilities = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_tokenProbabilities), type * 8 * 3 * Vp8Tables.TokenNodes));
+        ref var bandOffsets = ref unsafe(MemoryMarshal.GetReference(BandOffsets));
+        ref var zigzag = ref unsafe(MemoryMarshal.GetReference(Vp8Tables.Zigzag));
+        ref var coefficients = ref unsafe(MemoryMarshal.GetReference(block));
         var i = first;
-        var p = probabilities.Slice(((bands[i] * 3) + context) * Vp8Tables.TokenNodes, Vp8Tables.TokenNodes);
-        while (i < 16)
+        ref var p = ref unsafe(Unsafe.Add(ref probabilities, Unsafe.Add(ref bandOffsets, i) + (context * Vp8Tables.TokenNodes)));
+        while (Vp8BoolDecoder.ReadBool(ref decoder, ref value, ref range, ref bits, p))
         {
-            if (!d.ReadBool(p[0]))
-                return i; // end of block
-
-            while (!d.ReadBool(p[1]))
+            while (!Vp8BoolDecoder.ReadBool(ref decoder, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 1))))
             {
                 // DCT_0: the next token cannot be an end of block
                 if (++i == 16)
-                    return 16;
+                    goto Done;
 
-                p = probabilities.Slice(bands[i] * 3 * Vp8Tables.TokenNodes, Vp8Tables.TokenNodes);
+                p = ref unsafe(Unsafe.Add(ref probabilities, Unsafe.Add(ref bandOffsets, i)));
             }
 
-            int value;
+            int coefficient;
             int nextContext;
-            if (!d.ReadBool(p[2]))
+            if (!Vp8BoolDecoder.ReadBool(ref decoder, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 2))))
             {
-                value = 1;
+                coefficient = 1;
                 nextContext = 1;
             }
             else
             {
-                value = ReadLargeValue(d, p);
+                coefficient = ReadLargeValue(ref decoder, ref value, ref range, ref bits, ref p);
                 nextContext = 2;
             }
 
-            if (d.ReadBit() != 0)
+            if (Vp8BoolDecoder.ReadBool(ref decoder, ref value, ref range, ref bits, 128))
             {
-                value = -value;
+                coefficient = -coefficient;
             }
 
-            block[zigzag[i]] = (short)(value * (i > 0 ? acFactor : dcFactor));
-            if (++i == 16)
-                return 16;
+            unsafe
+            {
+                Unsafe.Add(ref coefficients, Unsafe.Add(ref zigzag, i)) = (short)(coefficient * (i > 0 ? acFactor : dcFactor));
+            }
 
-            p = probabilities.Slice(((bands[i] * 3) + nextContext) * Vp8Tables.TokenNodes, Vp8Tables.TokenNodes);
+            if (++i == 16)
+                break;
+
+            p = ref unsafe(Unsafe.Add(ref probabilities, Unsafe.Add(ref bandOffsets, i) + (nextContext * Vp8Tables.TokenNodes)));
         }
 
-        return 16;
+    Done:
+        decoder.Store(value, range, bits);
+        return i;
     }
 
-    private static int ReadLargeValue(Vp8BoolDecoder d, ReadOnlySpan<byte> p)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int ReadLargeValue(ref Vp8BoolDecoder d, ref ulong value, ref uint range, ref int bits, ref byte p)
     {
-        if (!d.ReadBool(p[3]))
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 3))))
         {
-            if (!d.ReadBool(p[4]))
+            if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 4))))
                 return 2;
 
-            return 3 + (d.ReadBool(p[5]) ? 1 : 0);
+            return 3 + (Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 5))) ? 1 : 0);
         }
 
-        if (!d.ReadBool(p[6]))
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 6))))
         {
-            if (!d.ReadBool(p[7]))
-                return 5 + (d.ReadBool(159) ? 1 : 0); // DCT_CAT1: 5-6
+            if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 7))))
+                return 5 + (Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, 159) ? 1 : 0); // DCT_CAT1: 5-6
 
-            var high = d.ReadBool(165) ? 2 : 0;
-            return 7 + high + (d.ReadBool(145) ? 1 : 0); // DCT_CAT2: 7-10
+            var high = Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, 165) ? 2 : 0;
+            return 7 + high + (Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, 145) ? 1 : 0); // DCT_CAT2: 7-10
         }
 
-        var b1 = d.ReadBool(p[8]) ? 1 : 0;
-        var b0 = d.ReadBool(p[9 + b1]) ? 1 : 0;
+        var b1 = Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 8))) ? 1 : 0;
+        var b0 = Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 9 + b1))) ? 1 : 0;
         var category = (2 * b1) + b0; // DCT_CAT3 to DCT_CAT6
         var extra = category switch
         {
@@ -628,13 +704,13 @@ internal sealed class Vp8Decoder : IDisposable
             2 => Vp8Tables.Cat5Probabilities,
             _ => Vp8Tables.Cat6Probabilities,
         };
-        var value = 0;
+        var extraBits = 0;
         foreach (var probability in extra)
         {
-            value = (value << 1) | (d.ReadBool(probability) ? 1 : 0);
+            extraBits = (extraBits << 1) | (Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, probability) ? 1 : 0);
         }
 
-        return value + 3 + (8 << category);
+        return extraBits + 3 + (8 << category);
     }
 
     private static InvalidImageContentException Invalid(string message) => new(message, ImageFormat.WebP);

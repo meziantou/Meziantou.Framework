@@ -587,6 +587,241 @@ public sealed class JpegXlDecoderTests
         }
     }
 
+    public static TheoryData<int> ModularTreeSeeds
+    {
+        get
+        {
+            var data = new TheoryData<int>();
+            for (var seed = 0; seed < 60; seed++)
+            {
+                data.Add(seed);
+            }
+
+            return data;
+        }
+    }
+
+    /// <summary>
+    /// A Modular sub-bitstream whose tree is drawn at random (the first 14 seeds: one leaf with each predictor; the next 14:
+    /// decisions on one property, 2 to 15) is decoded like a transcription of the section H.3 of the standard does: every
+    /// sample computes the properties, walks the tree and predicts from its neighbors, at the edges of channels of 1 to 40
+    /// samples, with the previous channels of the same size as the source of the properties from 16 on.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(ModularTreeSeeds))]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ModularSamplesFollowTheirTree(int seed)
+    {
+        const int StreamIndex = 5;
+        var random = new Random(seed);
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(ModularSamplesFollowTheirTree));
+        var sizes = new (int Width, int Height, int Shift)[random.Next(1, 5)];
+        var width = seed % 3 == 0 ? random.Next(1, 4) : random.Next(1, 41);
+        var height = seed % 5 == 0 ? random.Next(1, 4) : random.Next(1, 41);
+        for (var i = 0; i < sizes.Length; i++)
+        {
+            sizes[i] = random.Next(4) == 0 ? (random.Next(1, 9), random.Next(1, 9), random.Next(2)) : (width, height, 0);
+        }
+
+        // The tree, in breadth-first order: (property, value, left, right) for a decision, (-1, offset, context, predictor, multiplier) for a leaf
+        var nodes = new List<JpegXlMaTreeNode>();
+        if (seed < JpegXlMaTree.PredictorCount)
+        {
+            nodes.Add(new JpegXlMaTreeNode { Property = -1, ValueOrOffset = random.Next(-3, 4), RightOrPredictor = seed, Multiplier = 1 });
+        }
+        else
+        {
+            // Then trees whose decisions all test the same property, of the sample and its neighbors, then any
+            BuildTree(random, nodes, sizes.Length, seed < JpegXlMaTree.PredictorCount + 14 ? seed - JpegXlMaTree.PredictorCount + 2 : -1);
+        }
+
+        var leafCount = 0;
+        for (var i = 0; i < nodes.Count; i++)
+        {
+            if (nodes[i].IsLeaf)
+            {
+                var node = nodes[i];
+                node.LeftOrContext = leafCount++;
+                nodes[i] = node;
+            }
+        }
+
+        // The samples: the reference decoder draws the residual of each sample and records the token it reads
+        var tokens = new List<(int Context, uint Token)>();
+        var expected = new int[sizes.Length][];
+        for (var c = 0; c < sizes.Length; c++)
+        {
+            expected[c] = DecodeReferenceChannel(c);
+        }
+
+        using var writer = new LsbBitWriter(scope);
+        JpegXlModularEncoder.WriteHeader(writer);
+        using (var tree = new JpegXlEntropyEncoder(JpegXlMaTree.TreeContextCount, new JpegXlHybridUintConfig(4, 0, 0), scope))
+        {
+            foreach (var node in nodes)
+            {
+                if (node.IsLeaf)
+                {
+                    var multiplierLog = System.Numerics.BitOperations.TrailingZeroCount(node.Multiplier);
+                    tree.Add(1, 0);
+                    tree.Add(2, (uint)node.RightOrPredictor);
+                    tree.Add(3, Pack(node.ValueOrOffset));
+                    tree.Add(4, (uint)multiplierLog);
+                    tree.Add(5, (uint)((node.Multiplier >> multiplierLog) - 1));
+                }
+                else
+                {
+                    tree.Add(1, (uint)node.Property + 1);
+                    tree.Add(0, Pack(node.ValueOrOffset));
+                }
+            }
+
+            tree.Write(writer);
+        }
+
+        using (var samples = new JpegXlEntropyEncoder(leafCount, new JpegXlHybridUintConfig(4, 1, 0), scope, seed % 2 == 0 ? JpegXlEntropyCoding.Ans : JpegXlEntropyCoding.PrefixCodes))
+        {
+            foreach (var (context, token) in tokens)
+            {
+                samples.Add(context, token);
+            }
+
+            samples.Write(writer);
+        }
+
+        writer.Finish();
+        var data = writer.WrittenSpan.ToArray();
+        using var image = new JpegXlModularImage(8);
+        foreach (var (channelWidth, channelHeight, shift) in sizes)
+        {
+            image.AddChannel(channelWidth, channelHeight, shift, 0);
+        }
+
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        JpegXlModularDecoder.Decode(reader, image, StreamIndex, globalTree: null, int.MaxValue, undoTransforms: false, scope, TestContext.Current.CancellationToken);
+        reader.EnsureNotOverrun();
+        for (var c = 0; c < sizes.Length; c++)
+        {
+            Assert.Equal(expected[c], image.Channels[c].Samples.ToArray());
+        }
+
+        static uint Pack(int value) => value >= 0 ? (uint)value * 2 : ((uint)-value * 2) - 1;
+
+        int[] DecodeReferenceChannel(int channelIndex)
+        {
+            var (w, h, shift) = sizes[channelIndex];
+            var samples = new int[w * h];
+            var references = new List<int>();
+            for (var i = channelIndex - 1; i >= 0; i--)
+            {
+                if (sizes[i] == sizes[channelIndex])
+                {
+                    references.Add(i);
+                }
+            }
+
+            var properties = new int[16 + (4 * 64)];
+            properties[0] = channelIndex;
+            properties[1] = StreamIndex;
+            using var weighted = new JpegXlWeightedPredictor(JpegXlWeightedPredictorHeader.Default, w, scope);
+            for (var y = 0; y < h; y++)
+            {
+                properties[2] = y;
+                properties[9] = 0;
+                for (var x = 0; x < w; x++)
+                {
+                    long Get(int column, int row) => samples[(row * w) + column];
+                    long left = x > 0 ? Get(x - 1, y) : y > 0 ? Get(x, y - 1) : 0;
+                    long top = y > 0 ? Get(x, y - 1) : left;
+                    long topLeft = x > 0 && y > 0 ? Get(x - 1, y - 1) : left;
+                    long topRight = x + 1 < w && y > 0 ? Get(x + 1, y - 1) : top;
+                    long leftLeft = x > 1 ? Get(x - 2, y) : left;
+                    long topTop = y > 1 ? Get(x, y - 2) : top;
+                    long topRightRight = x + 2 < w && y > 0 ? Get(x + 2, y - 1) : topRight;
+                    var weightedPrediction = weighted.Predict(x, y, top, left, topRight, topLeft, topTop, out var weightedProperty);
+                    properties[3] = x;
+                    properties[4] = (int)Math.Abs(top);
+                    properties[5] = (int)Math.Abs(left);
+                    properties[6] = (int)top;
+                    properties[7] = (int)left;
+                    properties[8] = (int)(left - properties[9]);
+                    properties[9] = (int)(left + top - topLeft);
+                    properties[10] = (int)(left - topLeft);
+                    properties[11] = (int)(topLeft - top);
+                    properties[12] = (int)(top - topRight);
+                    properties[13] = (int)(top - topTop);
+                    properties[14] = (int)(left - leftLeft);
+                    properties[15] = weightedProperty;
+                    for (var i = 0; i < references.Count; i++)
+                    {
+                        var other = expected[references[i]];
+                        long value = other[(y * w) + x];
+                        long otherLeft = x > 0 ? other[(y * w) + x - 1] : 0;
+                        long otherTop = y > 0 ? other[((y - 1) * w) + x] : otherLeft;
+                        long otherTopLeft = x > 0 && y > 0 ? other[((y - 1) * w) + x - 1] : otherLeft;
+                        long predicted = JpegXlModularTransform.ClampedGradient((int)otherLeft, (int)otherTop, (int)otherTopLeft);
+                        properties[16 + (i * 4)] = (int)Math.Abs(value);
+                        properties[17 + (i * 4)] = (int)value;
+                        properties[18 + (i * 4)] = (int)Math.Abs(value - predicted);
+                        properties[19 + (i * 4)] = (int)(value - predicted);
+                    }
+
+                    var index = 0;
+                    while (!nodes[index].IsLeaf)
+                    {
+                        index = properties[nodes[index].Property] > nodes[index].ValueOrOffset ? nodes[index].LeftOrContext : nodes[index].RightOrPredictor;
+                    }
+
+                    var leaf = nodes[index];
+                    var token = random.Next(8) == 0 ? (uint)random.Next(1 << 12) : (uint)random.Next(24);
+                    tokens.Add((leaf.LeftOrContext, token));
+                    var guess = leaf.ValueOrOffset + JpegXlModularTransform.Predict(leaf.RightOrPredictor, left, top, topTop, topLeft, topRight, leftLeft, topRightRight, weightedPrediction);
+                    var sample = (int)(((long)JpegXlBitReader.UnpackSigned(token) * leaf.Multiplier) + guess);
+                    samples[(y * w) + x] = sample;
+                    weighted.Update(sample, x, y);
+                }
+            }
+
+            return samples;
+        }
+
+        static void BuildTree(Random random, List<JpegXlMaTreeNode> nodes, int channelCount, int onlyProperty)
+        {
+            // Breadth first: each queued node keeps the range of values its ancestors leave to each property
+            var queue = new Queue<(int Index, int Depth, Dictionary<int, (int Low, int High)> Ranges)>();
+            nodes.Add(default);
+            queue.Enqueue((0, 0, []));
+            while (queue.TryDequeue(out var item))
+            {
+                var property = onlyProperty >= 0 ? onlyProperty : random.Next(4) switch
+                {
+                    0 => random.Next(16),
+                    1 => 16 + random.Next(4 * channelCount),
+                    _ => random.Next(2, 16),
+                };
+                var (low, high) = item.Ranges.GetValueOrDefault(property, (-20, 20));
+                if (item.Depth >= 6 || random.Next(4) == 0 || low >= high)
+                {
+                    var multiplierLog = random.Next(3) == 0 ? random.Next(3) : 0;
+                    var multiplier = random.Next(3) == 0 ? (random.Next(3) + 1) << multiplierLog : 1;
+                    nodes[item.Index] = new JpegXlMaTreeNode { Property = -1, ValueOrOffset = random.Next(-5, 6), RightOrPredictor = random.Next(JpegXlMaTree.PredictorCount), Multiplier = multiplier };
+                    continue;
+                }
+
+                // The left child takes the values above the split, the right one the others
+                var value = random.Next(low, high);
+                var left = nodes.Count;
+                nodes.Add(default);
+                nodes.Add(default);
+                nodes[item.Index] = new JpegXlMaTreeNode { Property = property, ValueOrOffset = value, LeftOrContext = left, RightOrPredictor = left + 1, Multiplier = 1 };
+                var leftRanges = new Dictionary<int, (int Low, int High)>(item.Ranges) { [property] = (value + 1, high) };
+                var rightRanges = new Dictionary<int, (int Low, int High)>(item.Ranges) { [property] = (low, value) };
+                queue.Enqueue((left, item.Depth + 1, leftRanges));
+                queue.Enqueue((left + 1, item.Depth + 1, rightRanges));
+            }
+        }
+    }
+
     public static TheoryData<string> StillFiles =>
     [
         nameof(JpegXlTestFiles.Rgb),

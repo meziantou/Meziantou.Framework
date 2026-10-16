@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -22,6 +23,7 @@ internal sealed class BmpDibLayout
     private readonly BmpChannelMask _blue;
     private readonly BmpChannelMask _alpha;
     private byte[]? _palette;
+    private uint[]? _paletteColors;
 
     private BmpDibLayout(BmpInfoHeader header, BmpChannelMask red, BmpChannelMask green, BmpChannelMask blue, BmpChannelMask alpha)
     {
@@ -103,15 +105,24 @@ internal sealed class BmpDibLayout
         var entries = Header.PaletteEntries;
         var entryLength = Header.PaletteEntryLength;
         var table = new byte[entries * 3];
+        var colors = new uint[256];
+        Span<byte> color = stackalloc byte[sizeof(uint)];
         for (var i = 0; i < entries; i++)
         {
             var source = palette.Slice(i * entryLength, entryLength);
             table[(i * 3) + 0] = source[2];
             table[(i * 3) + 1] = source[1];
             table[(i * 3) + 2] = source[0];
+            if (i < colors.Length)
+            {
+                // The colors as packed native-endian Rgba32 pixels for IndexedPixels (the fourth byte is not written to Rgb24 rows)
+                table.AsSpan(i * 3, 3).CopyTo(color);
+                colors[i] = unsafe(MemoryMarshal.Read<uint>(color));
+            }
         }
 
         _palette = table;
+        _paletteColors = colors;
     }
 
     /// <summary>Expands one stored row to <see cref="SourcePixelFormat"/>.</summary>
@@ -156,6 +167,21 @@ internal sealed class BmpDibLayout
             default:
             {
                 var hasAlpha = HasAlpha;
+                if (_red.Mask == 0x00FF_0000 && _green.Mask == 0x0000_FF00 && _blue.Mask == 0x0000_00FF && (!hasAlpha || _alpha.Mask == 0xFF00_0000))
+                {
+                    // Byte-aligned 8-bit channels (BGRA or BGRX bytes): their expansion to 8 bits is the identity
+                    if (hasAlpha)
+                    {
+                        PixelConverter.ConvertRow(PixelFormat.Bgra32, source[..(width * 4)], PixelFormat.Rgba32, destination[..(width * 4)]);
+                    }
+                    else
+                    {
+                        PackedPixels.Bgrx32ToRgb24(source[..(width * 4)], destination);
+                    }
+
+                    break;
+                }
+
                 var step = hasAlpha ? 4 : 3;
                 for (var x = 0; x < width; x++)
                 {
@@ -179,28 +205,10 @@ internal sealed class BmpDibLayout
     {
         var palette = _palette ?? throw new InvalidOperationException("The BMP palette was not read.");
         var entries = palette.Length / 3;
-        for (var x = 0; x < width; x++)
-        {
-            int index;
-            switch (bitsPerPixel)
-            {
-                case 1:
-                    index = (source[x >> 3] >> (7 - (x & 7))) & 1;
-                    break;
+        var invalid = IndexedPixels.FindIndexOutside(source, bitsPerPixel, width, entries);
+        if (invalid >= 0)
+            throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP palette index {IndexedPixels.ReadIndex(source, invalid, bitsPerPixel)} at column {invalid} is outside the {entries}-entry palette."));
 
-                case 4:
-                    index = (x & 1) == 0 ? source[x >> 1] >> 4 : source[x >> 1] & 0x0F;
-                    break;
-
-                default:
-                    index = source[x];
-                    break;
-            }
-
-            if (index >= entries)
-                throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP palette index {index} at column {x} is outside the {entries}-entry palette."));
-
-            palette.AsSpan(index * 3, 3).CopyTo(destination[(x * 3)..]);
-        }
+        IndexedPixels.Expand(source, bitsPerPixel, width, _paletteColors, destination, rgba: false);
     }
 }

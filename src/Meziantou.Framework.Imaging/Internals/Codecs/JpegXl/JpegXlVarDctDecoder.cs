@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -932,15 +933,8 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
                     var matrixX = matrix[..size];
                     var matrixY = matrix.Slice(size, size);
                     var matrixB = matrix.Slice(2 * size, size);
-                    var stepX = scale * scaleX;
-                    var stepB = scale * scaleB;
-                    for (var k = 0; k < size; k++)
-                    {
-                        var valueY = AdjustBias(quantizedY[k], biasY, biasNumerator) * (matrixY[k] * scale);
-                        dequantizedY[k] = valueY;
-                        dequantizedX[k] = (kx * valueY) + (AdjustBias(quantizedX[k], biasX, biasNumerator) * (matrixX[k] * stepX));
-                        dequantizedB[k] = (kb * valueY) + (AdjustBias(quantizedB[k], biasB, biasNumerator) * (matrixB[k] * stepB));
-                    }
+                    var steps = new DequantizationSteps(scale, scale * scaleX, scale * scaleB, kx, kb, biasX, biasY, biasB, biasNumerator);
+                    Dequantize(quantizedX, quantizedY, quantizedB, matrixX, matrixY, matrixB, steps, dequantizedX, dequantizedY, dequantizedB);
 
                     for (var c = 0; c < 3; c++)
                     {
@@ -970,10 +964,7 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
                         var source = coefficients.Slice((c * groupArea) + offset, size);
                         var channelMatrix = matrix.Slice(c * size, size);
                         var block = work[..size];
-                        for (var k = 0; k < size; k++)
-                        {
-                            block[k] = AdjustBias(source[k], bias, biasNumerator) * (channelMatrix[k] * channelStep);
-                        }
+                        Dequantize(source, channelMatrix, channelStep, bias, biasNumerator, block);
 
                         var channelBlocksWide = _blocksWide >> hs;
                         var channelX = blockX >> hs;
@@ -1165,6 +1156,119 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         _blockOffsets = null;
         _nonZeros = null;
         _work = null;
+    }
+
+    /// <summary>The factors of the dequantization of the three channels of a block: steps, chroma from luma correlations and biases.</summary>
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    internal readonly record struct DequantizationSteps(float StepY, float StepX, float StepB, float CorrelationX, float CorrelationB, float BiasX, float BiasY, float BiasB, float BiasNumerator);
+
+    /// <summary>
+    /// Dequantizes the three channels of a block of a frame whose channels are not subsampled: the Y coefficients, then the
+    /// X and B coefficients, each plus its prediction from Y (chroma from luma).
+    /// </summary>
+    internal static void Dequantize(
+        ReadOnlySpan<int> quantizedX,
+        ReadOnlySpan<int> quantizedY,
+        ReadOnlySpan<int> quantizedB,
+        ReadOnlySpan<float> matrixX,
+        ReadOnlySpan<float> matrixY,
+        ReadOnlySpan<float> matrixB,
+        in DequantizationSteps steps,
+        Span<float> dequantizedX,
+        Span<float> dequantizedY,
+        Span<float> dequantizedB)
+    {
+        var size = dequantizedY.Length;
+        var k = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            // The operations of the scalar loop, lane by lane; each case of the bias is a selection
+            var stepY = Vector128.Create(steps.StepY);
+            var stepX = Vector128.Create(steps.StepX);
+            var stepB = Vector128.Create(steps.StepB);
+            var correlationX = Vector128.Create(steps.CorrelationX);
+            var correlationB = Vector128.Create(steps.CorrelationB);
+            var numerator = Vector128.Create(steps.BiasNumerator);
+            var biasX = Vector128.Create(steps.BiasX);
+            var biasY = Vector128.Create(steps.BiasY);
+            var biasB = Vector128.Create(steps.BiasB);
+            var negativeBiasX = Vector128.Create(-steps.BiasX);
+            var negativeBiasY = Vector128.Create(-steps.BiasY);
+            var negativeBiasB = Vector128.Create(-steps.BiasB);
+            for (; k <= size - Vector128<float>.Count; k += Vector128<float>.Count)
+            {
+                var valueY = AdjustBias(Vector128.Create(quantizedY.Slice(k, 4)), biasY, negativeBiasY, numerator) * (Vector128.Create(matrixY.Slice(k, 4)) * stepY);
+                valueY.CopyTo(dequantizedY.Slice(k, 4));
+                var valueX = (correlationX * valueY) + (AdjustBias(Vector128.Create(quantizedX.Slice(k, 4)), biasX, negativeBiasX, numerator) * (Vector128.Create(matrixX.Slice(k, 4)) * stepX));
+                valueX.CopyTo(dequantizedX.Slice(k, 4));
+                var valueB = (correlationB * valueY) + (AdjustBias(Vector128.Create(quantizedB.Slice(k, 4)), biasB, negativeBiasB, numerator) * (Vector128.Create(matrixB.Slice(k, 4)) * stepB));
+                valueB.CopyTo(dequantizedB.Slice(k, 4));
+            }
+        }
+
+        DequantizeScalar(quantizedX[k..], quantizedY[k..], quantizedB[k..], matrixX[k..], matrixY[k..], matrixB[k..], steps, dequantizedX[k..], dequantizedY[k..], dequantizedB[k..]);
+    }
+
+    /// <summary>The scalar reference of <see cref="Dequantize(ReadOnlySpan{int}, ReadOnlySpan{int}, ReadOnlySpan{int}, ReadOnlySpan{float}, ReadOnlySpan{float}, ReadOnlySpan{float}, in DequantizationSteps, Span{float}, Span{float}, Span{float})"/>.</summary>
+    internal static void DequantizeScalar(
+        ReadOnlySpan<int> quantizedX,
+        ReadOnlySpan<int> quantizedY,
+        ReadOnlySpan<int> quantizedB,
+        ReadOnlySpan<float> matrixX,
+        ReadOnlySpan<float> matrixY,
+        ReadOnlySpan<float> matrixB,
+        in DequantizationSteps steps,
+        Span<float> dequantizedX,
+        Span<float> dequantizedY,
+        Span<float> dequantizedB)
+    {
+        for (var k = 0; k < dequantizedY.Length; k++)
+        {
+            var valueY = AdjustBias(quantizedY[k], steps.BiasY, steps.BiasNumerator) * (matrixY[k] * steps.StepY);
+            dequantizedY[k] = valueY;
+            dequantizedX[k] = (steps.CorrelationX * valueY) + (AdjustBias(quantizedX[k], steps.BiasX, steps.BiasNumerator) * (matrixX[k] * steps.StepX));
+            dequantizedB[k] = (steps.CorrelationB * valueY) + (AdjustBias(quantizedB[k], steps.BiasB, steps.BiasNumerator) * (matrixB[k] * steps.StepB));
+        }
+    }
+
+    /// <summary>Dequantizes the coefficients of one channel of a block.</summary>
+    internal static void Dequantize(ReadOnlySpan<int> quantized, ReadOnlySpan<float> matrix, float step, float bias, float biasNumerator, Span<float> dequantized)
+    {
+        var k = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            var stepVector = Vector128.Create(step);
+            var biasVector = Vector128.Create(bias);
+            var negativeBias = Vector128.Create(-bias);
+            var numerator = Vector128.Create(biasNumerator);
+            for (; k <= dequantized.Length - Vector128<float>.Count; k += Vector128<float>.Count)
+            {
+                var value = AdjustBias(Vector128.Create(quantized.Slice(k, 4)), biasVector, negativeBias, numerator) * (Vector128.Create(matrix.Slice(k, 4)) * stepVector);
+                value.CopyTo(dequantized.Slice(k, 4));
+            }
+        }
+
+        DequantizeScalar(quantized[k..], matrix[k..], step, bias, biasNumerator, dequantized[k..]);
+    }
+
+    /// <summary>The scalar reference of <see cref="Dequantize(ReadOnlySpan{int}, ReadOnlySpan{float}, float, float, float, Span{float})"/>.</summary>
+    internal static void DequantizeScalar(ReadOnlySpan<int> quantized, ReadOnlySpan<float> matrix, float step, float bias, float biasNumerator, Span<float> dequantized)
+    {
+        for (var k = 0; k < dequantized.Length; k++)
+        {
+            dequantized[k] = AdjustBias(quantized[k], bias, biasNumerator) * (matrix[k] * step);
+        }
+    }
+
+    /// <summary><see cref="AdjustBias(int, float, float)"/> on four coefficients: each case is a selection.</summary>
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    private static Vector128<float> AdjustBias(Vector128<int> quantized, Vector128<float> bias, Vector128<float> negativeBias, Vector128<float> biasNumerator)
+    {
+        var value = Vector128.ConvertToSingle(quantized);
+        var result = value - (biasNumerator / value);
+        result = Vector128.ConditionalSelect(Vector128.Equals(quantized, Vector128<int>.One).AsSingle(), bias, result);
+        result = Vector128.ConditionalSelect(Vector128.Equals(quantized, Vector128<int>.AllBitsSet).AsSingle(), negativeBias, result);
+        return Vector128.ConditionalSelect(Vector128.Equals(quantized, Vector128<int>.Zero).AsSingle(), Vector128<float>.Zero, result);
     }
 
     /// <summary>

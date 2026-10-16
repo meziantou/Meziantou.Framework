@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -21,10 +22,19 @@ internal struct JpegBitWriter
     /// <param name="position">The write position in <paramref name="destination"/>, advanced.</param>
     /// <param name="bits">The bits, right-aligned.</param>
     /// <param name="length">The number of bits, 0 to 32.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Write(Span<byte> destination, ref int position, uint bits, int length)
     {
         _buffer = (_buffer << length) | bits;
         _count += length;
+        if (_count >= 8)
+        {
+            WriteBytes(destination, ref position);
+        }
+    }
+
+    private void WriteBytes(Span<byte> destination, ref int position)
+    {
         while (_count >= 8)
         {
             _count -= 8;
@@ -36,6 +46,21 @@ internal struct JpegBitWriter
             }
         }
     }
+
+    /// <summary>Writes the code of a symbol, then <paramref name="length"/> additional bits, as one <see cref="Write"/>.</summary>
+    /// <exception cref="InvalidOperationException">The table has no code for the symbol.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WriteSymbolAndBits(Span<byte> destination, ref int position, JpegHuffmanEncoder table, int symbol, uint bits, int length)
+    {
+        var codeLength = table.GetLength(symbol);
+        if (codeLength == 0)
+            ThrowMissingCode(symbol);
+
+        // At most 16 + 16 bits
+        Write(destination, ref position, (table.GetCode(symbol) << length) | bits, codeLength + length);
+    }
+
+    private static void ThrowMissingCode(int symbol) => throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"The Huffman table has no code for the symbol 0x{symbol:X2}."));
 
     /// <summary>Writes the code of a symbol.</summary>
     /// <exception cref="InvalidOperationException">The table has no code for the symbol.</exception>

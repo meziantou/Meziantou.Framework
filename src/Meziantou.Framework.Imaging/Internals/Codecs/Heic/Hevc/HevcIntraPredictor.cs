@@ -1,3 +1,6 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -86,6 +89,33 @@ internal static class HevcIntraPredictor
     /// <returns><see langword="true"/> when <c>biIntFlag</c> is 1.</returns>
     public static bool Filter(ReadOnlySpan<ushort> p, Span<ushort> filtered, int nTbS, bool strongIntraSmoothing, int bitDepth)
     {
+        var last = nTbS * 4;
+        if (!Vector128.IsHardwareAccelerated || bitDepth > 13 || (strongIntraSmoothing && nTbS is 32))
+            return FilterScalar(p, filtered, nTbS, strongIntraSmoothing, bitDepth);
+
+        // Equations 8-41 to 8-45, 8 samples at a time: 4 * ( 2^13 - 1 ) + 2 fits in 16 bits
+        p = p[..(last + 1)];
+        filtered[0] = p[0];
+        filtered[last] = p[last];
+        var two = Vector128.Create((ushort)2);
+        var i = 1;
+        for (; i + 9 <= last + 1; i += 8)
+        {
+            var center = Vector128.Create(p[i..]);
+            ((Vector128.Create(p[(i - 1)..]) + center + center + Vector128.Create(p[(i + 1)..]) + two) >>> 2).CopyTo(filtered[i..]);
+        }
+
+        for (; i < last; i++)
+        {
+            filtered[i] = (ushort)((p[i - 1] + (2 * p[i]) + p[i + 1] + 2) >> 2);
+        }
+
+        return false;
+    }
+
+    /// <summary>The filtering of <see cref="Filter"/>, one sample at a time: the reference of the vector path.</summary>
+    internal static bool FilterScalar(ReadOnlySpan<ushort> p, Span<ushort> filtered, int nTbS, bool strongIntraSmoothing, int bitDepth)
+    {
         var corner = nTbS * 2;
         var last = nTbS * 4;
         if (strongIntraSmoothing && nTbS is 32)
@@ -121,7 +151,45 @@ internal static class HevcIntraPredictor
     }
 
     /// <summary>Predicts a block with the mode <c>INTRA_PLANAR</c> (clause 8.4.4.2.4).</summary>
-    public static void PredictPlanar(ReadOnlySpan<ushort> p, Span<ushort> destination, int stride, int nTbS)
+    /// <param name="p">The neighbouring samples.</param>
+    /// <param name="destination">The samples of the plane, from the first sample of the block.</param>
+    /// <param name="stride">The number of samples of a row of the plane.</param>
+    /// <param name="nTbS">The size of the transform block.</param>
+    /// <param name="bitDepth">The bit depth of the samples.</param>
+    public static void PredictPlanar(ReadOnlySpan<ushort> p, Span<ushort> destination, int stride, int nTbS, int bitDepth)
+    {
+        if (!Vector128.IsHardwareAccelerated || nTbS < 8 || bitDepth > 10)
+        {
+            PredictPlanarScalar(p, destination, stride, nTbS);
+            return;
+        }
+
+        // Equation 8-46, 8 samples at a time: each pair of products is at most nTbS * ( 2^10 - 1 ), and their sum with the
+        // rounding at most 2 * 32 * 1023 + 32 = 65504, which fits in 16 bits
+        var corner = nTbS * 2;
+        var shift = int.Log2(nTbS) + 1;
+        var topRight = Vector128.Create(p[corner + 1 + nTbS]);
+        int bottomLeft = p[corner - 1 - nTbS];
+        var rounding = Vector128.Create((ushort)nTbS);
+        var top = p.Slice(corner + 1, nTbS);
+        var indices = Vector128.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8);
+        for (var y = 0; y < nTbS; y++)
+        {
+            var row = destination.Slice(y * stride, nTbS);
+            var left = Vector128.Create(p[corner - 1 - y]);
+            var vertical = Vector128.Create((ushort)(nTbS - 1 - y));
+            var bottom = Vector128.Create((ushort)((y + 1) * bottomLeft));
+            for (var x = 0; x < nTbS; x += 8)
+            {
+                var right = indices + Vector128.Create((ushort)x);
+                var sum = ((Vector128.Create((ushort)nTbS) - right) * left) + (right * topRight) + (vertical * Vector128.Create(top[x..])) + bottom + rounding;
+                (sum >>> shift).CopyTo(row[x..]);
+            }
+        }
+    }
+
+    /// <summary>The prediction of <see cref="PredictPlanar"/>, one sample at a time: the reference of the vector path.</summary>
+    internal static void PredictPlanarScalar(ReadOnlySpan<ushort> p, Span<ushort> destination, int stride, int nTbS)
     {
         var corner = nTbS * 2;
         var shift = int.Log2(nTbS) + 1;
@@ -188,7 +256,112 @@ internal static class HevcIntraPredictor
     /// <param name="predModeIntra">The prediction mode.</param>
     /// <param name="edgeFilter">Whether the first column of the vertical mode and the first row of the horizontal mode are filtered: <c>cIdx</c> is 0, <c>nTbS</c> is less than 32 and <c>disableIntraBoundaryFilter</c> is 0.</param>
     /// <param name="bitDepth">The bit depth of the samples.</param>
+    [SkipLocalsInit]
     public static void PredictAngular(ReadOnlySpan<ushort> p, Span<ushort> destination, int stride, int nTbS, int predModeIntra, bool edgeFilter, int bitDepth)
+    {
+        if (!Vector128.IsHardwareAccelerated || nTbS < 8 || bitDepth > 11)
+        {
+            PredictAngularScalar(p, destination, stride, nTbS, predModeIntra, edgeFilter, bitDepth);
+            return;
+        }
+
+        var corner = nTbS * 2;
+        int intraPredAngle = HevcIntraTables.IntraPredAngle[predModeIntra];
+        var vertical = predModeIntra >= 18;
+
+        // ref[ x ] for x in the range -nTbS to 2 * nTbS, as in PredictAngularScalar: the elements that the interpolation
+        // reads are written before, and the last element of the buffer is never read
+        Span<ushort> buffer = unsafe(stackalloc ushort[(3 * 32) + 2]);
+        var reference = buffer[..((3 * nTbS) + 2)];
+        var mainStep = vertical ? 1 : -1;
+        for (var x = 0; x <= nTbS; x++)
+        {
+            // Equations 8-53 and 8-61
+            reference[nTbS + x] = p[corner + (mainStep * x)];
+        }
+
+        if (intraPredAngle < 0)
+        {
+            var lastIndex = (nTbS * intraPredAngle) >> 5;
+            if (lastIndex < -1)
+            {
+                // Equations 8-54 and 8-62: the samples of the other side, projected on the main reference
+                int invAngle = HevcIntraTables.InvAngle[predModeIntra - 11];
+                for (var x = lastIndex; x <= -1; x++)
+                {
+                    reference[nTbS + x] = p[corner - (mainStep * (((x * invAngle) + 128) >> 8))];
+                }
+            }
+        }
+        else
+        {
+            for (var x = nTbS + 1; x <= 2 * nTbS; x++)
+            {
+                // Equations 8-55 and 8-63
+                reference[nTbS + x] = p[corner + (mainStep * x)];
+            }
+        }
+
+        // Equations 8-56 to 8-59 and 8-64 to 8-67: the rows of a vertical mode, or the columns of a horizontal mode, which
+        // are rows of the transposed block, 8 samples at a time. 32 * ( 2^11 - 1 ) + 16 fits in 16 bits
+        Span<ushort> transposed = unsafe(stackalloc ushort[vertical ? 0 : nTbS * nTbS]);
+        var round = Vector128.Create((ushort)16);
+        for (var y = 0; y < nTbS; y++)
+        {
+            var iIdx = ((y + 1) * intraPredAngle) >> 5;
+            var iFact = ((y + 1) * intraPredAngle) & 31;
+            var row = vertical ? destination.Slice(y * stride, nTbS) : transposed.Slice(y * nTbS, nTbS);
+            var source = reference.Slice(nTbS + iIdx + 1, nTbS + 1);
+            if (iFact is 0)
+            {
+                source[..nTbS].CopyTo(row);
+                continue;
+            }
+
+            var weight = Vector128.Create((ushort)iFact);
+            var otherWeight = Vector128.Create((ushort)(32 - iFact));
+            for (var x = 0; x < nTbS; x += 8)
+            {
+                (((otherWeight * Vector128.Create(source[x..])) + (weight * Vector128.Create(source[(x + 1)..])) + round) >>> 5).CopyTo(row[x..]);
+            }
+        }
+
+        var maxValue = (1 << bitDepth) - 1;
+        if (vertical)
+        {
+            if (predModeIntra is HevcConstants.IntraAngular26 && edgeFilter)
+            {
+                // Equation 8-60
+                for (var y = 0; y < nTbS; y++)
+                {
+                    destination[y * stride] = (ushort)Math.Clamp(p[corner + 1] + ((p[corner - 1 - y] - p[corner]) >> 1), 0, maxValue);
+                }
+            }
+
+            return;
+        }
+
+        for (var y = 0; y < nTbS; y++)
+        {
+            var row = destination.Slice(y * stride, nTbS);
+            for (var x = 0; x < nTbS; x++)
+            {
+                row[x] = transposed[(x * nTbS) + y];
+            }
+        }
+
+        if (predModeIntra is HevcConstants.IntraAngular10 && edgeFilter)
+        {
+            // Equation 8-68
+            for (var x = 0; x < nTbS; x++)
+            {
+                destination[x] = (ushort)Math.Clamp(p[corner - 1] + ((p[corner + 1 + x] - p[corner]) >> 1), 0, maxValue);
+            }
+        }
+    }
+
+    /// <summary>The prediction of <see cref="PredictAngular"/>, one sample at a time: the reference of the vector path.</summary>
+    internal static void PredictAngularScalar(ReadOnlySpan<ushort> p, Span<ushort> destination, int stride, int nTbS, int predModeIntra, bool edgeFilter, int bitDepth)
     {
         var corner = nTbS * 2;
         int intraPredAngle = HevcIntraTables.IntraPredAngle[predModeIntra];

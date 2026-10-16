@@ -64,6 +64,7 @@ internal sealed class TextLayoutEngine
     private readonly bool _hasCentralBaseline;
     private readonly Dictionary<(FontFace Face, int CodePoint), bool> _verticalForms = [];
     private GlyphBuffer? _probeBuffer;
+    private readonly ShapingCache _shapingCache = new();
     private GlyphScratch? _scratch;
     private readonly List<Font> _fonts = [];
     private readonly List<Line> _lines = [];
@@ -351,7 +352,7 @@ internal sealed class TextLayoutEngine
             var buffer = _probeBuffer ??= new GlyphBuffer(_limits);
             buffer.Clear();
             buffer.Add(rune.Value, 0);
-            TextShaper.Shape(buffer, face, UnicodeScripts.GetScript(rune.Value), [], isRightToLeft: false, [], isVertical: true, GetScratch(face));
+            TextShaper.Shape(buffer, face, UnicodeScripts.GetScript(rune.Value), [], isRightToLeft: false, [], isVertical: true, GetScratch(face), _shapingCache);
             hasVerticalForm = buffer.Length == 1 && buffer.Info[0].Glyph != glyph;
         }
 
@@ -484,6 +485,7 @@ internal sealed class TextLayoutEngine
     private void Shape(Paragraph paragraph, Item item, string? suffix = null)
     {
         item.IsPending = false;
+        item.NeedsShaping = false;
         item.GlyphStart = paragraph.Glyphs.Count;
         item.GlyphCount = 0;
         paragraph.Advances.AsSpan(item.Start - paragraph.Start, item.End - item.Start).Clear();
@@ -533,7 +535,7 @@ internal sealed class TextLayoutEngine
             features[i] = new ShapingFeature(style.Features[i].TagValue, style.Features[i].Value);
         }
 
-        TextShaper.Shape(_buffer, item.Font.Face, item.Script, style.LanguageTags, isRightToLeft, features, item.IsUpright, item.IsUpright ? GetScratch(item.Font.Face) : null);
+        TextShaper.Shape(_buffer, item.Font.Face, item.Script, style.LanguageTags, isRightToLeft, features, item.IsUpright, item.IsUpright ? GetScratch(item.Font.Face) : null, _shapingCache);
         var scale = GetSize(style) / item.Font.UnitsPerEm;
         var info = _buffer.Info;
         var positions = _buffer.Positions;
@@ -638,11 +640,9 @@ internal sealed class TextLayoutEngine
         var previous = from;
         var lastFit = -1;
         var lastFitIsHyphenated = false;
-        foreach (var candidate in paragraph.Breaks)
+        var breaks = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(paragraph.Breaks);
+        foreach (var candidate in breaks[FindFirstBreakAfter(breaks, from)..])
         {
-            if (candidate <= from)
-                continue;
-
             // A soft hyphen is a place to break only when words are hyphenated, and the line then ends with a hyphen.
             var isSoftHyphen = candidate < paragraph.End && _text[candidate - 1] == SoftHyphen;
             if (isSoftHyphen && !withHyphens)
@@ -890,13 +890,9 @@ internal sealed class TextLayoutEngine
 
         static int NextBreak(Paragraph paragraph, int position, int to)
         {
-            foreach (var candidate in paragraph.Breaks)
-            {
-                if (candidate > position)
-                    return Math.Min(candidate, to);
-            }
-
-            return to;
+            var breaks = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(paragraph.Breaks);
+            var index = FindFirstBreakAfter(breaks, position);
+            return index < breaks.Length ? Math.Min(breaks[index], to) : to;
         }
     }
 
@@ -916,9 +912,10 @@ internal sealed class TextLayoutEngine
     /// <summary>Builds the line of a range of a paragraph: its glyphs in display order, from the start of its text.</summary>
     private Line BuildLine(Paragraph paragraph, int from, int to, double indent, LineEnd end, bool isWrapped)
     {
-        // An item the line ends inside is cut in two, and each part is shaped again.
-        SplitAt(paragraph, to);
-        SplitAt(paragraph, from);
+        // An item the line ends inside is cut in two, and each part is shaped again: the part in the line once it has
+        // its final extent, below.
+        SplitAt(paragraph, to, from);
+        SplitAt(paragraph, from, int.MaxValue);
 
         // The white space that ends a wrapped line hangs: it is not part of the width, and it follows the direction of
         // the paragraph whatever the direction of the text before it (rule L1).
@@ -930,12 +927,14 @@ internal sealed class TextLayoutEngine
                 contentEnd--;
             }
 
-            SplitAt(paragraph, contentEnd);
+            SplitAt(paragraph, contentEnd, from);
         }
 
         // The text after the line is shaped from its start, for the next line to be found; a part of the line that
         // was shaped for an earlier line, or not yet, is shaped with the rest of its run: a line is shaped as a whole.
-        for (var i = 0; i < paragraph.Items.Count; i++)
+        // The items before the line are not looked at.
+        var first = FindFirstItemFrom(paragraph, from);
+        for (var i = first; i < paragraph.Items.Count; i++)
         {
             var item = paragraph.Items[i];
             if (item.Start == to && item.IsPending)
@@ -955,15 +954,16 @@ internal sealed class TextLayoutEngine
                 isMerged = true;
             }
 
-            if (isMerged || item.IsPending)
+            if (isMerged || item.IsPending || item.NeedsShaping)
             {
                 Shape(paragraph, item);
             }
         }
 
         var items = new List<Item>();
-        foreach (var item in paragraph.Items)
+        for (var i = first; i < paragraph.Items.Count && paragraph.Items[i].Start < to; i++)
         {
+            var item = paragraph.Items[i];
             if (item.Start >= from && item.End <= to && item.Start < item.End)
             {
                 items.Add(item);
@@ -1018,6 +1018,15 @@ internal sealed class TextLayoutEngine
         var pen = 0.0;
         var hanging = 0.0;
         var glyphs = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(paragraph.Glyphs);
+
+        // A tabulation and a placeholder are one glyph of the line each.
+        var glyphCount = 0;
+        foreach (var item in items)
+        {
+            glyphCount += item.IsTabulation || item.Placeholder >= 0 ? 1 : item.GlyphCount;
+        }
+
+        line.Glyphs.Capacity = glyphCount;
         for (var i = 0; i < items.Count; i++)
         {
             var item = items[order[i]];
@@ -1134,21 +1143,63 @@ internal sealed class TextLayoutEngine
     }
 
     /// <summary>Cuts the item that contains a position in two, and shapes each part again.</summary>
-    private void SplitAt(Paragraph paragraph, int position)
+    /// <param name="paragraph">The paragraph.</param>
+    /// <param name="position">The position.</param>
+    /// <param name="lineStart">
+    /// The start of the line being built, when the position is not after its end: a part before the position that is
+    /// in the line is shaped once the line has cut its items (<see cref="Item.NeedsShaping"/>), not each time it is cut.
+    /// </param>
+    private void SplitAt(Paragraph paragraph, int position, int lineStart)
     {
-        for (var i = 0; i < paragraph.Items.Count; i++)
+        for (var i = FindFirstItemEndingAfter(paragraph, position); i < paragraph.Items.Count && paragraph.Items[i].Start < position; i++)
         {
             var item = paragraph.Items[i];
             if (position <= item.Start || position >= item.End)
                 continue;
 
+            // The start of the second part is measured with the advances the item would have had if it had been
+            // shaped when it was cut last.
+            if (item.NeedsShaping && ReadsAdvancesWhenShapedFrom(paragraph, i, position))
+            {
+                Shape(paragraph, item);
+            }
+
             var second = new Item { Start = position, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsTabulation = item.IsTabulation, Placeholder = item.Placeholder, IsUpright = item.IsUpright };
             item.End = position;
             paragraph.Items.Insert(i + 1, second);
-            Shape(paragraph, item);
+            if (item.Start >= lineStart)
+            {
+                item.IsPending = false;
+                item.NeedsShaping = true;
+            }
+            else
+            {
+                Shape(paragraph, item);
+            }
+
             ShapeStart(paragraph, i + 1);
             return;
         }
+    }
+
+    /// <summary>
+    /// Determines whether shaping the start of the part of an item after a position (<see cref="ShapeStart"/>) reads
+    /// the advances of its characters: when the part, with the text left for later after it, is long enough to be
+    /// cut (<see cref="FindShapingEnd"/>).
+    /// </summary>
+    private bool ReadsAdvancesWhenShapedFrom(Paragraph paragraph, int index, int position)
+    {
+        var item = paragraph.Items[index];
+        if (!_wraps || item.IsTabulation)
+            return false;
+
+        var end = item.End;
+        for (var i = index + 1; i < paragraph.Items.Count && paragraph.Items[i] is { IsPending: true } next && next.Start == end && IsSameRun(item, next); i++)
+        {
+            end = next.End;
+        }
+
+        return end - position >= 2 * MinShapingLength;
     }
 
     /// <summary>
@@ -1218,13 +1269,81 @@ internal sealed class TextLayoutEngine
 
     private static Item? FindItem(Paragraph paragraph, int position)
     {
-        foreach (var item in paragraph.Items)
+        for (var i = FindFirstItemEndingAfter(paragraph, position); i < paragraph.Items.Count && paragraph.Items[i].Start <= position; i++)
         {
+            var item = paragraph.Items[i];
             if (position >= item.Start && position < item.End)
                 return item;
         }
 
         return null;
+    }
+
+    // The items of a paragraph follow each other in the text: their starts and their ends never decrease.
+
+    /// <summary>Finds the first item of a paragraph that ends after a position, or the number of items.</summary>
+    private static int FindFirstItemEndingAfter(Paragraph paragraph, int position)
+    {
+        var items = paragraph.Items;
+        var low = 0;
+        var high = items.Count;
+        while (low < high)
+        {
+            var middle = (low + high) >>> 1;
+            if (items[middle].End <= position)
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        return low;
+    }
+
+    /// <summary>Finds the first item of a paragraph that starts at or after a position, or the number of items.</summary>
+    private static int FindFirstItemFrom(Paragraph paragraph, int position)
+    {
+        var items = paragraph.Items;
+        var low = 0;
+        var high = items.Count;
+        while (low < high)
+        {
+            var middle = (low + high) >>> 1;
+            if (items[middle].Start < position)
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        return low;
+    }
+
+    /// <summary>Finds the first place a line can end at that is after a position, or the number of places.</summary>
+    private static int FindFirstBreakAfter(ReadOnlySpan<int> breaks, int position)
+    {
+        var low = 0;
+        var high = breaks.Length;
+        while (low < high)
+        {
+            var middle = (low + high) >>> 1;
+            if (breaks[middle] <= position)
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        return low;
     }
 
     /// <summary>Finds the span of a character.</summary>
@@ -1739,6 +1858,12 @@ internal sealed class TextLayoutEngine
         /// glyph, and its characters have the advances of the last time they were shaped.
         /// </summary>
         public bool IsPending;
+
+        /// <summary>
+        /// The item was cut since it was last shaped, and is in the line being built: its glyphs and the advances of
+        /// its characters are those of its extent before the cut until the line shapes it.
+        /// </summary>
+        public bool NeedsShaping;
         public int GlyphStart;
         public int GlyphCount;
     }

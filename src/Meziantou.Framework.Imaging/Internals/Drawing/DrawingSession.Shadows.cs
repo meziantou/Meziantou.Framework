@@ -48,15 +48,34 @@ internal sealed partial class DrawingSession
         var color = target.ConvertDrawingColor(level.ShadowColor);
         var left = level.VisibleLeft;
         var top = level.VisibleTop;
-        var width = level.VisibleRight - left;
-        var height = level.VisibleBottom - top;
-        if (color.Alpha == 0 || width <= 0 || height <= 0)
-            return;
-
+        var right = level.VisibleRight;
+        var bottom = level.VisibleBottom;
         var layerWidth = level.Right - level.Left;
         var layerHeight = level.Bottom - level.Top;
         var radius = GaussianKernel.GetRadius(level.BlurSigma);
         var taps = (2 * radius) + 2;
+        var wholeX = Math.Floor(level.ShadowOffsetX);
+        var wholeY = Math.Floor(level.ShadowOffsetY);
+        if (!isInner)
+        {
+            // The shadow of a pixel reads the alpha of the layer from radius + 1 - offset before it to radius - offset
+            // after it: too far from every pixel that may not be transparent, it reads zeros only and has no coverage.
+            // The pixels beyond the layer are read as those on its edges.
+            if (level.DirtyRight <= level.DirtyLeft)
+                return;
+
+            var (reachLeft, reachRight) = GetReach(level.DirtyLeft, level.DirtyRight, level.Left, level.Right, (long)wholeX + radius + 1, radius - (long)wholeX);
+            var (reachTop, reachBottom) = GetReach(level.DirtyTop, level.DirtyBottom, level.Top, level.Bottom, (long)wholeY + radius + 1, radius - (long)wholeY);
+            left = (int)Math.Max(left, reachLeft);
+            top = (int)Math.Max(top, reachTop);
+            right = (int)Math.Min(right, reachRight);
+            bottom = (int)Math.Min(bottom, reachBottom);
+        }
+
+        var width = right - left;
+        var height = bottom - top;
+        if (color.Alpha == 0 || width <= 0 || height <= 0)
+            return;
 
         // Every rental comes before the first pixel that changes
         var scope = _image.Owner.Scope;
@@ -90,8 +109,6 @@ internal sealed partial class DrawingSession
         var horizontal = weights.Slice(taps - 1, taps);
         var vertical = weights.Slice((2 * taps) - 1, taps);
         GaussianKernel.Fill(level.BlurSigma, blur);
-        var wholeX = Math.Floor(level.ShadowOffsetX);
-        var wholeY = Math.Floor(level.ShadowOffsetY);
         Shift(blur, level.ShadowOffsetX - wholeX, horizontal);
         Shift(blur, level.ShadowOffsetY - wholeY, vertical);
 
@@ -116,19 +133,7 @@ internal sealed partial class DrawingSession
             if (hasOpacity[row] == 0)
                 continue;
 
-            var output = rows.Slice(row * width, width);
-            for (var x = 0; x < width; x++)
-            {
-                var sum = 0d;
-                var first = originX + x;
-                for (var tap = 0; tap < taps; tap++)
-                {
-                    var index = first + tap;
-                    sum += horizontal[tap] * alpha[index < 0 ? 0 : index >= layerWidth ? layerWidth - 1 : index];
-                }
-
-                output[x] = (float)sum;
-            }
+            BlurKernels.BlurValues(alpha, horizontal, originX, rows.Slice(row * width, width));
         }
 
         if (!isInner && !_thumbnailRemoved)
@@ -139,6 +144,11 @@ internal sealed partial class DrawingSession
         }
 
         var coverage = unsafe(MemoryMarshal.Cast<byte, uint>(_shadowCoverage!.Span))[..width];
+        if (!isInner)
+        {
+            MarkDrawn(left, top, right, bottom);
+        }
+
         for (var y = 0; y < height; y++)
         {
             if ((y & 15) == 0)
@@ -156,12 +166,7 @@ internal sealed partial class DrawingSession
                     continue;
 
                 any = true;
-                var weight = vertical[tap];
-                var source = rows.Slice(row * width, width);
-                for (var x = 0; x < width; x++)
-                {
-                    sums[x] += weight * source[x];
-                }
+                BlurKernels.Accumulate(sums, vertical[tap], rows.Slice(row * width, width));
             }
 
             if (!any)

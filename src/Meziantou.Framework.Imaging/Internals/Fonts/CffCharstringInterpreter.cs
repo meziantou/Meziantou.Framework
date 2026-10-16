@@ -31,7 +31,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal ref struct CffCharstringInterpreter
 {
     /// <summary>The size of the argument stack. The Type 2 format allows 48 arguments and CFF2 513: the larger one is used for both.</summary>
-    private const int StackSize = 513;
+    public const int StackSize = 513;
 
     /// <summary>The depth of subroutine calls: appendix B, "Type 2 Charstring Implementation Limits".</summary>
     private const int MaxCallDepth = 10;
@@ -50,6 +50,9 @@ internal ref struct CffCharstringInterpreter
     private readonly bool _isCff2;
     private readonly int _variationStore;
     private readonly ReadOnlySpan<double> _scalars;
+
+    // The scalars of the regions the charstring blends with, in the frame of the caller: CFF2 only.
+    private readonly Span<double> _blend;
     private int _variationStoreIndex;
     private int _regionCount;
     private Buffer _buffer;
@@ -80,10 +83,12 @@ internal ref struct CffCharstringInterpreter
     /// <param name="variationStore">The position of the item variation store, or 0.</param>
     /// <param name="variationStoreIndex">The subtable of the store the font DICT of the glyph blends with.</param>
     /// <param name="scalars">The scalars of the regions of the store for the instance; empty for the default instance.</param>
-    public CffCharstringInterpreter(ReadOnlySpan<byte> table, CffIndex globalSubroutines, CffIndex localSubroutines, OutlineSink sink, ref GlyphBudget budget, int variationStore, int variationStoreIndex, ReadOnlySpan<double> scalars)
+    /// <param name="blend">The storage of the scalars of the regions a charstring blends with: <see cref="StackSize"/> numbers, set to zero.</param>
+    public CffCharstringInterpreter(ReadOnlySpan<byte> table, CffIndex globalSubroutines, CffIndex localSubroutines, OutlineSink sink, ref GlyphBudget budget, int variationStore, int variationStoreIndex, ReadOnlySpan<double> scalars, Span<double> blend)
         : this(table, globalSubroutines, localSubroutines, sink, ref budget)
     {
         _isCff2 = true;
+        _blend = blend;
         _hasWidth = true;
         _variationStore = variationStore;
         _variationStoreIndex = variationStoreIndex;
@@ -596,7 +601,7 @@ internal ref struct CffCharstringInterpreter
         if (_regionCount < 0)
         {
             // The scalar of each region the deltas are for: none of them applies to the default instance.
-            var blend = _buffer.Blend;
+            var blend = _blend;
             _regionCount = 0;
             if (_variationStore != 0 && (uint)_variationStoreIndex <= ushort.MaxValue)
             {
@@ -625,7 +630,7 @@ internal ref struct CffCharstringInterpreter
         if (first < 0)
             throw Invalid("has an operator with too few arguments");
 
-        var scalars = _buffer.Blend[.._regionCount];
+        var scalars = _blend[.._regionCount];
         var deltas = stack.Slice(first + valueCount, valueCount * _regionCount);
         for (var i = 0; i < valueCount; i++)
         {
@@ -750,14 +755,9 @@ internal ref struct CffCharstringInterpreter
     {
         private StackValues _stack;
         private TransientValues _transient;
-        private BlendValues _blend;
 
         [UnscopedRef]
         public Span<double> Stack => _stack;
-
-        /// <summary>Gets the scalars of the regions the charstring blends with.</summary>
-        [UnscopedRef]
-        public Span<double> Blend => _blend;
 
         [UnscopedRef]
         public Span<double> Transient => _transient;
@@ -775,9 +775,4 @@ internal ref struct CffCharstringInterpreter
         private double _first;
     }
 
-    [InlineArray(StackSize)]
-    private struct BlendValues
-    {
-        private double _first;
-    }
 }

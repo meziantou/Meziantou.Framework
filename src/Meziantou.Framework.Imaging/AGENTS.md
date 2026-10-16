@@ -711,7 +711,9 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   (a ligature) are kept, and share its width. What a line adds (a hyphen, an ellipsis) has no character.
 - **Validate at layout, not at draw.** Creating a layout decodes each distinct glyph once, so the errors of the font
   data surface there; drawing a layout then only fails on a limit of the image or on cancellation. Do not add a failure
-  mode to `FillText` that `TextLayout.Create` could have reported.
+  mode to `FillText` that `TextLayout.Create` could have reported. The outlines decoded then are recorded
+  (`RecordedOutlines`: the calls of the font to its sink, in font units) and replayed by every draw and by `ToPath`:
+  a glyph is never decoded again for a layout.
 - **The Unicode algorithms are those of `Meziantou.Framework.Unicode`**: line breaking (UAX #14), bidirectional levels
   and reordering (UAX #9), script runs (UAX #24), grapheme clusters and words (UAX #29), hyphenation. Do not
   reimplement or approximate one here; a missing piece belongs in that package, with its conformance tests.

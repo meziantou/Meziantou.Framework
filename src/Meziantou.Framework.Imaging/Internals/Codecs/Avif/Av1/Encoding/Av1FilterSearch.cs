@@ -81,8 +81,25 @@ internal static class Av1FilterSearch
             return;
 
         // CDEF: one pair of strengths for the luma plane and one for the chroma planes, for the whole frame. The primary
-        // strengths first, then the secondary strengths that go with them
+        // strengths first, then the secondary strengths that go with them. Every candidate filters the same deblocked
+        // frame, so the directions of the blocks are found once
         Save(frame, workspace);
+        postFilter.BeginCdefSearch(scope, frame);
+        try
+        {
+            SearchCdef(search, frame, workspace, syntax, thoroughness, best, value);
+            if (header.CdefYPriStrength[0] is not 0 || header.CdefYSecStrength[0] is not 0 || header.CdefUvPriStrength[0] is not 0 || header.CdefUvSecStrength[0] is not 0)
+                postFilter.Apply(scope, frame, state, Av1InLoopFilters.Cdef, cancellationToken);
+        }
+        finally
+        {
+            postFilter.EndCdefSearch();
+        }
+    }
+
+    private static void SearchCdef(Search search, Av1FrameBuffer frame, Av1EncoderWorkspace workspace, Av1FrameHeader syntax, int thoroughness, Span<long> best, Span<int> value)
+    {
+        var header = frame.Header;
         MeasureError(frame, workspace, best);
         best[1] += best[2];
         header.CdefBits = 0;
@@ -106,8 +123,6 @@ internal static class Av1FilterSearch
         syntax.CdefYSecStrength[0] = header.CdefYSecStrength[0];
         syntax.CdefUvPriStrength[0] = header.CdefUvPriStrength[0];
         syntax.CdefUvSecStrength[0] = header.CdefUvSecStrength[0];
-        if (lumaPrimary is not 0 || lumaSecondary is not 0 || chromaPrimary is not 0 || chromaSecondary is not 0)
-            postFilter.Apply(scope, frame, state, Av1InLoopFilters.Cdef, cancellationToken);
     }
 
     // The search of the value of a parameter. A pass of the filter gives the error of a value for every plane: the search
@@ -236,13 +251,7 @@ internal static class Av1FilterSearch
             long sum = 0;
             for (var y = 0; y < reconstructed.Height; y++)
             {
-                var actual = reconstructed.GetRow(y);
-                var expected = source.GetRow(y);
-                for (var x = 0; x < actual.Length; x++)
-                {
-                    var difference = expected[x] - actual[x];
-                    sum += difference * difference;
-                }
+                sum += Av1EncoderKernels.SumOfSquaredDifferences(source.GetRow(y), reconstructed.GetRow(y));
             }
 
             error[plane] = sum;

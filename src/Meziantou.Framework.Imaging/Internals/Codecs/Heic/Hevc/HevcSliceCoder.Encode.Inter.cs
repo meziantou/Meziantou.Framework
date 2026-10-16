@@ -416,37 +416,17 @@ internal ref partial struct HevcSliceCoder
         var source = _workspace.GetSourcePlane(0);
         var xInt = xPb + (mvX >> 2);
         var yInt = yPb + (mvY >> 2);
-        var sad = 0L;
+        var original = source.Samples[((yPb * source.Stride) + xPb)..];
         if (((mvX | mvY) & 3) is 0 && xInt >= 0 && yInt >= 0 && xInt + nPbW <= reference.Width && yInt + nPbH <= reference.Height)
         {
             // Whole samples of the reference picture
-            for (var y = 0; y < nPbH; y++)
-            {
-                var predicted = reference.Samples.Slice(((yInt + y) * reference.Stride) + xInt, nPbW);
-                var original = source.Samples.Slice(((yPb + y) * source.Stride) + xPb, nPbW);
-                for (var x = 0; x < nPbW; x++)
-                {
-                    sad += Math.Abs(original[x] - predicted[x]);
-                }
-            }
-
-            return sad;
+            return GetSad(reference.Samples[((yInt * reference.Stride) + xInt)..], reference.Stride, original, source.Stride, nPbW, nPbH);
         }
 
         var prediction = _workspace.GetDraftSamples(HevcEncoderWorkspace.DraftMotionSearch, 0);
         HevcInterPredictor.Predict(reference, xInt, yInt, mvX & 3, mvY & 3, nPbW, nPbH, luma: true, _bitDepth, _scratch.GetPrediction(0), _scratch.Intermediate, _scratch.Window);
         HevcInterPredictor.WeightDefault(_scratch.GetPrediction(0), prediction, nPbW, nPbW, nPbH, _bitDepth);
-        for (var y = 0; y < nPbH; y++)
-        {
-            var predicted = prediction.Slice(y * nPbW, nPbW);
-            var original = source.Samples.Slice(((yPb + y) * source.Stride) + xPb, nPbW);
-            for (var x = 0; x < nPbW; x++)
-            {
-                sad += Math.Abs(original[x] - predicted[x]);
-            }
-        }
-
-        return sad;
+        return GetSad(prediction, nPbW, original, source.Stride, nPbW, nPbH);
     }
 
     // part_mode of a coding unit coded in inter prediction mode (Table 9-45)

@@ -348,8 +348,10 @@ internal ref partial struct HevcSliceCoder
         if (ctbAddrNbRs == _ctbAddrInRs)
         {
             // In the coding tree block of the current block: the same slice and the same tile, and the order of the
-            // blocks is the z-scan order inside the coding tree block
-            return _layout.GetMinTbAddrZs(xNbY >> _minTbLog2SizeY, yNbY >> _minTbLog2SizeY) <= _layout.GetMinTbAddrZs(xCurr >> _minTbLog2SizeY, yCurr >> _minTbLog2SizeY);
+            // blocks is the z-scan order inside the coding tree block. MinTbAddrZs (Equation 6-10) of two minimum
+            // transform blocks of one coding tree block differ by their positions in it
+            var mask = (1 << (_ctbLog2SizeY - _minTbLog2SizeY)) - 1;
+            return HevcPictureLayout.GetZScanIndex((xNbY >> _minTbLog2SizeY) & mask, (yNbY >> _minTbLog2SizeY) & mask) <= HevcPictureLayout.GetZScanIndex((xCurr >> _minTbLog2SizeY) & mask, (yCurr >> _minTbLog2SizeY) & mask);
         }
 
         // In another coding tree block: it precedes the current one in tile scan, and is in its slice and in its tile

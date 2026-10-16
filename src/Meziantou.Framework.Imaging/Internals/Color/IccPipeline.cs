@@ -20,6 +20,7 @@ internal sealed class IccPipeline
         SourceChannelCount = sourceChannelCount;
         DestinationChannelCount = destinationChannelCount;
         IsIdentity = isIdentity;
+        HasLookupTable = Array.Exists(stages, stage => stage is IccClutStage);
 
         // The first stage of most conversions is one curve per source channel (tone curves, or the input tables of a
         // lookup table): its values for the 256 possible 8-bit samples are computed once, by the same evaluation as
@@ -60,6 +61,12 @@ internal sealed class IccPipeline
     /// channel; <see langword="null"/> otherwise. See <see cref="ApplyAfterInputCurves"/>.
     /// </summary>
     public double[][]? ByteInputTables { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether a stage interpolates a color lookup table: such a conversion costs far more per color
+    /// than a matrix-based one, so remembering the colors already converted pays (<see cref="ColorConversionKernels"/>).
+    /// </summary>
+    public bool HasLookupTable { get; }
 
     /// <summary>Gets the number of device channels of the source profile.</summary>
     public int SourceChannelCount { get; }

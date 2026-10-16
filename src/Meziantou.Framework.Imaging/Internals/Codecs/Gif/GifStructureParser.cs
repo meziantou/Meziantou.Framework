@@ -222,6 +222,24 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
                     if (remaining.Length < size + 1)
                         return ParseStatus.NeedMoreData(size + 1);
 
+                    if (_block == BlockKind.ImageData)
+                    {
+                        // The complete data sub-blocks of the buffer go to the observer together (it decodes them under one
+                        // lease of its canvas); the terminator and an incomplete sub-block are left for the next steps
+                        var length = 0;
+                        var count = 0;
+                        while (length < remaining.Length && remaining[length] != 0 && length + 1 + remaining[length] <= remaining.Length)
+                        {
+                            length += 1 + remaining[length];
+                            count++;
+                        }
+
+                        _observer?.OnImageDataBlocks(remaining[..length]);
+                        consumed += length;
+                        _subBlockIndex += count;
+                        break;
+                    }
+
                     ProcessSubBlock(remaining.Slice(1, size));
                     consumed += size + 1;
                     _subBlockIndex++;

@@ -30,7 +30,11 @@ internal sealed class GlyphBuffer
 
     private readonly long _maxLength;
     private GlyphInfo[] _info = new GlyphInfo[32];
-    private GlyphPosition[] _positions = [];
+
+    // The positions, once they are created: the first _positionCount entries of a storage that is kept from a run to
+    // the next one.
+    private GlyphPosition[] _positionStorage = [];
+    private int _positionCount;
     private long _operations;
     private long _subtables;
     private byte _nextLigatureId;
@@ -47,7 +51,7 @@ internal sealed class GlyphBuffer
     public Span<GlyphInfo> Info => _info.AsSpan(0, Length);
 
     /// <summary>Gets the positions of the glyphs, once <see cref="CreatePositions"/> was called.</summary>
-    public Span<GlyphPosition> Positions => _positions.AsSpan(0, Length);
+    public Span<GlyphPosition> Positions => _positionStorage.AsSpan(0, _positionCount)[..Length];
 
     /// <summary>Removes every glyph.</summary>
     public void Clear()
@@ -55,7 +59,7 @@ internal sealed class GlyphBuffer
         Length = 0;
         _operations = 0;
         _nextLigatureId = 0;
-        _positions = [];
+        _positionCount = 0;
     }
 
     /// <summary>Adds a character at the end.</summary>
@@ -95,7 +99,12 @@ internal sealed class GlyphBuffer
     }
 
     /// <summary>Allocates the positions, all zero, once the substitutions are done.</summary>
-    public void CreatePositions() => _positions = new GlyphPosition[Length];
+    public void CreatePositions()
+    {
+        EnsurePositionCapacity(Length);
+        _positionStorage.AsSpan(0, Length).Clear();
+        _positionCount = Length;
+    }
 
     /// <summary>Gets an identifier for a new ligature: a small number that differs from the ones of its neighbors.</summary>
     public byte AllocateLigatureId()
@@ -158,12 +167,10 @@ internal sealed class GlyphBuffer
     /// <summary>Removes a glyph, and its position when the positions exist; its characters join the cluster of a neighbor, so that no character is lost.</summary>
     public void Delete(int index)
     {
-        if (_positions.Length == Length)
+        if (_positionCount == Length)
         {
-            var positions = new GlyphPosition[Length - 1];
-            _positions.AsSpan(0, index).CopyTo(positions);
-            _positions.AsSpan(index + 1).CopyTo(positions.AsSpan(index));
-            _positions = positions;
+            _positionStorage.AsSpan(index + 1, _positionCount - index - 1).CopyTo(_positionStorage.AsSpan(index));
+            _positionCount--;
         }
 
         var cluster = _info[index].Cluster;
@@ -200,17 +207,19 @@ internal sealed class GlyphBuffer
 
         var newLength = (long)Length + copies;
         EnsureCapacity(newLength);
-        var positions = new GlyphPosition[(int)newLength];
-        _positions.AsSpan(0, index + 1).CopyTo(positions);
-        _positions.AsSpan(index + 1, Length - index - 1).CopyTo(positions.AsSpan(index + 1 + copies));
+        // The positions of the glyphs, which exist: the copies get the position of the glyph.
+        var tail = _positionStorage.AsSpan(0, _positionCount).Slice(index + 1, Length - index - 1);
+        EnsurePositionCapacity((int)newLength);
+        tail = _positionStorage.AsSpan(index + 1, tail.Length);
+        tail.CopyTo(_positionStorage.AsSpan(index + 1 + copies));
         Array.Copy(_info, index + 1, _info, index + 1 + copies, Length - index - 1);
         for (var i = 1; i <= copies; i++)
         {
             _info[index + i] = _info[index];
-            positions[index + i] = positions[index];
+            _positionStorage[index + i] = _positionStorage[index];
         }
 
-        _positions = positions;
+        _positionCount = (int)newLength;
         Length = (int)newLength;
     }
 
@@ -218,9 +227,17 @@ internal sealed class GlyphBuffer
     public void Reverse()
     {
         Info.Reverse();
-        if (_positions.Length == Length)
+        if (_positionCount == Length)
         {
             Positions.Reverse();
+        }
+    }
+
+    private void EnsurePositionCapacity(int length)
+    {
+        if (length > _positionStorage.Length)
+        {
+            Array.Resize(ref _positionStorage, Math.Max(length, _positionStorage.Length * 2));
         }
     }
 

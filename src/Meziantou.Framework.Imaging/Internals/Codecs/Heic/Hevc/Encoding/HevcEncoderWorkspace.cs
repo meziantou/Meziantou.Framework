@@ -95,6 +95,7 @@ internal sealed class HevcEncoderWorkspace : IDisposable
     private const int InitialRecordCapacity = 1 << 14;
     private const int ScratchBlocks = 7;
     private const int ScratchBlockLength = 32 * 32;
+    private const int IntraScratchLength = (2 * HevcIntraPredictor.MaxNeighbourCount) + ScratchBlockLength;
 
     private readonly AllocationScope _scope;
     private readonly Av1Plane?[] _source = new Av1Plane?[3];
@@ -103,6 +104,7 @@ internal sealed class HevcEncoderWorkspace : IDisposable
     private readonly Av1PooledArray<short> _levels;
     private readonly Av1PooledArray<ushort> _samples;
     private readonly Av1PooledArray<int> _scratch;
+    private readonly Av1PooledArray<ushort> _intraScratch;
     private Av1PooledArray<short>? _records;
 
     public HevcEncoderWorkspace(AllocationScope scope, HevcSequenceParameterSet sps, int width, int height)
@@ -115,6 +117,7 @@ internal sealed class HevcEncoderWorkspace : IDisposable
         Av1PooledArray<short>? levels = null;
         Av1PooledArray<ushort>? samples = null;
         Av1PooledArray<int>? scratch = null;
+        Av1PooledArray<ushort>? intraScratch = null;
         try
         {
             // The planes of the source have the samples of the picture to encode, in buffers of the size of the planes
@@ -132,12 +135,14 @@ internal sealed class HevcEncoderWorkspace : IDisposable
             levels = Av1PooledArray<short>.Rent(scope, (long)(1 + DraftSlots) * components * BlockLength, clear: true, AllocationKind.Temporary);
             samples = Av1PooledArray<ushort>.Rent(scope, (long)(DraftSlots + SampleSlots) * components * BlockLength, clear: true, AllocationKind.Temporary);
             scratch = Av1PooledArray<int>.Rent(scope, ScratchBlocks * ScratchBlockLength, clear: true, AllocationKind.Temporary);
+            intraScratch = Av1PooledArray<ushort>.Rent(scope, IntraScratchLength, clear: true, AllocationKind.Temporary);
             _records = Av1PooledArray<short>.Rent(scope, InitialRecordCapacity, clear: false, AllocationKind.Temporary);
             _contexts = contexts;
             _maps = maps;
             _levels = levels;
             _samples = samples;
             _scratch = scratch;
+            _intraScratch = intraScratch;
             ComponentCount = components;
         }
         catch
@@ -147,6 +152,7 @@ internal sealed class HevcEncoderWorkspace : IDisposable
             levels?.Dispose();
             samples?.Dispose();
             scratch?.Dispose();
+            intraScratch?.Dispose();
             foreach (var plane in _source)
             {
                 plane?.Dispose();
@@ -209,6 +215,13 @@ internal sealed class HevcEncoderWorkspace : IDisposable
     /// <summary>Gets a block of 32x32 values: 0 to 6.</summary>
     public Span<int> GetScratch(int index) => _scratch.Span.Slice(index * ScratchBlockLength, ScratchBlockLength);
 
+    /// <summary>
+    /// Gets the scratch of the evaluation of the intra prediction modes of a luma prediction block: its neighbouring samples
+    /// and their filtered version (<see cref="HevcIntraPredictor.MaxNeighbourCount"/> samples each), then the prediction of
+    /// a mode (32x32 samples).
+    /// </summary>
+    public Span<ushort> IntraScratch => _intraScratch.Span[..IntraScratchLength];
+
     /// <summary>Clears the description of the coding unit being searched.</summary>
     public void ClearCodingUnit()
     {
@@ -266,6 +279,7 @@ internal sealed class HevcEncoderWorkspace : IDisposable
         _levels.Dispose();
         _samples.Dispose();
         _scratch.Dispose();
+        _intraScratch.Dispose();
         _records?.Dispose();
         _records = null;
     }

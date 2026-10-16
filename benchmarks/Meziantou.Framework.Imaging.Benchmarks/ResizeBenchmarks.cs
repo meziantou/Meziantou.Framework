@@ -13,6 +13,8 @@ public class ResizeBenchmarks
 {
     private Image<Rgba32> _rgba32 = null!;
     private Image<Rgba64> _rgba64 = null!;
+    private Image<Rgb24> _rgb24 = null!;
+    private Image<Gray8> _gray8 = null!;
 
     /// <summary>Gets or sets <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> (1 is the default configuration).</summary>
     [Params(1, 2, 4)]
@@ -24,6 +26,9 @@ public class ResizeBenchmarks
         var configuration = new ImageConfiguration { MaxDegreeOfParallelism = Workers };
         _rgba32 = Image.ImportPixelData<Rgba32>(BenchmarkInputs.ResizeRgba32Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight, configuration: configuration);
         _rgba64 = Image.ImportPixelData<Rgba64>(BenchmarkInputs.ResizeRgba64Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight, configuration: configuration);
+        var flatten = new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0, ushort.MaxValue) };
+        _rgb24 = _rgba32.CloneAs<Rgb24>(flatten);
+        _gray8 = _rgba32.CloneAs<Gray8>(flatten);
     }
 
     [GlobalCleanup]
@@ -31,6 +36,8 @@ public class ResizeBenchmarks
     {
         _rgba32?.Dispose();
         _rgba64?.Dispose();
+        _rgb24?.Dispose();
+        _gray8?.Dispose();
     }
 
     [Benchmark(Baseline = true)]
@@ -68,6 +75,14 @@ public class ResizeBenchmarks
     [Benchmark]
     [Workload("1920x1080 -> 640x360 Rgba64 Catmull-Rom")]
     public int CatmullRom16() => Resize(_rgba64, ResamplingFilter.Bicubic, 640, 360);
+
+    [Benchmark]
+    [Workload("1920x1080 -> 640x360 Rgb24 Catmull-Rom")]
+    public int CatmullRomRgb24() => Resize(_rgb24, ResamplingFilter.Bicubic, 640, 360);
+
+    [Benchmark]
+    [Workload("1920x1080 -> 640x360 Gray8 Catmull-Rom")]
+    public int CatmullRomGray8() => Resize(_gray8, ResamplingFilter.Bicubic, 640, 360);
 
     private static int Resize(Image source, ResamplingFilter filter, int width, int height, ResizeWorkingSpace workingSpace = ResizeWorkingSpace.Encoded)
     {

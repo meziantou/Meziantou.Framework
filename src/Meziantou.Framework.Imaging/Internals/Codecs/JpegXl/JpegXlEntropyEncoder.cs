@@ -75,10 +75,7 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
     {
         if (_values is null || _count == _values.Length)
         {
-            var larger = Av1PooledArray<ulong>.Rent(_scope, Math.Max(1024, (long)_count * 2), clear: false);
-            _values?.Span.CopyTo(larger.Span);
-            _values?.Dispose();
-            _values = larger;
+            Grow();
         }
 
         // A value is kept as its cluster, its token, the number of raw bits and the raw bits
@@ -86,6 +83,32 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
         var (token, bitCount, bits) = GetToken(value);
         _histograms[cluster][token]++;
         _values.Span[_count++] = ((ulong)cluster << 56) | ((ulong)token << 40) | ((ulong)bitCount << 32) | bits;
+    }
+
+    /// <summary>Adds values of the same context to the stream: the values of <see cref="Add"/> called for each, in order.</summary>
+    public void AddRange(int context, ReadOnlySpan<uint> values)
+    {
+        if (values.IsEmpty)
+            return;
+
+        // The storage grows as it does when the values are added one by one
+        while (_values is null || _values.Length - _count < values.Length)
+        {
+            Grow();
+        }
+
+        var cluster = context % MaxClusters;
+        var histogram = _histograms[cluster];
+        var clusterBits = (ulong)cluster << 56;
+        var destination = _values.Span.Slice(_count, values.Length);
+        for (var i = 0; i < values.Length; i++)
+        {
+            var (token, bitCount, bits) = GetToken(values[i]);
+            histogram[token]++;
+            destination[i] = clusterBits | ((ulong)token << 40) | ((ulong)bitCount << 32) | bits;
+        }
+
+        _count += values.Length;
     }
 
     /// <summary>Writes the description of the stream, then its values.</summary>
@@ -528,6 +551,16 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
         var log = BitOperations.Log2((uint)value);
         writer.WriteBits((uint)log, 3);
         writer.WriteBits((uint)(value - (1 << log)), log);
+    }
+
+    /// <summary>Replaces the storage of the values with one twice as large, of 1024 values at least.</summary>
+    [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(_values))]
+    private void Grow()
+    {
+        var larger = Av1PooledArray<ulong>.Rent(_scope, Math.Max(1024, (long)(_values?.Length ?? 0) * 2), clear: false);
+        _values?.Span.CopyTo(larger.Span);
+        _values?.Dispose();
+        _values = larger;
     }
 
     private (int Token, int BitCount, uint Bits) GetToken(uint value) => GetToken(_config, value);

@@ -329,10 +329,18 @@ internal sealed class CffTable
         if ((uint)fontDict >= (uint)_localSubroutines.Length)
             throw FontErrors.InvalidTable(FontTags.Cff, "selects a font DICT that does not exist for a glyph.");
 
-        var interpreter = _variationStoreIndexes is null
-            ? new CffCharstringInterpreter(table, _globalSubroutines, _localSubroutines[fontDict], sink, ref budget)
-            : new CffCharstringInterpreter(table, _globalSubroutines, _localSubroutines[fontDict], sink, ref budget, VariationStore, _variationStoreIndexes[fontDict], scalars);
-        interpreter.Run(_charStrings.Get(table, glyphId));
+        // Each interpreter is built where it runs: it holds the stack of the charstring, which is not copied.
+        if (_variationStoreIndexes is null)
+        {
+            var interpreter = new CffCharstringInterpreter(table, _globalSubroutines, _localSubroutines[fontDict], sink, ref budget);
+            interpreter.Run(_charStrings.Get(table, glyphId));
+        }
+        else
+        {
+            Span<double> blend = stackalloc double[CffCharstringInterpreter.StackSize];
+            var interpreter = new CffCharstringInterpreter(table, _globalSubroutines, _localSubroutines[fontDict], sink, ref budget, VariationStore, _variationStoreIndexes[fontDict], scalars, blend);
+            interpreter.Run(_charStrings.Get(table, glyphId));
+        }
     }
 
     private int GetFontDict(ReadOnlySpan<byte> table, int glyphId)

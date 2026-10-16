@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -71,6 +72,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal static class DrawingKernels
 {
+    /// <summary>The number of pixels from which a run with a single paint is searched for pixels covered entirely.</summary>
+    private const int MinFullRunSearchLength = 16;
+
     /// <summary>Converts a paint color to the pixel format of a frame, with the rules of pixel conversion.</summary>
     /// <remarks>
     /// The color samples are those of the opaque color converted by <see cref="PixelConverter"/> (Rec. 709 luma for
@@ -117,17 +121,108 @@ internal static class DrawingKernels
     }
 
     /// <summary>Converts paint colors to the pixel format of a frame: four samples per color, laid out as <see cref="DrawingColor"/>.</summary>
+    /// <remarks>
+    /// The colors are those of <see cref="ConvertColor{TPixel}(Rgba64)"/>: the opaque colors of a chunk are converted
+    /// by one call of <see cref="PixelConverter"/>, which converts each pixel on its own.
+    /// </remarks>
     public static void ConvertColors<TPixel>(ReadOnlySpan<Rgba64> colors, Span<ushort> destination)
         where TPixel : unmanaged
     {
-        for (var i = 0; i < colors.Length; i++)
+        const int ChunkSize = 64;
+        Span<Rgba64> opaque = stackalloc Rgba64[ChunkSize];
+        Span<TPixel> pixels = stackalloc TPixel[ChunkSize];
+        for (var start = 0; start < colors.Length; start += ChunkSize)
         {
-            var color = ConvertColor<TPixel>(colors[i]);
-            var entry = destination.Slice(i * 4, 4);
-            entry[0] = color.C0;
-            entry[1] = color.C1;
-            entry[2] = color.C2;
-            entry[3] = color.Alpha;
+            var chunk = colors.Slice(start, Math.Min(ChunkSize, colors.Length - start));
+            var count = chunk.Length;
+            for (var i = 0; i < count; i++)
+            {
+                var color = chunk[i];
+                opaque[i] = new Rgba64(color.R, color.G, color.B);
+            }
+
+            PixelConverter.ConvertRow<Rgba64, TPixel>(opaque[..count], pixels);
+            var entries = destination.Slice(start * 4, count * 4);
+            if (typeof(TPixel) == typeof(Rgba64))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, Rgba64>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var value = values[i];
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = value.R;
+                    entry[1] = value.G;
+                    entry[2] = value.B;
+                    entry[3] = chunk[i].A;
+                }
+            }
+            else if (typeof(TPixel) == typeof(Gray16))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, Gray16>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = values[i].Value;
+                    entry[1] = 0;
+                    entry[2] = 0;
+                    entry[3] = chunk[i].A;
+                }
+            }
+            else if (typeof(TPixel) == typeof(Rgba32))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, Rgba32>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var value = values[i];
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = value.R;
+                    entry[1] = value.G;
+                    entry[2] = value.B;
+                    entry[3] = PixelConverter.To8Bit(chunk[i].A);
+                }
+            }
+            else if (typeof(TPixel) == typeof(Bgra32))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, Bgra32>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var value = values[i];
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = value.B;
+                    entry[1] = value.G;
+                    entry[2] = value.R;
+                    entry[3] = PixelConverter.To8Bit(chunk[i].A);
+                }
+            }
+            else if (typeof(TPixel) == typeof(Rgb24))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, Rgb24>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var value = values[i];
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = value.R;
+                    entry[1] = value.G;
+                    entry[2] = value.B;
+                    entry[3] = PixelConverter.To8Bit(chunk[i].A);
+                }
+            }
+            else if (typeof(TPixel) == typeof(Gray8))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, Gray8>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = values[i].Value;
+                    entry[1] = 0;
+                    entry[2] = 0;
+                    entry[3] = PixelConverter.To8Bit(chunk[i].A);
+                }
+            }
+            else
+            {
+                throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
+            }
         }
     }
 
@@ -213,12 +308,261 @@ internal static class DrawingKernels
             return;
         }
 
+        // A short run is cheaper pixel by pixel than searched for runs
+        if (coverage.Length >= MinFullRunSearchLength && source.Colors.IsEmpty && TryCompositeFullRuns(samples, channels, coverage, source))
+            return;
+
+        CompositeCore(samples, channels, coverage, source);
+    }
+
+    /// <summary>Composites a paint with the formulas of the stored samples, pixel by pixel.</summary>
+    private static void CompositeCore<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
         if (source.Mode != CompositeMode.SourceOver)
         {
             CompositeWithOperator(samples, channels, coverage, source);
+        }
+        else
+        {
+            CompositeOver(samples, channels, coverage, source);
+        }
+    }
+
+    /// <summary>
+    /// Composites a single paint whose result on a pixel covered entirely does not depend on the pixel: an opaque paint
+    /// with source-over, or any paint that replaces the pixel (<see cref="CompositeMode.Source"/>). The runs of full
+    /// coverage get the samples the formulas give one of their pixels; the other pixels go through the formulas.
+    /// </summary>
+    /// <returns><see langword="false"/> when the paint has no such result, or no pixel is covered entirely.</returns>
+    /// <remarks>
+    /// With <c>q = Q</c>, source-over and <c>sa = M</c> write the paint (<c>c' = sc</c>, <c>a' = M</c>). The operator
+    /// <see cref="CompositeMode.Source"/> has <c>D = 0</c>: the color is <c>round(sc S / S) = sc</c> and the alpha
+    /// <c>round(S / (M Q)) = sa</c>, or the color over black without alpha, whatever the pixel was. A paint without
+    /// opacity then makes a pixel with alpha transparent black, or leaves it as it is when it was transparent.
+    /// </remarks>
+    private static bool TryCompositeFullRuns<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        const uint Full = CoverageRasterizer.FullCoverage;
+        var paintAlpha = source.Color.Alpha;
+        var isConstant = source.Mode switch
+        {
+            CompositeMode.SourceOver => paintAlpha == ushort.CreateTruncating(TSample.MaxValue),
+            CompositeMode.Source => paintAlpha != 0 || channels != 4,
+            _ => false,
+        };
+
+        var erases = !isConstant && source.Mode == CompositeMode.Source;
+        if (!isConstant && !erases)
+            return false;
+
+        var first = coverage.IndexOf(Full);
+        if (first < 0)
+            return false;
+
+        // The samples of a pixel covered entirely, from the formulas
+        Span<TSample> pixel = stackalloc TSample[4];
+        pixel = pixel[..channels];
+        if (isConstant)
+        {
+            var full = Full;
+            CompositeCore(pixel, channels, new ReadOnlySpan<uint>(in full), source);
+        }
+
+        var start = 0;
+        while (true)
+        {
+            if (first > start)
+            {
+                CompositeCore(samples[(start * channels)..(first * channels)], channels, coverage[start..first], source);
+            }
+
+            if (first == coverage.Length)
+                return true;
+
+            var length = coverage[first..].IndexOfAnyExcept(Full);
+            if (length < 0)
+            {
+                length = coverage.Length - first;
+            }
+
+            var run = samples.Slice(first * channels, length * channels);
+            if (isConstant)
+            {
+                FillPixels(run, pixel);
+            }
+            else
+            {
+                ErasePixels(run);
+            }
+
+            start = first + length;
+            if (start == coverage.Length)
+                return true;
+
+            var next = coverage[start..].IndexOf(Full);
+            first = next < 0 ? coverage.Length : start + next;
+        }
+    }
+
+    /// <summary>Writes the samples of one pixel to every pixel of a run.</summary>
+    private static void FillPixels<TSample>(Span<TSample> run, ReadOnlySpan<TSample> pixel)
+        where TSample : unmanaged
+    {
+        if (pixel.Length == 1)
+        {
+            run.Fill(pixel[0]);
             return;
         }
 
+        if (pixel.Length == 4 && typeof(TSample) == typeof(byte))
+        {
+            var packed = unsafe(MemoryMarshal.Read<uint>(MemoryMarshal.AsBytes(pixel)));
+            var pixels = unsafe(MemoryMarshal.Cast<TSample, uint>(run));
+            pixels.Fill(packed);
+            return;
+        }
+
+        if (pixel.Length == 4 && typeof(TSample) == typeof(ushort))
+        {
+            var packed = unsafe(MemoryMarshal.Read<ulong>(MemoryMarshal.AsBytes(pixel)));
+            var pixels = unsafe(MemoryMarshal.Cast<TSample, ulong>(run));
+            pixels.Fill(packed);
+            return;
+        }
+
+        // The pixels written so far are copied after themselves
+        pixel.CopyTo(run);
+        var filled = pixel.Length;
+        while (filled < run.Length)
+        {
+            var count = Math.Min(filled, run.Length - filled);
+            run[..count].CopyTo(run[filled..]);
+            filled += count;
+        }
+    }
+
+    /// <summary>Makes the pixels of a run (color then alpha) that are not transparent transparent black.</summary>
+    private static void ErasePixels<TSample>(Span<TSample> run)
+        where TSample : unmanaged, IBinaryInteger<TSample>
+    {
+        for (var i = 0; i < run.Length; i += 4)
+        {
+            if (run[i + 3] != TSample.Zero)
+            {
+                run.Slice(i, 4).Clear();
+            }
+        }
+    }
+
+    /// <summary>Composites a paint over interleaved samples with source-over.</summary>
+    private static void CompositeOver<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        if (typeof(TSample) == typeof(byte) && channels == 4 && coverage.Length >= 4 && Vector128.IsHardwareAccelerated)
+        {
+            CompositeOver8(unsafe(MemoryMarshal.Cast<TSample, byte>(samples)), coverage, source);
+            return;
+        }
+
+        CompositeOverScalar(samples, channels, coverage, source);
+    }
+
+    /// <summary>
+    /// Composites a paint over pixels of four 8-bit samples (color then alpha) with source-over: four pixels at a time
+    /// when they are opaque, the others with <see cref="CompositeOverScalar"/>.
+    /// </summary>
+    /// <remarks>
+    /// On an opaque pixel the color is <c>floor(x / S)</c> with <c>x = sc E + dc (S - E) + S / 2</c>, <c>S = 255 Q</c>
+    /// and <c>E = sa q</c>, and the alpha stays 255. That formula also leaves the pixel as it is when <c>E</c> is 0 and
+    /// writes the paint when <c>E</c> is <c>S</c>, as the scalar path does. <c>x</c> is below <c>255.5 S &lt; 2^32</c>;
+    /// <c>floor(x / S) = floor(floor(x / 2^16) / 255)</c>, and <c>floor(y / 255) = (y 32897) >> 23</c> for every
+    /// <c>y &lt; 2^16</c>, whose product is below 2^32.
+    /// </remarks>
+    internal static void CompositeOver8(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+    {
+        const uint Scale = byte.MaxValue * CoverageRasterizer.FullCoverage;
+        var colors = source.Colors;
+        var color = source.Color;
+        var transpose = Vector128.Create((byte)0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15);
+        var colorMask = Vector128.Create((byte)255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0);
+        var half = Vector128.Create(Scale / 2);
+        var scale = Vector128.Create(Scale);
+        var reciprocal = Vector128.Create(32897u);
+        var red = Vector128.Create((uint)color.C0);
+        var green = Vector128.Create((uint)color.C1);
+        var blue = Vector128.Create((uint)color.C2);
+        var alpha = Vector128.Create((uint)color.Alpha);
+
+        // The pixels from 'pending' on are not composited yet
+        var pending = 0;
+        for (var i = 0; i + 4 <= coverage.Length; i += 4)
+        {
+            var block = samples.Slice(i * 4, 16);
+            var pixels = Vector128.Create(block);
+            if ((pixels | colorMask) != Vector128<byte>.AllBitsSet)
+                continue;
+
+            if (pending < i)
+            {
+                CompositeOverScalarRange(samples, coverage, source, pending, i);
+            }
+
+            if (!colors.IsEmpty)
+            {
+                var paint = colors.Slice(i * 4, 16);
+                var paintBytes = Vector128.Shuffle(Vector128.Narrow(Vector128.Create(paint[..8]), Vector128.Create(paint[8..])), transpose);
+                var paintLow = Vector128.WidenLower(paintBytes);
+                var paintHigh = Vector128.WidenUpper(paintBytes);
+                red = Vector128.WidenLower(paintLow);
+                green = Vector128.WidenUpper(paintLow);
+                blue = Vector128.WidenLower(paintHigh);
+                alpha = Vector128.WidenUpper(paintHigh);
+            }
+
+            var effective = Vector128.Create(coverage.Slice(i, 4)) * alpha;
+            var inverse = scale - effective;
+            var planar = Vector128.Shuffle(pixels, transpose);
+            var low = Vector128.WidenLower(planar);
+            var high = Vector128.WidenUpper(planar);
+            var r = Blend(red, Vector128.WidenLower(low), effective, inverse, half, reciprocal);
+            var g = Blend(green, Vector128.WidenUpper(low), effective, inverse, half, reciprocal);
+            var b = Blend(blue, Vector128.WidenLower(high), effective, inverse, half, reciprocal);
+            var result = Vector128.Narrow(Vector128.Narrow(r, g), Vector128.Narrow(b, Vector128.WidenUpper(high)));
+            Vector128.Shuffle(result, transpose).CopyTo(block);
+            pending = i + 4;
+        }
+
+        if (pending < coverage.Length)
+        {
+            CompositeOverScalarRange(samples, coverage, source, pending, coverage.Length);
+        }
+
+        static Vector128<uint> Blend(Vector128<uint> paint, Vector128<uint> pixel, Vector128<uint> effective, Vector128<uint> inverse, Vector128<uint> half, Vector128<uint> reciprocal)
+        {
+            var x = (paint * effective) + (pixel * inverse) + half;
+            return Vector128.ShiftRightLogical(Vector128.ShiftRightLogical(x, 16) * reciprocal, 23);
+        }
+    }
+
+    private static void CompositeOverScalarRange(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, int start, int end)
+    {
+        var range = samples[(start * 4)..(end * 4)];
+        if (source.Colors.IsEmpty)
+        {
+            CompositeOverScalar(range, 4, coverage[start..end], source);
+        }
+        else
+        {
+            CompositeOverScalar(range, 4, coverage[start..end], new DrawingSource(source.Colors[(start * 4)..(end * 4)]));
+        }
+    }
+
+    /// <summary>Composites a paint over interleaved samples with source-over, pixel by pixel: the reference of the vectorized paths.</summary>
+    internal static void CompositeOverScalar<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
         var max = ulong.CreateTruncating(TSample.MaxValue);
         var scale = max * CoverageRasterizer.FullCoverage;
         var half = scale / 2;
@@ -304,58 +648,68 @@ internal static class DrawingKernels
         var colors = source.Colors;
         var color = source.Color;
         Span<ushort> paint = [color.C0, color.C1, color.C2, color.Alpha];
-        Span<ushort> blended = stackalloc ushort[4];
         Span<double> s = stackalloc double[3];
         Span<double> d = stackalloc double[3];
         Span<double> b = stackalloc double[3];
 
+        // The paint of each pixel of a chunk, composited at once: a pixel only depends on its own samples
+        const int ChunkSize = 64;
+        Span<ushort> chunkColors = stackalloc ushort[ChunkSize * 4];
+
         // Where red is among the color samples of a pixel, and where blue is
         var red = isBlueFirst ? 2 : 0;
         var blue = 2 - red;
-        for (var i = 0; i < coverage.Length; i++)
+        for (var start = 0; start < coverage.Length; start += ChunkSize)
         {
-            if (coverage[i] == 0)
-                continue;
-
-            if (!colors.IsEmpty)
+            var count = Math.Min(ChunkSize, coverage.Length - start);
+            for (var k = 0; k < count; k++)
             {
-                colors.Slice(i * 4, 4).CopyTo(paint);
+                var i = start + k;
+                if (coverage[i] == 0)
+                    continue;
+
+                if (!colors.IsEmpty)
+                {
+                    colors.Slice(i * 4, 4).CopyTo(paint);
+                }
+
+                var blended = chunkColors.Slice(k * 4, 4);
+                paint.CopyTo(blended);
+                var pixel = samples.Slice(i * channels, channels);
+                var backdrop = channels == 4 ? double.CreateTruncating(pixel[3]) / max : 1;
+                if (paint[3] != 0 && backdrop != 0)
+                {
+                    if (colorChannels == 1)
+                    {
+                        s[0] = s[1] = s[2] = paint[0] / max;
+                        d[0] = d[1] = d[2] = double.CreateTruncating(pixel[0]) / max;
+                    }
+                    else
+                    {
+                        s[0] = paint[red] / max;
+                        s[1] = paint[1] / max;
+                        s[2] = paint[blue] / max;
+                        d[0] = double.CreateTruncating(pixel[red]) / max;
+                        d[1] = double.CreateTruncating(pixel[1]) / max;
+                        d[2] = double.CreateTruncating(pixel[blue]) / max;
+                    }
+
+                    BlendFunctions.Blend(source.Blend, s, d, b);
+                    if (colorChannels == 1)
+                    {
+                        blended[0] = ToSample(((1 - backdrop) * s[0]) + (backdrop * b[0]), max);
+                    }
+                    else
+                    {
+                        blended[red] = ToSample(((1 - backdrop) * s[0]) + (backdrop * b[0]), max);
+                        blended[1] = ToSample(((1 - backdrop) * s[1]) + (backdrop * b[1]), max);
+                        blended[blue] = ToSample(((1 - backdrop) * s[2]) + (backdrop * b[2]), max);
+                    }
+                }
             }
 
-            paint.CopyTo(blended);
-            var pixel = samples.Slice(i * channels, channels);
-            var backdrop = channels == 4 ? double.CreateTruncating(pixel[3]) / max : 1;
-            if (paint[3] != 0 && backdrop != 0)
-            {
-                if (colorChannels == 1)
-                {
-                    s[0] = s[1] = s[2] = paint[0] / max;
-                    d[0] = d[1] = d[2] = double.CreateTruncating(pixel[0]) / max;
-                }
-                else
-                {
-                    s[0] = paint[red] / max;
-                    s[1] = paint[1] / max;
-                    s[2] = paint[blue] / max;
-                    d[0] = double.CreateTruncating(pixel[red]) / max;
-                    d[1] = double.CreateTruncating(pixel[1]) / max;
-                    d[2] = double.CreateTruncating(pixel[blue]) / max;
-                }
-
-                BlendFunctions.Blend(source.Blend, s, d, b);
-                if (colorChannels == 1)
-                {
-                    blended[0] = ToSample(((1 - backdrop) * s[0]) + (backdrop * b[0]), max);
-                }
-                else
-                {
-                    blended[red] = ToSample(((1 - backdrop) * s[0]) + (backdrop * b[0]), max);
-                    blended[1] = ToSample(((1 - backdrop) * s[1]) + (backdrop * b[1]), max);
-                    blended[blue] = ToSample(((1 - backdrop) * s[2]) + (backdrop * b[2]), max);
-                }
-            }
-
-            Composite(pixel, channels, coverage.Slice(i, 1), new DrawingSource(blended, source.Mode));
+            // The pixels without coverage are not written: their entry is not read
+            CompositeCore(samples.Slice(start * channels, count * channels), channels, coverage.Slice(start, count), new DrawingSource(chunkColors[..(count * 4)], source.Mode));
         }
 
         // Written so that a value that is not a number is zero

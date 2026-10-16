@@ -630,6 +630,44 @@ public sealed class AutoCropTests
     }
 
     [Fact]
+    public void WeightsOfWideRowsAreExact()
+    {
+        // Rows longer than the chunks the weights are summed by: content on both sides of the chunk boundaries
+        CheckWideRow<Rgba32>(new Rgba32(255, 255, 255), new Rgba32(0, 0, 0), byte.MaxValue);
+        CheckWideRow<Gray16>(new Gray16(65535), new Gray16(0), ushort.MaxValue);
+
+        static void CheckWideRow<TPixel>(TPixel background, TPixel content, double max)
+            where TPixel : unmanaged
+        {
+            const int Width = 1300;
+            const int Height = 5;
+            using var image = new Image<TPixel>(Width, Height, background);
+            Rectangle[] blocks = [new(3, 1, 2, 1), new(500, 1, 30, 2), new(1020, 2, 10, 2), new(1290, 3, 7, 1)];
+            Int128 sumX = 0;
+            Int128 sumY = 0;
+            foreach (var block in blocks)
+            {
+                Fill(image.Frames[0], block, content);
+                for (var y = block.Top; y < block.Bottom; y++)
+                {
+                    for (var x = block.Left; x < block.Right; x++)
+                    {
+                        sumX += (2 * x) + 1 - Width;
+                        sumY += (2 * y) + 1 - Height;
+                    }
+                }
+            }
+
+            // Every content pixel has the largest difference: 10000 * max * max
+            var mass = (Int128)(10000 * (long)max * (long)max);
+            var scale = 10000d * max * max * (Width * Height);
+            var analysis = image.AnalyzeAutoCrop(new AutoCropOptions { AnalyzeWeights = true }, Ct);
+            Assert.Equal((double)(mass * sumX) / (scale * Width), analysis.WeightX);
+            Assert.Equal((double)(mass * sumY) / (scale * Height), analysis.WeightY);
+        }
+    }
+
+    [Fact]
     public void WeightsShiftThePaddedRectangle()
     {
         using var image = new Image<Rgba32>(8, 8, new Rgba32(255, 255, 255));

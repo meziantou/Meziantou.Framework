@@ -163,12 +163,7 @@ internal sealed class TgaPixelLayout
                     }
                     else
                     {
-                        for (var x = 0; x < width; x++)
-                        {
-                            destination[x * 3] = stored[(x * 4) + 2];
-                            destination[(x * 3) + 1] = stored[(x * 4) + 1];
-                            destination[(x * 3) + 2] = stored[x * 4];
-                        }
+                        PackedPixels.Bgrx32ToRgb24(stored[..(width * 4)], destination);
                     }
 
                     break;

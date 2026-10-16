@@ -14,12 +14,17 @@ internal ref partial struct HevcSliceCoder
     /// <param name="log2TrafoSize">The base 2 logarithm of the size of the block.</param>
     /// <param name="cIdx">The colour component of the block.</param>
     /// <param name="predModeIntra">The intra prediction mode of the block.</param>
-    /// <param name="coefficients"><c>TransCoeffLevel</c>: the rows of the block.</param>
+    /// <param name="coefficients">
+    /// The rows of the block: <c>TransCoeffLevel</c> for a coding unit that bypasses the scaling and the transform, otherwise
+    /// the scaled transform coefficients <c>d</c> (clause 8.6.3), which the scaling process gives for each level as it is
+    /// read.
+    /// </param>
+    /// <param name="rows">The number of rows of the block that are written: the others are not cleared.</param>
+    /// <param name="columns">The number of columns of the block that are written in those rows: a multiple of 4.</param>
     /// <returns><c>transform_skip_flag</c>.</returns>
-    private bool ResidualCoding(int log2TrafoSize, int cIdx, int predModeIntra, Span<int> coefficients)
+    private bool ResidualCoding(int log2TrafoSize, int cIdx, int predModeIntra, Span<int> coefficients, out int rows, out int columns)
     {
         var nTbS = 1 << log2TrafoSize;
-        coefficients[..(nTbS * nTbS)].Clear();
         var transformSkipFlag = false;
         if (_pps.TransformSkipEnabledFlag && !_cuTransquantBypassFlag && log2TrafoSize <= _pps.Log2MaxTransformSkipSize)
         {
@@ -94,6 +99,55 @@ internal ref partial struct HevcSliceCoder
         var lastSubBlock = subBlockScan.IndexOf((byte)(((lastSignificantCoeffY >> 2) << 4) | (lastSignificantCoeffX >> 2)));
         var lastScanPos = positionScan.IndexOf((byte)(((lastSignificantCoeffY & 3) << 4) | (lastSignificantCoeffX & 3)));
 
+        // The transform only reads the rows and the columns of the sub-blocks up to the last one: only they are cleared in
+        // the blocks of 16x16 and 32x32 coefficients. The residual of a block without transform is the whole block
+        if (transformSkipFlag || _cuTransquantBypassFlag || log2TrafoSize <= 3)
+        {
+            rows = nTbS;
+            columns = nTbS;
+            coefficients[..(nTbS * nTbS)].Clear();
+        }
+        else
+        {
+            var maxXS = 0;
+            var maxYS = 0;
+            foreach (var subBlock in subBlockScan[..(lastSubBlock + 1)])
+            {
+                maxXS = Math.Max(maxXS, HevcScanOrder.X(subBlock));
+                maxYS = Math.Max(maxYS, HevcScanOrder.Y(subBlock));
+            }
+
+            rows = (maxYS + 1) << 2;
+            columns = (maxXS + 1) << 2;
+            for (var y = 0; y < rows; y++)
+            {
+                coefficients.Slice(y << log2TrafoSize, columns).Clear();
+            }
+        }
+
+        // Clause 8.6.3 "Scaling process for transform coefficients", for each level as it is read: m[ x ][ y ] is 16 without
+        // scaling list and for a block larger than 4x4 that skips the transform. Equation 8-308: matrixId is cIdx for a
+        // coding unit coded in intra prediction mode, 3 + cIdx otherwise (Table 7-4)
+        var scaled = !_cuTransquantBypassFlag;
+        var bdShift = _bitDepth + log2TrafoSize + 10 - 15;
+        var levelScale = 0L;
+        ReadOnlySpan<byte> m = default;
+        if (scaled)
+        {
+            var qP = cIdx is 0 ? _qpY + _sps.QpBdOffset : GetChromaQp(cIdx);
+            levelScale = HevcQuantizationTables.LevelScale[qP % 6] << (qP / 6);
+            var scalingFactors = _layout.ScalingFactors;
+            if (scalingFactors.IsEmpty || (transformSkipFlag && nTbS > 4))
+            {
+                levelScale *= 16;
+            }
+            else
+            {
+                m = scalingFactors.Slice(HevcScalingList.GetScalingFactorOffset(log2TrafoSize - 2, _isIntra ? cIdx : 3 + cIdx), nTbS * nTbS);
+            }
+        }
+
+        var rounding = 1L << (bdShift - 1);
         var subBlocksPerSide = 1 << (log2TrafoSize - 2);
         Span<byte> codedSubBlockFlag = stackalloc byte[64];
         Span<byte> significant = stackalloc byte[16];
@@ -270,7 +324,10 @@ internal ref partial struct HevcSliceCoder
                     throw HevcErrors.Invalid("a transform coefficient level is out of range.");
 
                 var position = positionScan[significant[k]];
-                coefficients[((((yS << 2) + HevcScanOrder.Y(position)) << log2TrafoSize) + (xS << 2)) + HevcScanOrder.X(position)] = level;
+                var index = ((((yS << 2) + HevcScanOrder.Y(position)) << log2TrafoSize) + (xS << 2)) + HevcScanOrder.X(position);
+                coefficients[index] = scaled
+                    ? (int)Math.Clamp((((m.IsEmpty ? level : level * m[index]) * levelScale) + rounding) >> bdShift, HevcInverseTransform.CoeffMin, HevcInverseTransform.CoeffMax)
+                    : level;
                 numSigCoeff++;
             }
         }

@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -437,7 +438,7 @@ internal sealed class Vp8Encoder : IDisposable
         {
             var blockOffset = offset + ((block >> 2) * 4 * stride) + ((block & 3) * 4);
             GetResidual(source, recon, stride, blockOffset, residual);
-            Vp8ForwardTransforms.ForwardDct(residual, coefficients.Slice(block * 16, 16));
+            Vp8ForwardTransforms.ForwardDctColumns(residual, coefficients.Slice(block * 16, 16));
             dc[block] = coefficients[block * 16];
         }
 
@@ -501,6 +502,9 @@ internal sealed class Vp8Encoder : IDisposable
         Span<short> best = stackalloc short[16];
         Span<short> dequantized = stackalloc short[16];
         Span<byte> bestPixels = stackalloc byte[16];
+        Span<byte> edge = stackalloc byte[13];
+        Span<byte> sourcePixels = stackalloc byte[16];
+        Span<byte> pixels = stackalloc byte[16];
         var modeCount = _effort >= 4 ? 10 : 6;
         var total = 0.0;
         for (var block = 0; block < 16; block++)
@@ -514,21 +518,38 @@ internal sealed class Vp8Encoder : IDisposable
             var modeCosts = BModeCosts.AsSpan(((modesAbove[bx] * 10) + modesLeft[by]) * 10, 10);
             var bestCost = double.MaxValue;
             var bestMode = 0;
+
+            // The edge and the source of the block do not change while its modes are tried: every mode is predicted,
+            // reconstructed and measured in local 4x4 buffers, and only the best reconstruction is written to the plane
+            Vp8Reconstruction.GetSubBlockEdge(recon, stride, blockOffset, px, py, bx == 3 ? aboveRight : default, edge);
+            CopyBlock(source, stride, blockOffset, sourcePixels, 4);
             for (var mode = 0; mode < modeCount; mode++)
             {
-                Vp8Reconstruction.PredictSubBlock(recon, stride, blockOffset, px, py, bx == 3 ? aboveRight : default, mode);
-                GetResidual(source, recon, stride, blockOffset, residual);
-                Vp8ForwardTransforms.ForwardDct(residual, coefficients);
+                Vp8Reconstruction.PredictSubBlock(edge, mode, pixels);
+                // Column-major residuals (ForwardDctColumns)
+                for (var i = 0; i < 16; i++)
+                {
+                    residual[((i & 3) * 4) + (i >> 2)] = sourcePixels[i] - pixels[i];
+                }
+
+                Vp8ForwardTransforms.ForwardDctColumns(residual, coefficients);
                 Quantize(coefficients, trial, _q.YDc, _q.YAc, first: 0);
                 Dequantize(trial, dequantized, _q.YDc, _q.YAc);
-                Vp8Transforms.InverseDctAdd(dequantized, recon[blockOffset..], stride);
-                var cost = Distortion(source, recon, stride, blockOffset, 4) + (_lambda * (TokenBits(trial, 0, 3, context) + modeCosts[mode]));
+                Vp8Transforms.InverseDctAdd(dequantized, pixels, 4);
+                var distortion = Distortion(sourcePixels, pixels, 4, 0, 4);
+
+                // The token bits are not negative and the operations are monotonic: when the cost without them is not below
+                // the best cost, the full cost is not either, and the mode cannot be chosen
+                if (distortion + (_lambda * modeCosts[mode]) >= bestCost)
+                    continue;
+
+                var cost = distortion + (_lambda * (TokenBits(trial, 0, 3, context) + modeCosts[mode]));
                 if (cost < bestCost)
                 {
                     bestCost = cost;
                     bestMode = mode;
                     trial.CopyTo(best);
-                    CopyBlock(recon, stride, blockOffset, bestPixels, 4);
+                    pixels.CopyTo(bestPixels);
                 }
             }
 
@@ -567,7 +588,7 @@ internal sealed class Vp8Encoder : IDisposable
                 var blockOffset = offset + ((block >> 1) * 4 * stride) + ((block & 1) * 4);
                 var blockLevels = levels.Slice(((plane * 4) + block) * 16, 16);
                 GetResidual(source, recon, stride, blockOffset, residual);
-                Vp8ForwardTransforms.ForwardDct(residual, coefficients);
+                Vp8ForwardTransforms.ForwardDctColumns(residual, coefficients);
                 Quantize(coefficients, blockLevels, _q.UVDc, _q.UVAc, first: 0);
                 bits += TokenBits(blockLevels, 0, 2, above[block & 1] + left[block >> 1]);
                 above[block & 1] = left[block >> 1] = HasLevels(blockLevels, 0) ? (byte)1 : (byte)0;
@@ -588,7 +609,7 @@ internal sealed class Vp8Encoder : IDisposable
             for (var x = 0; x < 4; x++)
             {
                 var position = offset + (y * stride) + x;
-                residual[(y * 4) + x] = source[position] - prediction[position];
+                residual[(x * 4) + y] = source[position] - prediction[position];
             }
         }
     }
@@ -599,6 +620,70 @@ internal sealed class Vp8Encoder : IDisposable
     /// correction (<see cref="Divide"/>): the levels are the ones of <see cref="QuantizeReference"/>.
     /// </remarks>
     internal static void Quantize(ReadOnlySpan<int> coefficients, Span<short> levels, int dcStep, int acStep, int first)
+    {
+        if (!Vector128.IsHardwareAccelerated || !TryQuantizeVector(coefficients, levels, dcStep, acStep, first))
+        {
+            QuantizeScalar(coefficients, levels, dcStep, acStep, first);
+        }
+    }
+
+    /// <summary>
+    /// <see cref="Quantize"/> 4 coefficients at a time: the quotients are single-precision divisions rounded down, exact while
+    /// the numerators are below 2^24 (otherwise nothing is written and <see langword="false"/> is returned).
+    /// </summary>
+    /// <remarks>
+    /// For integers <c>0 &lt;= n &lt; 2^24</c> and <c>d &gt; 0</c>, the correctly rounded quotient differs from <c>n / d</c> by at
+    /// most <c>n / d * 2^-24 &lt; 1 / d</c>, which is less than the distance from a non-integer <c>n / d</c> to the next integer:
+    /// its floor is the integer quotient. Integer quotients are exact.
+    /// </remarks>
+    private static bool TryQuantizeVector(ReadOnlySpan<int> coefficients, Span<short> levels, int dcStep, int acStep, int first)
+    {
+        coefficients = coefficients[..16];
+        levels = levels[..16];
+
+        // Lane 0 of the first vector is the DC (rounded to nearest), the other lanes AC coefficients (2/3 of a step dead zone)
+        var multiplierFirst = Vector128.Create(1, 3, 3, 3);
+        var offsetFirst = Vector128.Create(dcStep >> 1, acStep, acStep, acStep);
+        var divisorFirst = Vector128.Create((float)dcStep, 3 * acStep, 3 * acStep, 3 * acStep);
+        var multiplier = Vector128.Create(3);
+        var offset = Vector128.Create(acStep);
+        var divisor = Vector128.Create((float)(3 * acStep));
+        var limit = Vector128.Create(1u << 24);
+        var c0 = Vector128.Create(coefficients[..4]);
+        var c1 = Vector128.Create(coefficients.Slice(4, 4));
+        var c2 = Vector128.Create(coefficients.Slice(8, 4));
+        var c3 = Vector128.Create(coefficients.Slice(12, 4));
+        var n0 = (Vector128.Abs(c0) * multiplierFirst) + offsetFirst;
+        var n1 = (Vector128.Abs(c1) * multiplier) + offset;
+        var n2 = (Vector128.Abs(c2) * multiplier) + offset;
+        var n3 = (Vector128.Abs(c3) * multiplier) + offset;
+
+        // Numerators from 2^24 (or wrapped to negative values, compared as unsigned) take the scalar path
+        var tooLarge = Vector128.GreaterThanOrEqual(n0.AsUInt32(), limit) | Vector128.GreaterThanOrEqual(n1.AsUInt32(), limit)
+            | Vector128.GreaterThanOrEqual(n2.AsUInt32(), limit) | Vector128.GreaterThanOrEqual(n3.AsUInt32(), limit);
+        if (tooLarge != Vector128<uint>.Zero)
+            return false;
+
+        var l0 = Level(c0, n0, divisorFirst);
+        if (first > 0)
+        {
+            l0 = l0.WithElement(0, 0);
+        }
+
+        Vector128.Narrow(l0, Level(c1, n1, divisor)).CopyTo(levels[..8]);
+        Vector128.Narrow(Level(c2, n2, divisor), Level(c3, n3, divisor)).CopyTo(levels.Slice(8, 8));
+        return true;
+
+        static Vector128<int> Level(Vector128<int> coefficient, Vector128<int> numerator, Vector128<float> divisor)
+        {
+            var quotient = Vector128.ConvertToInt32(Vector128.Floor(Vector128.ConvertToSingle(numerator) / divisor));
+            var level = Vector128.Min(quotient, Vector128.Create(MaxLevel));
+            return Vector128.ConditionalSelect(Vector128.LessThan(coefficient, Vector128<int>.Zero), -level, level);
+        }
+    }
+
+    /// <summary>The scalar version of <see cref="Quantize"/>, for any coefficient.</summary>
+    internal static void QuantizeScalar(ReadOnlySpan<int> coefficients, Span<short> levels, int dcStep, int acStep, int first)
     {
         coefficients = coefficients[..16];
         levels = levels[..16];
@@ -758,11 +843,74 @@ internal sealed class Vp8Encoder : IDisposable
     private static double BoolBits(int probability, bool value) => BitCosts[value ? 256 - probability : probability];
 
     /// <summary>Estimates the bits of the tokens of one block (raster-order levels) with the current probabilities.</summary>
+    /// <remarks>
+    /// The walk of <see cref="WalkTokens"/> with the bit costs added, in the same order, to a local sum (a cost sink adds them
+    /// through a reference); probabilities and costs are addressed by reference
+    /// (the type, band and context offsets stay inside the probability table, the costs are indexed by p or 256 - p).
+    /// </remarks>
     private double TokenBits(ReadOnlySpan<short> levels, int first, int type, int context)
     {
-        var sink = new CostSink();
-        WalkTokens(levels, first, type, context, ref sink);
-        return sink.Bits;
+        levels = levels[..16];
+        ref var probabilities = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_probabilities), type * 8 * 3 * Vp8Tables.TokenNodes));
+        ref var costs = ref unsafe(MemoryMarshal.GetArrayDataReference(BitCosts));
+        var bands = Vp8Tables.Bands;
+        var zigzag = Vp8Tables.Zigzag;
+        var last = -1;
+        for (var i = 15; i >= first; i--)
+        {
+            if (levels[zigzag[i]] != 0)
+            {
+                last = i;
+                break;
+            }
+        }
+
+        var bits = 0.0;
+        var previousWasZero = false;
+        for (var i = first; i < 16; i++)
+        {
+            ref var p = ref unsafe(Unsafe.Add(ref probabilities, ((bands[i] * 3) + context) * Vp8Tables.TokenNodes));
+            if (!previousWasZero)
+            {
+                if (i > last)
+                    return bits + Cost(ref costs, p, false); // end of block
+
+                bits += Cost(ref costs, p, true);
+            }
+
+            var level = (int)levels[zigzag[i]];
+            var value = Math.Abs(level);
+            if (value == 0)
+            {
+                bits += Cost(ref costs, unsafe(Unsafe.Add(ref p, 1)), false);
+                previousWasZero = true;
+                context = 0;
+                continue;
+            }
+
+            bits += Cost(ref costs, unsafe(Unsafe.Add(ref p, 1)), true);
+            previousWasZero = false;
+            if (value == 1)
+            {
+                bits += Cost(ref costs, unsafe(Unsafe.Add(ref p, 2)), false);
+                context = 1;
+            }
+            else
+            {
+                bits += Cost(ref costs, unsafe(Unsafe.Add(ref p, 2)), true);
+                var sink = new CostSink(bits);
+                WriteLargeValue(unsafe(MemoryMarshal.CreateReadOnlySpan(ref p, Vp8Tables.TokenNodes)), value, ref sink);
+                bits = sink.Bits;
+                context = 2;
+            }
+
+            bits += Cost(ref costs, 128, level < 0);
+        }
+
+        return bits;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static double Cost(ref double costs, int probability, bool value) => unsafe(Unsafe.Add(ref costs, value ? 256 - probability : probability));
     }
 
     private static double[] CreateBitCosts()
@@ -1363,9 +1511,9 @@ internal sealed class Vp8Encoder : IDisposable
 
     /// <summary>Sums the estimated cost in bits of the booleans.</summary>
     [StructLayout(LayoutKind.Auto)]
-    private struct CostSink : IBoolSink
+    private struct CostSink(double bits) : IBoolSink
     {
-        public double Bits { get; private set; }
+        public double Bits { get; private set; } = bits;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Write(int probability, bool value) => Bits += BoolBits(probability, value);

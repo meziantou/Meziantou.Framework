@@ -1,3 +1,6 @@
+using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -62,24 +65,30 @@ internal sealed class IccClutStage : IccStage
         }
     }
 
+    // Every element of the stack buffers is written before it is read: the fraction of each input, the order of the inputs
+    // (read by the simplex interpolation only, which sorts them), the weights and offsets of the interpolated vertices
+    [SkipLocalsInit]
     public override void Apply(Span<double> values)
     {
-        Span<double> fractions = stackalloc double[IccPipeline.MaxChannels];
-        Span<int> order = stackalloc int[IccPipeline.MaxChannels];
-        Span<double> result = stackalloc double[IccPipeline.MaxChannels];
-        result.Clear();
+        Span<double> fractions = unsafe(stackalloc double[IccPipeline.MaxChannels]);
+        Span<int> order = unsafe(stackalloc int[IccPipeline.MaxChannels]);
 
         // The cell containing the input and the position inside it. The last grid point belongs to the last cell
+        var gridPoints = _gridPoints;
+        var strides = _strides;
+        var inputs = _inputs;
         var offset = 0;
-        for (var i = 0; i < _inputs; i++)
+        for (var i = 0; i < inputs; i++)
         {
-            var last = _gridPoints[i] - 1;
+            var last = gridPoints[i] - 1;
             var position = IccCurve.Clip(values[i]) * last;
             var index = Math.Min((int)position, last - 1);
             fractions[i] = position - index;
-            offset += index * _strides[i];
+            offset += index * strides[i];
+            if (_multilinear)
+                continue;
 
-            // Insertion sort of the inputs by decreasing fraction
+            // Insertion sort of the inputs by decreasing fraction (simplex interpolation)
             var slot = i;
             while (slot > 0 && fractions[order[slot - 1]] < fractions[i])
             {
@@ -90,71 +99,112 @@ internal sealed class IccClutStage : IccStage
             order[slot] = i;
         }
 
-        var data = _data.Span;
+        // The vertices of the cell that are interpolated, with their weights, in the order of the sums
+        Span<double> vertexWeights = unsafe(stackalloc double[1 << IccPipeline.MaxChannels]);
+        Span<int> vertexOffsets = unsafe(stackalloc int[1 << IccPipeline.MaxChannels]);
+        int count;
         if (_multilinear)
         {
-            // Every vertex of the cell: bit i of the vertex number selects the upper grid point of input i
-            for (var vertex = 0; vertex < 1 << _inputs; vertex++)
+            // Every vertex of the cell: bit i of the vertex number selects the upper grid point of input i. Its weight is
+            // 1.0 times, input by input in increasing order, the fraction (upper grid point) or 1 minus the fraction: the
+            // vertices that agree on the first inputs share the products of those inputs, computed once (the same
+            // operations in the same order)
+            vertexWeights[0] = 1.0;
+            vertexOffsets[0] = offset;
+            count = 1;
+            for (var i = 0; i < inputs; i++)
             {
-                var vertexWeight = 1.0;
-                var vertexOffset = offset;
-                for (var i = 0; i < _inputs; i++)
+                var fraction = fractions[i];
+                var complement = 1 - fraction;
+                var stride = strides[i];
+                var upperWeights = vertexWeights.Slice(count, count);
+                var upperOffsets = vertexOffsets.Slice(count, count);
+                for (var vertex = 0; vertex < upperWeights.Length; vertex++)
                 {
-                    if ((vertex & (1 << i)) != 0)
-                    {
-                        vertexWeight *= fractions[i];
-                        vertexOffset += _strides[i];
-                    }
-                    else
-                    {
-                        vertexWeight *= 1 - fractions[i];
-                    }
+                    var vertexWeight = vertexWeights[vertex];
+                    upperWeights[vertex] = vertexWeight * fraction;
+                    upperOffsets[vertex] = vertexOffsets[vertex] + stride;
+                    vertexWeights[vertex] = vertexWeight * complement;
                 }
 
-                if (vertexWeight != 0)
-                {
-                    Accumulate(data[vertexOffset..], vertexWeight, result);
-                }
-            }
-
-            result[.._outputs].CopyTo(values);
-            return;
-        }
-
-        var weight = 1 - fractions[order[0]];
-        for (var vertex = 0; ; vertex++)
-        {
-            if (weight != 0)
-            {
-                Accumulate(data[offset..], weight, result);
-            }
-
-            if (vertex == _inputs)
-                break;
-
-            var input = order[vertex];
-            offset += _strides[input];
-            weight = fractions[input] - (vertex + 1 < _inputs ? fractions[order[vertex + 1]] : 0);
-        }
-
-        result[.._outputs].CopyTo(values);
-    }
-
-    private void Accumulate(ReadOnlySpan<byte> entry, double weight, Span<double> result)
-    {
-        if (_bytesPerEntry == 1)
-        {
-            for (var i = 0; i < _outputs; i++)
-            {
-                result[i] += weight * (entry[i] / 255.0);
+                count *= 2;
             }
         }
         else
         {
+            var weight = 1 - fractions[order[0]];
+            for (var vertex = 0; ; vertex++)
+            {
+                vertexWeights[vertex] = weight;
+                vertexOffsets[vertex] = offset;
+                if (vertex == _inputs)
+                    break;
+
+                var input = order[vertex];
+                offset += _strides[input];
+                weight = fractions[input] - (vertex + 1 < _inputs ? fractions[order[vertex + 1]] : 0);
+            }
+
+            count = _inputs + 1;
+        }
+
+        Interpolate(vertexWeights[..count], vertexOffsets[..count], values);
+    }
+
+    /// <summary>
+    /// Sets the outputs to the sum, in vertex order, of the entries of the vertices whose weight is not zero times their
+    /// weights: <c>0 + w0 e0 + w1 e1 + ...</c> for each output.
+    /// </summary>
+    private void Interpolate(ReadOnlySpan<double> weights, ReadOnlySpan<int> offsets, Span<double> values)
+    {
+        var data = _data.Span;
+        if (_outputs == 3)
+        {
+            // The usual case (CIELAB, CIEXYZ or RGB outputs): the sums stay in registers
+            double sum0 = 0, sum1 = 0, sum2 = 0;
+            for (var vertex = 0; vertex < weights.Length; vertex++)
+            {
+                var weight = weights[vertex];
+                if (weight == 0)
+                    continue;
+
+                if (_bytesPerEntry == 1)
+                {
+                    var entry = data.Slice(offsets[vertex], 3);
+                    sum0 += weight * (entry[0] / 255.0);
+                    sum1 += weight * (entry[1] / 255.0);
+                    sum2 += weight * (entry[2] / 255.0);
+                }
+                else
+                {
+                    var entry = data.Slice(offsets[vertex], 6);
+                    sum0 += weight * (BinaryPrimitives.ReadUInt16BigEndian(entry) / 65535.0);
+                    sum1 += weight * (BinaryPrimitives.ReadUInt16BigEndian(entry[2..]) / 65535.0);
+                    sum2 += weight * (BinaryPrimitives.ReadUInt16BigEndian(entry[4..]) / 65535.0);
+                }
+            }
+
+            values[0] = sum0;
+            values[1] = sum1;
+            values[2] = sum2;
+            return;
+        }
+
+        Span<double> result = unsafe(stackalloc double[IccPipeline.MaxChannels]);
+        result.Clear();
+        for (var vertex = 0; vertex < weights.Length; vertex++)
+        {
+            var weight = weights[vertex];
+            if (weight == 0)
+                continue;
+
+            var entry = data.Slice(offsets[vertex], _outputs * _bytesPerEntry);
             for (var i = 0; i < _outputs; i++)
             {
-                result[i] += weight * (IccReader.ReadUInt16(entry[(2 * i)..]) / 65535.0);
+                result[i] += weight * (_bytesPerEntry == 1 ? entry[i] / 255.0 : BinaryPrimitives.ReadUInt16BigEndian(entry[(2 * i)..]) / 65535.0);
             }
         }
+
+        result[.._outputs].CopyTo(values);
     }
 }

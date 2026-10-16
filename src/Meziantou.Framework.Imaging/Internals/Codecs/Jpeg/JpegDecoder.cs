@@ -409,7 +409,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             if (payload.Length < 17 + total)
                 throw Invalid("The JPEG DHT segment is truncated.");
 
-            var table = JpegHuffmanTable.TryCreate(counts, payload.Slice(17, total), out var error) ?? throw Invalid(error!);
+            var table = JpegHuffmanTable.TryCreate(counts, payload.Slice(17, total), out var error, ac: tableClass == 1) ?? throw Invalid(error!);
             (tableClass == 0 ? _dcTables : _acTables)[id] = table;
             payload = payload[(17 + total)..];
         }
@@ -548,11 +548,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _scanComponents = scanComponents;
         _scan = _arithmetic
             ? new JpegArithmeticSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken)
-            : new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken)
-            {
-                // The table of the AC coefficients that one lookup decodes costs more than it saves on small images
-                UsesFastAc = (long)_structure!.Width * _structure.Height >= FastAcMinimumPixels,
-            };
+            : new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken);
+        PrepareFastAc(scanComponents);
     }
 
     /// <summary>
@@ -662,6 +659,22 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _scan = _arithmetic
             ? new JpegArithmeticProgressiveScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, start, end, high, low, _context.CancellationToken)
             : new JpegProgressiveScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, start, end, high, low, _context.CancellationToken);
+        PrepareFastAc(scanComponents);
+    }
+
+    /// <summary>
+    /// Builds the table of the AC coefficients that one lookup decodes (<see cref="JpegHuffmanTable.FastAc"/>) for the AC
+    /// tables of a scan. It costs more than it saves on small images, whose coefficients all take the regular path.
+    /// </summary>
+    private void PrepareFastAc(JpegScanDecoder.ScanComponent[] scanComponents)
+    {
+        if (_arithmetic || (long)_structure!.Width * _structure.Height < FastAcMinimumPixels)
+            return;
+
+        foreach (var scanComponent in scanComponents)
+        {
+            scanComponent.AcTable?.PrepareFastAc();
+        }
     }
 
     private void AllocateProgressiveState()
@@ -758,11 +771,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 
         _writer = CreateRowWriter(scope);
         var block = new double[64];
+        var scales = new double[64];
         for (var row = 0; row < _mcusY; row++)
         {
             foreach (var component in _components)
             {
-                TransformBlockRows(component, row, block);
+                TransformBlockRows(component, row, block, scales);
             }
 
             if (row > 0)
@@ -781,9 +795,14 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     }
 
     /// <summary>Dequantizes and transforms the blocks of one MCU row of a component into its sample plane.</summary>
-    private static void TransformBlockRows(JpegFrameComponent component, int mcuRow, double[] block)
+    private static void TransformBlockRows(JpegFrameComponent component, int mcuRow, double[] block, double[] scales)
     {
         var quantization = component.LatchedQuantization!;
+        for (var i = 0; i < 64; i++)
+        {
+            scales[i] = quantization[i];
+        }
+
         var stride = component.Stride;
         var precision = component.Precision;
         for (var blockRow = mcuRow * component.VerticalSampling; blockRow < (mcuRow + 1) * component.VerticalSampling; blockRow++)
@@ -808,10 +827,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
                     continue;
                 }
 
-                for (var i = 0; i < 64; i++)
-                {
-                    block[i] = coefficients[i] * (double)quantization[i];
-                }
+                JpegIdct.Dequantize(coefficients, scales, block);
 
                 if (precision > 8)
                 {
@@ -819,7 +835,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
                 }
                 else
                 {
-                    JpegIdct.Transform(block, component.Samples.AsSpan(offset), stride);
+                    JpegIdct.Transform(block, component.Samples.AsSpan(offset), stride, JpegIdct.IsSparse(coefficients));
                 }
             }
         }

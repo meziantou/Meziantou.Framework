@@ -13,7 +13,17 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal static class Vp8Reconstruction
 {
     /// <summary>Predicts the macroblock and adds the residuals of its 24 blocks (luma blocks 0-15, U 16-19, V 20-23).</summary>
-    public static void ReconstructMacroblock(Vp8Planes planes, int mbX, int mbY, int mbWidth, int yMode, ReadOnlySpan<byte> subModes, int uvMode, ReadOnlySpan<short> coefficients)
+    /// <param name="planes">The planes being reconstructed.</param>
+    /// <param name="mbX">The macroblock column.</param>
+    /// <param name="mbY">The macroblock row.</param>
+    /// <param name="mbWidth">The number of macroblocks in a row.</param>
+    /// <param name="yMode">The luma mode.</param>
+    /// <param name="subModes">The 16 sub-block modes of a B_PRED macroblock.</param>
+    /// <param name="uvMode">The chroma mode.</param>
+    /// <param name="coefficients">The dequantized coefficients of the 24 blocks.</param>
+    /// <param name="blocksWithCoefficients">Bit <c>i</c> is clear when every coefficient of block <c>i</c> is zero (no residual).</param>
+    /// <param name="blocksWithAc">Bit <c>i</c> is clear when every coefficient of block <c>i</c> but the DC is zero.</param>
+    public static void ReconstructMacroblock(Vp8Planes planes, int mbX, int mbY, int mbWidth, int yMode, ReadOnlySpan<byte> subModes, int uvMode, ReadOnlySpan<short> coefficients, uint blocksWithCoefficients, uint blocksWithAc)
     {
         var y = planes.Y;
         var yStride = planes.YStride;
@@ -29,7 +39,7 @@ internal static class Vp8Reconstruction
                     var offset = yOffset + (by * 4 * yStride) + (bx * 4);
                     PredictSubBlock(y, yStride, offset, mbX * 16 + bx * 4, mbY * 16 + by * 4, bx == 3 ? aboveRight : default, subModes[(by * 4) + bx]);
                     var index = (by * 4) + bx;
-                    Vp8Transforms.InverseDctAdd(coefficients.Slice(index * 16, 16), y[offset..], yStride);
+                    AddResidual(coefficients, index, y[offset..], yStride, blocksWithCoefficients, blocksWithAc);
                 }
             }
         }
@@ -39,7 +49,7 @@ internal static class Vp8Reconstruction
             for (var index = 0; index < 16; index++)
             {
                 var offset = yOffset + ((index >> 2) * 4 * yStride) + ((index & 3) * 4);
-                Vp8Transforms.InverseDctAdd(coefficients.Slice(index * 16, 16), y[offset..], yStride);
+                AddResidual(coefficients, index, y[offset..], yStride, blocksWithCoefficients, blocksWithAc);
             }
         }
 
@@ -53,8 +63,21 @@ internal static class Vp8Reconstruction
             {
                 var offset = uvOffset + ((block >> 1) * 4 * uvStride) + ((block & 1) * 4);
                 var index = 16 + (plane * 4) + block;
-                Vp8Transforms.InverseDctAdd(coefficients.Slice(index * 16, 16), data[offset..], uvStride);
+                AddResidual(coefficients, index, data[offset..], uvStride, blocksWithCoefficients, blocksWithAc);
             }
+        }
+    }
+
+    private static void AddResidual(ReadOnlySpan<short> coefficients, int index, Span<byte> destination, int stride, uint blocksWithCoefficients, uint blocksWithAc)
+    {
+        var bit = 1u << index;
+        if ((blocksWithAc & bit) != 0)
+        {
+            Vp8Transforms.InverseDctAddFull(coefficients.Slice(index * 16, 16), destination, stride);
+        }
+        else if ((blocksWithCoefficients & bit) != 0)
+        {
+            Vp8Transforms.InverseDctAddDc(coefficients[index * 16], destination, stride);
         }
     }
 
@@ -164,8 +187,40 @@ internal static class Vp8Reconstruction
     /// <param name="macroblockAboveRight">For the right sub-block column, the macroblock's above-right pixels; otherwise empty (the above-right pixels are read from the plane).</param>
     public static void PredictSubBlock(Span<byte> plane, int stride, int offset, int px, int py, ReadOnlySpan<byte> macroblockAboveRight, int mode)
     {
-        // Edge: E[0..3] = L3..L0, E[4] = P (above-left), E[5..8] = A0..A3, E[9..12] = above-right
         Span<byte> e = stackalloc byte[13];
+        GetSubBlockEdge(plane, stride, offset, px, py, macroblockAboveRight, e);
+        Span<byte> b = stackalloc byte[16];
+        PredictSubBlock(e, mode, b);
+        for (var y = 0; y < 4; y++)
+        {
+            b.Slice(y * 4, 4).CopyTo(plane.Slice(offset + (y * stride), 4));
+        }
+    }
+
+    /// <summary>Gets the 13 edge pixels of a sub-block (see <see cref="PredictSubBlock(Span{byte}, int, int, int, int, ReadOnlySpan{byte}, int)"/>) for <see cref="PredictSubBlock(ReadOnlySpan{byte}, int, Span{byte})"/>.</summary>
+    public static void GetSubBlockEdge(ReadOnlySpan<byte> plane, int stride, int offset, int px, int py, ReadOnlySpan<byte> macroblockAboveRight, Span<byte> e)
+    {
+        // Edge: E[0..3] = L3..L0, E[4] = P (above-left), E[5..8] = A0..A3, E[9..12] = above-right
+        if (px > 0 && py > 0)
+        {
+            // Inside the frame: the above-left, above and above-right pixels are contiguous on the row above
+            e[3] = plane[offset - 1];
+            e[2] = plane[offset + stride - 1];
+            e[1] = plane[offset + (2 * stride) - 1];
+            e[0] = plane[offset + (3 * stride) - 1];
+            if (macroblockAboveRight.IsEmpty)
+            {
+                plane.Slice(offset - stride - 1, 9).CopyTo(e[4..]);
+            }
+            else
+            {
+                plane.Slice(offset - stride - 1, 5).CopyTo(e[4..]);
+                macroblockAboveRight.CopyTo(e[9..]);
+            }
+
+            return;
+        }
+
         for (var i = 0; i < 4; i++)
         {
             e[3 - i] = px > 0 ? plane[offset + (i * stride) - 1] : (byte)129;
@@ -187,13 +242,6 @@ internal static class Vp8Reconstruction
             {
                 e[9 + i] = py > 0 ? plane[offset - stride + 4 + i] : (byte)127;
             }
-        }
-
-        Span<byte> b = stackalloc byte[16];
-        PredictSubBlock(e, mode, b);
-        for (var y = 0; y < 4; y++)
-        {
-            b.Slice(y * 4, 4).CopyTo(plane.Slice(offset + (y * stride), 4));
         }
     }
 

@@ -193,11 +193,11 @@ internal static class Vp8LoopFilter
     }
 
     // The pixels p3 to q3 of the positions of the edge are 8 vectors of 16 bytes, one byte per position: rows of the plane for
-    // a horizontal edge, columns for a vertical one (two 8 x 8 transpositions of the rows of 8 pixels across the edge)
+    // a horizontal edge, columns for a vertical one (the rows of 8 pixels across the edge are transposed as two 8 x 8 blocks,
+    // rows 0-7 in the low halves of the vectors and rows 8-15 in the high halves)
     private static void EdgeVector(Span<byte> plane, int offset, int step, int along, int count, int edgeLimit, int interior, int hevThreshold, bool macroblock)
     {
         _ = GetEdgeOrigin(plane, offset, step, along, count, 4);
-        Span<ulong> columns = stackalloc ulong[16];
         Vector128<byte> p3, p2, p1, p0, q0, q1, q2, q3;
         if (along is 1)
         {
@@ -212,49 +212,28 @@ internal static class Vp8LoopFilter
         }
         else
         {
-            // columns[ k ] holds the pixel k of the rows 0 to 7, columns[ 8 + k ] the one of the rows 8 to 15
-            for (var i = 0; i < count; i++)
-            {
-                columns[i] = BinaryPrimitives.ReadUInt64LittleEndian(plane.Slice(offset - 4 + (i * along), 8));
-            }
-
-            Transpose8x8(columns[..8]);
-            Transpose8x8(columns[8..]);
-            p3 = Vector128.Create(columns[0], columns[8]).AsByte();
-            p2 = Vector128.Create(columns[1], columns[9]).AsByte();
-            p1 = Vector128.Create(columns[2], columns[10]).AsByte();
-            p0 = Vector128.Create(columns[3], columns[11]).AsByte();
-            q0 = Vector128.Create(columns[4], columns[12]).AsByte();
-            q1 = Vector128.Create(columns[5], columns[13]).AsByte();
-            q2 = Vector128.Create(columns[6], columns[14]).AsByte();
-            q3 = Vector128.Create(columns[7], columns[15]).AsByte();
+            var start = offset - 4;
+            var r0 = LoadRows(plane, start, along, 0, count);
+            var r1 = LoadRows(plane, start, along, 1, count);
+            var r2 = LoadRows(plane, start, along, 2, count);
+            var r3 = LoadRows(plane, start, along, 3, count);
+            var r4 = LoadRows(plane, start, along, 4, count);
+            var r5 = LoadRows(plane, start, along, 5, count);
+            var r6 = LoadRows(plane, start, along, 6, count);
+            var r7 = LoadRows(plane, start, along, 7, count);
+            Transpose8x8(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+            p3 = r0.AsByte();
+            p2 = r1.AsByte();
+            p1 = r2.AsByte();
+            p0 = r3.AsByte();
+            q0 = r4.AsByte();
+            q1 = r5.AsByte();
+            q2 = r6.AsByte();
+            q3 = r7.AsByte();
         }
 
-        var limits = new FilterLimits(edgeLimit, interior, hevThreshold, macroblock);
-        var p2Low = Widen(p2, upper: false);
-        var p1Low = Widen(p1, upper: false);
-        var p0Low = Widen(p0, upper: false);
-        var q0Low = Widen(q0, upper: false);
-        var q1Low = Widen(q1, upper: false);
-        var q2Low = Widen(q2, upper: false);
-        FilterLanes(Widen(p3, upper: false), ref p2Low, ref p1Low, ref p0Low, ref q0Low, ref q1Low, ref q2Low, Widen(q3, upper: false), limits);
-        var p2High = Widen(p2, upper: true);
-        var p1High = Widen(p1, upper: true);
-        var p0High = Widen(p0, upper: true);
-        var q0High = Widen(q0, upper: true);
-        var q1High = Widen(q1, upper: true);
-        var q2High = Widen(q2, upper: true);
-        if (count > 8)
-        {
-            FilterLanes(Widen(p3, upper: true), ref p2High, ref p1High, ref p0High, ref q0High, ref q1High, ref q2High, Widen(q3, upper: true), limits);
-        }
-
-        p2 = Narrow(p2Low, p2High);
-        p1 = Narrow(p1Low, p1High);
-        p0 = Narrow(p0Low, p0High);
-        q0 = Narrow(q0Low, q0High);
-        q1 = Narrow(q1Low, q1High);
-        q2 = Narrow(q2Low, q2High);
+        // With 8 positions, the high lanes are not stored: their results do not matter
+        FilterLanes(p3, ref p2, ref p1, ref p0, ref q0, ref q1, ref q2, q3, edgeLimit, interior, hevThreshold, macroblock);
         if (along is 1)
         {
             Store(p2, plane, offset - (3 * step), count);
@@ -267,17 +246,25 @@ internal static class Vp8LoopFilter
         }
 
         // The rows are written whole: p3 and q3 keep their values
-        Split(p2, columns, 1);
-        Split(p1, columns, 2);
-        Split(p0, columns, 3);
-        Split(q0, columns, 4);
-        Split(q1, columns, 5);
-        Split(q2, columns, 6);
-        Transpose8x8(columns[..8]);
-        Transpose8x8(columns[8..]);
-        for (var i = 0; i < count; i++)
         {
-            BinaryPrimitives.WriteUInt64LittleEndian(plane.Slice(offset - 4 + (i * along), 8), columns[i]);
+            var r0 = p3.AsUInt64();
+            var r1 = p2.AsUInt64();
+            var r2 = p1.AsUInt64();
+            var r3 = p0.AsUInt64();
+            var r4 = q0.AsUInt64();
+            var r5 = q1.AsUInt64();
+            var r6 = q2.AsUInt64();
+            var r7 = q3.AsUInt64();
+            Transpose8x8(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+            var start = offset - 4;
+            StoreRows(r0, plane, start, along, 0, count);
+            StoreRows(r1, plane, start, along, 1, count);
+            StoreRows(r2, plane, start, along, 2, count);
+            StoreRows(r3, plane, start, along, 3, count);
+            StoreRows(r4, plane, start, along, 4, count);
+            StoreRows(r5, plane, start, along, 5, count);
+            StoreRows(r6, plane, start, along, 6, count);
+            StoreRows(r7, plane, start, along, 7, count);
         }
 
         static Vector128<byte> Load(ReadOnlySpan<byte> plane, int offset, int count)
@@ -295,128 +282,137 @@ internal static class Vp8LoopFilter
             }
         }
 
-        static void Split(Vector128<byte> value, Span<ulong> columns, int k)
+        // The 8 pixels of row i (low half) and of row 8 + i (high half, zero when the edge has 8 positions)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<ulong> LoadRows(ReadOnlySpan<byte> plane, int start, int along, int i, int count)
         {
-            columns[k] = value.AsUInt64().GetElement(0);
-            columns[8 + k] = value.AsUInt64().GetElement(1);
+            var low = BinaryPrimitives.ReadUInt64LittleEndian(plane.Slice(start + (i * along), 8));
+            return count is 16
+                ? Vector128.Create(low, BinaryPrimitives.ReadUInt64LittleEndian(plane.Slice(start + ((8 + i) * along), 8)))
+                : Vector128.CreateScalar(low);
         }
 
-        static Vector128<short> Widen(Vector128<byte> value, bool upper) => (upper ? Vector128.WidenUpper(value) : Vector128.WidenLower(value)).AsInt16();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void StoreRows(Vector128<ulong> value, Span<byte> plane, int start, int along, int i, int count)
+        {
+            BinaryPrimitives.WriteUInt64LittleEndian(plane.Slice(start + (i * along), 8), value.GetElement(0));
+            if (count is 16)
+            {
+                BinaryPrimitives.WriteUInt64LittleEndian(plane.Slice(start + ((8 + i) * along), 8), value.GetElement(1));
+            }
+        }
 
-        static Vector128<byte> Narrow(Vector128<short> low, Vector128<short> high) => Vector128.Narrow(low.AsUInt16(), high.AsUInt16());
     }
 
-    // Transposes 8 x 8 bytes, a row per value (its byte k is the column k): exchanges the bytes, then the pairs of bytes,
-    // then the groups of 4 bytes, between the rows and the columns
-    private static void Transpose8x8(Span<ulong> rows)
+    // Transposes two 8 x 8 blocks of bytes at once, one in each 64-bit half: a row per value (its byte k is the column k).
+    // Exchanges the bytes, then the pairs of bytes, then the groups of 4 bytes, between the rows and the columns
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Transpose8x8(ref Vector128<ulong> r0, ref Vector128<ulong> r1, ref Vector128<ulong> r2, ref Vector128<ulong> r3, ref Vector128<ulong> r4, ref Vector128<ulong> r5, ref Vector128<ulong> r6, ref Vector128<ulong> r7)
     {
         const ulong Mask1 = 0x00FF00FF00FF00FF;
         const ulong Mask2 = 0x0000FFFF0000FFFF;
         const ulong Mask4 = 0x00000000FFFFFFFF;
-        for (var i = 0; i < 8; i += 2)
-        {
-            var a = rows[i];
-            var b = rows[i + 1];
-            rows[i] = (a & Mask1) | ((b & Mask1) << 8);
-            rows[i + 1] = ((a >> 8) & Mask1) | (b & ~Mask1);
-        }
+        Exchange(ref r0, ref r1, Mask1, 8);
+        Exchange(ref r2, ref r3, Mask1, 8);
+        Exchange(ref r4, ref r5, Mask1, 8);
+        Exchange(ref r6, ref r7, Mask1, 8);
+        Exchange(ref r0, ref r2, Mask2, 16);
+        Exchange(ref r1, ref r3, Mask2, 16);
+        Exchange(ref r4, ref r6, Mask2, 16);
+        Exchange(ref r5, ref r7, Mask2, 16);
+        Exchange(ref r0, ref r4, Mask4, 32);
+        Exchange(ref r1, ref r5, Mask4, 32);
+        Exchange(ref r2, ref r6, Mask4, 32);
+        Exchange(ref r3, ref r7, Mask4, 32);
 
-        for (var i = 0; i < 8; i += 4)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Exchange(ref Vector128<ulong> a, ref Vector128<ulong> b, ulong mask, int shift)
         {
-            for (var j = i; j < i + 2; j++)
-            {
-                var a = rows[j];
-                var b = rows[j + 2];
-                rows[j] = (a & Mask2) | ((b & Mask2) << 16);
-                rows[j + 2] = ((a >> 16) & Mask2) | (b & ~Mask2);
-            }
-        }
-
-        for (var j = 0; j < 4; j++)
-        {
-            var a = rows[j];
-            var b = rows[j + 4];
-            rows[j] = (a & Mask4) | ((b & Mask4) << 32);
-            rows[j + 4] = ((a >> 32) & Mask4) | (b & ~Mask4);
+            var m = Vector128.Create(mask);
+            var first = (a & m) | ((b & m) << shift);
+            b = ((a >> shift) & m) | Vector128.AndNot(b, m);
+            a = first;
         }
     }
 
-    // The filter of MacroblockEdge or SubBlockEdge for 8 positions: the pixels are 0 to 255 in 16-bit lanes, and every
-    // intermediate value of the scalar filter fits them (at most 27 * 127 + 63)
-    private static void FilterLanes(Vector128<short> p3, ref Vector128<short> p2, ref Vector128<short> p1, ref Vector128<short> p0, ref Vector128<short> q0, ref Vector128<short> q1, ref Vector128<short> q2, Vector128<short> q3, in FilterLimits limits)
+    // The filter of MacroblockEdge or SubBlockEdge for 16 positions, one per byte lane. The signed values (pixel - 128) are
+    // computed with saturating byte arithmetic, which gives the clamped results of the scalar filter:
+    // - SubtractSaturate(p1, q1) is Clamp128(p1 - q1);
+    // - Clamp128(a + 3 (q0 - p0)) is a + d + d + d with d = SubtractSaturate(q0, p0), each addition saturating: when
+    //   |q0 - p0| >= 128 both saturate toward its sign, otherwise the partial sums move monotonically toward the final sum
+    //   and saturate exactly when it is out of range;
+    // - the differences and the edge-limit sum are unsigned saturating differences and sums (the limits are below 255);
+    // - the flat filter's (k w + 63) >> 7 is computed in 16-bit lanes (|27 w + 63| < 2^15).
+    private static void FilterLanes(Vector128<byte> p3, ref Vector128<byte> p2, ref Vector128<byte> p1, ref Vector128<byte> p0, ref Vector128<byte> q0, ref Vector128<byte> q1, ref Vector128<byte> q2, Vector128<byte> q3, int edgeLimit, int interior, int hevThreshold, bool macroblock)
     {
-        var interior = limits.Interior;
-        var filter = Vector128.LessThanOrEqual((Vector128.Abs(p0 - q0) * 2) + (Vector128.Abs(p1 - q1) >> 1), limits.EdgeLimit)
-            & Vector128.LessThanOrEqual(Vector128.Abs(p3 - p2), interior) & Vector128.LessThanOrEqual(Vector128.Abs(p2 - p1), interior)
-            & Vector128.LessThanOrEqual(Vector128.Abs(p1 - p0), interior) & Vector128.LessThanOrEqual(Vector128.Abs(q3 - q2), interior)
-            & Vector128.LessThanOrEqual(Vector128.Abs(q2 - q1), interior) & Vector128.LessThanOrEqual(Vector128.Abs(q1 - q0), interior);
-        if (filter == Vector128<short>.Zero)
+        var interiorLimit = Vector128.Create((byte)interior);
+        var edgeSum = Vector128.AddSaturate(Vector128.AddSaturate(Difference(p0, q0), Difference(p0, q0)), Vector128.ShiftRightLogical(Difference(p1, q1), 1));
+        var filter = Vector128.LessThanOrEqual(edgeSum, Vector128.Create((byte)edgeLimit))
+            & Vector128.LessThanOrEqual(Difference(p3, p2), interiorLimit) & Vector128.LessThanOrEqual(Difference(p2, p1), interiorLimit)
+            & Vector128.LessThanOrEqual(Difference(p1, p0), interiorLimit) & Vector128.LessThanOrEqual(Difference(q3, q2), interiorLimit)
+            & Vector128.LessThanOrEqual(Difference(q2, q1), interiorLimit) & Vector128.LessThanOrEqual(Difference(q1, q0), interiorLimit);
+        if (filter == Vector128<byte>.Zero)
             return;
 
-        var hev = Vector128.GreaterThan(Vector128.Abs(p1 - p0), limits.HevThreshold) | Vector128.GreaterThan(Vector128.Abs(q1 - q0), limits.HevThreshold);
-        var offset = Vector128.Create((short)128);
-        var sp2 = p2 - offset;
-        var sp1 = p1 - offset;
-        var sp0 = p0 - offset;
-        var sq0 = q0 - offset;
-        var sq1 = q1 - offset;
-        var sq2 = q2 - offset;
-        var three = Vector128.Create((short)3);
-        var four = Vector128.Create((short)4);
-        if (limits.Macroblock)
+        var threshold = Vector128.Create((byte)hevThreshold);
+        var hev = Vector128.GreaterThan(Difference(p1, p0), threshold) | Vector128.GreaterThan(Difference(q1, q0), threshold);
+        var sign = Vector128.Create((byte)0x80);
+        var sp2 = (p2 ^ sign).AsSByte();
+        var sp1 = (p1 ^ sign).AsSByte();
+        var sp0 = (p0 ^ sign).AsSByte();
+        var sq0 = (q0 ^ sign).AsSByte();
+        var sq1 = (q1 ^ sign).AsSByte();
+        var sq2 = (q2 ^ sign).AsSByte();
+        var step = Vector128.SubtractSaturate(sq0, sp0);
+        var three = Vector128.Create((sbyte)3);
+        var four = Vector128.Create((sbyte)4);
+        if (macroblock)
         {
             // The filter value of CommonAdjust with the outer taps, which is also w of the 3 taps of a flat edge
-            var w = Clamp128(Clamp128(sp1 - sq1) + (Vector128.Create((short)3) * (sq0 - sp0)));
-            var b = Clamp128(w + three) >> 3;
-            var a = Clamp128(w + four) >> 3;
-            var q0Hev = ToUnsigned(sq0 - a);
-            var p0Hev = ToUnsigned(sp0 + b);
-            var round = Vector128.Create((short)63);
-            a = Clamp128(((Vector128.Create((short)27) * w) + round) >> 7);
-            var q0Flat = ToUnsigned(sq0 - a);
-            var p0Flat = ToUnsigned(sp0 + a);
-            a = Clamp128(((Vector128.Create((short)18) * w) + round) >> 7);
-            var q1Flat = ToUnsigned(sq1 - a);
-            var p1Flat = ToUnsigned(sp1 + a);
-            a = Clamp128(((Vector128.Create((short)9) * w) + round) >> 7);
-            var q2Flat = ToUnsigned(sq2 - a);
-            var p2Flat = ToUnsigned(sp2 + a);
+            var w = Vector128.AddSaturate(Vector128.AddSaturate(Vector128.AddSaturate(Vector128.SubtractSaturate(sp1, sq1), step), step), step);
+            var b = Vector128.ShiftRightArithmetic(Vector128.AddSaturate(w, three), 3);
+            var a = Vector128.ShiftRightArithmetic(Vector128.AddSaturate(w, four), 3);
+            var q0Hev = Vector128.SubtractSaturate(sq0, a);
+            var p0Hev = Vector128.AddSaturate(sp0, b);
+            var wLow = Vector128.WidenLower(w);
+            var wHigh = Vector128.WidenUpper(w);
+            var a27 = Taps(wLow, wHigh, 27);
+            var a18 = Taps(wLow, wHigh, 18);
+            var a9 = Taps(wLow, wHigh, 9);
             var flat = filter & ~hev;
-            q0 = Vector128.ConditionalSelect(filter, Vector128.ConditionalSelect(hev, q0Hev, q0Flat), q0);
-            p0 = Vector128.ConditionalSelect(filter, Vector128.ConditionalSelect(hev, p0Hev, p0Flat), p0);
-            q1 = Vector128.ConditionalSelect(flat, q1Flat, q1);
-            p1 = Vector128.ConditionalSelect(flat, p1Flat, p1);
-            q2 = Vector128.ConditionalSelect(flat, q2Flat, q2);
-            p2 = Vector128.ConditionalSelect(flat, p2Flat, p2);
+            q0 = Vector128.ConditionalSelect(filter, Vector128.ConditionalSelect(hev.AsSByte(), q0Hev, Vector128.SubtractSaturate(sq0, a27)).AsByte() ^ sign, q0);
+            p0 = Vector128.ConditionalSelect(filter, Vector128.ConditionalSelect(hev.AsSByte(), p0Hev, Vector128.AddSaturate(sp0, a27)).AsByte() ^ sign, p0);
+            q1 = Vector128.ConditionalSelect(flat, Vector128.SubtractSaturate(sq1, a18).AsByte() ^ sign, q1);
+            p1 = Vector128.ConditionalSelect(flat, Vector128.AddSaturate(sp1, a18).AsByte() ^ sign, p1);
+            q2 = Vector128.ConditionalSelect(flat, Vector128.SubtractSaturate(sq2, a9).AsByte() ^ sign, q2);
+            p2 = Vector128.ConditionalSelect(flat, Vector128.AddSaturate(sp2, a9).AsByte() ^ sign, p2);
         }
         else
         {
             // CommonAdjust with the outer taps where the edge variance is high, then the adjustment of p1 and q1 elsewhere
-            var value = Clamp128((Clamp128(sp1 - sq1) & hev) + (three * (sq0 - sp0)));
-            var b = Clamp128(value + three) >> 3;
-            var a = Clamp128(value + four) >> 3;
-            q0 = Vector128.ConditionalSelect(filter, ToUnsigned(sq0 - a), q0);
-            p0 = Vector128.ConditionalSelect(filter, ToUnsigned(sp0 + b), p0);
-            a = (a + Vector128<short>.One) >> 1;
+            var outerTaps = Vector128.SubtractSaturate(sp1, sq1) & hev.AsSByte();
+            var value = Vector128.AddSaturate(Vector128.AddSaturate(Vector128.AddSaturate(outerTaps, step), step), step);
+            var b = Vector128.ShiftRightArithmetic(Vector128.AddSaturate(value, three), 3);
+            var a = Vector128.ShiftRightArithmetic(Vector128.AddSaturate(value, four), 3);
+            q0 = Vector128.ConditionalSelect(filter, Vector128.SubtractSaturate(sq0, a).AsByte() ^ sign, q0);
+            p0 = Vector128.ConditionalSelect(filter, Vector128.AddSaturate(sp0, b).AsByte() ^ sign, p0);
+
+            // a is between -16 and 15: (a + 1) >> 1 does not saturate
+            a = Vector128.ShiftRightArithmetic(a + Vector128<sbyte>.One, 1);
             var outer = filter & ~hev;
-            q1 = Vector128.ConditionalSelect(outer, ToUnsigned(sq1 - a), q1);
-            p1 = Vector128.ConditionalSelect(outer, ToUnsigned(sp1 + a), p1);
+            q1 = Vector128.ConditionalSelect(outer, Vector128.SubtractSaturate(sq1, a).AsByte() ^ sign, q1);
+            p1 = Vector128.ConditionalSelect(outer, Vector128.AddSaturate(sp1, a).AsByte() ^ sign, p1);
         }
 
-        static Vector128<short> Clamp128(Vector128<short> value) => Vector128.Min(Vector128.Max(value, Vector128.Create((short)-128)), Vector128.Create((short)127));
+        static Vector128<byte> Difference(Vector128<byte> a, Vector128<byte> b) => Vector128.SubtractSaturate(a, b) | Vector128.SubtractSaturate(b, a);
 
-        static Vector128<short> ToUnsigned(Vector128<short> value) => Clamp128(value) + Vector128.Create((short)128);
-    }
-
-    private readonly struct FilterLimits(int edgeLimit, int interior, int hevThreshold, bool macroblock)
-    {
-        public Vector128<short> EdgeLimit { get; } = Vector128.Create((short)edgeLimit);
-
-        public Vector128<short> Interior { get; } = Vector128.Create((short)interior);
-
-        public Vector128<short> HevThreshold { get; } = Vector128.Create((short)hevThreshold);
-
-        public bool Macroblock { get; } = macroblock;
+        // (k w + 63) >> 7 for the 16 lanes, between -27 and 27
+        static Vector128<sbyte> Taps(Vector128<short> low, Vector128<short> high, short k)
+        {
+            var round = Vector128.Create((short)63);
+            var factor = Vector128.Create(k);
+            return Vector128.Narrow(Vector128.ShiftRightArithmetic((low * factor) + round, 7), Vector128.ShiftRightArithmetic((high * factor) + round, 7));
+        }
     }
 
     private static void MacroblockEdge(Span<byte> plane, int offset, int step, int along, int count, int edgeLimit, int interior, int hevThreshold)

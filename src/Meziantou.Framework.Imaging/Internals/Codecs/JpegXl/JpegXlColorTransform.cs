@@ -1,3 +1,5 @@
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -6,6 +8,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 internal static class JpegXlColorTransform
 {
+    private const float YCbCrOffset = 128f / 255;
+    private const float RedFromCr = 1.402f;
+    private const float GreenFromCb = -0.114f * 1.772f / 0.587f;
+    private const float GreenFromCr = -0.299f * 1.402f / 0.587f;
+    private const float BlueFromCb = 1.772f;
+
     /// <summary>
     /// Converts rows of YCbCr samples as JPEG defines them (full range, chroma centered on zero, luma centered on one half)
     /// to RGB samples, in place.
@@ -15,14 +23,35 @@ internal static class JpegXlColorTransform
     /// <param name="cr">The Cr samples, replaced with the blue ones.</param>
     public static void YCbCrToRgb(Span<float> cb, Span<float> y, Span<float> cr)
     {
-        const float Offset = 128f / 255;
-        const float RedFromCr = 1.402f;
-        const float GreenFromCb = -0.114f * 1.772f / 0.587f;
-        const float GreenFromCr = -0.299f * 1.402f / 0.587f;
-        const float BlueFromCb = 1.772f;
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            // The operations of the scalar loop, four samples at a time
+            var offset = Vector128.Create(YCbCrOffset);
+            var redFromCr = Vector128.Create(RedFromCr);
+            var greenFromCb = Vector128.Create(GreenFromCb);
+            var greenFromCr = Vector128.Create(GreenFromCr);
+            var blueFromCb = Vector128.Create(BlueFromCb);
+            for (; i <= y.Length - 4; i += 4)
+            {
+                var luma = Vector128.Create(y.Slice(i, 4)) + offset;
+                var blueDifference = Vector128.Create(cb.Slice(i, 4));
+                var redDifference = Vector128.Create(cr.Slice(i, 4));
+                (luma + (redFromCr * redDifference)).CopyTo(cb.Slice(i, 4));
+                (luma + (greenFromCb * blueDifference) + (greenFromCr * redDifference)).CopyTo(y.Slice(i, 4));
+                (luma + (blueFromCb * blueDifference)).CopyTo(cr.Slice(i, 4));
+            }
+        }
+
+        YCbCrToRgbScalar(cb[i..], y[i..], cr[i..]);
+    }
+
+    /// <summary>The scalar reference of <see cref="YCbCrToRgb"/>.</summary>
+    internal static void YCbCrToRgbScalar(Span<float> cb, Span<float> y, Span<float> cr)
+    {
         for (var i = 0; i < y.Length; i++)
         {
-            var luma = y[i] + Offset;
+            var luma = y[i] + YCbCrOffset;
             var blueDifference = cb[i];
             var redDifference = cr[i];
             cb[i] = luma + (RedFromCr * redDifference);

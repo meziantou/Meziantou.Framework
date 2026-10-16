@@ -62,12 +62,16 @@ internal sealed class Jpeg2000TileComponent : IDisposable
     /// <summary>Gets the plane as floating-point numbers: the coefficients of the irreversible transformation.</summary>
     public Span<float> Coefficients => unsafe(MemoryMarshal.Cast<int, float>(Samples));
 
-    /// <summary>Rents the plane, cleared: a coefficient no code-block gives is zero.</summary>
+    /// <summary>
+    /// Rents the plane, not cleared: the code-blocks of the sub-bands cover it exactly, and the decoder stores the
+    /// coefficients of each code-block or clears its area when it has no coding pass.
+    /// </summary>
     /// <exception cref="ImageResourceLimitException">The plane exceeds the live-allocation limit.</exception>
     public void AllocatePlane(AllocationScope scope)
     {
         _plane?.Dispose();
-        _plane = Av1PooledArray<int>.Rent(scope, (long)Width * Height);
+        _plane = null;
+        _plane = Av1PooledArray<int>.Rent(scope, (long)Width * Height, clear: false);
     }
 
     public void Dispose()

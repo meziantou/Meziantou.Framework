@@ -31,17 +31,49 @@ internal static class HevcInverseTransform
     /// <param name="scratch">A scratch of <c>nTbS * nTbS</c> values.</param>
     public static void Transform(Span<int> block, int log2TrafoSize, int trType, Span<int> scratch)
     {
+        var nTbS = 1 << log2TrafoSize;
+        Transform(block, log2TrafoSize, trType, scratch, nTbS, nTbS, residualShift: 0);
+    }
+
+    /// <summary>
+    /// Transforms the scaled transform coefficients <c>d</c> of a block whose coefficients that are not zero are in its
+    /// first rows and columns into the residual samples <c>r</c>, rounded by Equation 8-299 when
+    /// <paramref name="residualShift"/> is not zero: <c>( r + ( 1 &lt;&lt; ( bdShift - 1 ) ) ) &gt;&gt; bdShift</c>.
+    /// </summary>
+    /// <param name="block">The rows of the block, <c>nTbS</c> values each: the coefficients, whose values outside the first <paramref name="rows"/> rows and <paramref name="columns"/> columns are not read and count as zeros; replaced by the residual samples.</param>
+    /// <param name="log2TrafoSize">The base 2 logarithm of <c>nTbS</c>: 2 to 5.</param>
+    /// <param name="trType">The transform type: 1 for the discrete sine transform of a 4x4 block, otherwise 0.</param>
+    /// <param name="scratch">A scratch of <c>nTbS * nTbS</c> values.</param>
+    /// <param name="rows">The number of rows that can have coefficients that are not zero: 1 to <c>nTbS</c>.</param>
+    /// <param name="columns">The number of columns that can have coefficients that are not zero: a multiple of 4 up to <c>nTbS</c>.</param>
+    /// <param name="residualShift"><c>bdShift</c> of Equation 8-299, or 0 for the residual samples before that rounding.</param>
+    public static void Transform(Span<int> block, int log2TrafoSize, int trType, Span<int> scratch, int rows, int columns, int residualShift)
+    {
         if (Vector128.IsHardwareAccelerated)
         {
-            TransformVector(block, log2TrafoSize, trType, scratch);
+            TransformVector(block, log2TrafoSize, trType, scratch, rows, columns, residualShift);
+            return;
         }
-        else
+
+        // The coefficients outside the rows and the columns are zeros
+        var nTbS = 1 << log2TrafoSize;
+        for (var y = 0; y < nTbS; y++)
         {
-            TransformScalar(block, log2TrafoSize, trType, scratch);
+            block.Slice((y * nTbS) + (y < rows ? columns : 0), y < rows ? nTbS - columns : nTbS).Clear();
+        }
+
+        TransformScalar(block, log2TrafoSize, trType, scratch);
+        if (residualShift > 0)
+        {
+            var rounding = 1 << (residualShift - 1);
+            for (var i = 0; i < nTbS * nTbS; i++)
+            {
+                block[i] = (block[i] + rounding) >> residualShift;
+            }
         }
     }
 
-    /// <summary>The transformation of <see cref="Transform"/>, one sample at a time: the reference of the vector path.</summary>
+    /// <summary>The transformation of <see cref="Transform(Span{int}, int, int, Span{int})"/>, one sample at a time: the reference of the vector path.</summary>
     internal static void TransformScalar(Span<int> block, int log2TrafoSize, int trType, Span<int> scratch)
     {
         var nTbS = 1 << log2TrafoSize;
@@ -84,15 +116,34 @@ internal static class HevcInverseTransform
 
     // Each output of a one-dimensional transform is a sum of products of the coefficients by a column of the matrix: the
     // column pass computes 4 columns of the block at a time (one output row of 4 columns), the row pass 4 outputs of a row
-    // at a time. The coefficients after the last one that is not zero add nothing to the sums.
-    private static void TransformVector(Span<int> block, int log2TrafoSize, int trType, Span<int> scratch)
+    // at a time. The coefficients after the last one that is not zero add nothing to the sums, and the columns that have
+    // no coefficient give columns of zeros.
+    private static void TransformVector(Span<int> block, int log2TrafoSize, int trType, Span<int> scratch, int rows, int columns, int residualShift)
     {
         var nTbS = 1 << log2TrafoSize;
         var size = nTbS * nTbS;
         block = block[..size];
-        var lastIndex = block.LastIndexOfAnyExcept(0);
-        if (lastIndex < 0)
-            return; // A block of zeros transforms to zeros
+        int lastRow;
+        if (columns == nTbS)
+        {
+            var lastIndex = block[..(rows * nTbS)].LastIndexOfAnyExcept(0);
+            lastRow = lastIndex < 0 ? -1 : lastIndex / nTbS;
+        }
+        else
+        {
+            lastRow = rows - 1;
+            while (lastRow >= 0 && !block.Slice(lastRow * nTbS, columns).ContainsAnyExcept(0))
+            {
+                lastRow--;
+            }
+        }
+
+        if (lastRow < 0)
+        {
+            // A block of zeros transforms to zeros
+            block.Clear();
+            return;
+        }
 
         ReadOnlySpan<int> matrix;
         int rowStep;
@@ -109,7 +160,6 @@ internal static class HevcInverseTransform
         }
 
         // 1. Each column of d is transformed to e; 2. g = Clip3( coeffMin, coeffMax, ( e + 64 ) >> 7 )
-        var lastRow = lastIndex / nTbS;
         var g = scratch[..size];
         var round = Vector128.Create(64);
         var min = Vector128.Create(CoeffMin);
@@ -117,7 +167,7 @@ internal static class HevcInverseTransform
         for (var y = 0; y < nTbS; y++)
         {
             var output = g.Slice(y * nTbS, nTbS);
-            for (var x = 0; x < nTbS; x += 4)
+            for (var x = 0; x < columns; x += 4)
             {
                 var sum = Vector128<int>.Zero;
                 for (var j = 0; j <= lastRow; j++)
@@ -127,12 +177,15 @@ internal static class HevcInverseTransform
 
                 Vector128.Min(Vector128.Max((sum + round) >> 7, min), max).CopyTo(output[x..]);
             }
+
+            output[columns..].Clear();
         }
 
-        // 3. Each row of g is transformed to r
+        // 3. Each row of g is transformed to r, then rounded by Equation 8-299
+        var rounding = Vector128.Create(residualShift > 0 ? 1 << (residualShift - 1) : 0);
         for (var y = 0; y < nTbS; y++)
         {
-            var input = g.Slice(y * nTbS, nTbS);
+            var input = g.Slice(y * nTbS, columns);
             var output = block.Slice(y * nTbS, nTbS);
             var last = input.LastIndexOfAnyExcept(0);
             if (last < 0)
@@ -149,7 +202,7 @@ internal static class HevcInverseTransform
                     sum += Vector128.Create(matrix.Slice((j * rowStep) + i, 4)) * input[j];
                 }
 
-                sum.CopyTo(output[i..]);
+                ((sum + rounding) >> residualShift).CopyTo(output[i..]);
             }
         }
     }

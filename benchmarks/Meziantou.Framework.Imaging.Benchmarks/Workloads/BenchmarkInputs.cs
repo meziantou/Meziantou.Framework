@@ -16,12 +16,15 @@ internal static class BenchmarkInputs
     private static readonly Lazy<byte[]> LargeRgb24Bytes = new(() => BenchmarkPixels.Rgb24(LargeWidth, LargeHeight, seed: 1));
     private static readonly Lazy<byte[]> SmallPngData = new(() => EncodeRgba32(SmallPngSource, 64, 64, new PngEncoder()));
     private static readonly Lazy<byte[]> LargePng8Data = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new PngEncoder()));
+    private static readonly Lazy<byte[]> PngGrayAlpha8Data = new(() => PngLayoutInput.Encode(GrayAlpha8Samples(ServiceRgba32Source), ServiceWidth, ServiceHeight, colorType: 4, bitDepth: 8));
+    private static readonly Lazy<byte[]> PngRgb16Data = new(() => PngLayoutInput.Encode(Rgb16Samples(LargeRgba64Source), Large16Width, Large16Height, colorType: 2, bitDepth: 16));
     private static readonly Lazy<byte[]> LargePng16Data = new(() => EncodeRgba64(LargeRgba64Source, Large16Width, Large16Height, new PngEncoder()));
     private static readonly Lazy<byte[]> BaselineJpegData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, JpegEncoder));
     private static readonly Lazy<byte[]> ProgressiveJpegData = new(() => ProgressiveJpegInput.Encode(LargeRgb24Bytes.Value, LargeWidth, LargeHeight, JpegQuality));
     private static readonly Lazy<byte[]> InkJpegData = new(() => ProgressiveJpegInput.EncodeInks(LargeRgb24Bytes.Value, LargeWidth, LargeHeight, JpegQuality));
     private static readonly Lazy<byte[]> ServiceJpegData = new(() => EncodeRgb24(BenchmarkPixels.Rgb24(ServiceWidth, ServiceHeight, seed: 5), ServiceWidth, ServiceHeight, JpegEncoder));
     private static readonly Lazy<byte[]> GifData = new(() => EncodeAnimation(new GifEncoder()));
+    private static readonly Lazy<byte[]> TransparentGifData = new(() => EncodeTransparentAnimation(new GifEncoder()));
     private static readonly Lazy<byte[]> ApngData = new(() => EncodeAnimation(new PngEncoder { AnimationMode = PngAnimationMode.Animated }));
     private static readonly Lazy<byte[]> LossyWebPData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, WebPLossyEncoder));
     private static readonly Lazy<byte[]> LosslessWebPData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new WebPEncoder()));
@@ -33,6 +36,14 @@ internal static class BenchmarkInputs
     private static readonly Lazy<byte[]> BmpRgbaData = new(() => EncodeRgba32(ServiceRgba32Source, ServiceWidth, ServiceHeight, new BmpEncoder()));
     private static readonly Lazy<byte[]> TgaRgbData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TgaEncoder { Compression = TgaCompression.RunLength }));
     private static readonly Lazy<byte[]> TgaRgbaData = new(() => EncodeRgba32(ServiceRgba32Source, ServiceWidth, ServiceHeight, new TgaEncoder { Compression = TgaCompression.RunLength }));
+    private static readonly Lazy<byte[]> BmpIndexed8Data = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, AllowColorReduction = true }));
+    private static readonly Lazy<byte[]> PngIndexed8Data = new(() => EncodeRgb24(IndexedRgb24Source, LargeWidth, LargeHeight, new PngEncoder { PixelLayout = PngPixelLayout.Indexed }));
+    private static readonly Lazy<byte[]> TiffIndexed8Data = new(() => EncodeRgb24(IndexedRgb24Source, LargeWidth, LargeHeight, new TiffEncoder { PixelLayout = TiffPixelLayout.Indexed }));
+    private static readonly Lazy<byte[]> TiffLzwData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TiffEncoder { Compression = TiffCompression.Lzw }));
+    private static readonly Lazy<byte[]> TiffDeflateData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TiffEncoder { Compression = TiffCompression.Deflate }));
+    private static readonly Lazy<byte[]> TiffDeflateRowStripsData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TiffEncoder { Compression = TiffCompression.Deflate, RowsPerStrip = 1 }));
+    private static readonly Lazy<byte[]> TiffPredictor8Data = new(() => TiffPredictorInput.Encode(LargeRgb24Bytes.Value, LargeWidth, LargeHeight, samplesPerPixel: 3, bitsPerSample: 8, bigEndian: false));
+    private static readonly Lazy<byte[]> TiffPredictor16Data = new(() => TiffPredictorInput.Encode(unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(LargeRgba64Source.AsSpan())), Large16Width, Large16Height, samplesPerPixel: 4, bitsPerSample: 16, bigEndian: true));
     private static readonly Lazy<byte[]> PnmRgbData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new PnmEncoder()));
     private static readonly Lazy<byte[]> PnmRgbaData = new(() => EncodeRgba32(ServiceRgba32Source, ServiceWidth, ServiceHeight, new PnmEncoder()));
 
@@ -78,6 +89,18 @@ internal static class BenchmarkInputs
     /// <summary>Gets a 2048x1536 RGB 8-bit PNG (default <see cref="PngEncoder"/>).</summary>
     public static byte[] LargePng8 => LargePng8Data.Value;
 
+    /// <summary>Gets the 1024x768 RGBA source as a gray+alpha 8-bit PNG (gray <c>(r + 2g + b) / 4</c>), written by <see cref="PngLayoutInput"/>.</summary>
+    public static byte[] PngGrayAlpha8 => PngGrayAlpha8Data.Value;
+
+    /// <summary>Gets the pixels <see cref="PngGrayAlpha8"/> decodes to.</summary>
+    public static Rgba32[] GrayAlpha8Pixels => [.. ServiceRgba32Source.Select(static p => new Rgba32(Luma(p), Luma(p), Luma(p), p.A))];
+
+    /// <summary>Gets the 1024x768 RGBA 16-bit source without its alpha as an RGB 16-bit PNG, written by <see cref="PngLayoutInput"/>.</summary>
+    public static byte[] PngRgb16 => PngRgb16Data.Value;
+
+    /// <summary>Gets the pixels <see cref="PngRgb16"/> decodes to.</summary>
+    public static Rgba64[] Rgb16Pixels => [.. LargeRgba64Source.Select(static p => new Rgba64(p.R, p.G, p.B))];
+
     /// <summary>Gets a 1024x768 RGBA 16-bit PNG (default <see cref="PngEncoder"/>).</summary>
     public static byte[] LargePng16 => LargePng16Data.Value;
 
@@ -98,6 +121,12 @@ internal static class BenchmarkInputs
 
     /// <summary>Gets a 320x240 GIF of 48 frames (default <see cref="GifEncoder"/>: 256 colors, no dithering), 40 ms per frame.</summary>
     public static byte[] Gif => GifData.Value;
+
+    /// <summary>
+    /// Gets a 320x240 GIF of 48 frames (default <see cref="GifEncoder"/>), 40 ms per frame, with a transparent index:
+    /// every frame is composited over the canvas.
+    /// </summary>
+    public static byte[] TransparentGif => TransparentGifData.Value;
 
     /// <summary>Gets a 320x240 APNG of 48 frames (default <see cref="PngEncoder"/>), 40 ms per frame.</summary>
     public static byte[] Apng => ApngData.Value;
@@ -138,6 +167,42 @@ internal static class BenchmarkInputs
     /// <summary>Gets the 1024x768 RGBA source encoded as a run-length TGA with eight alpha bits.</summary>
     public static byte[] TgaRgba => TgaRgbaData.Value;
 
+    /// <summary>Gets the 2048x1536 RGB source reduced to 256 colors and encoded as an 8-bit indexed BMP.</summary>
+    public static byte[] BmpIndexed8 => BmpIndexed8Data.Value;
+
+    /// <summary>Gets the 256 colors of <see cref="BmpIndexed8"/> as 2048x1536 RGB 8-bit pixels: the source of the other indexed inputs.</summary>
+    public static Rgb24[] IndexedRgb24Source
+    {
+        get
+        {
+            using var image = Image.Load<Rgb24>(BmpIndexed8);
+            var pixels = new Rgb24[image.Width * image.Height];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            return pixels;
+        }
+    }
+
+    /// <summary>Gets <see cref="IndexedRgb24Source"/> encoded as an 8-bit indexed PNG (default compression, adaptive filters).</summary>
+    public static byte[] PngIndexed8 => PngIndexed8Data.Value;
+
+    /// <summary>Gets <see cref="IndexedRgb24Source"/> encoded as an uncompressed 8-bit indexed TIFF.</summary>
+    public static byte[] TiffIndexed8 => TiffIndexed8Data.Value;
+
+    /// <summary>Gets the 2048x1536 RGB source encoded as an LZW TIFF (<see cref="TiffEncoder"/>, strips of 64 KB, no predictor).</summary>
+    public static byte[] TiffLzw => TiffLzwData.Value;
+
+    /// <summary>Gets the 2048x1536 RGB source encoded as a Deflate TIFF (<see cref="TiffEncoder"/>, strips of 64 KB, no predictor).</summary>
+    public static byte[] TiffDeflate => TiffDeflateData.Value;
+
+    /// <summary>Gets the 2048x1536 RGB source encoded as a Deflate TIFF of one row (6 KB) per strip, the size libtiff writes by default.</summary>
+    public static byte[] TiffDeflateRowStrips => TiffDeflateRowStripsData.Value;
+
+    /// <summary>Gets the 2048x1536 RGB source as an uncompressed little-endian TIFF with the horizontal differencing predictor.</summary>
+    public static byte[] TiffPredictor8 => TiffPredictor8Data.Value;
+
+    /// <summary>Gets the 1024x768 RGBA 16-bit source as an uncompressed big-endian TIFF with the horizontal differencing predictor.</summary>
+    public static byte[] TiffPredictor16 => TiffPredictor16Data.Value;
+
     /// <summary>Gets the 2048x1536 RGB source encoded as a binary PPM.</summary>
     public static byte[] PnmRgb => PnmRgbData.Value;
 
@@ -172,6 +237,58 @@ internal static class BenchmarkInputs
             image.Dispose();
             throw;
         }
+    }
+
+    private static byte[] EncodeTransparentAnimation(ImageEncoder encoder)
+    {
+        // The animation of CreateAnimation with transparent 16x16 cells in a diagonal pattern
+        using var image = CreateAnimation();
+        foreach (var frame in image.Frames)
+        {
+            frame.ProcessPixelBytes(static pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < pixels.Width; x++)
+                    {
+                        if (((x / 16) + (y / 16)) % 3 == 0)
+                        {
+                            row[(x * 4) + 3] = 0;
+                        }
+                    }
+                }
+            });
+        }
+
+        return Save(image, encoder);
+    }
+
+    private static byte Luma(Rgba32 pixel) => (byte)((pixel.R + (2 * pixel.G) + pixel.B) / 4);
+
+    private static byte[] GrayAlpha8Samples(Rgba32[] pixels)
+    {
+        var samples = new byte[pixels.Length * 2];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            samples[i * 2] = Luma(pixels[i]);
+            samples[(i * 2) + 1] = pixels[i].A;
+        }
+
+        return samples;
+    }
+
+    private static byte[] Rgb16Samples(Rgba64[] pixels)
+    {
+        var samples = new byte[pixels.Length * 6];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(samples.AsSpan(i * 6), pixels[i].R);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(samples.AsSpan((i * 6) + 2), pixels[i].G);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(samples.AsSpan((i * 6) + 4), pixels[i].B);
+        }
+
+        return samples;
     }
 
     private static byte[] EncodeAnimation(ImageEncoder encoder)

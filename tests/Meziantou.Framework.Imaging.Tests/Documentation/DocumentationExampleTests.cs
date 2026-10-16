@@ -1140,17 +1140,18 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
-    public void ConvertAvifDoesNotRelabelAnHdrImage()
+    public void ConvertAvifKeepsTheColorDescriptionOfAnHdrImage()
     {
-        // BT.2020 primaries with the PQ transfer characteristics: PNG cannot store that description, and the strict save
-        // of the example fails instead of writing the samples as if they were sRGB
+        // BT.2020 primaries with the PQ transfer characteristics: PNG stores them in a cICP chunk, with the matrix of RGB
+        // samples and their full range, so the samples are not relabeled as sRGB
         var fixture = GoldenCorpus.Default.Get("avif/lossy-420-bt2020-limited-10bit");
         var png = GetPath("hdr.png");
-        Assert.Throws<UnsupportedImageFeatureException>(() => Examples.ConvertAvif(fixture.InputPath, png));
-        Assert.False(File.Exists(png));
+        Assert.EndsWith("color: 9/16/9 limited", Examples.ConvertAvif(fixture.InputPath, png), StringComparison.Ordinal);
 
         using var image = Image.Load(fixture.InputPath);
-        Assert.Equal(new CicpColorDescription(9, 16, 9, fullRange: false), image.Metadata.Cicp);
+        using var converted = Image.Load(png);
+        Assert.Equal(new CicpColorDescription(9, 16, 0, fullRange: true), converted.Metadata.Cicp);
+        Assert.Equal(ImageSnapshots.CaptureFrame(image.Frames[0]).Span.ToArray(), ImageSnapshots.CaptureFrame(converted.Frames[0]).Span.ToArray());
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.Tests.Codecs;
 
@@ -510,6 +511,62 @@ public sealed class PngDecoderTests
         }
 
         Assert.True(partials > 5, $"{partials}");
+    }
+
+    [Fact]
+    public void ColorDescriptionsAndLightLevelsAreDecoded()
+    {
+        // cICP: primaries, transfer, matrix 0, full range; mDCV: R, G, B and white chromaticities (0.00002), luminances
+        // (0.0001 cd/m2); cLLI: MaxCLL and MaxFALL (0.0001 cd/m2), to the nearest whole cd/m2
+        byte[] mdcv = [0x8A, 0x48, 0x39, 0x08, 0x21, 0x34, 0x9B, 0xAA, 0x19, 0x96, 0x08, 0xFC, 0x3D, 0x13, 0x40, 0x42, 0x00, 0x98, 0x96, 0x80, 0x00, 0x00, 0x00, 0x32];
+        byte[] clli = [0x00, 0x98, 0xAB, 0x18, 0x00, 0x3D, 0x09, 0x00];
+        var profile = new IccProfile(new MetadataBlob(IccTestBlobs.Create("RGB ")));
+        byte[] iccp = [.. "ICC profile"u8, 0, 0, .. SyntheticImages.Zlib(profile.Data.ToArray())];
+        var data = Png(builder => builder.Chunk("iCCP", iccp).Chunk("cICP", [9, 16, 0, 1]).Chunk("mDCV", mdcv).Chunk("cLLI", clli));
+        foreach (var metadata in new[] { Image.Identify(data).Metadata, LoadMetadata(data) })
+        {
+            Assert.Equal(new CicpColorDescription(9, 16, 0, fullRange: true), metadata.Cicp);
+            Assert.Equal(new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50), metadata.MasteringDisplay);
+            Assert.Equal(new ContentLightLevel(1001, 400), metadata.ContentLightLevel);
+
+            // The color description takes precedence over the profile, wherever it is
+            Assert.Null(metadata.IccProfile);
+        }
+
+        Assert.Null(LoadMetadata(Png(builder => builder.Chunk("cICP", [9, 16, 0, 1]).Chunk("iCCP", iccp))).IccProfile);
+
+        // A matrix other than 0 (RGB), a wrong length or a chunk after the palette is skipped; the profile then describes the colors
+        foreach (var skipped in new[]
+        {
+            Png(builder => builder.Chunk("cICP", [9, 16, 1, 1]).Chunk("iCCP", iccp)),
+            Png(builder => builder.Chunk("iCCP", iccp).Chunk("cICP", [9, 16, 0, 1, 0])),
+        })
+        {
+            var metadata = LoadMetadata(skipped);
+            Assert.Null(metadata.Cicp);
+            Assert.Equal(profile.Data.ToArray(), metadata.IccProfile?.Data.ToArray());
+        }
+
+        var palette = new SyntheticImages.PngBuilder().Header(2, 2, 8, 3).Chunk("PLTE", [1, 2, 3]).Chunk("cICP", [9, 16, 0, 1]).Chunk("cLLI", clli).ImageData(2, 2, 3, 8).End().ToArray();
+        Assert.Null(LoadMetadata(palette).Cicp);
+        Assert.Null(LoadMetadata(palette).ContentLightLevel);
+
+        // Narrow-range samples would have to be expanded
+        var narrow = Png(builder => builder.Chunk("cICP", [9, 16, 0, 0]));
+        Assert.Equal("PNG narrow-range cICP", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(narrow)).Feature);
+
+        static byte[] Png(Action<SyntheticImages.PngBuilder> chunks)
+        {
+            var builder = new SyntheticImages.PngBuilder().Header(2, 2);
+            chunks(builder);
+            return builder.ImageData(2, 2).End().ToArray();
+        }
+
+        static ImageMetadata LoadMetadata(byte[] data)
+        {
+            using var image = Image.Load(data);
+            return image.Metadata.Clone();
+        }
     }
 
     [Fact]

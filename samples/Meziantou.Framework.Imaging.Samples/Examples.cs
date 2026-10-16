@@ -895,8 +895,8 @@ internal static class Examples
         // label, as an ICC profile is: the matrix and the range were applied to produce RGB, nothing else was converted.
         var description = $"{image.Width}x{image.Height} {image.PixelFormat}, frames: {image.Frames.Count}, color: {image.Metadata.Cicp}";
 
-        // PNG keeps 16-bit samples, alpha and animations, without loss. It cannot store a color description
-        // that is not sRGB, so a strict save of an HDR image fails instead of relabeling its samples.
+        // PNG keeps 16-bit samples, alpha and animations, without loss, and the primaries and the transfer
+        // characteristics of the description (cICP chunk), so the samples of an HDR image keep their meaning.
         image.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
         return description;
     }

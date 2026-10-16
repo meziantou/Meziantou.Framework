@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using System.Text;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -97,6 +99,37 @@ internal static class IccTestProfiles
 
     /// <inheritdoc cref="IccProfileBuilder.CmykLabLutAToB"/>
     public static IccProfile CmykLabLutAToB() => Wrap(IccProfileBuilder.CmykLabLutAToB());
+
+    /// <summary>
+    /// Adds a tag to a profile: its entry ends the tag table (the data of the other tags move by the size of an entry), its
+    /// data ends the profile.
+    /// </summary>
+    public static IccProfile WithTag(IccProfile profile, string signature, byte[] data)
+    {
+        var source = profile.Data.ToArray();
+        var count = (int)BinaryPrimitives.ReadUInt32BigEndian(source.AsSpan(128));
+        var tableEnd = 132 + (12 * count);
+        var output = new byte[source.Length + 12 + data.Length];
+        source.AsSpan(0, tableEnd).CopyTo(output);
+        source.AsSpan(tableEnd).CopyTo(output.AsSpan(tableEnd + 12));
+        data.CopyTo(output.AsSpan(source.Length + 12));
+        BinaryPrimitives.WriteUInt32BigEndian(output, (uint)output.Length);
+        BinaryPrimitives.WriteUInt32BigEndian(output.AsSpan(128), (uint)count + 1);
+        for (var i = 0; i < count; i++)
+        {
+            var entry = output.AsSpan(132 + (12 * i) + 4);
+            BinaryPrimitives.WriteUInt32BigEndian(entry, BinaryPrimitives.ReadUInt32BigEndian(entry) + 12);
+        }
+
+        var added = output.AsSpan(tableEnd);
+        Encoding.ASCII.GetBytes(signature).CopyTo(added);
+        BinaryPrimitives.WriteUInt32BigEndian(added[4..], (uint)(source.Length + 12));
+        BinaryPrimitives.WriteUInt32BigEndian(added[8..], (uint)data.Length);
+        return Wrap(output);
+    }
+
+    /// <summary>Gets the data of a <c>cicp</c> tag (ICC.1:2022 section 10.3).</summary>
+    public static byte[] CicpTag(byte primaries, byte transfer, byte matrix, byte fullRange) => [.. "cicp"u8, 0, 0, 0, 0, primaries, transfer, matrix, fullRange];
 
     private static IccProfile Wrap(byte[] data) => new(new MetadataBlob(data));
 }

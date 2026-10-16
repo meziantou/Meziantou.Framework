@@ -2353,13 +2353,15 @@ content light level, the mastering display color volume and text entries.
   encoding with the sRGB primaries and a linear transfer function). Only `ConvertColorProfile` converts the pixels (and
   resets the label); linear-light resizing filters `Linear` samples directly. Only QOI and JPEG XL store the label: the
   other encoders treat `Linear` as metadata they cannot store, so the samples are never silently relabeled as sRGB.
-- **CICP color descriptions are labels too.** `Metadata.Cicp` holds the code points of ITU-T H.273 that an AVIF or HEIC
-  file declares, or that are equivalent to the enumerated color encoding of a JPEG XL file: color primaries, transfer
+- **CICP color descriptions are labels too.** `Metadata.Cicp` holds the code points of ITU-T H.273 that an AVIF, HEIC or
+  PNG (`cICP`) file declares, or that are equivalent to the enumerated color encoding of a JPEG XL file: color primaries, transfer
   characteristics, matrix coefficients and range. The decoder applies the matrix and the range to produce RGB; the
   primaries and the transfer characteristics are not applied when a file is read or written (the samples of an HDR
   image are returned as they are stored). `ConvertColorProfile` converts the pixels from the color space they
   describe, and linear-light processing decodes the samples with their transfer function. The AVIF and HEIC encoders
-  store the description (with the matrix and the range that it used), and the JPEG XL encoder stores it when the
+  store the description (with the matrix and the range that it used), the PNG encoder stores its primaries and its
+  transfer characteristics when no ICC profile is written (a `cICP` chunk takes precedence over `iCCP`, so the PNG
+  decoder does not adopt the profile of a file that has both), and the JPEG XL encoder stores it when the
   format can enumerate it (full-range RGB with the sRGB, Display P3, DCI-P3 or BT.2020 primaries). For the other
   encoders, a description that is not equivalent to sRGB is metadata the format cannot store, unless an ICC profile is
   written.
@@ -2368,8 +2370,9 @@ content light level, the mastering display color volume and text entries.
   range of the display, as the integers of SMPTE ST 2086) describe high dynamic range samples as they were mastered;
   nothing computes them from the pixels. `Metadata.PixelAspectRatio` is the relative width and height of a pixel:
   nothing resamples the pixels to make them square, and an operation that swaps the axes of the image (a quarter turn,
-  `AutoOrient()` for the orientations that transpose) swaps its terms. Only AVIF stores the three of them; for the
-  other encoders they are metadata the format cannot store (a ratio of square pixels excepted).
+  `AutoOrient()` for the orientations that transpose) swaps its terms. AVIF stores the three of them; PNG stores the
+  light levels (`cLLI`, in whole cd/m2 once read) and the mastering display (`mDCV`, only with the `cICP` chunk it
+  completes); for the other encoders they are metadata the format cannot store (a ratio of square pixels excepted).
 - **Orientation is reported, never applied by decoders.** `Metadata.Orientation` reports the EXIF orientation;
   `AutoOrient()` transforms the pixels for all eight orientations and resets it to `TopLeft`. On save, the typed
   orientation is authoritative: EXIF orientation and dimension tags are rewritten and thumbnails made stale by geometry
@@ -2389,6 +2392,7 @@ content light level, the mastering display color volume and text entries.
 | EXIF and orientation | `eXIf` | not stored (orientation must be `TopLeft`) | APP1 (at most 65,527 bytes) | `EXIF` | not stored (orientation must be `TopLeft`) | not stored (orientation must be `TopLeft`) | not stored (orientation must be `TopLeft`) | not stored (orientation must be `TopLeft`) |
 | XMP | `iTXt` `XML:com.adobe.xmp` | not stored | APP1, standard XMP only (at most 65,504 bytes, no extended XMP) | `XMP ` | not stored | not stored | not stored | not stored |
 | Text | `tEXt`/`zTXt`/`iTXt` | Comment extension (`Comment` entries, Latin-1) | COM (`Comment` entries, Latin-1, at most 65,533 characters) | not stored | not stored | not stored | not stored | not stored |
+| CICP color description, light levels, mastering display | `cICP` (without ICC profile), `cLLI`, `mDCV` (with `cICP`) | not stored | not stored | not stored | not stored | not stored | not stored | not stored |
 | Resolution | `pHYs` (pixels per meter) | not stored | JFIF density | not stored | not stored | `biXPelsPerMeter`/`biYPelsPerMeter` | not stored | not stored |
 | Linear transfer function | not stored | not stored | not stored | not stored | header colorspace 1 | not stored | not stored | not stored |
 
@@ -2461,7 +2465,10 @@ public static void ConvertToSrgb(string inputPath, string outputPath)
 
 High dynamic range samples (the PQ and HLG transfer characteristics, 16 and 18) are not converted implicitly: an ICC
 profile describes a standard dynamic range, and compressing highlights into it changes the look of the image.
-`ConvertColorProfile` rejects them unless `IccColorTransformOptions.ToneMapping` says how:
+`ConvertColorProfile` rejects them unless `IccColorTransformOptions.ToneMapping` says how. They are the samples of an
+image whose CICP color description says so and that has no ICC profile, or of an image whose ICC profile has a `cicp`
+tag (ICC.1:2022, version 4.4) that says so (`IccProfile.Cicp`): the curves of such a profile only approximate the
+functions, and the samples are converted from the color space of the tag.
 
 - PQ samples are the light of a display, up to 10,000 cd/m2. HLG samples are the light of a scene, turned into the
   light of a display by the opto-optical transfer function of Rec. ITU-R BT.2100 for the peak of the source.
@@ -2886,7 +2893,7 @@ public static bool SaveIndexedPng(string inputPath, string outputPath)
 | Adam7 interlacing | Empty passes, pass rows scattered directly into the frame (no intermediate image); with `ReadFrameRefinementInto`, a rendering of the passes completed by each piece of the data, every other pixel taking the value of the top left pixel of its block in them (the passes are then decoded into an image of the decoder, from which the renderings and the frame are written) | Option; pass rows gathered from the frame storage, empty passes have no scanline |
 | Filters | All five; invalid types rejected | Adaptive minimum-sum-of-absolute-differences heuristic, or one fixed type for every scanline; indexed output uses type 0 (None) instead of the heuristic, as the specification recommends |
 | zlib datastream | Truncation, extra data, Adler-32 and expansion (bounded by the image size) validated; streamed with bounded memory | BCL zlib at the four `CompressionLevel` values; `IDAT` chunks of at most 32 KiB, streamed in bounded bands |
-| Metadata (`iCCP`, `eXIf`, XMP `iTXt`, `tEXt`/`zTXt`/`iTXt`, `pHYs`) | Bounded; metadata after `IDAT` included | Written before `IDAT`; typed orientation and canvas reconciled into EXIF; incompatible ICC profiles and invalid text entries follow `MetadataHandling`; long texts compressed |
+| Metadata (`iCCP`, `cICP`, `mDCV`, `cLLI`, `eXIf`, XMP `iTXt`, `tEXt`/`zTXt`/`iTXt`, `pHYs`) | Bounded; metadata after `IDAT` included; a `cICP` chunk takes precedence over `iCCP` (the profile is not adopted), one whose matrix coefficients are not 0 is skipped, and narrow-range samples are rejected with `UnsupportedImageFeatureException` | Written before `IDAT`; `cICP` (matrix coefficients 0, full range) when no ICC profile is written; typed orientation and canvas reconciled into EXIF; incompatible ICC profiles and invalid text entries follow `MetadataHandling`; long texts compressed |
 | APNG animations | Full-canvas displayed frames from one compositor (SOURCE/OVER blending with an exact rounding contract at 8 and 16 bits, NONE/BACKGROUND/PREVIOUS disposal; BACKGROUND clears to transparent black), every color type and bit depth, Adam7 frame regions, partial rectangles, split `fdAT` chunks, exact rational delays, total plays; control-data errors are never reported as a clean end or a still image | Every displayed frame written as a full-canvas `SOURCE` frame with freshly computed control data, so decoded delta/disposal/blend data never survives an edit; exact delays (`RequireExact`, default) or `RoundToNearest` (nearest 16-bit fraction, ties to the longer delay); writers require `ExpectedFrameCount` and stream to non-seekable outputs |
 | APNG poster frame | `PosterFrame`, excluded from `Frames.Count`; a default image with an `fcTL` is frame zero | The `IDAT` image without a preceding `fcTL`, written once before frame zero, not counted in `num_frames` |
 | APNG delta-rectangle optimization | — | Not supported (full-canvas frames) |
@@ -3251,8 +3258,8 @@ public static string ConvertAvif(string avifPath, string pngPath)
     // label, as an ICC profile is: the matrix and the range were applied to produce RGB, nothing else was converted.
     var description = $"{image.Width}x{image.Height} {image.PixelFormat}, frames: {image.Frames.Count}, color: {image.Metadata.Cicp}";
 
-    // PNG keeps 16-bit samples, alpha and animations, without loss. It cannot store a color description
-    // that is not sRGB, so a strict save of an HDR image fails instead of relabeling its samples.
+    // PNG keeps 16-bit samples, alpha and animations, without loss, and the primaries and the transfer
+    // characteristics of the description (cICP chunk), so the samples of an HDR image keep their meaning.
     image.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
     return description;
 }

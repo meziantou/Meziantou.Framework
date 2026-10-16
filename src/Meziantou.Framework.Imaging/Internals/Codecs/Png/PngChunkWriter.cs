@@ -21,6 +21,9 @@ internal static class PngChunkWriter
     public const uint Trns = 0x74524E53;
     public const uint Phys = 0x70485973;
     public const uint Iccp = 0x69434350;
+    public const uint Cicp = 0x63494350;
+    public const uint Mdcv = 0x6D444356;
+    public const uint Clli = 0x634C4C49;
     public const uint Exif = 0x65584966;
     public const uint Text = 0x74455874;
     public const uint Ztxt = 0x7A545874;

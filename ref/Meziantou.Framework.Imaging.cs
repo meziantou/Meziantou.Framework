@@ -2407,6 +2407,7 @@ namespace Meziantou.Framework.Imaging.Metadata
     public sealed class IccProfile
     {
         public static Meziantou.Framework.Imaging.Metadata.IccProfile Cgats001CompatibleCmyk { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.CicpColorDescription? Cicp { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.IccProfileColorSpace ColorSpace { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.MetadataBlob Data { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.IccProfileClass ProfileClass { get => throw null; }

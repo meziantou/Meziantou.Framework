@@ -277,11 +277,12 @@ internal sealed class MetadataWritePlan
             }
         }
 
-        // AVIF stores any CICP color description; JPEG XL stores the ones it can enumerate, as its color encoding, when no
-        // ICC profile is written. Elsewhere a written ICC profile describes the colors in its place; without one, dropping
-        // a description that is not equivalent to sRGB would relabel the samples as sRGB
-        var storedCicp = capabilities.Cicp ? metadata.Cicp : null;
-        if (!capabilities.Cicp && metadata.Cicp is { } cicp && icc is null && !IsSrgbEquivalent(cicp) && !(metadata.TransferFunction == ColorTransferFunction.Linear && cicp.TransferCharacteristics is 8))
+        // AVIF stores any CICP color description; PNG stores it when no ICC profile is written (its cICP chunk takes
+        // precedence over the profile); JPEG XL stores the ones it can enumerate, as its color encoding, when no ICC profile
+        // is written. Elsewhere a written ICC profile describes the colors in its place; without one, dropping a
+        // description that is not equivalent to sRGB would relabel the samples as sRGB
+        var storedCicp = capabilities.Cicp || (capabilities.CicpWithoutIcc && icc is null) ? metadata.Cicp : null;
+        if (storedCicp is null && metadata.Cicp is { } cicp && icc is null && !IsSrgbEquivalent(cicp) && !(metadata.TransferFunction == ColorTransferFunction.Linear && cicp.TransferCharacteristics is 8))
         {
             if (capabilities.EnumeratedCicp && JpegXlEncoderColor.FromCicp(cicp) is not null)
             {
@@ -301,8 +302,10 @@ internal sealed class MetadataWritePlan
             context.Unsupported("content light level");
         }
 
-        var masteringDisplay = capabilities.MasteringDisplay ? metadata.MasteringDisplay : null;
-        if (metadata.MasteringDisplay is not null && !capabilities.MasteringDisplay)
+        // PNG stores the mastering display with a color description only (mDCV needs a cICP chunk)
+        var hasMasteringDisplay = capabilities.MasteringDisplay && (!capabilities.CicpWithoutIcc || storedCicp is not null);
+        var masteringDisplay = hasMasteringDisplay ? metadata.MasteringDisplay : null;
+        if (metadata.MasteringDisplay is not null && !hasMasteringDisplay)
         {
             context.Unsupported("mastering display color volume");
         }
@@ -367,7 +370,9 @@ internal sealed class MetadataWritePlan
     {
         private static readonly FormatCapabilities None = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None);
         private static readonly FormatCapabilities Qoi = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true);
-        private static readonly FormatCapabilities Png = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.PngKeywords);
+        // PNG stores a CICP color description in a cICP chunk when no ICC profile is written, with the mastering display
+        // (mDCV, which needs the cICP chunk) and the light levels (cLLI)
+        private static readonly FormatCapabilities Png = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.PngKeywords, cicpWithoutIcc: true, contentLightLevel: true, masteringDisplay: true);
         private static readonly FormatCapabilities Gif = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.CommentsOnly);
         private static readonly FormatCapabilities Jpeg = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.JpegComments);
         private static readonly FormatCapabilities WebP = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None);
@@ -392,8 +397,9 @@ internal sealed class MetadataWritePlan
         // A JP2 file; the orientation is the one of its EXIF data
         private static readonly FormatCapabilities Jp2 = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.None);
 
-        private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false, bool contentLightLevel = false, bool masteringDisplay = false, bool pixelAspectRatio = false)
+        private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false, bool contentLightLevel = false, bool masteringDisplay = false, bool pixelAspectRatio = false, bool cicpWithoutIcc = false)
         {
+            CicpWithoutIcc = cicpWithoutIcc;
             ContentLightLevel = contentLightLevel;
             MasteringDisplay = masteringDisplay;
             PixelAspectRatio = pixelAspectRatio;
@@ -442,6 +448,12 @@ internal sealed class MetadataWritePlan
 
         /// <summary>Gets a value indicating whether the format stores any CICP color description (AVIF).</summary>
         public bool Cicp { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the format stores any CICP color description when no ICC profile is written (PNG,
+        /// whose description takes precedence over the profile), and the mastering display only with it.
+        /// </summary>
+        public bool CicpWithoutIcc { get; }
 
         /// <summary>Gets a value indicating whether the format stores a content light level (the AVIF <c>clli</c> box).</summary>
         public bool ContentLightLevel { get; }

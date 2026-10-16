@@ -447,7 +447,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - A conversion is a list of `IccStage` evaluated in `double`, one color at a time (`ColorConversionKernels.ConvertScalar`
   is the numerical reference). Both profiles meet in CIEXYZ relative to D50. A faster kernel must be bit-identical and
   proven so in `VectorizedKernelTests`.
-- The source of `ConvertColorProfile` may be the CICP color description of an image without profile
+- The source of `ConvertColorProfile` may be the CICP color description of an image without profile, or the `cicp`
+  tag of an ICC profile of PQ or HLG samples (`IccProfile.Cicp`, whose curves only approximate the functions)
   (`CicpColorSpace`, `IccPipeline.Create(CicpColorSpace, ...)`): a `CicpDecodeStage` (the functions of
   `CicpTransfer`, Rec. ITU-T H.273 table 3), the matrix of the primaries (`CicpPrimaries`, table 2) adapted to D50 with
   the linear Bradford transform, then the destination half of the ICC pipeline. Descriptions equivalent to sRGB keep

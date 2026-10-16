@@ -10,6 +10,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Serializes the metadata of a <see cref="MetadataWritePlan"/> (already reconciled and filtered by the save-time policy)
 /// as PNG ancillary chunks, all written before the image data, in this order:
 /// <list type="bullet">
+/// <item><description>
+/// <c>cICP</c>: the color primaries and the transfer characteristics of the CICP color description, matrix coefficients 0
+/// and full range (the samples are RGB and full range, whatever the source they were decoded from), when no ICC profile is
+/// written; then <c>mDCV</c> and <c>cLLI</c> (light levels in units of 0.0001 cd/m2);
+/// </description></item>
 /// <item><description><c>iCCP</c>: profile name <c>ICC profile</c>, zlib-compressed profile (the plan checked that its color space matches the pixels);</description></item>
 /// <item><description><c>pHYs</c>: nearest pixels per meter, unit 1 (<see cref="ResolutionConversion.ToPngPhys"/>);</description></item>
 /// <item><description><c>eXIf</c>: the TIFF-structured EXIF data with the typed orientation and the canvas dimensions reconciled;</description></item>
@@ -45,6 +50,21 @@ internal sealed class PngMetadataWriter
         _plan = plan;
         _compressionLevel = compressionLevel;
         _scope = scope;
+        if (plan.Cicp is not null)
+        {
+            _items.Add(new Item(ItemKind.Cicp, -1));
+        }
+
+        if (plan.MasteringDisplay is not null)
+        {
+            _items.Add(new Item(ItemKind.MasteringDisplay, -1));
+        }
+
+        if (plan.ContentLightLevel is not null)
+        {
+            _items.Add(new Item(ItemKind.ContentLightLevel, -1));
+        }
+
         if (plan.IccProfile is { } icc)
         {
             // The compressed profile is checked again when written; a stored deflate block adds 5 bytes per 16 KiB at most
@@ -81,6 +101,9 @@ internal sealed class PngMetadataWriter
 
     private enum ItemKind
     {
+        Cicp,
+        MasteringDisplay,
+        ContentLightLevel,
         Icc,
         Resolution,
         Exif,
@@ -99,6 +122,23 @@ internal sealed class PngMetadataWriter
         var item = _items[index];
         switch (item.Kind)
         {
+            case ItemKind.Cicp:
+                var cicp = _plan.Cicp!;
+                PngChunkWriter.Write(output, PngChunkWriter.Cicp, [cicp.ColorPrimaries, cicp.TransferCharacteristics, 0, 1]);
+                break;
+
+            case ItemKind.MasteringDisplay:
+                WriteMasteringDisplay(output, _plan.MasteringDisplay!);
+                break;
+
+            case ItemKind.ContentLightLevel:
+                var lightLevel = _plan.ContentLightLevel!;
+                Span<byte> levels = stackalloc byte[8];
+                BinaryPrimitives.WriteUInt32BigEndian(levels, lightLevel.MaxContentLightLevel * 10_000u);
+                BinaryPrimitives.WriteUInt32BigEndian(levels[4..], lightLevel.MaxPictureAverageLightLevel * 10_000u);
+                PngChunkWriter.Write(output, PngChunkWriter.Clli, levels);
+                break;
+
             case ItemKind.Icc:
                 WriteIccProfile(output, _plan.IccProfile!);
                 break;
@@ -127,6 +167,23 @@ internal sealed class PngMetadataWriter
     {
         if (length > PngChunkWriter.MaxDataLength)
             throw new UnsupportedImageFeatureException($"The {item} is too large for a PNG chunk (at most {PngChunkWriter.MaxDataLength.ToString(CultureInfo.InvariantCulture)} bytes).", ImageFormat.Png, "Metadata: " + item);
+    }
+
+    private static void WriteMasteringDisplay(IBufferWriter<byte> output, MasteringDisplayColorVolume display)
+    {
+        // The primaries in the order red, green, blue, then the white point, in units of 0.00002; the luminances in units of 0.0001 cd/m2
+        Span<byte> data = stackalloc byte[24];
+        BinaryPrimitives.WriteUInt16BigEndian(data, display.RedX);
+        BinaryPrimitives.WriteUInt16BigEndian(data[2..], display.RedY);
+        BinaryPrimitives.WriteUInt16BigEndian(data[4..], display.GreenX);
+        BinaryPrimitives.WriteUInt16BigEndian(data[6..], display.GreenY);
+        BinaryPrimitives.WriteUInt16BigEndian(data[8..], display.BlueX);
+        BinaryPrimitives.WriteUInt16BigEndian(data[10..], display.BlueY);
+        BinaryPrimitives.WriteUInt16BigEndian(data[12..], display.WhitePointX);
+        BinaryPrimitives.WriteUInt16BigEndian(data[14..], display.WhitePointY);
+        BinaryPrimitives.WriteUInt32BigEndian(data[16..], display.MaxLuminance);
+        BinaryPrimitives.WriteUInt32BigEndian(data[20..], display.MinLuminance);
+        PngChunkWriter.Write(output, PngChunkWriter.Mdcv, data);
     }
 
     private static void WriteResolution(IBufferWriter<byte> output, ImageResolution resolution)

@@ -17,36 +17,7 @@ internal static class NormalizationWriter
         Console.WriteLine("Loading Unicode normalization data...");
         var combiningClass = await PropertyTablesWriter.LoadCombiningClassAsync();
 
-        // One step of decomposition, from UnicodeData.txt: a canonical mapping has no tag.
-        var canonical = new SortedDictionary<int, int[]>();
-        var compatibility = new Dictionary<int, int[]>();
-        foreach (var rawLine in (await Ucd.DownloadAsync("ucd/UnicodeData.txt")).Split('\n'))
-        {
-            var fields = rawLine.Trim().Split(';');
-            if (fields.Length < 15 || fields[5].Length == 0)
-                continue;
-
-            var codePoint = int.Parse(fields[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-            var mapping = fields[5];
-            var isCompatibility = mapping[0] == '<';
-            if (isCompatibility)
-            {
-                mapping = mapping[(mapping.IndexOf('>', StringComparison.Ordinal) + 1)..];
-            }
-
-            var values = mapping.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(value => int.Parse(value, NumberStyles.HexNumber, CultureInfo.InvariantCulture)).ToArray();
-            if (isCompatibility)
-            {
-                compatibility.Add(codePoint, values);
-            }
-            else
-            {
-                if (values.Length is not (1 or 2))
-                    throw new InvalidOperationException($"The canonical decomposition of U+{codePoint:X4} is not one or two code points");
-
-                canonical.Add(codePoint, values);
-            }
-        }
+        var (canonical, compatibility) = await LoadDecompositionMappingsAsync();
 
         // The reader rebuilds a full canonical decomposition by following the first element: check what it relies on.
         foreach (var (codePoint, values) in canonical)
@@ -214,10 +185,46 @@ internal static class NormalizationWriter
         return await GeneratorFiles.WriteTextIfChanged(outputPath / "UnicodeNormalizationTables.g.cs", content);
     }
 
-    private static bool IsHangulSyllable(int codePoint) => codePoint is >= HangulBase and < HangulBase + HangulCount;
+    /// <summary>Loads the one-step decomposition mappings of UnicodeData.txt: a canonical mapping has no tag.</summary>
+    internal static async Task<(SortedDictionary<int, int[]> Canonical, Dictionary<int, int[]> Compatibility)> LoadDecompositionMappingsAsync()
+    {
+        var canonical = new SortedDictionary<int, int[]>();
+        var compatibility = new Dictionary<int, int[]>();
+        foreach (var rawLine in (await Ucd.DownloadAsync("ucd/UnicodeData.txt")).Split('\n'))
+        {
+            var fields = rawLine.Trim().Split(';');
+            if (fields.Length < 15 || fields[5].Length == 0)
+                continue;
+
+            var codePoint = int.Parse(fields[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            var mapping = fields[5];
+            var isCompatibility = mapping[0] == '<';
+            if (isCompatibility)
+            {
+                mapping = mapping[(mapping.IndexOf('>', StringComparison.Ordinal) + 1)..];
+            }
+
+            var values = mapping.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(value => int.Parse(value, NumberStyles.HexNumber, CultureInfo.InvariantCulture)).ToArray();
+            if (isCompatibility)
+            {
+                compatibility.Add(codePoint, values);
+            }
+            else
+            {
+                if (values.Length is not (1 or 2))
+                    throw new InvalidOperationException($"The canonical decomposition of U+{codePoint:X4} is not one or two code points");
+
+                canonical.Add(codePoint, values);
+            }
+        }
+
+        return (canonical, compatibility);
+    }
+
+    internal static bool IsHangulSyllable(int codePoint) => codePoint is >= HangulBase and < HangulBase + HangulCount;
 
     /// <summary>Computes the full decomposition of a code point, in canonical order.</summary>
-    private static List<int> Decompose(int codePoint, SortedDictionary<int, int[]> canonical, Dictionary<int, int[]>? compatibility, byte[] combiningClass)
+    internal static List<int> Decompose(int codePoint, SortedDictionary<int, int[]> canonical, Dictionary<int, int[]>? compatibility, byte[] combiningClass)
     {
         var result = new List<int>();
         Expand(codePoint);

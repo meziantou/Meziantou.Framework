@@ -468,7 +468,7 @@ internal static class PropertyTablesWriter
         return result;
     }
 
-    private static async Task<byte[]> LoadGeneralCategoryAsync()
+    internal static async Task<byte[]> LoadGeneralCategoryAsync()
     {
         var result = new byte[ValueCount];
         result.AsSpan().Fill((byte)UnicodeCategory.OtherNotAssigned);

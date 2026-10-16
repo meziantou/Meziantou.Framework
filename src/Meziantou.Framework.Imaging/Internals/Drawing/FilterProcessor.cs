@@ -343,9 +343,24 @@ internal sealed class FilterProcessor : IDisposable
         // The offset on the canvas, through the linear part of the transformation
         var dx = (_m11 * offset.X) + (_m21 * offset.Y);
         var dy = (_m12 * offset.X) + (_m22 * offset.Y);
+        var shadow = GetShadowAlpha(surface, dx, dy, sigmaX, sigmaY);
+        CompositeShadow(surface, shadow, 0, 0, red, green, blue, opacity, shadowOnly);
+    }
+
+    /// <summary>
+    /// Gets the alpha of the shadow of a surface: its alpha at the position an offset of the canvas moves each pixel
+    /// from, blurred. The result is a surface of the bounds of the surface, kept until the next filter, whose alpha is
+    /// the shadow (its colors are zero).
+    /// </summary>
+    /// <param name="surface">The surface that casts the shadow.</param>
+    /// <param name="dx">The offset of the shadow along x, in pixels of the canvas.</param>
+    /// <param name="dy">The offset of the shadow along y, in pixels of the canvas.</param>
+    /// <param name="sigmaX">The deviation of the blur of the shadow along x, in the drawing.</param>
+    /// <param name="sigmaY">The deviation of the blur of the shadow along y, in the drawing.</param>
+    public FilterSurface GetShadowAlpha(FilterSurface surface, double dx, double dy, double sigmaX, double sigmaY)
+    {
         var shadow = GetScratch(surface.Bounds);
         var bounds = surface.Bounds;
-        var source = surface.Values;
         var target = shadow.Values;
 
         // The alpha at the position the offset moves each pixel from: the four pixels around it, interpolated
@@ -377,17 +392,48 @@ internal sealed class FilterProcessor : IDisposable
         var mode = _edgeOverride ?? FilterEdgeMode.Transparent;
         BlurAxis(shadow, Math.Min(sigmaX * _scaleX, GaussianKernel.MaxSigma), mode, horizontal: true);
         BlurAxis(shadow, Math.Min(sigmaY * _scaleY, GaussianKernel.MaxSigma), mode, horizontal: false);
+        return shadow;
+    }
+
+    /// <summary>
+    /// Paints the color of a shadow under the pixels of a surface, or replaces them by it. The shadow of the pixel
+    /// <c>(x, y)</c> of the surface is the alpha of the pixel <c>(x + shiftX, y + shiftY)</c> of <paramref name="shadow"/>,
+    /// and nothing beyond it.
+    /// </summary>
+    /// <param name="surface">The surface.</param>
+    /// <param name="shadow">The alpha of the shadow (<see cref="GetShadowAlpha"/>).</param>
+    /// <param name="shiftX">The column of the shadow of the first column of the surface, relative to that column.</param>
+    /// <param name="shiftY">The row of the shadow of the first row of the surface, relative to that row.</param>
+    /// <param name="red">The red of the shadow, as a fraction of one.</param>
+    /// <param name="green">The green of the shadow.</param>
+    /// <param name="blue">The blue of the shadow.</param>
+    /// <param name="opacity">The alpha of the shadow.</param>
+    /// <param name="shadowOnly"><see langword="true"/> to replace the surface by its shadow.</param>
+    public static void CompositeShadow(FilterSurface surface, FilterSurface shadow, int shiftX, int shiftY, double red, double green, double blue, double opacity, bool shadowOnly)
+    {
+        var source = surface.Values;
+        var target = shadow.Values;
+        var bounds = surface.Bounds;
+        var shadowBounds = shadow.Bounds;
 
         // The color of the shadow, multiplied by its alpha; what casts it over it, unless the shadow is alone
-        for (var i = 0; i < source.Length; i += 4)
+        for (var y = bounds.Top; y < bounds.Bottom; y++)
         {
-            var alpha = Math.Clamp(target[i + 3] * opacity, 0, 1);
-            var keep = shadowOnly ? 0 : 1d;
-            var under = 1 - (keep * source[i + 3]);
-            source[i] = (float)((keep * source[i]) + (under * red * alpha));
-            source[i + 1] = (float)((keep * source[i + 1]) + (under * green * alpha));
-            source[i + 2] = (float)((keep * source[i + 2]) + (under * blue * alpha));
-            source[i + 3] = (float)((keep * source[i + 3]) + (under * alpha));
+            var shadowY = y + shiftY;
+            var hasRow = shadowY >= shadowBounds.Top && shadowY < shadowBounds.Bottom;
+            for (var x = bounds.Left; x < bounds.Right; x++)
+            {
+                var i = surface.IndexOf(x, y);
+                var shadowX = x + shiftX;
+                var shadowAlpha = hasRow && shadowX >= shadowBounds.Left && shadowX < shadowBounds.Right ? target[shadow.IndexOf(shadowX, shadowY) + 3] : 0f;
+                var alpha = Math.Clamp(shadowAlpha * opacity, 0, 1);
+                var keep = shadowOnly ? 0 : 1d;
+                var under = 1 - (keep * source[i + 3]);
+                source[i] = (float)((keep * source[i]) + (under * red * alpha));
+                source[i + 1] = (float)((keep * source[i + 1]) + (under * green * alpha));
+                source[i + 2] = (float)((keep * source[i + 2]) + (under * blue * alpha));
+                source[i + 3] = (float)((keep * source[i + 3]) + (under * alpha));
+            }
         }
     }
 

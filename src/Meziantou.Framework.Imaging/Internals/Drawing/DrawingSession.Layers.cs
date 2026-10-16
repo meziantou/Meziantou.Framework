@@ -13,6 +13,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// pixel format. When it ends, it is drawn on what was drawn on before it started (the frames, or the layer under
 /// it) as an image is drawn at a whole position: its pixels converted to the pixel format like brush colors, combined
 /// with the blend mode and the operator of the layer, the opacity of the layer multiplying the coverage as a clip does.
+/// With the group opacity (<see cref="LayerOpacity.Group"/>) of an operator other than source-over, the opacity
+/// multiplies the alpha of the converted pixels instead, as the opacity of a brush does (<see cref="LayerLevel.AlphaFactor"/>).
 /// </para>
 /// <para>
 /// The clip that is active when a layer starts applies to the layer as a whole, when it is drawn; only its bounds are
@@ -41,7 +43,16 @@ internal sealed partial class DrawingSession
     /// <param name="blend">The blend mode that mixes the colors of the layer with those of what is under it.</param>
     /// <exception cref="ArgumentOutOfRangeException">The opacity is not between 0 and 1, or the operator or the blend mode is not defined.</exception>
     /// <exception cref="ImageResourceLimitException">The image of the layer exceeds the allocation limit.</exception>
-    public void PushLayer(double opacity, CompositeMode mode, BlendMode blend)
+    public void PushLayer(double opacity, CompositeMode mode, BlendMode blend) => PushLayer(opacity, mode, blend, LayerOpacity.Coverage);
+
+    /// <summary>Starts a layer: the draw calls that follow paint it, until <see cref="PopLayer"/>.</summary>
+    /// <param name="opacity">The opacity the layer is drawn with, from 0 to 1.</param>
+    /// <param name="mode">The operator that combines the layer with what is under it.</param>
+    /// <param name="blend">The blend mode that mixes the colors of the layer with those of what is under it.</param>
+    /// <param name="opacityMode">How the opacity combines with the operator.</param>
+    /// <exception cref="ArgumentOutOfRangeException">The opacity is not between 0 and 1, or the operator, the blend mode or the opacity mode is not defined.</exception>
+    /// <exception cref="ImageResourceLimitException">The image of the layer exceeds the allocation limit.</exception>
+    public void PushLayer(double opacity, CompositeMode mode, BlendMode blend, LayerOpacity opacityMode)
     {
         var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
         if ((uint)mode > (uint)CompositeMode.Plus)
@@ -50,12 +61,39 @@ internal sealed partial class DrawingSession
         if ((uint)blend > (uint)BlendMode.Luminosity)
             throw new ArgumentOutOfRangeException(nameof(blend), blend, "The blend mode is not valid.");
 
+        ValidateLayerOpacity(opacityMode, nameof(opacityMode));
         var level = PushLayerCore(margin: 0);
-        level.Opacity = coverage;
+        SetOpacity(level, opacity, coverage, mode, opacityMode);
         level.Mode = mode;
         level.Blend = blend;
         level.Effect = LayerEffect.None;
         level.IsLuminanceMask = false;
+    }
+
+    /// <summary>Validates how the opacity of a layer combines with its operator.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The mode is not defined.</exception>
+    public static void ValidateLayerOpacity(LayerOpacity mode, string paramName)
+    {
+        if (mode is not (LayerOpacity.Coverage or LayerOpacity.Group))
+            throw new ArgumentOutOfRangeException(paramName, mode, "The layer opacity mode is not valid.");
+    }
+
+    /// <summary>
+    /// Sets the opacity a layer is drawn with: a coverage, or, for the group opacity of an operator other than
+    /// source-over, a factor of the alpha of its pixels, as the opacity of a brush is. With source-over, both are the
+    /// same: the coverage keeps the pixels of the layers that use it.
+    /// </summary>
+    private static void SetOpacity(LayerLevel level, double opacity, uint coverage, CompositeMode mode, LayerOpacity opacityMode)
+    {
+        if (opacityMode == LayerOpacity.Group && mode != CompositeMode.SourceOver)
+        {
+            level.Opacity = CoverageRasterizer.FullCoverage;
+            level.AlphaFactor = opacity;
+            return;
+        }
+
+        level.Opacity = coverage;
+        level.AlphaFactor = 1;
     }
 
     /// <summary>Validates the mode of a mask.</summary>
@@ -159,8 +197,13 @@ internal sealed partial class DrawingSession
             // moves its shadow further and blurs it more, by the square root of what it does to an area
             offset = _transform.TransformVector(offset);
             sigma = ToCanvasBlur(sigma);
-            if (!(Math.Abs(offset.X) <= DrawingGuard.MaxCoordinate && Math.Abs(offset.Y) <= DrawingGuard.MaxCoordinate))
-                TransformSink.ThrowOutOfRange(Math.Abs(offset.X) <= DrawingGuard.MaxCoordinate ? offset.Y : offset.X);
+            if (!(double.IsFinite(offset.X) && double.IsFinite(offset.Y)))
+                TransformSink.ThrowOutOfRange(double.IsFinite(offset.X) ? offset.Y : offset.X);
+
+            // A shadow moved further than four times the largest coordinate is moved beyond everything the layer can
+            // hold, as it is moved that far
+            const double Farthest = 4 * DrawingGuard.MaxCoordinate;
+            offset = new PointD(Math.Clamp(offset.X, -Farthest, Farthest), Math.Clamp(offset.Y, -Farthest, Farthest));
         }
 
         // What is drawn around the pixels the clip can show casts a shadow on them: the layer keeps that much more
@@ -186,13 +229,13 @@ internal sealed partial class DrawingSession
     /// <exception cref="ArgumentException">A coordinate of the rectangle is not a finite number.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, the opacity is not between 0 and 1, or the operator or the blend mode is not defined.</exception>
     /// <exception cref="ImageResourceLimitException">The image of the layer exceeds the limits of the image that is drawn on.</exception>
-    public DrawingSession PushBoundedLayer(RectangleD bounds, double opacity, CompositeMode mode, BlendMode blend)
+    public DrawingSession PushBoundedLayer(RectangleD bounds, double opacity, CompositeMode mode, BlendMode blend, LayerOpacity opacityMode = LayerOpacity.Coverage)
     {
         DrawingGuard.Rectangle(bounds, nameof(bounds));
         if (_isProjective)
         {
             // In perspective, a layer is an image of the plane of the drawing already
-            PushLayer(opacity, mode, blend);
+            PushLayer(opacity, mode, blend, opacityMode);
             return this;
         }
 
@@ -203,6 +246,7 @@ internal sealed partial class DrawingSession
         if ((uint)blend > (uint)BlendMode.Luminosity)
             throw new ArgumentOutOfRangeException(nameof(blend), blend, "The blend mode is not valid.");
 
+        ValidateLayerOpacity(opacityMode, nameof(opacityMode));
         _cancellationToken.ThrowIfCancellationRequested();
 
         // The pixels of the box of the rectangle on the canvas that the clip can show
@@ -213,7 +257,7 @@ internal sealed partial class DrawingSession
         var right = Math.Min(clipRight, (int)Math.Clamp(Math.Ceiling(box.Right), -1, Width + 1));
         var bottom = Math.Min(clipBottom, (int)Math.Clamp(Math.Ceiling(box.Bottom), -1, Height + 1));
         var level = PushBoundedLevel(left, top, right, bottom);
-        level.Opacity = coverage;
+        SetOpacity(level, opacity, coverage, mode, opacityMode);
         level.Mode = mode;
         level.Blend = blend;
         level.Effect = LayerEffect.None;
@@ -226,8 +270,28 @@ internal sealed partial class DrawingSession
     /// </summary>
     /// <returns>The level of the layer; its session is <see cref="LayerLevel.Bounded"/>.</returns>
     /// <exception cref="ImageResourceLimitException">The image of the layer exceeds the limits of the image that is drawn on.</exception>
-    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session and the image are owned by the level of the layer, released by PopLayer.")]
     private LayerLevel PushBoundedLevel(int left, int top, int right, int bottom)
+    {
+        var bounded = CreateBoundedLayer(left, top, right, bottom);
+        if (_layerDepth == _layers.Count)
+        {
+            _layers.Add(new LayerLevel());
+        }
+
+        var level = _layers[_layerDepth];
+        level.Bounded = bounded;
+        level.AlphaFactor = 1;
+        _layerDepth++;
+        return level;
+    }
+
+    /// <summary>
+    /// Creates the image of a rectangle of the canvas, which may go beyond it, and a session of its own that draws on
+    /// it with the transformation of this one, moved to the image.
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The image exceeds the limits of the image that is drawn on.</exception>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session and the image are owned by the level of the layer, released by PopLayer.")]
+    private BoundedLayer CreateBoundedLayer(int left, int top, int right, int bottom)
     {
         var isEmpty = !(right > left && bottom > top);
         var width = isEmpty ? 1 : right - left;
@@ -252,15 +316,7 @@ internal sealed partial class DrawingSession
             session._canvasBounds = new Rectangle(_canvasBounds.X - left, _canvasBounds.Y - top, _canvasBounds.Width, _canvasBounds.Height);
             var toImage = AffineTransform.CreateTranslation(-left, -top);
             session.PushTransform(_hasTransform ? _transform.Then(toImage) : toImage);
-            if (_layerDepth == _layers.Count)
-            {
-                _layers.Add(new LayerLevel());
-            }
-
-            var level = _layers[_layerDepth];
-            level.Bounded = new BoundedLayer(image, session, left, top, isEmpty);
-            _layerDepth++;
-            return level;
+            return new BoundedLayer(image, session, left, top, isEmpty);
         }
         catch
         {
@@ -346,6 +402,7 @@ internal sealed partial class DrawingSession
             var level = _layers[_layerDepth];
             level.Bounded = new BoundedLayer(image, session, left, top, isEmpty);
             level.Opacity = CoverageRasterizer.FullCoverage;
+            level.AlphaFactor = 1;
             level.Mode = CompositeMode.Source;
             level.Blend = BlendMode.Normal;
             level.Effect = LayerEffect.None;
@@ -376,6 +433,7 @@ internal sealed partial class DrawingSession
         }
 
         var level = _layers[_layerDepth];
+        level.AlphaFactor = 1;
         level.VisibleLeft = left;
         level.VisibleTop = top;
         level.VisibleRight = right;
@@ -416,22 +474,34 @@ internal sealed partial class DrawingSession
         {
             // A layer of its own image: its session ends, then the image is drawn at its place
             level.Bounded = null;
+            var caster = level.Caster;
+            level.Caster = null;
             try
             {
                 bounded.Session.Dispose();
+                caster?.Session.Dispose();
                 if (draw && !bounded.IsEmpty && level.Opacity != 0)
                 {
+                    var (shiftX, shiftY) = (0, 0);
                     if (level.Effect == LayerEffect.Filter)
                     {
                         ApplyFilterLayer(bounded, level);
                     }
+                    else if (level.Effect == LayerEffect.FarShadow)
+                    {
+                        ApplyFarShadow(bounded, caster, level);
 
-                    DrawBoundedLayer(bounded, level);
+                        // A shadow alone is drawn on its own: the layer is the window it is cast from
+                        (shiftX, shiftY) = ((DropShadowFilter)level.Filter!).ShadowOnly ? level.CasterShift : default;
+                    }
+
+                    DrawBoundedLayer(bounded, level, shiftX, shiftY);
                 }
             }
             finally
             {
                 bounded.Image.Dispose();
+                caster?.Image.Dispose();
             }
 
             return;
@@ -550,12 +620,14 @@ internal sealed partial class DrawingSession
         }
     }
 
-    /// <summary>Draws the image of a layer of a rectangle at its place: its frame on every frame, or each of its frames on its own.</summary>
-    private void DrawBoundedLayer(BoundedLayer bounded, LayerLevel level)
+    /// <summary>Draws the image of a layer of a rectangle at its place, moved by whole pixels: its frame on every frame, or each of its frames on its own.</summary>
+    private void DrawBoundedLayer(BoundedLayer bounded, LayerLevel level, int shiftX, int shiftY)
     {
         var layerFrames = bounded.Image.Frames;
-        var placement = AffineTransform.CreateTranslation(bounded.Left, bounded.Top);
-        var bounds = new Rectangle(bounded.Left, bounded.Top, bounded.Image.Width, bounded.Image.Height);
+        var left = bounded.Left + shiftX;
+        var top = bounded.Top + shiftY;
+        var placement = AffineTransform.CreateTranslation(left, top);
+        var bounds = new Rectangle(left, top, bounded.Image.Width, bounded.Image.Height);
         if (layerFrames.Count == 1)
         {
             DrawLayerFrame(layerFrames[0], bounds, level, placement);
@@ -596,9 +668,15 @@ internal sealed partial class DrawingSession
             EnsureCoverageRow();
         }
 
+        if (level.AlphaFactor != 1)
+        {
+            // The group opacity multiplies the alpha of each pixel of the layer, as the opacity of a brush does
+            _alphaRow ??= ResampleWeights.Rent<ushort>(_image.Owner.Scope, 4L * Width);
+        }
+
         if (_rasterizer!.Begin(_edges!, FillRule.NonZero, _cancellationToken))
         {
-            Paint(default, evaluator, level.Mode, level.Blend, level.Opacity);
+            Paint(default, evaluator, level.Mode, level.Blend, level.Opacity, level.AlphaFactor);
         }
     }
 
@@ -703,6 +781,7 @@ internal sealed partial class DrawingSession
         Blur,
         ColorMatrix,
         Filter,
+        FarShadow,
     }
 
     /// <summary>A layer of the stack: its image, what was drawn on before it started, and how it is drawn when it ends.</summary>
@@ -720,6 +799,9 @@ internal sealed partial class DrawingSession
         public PixelStorage[]? ParentStorages { get; set; }
 
         public uint Opacity { get; set; }
+
+        /// <summary>Gets or sets the factor of the alpha of the pixels of the layer when it is drawn: the group opacity of an operator other than source-over, or 1.</summary>
+        public double AlphaFactor { get; set; } = 1;
 
         /// <summary>Gets or sets the session on an image of the plane of the drawing the layer is drawn by, under a projective transformation; the other properties are then not used.</summary>
         public ProjectedScope? Projected { get; set; }
@@ -751,6 +833,21 @@ internal sealed partial class DrawingSession
 
         /// <summary>Gets or sets the scales of the lengths of <see cref="Filter"/> along x and along y.</summary>
         public (double X, double Y) FilterScale { get; set; }
+
+        /// <summary>Gets or sets the image a drop shadow cast from far away is cast from, once the callback has drawn on it (<see cref="NextFilterPass"/>).</summary>
+        public BoundedLayer? Caster { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether the callback has yet to draw on the window of <see cref="CasterWindow"/>.</summary>
+        public bool IsCasterPending { get; set; }
+
+        /// <summary>Gets or sets the pixels of the canvas a drop shadow cast from far away is cast from; empty when it is cast from beyond anything that can be drawn.</summary>
+        public Rectangle CasterWindow { get; set; }
+
+        /// <summary>Gets or sets the whole part of the offset of a drop shadow cast from far away, in pixels of the canvas.</summary>
+        public (int X, int Y) CasterShift { get; set; }
+
+        /// <summary>Gets or sets the rest of the offset of a drop shadow cast from far away, from 0 to 1 along each axis.</summary>
+        public (double X, double Y) CasterResidual { get; set; }
 
         /// <summary>Gets or sets the standard deviation of the blur of the shadow of the layer, or of the layer itself.</summary>
         public double BlurSigma { get; set; }
@@ -887,6 +984,13 @@ internal sealed partial class DrawingSession
                 bounded.Session.Dispose();
                 bounded.Image.Dispose();
                 Bounded = null;
+            }
+
+            if (Caster is { } caster)
+            {
+                caster.Session.Dispose();
+                caster.Image.Dispose();
+                Caster = null;
             }
 
             _image?.Dispose();

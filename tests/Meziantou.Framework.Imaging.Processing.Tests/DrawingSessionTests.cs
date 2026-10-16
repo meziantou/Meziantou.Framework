@@ -1860,8 +1860,9 @@ public sealed class DrawingSessionTests
             Ct);
         Assert.Equal([16, 48, 80, 112, 143, 175, 207, 239], DrawingTestSupport.ReadSamples(image.Frames[0])[24..]);
 
-        // A transformation that flattens the plane draws nothing; one that sends a shape too far is rejected, and
-        // the canvas can still be drawn on
+        // A transformation that flattens the plane draws nothing; one that sends a shape beyond the range of the
+        // coordinates draws what the canvas shows of it (nothing here), one that sends it beyond the finite numbers is
+        // rejected, and the canvas can still be drawn on
         using var gray = new Image<Gray8>(4, 4, new Gray8(0));
         gray.Draw(
             canvas =>
@@ -1870,17 +1871,85 @@ public sealed class DrawingSessionTests
                 canvas.Transform(AffineTransform.CreateScale(1, 0), inner => inner.Stroke(WhitePen, new VectorPathBuilder().AddCircle(new PointD(2, 2), 1).Build()));
                 canvas.Transform(AffineTransform.CreateScale(1e6, 1e6), inner =>
                 {
-                    AssertThrows<ArgumentOutOfRangeException>(inner, static canvas => canvas.FillRectangle(White, new Rectangle(0, 0, 100, 100)));
-                    AssertThrows<ArgumentOutOfRangeException>(inner, static canvas => canvas.StrokeLine(WhitePen, new PointD(0, 0), new PointD(100, 100)));
-                    AssertThrows<ArgumentOutOfRangeException>(inner, static canvas => canvas.Shadow(Colors.Black, new PointD(100, 0), 1, static _ => Assert.Fail("The callback ran.")));
+                    inner.FillRectangle(White, new Rectangle(1, 0, 100, 100));
+                    inner.StrokeLine(WhitePen, new PointD(1, 1), new PointD(100, 100));
+                    inner.Shadow(Colors.White, new PointD(100, 0), 1, static canvas => canvas.FillRectangle(White, new RectangleD(1, 1, 1, 1)));
                     AssertThrows<ArgumentException>(inner, static canvas => canvas.FillRectangle(White, new RectangleD(double.NaN, 0, 1, 1)));
                 });
+                canvas.Transform(AffineTransform.CreateScale(1e305, 1e305), inner => AssertThrows<ArgumentOutOfRangeException>(inner, static canvas => canvas.FillRectangle(White, new Rectangle(1, 1, 10000, 10000))));
                 AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Transform(AffineTransform.Identity, null!));
                 AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Transform(AffineTransform.Identity, 1, null!));
                 canvas.FillRectangle(White, new Rectangle(3, 3, 1, 1));
             },
             Ct);
         Assert.Equal([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255], DrawingTestSupport.ReadSamples(gray.Frames[0]));
+    }
+
+    [Fact]
+    public void WhatATransformationSendsBeyondTheRangeOfTheCoordinatesIsCutByIt()
+    {
+        // Each drawing goes beyond 16777216 once it is transformed, which the rasterizer does not take: it is cut by
+        // that range, and the canvas shows what it shows of the same drawing made within it. A shape that stays in the
+        // range is drawn as it is.
+        var red = new Rgba32(255, 0, 0);
+        var blue = new Rgba32(0, 0, 255);
+
+        // The box of a page of 33,554,400 pixels, moved by 100 pixels, fills the canvas
+        AssertSame(
+            static canvas => canvas.Fill(White),
+            static canvas => canvas.Transform(AffineTransform.CreateTranslation(100, 0), moved => moved.FillRectangle(White, RectangleD.FromLTRB(-16777200, -16777200, 16777200, 16777200))));
+
+        // A rectangle whose left side is 2^20 times further than 20 pixels, and a band between two lines of slope 1/4
+        // whose far ends are 25,165,824 pixels to the left of the canvas
+        AssertSame(
+            static canvas => canvas.FillRectangle(White, RectangleD.FromLTRB(-1, 2, 12.5, 6.5)),
+            static canvas => canvas.Transform(AffineTransform.CreateScale(1048576, 1), scaled => scaled.FillRectangle(White, RectangleD.FromLTRB(-20, 2, 12.5 / 1048576, 6.5))));
+        AssertSame(
+            static canvas => canvas.FillPolygon(White, [new PointD(-8, 0.5), new PointD(24, 8.5), new PointD(24, 16.5), new PointD(-8, 8.5)]),
+            static canvas => canvas.Transform(AffineTransform.CreateTranslation(-8388608, 0), moved => moved.FillPolygon(White, [new PointD(-16777216, -6291453.5), new PointD(8388632, 8.5), new PointD(8388632, 16.5), new PointD(-16777216, -6291445.5)])));
+
+        // A stroke whose pen scales, and one whose pen does not, with dashes that start 25,165,824 pixels to the left
+        // (a multiple of their period, as -16777216 is)
+        AssertSame(
+            static canvas => canvas.FillRectangle(White, new Rectangle(0, 4, 32, 2)),
+            static canvas => canvas.Transform(AffineTransform.CreateScale(1048576, 1), scaled => scaled.StrokeLine(new Pen(White, 2), new PointD(-20, 5), new PointD(20, 5))));
+        var dashes = new Pen(White, 2) { ScalesWithTransform = false, DashPattern = [3, 5] };
+        AssertSame(
+            canvas => canvas.StrokeLine(dashes, new PointD(-16777216, 5), new PointD(64, 5)),
+            canvas => canvas.Transform(AffineTransform.CreateTranslation(-8388608, 0), moved => moved.StrokeLine(dashes, new PointD(-16777216, 5), new PointD(8388672, 5))));
+        AssertSame(
+            static canvas => canvas.StrokeCircle(WhitePen, new PointD(16, 8), 6),
+            static canvas => canvas.Transform(AffineTransform.CreateTranslation(-8388608, 0), moved =>
+            {
+                moved.StrokeCircle(WhitePen, new PointD(8388624, 8), 6);
+                moved.StrokeLine(new Pen(White, 2) { ScalesWithTransform = false }, new PointD(-16777216, -5), new PointD(-16777216, 30));
+            }));
+
+        // A clip path, and the destination of an image whose middle is at x = 16
+        var band = new VectorPathBuilder().AddRectangle(RectangleD.FromLTRB(-16777216, 2, 16777216, 6)).Build();
+        AssertSame(
+            static canvas => canvas.FillRectangle(White, new Rectangle(0, 2, 32, 4)),
+            canvas => canvas.Transform(AffineTransform.CreateTranslation(8388608, 0), moved => moved.Clip(band, clipped => clipped.Fill(White))));
+        using var halves = new Image<Rgba32>(2, 1);
+        halves.Frames[0][0, 0] = red;
+        halves.Frames[0][1, 0] = blue;
+        var frame = halves.Frames[0];
+        AssertSame(
+            canvas =>
+            {
+                canvas.FillRectangle(red, new Rectangle(0, 0, 16, 16));
+                canvas.FillRectangle(blue, new Rectangle(16, 0, 16, 16));
+            },
+            canvas => canvas.Transform(AffineTransform.CreateTranslation(16, 0), moved => moved.DrawImage(frame, new RectangleD(-16777216, 0, 33554432, 16), ImageSampling.Nearest)));
+
+        static void AssertSame(DrawingAction expected, DrawingAction actual)
+        {
+            using var reference = new Image<Rgba32>(32, 16);
+            reference.Draw(expected, Ct);
+            using var image = new Image<Rgba32>(32, 16);
+            image.Draw(actual, Ct);
+            Assert.Equal(DrawingTestSupport.ReadSamples(reference.Frames[0]), DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
     }
 
     [Theory]
@@ -1994,15 +2063,15 @@ public sealed class DrawingSessionTests
         Assert.Equal(DrawingTestSupport.ReadSamples(one.Frames[0]), DrawingTestSupport.ReadSamples(other.Frames[0]));
         Assert.Equal(path.Widen(plain).ToSvgPathData(), path.Widen(same).ToSvgPathData());
 
-        // A transformation that flattens the plane leaves a line, which the pen strokes; one that sends the path too
-        // far is rejected before a pixel changes
+        // A transformation that flattens the plane leaves a line, which the pen strokes; one that sends the path
+        // beyond the range of the coordinates draws what the canvas shows of it: nothing here
         using var flat = new Image<Gray8>(8, 8, new Gray8(0));
         flat.Draw(
             canvas =>
             {
                 canvas.Transform(AffineTransform.CreateScale(1, 0).Then(AffineTransform.CreateTranslation(0, 4)), inner => inner.StrokeLine(new Pen(White, 2) { ScalesWithTransform = false }, new PointD(2, 1), new PointD(6, 7)));
                 canvas.Transform(AffineTransform.CreateScale(1, 0).Then(AffineTransform.CreateTranslation(0, 4)), inner => inner.StrokeRectangle(new Pen(White, 2) { ScalesWithTransform = false, Alignment = PenAlignment.Outside }, new RectangleD(2, 1, 4, 5)));
-                canvas.Transform(AffineTransform.CreateScale(1e6, 1e6), inner => AssertThrows<ArgumentOutOfRangeException>(inner, static canvas => canvas.StrokeLine(new Pen(White, 1) { ScalesWithTransform = false }, new PointD(0, 0), new PointD(100, 100))));
+                canvas.Transform(AffineTransform.CreateScale(1e6, 1e6), inner => inner.StrokeLine(new Pen(White, 1) { ScalesWithTransform = false }, new PointD(1, 1), new PointD(100, 100)));
             },
             Ct);
         var line = DrawingTestSupport.ReadSamples(flat.Frames[0]);
@@ -3714,6 +3783,112 @@ public sealed class DrawingSessionTests
         image.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
         image.Draw(canvas => canvas.Transform(AffineTransform.CreateTranslation(-30, -30), moved => moved.Filter(new DropShadowFilter(green, new PointD(15, 15), 0), layer => layer.FillRectangle(new Rgba32(255, 0, 0), new RectangleD(20, 20, 5, 5)))), Ct);
         Assert.Equal(green, image.Frames[0][7, 7]);
+    }
+
+    [Fact]
+    public void AShadowCastFromFartherThanTheCanvasIsCastFromAWindowOfItsOwn()
+    {
+        // WPT css/filter-effects/filters-drop-shadow-003.html: a square 1000 pixels above and to the left of the canvas,
+        // further than the largest side of the canvas, casts its shadow on it. The callback draws twice: the layer of
+        // what the clip shows, then the window the shadow is cast from.
+        var green = new Rgba32(0, 255, 0);
+        var red = new Rgba32(255, 0, 0);
+        using var image = new Image<Rgba32>(800, 600);
+        var calls = 0;
+        image.Draw(
+            canvas => canvas.Filter(new DropShadowFilter(green, new PointD(1000, 1000), 0), layer =>
+            {
+                calls++;
+                layer.FillRectangle(red, new RectangleD(-1000, -1000, 300, 300));
+            }),
+            Ct);
+        Assert.Equal(2, calls);
+        Assert.Equal(green, image.Frames[0][100, 100]);
+        Assert.Equal(green, image.Frames[0][0, 0]);
+        Assert.Equal(green, image.Frames[0][299, 299]);
+        Assert.Equal(default, image.Frames[0][300, 299]);
+        Assert.Equal(default, image.Frames[0][400, 400]);
+
+        // A shadow alone draws once, on the window, and what casts it is not drawn
+        image.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
+        calls = 0;
+        image.Draw(
+            canvas => canvas.Filter(new DropShadowFilter(green, new PointD(1000, -1000), 0) { ShadowOnly = true }, 0, (layer, _) =>
+            {
+                calls++;
+                layer.FillRectangle(red, new RectangleD(-950, 1100, 300, 300));
+                layer.FillRectangle(red, new RectangleD(10, 10, 5, 5));
+            }),
+            Ct);
+        Assert.Equal(1, calls);
+        Assert.Equal(green, image.Frames[0][50, 100]);
+        Assert.Equal(green, image.Frames[0][50, 399]);
+        Assert.Equal(default, image.Frames[0][50, 400]);
+        Assert.Equal(default, image.Frames[0][12, 12]);
+
+        // Under a scaling, the offset is scaled, and so is what casts the shadow; a clip shows the part it lets through
+        image.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
+        image.Draw(canvas => canvas.Clip(new Rectangle(0, 0, 200, 200), clipped => clipped.Transform(AffineTransform.CreateScale(2, 2), scaled => scaled.Filter(new DropShadowFilter(green, new PointD(600, 0), 0), layer => layer.FillRectangle(red, new RectangleD(-550, 0, 100, 50))))), Ct);
+        Assert.Equal(green, image.Frames[0][150, 50]);
+        Assert.Equal(green, image.Frames[0][199, 99]);
+        Assert.Equal(default, image.Frames[0][150, 100]);
+        Assert.Equal(default, image.Frames[0][250, 50]);
+
+        // A shadow cast from beyond anything that can be drawn is transparent, and what casts it is still drawn
+        image.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
+        image.Draw(canvas => canvas.Transform(AffineTransform.CreateScale(16, 16), scaled => scaled.Filter(new DropShadowFilter(green, new PointD(16777216, 0), 0), layer => layer.FillRectangle(red, new RectangleD(1, 1, 1, 1)))), Ct);
+        Assert.Equal(red, image.Frames[0][20, 20]);
+        Assert.Equal(default, image.Frames[0][40, 20]);
+        Assert.Equal(0, image.Owner.ActiveLeaseCount);
+    }
+
+    [Theory]
+    [InlineData(1.5, false)]
+    [InlineData(1.5, true)]
+    [InlineData(4, false)]
+    public void AShadowCastFromAWindowHasThePixelsOfALayerThatHoldsEverything(double sigma, bool shadowOnly)
+    {
+        // The same drawing on a canvas large enough for a layer of the canvas to hold the shape that casts the shadow,
+        // and on a small one that shows a part of it, the shape far beyond its edge. The offset is a whole number of
+        // pixels and quarters: the positions the shadow is interpolated at are the same. Below a deviation of 2, the blur
+        // adds the same weights in the same order, and the pixels are the same; from 2, its box sums start elsewhere.
+        // The shapes are rectangles on quarters of pixels: moved by whole pixels, their coverages are the same.
+        var filter = new DropShadowFilter(new Rgba32(20, 40, 200, 220), new PointD(100.25, 90.75), sigma) { ShadowOnly = shadowOnly };
+        void Shapes(DrawingCanvas layer)
+        {
+            layer.FillRectangle(new Rgba32(250, 120, 10, 200), new RectangleD(110.25, 113.5, 17.75, 15.25));
+            layer.FillRectangle(new Rgba32(255, 255, 255), new RectangleD(201, 196, 30, 12));
+        }
+
+        using var large = new Image<Rgba32>(320, 320);
+        large.Draw(canvas => canvas.Filter(filter, Shapes), Ct);
+        using var small = new Image<Rgba32>(48, 48);
+        var calls = 0;
+        small.Draw(
+            canvas => canvas.Transform(AffineTransform.CreateTranslation(-196, -186), moved => moved.Filter(filter, layer =>
+            {
+                calls++;
+                Shapes(layer);
+            })),
+            Ct);
+        Assert.Equal(shadowOnly ? 1 : 2, calls);
+        var tolerance = sigma < 2 ? 0 : 1;
+        var hasShadow = false;
+        for (var y = 0; y < 48; y++)
+        {
+            for (var x = 0; x < 48; x++)
+            {
+                var expected = large.Frames[0][x + 196, y + 186];
+                var actual = small.Frames[0][x, y];
+                hasShadow |= expected.A != 0 && expected.B > 150;
+                Assert.InRange(actual.R, expected.R - tolerance, expected.R + tolerance);
+                Assert.InRange(actual.G, expected.G - tolerance, expected.G + tolerance);
+                Assert.InRange(actual.B, expected.B - tolerance, expected.B + tolerance);
+                Assert.InRange(actual.A, expected.A - tolerance, expected.A + tolerance);
+            }
+        }
+
+        Assert.True(hasShadow);
     }
 
     [Fact]

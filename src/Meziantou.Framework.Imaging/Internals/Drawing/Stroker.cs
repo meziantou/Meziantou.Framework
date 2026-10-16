@@ -77,6 +77,12 @@ internal sealed class Stroker : PathSink
     private PieceSink? _pieceSink;
     private bool _isProjectiveOutput;
 
+    // Whether the pieces of the stroke that leave the range of the coordinates are cut by it (a path placed before it
+    // is stroked that leaves it), and the piece being cut
+    private bool _clipsToRange;
+    private RangeClipSink? _rangeClipper;
+    private bool _isPieceClipped;
+
     // The view of the pieces themselves: their arcs are what is drawn, nothing reaches beyond them
     private ProjectiveView _pieceView;
 
@@ -172,6 +178,7 @@ internal sealed class Stroker : PathSink
     {
         var width = pen.StrokeWidth * widthFactor;
         CoversFrame = false;
+        _clipsToRange = false;
         _testFrame = _edges is not null && !_hasOutputTransform && (_isProjectiveOutput || width >= Math.Min(_edges.Width, _edges.Height));
         _halfWidth = width / 2;
         _join = pen.LineJoin;
@@ -185,6 +192,7 @@ internal sealed class Stroker : PathSink
     public void Configure(double width, LineJoin join, double miterLimit)
     {
         CoversFrame = false;
+        _clipsToRange = false;
         _testFrame = _edges is not null && !_hasOutputTransform && (_isProjectiveOutput || width >= Math.Min(_edges.Width, _edges.Height));
         _halfWidth = width / 2;
         _join = join;
@@ -817,6 +825,12 @@ internal sealed class Stroker : PathSink
         return maxX < 0 || maxY < 0 || minX > _edges.Width || minY > _edges.Height;
     }
 
+    /// <summary>
+    /// Cuts the pieces of the rest of the stroke whose vertices leave the range of the coordinates: the path, placed on
+    /// the canvas before it is stroked, has left it. The pieces that stay in the range are emitted as they are.
+    /// </summary>
+    public void ClipToRange() => _clipsToRange = true;
+
     private void BeginPiece(double x, double y)
     {
         if (_isProjectiveOutput)
@@ -825,12 +839,39 @@ internal sealed class Stroker : PathSink
             return;
         }
 
+        _isPieceClipped = false;
         if (_hasOutputTransform)
         {
             (x, y) = TransformOutput(x, y);
         }
 
+        if (IsOutOfRange(x, y))
+        {
+            // A piece that leaves the range of the coordinates is cut by it
+            StartPieceClipping(resume: false).MoveTo(x, y);
+            return;
+        }
+
         BeginOutputPiece(x, y);
+    }
+
+    /// <summary>Gets a value indicating whether a vertex of a piece on the canvas is beyond the range of the coordinates, which the canvas checks.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">A coordinate of the vertex is not a finite number.</exception>
+    private bool IsOutOfRange(double x, double y) => (_hasOutputTransform || _clipsToRange) && _isOutputChecked && TransformSink.IsOutOfRange(x, y, _originX, _originY);
+
+    /// <summary>Starts cutting the piece being emitted by the range of the coordinates.</summary>
+    /// <param name="resume"><see langword="true"/> when the piece has vertices on the canvas already, all in the range.</param>
+    private RangeClipSink StartPieceClipping(bool resume)
+    {
+        var clipper = _rangeClipper ??= new RangeClipSink();
+        clipper.Configure(_pieceSink ??= new PieceSink(this), -DrawingGuard.MaxCoordinate - _originX, -DrawingGuard.MaxCoordinate - _originY, DrawingGuard.MaxCoordinate - _originX, DrawingGuard.MaxCoordinate - _originY);
+        if (resume)
+        {
+            clipper.Resume(_pieceStartX, _pieceStartY, _pieceX, _pieceY);
+        }
+
+        _isPieceClipped = true;
+        return clipper;
     }
 
     /// <summary>Starts a piece at a point of the canvas.</summary>
@@ -870,6 +911,18 @@ internal sealed class Stroker : PathSink
             (x, y) = TransformOutput(x, y);
         }
 
+        if (_isPieceClipped)
+        {
+            _rangeClipper!.LineTo(x, y, smooth: false);
+            return;
+        }
+
+        if (IsOutOfRange(x, y))
+        {
+            StartPieceClipping(resume: true).LineTo(x, y, smooth: false);
+            return;
+        }
+
         OutputLineTo(x, y);
     }
 
@@ -887,6 +940,15 @@ internal sealed class Stroker : PathSink
         if (_isProjectiveOutput)
         {
             _projectiveOutput!.Close(smooth: false);
+            return;
+        }
+
+        if (_isPieceClipped)
+        {
+            // What remains of the piece, if anything, is closed by the clipper
+            _isPieceClipped = false;
+            _rangeClipper!.Close(smooth: false);
+            _rangeClipper.End();
             return;
         }
 
@@ -917,18 +979,7 @@ internal sealed class Stroker : PathSink
     }
 
     /// <summary>Places a vertex of a piece on the canvas.</summary>
-    /// <exception cref="ArgumentOutOfRangeException">The vertex is beyond the largest coordinate.</exception>
-    private (double X, double Y) TransformOutput(double x, double y)
-    {
-        var px = _outputTransform.TransformX(x, y);
-        var py = _outputTransform.TransformY(x, y);
-
-        // Written so that a value that is not a number is rejected too
-        if (_isOutputChecked && !(Math.Abs(px + _originX) <= DrawingGuard.MaxCoordinate && Math.Abs(py + _originY) <= DrawingGuard.MaxCoordinate))
-            TransformSink.ThrowOutOfRange(Math.Abs(px + _originX) <= DrawingGuard.MaxCoordinate ? py + _originY : px + _originX);
-
-        return (px, py);
-    }
+    private (double X, double Y) TransformOutput(double x, double y) => (_outputTransform.TransformX(x, y), _outputTransform.TransformY(x, y));
 
     private void AddPieceEdge(double x, double y)
     {

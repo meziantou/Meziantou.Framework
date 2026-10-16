@@ -13,7 +13,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// whose session fills only the canvas when it fills the whole canvas: what is drawn beyond the canvas is filtered
 /// into it. When it ends, those pixels are read into a surface (<see cref="FilterProcessor"/>), filtered with the
 /// edges of the canvas (the transparent edge mode reads what the layer holds beyond them,
-/// <see cref="FilterProcessor.Extent"/>), written back to the layer, and the layer is drawn. Under a transformation that scales the axes, the lengths of the filter are multiplied by the scale of each
+/// <see cref="FilterProcessor.Extent"/>), written back to the layer, and the layer is drawn. A drop shadow whose
+/// margin a layer cannot hold is cast from a window of its own (<see cref="PushFarShadow"/>), which the callback draws
+/// on again (<see cref="NextFilterPass"/>). Under a transformation that scales the axes, the lengths of the filter are multiplied by the scale of each
 /// axis; under one that turns, skews or is projective, the layer is drawn on an image of the plane of the drawing
 /// (<see cref="BeginProjectedScope"/>), where the filter applies.
 /// </para>
@@ -60,6 +62,13 @@ internal sealed partial class DrawingSession
         var scaleY = _hasTransform ? Math.Abs(_transform.M22) : 1;
         var reach = Math.Ceiling(Math.Max(reachX * scaleX, reachY * scaleY));
         var margin = reach + 1;
+        if (reach > 0 && filter is DropShadowFilter shadow && IsFilterMarginTruncated(margin))
+        {
+            // The layer cannot hold everything that casts a shadow on what the clip shows: the shadow is cast from a
+            // window of its own, where the offset brings what the clip shows from
+            return PushFarShadow(shadow, scaleX, scaleY);
+        }
+
         LayerLevel level;
         if (reach > 0 && TryGetFilterExtent(margin, out var extent))
         {
@@ -95,12 +104,25 @@ internal sealed partial class DrawingSession
         if (!(right > left && bottom > top))
             return false;
 
+        var extension = GetFilterExtension(right - left, bottom - top, Math.Min(margin, Math.Max(Width, Height)));
+        if (extension <= 0 || (left - extension >= 0 && top - extension >= 0 && right + extension <= Width && bottom + extension <= Height))
+            return false;
+
+        extent = Rectangle.FromLTRB(left - (int)extension, top - (int)extension, right + (int)extension, bottom + (int)extension);
+        return true;
+    }
+
+    /// <summary>
+    /// Gets the largest margin, up to <paramref name="wanted"/>, around a rectangle of pixels of the canvas such that the
+    /// rectangle and its margin have at most four times its pixels (and 65,536) and fit in the limits of the image.
+    /// </summary>
+    /// <returns>The margin; negative when the rectangle alone does not fit in the limits.</returns>
+    private long GetFilterExtension(long width, long height, double wanted)
+    {
         // The largest margin e with (w + 2e) (h + 2e) <= the most pixels: 4e^2 + 2(w + h)e + wh - pixels <= 0
         var limits = _image.Configuration.Limits;
-        long width = right - left;
-        long height = bottom - top;
         var pixels = Math.Min(limits.MaxFramePixels, (4 * width * height) + 65536);
-        var extension = (long)Math.Min(Math.Min(margin, Math.Max(Width, Height)), Math.Min((limits.MaxWidth - width) / 2, (limits.MaxHeight - height) / 2));
+        var extension = (long)Math.Min(wanted, Math.Min((limits.MaxWidth - width) / 2, (limits.MaxHeight - height) / 2));
         if (extension > 0 && (width + (2 * extension)) * (height + (2 * extension)) > pixels)
         {
             double sum = width + height;
@@ -111,18 +133,145 @@ internal sealed partial class DrawingSession
             }
         }
 
-        if (extension <= 0 || (left - extension >= 0 && top - extension >= 0 && right + extension <= Width && bottom + extension <= Height))
-            return false;
+        return extension;
+    }
 
-        extent = Rectangle.FromLTRB(left - (int)extension, top - (int)extension, right + (int)extension, bottom + (int)extension);
-        return true;
+    /// <summary>Gets a value indicating whether the clip shows pixels and a layer of them cannot hold the whole margin a filter needs around them (<see cref="TryGetFilterExtent"/>).</summary>
+    private bool IsFilterMarginTruncated(double margin)
+    {
+        GetClipBounds(out var left, out var top, out var right, out var bottom, out _);
+        return right > left && bottom > top && GetFilterExtension(right - left, bottom - top, Math.Min(margin, Math.Max(Width, Height))) < margin;
+    }
+
+    /// <summary>
+    /// Starts the layer of a drop shadow cast from further than a layer around the clip can hold. The shadow of the
+    /// pixels the clip shows comes from a window of their own: the bounds of the clip moved back by the whole part of
+    /// the offset on the canvas, with the reach of the blur (and of the interpolation) around them, which the callback
+    /// draws on (a session of its own, <see cref="NextFilterPass"/>), then whose alpha is moved by the rest of the
+    /// offset and blurred. What casts the shadow is drawn on a layer of the bounds of the clip, unless the shadow is
+    /// alone: the window is then the layer, drawn moved by the whole part of the offset. The pixels are those of a layer
+    /// that would hold everything, but for the sums of the blur, which start elsewhere.
+    /// </summary>
+    /// <returns>The session the callback draws on first.</returns>
+    /// <exception cref="ImageResourceLimitException">An image of the layer exceeds the limits of the image that is drawn on.</exception>
+    private DrawingSession PushFarShadow(DropShadowFilter filter, double scaleX, double scaleY)
+    {
+        GetClipBounds(out var left, out var top, out var right, out var bottom, out _);
+
+        // The offset on the canvas, as the filter computes it, and its whole part
+        var m11 = _hasTransform ? _transform.M11 : 1;
+        var m22 = _hasTransform ? _transform.M22 : 1;
+        var dx = m11 * filter.Offset.X;
+        var dy = m22 * filter.Offset.Y;
+        var shiftX = Math.Floor(dx);
+        var shiftY = Math.Floor(dy);
+
+        // The window keeps the reach of the blur and one pixel of interpolation, within the pixels a filter may use
+        var radiusX = GaussianKernel.GetRadius(Math.Min(filter.Sigma * scaleX, GaussianKernel.MaxSigma)) + 2L;
+        var radiusY = GaussianKernel.GetRadius(Math.Min(filter.Sigma * scaleY, GaussianKernel.MaxSigma)) + 2L;
+        var extension = Math.Max(GetFilterExtension(right - left, bottom - top, Math.Max(radiusX, radiusY)), 0);
+        radiusX = Math.Min(radiusX, extension);
+        radiusY = Math.Min(radiusY, extension);
+
+        // Nothing drawn reaches beyond the largest coordinate: a shadow cast from further than that is transparent
+        var isReachable = Math.Abs(shiftX) <= 4 * DrawingGuard.MaxCoordinate && Math.Abs(shiftY) <= 4 * DrawingGuard.MaxCoordinate;
+        var window = isReachable
+            ? Rectangle.FromLTRB((int)(left - shiftX - radiusX), (int)(top - shiftY - radiusY), (int)(right - shiftX + radiusX), (int)(bottom - shiftY + radiusY))
+            : Rectangle.Empty;
+        var level = filter.ShadowOnly && isReachable
+            ? PushBoundedLevel(window.Left, window.Top, window.Right, window.Bottom)
+            : PushBoundedLevel(left, top, right, bottom);
+        level.Opacity = CoverageRasterizer.FullCoverage;
+        level.Mode = CompositeMode.SourceOver;
+        level.Blend = BlendMode.Normal;
+        level.Effect = LayerEffect.FarShadow;
+        level.IsLuminanceMask = false;
+        level.Filter = filter;
+        level.FilterScale = (scaleX, scaleY);
+        level.CasterShift = isReachable ? ((int)shiftX, (int)shiftY) : default;
+        level.CasterResidual = (dx - shiftX, dy - shiftY);
+        level.CasterWindow = window;
+        level.IsCasterPending = !filter.ShadowOnly && isReachable;
+        return level.Bounded!.Session;
+    }
+
+    /// <summary>
+    /// Gets the session the callback of the filtered layer that was started last draws on again, once it has drawn
+    /// on the session <see cref="PushFilter(Filter)"/> returned: the window a drop shadow is cast from, when it is cast from
+    /// too far for the layer to hold it.
+    /// </summary>
+    /// <returns>The session, or <see langword="null"/> when the callback has drawn everything the filter needs.</returns>
+    /// <exception cref="ImageResourceLimitException">The image of the window exceeds the limits of the image that is drawn on.</exception>
+    public DrawingSession? NextFilterPass()
+    {
+        var level = _layers[_layerDepth - 1];
+        if (level.Projected is { } scope)
+            return scope.Session.NextFilterPass();
+
+        if (level.Effect != LayerEffect.FarShadow || !level.IsCasterPending)
+            return null;
+
+        level.IsCasterPending = false;
+        var window = level.CasterWindow;
+        level.Caster = CreateBoundedLayer(window.Left, window.Top, window.Right, window.Bottom);
+        return level.Caster.Session;
+    }
+
+    /// <summary>
+    /// Applies a drop shadow cast from a window of its own (<see cref="PushFarShadow"/>) to the image of a layer: the
+    /// shadow of the window, under what the layer holds, or, when the shadow is alone, the shadow of the layer itself,
+    /// which is that window.
+    /// </summary>
+    private void ApplyFarShadow(BoundedLayer target, BoundedLayer? caster, LayerLevel level)
+    {
+        var filter = (DropShadowFilter)level.Filter!;
+        var (scaleX, scaleY) = level.FilterScale;
+        var (residualX, residualY) = level.CasterResidual;
+        var (red, green, blue, alpha) = (filter.Color.R / 65535.0, filter.Color.G / 65535.0, filter.Color.B / 65535.0, filter.Color.A / 65535.0);
+        var area = new Rectangle(0, 0, target.Image.Width, target.Image.Height);
+        var processor = GetFilterProcessor(Math.Max(area.Width, caster?.Image.Width ?? 0));
+        var row = unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span));
+        var targetFrame = target.Image.Frames[0];
+        var targetStorage = targetFrame.GetStorage();
+        using var surface = new FilterSurface(_image.Owner.Scope, area);
+        FilterProcessor.Read(targetFrame, targetStorage, surface, row);
+        if (filter.ShadowOnly)
+        {
+            if (level.CasterWindow.IsEmpty)
+            {
+                // Cast from beyond anything that can be drawn: the shadow is transparent
+                surface.Values.Clear();
+            }
+            else
+            {
+                // The layer is the window: its shadow replaces it, and it is drawn moved by the whole part of the offset
+                processor.Configure(area, edgeOverride: null, scaleX, scaleY, 1, 0, 0, 1, 0, 0, _cancellationToken);
+                var shadow = processor.GetShadowAlpha(surface, residualX, residualY, filter.Sigma, filter.Sigma);
+                FilterProcessor.CompositeShadow(surface, shadow, 0, 0, red, green, blue, alpha, shadowOnly: true);
+            }
+        }
+        else if (caster is not null)
+        {
+            // The pixel (x, y) of the layer is the pixel of the canvas its left and top move it to; its shadow is the
+            // one of the pixel of the canvas the whole part of the offset moves that one back to, in the window
+            var casterArea = new Rectangle(0, 0, caster.Image.Width, caster.Image.Height);
+            processor.Configure(casterArea, edgeOverride: null, scaleX, scaleY, 1, 0, 0, 1, 0, 0, _cancellationToken);
+            using var casterSurface = new FilterSurface(_image.Owner.Scope, casterArea);
+            var casterFrame = caster.Image.Frames[0];
+            FilterProcessor.Read(casterFrame, casterFrame.GetStorage(), casterSurface, row);
+            var shadow = processor.GetShadowAlpha(casterSurface, residualX, residualY, filter.Sigma, filter.Sigma);
+            var (shiftX, shiftY) = level.CasterShift;
+            FilterProcessor.CompositeShadow(surface, shadow, target.Left - shiftX - caster.Left, target.Top - shiftY - caster.Top, red, green, blue, alpha, shadowOnly: false);
+        }
+
+        FilterProcessor.Write(surface, targetStorage, area);
     }
 
     /// <summary>Starts a layer that starts with the filtered backdrop of a rectangle, and is drawn as a layer when it ends.</summary>
     /// <exception cref="ArgumentException">A coordinate of the rectangle is not a finite number.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, the opacity is not between 0 and 1, or the operator or the blend mode is not defined.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, the opacity is not between 0 and 1, or the operator, the blend mode or the opacity mode is not defined.</exception>
     /// <exception cref="ImageResourceLimitException">The image of the layer or the working storage exceeds the allocation limit.</exception>
-    public void PushBackdropLayer(Filter? filter, RectangleD bounds, double opacity, CompositeMode mode, BlendMode blend)
+    public void PushBackdropLayer(Filter? filter, RectangleD bounds, double opacity, CompositeMode mode, BlendMode blend, LayerOpacity opacityMode = LayerOpacity.Coverage)
     {
         DrawingGuard.Rectangle(bounds, nameof(bounds));
         var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
@@ -132,6 +281,7 @@ internal sealed partial class DrawingSession
         if ((uint)blend > (uint)BlendMode.Luminosity)
             throw new ArgumentOutOfRangeException(nameof(blend), blend, "The blend mode is not valid.");
 
+        ValidateLayerOpacity(opacityMode, nameof(opacityMode));
         _cancellationToken.ThrowIfCancellationRequested();
 
         // The pixels of the backdrop: those whose center is in the rectangle on the canvas, in what is drawn on
@@ -165,7 +315,7 @@ internal sealed partial class DrawingSession
             }
 
             var level = PushLayerCore(margin: 0, _frames.Length);
-            level.Opacity = coverage;
+            SetOpacity(level, opacity, coverage, mode, opacityMode);
             level.Mode = mode;
             level.Blend = blend;
             level.Effect = LayerEffect.None;

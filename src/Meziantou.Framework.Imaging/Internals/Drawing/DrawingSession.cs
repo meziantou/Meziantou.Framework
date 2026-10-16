@@ -1109,32 +1109,39 @@ internal sealed partial class DrawingSession : IDisposable
 
     private void PaintRows(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity)
     {
+        RemoveStaleThumbnail();
+        var rasterizer = _rasterizer!;
+        while (rasterizer.MoveNext())
+        {
+            PaintSpan(color, evaluator, mode, blend, opacity, rasterizer.Y, rasterizer.X, rasterizer.Coverage);
+        }
+    }
+
+    private void RemoveStaleThumbnail()
+    {
         if (!_thumbnailRemoved)
         {
             // The pixels are about to change: the EXIF thumbnail no longer shows them
             _image.Metadata.RemoveStaleThumbnail();
             _thumbnailRemoved = true;
         }
+    }
 
-        var rasterizer = _rasterizer!;
-        while (rasterizer.MoveNext())
+    /// <summary>Paints the coverages of a run of pixels of a row: through the clip and the opacity, on every frame.</summary>
+    private void PaintSpan(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, int y, int x, ReadOnlySpan<uint> coverage)
+    {
+        if (_clipDepth != 0 && !ApplyClip(y, ref x, ref coverage, out _))
+            return;
+
+        if (opacity != CoverageRasterizer.FullCoverage)
         {
-            var y = rasterizer.Y;
-            var x = rasterizer.X;
-            var coverage = rasterizer.Coverage;
-            if (_clipDepth != 0 && !ApplyClip(y, ref x, ref coverage, out _))
-                continue;
+            coverage = ApplyOpacity(coverage, opacity);
+        }
 
-            if (opacity != CoverageRasterizer.FullCoverage)
-            {
-                coverage = ApplyOpacity(coverage, opacity);
-            }
-
-            var source = evaluator is null ? new DrawingSource(color, mode, blend, _transfer, _curves) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend, _transfer, _curves);
-            for (var i = 0; i < _frames.Length; i++)
-            {
-                _frames[i].CompositePixels(_storages[i], y, x, coverage, source);
-            }
+        var source = evaluator is null ? new DrawingSource(color, mode, blend, _transfer, _curves) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend, _transfer, _curves);
+        for (var i = 0; i < _frames.Length; i++)
+        {
+            _frames[i].CompositePixels(_storages[i], y, x, coverage, source);
         }
     }
 
@@ -1147,6 +1154,16 @@ internal sealed partial class DrawingSession : IDisposable
         var edges = _edges!;
         if (edges.Count == 0)
             return false;
+
+        return PrepareBrush(brush, out color, out evaluator) && _rasterizer!.Begin(edges, fillRule, _isAliased, _cancellationToken);
+    }
+
+    /// <summary>Prepares the paint of a brush: every rental happens here, and no pixel is changed.</summary>
+    /// <returns><see langword="false"/> when the brush paints nothing.</returns>
+    private bool PrepareBrush(Brush brush, out DrawingColor color, out PaintEvaluator? evaluator)
+    {
+        color = default;
+        evaluator = null;
 
         // A paint without opacity changes nothing with most operators; with the others, it erases
         var isInert = DrawingKernels.IsTransparentPaintInert(brush.CompositeMode);
@@ -1191,6 +1208,6 @@ internal sealed partial class DrawingSession : IDisposable
             evaluator = gradient;
         }
 
-        return _rasterizer!.Begin(edges, fillRule, _isAliased, _cancellationToken);
+        return true;
     }
 }

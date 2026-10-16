@@ -614,6 +614,47 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void StrokeText(Pen pen, TextLayout layout, PointD origin) => GetSession().StrokeText(pen, layout, origin);
 
+    /// <summary>Fills a run of glyphs placed by the caller: the glyphs of a font at the positions a text shaper gives.</summary>
+    /// <remarks>
+    /// <para>
+    /// Each glyph is filled on its own, over the ones before it. Under a transformation that keeps the axes (or swaps
+    /// them), the origin of a glyph is moved to the nearest quarter of a pixel along the line and to the nearest pixel
+    /// across it, as browsers do, and its coverage is computed once per position in a pixel when
+    /// <see cref="GlyphRunOptions.Cache"/> keeps it: the pixels are the same with or without a cache. The glyphs a font
+    /// draws with its own colors (<c>COLR</c>, <c>sbix</c>, <c>CBDT</c>) are drawn with them, from the palette of the
+    /// options; a variable font draws the glyphs of its instance (<see cref="Font.WithVariations(ReadOnlySpan{FontVariationSetting})"/>).
+    /// </para>
+    /// </remarks>
+    /// <param name="brush">The paint of the glyphs, and the color of the glyphs a font draws with its own colors where they ask for the color of the text.</param>
+    /// <param name="font">The font.</param>
+    /// <param name="size">The size of the text: the length of an em, in units of the drawing.</param>
+    /// <param name="glyphs">The glyphs and their origins, in the coordinates of the drawing.</param>
+    /// <param name="options">The synthesis, the palette and the cache, or <see langword="null"/> for none.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="brush"/> or <paramref name="font"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The size or a coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A glyph is not a glyph of the font, the size is negative, or the magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidImageContentException">The outline or the display list of a glyph is malformed.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void FillGlyphs(Brush brush, Font font, double size, ReadOnlySpan<PositionedGlyph> glyphs, GlyphRunOptions? options = null) => GetSession().FillGlyphs(brush, font, size, glyphs, options);
+
+    /// <summary>Strokes the outlines of a run of glyphs placed by the caller, as one shape: <c>strokeText</c> of the HTML canvas.</summary>
+    /// <remarks>A synthetic oblique shears the outlines; a synthetic bold does not widen the pen, as for <see cref="StrokeText(Pen, TextLayout, PointD)"/>. The glyphs a font draws with its own colors are stroked as their outlines.</remarks>
+    /// <param name="pen">The pen.</param>
+    /// <param name="font">The font.</param>
+    /// <param name="size">The size of the text: the length of an em, in units of the drawing.</param>
+    /// <param name="glyphs">The glyphs and their origins, in the coordinates of the drawing.</param>
+    /// <param name="options">The synthesis, or <see langword="null"/> for none.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> or <paramref name="font"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The size or a coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A glyph is not a glyph of the font, the size is negative, or the magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidImageContentException">The outline of a glyph is malformed.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokeGlyphs(Pen pen, Font font, double size, ReadOnlySpan<PositionedGlyph> glyphs, GlyphRunOptions? options = null) => GetSession().StrokeGlyphs(pen, font, size, glyphs, options);
+
     /// <summary>Paints the glyphs of a text layout along a path.</summary>
     /// <param name="brush">The paint of the spans that have none.</param>
     /// <param name="layout">The text, laid out.</param>

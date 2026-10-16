@@ -1393,6 +1393,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void FillCircle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.PointD center, double radius) { }
         public void FillClosedCurve(Meziantou.Framework.Imaging.Drawing.Brush brush, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, double tension = 0.5d, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) { }
         public void FillEllipse(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY) { }
+        public void FillGlyphs(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.Typography.Font font, double size, System.ReadOnlySpan<Meziantou.Framework.Imaging.Typography.PositionedGlyph> glyphs, Meziantou.Framework.Imaging.Typography.GlyphRunOptions? options = null) { }
         public void FillPie(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.PointD center, double radius, double startAngle, double sweepAngle) { }
         public void FillPolygon(Meziantou.Framework.Imaging.Drawing.Brush brush, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) { }
         public void FillRectangle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.RectangleD rectangle) { }
@@ -1424,6 +1425,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void StrokeClosedCurve(Meziantou.Framework.Imaging.Drawing.Pen pen, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, double tension = 0.5d) { }
         public void StrokeCurve(Meziantou.Framework.Imaging.Drawing.Pen pen, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, double tension = 0.5d) { }
         public void StrokeEllipse(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY) { }
+        public void StrokeGlyphs(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Typography.Font font, double size, System.ReadOnlySpan<Meziantou.Framework.Imaging.Typography.PositionedGlyph> glyphs, Meziantou.Framework.Imaging.Typography.GlyphRunOptions? options = null) { }
         public void StrokeLine(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.PointD start, Meziantou.Framework.Imaging.PointD end) { }
         public void StrokePolygon(Meziantou.Framework.Imaging.Drawing.Pen pen, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points) { }
         public void StrokePolyline(Meziantou.Framework.Imaging.Drawing.Pen pen, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points) { }
@@ -2668,6 +2670,36 @@ namespace Meziantou.Framework.Imaging.Typography
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Typography.FontVariationSetting left, Meziantou.Framework.Imaging.Typography.FontVariationSetting right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Typography.FontVariationSetting left, Meziantou.Framework.Imaging.Typography.FontVariationSetting right) => throw null;
+    }
+
+    public sealed class GlyphCache
+    {
+        public long Bytes { get => throw null; }
+        public int Count { get => throw null; }
+        public long MaxBytes { get => throw null; }
+        public GlyphCache(long maxBytes) { }
+        public void Clear() { }
+    }
+
+    public sealed class GlyphRunOptions
+    {
+        public double? BoldWidth { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.GlyphCache? Cache { get => throw null; init { } }
+        public double? ObliqueShear { get => throw null; init { } }
+        public int Palette { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.FontSynthesis Synthesis { get => throw null; init { } }
+    }
+
+    public readonly struct PositionedGlyph : System.IEquatable<Meziantou.Framework.Imaging.Typography.PositionedGlyph>
+    {
+        public int Glyph { get => throw null; }
+        public Meziantou.Framework.Imaging.PointD Origin { get => throw null; }
+        public PositionedGlyph(int glyph, Meziantou.Framework.Imaging.PointD origin) { }
+        public bool Equals(Meziantou.Framework.Imaging.Typography.PositionedGlyph other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Typography.PositionedGlyph left, Meziantou.Framework.Imaging.Typography.PositionedGlyph right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Typography.PositionedGlyph left, Meziantou.Framework.Imaging.Typography.PositionedGlyph right) => throw null;
     }
 
     public sealed class RichText

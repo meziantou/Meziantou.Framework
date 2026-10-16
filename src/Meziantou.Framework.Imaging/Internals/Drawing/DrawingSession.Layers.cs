@@ -407,6 +407,8 @@ internal sealed partial class DrawingSession
         DisposeBlur();
         DisposeFilters();
         DisposeFilterEffects();
+        _glyphMasks?.Dispose();
+        _glyphMasks = null;
     }
 
     /// <summary>What changes the pixels of a layer, or is drawn with it, when it ends.</summary>

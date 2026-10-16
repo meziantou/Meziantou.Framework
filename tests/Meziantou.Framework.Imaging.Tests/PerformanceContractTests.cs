@@ -422,5 +422,58 @@ public sealed class PerformanceContractTests
         return stream.ToArray();
     }
 
+    [Fact]
+    public void GlyphRunsAllocateNothingOnceTheirScratchAndTheirCacheAreWarm()
+    {
+        // The masks of the glyphs on the pixels, uncached (computed in the scratch of the session) and cached (with a
+        // synthetic bold), the shapes of glyphs on a turned canvas, a stroke, and the glyphs of colors and of images,
+        // whose display lists only a cache keeps
+        using var image = DrawingTestSupport.Create(PixelFormat.Rgba32, 64, 48);
+        var state = new GlyphState(
+            FontTestSupport.Load(FontSamples.Boxes()),
+            FontTestSupport.Load(FontSamples.ColorBoxes()),
+            FontTestSupport.Load(FontSamples.BitmapBoxes()),
+            [new(FontSamples.BoxA, new PointD(2.3, 14)), new(FontSamples.TriangleD, new PointD(18.6, 14.5)), new(FontSamples.FrameE, new PointD(27, 30.2)), new(FontSamples.BoxA, new PointD(40.3, 14))],
+            [new(FontSamples.ColorA, new PointD(2, 30)), new(FontSamples.ColorB, new PointD(20.5, 30))],
+            [new(FontSamples.BitmapA, new PointD(30, 45)), new(FontSamples.BitmapB, new PointD(46, 45))],
+            new GlyphRunOptions { Cache = new GlyphCache(1 << 20), Synthesis = FontSynthesis.Bold },
+            new SolidBrush(new Rgba32(10, 200, 30, 120)),
+            new LinearGradientBrush(new PointD(0, 0), new PointD(64, 48), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 255))]),
+            new Pen(new SolidBrush(new Rgba32(0, 0, 0)), 1.25),
+            new StrongBox<long>(long.MaxValue));
+        for (var round = 0; round < 40 && state.Allocated.Value != 0; round++)
+        {
+            image.Draw(state, static (canvas, state) =>
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    Paint(canvas, state);
+                }
+
+                var before = GC.GetAllocatedBytesForCurrentThread();
+                for (var i = 0; i < 20; i++)
+                {
+                    Paint(canvas, state);
+                }
+
+                state.Allocated.Value = Math.Min(state.Allocated.Value, GC.GetAllocatedBytesForCurrentThread() - before);
+            });
+        }
+
+        Assert.Equal(0, state.Allocated.Value);
+
+        static void Paint(DrawingCanvas canvas, GlyphState state)
+        {
+            canvas.FillGlyphs(state.Solid, state.Boxes, 16, state.Glyphs);
+            canvas.FillGlyphs(state.Gradient, state.Boxes, 16, state.Glyphs, state.Options);
+            canvas.FillGlyphs(state.Gradient, state.Colors, 16, state.ColorGlyphs, state.Options);
+            canvas.FillGlyphs(state.Solid, state.Bitmaps, 16, state.BitmapGlyphs, state.Options);
+            canvas.StrokeGlyphs(state.Pen, state.Boxes, 16, state.Glyphs);
+            canvas.Transform(AffineTransform.CreateRotation(20, new PointD(32, 24)), state, static (turned, state) => turned.FillGlyphs(state.Solid, state.Boxes, 16, state.Glyphs, state.Options));
+        }
+    }
+
+    private sealed record GlyphState(Font Boxes, Font Colors, Font Bitmaps, PositionedGlyph[] Glyphs, PositionedGlyph[] ColorGlyphs, PositionedGlyph[] BitmapGlyphs, GlyphRunOptions Options, SolidBrush Solid, GradientBrush Gradient, Pen Pen, StrongBox<long> Allocated);
+
     private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, TextLayout RichText, TextLayout VariableText, TextLayout BlendedText, TextLayout ColorText, TextLayout BitmapText, TextLayout ScaledBitmapText, TextPathOptions PathOptions, Pen DashedPen, SweepGradientBrush Sweep, RadialGradientBrush Focal, Brush Eraser, ImageFrame Sprite, ImageBrush Tile, StrongBox<long> Allocated);
 }

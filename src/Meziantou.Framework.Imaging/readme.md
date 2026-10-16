@@ -2283,6 +2283,21 @@ of their characters and were not compared with a font.
 - **Limits.** `MaxTextLength` (UTF-16 code units), `MaxTextGlyphs`, `MaxTextLines` and `MaxGlyphComplexity`, from the
   configuration the primary font of the first span was loaded with.
 
+**Glyph runs**. A caller that shapes text itself, a browser engine for example, draws the glyphs it placed with
+`canvas.FillGlyphs(brush, font, size, glyphs, options)`: each `PositionedGlyph` is a glyph of the font and its origin
+on the baseline, in the coordinates of the drawing. Each glyph is filled on its own, over the ones before it, as
+browsers draw a text. Under a transformation that keeps the axes (or swaps them), the origin of a glyph on the canvas
+is moved to the nearest quarter of a pixel along the line and to the nearest pixel across it (to the nearest pixel
+without antialiasing), and the glyph is painted from its coverage in the pixels around the pixel of its origin; under
+a transformation that turns, skews or is projective, and for a glyph larger than 128 by 128 pixels, it is filled as a
+shape where it is. `GlyphRunOptions` gives a synthetic bold and oblique (with the width and the shear browsers use when
+they differ from those of `FontSynthesis`), the palette of the glyphs a font draws with its own colors (`COLR`,
+`sbix`, `CBDT`, which are drawn as a text draws them), and a `GlyphCache`. A cache, owned by the caller and bounded in
+bytes, keeps the coverage of a glyph for each font object, size, transformation, position in a pixel, antialiasing and
+bold, and the display lists of the glyphs of colors and of images: the pixels are the same with or without it, and a
+run whose glyphs are in the cache allocates nothing. `canvas.StrokeGlyphs(pen, font, size, glyphs, options)` strokes
+the outlines of a run as one shape, as `StrokeText` does. A variable font draws the glyphs of its instance.
+
 What text layout does not do yet: letter spacing is added between the letters of
 every script, including those that join. Justification does not lengthen Arabic words (kashida). The advances of a
 bitmap strike are not used. Lines are broken one after the other, each as full as

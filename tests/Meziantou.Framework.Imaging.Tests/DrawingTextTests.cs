@@ -1035,6 +1035,143 @@ public sealed class DrawingTextTests
     }
 
     /// <summary>Asserts that a text of the boxes font at 16 pixels per em paints exactly the given rectangles of whole pixels.</summary>
+    [Fact]
+    public void AGlyphRunDrawsEachGlyphFromItsOriginOnThePixelGrid()
+    {
+        // A is (128, 0)-(896, 768) and B (64, 0)-(448, 512): at 16 pixels per em, from 2 and 1 pixels right of the
+        // origin, 12 and 8 pixels up from it
+        PositionedGlyph[] run = [new(FontSamples.BoxA, new PointD(3, 15)), new(FontSamples.BoxB, new PointD(20, 15))];
+        foreach (var format in (PixelFormat[])[PixelFormat.Gray8, PixelFormat.Rgba64])
+        {
+            var rectangles = Render(format, 40, 20, canvas =>
+            {
+                canvas.FillRectangle(White, new RectangleD(5, 3, 12, 12));
+                canvas.FillRectangle(White, new RectangleD(21, 7, 6, 8));
+            });
+            Assert.Equal(rectangles, Render(format, 40, 20, canvas => canvas.FillGlyphs(White, Boxes, 16, run)));
+        }
+
+        // Along the line, an origin goes to the nearest quarter of a pixel, and across it to the nearest pixel: (3.3,
+        // 15.4) is (3.25, 15), as in the glyph caches of browsers
+        var expected = Render(PixelFormat.Rgba64, 40, 20, canvas => canvas.FillRectangle(White, new RectangleD(5.25, 3, 12, 12)));
+        Assert.Equal(expected, Render(PixelFormat.Rgba64, 40, 20, canvas => canvas.FillGlyphs(White, Boxes, 16, [new(FontSamples.BoxA, new PointD(3.3, 15.4))])));
+
+        // The same pixels with a cache, which keeps a coverage per glyph and position in a pixel: A at 3.3 and at 20.2
+        // is A a quarter of a pixel in
+        PositionedGlyph[] repeated = [new(FontSamples.BoxA, new PointD(3.3, 15.4)), new(FontSamples.BoxA, new PointD(20.2, 15.1)), new(FontSamples.BoxB, new PointD(33, 15))];
+        var cache = new GlyphCache(1 << 20);
+        var options = new GlyphRunOptions { Cache = cache };
+        var uncached = Render(PixelFormat.Rgba64, 40, 20, canvas => canvas.FillGlyphs(White, Boxes, 16, repeated));
+        Assert.Equal(uncached, Render(PixelFormat.Rgba64, 40, 20, canvas => canvas.FillGlyphs(White, Boxes, 16, repeated, options)));
+        Assert.Equal(2, cache.Count);
+        var bytes = cache.Bytes;
+        Assert.Equal(uncached, Render(PixelFormat.Rgba64, 40, 20, canvas => canvas.FillGlyphs(White, Boxes, 16, repeated, options)));
+        Assert.Equal((2, bytes), (cache.Count, cache.Bytes));
+
+        // A cache too small keeps nothing; the least recently used entries leave first
+        var tiny = new GlyphCache(10);
+        Assert.Equal(uncached, Render(PixelFormat.Rgba64, 40, 20, canvas => canvas.FillGlyphs(White, Boxes, 16, repeated, new GlyphRunOptions { Cache = tiny })));
+        Assert.Equal(0, tiny.Count);
+        var small = new GlyphCache(bytes - 1);
+        Render(PixelFormat.Rgba64, 40, 20, canvas => canvas.FillGlyphs(White, Boxes, 16, repeated, new GlyphRunOptions { Cache = small }));
+        Assert.Equal(1, small.Count);
+        cache.Clear();
+        Assert.Equal((0, 0L), (cache.Count, cache.Bytes));
+
+        // Each glyph is drawn over the ones before it: two A at half their opacity at the same place
+        var half = new SolidBrush(new Rgba32(255, 255, 255, 128));
+        expected = Render(PixelFormat.Rgba64, 40, 20, canvas =>
+        {
+            canvas.FillRectangle(half, new RectangleD(5, 3, 12, 12));
+            canvas.FillRectangle(half, new RectangleD(5, 3, 12, 12));
+        });
+        Assert.Equal(expected, Render(PixelFormat.Rgba64, 40, 20, canvas => canvas.FillGlyphs(half, Boxes, 16, [new(FontSamples.BoxA, new PointD(3, 15)), new(FontSamples.BoxA, new PointD(3, 15))])));
+
+        // Through a clip, with a gradient, and on a scaled canvas, a glyph is the rectangle it is
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(40, 0), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 255))]);
+        expected = Render(PixelFormat.Rgba64, 40, 20, canvas => canvas.Clip(new RectangleD(8, 0, 10.5, 20), clipped => clipped.FillRectangle(gradient, new RectangleD(5, 3, 12, 12))));
+        Assert.Equal(expected, Render(PixelFormat.Rgba64, 40, 20, canvas => canvas.Clip(new RectangleD(8, 0, 10.5, 20), clipped => clipped.FillGlyphs(gradient, Boxes, 16, [new(FontSamples.BoxA, new PointD(3, 15))]))));
+        expected = Render(PixelFormat.Rgba64, 40, 20, canvas => canvas.FillRectangle(White, new RectangleD(6, 2, 24, 12)));
+        Assert.Equal(expected, Render(PixelFormat.Rgba64, 40, 20, canvas => canvas.Transform(AffineTransform.CreateScale(2, 1), scaled => scaled.FillGlyphs(White, Boxes, 16, [new(FontSamples.BoxA, new PointD(1, 14))]))));
+
+        // Without antialiasing, the origin goes to the nearest pixel
+        expected = Render(PixelFormat.Gray8, 40, 20, canvas => canvas.FillRectangle(White, new RectangleD(5, 3, 12, 12)));
+        Assert.Equal(expected, Render(PixelFormat.Gray8, 40, 20, canvas => canvas.Antialiasing(enabled: false, hard => hard.FillGlyphs(White, Boxes, 16, [new(FontSamples.BoxA, new PointD(3.4, 15.4))]))));
+
+        using var image = new Image<Gray8>(4, 4);
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Draw(canvas => canvas.FillGlyphs(White, Boxes, 16, [new(Boxes.GlyphCount, default)]), Ct));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Draw(canvas => canvas.FillGlyphs(White, Boxes, -1, [new(FontSamples.BoxA, default)]), Ct));
+        Assert.Throws<ArgumentException>(() => image.Draw(canvas => canvas.FillGlyphs(White, Boxes, 16, [new(FontSamples.BoxA, new PointD(double.NaN, 0))]), Ct));
+        Assert.Throws<ArgumentNullException>(() => image.Draw(canvas => canvas.FillGlyphs(null!, Boxes, 16, []), Ct));
+        Assert.Throws<ArgumentNullException>(() => image.Draw(canvas => canvas.StrokeGlyphs(new Pen(White, 1), null!, 16, []), Ct));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GlyphCache(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GlyphRunOptions { Synthesis = (FontSynthesis)4 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GlyphRunOptions { Palette = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GlyphRunOptions { BoldWidth = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GlyphRunOptions { ObliqueShear = 17 });
+        Assert.Equal(new PositionedGlyph(2, new PointD(1, 2)), new PositionedGlyph(2, new PointD(1, 2)));
+        Assert.NotEqual(new PositionedGlyph(2, new PointD(1, 2)), new PositionedGlyph(3, new PointD(1, 2)));
+    }
+
+    [Fact]
+    public void AGlyphRunDrawsWhatATextOfItsGlyphsDraws()
+    {
+        // Under a transformation that turns, a glyph is a shape: the one of the text. A text at (3, 2) has its
+        // baseline 13 pixels lower.
+        var turn = AffineTransform.CreateRotation(25, new PointD(10, 10));
+        Assert.Equal(
+            Render(PixelFormat.Rgba64, 40, 30, canvas => canvas.Transform(turn, turned => turned.FillText(White, "A", Boxes, 16, new PointD(3, 2)))),
+            Render(PixelFormat.Rgba64, 40, 30, canvas => canvas.Transform(turn, turned => turned.FillGlyphs(White, Boxes, 16, [new(FontSamples.BoxA, new PointD(3, 15))]))));
+
+        // A stroke is the stroke of the outlines, as one shape: the one of the text, kerned
+        var pen = new Pen(new SolidBrush(new Rgba32(20, 200, 90)), 1.5);
+        Assert.Equal(
+            Render(PixelFormat.Rgba64, 40, 30, canvas => canvas.StrokeText(pen, TextLayout.Create("AB", Boxes, 16), new PointD(3, 2))),
+            Render(PixelFormat.Rgba64, 40, 30, canvas => canvas.StrokeGlyphs(pen, Boxes, 16, [new(FontSamples.BoxA, new PointD(3, 15)), new(FontSamples.BoxB, new PointD(17, 15))])));
+
+        // A synthetic bold and oblique: those of a text, up to the rounding of the coverages of a glyph moved by whole
+        // pixels. At 24 pixels per em, a text at (3, 2.5) has its baseline at 22, and a bold glyph is 1/48 of the size
+        // (0.5) further right, in the middle of its wider advance.
+        foreach (var synthesis in (FontSynthesis[])[FontSynthesis.Bold, FontSynthesis.Oblique, FontSynthesis.Bold | FontSynthesis.Oblique])
+        {
+            var shift = (synthesis & FontSynthesis.Bold) == FontSynthesis.None ? 0 : 0.5;
+            var text = Render(PixelFormat.Gray8, 40, 30, canvas => canvas.FillText(White, TextLayout.Create("D", new TextStyle(Boxes, 24) { Synthesis = synthesis }), new PointD(3, 2.5)));
+            var glyphs = Render(PixelFormat.Gray8, 40, 30, canvas => canvas.FillGlyphs(White, Boxes, 24, [new(FontSamples.TriangleD, new PointD(3 + shift, 22))], new GlyphRunOptions { Synthesis = synthesis }));
+            Assert.Contains(255, glyphs);
+            for (var i = 0; i < text.Length; i++)
+            {
+                Assert.InRange(glyphs[i], text[i] - 1, text[i] + 1, message: $"{synthesis}, sample {i}");
+            }
+        }
+
+        // The glyphs a font draws with its own colors, layers or images, and a variable font
+        foreach (var (font, glyph, character) in new (Font, int, string)[]
+        {
+            (FontTestSupport.Load(FontSamples.ColorBoxes()), FontSamples.ColorA, "A"),
+            (FontTestSupport.Load(FontSamples.BitmapBoxes()), FontSamples.BitmapA, "A"),
+            (FontTestSupport.Load(FontSamples.BitmapBoxes(useColorBitmapTables: true)), FontSamples.BitmapB, "B"),
+        })
+        {
+            var brush = new SolidBrush(new Rgba32(10, 20, 250));
+            var options = new GlyphRunOptions { Cache = new GlyphCache(1 << 20) };
+            var text = Render(PixelFormat.Rgba64, 40, 30, canvas => canvas.FillText(brush, character, font, 16, new PointD(3, 2)));
+            Assert.Equal(text, Render(PixelFormat.Rgba64, 40, 30, canvas => canvas.FillGlyphs(brush, font, 16, [new(glyph, new PointD(3, 15))])));
+            Assert.Equal(text, Render(PixelFormat.Rgba64, 40, 30, canvas => canvas.FillGlyphs(brush, font, 16, [new(glyph, new PointD(3, 15))], options)));
+            Assert.Equal(text, Render(PixelFormat.Rgba64, 40, 30, canvas => canvas.FillGlyphs(brush, font, 16, [new(glyph, new PointD(3, 15))], options)));
+        }
+
+        var heavy = FontTestSupport.Load(FontSamples.Variable()).WithVariations(new FontVariationSetting("wght", 900));
+        var layout = TextLayout.Create("A", heavy, 20);
+        // The text placed so that its baseline is on a row of pixels, where the glyph is not moved
+        var heavyText = Render(PixelFormat.Gray8, 40, 30, canvas => canvas.FillText(White, layout, new PointD(2, 20 - layout.Baseline)));
+        var heavyGlyphs = Render(PixelFormat.Gray8, 40, 30, canvas => canvas.FillGlyphs(White, heavy, 20, [new(FontSamples.VariableA, new PointD(2, 20))]));
+        Assert.Contains(255, heavyText);
+        for (var i = 0; i < heavyText.Length; i++)
+        {
+            Assert.InRange(heavyGlyphs[i], heavyText[i] - 1, heavyText[i] + 1, message: $"sample {i}");
+        }
+    }
+
     private static void AssertRectangles(string text, PointD origin, params RectangleD[] rectangles)
     {
         foreach (var format in (PixelFormat[])[PixelFormat.Gray8, PixelFormat.Rgba64])

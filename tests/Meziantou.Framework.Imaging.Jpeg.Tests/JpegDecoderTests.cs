@@ -96,6 +96,35 @@ public sealed class JpegDecoderTests
         }
     }
 
+    [Theory]
+    [InlineData("4:2:0", 8)]
+    [InlineData("4:4:4", 8)]
+    [InlineData("gray", 8)]
+    [InlineData("4:2:2", 12)]
+    public void LargeFramesDecodeTheirShortAcCodesInOneLookup(string layout, int precision)
+    {
+        // From 128x128 pixels, the AC coefficients whose code and magnitude bits fit in the lookup bits are decoded by one
+        // lookup: dense coefficients and every code length from 2 to 16 bits give both paths
+        var sampling = Layouts[layout];
+        foreach (var (width, height) in new[] { (128, 128), (161, 137) })
+        {
+            var image = JpegTestImage.CreateRandom(width, height, sampling, seed: width + height + precision, acDensity: 0.7, dcOnlyProbability: 0.05, precision: precision);
+            var expected = image.GetExpectedPixels();
+            for (var seed = 0; seed < 3; seed++)
+            {
+                foreach (var options in new[]
+                {
+                    new JpegTestEncodeOptions { Huffman = JpegTestHuffmanStyle.Skewed, HuffmanSeed = seed, FrameMarker = precision == 8 ? (byte)0xC0 : (byte)0xC1 },
+                    new JpegTestEncodeOptions { Huffman = JpegTestHuffmanStyle.Skewed, HuffmanSeed = seed + 10, RestartInterval = 1, FrameMarker = 0xC1 },
+                })
+                {
+                    using var decoded = Image.Load(image.Encode(options));
+                    AssertPixels(expected, decoded, $"{layout} {width}x{height}, {precision} bits, Huffman seed {options.HuffmanSeed}");
+                }
+            }
+        }
+    }
+
     public static TheoryData<string, int, int> DeepLayoutCases
     {
         get

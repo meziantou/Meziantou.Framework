@@ -74,6 +74,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     private const byte MarkerDqt = 0xDB;
     private const byte MarkerDri = 0xDD;
     private const int EntropyBufferCapacity = 64 * 1024;
+    private const int FastAcMinimumPixels = 128 * 128;
 
     private readonly ImageDecodeRequest? _request;
     private readonly ImageCodecContext _context;
@@ -543,7 +544,11 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _scanComponents = scanComponents;
         _scan = _arithmetic
             ? new JpegArithmeticSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken)
-            : new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken);
+            : new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken)
+            {
+                // The table of the AC coefficients that one lookup decodes costs more than it saves on small images
+                UsesFastAc = (long)_structure!.Width * _structure.Height >= FastAcMinimumPixels,
+            };
     }
 
     /// <summary>

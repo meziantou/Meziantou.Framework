@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -105,6 +106,29 @@ internal sealed class JpegEntropyReader : IDisposable
         return DecodeLongCode(table);
     }
 
+    /// <summary>
+    /// Decodes an AC coefficient whose code and magnitude bits fit in <see cref="JpegHuffmanTable.LookupBits"/> bits (see
+    /// <see cref="JpegHuffmanTable.FastAc"/>), or returns 0 and reads nothing.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int DecodeFastAc(JpegHuffmanTable table)
+    {
+        if (_bitCount < 16)
+        {
+            Fill();
+            if (_bitCount < 16)
+                return 0;
+        }
+
+        var entry = table.FastAc((int)(_bits >> (64 - JpegHuffmanTable.LookupBits)));
+        if (entry != 0)
+        {
+            Skip(entry & 0x0F);
+        }
+
+        return entry;
+    }
+
     /// <summary>Reads an <paramref name="size"/>-bit magnitude and extends its sign (T.81 F.2.2.1, EXTEND).</summary>
     /// <param name="size">The magnitude category, 1 to 16.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -173,6 +197,17 @@ internal sealed class JpegEntropyReader : IDisposable
     /// <summary>Loads bytes until the accumulator holds at least 57 bits (or the buffered bytes are exhausted).</summary>
     private void Fill()
     {
+        if (_end - _start >= 8)
+        {
+            // The whole bytes that fit (at least 57 bits), from one big-endian load: the bits below them stay zero
+            var count = (64 - _bitCount) >> 3;
+            var word = BinaryPrimitives.ReadUInt64BigEndian(_data.AsSpan(_start, 8));
+            _bits |= (word & (ulong.MaxValue << (64 - (count * 8)))) >> _bitCount;
+            _start += count;
+            _bitCount += count * 8;
+            return;
+        }
+
         while (_bitCount <= 56)
         {
             if (_start < _end)

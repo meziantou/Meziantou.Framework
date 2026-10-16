@@ -1446,7 +1446,9 @@ contour.
 then stroked, so the width, the dashes and the markers of the pen stay in pixels. A chart, a map or an icon that is
 drawn in coordinates of its own, inside `canvas.Transform`, then has lines of the same width at every scale, where
 the default pen is enlarged with the drawing (and is wider in one direction when the scaling is not the same along
-both axes).
+both axes). A pen of width 0 is a hairline, as in Skia: one pixel of the canvas wide whatever the transformation,
+the pen of width 1 that the transformation does not apply to. A dash of length 0 is drawn by its caps alone, turned
+to the direction of the path at its point: a dot for round caps, a square for square caps, nothing for butt caps.
 
 **Dashes**. `Pen.DashPattern` cuts a stroke into dashes: a list of lengths in pixels, alternately of a dash and of a
 gap, repeated along each contour (`[6, 3]` is dashes of 6 and gaps of 3; a pattern of an odd number of lengths is used

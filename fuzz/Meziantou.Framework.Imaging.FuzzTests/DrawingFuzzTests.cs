@@ -796,7 +796,7 @@ public sealed class DrawingFuzzTests
         var width = random.Next(10) switch
         {
             0 => widest ? MaxCoordinate : 1 + (NextDouble(random) * 100),
-            1 => 1e-9 + (NextDouble(random) * 1e-3),
+            1 => random.Chance(3) ? 0 : 1e-9 + (NextDouble(random) * 1e-3),
             2 => 1 + (NextDouble(random) * (widest ? 100000 : 100)),
             _ => 0.05 + (NextDouble(random) * 6),
         };

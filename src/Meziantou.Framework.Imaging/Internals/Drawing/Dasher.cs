@@ -110,7 +110,7 @@ internal sealed class Dasher : PathSink, IDisposable
         // The body of a dash is within half the width of the pen of its segment; a cap goes that far beyond its end; a
         // miter goes as far as the miter limit allows from its vertex, and the corner of a square cap or of a square dot
         // the diagonal of half the width. One more pixel than needed never shows.
-        var half = pen.Width * widthFactor / 2;
+        var half = pen.StrokeWidth * widthFactor / 2;
         _hasCanvas = true;
         _canvasWidth = width;
         _canvasHeight = height;
@@ -127,7 +127,7 @@ internal sealed class Dasher : PathSink, IDisposable
     public void Configure(Pen pen, Stroker stroker, in ProjectiveView view, CancellationToken cancellationToken, double widthFactor = 1)
     {
         Configure(pen, stroker, cancellationToken);
-        var half = pen.Width * widthFactor / 2;
+        var half = pen.StrokeWidth * widthFactor / 2;
         _hasPlanes = true;
         _acrossReach = half + view.Reach;
         _alongReach = (pen.LineCap == LineCap.Butt ? 0 : half) + view.Reach;

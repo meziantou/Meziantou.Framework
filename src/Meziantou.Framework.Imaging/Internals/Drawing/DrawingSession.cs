@@ -1052,10 +1052,10 @@ internal sealed partial class DrawingSession : IDisposable
 
     /// <summary>Gets the distance from its path a stroke can reach: half its width, its miters, or anywhere with markers.</summary>
     private static double GetStrokeReach(Pen pen, double widthFactor)
-        => pen.HasMarkers ? DrawingGuard.MaxCoordinate : pen.Width * widthFactor * Math.Max(pen.MiterLimit, 1) / 2;
+        => pen.HasMarkers ? DrawingGuard.MaxCoordinate : pen.StrokeWidth * widthFactor * Math.Max(pen.MiterLimit, 1) / 2;
 
     /// <summary>Gets a value indicating whether the path of a stroke is placed on the canvas before the pen strokes it: the pen is then not transformed with the path.</summary>
-    private bool IsPlacedBeforeStroke(Pen pen) => (_hasTransform || _isProjective) && !pen.ScalesWithTransform;
+    private bool IsPlacedBeforeStroke(Pen pen) => (_hasTransform || _isProjective) && !pen.IsScaled;
 
     /// <summary>Renders the pieces the stroker emitted, or the whole frame when one of them contains it.</summary>
     private void RenderStroke(Pen pen)
@@ -1075,7 +1075,7 @@ internal sealed partial class DrawingSession : IDisposable
         if (isOutside)
         {
             // What a stroke reaches around its path: its joins and its caps, and its markers anywhere
-            var reach = pen.HasMarkers ? DrawingGuard.MaxCoordinate : pen.Width * Math.Max(pen.MiterLimit, 2);
+            var reach = pen.HasMarkers ? DrawingGuard.MaxCoordinate : pen.StrokeWidth * Math.Max(pen.MiterLimit, 2);
             if (IsPlacedBeforeStroke(pen) && _isProjective)
             {
                 // A distance of the canvas is any distance of the drawing near the horizon of the plane

@@ -75,6 +75,82 @@ public sealed class DrawingStrokeTests
     }
 
     [Fact]
+    public void AHairlineIsOnePixelOfTheCanvasWideWhateverTheTransformation()
+    {
+        // A pen of width 0 strokes one pixel of the canvas: the line at 2.5 is at 10 once scaled by 4, and covers half of
+        // the rows 9 and 10, as wide as without the transformation
+        using (var image = NewBlack(16, 16))
+        {
+            image.Frames[0].Draw(static canvas => canvas.Transform(AffineTransform.CreateScale(4, 4), static scaled => scaled.StrokeLine(new Pen(White, 0), new PointD(0, 2.5), new PointD(4, 2.5))), Ct);
+            Assert.Equal(128, image.Frames[0][5, 9].Value);
+            Assert.Equal(128, image.Frames[0][5, 10].Value);
+            Assert.Equal(0, image.Frames[0][5, 8].Value);
+        }
+
+        // It is the pen one pixel wide the transformation does not apply to, under any transformation, and without one
+        var path = new VectorPathBuilder().MoveTo(1, 1).CubicBezierTo(9, -2, 3, 12, 11, 8).LineTo(2, 9).Build();
+        var transforms = new[] { AffineTransform.Identity, AffineTransform.CreateScale(0.5, 3).Then(AffineTransform.CreateRotation(30, new PointD(6, 6))) };
+        foreach (var transform in transforms)
+        {
+            Assert.Equal(Render(transform, new Pen(White, 1) { ScalesWithTransform = false, LineCap = LineCap.Round }), Render(transform, new Pen(White, 0) { LineCap = LineCap.Round }));
+            Assert.Equal(Render(transform, new Pen(White, 1) { ScalesWithTransform = false, DashPattern = [2, 1.5] }), Render(transform, new Pen(White, 0) { DashPattern = [2, 1.5] }));
+        }
+
+        int[] Render(AffineTransform transform, Pen pen)
+        {
+            using var image = NewBlack(24, 24);
+            image.Frames[0].Draw(canvas => canvas.Transform(transform, inner => inner.Stroke(pen, path)), Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
+    public void DashesWithoutLengthAreTheCapsOfTheirPoint()
+    {
+        // Dots: dashes of length 0 every 4 pixels with round caps are disks of the width of the pen at those points
+        using var dots = NewBlack(16, 8);
+        dots.Frames[0].Draw(static canvas => canvas.StrokeLine(new Pen(White, 3) { DashPattern = [0, 4], LineCap = LineCap.Round }, new PointD(2, 4), new PointD(14.5, 4)), Ct);
+        using var disks = NewBlack(16, 8);
+        disks.Frames[0].Draw(static canvas =>
+        {
+            foreach (var x in (double[])[2, 6, 10, 14])
+            {
+                canvas.FillCircle(White, new PointD(x, 4), 1.5);
+            }
+        }, Ct);
+        AssertClose(disks, dots);
+
+        // Squares turned to the direction of the path: on a diagonal, squares of 2 turned by 45 degrees
+        using var squares = NewBlack(16, 16);
+        squares.Frames[0].Draw(static canvas => canvas.StrokeLine(new Pen(White, 2) { DashPattern = [0, 5 * Math.Sqrt(2)], LineCap = LineCap.Square }, new PointD(3, 3), new PointD(13.5, 13.5)), Ct);
+        using var turned = NewBlack(16, 16);
+        turned.Frames[0].Draw(static canvas =>
+        {
+            foreach (var center in (double[])[3, 8, 13])
+            {
+                var d = Math.Sqrt(2) / 2;
+                canvas.FillPolygon(White, [new(center + (2 * d), center), new(center, center + (2 * d)), new(center - (2 * d), center), new(center, center - (2 * d))]);
+            }
+        }, Ct);
+        AssertClose(turned, squares);
+
+        // Butt caps draw nothing
+        using var nothing = NewBlack(8, 8);
+        nothing.Frames[0].Draw(static canvas => canvas.StrokeLine(new Pen(White, 3) { DashPattern = [0, 2] }, new PointD(1, 4), new PointD(7, 4)), Ct);
+        Assert.All(DrawingTestSupport.ReadSamples(nothing.Frames[0]), sample => Assert.Equal(0, sample));
+
+        static void AssertClose(Image<Gray8> expected, Image<Gray8> actual)
+        {
+            var left = DrawingTestSupport.ReadSamples(expected.Frames[0]);
+            var right = DrawingTestSupport.ReadSamples(actual.Frames[0]);
+            for (var i = 0; i < left.Length; i++)
+            {
+                Assert.InRange(right[i], left[i] - 2, left[i] + 2, message: $"sample {i}");
+            }
+        }
+    }
+
+    [Fact]
     public void AContourReducedToAPointIsDrawnByItsCaps()
     {
         var point = new PointD(2, 2);

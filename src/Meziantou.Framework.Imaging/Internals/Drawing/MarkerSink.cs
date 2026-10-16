@@ -47,7 +47,7 @@ internal sealed class MarkerSink : PathSink, IDisposable
         _stroker = stroker;
         _start = pen.StartMarker;
         _end = pen.EndMarker;
-        _width = pen.Width;
+        _width = pen.StrokeWidth;
         _hasContour = false;
         _vertices.Count = 0;
     }

@@ -347,7 +347,7 @@ public sealed class DrawingSessionTests
     [Fact]
     public void PensAndBrushesValidateTheirSettings()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Pen(White, 0));
+        Assert.Equal(0, new Pen(White, 0).Width);
         Assert.Throws<ArgumentOutOfRangeException>(() => new Pen(White, -1));
         Assert.Throws<ArgumentOutOfRangeException>(() => new Pen(White, 16777217));
         Assert.Throws<ArgumentException>(() => new Pen(White, double.NaN));

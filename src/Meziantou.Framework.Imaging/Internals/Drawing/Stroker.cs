@@ -151,7 +151,7 @@ internal sealed class Stroker : PathSink
     /// <param name="widthFactor">What the width of the pen is multiplied by: 2 for a stroke of which a clip keeps one side.</param>
     public void Configure(Pen pen, double widthFactor = 1)
     {
-        var width = pen.Width * widthFactor;
+        var width = pen.StrokeWidth * widthFactor;
         CoversFrame = false;
         _testFrame = _edges is not null && !_hasOutputTransform && (_isProjectiveOutput || width >= Math.Min(_edges.Width, _edges.Height));
         _halfWidth = width / 2;

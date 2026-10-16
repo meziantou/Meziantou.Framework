@@ -97,7 +97,6 @@ internal sealed class Stroker : PathSink
     private bool _firstEndSmooth;
     private double _firstNextX;
     private double _firstNextY;
-    private double _firstNextLength;
 
     // The piece being emitted
     private double _pieceStartX;
@@ -226,14 +225,13 @@ internal sealed class Stroker : PathSink
         var length = Math.Sqrt(lengthSquared);
         directionX /= length;
         directionY /= length;
-        var chord = new Chord { StartX = _x, StartY = _y, EndX = x, EndY = y, DirectionX = directionX, DirectionY = directionY, Length = length };
+        var chord = new Chord { StartX = _x, StartY = _y, EndX = x, EndY = y, DirectionX = directionX, DirectionY = directionY };
         if (_hasSegment)
         {
             // The vertex between the last chord and this one: the pieces of the last chord can be made
             chord.StartSmooth = smooth;
             chord.PreviousX = _last.DirectionX;
             chord.PreviousY = _last.DirectionY;
-            chord.PreviousLength = _last.Length;
             double endX, endY;
             if (_isLastFirst)
             {
@@ -241,12 +239,11 @@ internal sealed class Stroker : PathSink
                 _firstEndSmooth = smooth;
                 _firstNextX = directionX;
                 _firstNextY = directionY;
-                _firstNextLength = length;
                 GetEndDirection(in _last, smooth, out endX, out endY);
             }
             else
             {
-                AddChord(in _last, smooth, directionX, directionY, length, out _, out _, out endX, out endY);
+                AddChord(in _last, smooth, directionX, directionY, out _, out _, out endX, out endY);
             }
 
             if (smooth)
@@ -285,16 +282,15 @@ internal sealed class Stroker : PathSink
             if (_isLastFirst)
             {
                 // One chord, which ends where it starts: it cannot be, a chord without length is skipped
-                AddChord(in _last, endSmooth: false, 0, 0, 0, out _, out _, out _, out _);
+                AddChord(in _last, endSmooth: false, 0, 0, out _, out _, out _, out _);
             }
             else
             {
                 // The last chord ends where the first one starts
-                AddChord(in _last, smooth, _first.DirectionX, _first.DirectionY, _first.Length, out _, out _, out var endX, out var endY);
+                AddChord(in _last, smooth, _first.DirectionX, _first.DirectionY, out _, out _, out var endX, out var endY);
                 _first.StartSmooth = smooth;
                 _first.PreviousX = _last.DirectionX;
                 _first.PreviousY = _last.DirectionY;
-                _first.PreviousLength = _last.Length;
                 if (smooth)
                 {
                     AddJoin(_startX, _startY, _last.DirectionX, _last.DirectionY, _first.DirectionX, _first.DirectionY, smooth: true);
@@ -306,7 +302,7 @@ internal sealed class Stroker : PathSink
                     _first.JoinY = endY;
                 }
 
-                AddChord(in _first, _firstEndSmooth, _firstNextX, _firstNextY, _firstNextLength, out _, out _, out _, out _);
+                AddChord(in _first, _firstEndSmooth, _firstNextX, _firstNextY, out _, out _, out _, out _);
             }
         }
         else if (!_implicitStart)
@@ -337,12 +333,12 @@ internal sealed class Stroker : PathSink
             double startX, startY, endX, endY;
             if (_isLastFirst)
             {
-                AddChord(in _last, endSmooth: false, 0, 0, 0, out startX, out startY, out endX, out endY);
+                AddChord(in _last, endSmooth: false, 0, 0, out startX, out startY, out endX, out endY);
             }
             else
             {
-                AddChord(in _last, endSmooth: false, 0, 0, 0, out _, out _, out endX, out endY);
-                AddChord(in _first, _firstEndSmooth, _firstNextX, _firstNextY, _firstNextLength, out startX, out startY, out _, out _);
+                AddChord(in _last, endSmooth: false, 0, 0, out _, out _, out endX, out endY);
+                AddChord(in _first, _firstEndSmooth, _firstNextX, _firstNextY, out startX, out startY, out _, out _);
             }
 
             AddCap(_startX, _startY, -startX, -startY);
@@ -382,12 +378,11 @@ internal sealed class Stroker : PathSink
     /// <param name="endSmooth">Whether the vertex at its end was created by flattening a curve.</param>
     /// <param name="nextX">The direction of the chord after it, when there is one.</param>
     /// <param name="nextY">The direction of the chord after it, along y.</param>
-    /// <param name="nextLength">The length of the chord after it.</param>
     /// <param name="startX">The direction of the stroke at the start of the chord.</param>
     /// <param name="startY">The direction of the stroke at the start of the chord, along y.</param>
     /// <param name="endX">The direction of the stroke at the end of the chord.</param>
     /// <param name="endY">The direction of the stroke at the end of the chord, along y.</param>
-    private void AddChord(in Chord chord, bool endSmooth, double nextX, double nextY, double nextLength, out double startX, out double startY, out double endX, out double endY)
+    private void AddChord(in Chord chord, bool endSmooth, double nextX, double nextY, out double startX, out double startY, out double endX, out double endY)
     {
         startX = chord.DirectionX;
         startY = chord.DirectionY;
@@ -975,13 +970,11 @@ internal sealed class Stroker : PathSink
         public double EndY;
         public double DirectionX;
         public double DirectionY;
-        public double Length;
 
         // Whether the vertex at its start was created by flattening a curve, and the chord before it
         public bool StartSmooth;
         public double PreviousX;
         public double PreviousY;
-        public double PreviousLength;
 
         // A join at its start, a corner, waits for the direction the stroke starts the chord with; it comes from the
         // direction the stroke ends the chord before it with

@@ -36,6 +36,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// sequential frame. Each scan only updates coefficients (<see cref="JpegProgressiveScanDecoder"/>).
 /// </description></item>
 /// <item><description>
+/// A sequential reader that asks for renderings gets one after each scan of a progressive frame once every component has
+/// its DC coefficients: the coefficients decoded so far are transformed like at EOI, and kept. When the input ends before
+/// the frame, the rendering shows the coefficients decoded so far (progressive frames) or the rows that were written
+/// (streamed frames, the other rows being zero).
+/// </description></item>
+/// <item><description>
 /// The image (one frame, duration zero) ends at EOI after <see cref="DecodedFrameSink.UpdateMetadata"/>, so reader frames
 /// carry the metadata found after the scans like eager loads. EXIF orientation is metadata only: pixels are never rotated.
 /// </description></item>
@@ -60,7 +66,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// </list>
 /// </remarks>
-internal sealed class JpegDecoder : JpegDecodeObserver
+internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 {
     private const byte MarkerDht = 0xC4;
     private const byte MarkerDac = 0xCC;
@@ -99,6 +105,11 @@ internal sealed class JpegDecoder : JpegDecodeObserver
     // The number of samples of a side of a data unit: 8, or 1 for a lossless frame
     private int _dataUnitSize = 8;
     private int _scanCount;
+
+    // Progressive frames: the scans that were completed, whether the current one codes AC coefficients, and whether one did
+    private int _completedScans;
+    private bool _scanHasAc;
+    private bool _hasAcCoefficients;
     private JpegEntropyReader? _reader;
     private JpegBandWriter? _writer;
     private int _precision;
@@ -218,6 +229,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
 
         _sink = DecodedFrameSink.Create(_context, request, ImageFormat.Jpeg, structure.Size, structure.DefaultPixelFormat, source, profile);
         _sink.BeginFrame(FrameDuration.Zero);
+        _sink.SetPartialFrameRenderer(this);
     }
 
     public override void OnEntropyData(ReadOnlySpan<byte> data)
@@ -238,7 +250,20 @@ internal sealed class JpegDecoder : JpegDecodeObserver
 
         _scanComponents = [];
         if (_progressive)
-            return true; // The coefficients are complete at EOI only
+        {
+            // The coefficients are complete at EOI only: a rendering shows the ones decoded so far
+            _completedScans++;
+            _hasAcCoefficients |= _scanHasAc;
+            if (_sink is { WantsRefinement: true } sink && _components.All(component => component.IsDecoded))
+            {
+                // A rendering counts like the pixels of a frame that is not shown
+                var structure = _structure!;
+                _context.Tracker.ChargeHiddenPixels((long)structure.Width * structure.Height);
+                RenderCoefficients(sink);
+            }
+
+            return true;
+        }
 
         if (_components.All(component => component.IsDecoded))
         {
@@ -268,6 +293,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
 
         if (_progressive)
         {
+            _context.Sequential?.SetFramePassCount(_completedScans);
             WriteProgressiveFrame();
         }
 
@@ -619,6 +645,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         }
 
         _scanCount++;
+        _scanHasAc = start > 0;
         var reader = _reader ?? throw new InvalidOperationException("The JPEG decoder state is not allocated.");
 
         // Only a DC first scan makes a component decodable: its other coefficients may legitimately stay zero
@@ -648,6 +675,71 @@ internal sealed class JpegDecoder : JpegDecodeObserver
     {
         _reader?.Dispose();
         _reader = null;
+        WriteCoefficients();
+        ReleaseDecoderState();
+    }
+
+    /// <summary>The frame as far as it was decoded, when the input ends before it.</summary>
+    public bool TryRenderPartialFrame()
+    {
+        if (_sink is not { } sink || _scanCount == 0)
+            return false;
+
+        if (_progressive)
+        {
+            // A component that no scan coded yet has no quantization table to transform its coefficients with
+            if (_components.Any(component => component.LatchedQuantization is null))
+                return false;
+
+            RenderCoefficients(sink);
+            return true;
+        }
+
+        var structure = _structure!;
+        int writtenRows;
+        if (_writer is { } writer && _streaming)
+        {
+            writtenRows = Math.Min(structure.Height, writer.BandsWritten * _dataUnitSize * _maxVertical);
+        }
+        else if (_writer is null && _components.All(component => component.IsDecoded))
+        {
+            // Every scan was decoded and every row written
+            writtenRows = structure.Height;
+        }
+        else
+        {
+            // The scans of the components are decoded one after the other: no row is written before the last one
+            return false;
+        }
+
+        using (var lease = sink.LeaseCurrentFrame())
+        {
+            for (var y = writtenRows; y < structure.Height; y++)
+            {
+                lease.GetRowBytes(y).Clear();
+            }
+        }
+
+        sink.EndRefinement(downsampling: 1, passCount: 0);
+        return true;
+    }
+
+    /// <summary>Writes a rendering of the coefficients of a progressive frame decoded so far.</summary>
+    private void RenderCoefficients(DecodedFrameSink sink)
+    {
+        sink.BeginRefinement(FrameDuration.Zero);
+        WriteCoefficients();
+
+        // Only the DC coefficients: one value per block of 8x8 samples
+        sink.EndRefinement(_hasAcCoefficients ? 1 : 8, _completedScans);
+    }
+
+    /// <summary>
+    /// Transforms the coefficients of a progressive frame one MCU row at a time into a ring of three MCU rows of samples
+    /// and writes every row; the coefficients are kept.
+    /// </summary>
+    private void WriteCoefficients()
+    {
         var scope = _context.Scope;
         var bandCount = Math.Min(3, _mcusY);
         foreach (var component in _components)
@@ -671,7 +763,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         }
 
         _writer.WriteNextBand(_context.CancellationToken);
-        ReleaseDecoderState();
+        _writer.Dispose();
+        _writer = null;
+        foreach (var component in _components)
+        {
+            component.ReleasePlane();
+        }
     }
 
     /// <summary>Dequantizes and transforms the blocks of one MCU row of a component into its sample plane.</summary>

@@ -117,6 +117,12 @@ internal sealed class PngImageDataDecoder : IDisposable
     /// <summary>Gets a value indicating whether every scanline was decoded.</summary>
     public bool IsComplete => _done;
 
+    /// <summary>
+    /// Gets the pass whose scanlines are being decoded (0 when the datastream is not interlaced; the number of passes
+    /// once every scanline was decoded), and the number of its rows that were read.
+    /// </summary>
+    public (int Pass, int Rows) Progress => _done ? (_passCount, 0) : (_pass, _passRow);
+
     /// <summary>Copies the next piece of compressed data. Call <see cref="TryReadRow"/> until it returns <see langword="false"/> before the next call.</summary>
     /// <returns>The number of bytes taken (at most an internal bound); feed the rest afterward.</returns>
     public int Feed(ReadOnlySpan<byte> compressed)

@@ -47,6 +47,12 @@ internal sealed class SequentialDecodeSession
     /// <summary>Gets the caller image of a <c>ReadFrameInto</c> call, or <see langword="null"/> when a new image must be created.</summary>
     public Image? Destination { get; private set; }
 
+    /// <summary>Gets or sets the decoder that shows the frame it is decoding when the input ends before the frame does.</summary>
+    public IPartialFrameRenderer? PartialFrameRenderer { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the input ended while the decoder still needed bytes.</summary>
+    public bool IsTruncated { get; set; }
+
     /// <summary>Gets a value indicating whether a step result is waiting to be returned to the reader.</summary>
     public bool HasPendingEvent => _pendingEvent is not null;
 

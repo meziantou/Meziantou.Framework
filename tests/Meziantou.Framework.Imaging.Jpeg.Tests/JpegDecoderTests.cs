@@ -1041,6 +1041,41 @@ public sealed class JpegDecoderTests
     }
 
     [Fact]
+    public void ATruncatedFrameIsShownAsFarAsItWasDecodedThenReported()
+    {
+        // Prefixes that end in the scan of a streamed frame: the rendering has the MCU rows that were written (one behind
+        // the decoded ones, and the decoder waits for the largest size of an MCU), the other rows being zero; the next
+        // read reports the truncation
+        var image = JpegTestImage.CreateRandom(21, 250, Layouts["4:2:0"], seed: 9);
+        var expected = image.GetExpectedPixels();
+        var data = image.Encode();
+        var sos = FindSegment(data, 0xDA);
+        var rowLength = 21 * 3;
+        var partials = 0;
+        for (var length = sos + 14; length < data.Length - 2; length += 7)
+        {
+            using var reader = Image.OpenReader<Rgb24>(new MemoryStream(data[..length]));
+            using var destination = new Image<Rgb24>(21, 250, new Rgb24(1, 2, 3));
+            var refinement = reader.ReadFrameRefinementInto(destination);
+            Assert.NotNull(refinement);
+            Assert.False(refinement.IsFinal);
+            var pixels = GetBytes(destination);
+            var rows = Enumerable.Range(0, 250).TakeWhile(y => pixels.AsSpan(y * rowLength, rowLength).SequenceEqual(expected.AsSpan(y * rowLength, rowLength))).Count();
+            Assert.True(rows % 16 == 0 || rows == 250, $"length {length}: {rows} rows");
+            Assert.True(pixels.AsSpan(rows * rowLength).IndexOfAnyExcept((byte)0) < 0, $"length {length}");
+            if (rows > 0)
+            {
+                partials++;
+            }
+
+            Assert.Throws<InvalidImageContentException>(() => reader.ReadFrameRefinementInto(destination));
+            Assert.Throws<InvalidOperationException>(() => reader.ReadFrameRefinementInto(destination));
+        }
+
+        Assert.True(partials > 10, $"{partials} of {data.Length} bytes");
+    }
+
+    [Fact]
     public void InksWithoutProfileUseTheAssumedProfile()
     {
         var image = JpegTestImage.CreateRandom(14, 10, InkLayouts["chroma-2x1"], seed: 31, inks: JpegTestInkCoding.Cmyk);

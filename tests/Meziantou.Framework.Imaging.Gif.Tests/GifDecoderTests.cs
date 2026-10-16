@@ -526,6 +526,63 @@ public sealed class GifDecoderTests
     }
 
     [Fact]
+    public void ATruncatedImageIsShownAsFarAsItWasDecodedThenReported()
+    {
+        // An image of 4 rows whose data is one code per pixel in sub-blocks of 2 bytes: a prefix of the file stops anywhere
+        // in it. A rendering of the frame shows the rows decoded so far, the others still transparent, then the next read
+        // reports the truncation.
+        var palette = new[] { R, G, new Rgba32(0, 0, 255), new Rgba32(255, 255, 0) };
+        var indices = new byte[16];
+        for (var i = 0; i < indices.Length; i++)
+        {
+            indices[i] = (byte)(i % 4);
+        }
+
+        var data = new GifTestBuilder(4, 4, palette).Image(0, 0, 4, 4, indices, minimumCodeSize: 2, lzw: new GifLzwTestOptions { ClearInterval = 1 }, subBlockSize: 2).ToArray();
+        using var complete = Image.Load<Rgba32>(data);
+        var expected = GetPixels(complete.Frames[0]);
+        var partials = 0;
+        // From the first byte of the image data: the header, the image descriptor and the minimum code size are complete
+        var start = new GifTestBuilder(4, 4, palette).ToArray(trailer: false).Length + 11;
+        for (var length = start; length < data.Length - 1; length++)
+        {
+            using var reader = Image.OpenReader<Rgba32>(new MemoryStream(data[..length]));
+            using var destination = new Image<Rgba32>(4, 4);
+            FrameRefinement? refinement;
+            try
+            {
+                refinement = reader.ReadFrameRefinementInto(destination);
+            }
+            catch (InvalidImageContentException)
+            {
+                continue;
+            }
+
+            Assert.NotNull(refinement);
+            Assert.False(refinement.IsFinal);
+            var pixels = GetPixels(destination.Frames[0]);
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                Assert.True(pixels[i] == expected[i] || pixels[i] == default, $"length {length}, pixel {i}");
+            }
+
+            if (pixels.Any(pixel => pixel != default))
+            {
+                partials++;
+            }
+
+            Assert.Throws<InvalidImageContentException>(() => reader.ReadFrameRefinementInto(destination));
+            Assert.Throws<InvalidOperationException>(() => reader.ReadFrameRefinementInto(destination));
+        }
+
+        Assert.True(partials > 3, $"{partials}");
+
+        // Without a rendering asked for, the truncation is reported at once
+        using var plain = Image.OpenReader<Rgba32>(new MemoryStream(data[..(data.Length - 6)]));
+        Assert.Throws<InvalidImageContentException>(() => plain.ReadFrame());
+    }
+
+    [Fact]
     public void FrameLimitsSelectAPrefixWithoutExaminingTheRest()
     {
         // The input stops in the middle of the third image: a two-frame prefix never reads it

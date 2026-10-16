@@ -390,6 +390,129 @@ public sealed class PngDecoderTests
     }
 
     [Fact]
+    public void InterlacedImagesAreShownPassByPass()
+    {
+        // IDAT chunks of 32 bytes: the passes are completed by different pieces of the data. Each rendering holds the
+        // completed passes, every other pixel being the top left pixel of its block in them (rows of the next pass may
+        // already be there). The image of the caller may change between two reads.
+        var image = PngTestImage.CreateRandom(19, 17, 6, 8, transparency: false, seed: 3);
+        var data = image.Encode(interlaced: true, idatChunkSize: 32);
+        var expected = image.GetExpectedPixels();
+        using var reader = Image.OpenReader<Rgba64>(new MemoryStream(data));
+        using var first = new Image<Rgba64>(19, 17, new Rgba64(1, 2, 3, 4));
+        using var second = new Image<Rgba64>(19, 17, new Rgba64(5, 6, 7, 8));
+        var passes = new List<int>();
+        for (var index = 0; ; index++)
+        {
+            var destination = index % 2 == 0 ? first : second;
+            var refinement = reader.ReadFrameRefinementInto(destination);
+            Assert.NotNull(refinement);
+            if (refinement.IsFinal)
+            {
+                Assert.Equal(7, refinement.CompletedPasses);
+                Assert.Equal(1, refinement.Downsampling);
+                AssertPixels(expected, destination, "final rendering");
+                break;
+            }
+
+            var completed = refinement.CompletedPasses;
+            passes.Add(completed);
+            var (blockWidth, blockHeight) = PngInterlace.GetBlockSize(completed);
+            Assert.Equal(Math.Max(blockWidth, blockHeight), refinement.Downsampling);
+            var pixels = new Rgba64[19 * 17];
+            destination.Frames[0].CopyPixelDataTo(pixels);
+            for (var y = 0; y < 17; y++)
+            {
+                for (var x = 0; x < 19; x++)
+                {
+                    var anchor = expected[((y - (y % blockHeight)) * 19) + x - (x % blockWidth)];
+                    var pixel = pixels[(y * 19) + x];
+                    var isComplete = PngInterlace.GetPassOfPixel(x, y) < completed;
+                    Assert.True(isComplete ? pixel == expected[(y * 19) + x] : pixel == anchor || pixel == expected[(y * 19) + x], $"rendering of {completed} passes, pixel ({x}, {y})");
+                }
+            }
+        }
+
+        Assert.Equal([1, 2, 3, 4, 5, 6], passes);
+        Assert.Null(reader.ReadFrameRefinementInto(first));
+
+        // A read of the frame after a rendering gives the frame, in any image
+        using var other = Image.OpenReader<Rgba64>(new MemoryStream(data));
+        Assert.NotNull(other.ReadFrameRefinementInto(first));
+        using var frame = other.ReadFrame();
+        Assert.NotNull(frame);
+        AssertPixels(expected, (Image<Rgba64>)frame, "frame after a rendering");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ATruncatedImageIsShownAsFarAsItWasDecodedThenReported(bool interlaced)
+    {
+        // Every prefix of the file that ends in the image data: the rendering has the rows (or the passes) that were
+        // decoded, the other pixels being zero or, with completed passes, the pixel of their block; the next read reports
+        // the truncation
+        var image = PngTestImage.CreateRandom(9, 10, 6, 8, transparency: false, seed: 5);
+        var data = image.Encode(interlaced, idatChunkSize: 16);
+        var expected = image.GetExpectedPixels();
+        var partials = 0;
+
+        // From the data of the first IDAT chunk: a reader is opened once the header is complete
+        var start = data.AsSpan().IndexOf("IDAT"u8) + 4;
+        for (var length = start; length < data.Length - 1; length++)
+        {
+            using var reader = Image.OpenReader<Rgba64>(new MemoryStream(data[..length]));
+            using var destination = new Image<Rgba64>(9, 10, new Rgba64(1, 2, 3, 4));
+
+            // Renderings of the completed passes, then the one of what was decoded, then the truncation
+            while (true)
+            {
+                FrameRefinement? refinement;
+                try
+                {
+                    refinement = reader.ReadFrameRefinementInto(destination);
+                }
+                catch (InvalidImageContentException)
+                {
+                    break;
+                }
+
+                Assert.NotNull(refinement);
+                Assert.False(refinement.IsFinal);
+                var completed = refinement.CompletedPasses;
+                var (blockWidth, blockHeight) = interlaced && completed > 0 ? PngInterlace.GetBlockSize(completed) : (8, 8);
+                var pixels = new Rgba64[9 * 10];
+                destination.Frames[0].CopyPixelDataTo(pixels);
+                for (var y = 0; y < 10; y++)
+                {
+                    for (var x = 0; x < 9; x++)
+                    {
+                        var pixel = pixels[(y * 9) + x];
+                        var isAnchor = interlaced && pixel == expected[((y - (y % blockHeight)) * 9) + x - (x % blockWidth)];
+                        Assert.True(pixel == expected[(y * 9) + x] || pixel == default || isAnchor, $"length {length}, pixel ({x}, {y})");
+                    }
+                }
+
+                if (!interlaced)
+                {
+                    // The rows that were decoded are the first ones
+                    var decodedRows = Enumerable.Range(0, 10).TakeWhile(y => pixels.AsSpan(y * 9, 9).SequenceEqual(expected.AsSpan(y * 9, 9))).Count();
+                    Assert.True(pixels.AsSpan(decodedRows * 9).IndexOfAnyExcept(default(Rgba64)) < 0, $"length {length}");
+                }
+
+                if (pixels.Any(pixel => pixel != default))
+                {
+                    partials++;
+                }
+            }
+
+            Assert.Throws<InvalidOperationException>(() => reader.ReadFrameRefinementInto(destination));
+        }
+
+        Assert.True(partials > 5, $"{partials}");
+    }
+
+    [Fact]
     public void SequentialReadersDecodeIntoReusedDestinations()
     {
         var first = PngTestImage.CreateRandom(7, 5, 3, 4, transparency: true, seed: 21);

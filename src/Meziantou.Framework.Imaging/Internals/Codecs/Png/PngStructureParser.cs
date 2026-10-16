@@ -255,6 +255,11 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
 
                     consumed += piece.Length;
                     _chunkRemaining -= piece.Length;
+
+                    // A rendering of the image that the data completed (sequential readers) is returned at once
+                    if (_deliverChunkData && TryYield())
+                        return ParseStatus.Complete;
+
                     break;
                 }
 

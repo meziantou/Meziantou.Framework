@@ -425,6 +425,124 @@ public sealed class JpegProgressiveDecoderTests
     }
 
     [Fact]
+    public void ReadersShowEveryScanThenTheFrame()
+    {
+        // A rendering after each scan, every component having its DC coefficients after the first one: exactly the image
+        // of the scans so far, at one eighth of its detail until an AC scan. The image of the caller may change between
+        // two reads.
+        var image = JpegTestImage.CreateRandom(16, 16, Layouts["4:2:0"], seed: 4, acDensity: 0.3);
+        var scans = JpegTestProgressiveScan.ParseScript(ColorStandard);
+        var data = image.Encode(new JpegTestEncodeOptions { Progression = scans, RestartInterval = 2 });
+        using var reader = Image.OpenReader<Rgb24>(new MemoryStream(data));
+        using var first = new Image<Rgb24>(16, 16, new Rgb24(1, 2, 3));
+        using var second = new Image<Rgb24>(16, 16, new Rgb24(4, 5, 6));
+        for (var completed = 1; completed <= scans.Length; completed++)
+        {
+            var destination = completed % 2 == 0 ? first : second;
+            var refinement = reader.ReadFrameRefinementInto(destination);
+            Assert.NotNull(refinement);
+            Assert.False(refinement.IsFinal);
+            Assert.Equal(completed, refinement.CompletedPasses);
+            Assert.Equal(completed == 1 ? 8 : 1, refinement.Downsampling);
+            AssertPixels(Approximate(image, scans[..completed]).GetExpectedPixels(), destination, $"{completed} scans");
+        }
+
+        var frame = reader.ReadFrameRefinementInto(first);
+        Assert.NotNull(frame);
+        Assert.True(frame.IsFinal);
+        Assert.Equal(scans.Length, frame.CompletedPasses);
+        AssertPixels(image.GetExpectedPixels(), first, "frame");
+        Assert.Null(reader.ReadFrameRefinementInto(first));
+
+        // A read of the frame after a rendering gives the frame
+        using var other = Image.OpenReader<Rgb24>(new MemoryStream(data));
+        Assert.NotNull(other.ReadFrameRefinementInto(first));
+        using var read = other.ReadFrame();
+        Assert.NotNull(read);
+        AssertPixels(image.GetExpectedPixels(), read, "frame after a rendering");
+    }
+
+    [Fact]
+    public void ATruncatedFrameIsShownAsFarAsItWasDecodedThenReported()
+    {
+        // Every prefix that ends in the scans: the renderings of the complete scans, then the one of the coefficients
+        // decoded so far, then the truncation
+        var image = JpegTestImage.CreateRandom(16, 16, Layouts["4:2:0"], seed: 4, acDensity: 0.3);
+        var scans = JpegTestProgressiveScan.ParseScript(ColorStandard);
+        var data = image.Encode(new JpegTestEncodeOptions { Progression = scans, RestartInterval = 2 });
+        var sosOffsets = FindSegments(data, 0xDA);
+        var renderings = 0;
+        for (var length = sosOffsets[0] + 14; length < data.Length - 2; length++)
+        {
+            using var reader = Image.OpenReader<Rgb24>(new MemoryStream(data[..length]));
+            using var destination = new Image<Rgb24>(16, 16);
+            var completedScans = sosOffsets.Count(offset => offset < length) - 1;
+            var count = 0;
+            while (true)
+            {
+                FrameRefinement? refinement;
+                try
+                {
+                    refinement = reader.ReadFrameRefinementInto(destination);
+                }
+                catch (InvalidImageContentException)
+                {
+                    break;
+                }
+
+                Assert.NotNull(refinement);
+                Assert.False(refinement.IsFinal);
+                Assert.InRange(refinement.CompletedPasses, count, completedScans);
+                count++;
+            }
+
+            Assert.InRange(count, 1, completedScans + 1);
+            renderings += count;
+            Assert.Throws<InvalidOperationException>(() => reader.ReadFrameRefinementInto(destination));
+        }
+
+        Assert.True(renderings > data.Length - sosOffsets[0], $"{renderings}");
+    }
+
+    [Fact]
+    public void ATruncatedFrameWhoseComponentsHaveNoScanYetIsOnlyReported()
+    {
+        // One DC scan per component: before the scan of a component, its coefficients have no quantization table, and the
+        // truncation is reported without a rendering
+        var image = JpegTestImage.CreateRandom(16, 16, Layouts["4:2:0"], seed: 8, acDensity: 0.3);
+        var scans = JpegTestProgressiveScan.ParseScript("0: 0 0 0 0; 1: 0 0 0 0; 2: 0 0 0 0; 0: 1 63 0 0; 1: 1 63 0 0; 2: 1 63 0 0");
+        var data = image.Encode(new JpegTestEncodeOptions { Progression = scans });
+        var sosOffsets = FindSegments(data, 0xDA);
+        var withoutRendering = 0;
+        for (var length = sosOffsets[0] + 10; length < data.Length - 2; length++)
+        {
+            using var reader = Image.OpenReader<Rgb24>(new MemoryStream(data[..length]));
+            using var destination = new Image<Rgb24>(16, 16);
+            var count = 0;
+            while (true)
+            {
+                try
+                {
+                    Assert.NotNull(reader.ReadFrameRefinementInto(destination));
+                    count++;
+                }
+                catch (InvalidImageContentException)
+                {
+                    break;
+                }
+            }
+
+            if (count == 0)
+            {
+                withoutRendering++;
+            }
+        }
+
+        // The prefixes that end before the scan of the third component
+        Assert.True(withoutRendering >= sosOffsets[2] - sosOffsets[0] - 10, $"{withoutRendering}");
+    }
+
+    [Fact]
     public void CorruptedBytesFailOnlyWithImageExceptions()
     {
         var image = JpegTestImage.CreateRandom(16, 8, Layouts["4:2:2"], seed: 6, acDensity: 0.15);

@@ -52,7 +52,12 @@ internal sealed class SequentialDecodeParser : ImageParser<SequentialDecodeEvent
 
     public override SequentialDecodeEvent GetResult() => _result;
 
-    public override Exception CreateTruncatedException(long position) => _inner.CreateTruncatedException(position);
+    public override Exception CreateTruncatedException(long position)
+    {
+        // The reader may still show what the decoder decoded of the frame
+        _session.IsTruncated = true;
+        return _inner.CreateTruncatedException(position);
+    }
 
     protected override void Dispose(bool disposing)
     {

@@ -309,25 +309,14 @@ internal static class SnapshotEngine
     /// the comparison is about the bytes that ended up on disk, so a comparer registered for the stored format
     /// wins. The requested type stays as the fallback, so an explicit registration for it still applies when
     /// nothing is registered for the stored format.
-    /// <para>
-    /// The PNG frames of a GIF or ICO snapshot are encoded by this library, and the compressed bytes depend on the
-    /// zlib of the runtime while the pixels do not. When no comparer is registered for either format, they are
-    /// compared by pixels, so a runtime update does not change the outcome.
-    /// </para>
     /// </summary>
     private static ISnapshotComparer GetComparer(SnapshotSettings settings, SnapshotType requestedType, SnapshotData data)
     {
         if (!string.IsNullOrEmpty(data.Extension))
         {
             var storedType = SnapshotType.Create(data.Extension);
-            if (storedType != requestedType)
-            {
-                if (settings.Comparers.TryGet(storedType, out var storedComparer))
-                    return storedComparer;
-
-                if (storedType == SnapshotType.Png && (requestedType == SnapshotType.Gif || requestedType == SnapshotType.Ico) && !settings.Comparers.TryGet(requestedType, out _))
-                    return ImageComparer.Instance;
-            }
+            if (storedType != requestedType && settings.Comparers.TryGet(storedType, out var storedComparer))
+                return storedComparer;
         }
 
         return settings.Comparers.Get(requestedType);

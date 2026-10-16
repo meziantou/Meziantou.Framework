@@ -28,20 +28,6 @@ namespace Meziantou.Framework.SnapshotTesting
         bool TrySerialize(Meziantou.Framework.SnapshotTesting.SnapshotType type, object? value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.SnapshotTesting.SerializedSnapshot? result);
     }
 
-    public sealed class ImageComparer : Meziantou.Framework.SnapshotTesting.ISnapshotComparer
-    {
-        public ImageComparer(Meziantou.Framework.SnapshotTesting.ImageComparisonSettings? settings = null) { }
-        public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotData expected, Meziantou.Framework.SnapshotTesting.SnapshotData actual) => throw null;
-        public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotData expected, Meziantou.Framework.SnapshotTesting.SnapshotData actual, out string? mismatchReason) => throw null;
-    }
-
-    public sealed class ImageComparisonSettings
-    {
-        public int? DHashThreshold { get => throw null; set { } }
-        public int? PHashThreshold { get => throw null; set { } }
-        public float? SimilarityThreshold { get => throw null; set { } }
-    }
-
     public abstract class MergeTool
     {
         public static Meziantou.Framework.SnapshotTesting.MergeTool AraxisMerge { get => throw null; }
@@ -126,11 +112,6 @@ namespace Meziantou.Framework.SnapshotTesting
         public void Set(Meziantou.Framework.SnapshotTesting.SnapshotType type, Meziantou.Framework.SnapshotTesting.ISnapshotComparer comparer) { }
     }
 
-    public static class SnapshotComparerCollectionImageComparerExtensions
-    {
-        public static void AddImageComparer(this Meziantou.Framework.SnapshotTesting.SnapshotComparerCollection comparers, Meziantou.Framework.SnapshotTesting.ImageComparisonSettings? settings = null) { }
-    }
-
     public sealed class SnapshotData : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotData>
     {
         public byte[] Data { get => throw null; init { } }
@@ -207,16 +188,6 @@ namespace Meziantou.Framework.SnapshotTesting
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public bool Remove(Meziantou.Framework.SnapshotTesting.ISnapshotSerializer serializer) => throw null;
         public Meziantou.Framework.SnapshotTesting.SerializedSnapshot Serialize(Meziantou.Framework.SnapshotTesting.SnapshotType type, object? value) => throw null;
-    }
-
-    public static class SnapshotSerializerCollectionGifSerializerExtensions
-    {
-        public static void AddGifSerializer(this Meziantou.Framework.SnapshotTesting.SnapshotSerializerCollection serializers) { }
-    }
-
-    public static class SnapshotSerializerCollectionIcoSerializerExtensions
-    {
-        public static void AddIcoSerializer(this Meziantou.Framework.SnapshotTesting.SnapshotSerializerCollection serializers) { }
     }
 
     public sealed class SnapshotSettings : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotSettings>

@@ -23,19 +23,9 @@ Snapshot.Validate(imageBytes, SnapshotType.Png);
 Snapshot.Validate(svgText, SnapshotType.Svg);
 ```
 
-For GIF/ICO frame snapshots (opt-in, emitted as PNG snapshots):
-
-```csharp
-var settings = SnapshotSettings.Default with { };
-settings.Serializers.AddGifSerializer();
-settings.Serializers.AddIcoSerializer();
-
-Snapshot.Validate(gifBytes, SnapshotType.Gif, settings);
-Snapshot.Validate(icoBytes, SnapshotType.Ico, settings);
-```
-
-The frames are compared by pixels, not by bytes: the compressed bytes of a PNG depend on the runtime's zlib, so a runtime update could otherwise make every frame differ.
-A comparer registered for `SnapshotType.Png` (such as `Comparers.AddImageComparer(settings)`), or for `SnapshotType.Gif`/`SnapshotType.Ico`, is used instead.
+Typed binary snapshots, such as images, are compared byte for byte. To compare images by their pixels, exactly or by
+similarity, and to validate image objects, use
+[`Meziantou.Framework.SnapshotTesting.Imaging`](https://www.nuget.org/packages/Meziantou.Framework.SnapshotTesting.Imaging).
 
 ## File naming convention
 
@@ -159,8 +149,8 @@ and no other test uses the name; delete them to switch to the new names.
 
 ## Storing snapshots in git
 
-Snapshots are often binary: PNG frames from the GIF/ICO serializers, whatever the ImageSharp and
-SkiaSharp backends emit, and `.bin` for any value whose extension is unknown. Add an entry to your
+Snapshots are often binary: images, the PNG frames of the GIF/ICO serializers of
+`Meziantou.Framework.SnapshotTesting.Imaging`, and `.bin` for any value whose extension is unknown. Add an entry to your
 `.gitattributes` so git never applies line-ending conversion to them:
 
 ```gitattributes
@@ -339,27 +329,12 @@ Snapshot.Validate(value, SnapshotType.Default, settings);
 ```
 
 The default serializers handle human-readable objects, `byte[]`, and `Stream`.
-GIF frame extraction is opt-in via `Serializers.AddGifSerializer()`: when enabled and `SnapshotType.Gif` is used with a valid GIF `byte[]`, each frame is serialized as a separate `.png` snapshot.
-ICO image extraction is opt-in via `Serializers.AddIcoSerializer()`: when enabled and `SnapshotType.Ico` is used with a valid ICO `byte[]`, each icon image is serialized as a separate `.png` snapshot.
-These PNG snapshots are compared by decoded pixels with the built-in image comparer, unless a comparer is registered for `SnapshotType.Png` or for the requested type.
-BMP/PNG/JPEG/TIFF image comparison is opt-in via `Comparers.AddImageComparer()`. When enabled, `SnapshotType.Bmp`, `SnapshotType.Png`, `SnapshotType.Jpeg` (including `.jpg` aliases), and `SnapshotType.Tiff` (including `.tif` aliases) snapshots are compared by decoded pixel content (ARGB), so format metadata differences do not trigger snapshot mismatches. Fully transparent pixels are equal whatever color they hide. A snapshot that cannot be decoded does not match. Animated PNGs and multi-page TIFFs are not decoded, so they only match when their bytes are identical.
-To allow small visual differences, configure the image comparer with an SSIM threshold or a maximum 64-bit dHash/pHash distance. When multiple thresholds are configured, all comparisons must pass. Every comparison requires images with identical dimensions.
-
-- `SimilarityThreshold` is compared to the mean SSIM over every 7×7 window of the images (uniform weights, sample covariance, `K1 = 0.01`, `K2 = 0.03`), the value scikit-image's `structural_similarity(expected, actual, data_range=255, channel_axis=-1)` computes with its default parameters. The R, G, and B channels are premultiplied by the alpha channel and averaged, and the score is the lower of that value and the SSIM of the alpha channel, so opacity differences are detected. Because the score is a mean, a localized difference lowers it in proportion to the area it covers: a difference confined to 1% of the image lowers it by about 0.01 at most, so use a threshold close to 1 to catch small regressions.
-- `DHashThreshold` and `PHashThreshold` are compared to the Hamming distance between the hashes of the images, plus the difference between their mean luminances on the same 0-64 scale (about 4 luminance levels per unit), capped at 64. The hashes are computed from area-averaged thumbnails, so every pixel contributes. Differences smaller than a luminance level do not flip bits: adjacent dHash cells must differ by more than half a level, and pHash coefficients must exceed their median by more than one level, so invisible noise in flat areas and gradients leaves the distance at or near 0. Images that are not fully opaque are compared composited over both a black and a white background, and the larger distance is used.
-- Images with 16-bit samples (16-bit PNG) are compared at full precision by the exact comparison (an 8-bit sample `v` equals the 16-bit sample `v × 257`), while the SSIM and the hashes reduce each sample to 8 bits by keeping its high byte. The ImageSharp and SkiaSharp packages follow the same rule.
-
-When images do not match, the assertion message says why under the changed file: an image cannot be decoded, the images have different sizes or different pixels, or which thresholds were not met and by how much (for example, `The SSIM score 0.9412 is below the threshold 0.95.` or `The pHash distance 12 is above the threshold 5.`). A custom `ISnapshotComparer` can provide such a reason by implementing `Equals(SnapshotData expected, SnapshotData actual, out string? mismatchReason)`.
-
-```csharp
-var settings = SnapshotSettings.Default with { };
-settings.Comparers.AddImageComparer(new ImageComparisonSettings
-{
-    SimilarityThreshold = 0.95f,
-    DHashThreshold = 5,
-    PHashThreshold = 5,
-});
-```
+Image snapshots (`SnapshotType.Png`, `SnapshotType.Jpeg`, ...) are compared byte for byte unless a comparer is
+registered for their type. A custom `ISnapshotComparer` can explain a mismatch, shown under the changed file in the
+assertion message, by implementing `Equals(SnapshotData expected, SnapshotData actual, out string? mismatchReason)`.
+[`Meziantou.Framework.SnapshotTesting.Imaging`](https://www.nuget.org/packages/Meziantou.Framework.SnapshotTesting.Imaging)
+provides an image comparer (exact pixels, SSIM, dHash and pHash), a serializer for its images, and serializers that
+store the frames of a GIF or ICO file as PNG snapshots.
 
 ## Scrubbing
 

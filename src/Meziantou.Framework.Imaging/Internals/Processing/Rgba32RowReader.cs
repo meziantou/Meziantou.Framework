@@ -1,0 +1,48 @@
+using System.Runtime.InteropServices;
+
+namespace Meziantou.Framework.Imaging.Internals;
+
+/// <summary>
+/// Reads the rows of a leased storage as <see cref="Rgba32"/> pixels, for the analyses that work on 8-bit RGBA whatever the
+/// pixel format (<see cref="ImageSimilarity"/>). Rows already stored as <see cref="Rgba32"/> are returned as they are; the
+/// others are converted like <see cref="Image.CloneAs{TPixel}"/> does into a row buffer rented from the scope.
+/// </summary>
+internal sealed class Rgba32RowReader : IDisposable
+{
+    private readonly PixelFormat _format;
+    private PooledBuffer? _buffer;
+
+    private Rgba32RowReader(PixelFormat format, PooledBuffer? buffer)
+    {
+        _format = format;
+        _buffer = buffer;
+    }
+
+    /// <summary>Rents the conversion buffer of a row, when the format needs one.</summary>
+    /// <param name="scope">The scope charged for the buffer.</param>
+    /// <param name="format">The pixel format of the storage.</param>
+    /// <param name="width">The width of the rows.</param>
+    /// <exception cref="ImageResourceLimitException">The buffer exceeds the allocation limit.</exception>
+    public static Rgba32RowReader Create(AllocationScope scope, PixelFormat format, int width)
+    {
+        var buffer = format is PixelFormat.Rgba32 ? null : ResampleWeights.Rent<Rgba32>(scope, width);
+        return new Rgba32RowReader(format, buffer);
+    }
+
+    /// <summary>Gets row <paramref name="y"/> of a lease on a storage of the format given at creation.</summary>
+    public ReadOnlySpan<Rgba32> GetRow(PixelLease lease, int y)
+    {
+        if (_format is PixelFormat.Rgba32)
+            return lease.GetRow<Rgba32>(y);
+
+        var buffer = _buffer ?? throw new ObjectDisposedException(nameof(Rgba32RowReader));
+        var width = PixelConverter.ConvertRow(_format, lease.GetRowBytes(y), PixelFormat.Rgba32, buffer.Span);
+        return unsafe(MemoryMarshal.Cast<byte, Rgba32>(buffer.Span))[..width];
+    }
+
+    public void Dispose()
+    {
+        _buffer?.Dispose();
+        _buffer = null;
+    }
+}

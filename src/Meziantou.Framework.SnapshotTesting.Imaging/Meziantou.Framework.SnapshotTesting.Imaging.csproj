@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Description>Enables verification of images using file-based snapshots, based on Meziantou.Framework.Imaging</Description>
+    <PackageTags>snapshot-testing, image, imaging, testing</PackageTags>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.SnapshotTesting.Imaging.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
+  </ItemGroup>
+
+</Project>

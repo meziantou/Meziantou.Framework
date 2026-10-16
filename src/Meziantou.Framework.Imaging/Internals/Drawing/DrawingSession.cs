@@ -836,7 +836,7 @@ internal sealed partial class DrawingSession : IDisposable
         }
         else
         {
-            stroker.SetOutput(_hasTransform, _transformMatrix, _transformScale);
+            stroker.SetOutput(_hasTransform, _transformMatrix, _transformScale, _originX, _originY, IsRangeChecked);
         }
 
         return stroker;
@@ -955,7 +955,7 @@ internal sealed partial class DrawingSession : IDisposable
         }
         else
         {
-            stroker.SetOutput(hasOutputTransform, _transformMatrix, _transformScale);
+            stroker.SetOutput(hasOutputTransform, _transformMatrix, _transformScale, _originX, _originY, IsRangeChecked);
         }
 
         stroker.Configure(pen, widthFactor);
@@ -999,7 +999,7 @@ internal sealed partial class DrawingSession : IDisposable
         else if (isPlacedFirst)
         {
             var placed = _strokeTransformSink ??= new TransformSink();
-            placed.Configure(sink, _transformMatrix, _transformScale);
+            placed.Configure(sink, _transformMatrix, _transformScale, _originX, _originY, IsRangeChecked);
             sink = placed;
         }
 

@@ -1212,7 +1212,11 @@ any drawing, a text included, and `DestinationOut` an eraser. A layer starts tra
 the canvas; layers and clips nest, and a clip that is active when a layer starts applies to the layer as a whole. The
 image of a layer comes from the allocation scope of the image (4 bytes per pixel on an 8-bit color canvas, 8 bytes
 otherwise) and is kept while the canvas lasts; a layer costs the clearing and the drawing of the pixels the clip can
-show, so start a layer inside `Clip` when it covers a small part of a large canvas.
+show, so start a layer inside `Clip` when it covers a small part of a large canvas. `canvas.Layer(bounds, opacity, callback)` makes a
+layer that holds the pixels of a rectangle only (the box of the rectangle on the canvas that the clip can show): its
+image is rented when it starts and released when it ends, and what the callback draws outside it is not kept. Its
+drawings are made by a canvas of their own, with the coordinates of the canvas, and give the pixels of a layer of the
+whole canvas: an element of a page with an opacity costs the pixels of its box, however large the page.
 
 **Shadows**. `canvas.Shadow(color, offset, blur, callback)` draws what the callback draws with its shadow under it: a
 drop shadow, or a glow when there is no offset. The drawings are made on a layer; the shadow is the alpha of that layer

@@ -316,14 +316,19 @@ public sealed class DrawingFuzzTests
                     Measure(canvas, random, context);
                     break;
                 case 22:
-                    // A filtered drawing, or a layer that starts with the filtered backdrop of a rectangle
+                    // A filtered drawing, a layer that holds the pixels of a rectangle, or a layer that starts with the
+                    // filtered backdrop of a rectangle
                     if (depth >= 3)
                     {
                         canvas.Fill(CreateBrush(random, canvas, context));
                     }
-                    else if (random.Chance(50))
+                    else if (random.Chance(40))
                     {
                         canvas.Filter(CreateFilter(random), inner => Paint(inner, random, context, depth + 1));
+                    }
+                    else if (random.Chance(40))
+                    {
+                        canvas.Layer(CreateRectangle(random, canvas), CreateOpacity(random), inner => Paint(inner, random, context, depth + 1), CreateCompositeMode(random, context), (BlendMode)random.Next(16));
                     }
                     else
                     {
@@ -649,15 +654,17 @@ public sealed class DrawingFuzzTests
         return new Rgba64((ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536), alpha);
     }
 
+    /// <summary>Creates an operator: one that never lowers the alpha of a pixel, unless the case erases.</summary>
+    private static CompositeMode CreateCompositeMode(FuzzRandom random, FuzzContext context) => context.Erases ? (CompositeMode)random.Next(12) : random.Next(6) switch
+    {
+        0 => CompositeMode.DestinationOver,
+        1 => CompositeMode.SourceAtop,
+        _ => CompositeMode.SourceOver,
+    };
+
     private static Brush CreateBrush(FuzzRandom random, DrawingCanvas canvas, FuzzContext context)
     {
-        // The operators that never lower the alpha of a pixel, unless the case erases
-        var mode = context.Erases ? (CompositeMode)random.Next(12) : random.Next(6) switch
-        {
-            0 => CompositeMode.DestinationOver,
-            1 => CompositeMode.SourceAtop,
-            _ => CompositeMode.SourceOver,
-        };
+        var mode = CreateCompositeMode(random, context);
         if (random.Chance(35))
             return new SolidBrush(CreateColor(random)) { CompositeMode = mode };
 

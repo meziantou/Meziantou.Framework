@@ -178,6 +178,84 @@ internal sealed partial class DrawingSession
         return this;
     }
 
+    /// <summary>
+    /// Starts a layer that holds the pixels of a rectangle only: an image of the box of the rectangle on the canvas,
+    /// within the bounds of the clip, drawn on by a session of its own, then drawn on what is under it at its place.
+    /// </summary>
+    /// <returns>The session the drawings of the layer are made by.</returns>
+    /// <exception cref="ArgumentException">A coordinate of the rectangle is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, the opacity is not between 0 and 1, or the operator or the blend mode is not defined.</exception>
+    /// <exception cref="ImageResourceLimitException">The image of the layer exceeds the limits of the image that is drawn on.</exception>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session and the image are owned by the level of the layer, released by PopLayer.")]
+    public DrawingSession PushBoundedLayer(RectangleD bounds, double opacity, CompositeMode mode, BlendMode blend)
+    {
+        DrawingGuard.Rectangle(bounds, nameof(bounds));
+        if (_isProjective)
+        {
+            // In perspective, a layer is an image of the plane of the drawing already
+            PushLayer(opacity, mode, blend);
+            return this;
+        }
+
+        var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
+        if ((uint)mode > (uint)CompositeMode.Plus)
+            throw new ArgumentOutOfRangeException(nameof(mode), mode, "The composite mode is not valid.");
+
+        if ((uint)blend > (uint)BlendMode.Luminosity)
+            throw new ArgumentOutOfRangeException(nameof(blend), blend, "The blend mode is not valid.");
+
+        _cancellationToken.ThrowIfCancellationRequested();
+
+        // The pixels of the box of the rectangle on the canvas that the clip can show
+        var box = ToCanvasBounds(bounds);
+        GetClipBounds(out var clipLeft, out var clipTop, out var clipRight, out var clipBottom, out _);
+        var left = Math.Max(clipLeft, (int)Math.Clamp(Math.Floor(box.Left), -1, Width + 1));
+        var top = Math.Max(clipTop, (int)Math.Clamp(Math.Floor(box.Top), -1, Height + 1));
+        var right = Math.Min(clipRight, (int)Math.Clamp(Math.Ceiling(box.Right), -1, Width + 1));
+        var bottom = Math.Min(clipBottom, (int)Math.Clamp(Math.Ceiling(box.Bottom), -1, Height + 1));
+        var isEmpty = !(right > left && bottom > top);
+        var width = isEmpty ? 1 : right - left;
+        var height = isEmpty ? 1 : bottom - top;
+        _image.Configuration.Limits.EnsureCanvasWithinLimits(width, height);
+        var isWide = _frames[0].PixelFormat is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24);
+        Image image = isWide
+            ? new Image<Rgba64>(_image.Configuration, new Size(width, height), _image.Owner.Scope, layoutOptions: null)
+            : new Image<Rgba32>(_image.Configuration, new Size(width, height), _image.Owner.Scope, layoutOptions: null);
+        DrawingSession? session = null;
+        try
+        {
+            var frame = image.Frames[0];
+            session = Begin(image, [frame], [frame.GetStorage()], _cancellationToken);
+            InheritRendering(session);
+
+            // The image is moved from the canvas: the largest coordinate is checked where its pixels are on the canvas
+            session._originX = _originX + left;
+            session._originY = _originY + top;
+            session._clipsGeometry = _clipsGeometry;
+            session._isLayerFrame = true;
+            var toImage = AffineTransform.CreateTranslation(-left, -top);
+            session.PushTransform(_hasTransform ? _transform.Then(toImage) : toImage);
+            if (_layerDepth == _layers.Count)
+            {
+                _layers.Add(new LayerLevel());
+            }
+
+            var level = _layers[_layerDepth];
+            level.Bounded = new BoundedLayer(image, session, left, top, isEmpty);
+            level.Opacity = coverage;
+            level.Mode = mode;
+            level.Blend = blend;
+            _layerDepth++;
+            return session;
+        }
+        catch
+        {
+            session?.Dispose();
+            image.Dispose();
+            throw;
+        }
+    }
+
     /// <summary>Starts a layer on the pixels the clip can show, and on a margin around them.</summary>
     private LayerLevel PushLayerCore(int margin) => PushLayerCore(margin, frameCount: 1);
 
@@ -230,6 +308,27 @@ internal sealed partial class DrawingSession
     public void PopLayer(bool draw)
     {
         var level = _layers[--_layerDepth];
+        if (level.Bounded is { } bounded)
+        {
+            // A layer of its own image: its session ends, then the image is drawn at its place
+            level.Bounded = null;
+            try
+            {
+                bounded.Session.Dispose();
+                if (draw && !bounded.IsEmpty && level.Opacity != 0)
+                {
+                    var frame = bounded.Image.Frames[0];
+                    DrawLayerFrame(frame, new Rectangle(bounded.Left, bounded.Top, frame.Width, frame.Height), level, AffineTransform.CreateTranslation(bounded.Left, bounded.Top));
+                }
+            }
+            finally
+            {
+                bounded.Image.Dispose();
+            }
+
+            return;
+        }
+
         if (level.Projected is { } scope)
         {
             // A layer of an image of the plane of the drawing: it ends in its own session, then the image is drawn in perspective
@@ -325,13 +424,16 @@ internal sealed partial class DrawingSession
     }
 
     /// <summary>Draws a frame of a layer on what is drawn on.</summary>
-    private void DrawLayerFrame(ImageFrame frame, Rectangle bounds, LayerLevel level)
+    private void DrawLayerFrame(ImageFrame frame, Rectangle bounds, LayerLevel level) => DrawLayerFrame(frame, bounds, level, placement: null);
+
+    /// <summary>Draws a frame of a layer on what is drawn on: the pixels of a rectangle of the canvas, or a frame placed by a translation.</summary>
+    private void DrawLayerFrame(ImageFrame frame, Rectangle bounds, LayerLevel level, AffineTransform? placement)
     {
         var sink = BeginDeviceFill();
         AddRectangle(sink, bounds);
         sink.End();
         var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-        evaluator.Prepare(frame, bounds, AffineTransform.Identity, ImageWrapMode.Transparent, ImageSampling.Nearest, _frames[0], Width, "draw");
+        evaluator.Prepare(frame, placement is null ? bounds : null, placement ?? AffineTransform.Identity, ImageWrapMode.Transparent, ImageSampling.Nearest, _frames[0], Width, "draw");
         if (level.Opacity != CoverageRasterizer.FullCoverage)
         {
             EnsureCoverageRow();
@@ -440,6 +542,9 @@ internal sealed partial class DrawingSession
 
         /// <summary>Gets or sets the session on an image of the plane of the drawing the layer is drawn by, under a projective transformation; the other properties are then not used.</summary>
         public ProjectedScope? Projected { get; set; }
+
+        /// <summary>Gets or sets the session on an image of the rectangle the layer holds, and where that image is on the canvas; only the opacity, the operator and the blend mode are then used.</summary>
+        public BoundedLayer? Bounded { get; set; }
 
         public CompositeMode Mode { get; set; }
 
@@ -555,10 +660,32 @@ internal sealed partial class DrawingSession
         public void Dispose()
         {
             End();
+            if (Bounded is { } bounded)
+            {
+                bounded.Session.Dispose();
+                bounded.Image.Dispose();
+                Bounded = null;
+            }
+
             _image?.Dispose();
             _image = null;
             Frames = null;
             Storages = null;
         }
+    }
+
+    /// <summary>The image of a layer that holds the pixels of a rectangle, the session that draws on it, and the pixel of the canvas its first pixel is.</summary>
+    private sealed class BoundedLayer(Image image, DrawingSession session, int left, int top, bool isEmpty)
+    {
+        public Image Image { get; } = image;
+
+        public DrawingSession Session { get; } = session;
+
+        public int Left { get; } = left;
+
+        public int Top { get; } = top;
+
+        /// <summary>Gets a value indicating whether the layer holds no pixel of the canvas: it is not drawn.</summary>
+        public bool IsEmpty { get; } = isEmpty;
     }
 }

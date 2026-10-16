@@ -1130,6 +1130,99 @@ public sealed class DrawingSessionTests
     }
 
     [Fact]
+    public void ALayerOfARectangleHoldsItsPixelsOnly()
+    {
+        // Drawings inside the rectangle: the pixels of a layer of the whole canvas, through a transformation, a clip, an
+        // opacity, a blend mode, a nested layer and a filter
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(30, 20), [new GradientStop(0, new Rgba32(250, 40, 10)), new GradientStop(1, new Rgba32(10, 60, 240, 180))]);
+        var transform = AffineTransform.CreateScale(1.5, 1.25).Then(AffineTransform.CreateTranslation(3.25, 2.5));
+        foreach (var format in (PixelFormat[])[PixelFormat.Rgba32, PixelFormat.Rgba64, PixelFormat.Gray8])
+        {
+            var whole = Draw(format, canvas => canvas.Layer(0.6, layer => Paint(layer), CompositeMode.SourceOver, BlendMode.Multiply));
+            var bounded = Draw(format, canvas => canvas.Layer(new RectangleD(4, 2, 23, 19), 0.6, layer => Paint(layer), CompositeMode.SourceOver, BlendMode.Multiply));
+            Assert.Equal(whole, bounded);
+        }
+
+        // What is drawn outside the box of the rectangle on the canvas is not kept: from 6.25 to 12.25 by 3.75 to 7.5
+        using (var image = new Image<Gray8>(16, 12, new Gray8(0)))
+        {
+            image.Draw(canvas => canvas.Transform(transform, moved => moved.Layer(new RectangleD(2, 1, 4, 4), 1, static layer => layer.Fill(White))), Ct);
+            Assert.Equal(new Gray8(255), image.Frames[0][7, 5]);
+            Assert.Equal(new Gray8(0), image.Frames[0][13, 5]);
+            Assert.Equal(new Gray8(0), image.Frames[0][7, 9]);
+            Assert.Equal(new Gray8(0), image.Frames[0][5, 5]);
+        }
+
+        // Drawn on every frame; discarded when the callback throws; a rectangle outside the clip is an empty layer
+        using (var animation = new Image<Rgba32>(4, 4, new Rgba32(0, 0, 0)))
+        {
+            animation.AppendFrame();
+            animation.Draw(static canvas => canvas.Fill(new Rgba32(0, 0, 0)), Ct);
+            animation.Draw(canvas => canvas.Layer(new RectangleD(0, 0, 2, 2), 0.5, static layer => layer.Fill(White)), Ct);
+            Assert.Equal(new Rgba32(128, 128, 128), animation.Frames[0][1, 1]);
+            Assert.Equal(new Rgba32(128, 128, 128), animation.Frames[1][1, 1]);
+            Assert.Equal(new Rgba32(0, 0, 0), animation.Frames[1][2, 2]);
+            animation.Draw(canvas => AssertThrows<InvalidOperationException>(canvas, static canvas => canvas.Layer(new RectangleD(0, 0, 4, 4), 1, static layer =>
+            {
+                layer.Fill(White);
+                throw new InvalidOperationException("callback");
+            })), Ct);
+            Assert.Equal(new Rgba32(0, 0, 0), animation.Frames[0][3, 3]);
+            animation.Draw(canvas => canvas.Clip(new RectangleD(0, 0, 1, 1), clipped => clipped.Layer(new RectangleD(2, 2, 2, 2), 1, static layer => layer.Fill(White))), Ct);
+            Assert.Equal(new Rgba32(0, 0, 0), animation.Frames[0][3, 3]);
+        }
+
+        // The memory of the layer is the one of its rectangle: a layer of 20 by 20 pixels on a canvas of 400 by 400
+        // rents far less than the 640,000 bytes of a layer of the whole canvas
+        using var large = new Image<Rgba32>(400, 400);
+        long wholeBytes = 0;
+        long boundedBytes = 0;
+        large.Draw(
+            canvas =>
+            {
+                // The image of a layer of the whole canvas is kept until the drawing ends: the bounded layer comes first
+                var before = large.Owner.Scope.LiveBytes;
+                canvas.Layer(new RectangleD(100, 100, 20, 20), 1, layer =>
+                {
+                    layer.FillRectangle(White, new RectangleD(105, 105, 5, 5));
+                    boundedBytes = large.Owner.Scope.LiveBytes - before;
+                });
+                before = large.Owner.Scope.LiveBytes;
+                canvas.Layer(1, layer => wholeBytes = large.Owner.Scope.LiveBytes - before);
+            },
+            Ct);
+        Assert.True(wholeBytes >= 640000, $"{wholeBytes}");
+        Assert.True(boundedBytes < 64000, $"{boundedBytes}");
+
+        // The layer rejects what the canvas rejects, and nothing more: a pen as wide as the largest coordinate, which
+        // the canvas does not transform, draws there as it does on the canvas
+        large.Draw(canvas => canvas.Layer(new RectangleD(100, 100, 20, 20), 1, static layer => layer.StrokeLine(new Pen(White, 16777216), new PointD(-16777216, 105), new PointD(16777216, 105))), Ct);
+        Assert.Equal(new Rgba32(255, 255, 255), large.Frames[0][110, 110]);
+
+        large.Draw(canvas => AssertThrows<ArgumentException>(canvas, static canvas => canvas.Layer(new RectangleD(double.NaN, 0, 1, 1), 1, static _ => Assert.Fail("The callback ran."))), Ct);
+        large.Draw(canvas => AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Layer(new RectangleD(0, 0, 1, 1), 2, static _ => Assert.Fail("The callback ran."))), Ct);
+        large.Draw(canvas => AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Layer(new RectangleD(0, 0, 1, 1), 1, null!)), Ct);
+
+        void Paint(DrawingCanvas layer)
+        {
+            layer.Transform(transform, moved => moved.Clip(new VectorPathBuilder().AddCircle(new PointD(8, 7), 6.5).Build(), clipped =>
+            {
+                clipped.FillRectangle(gradient, new RectangleD(2.5, 1.25, 12, 9));
+                clipped.Layer(0.7, inner => inner.FillEllipse(new Rgba32(30, 200, 90), new PointD(9, 8), 4.5, 3));
+            }));
+            layer.Filter(new ColorMatrixFilter(ColorMatrix.CreateSaturation(0.3)), filtered => filtered.FillCircle(new Rgba32(200, 30, 200), new PointD(10, 9), 3.25));
+        }
+
+        int[] Draw(PixelFormat format, DrawingAction action)
+        {
+            using var image = DrawingTestSupport.Create(format, 30, 24);
+            image.Draw(canvas => canvas.FillRectangle(new Rgba32(220, 220, 120), new RectangleD(0, 0, 30, 24)), Ct);
+            image.Draw(action, Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
     public void ALayerValidatesItsArgumentsAndIsChargedToTheImage()
     {
         using (var image = new Image<Gray8>(4, 4, new Gray8(0)))

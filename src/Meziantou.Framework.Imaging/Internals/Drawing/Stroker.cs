@@ -56,6 +56,9 @@ internal sealed class Stroker : PathSink
     private double _miterLimitSquared;
     private bool _hasOutputTransform;
     private Affine2D _outputTransform;
+    private double _originX;
+    private double _originY;
+    private bool _isOutputChecked = true;
     private ProjectiveSink? _projectiveOutput;
     private PieceSink? _pieceSink;
     private bool _isProjectiveOutput;
@@ -113,8 +116,14 @@ internal sealed class Stroker : PathSink
     /// <param name="hasTransform">Whether there is a transformation.</param>
     /// <param name="transform">The transformation.</param>
     /// <param name="scale">The largest factor by which the transformation enlarges a length.</param>
-    public void SetOutput(bool hasTransform, in Affine2D transform, double scale)
+    /// <param name="originX">Where the frame of the pieces is on the canvas the largest coordinate is checked on, along x: not zero for the image of a layer of a rectangle.</param>
+    /// <param name="originY">Where the frame of the pieces is on that canvas, along y.</param>
+    /// <param name="isChecked"><see langword="false"/> when the pieces are those of the canvas, only moved to the image of a layer of a rectangle: the canvas does not check them.</param>
+    public void SetOutput(bool hasTransform, in Affine2D transform, double scale, double originX = 0, double originY = 0, bool isChecked = true)
     {
+        _originX = originX;
+        _originY = originY;
+        _isOutputChecked = isChecked;
         _hasOutputTransform = hasTransform;
         _outputTransform = transform;
         _isProjectiveOutput = false;
@@ -618,8 +627,8 @@ internal sealed class Stroker : PathSink
         var py = _outputTransform.TransformY(x, y);
 
         // Written so that a value that is not a number is rejected too
-        if (!(Math.Abs(px) <= DrawingGuard.MaxCoordinate && Math.Abs(py) <= DrawingGuard.MaxCoordinate))
-            TransformSink.ThrowOutOfRange(Math.Abs(px) <= DrawingGuard.MaxCoordinate ? py : px);
+        if (_isOutputChecked && !(Math.Abs(px + _originX) <= DrawingGuard.MaxCoordinate && Math.Abs(py + _originY) <= DrawingGuard.MaxCoordinate))
+            TransformSink.ThrowOutOfRange(Math.Abs(px + _originX) <= DrawingGuard.MaxCoordinate ? py + _originY : px + _originX);
 
         return (px, py);
     }

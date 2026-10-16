@@ -56,6 +56,21 @@ internal sealed partial class DrawingSession
     // one is, the geometry cut at the largest coordinate instead of rejected, as the perspective it stands for does
     private bool _clipsGeometry;
 
+    // Where the frames of a session on the image of a layer of a rectangle are on the canvas: the largest coordinate is
+    // checked on the canvas, so that the layer rejects what the canvas rejects
+    private double _originX;
+    private double _originY;
+
+    // A session on the image of a layer of a rectangle, whose transformation starts with the translation to that image
+    private bool _isLayerFrame;
+
+    /// <summary>
+    /// Gets a value indicating whether the vertices placed by the transformation are checked against the largest
+    /// coordinate: not on the image of a layer of a rectangle when the transformation is only its translation, as the
+    /// canvas does not check what it does not transform.
+    /// </summary>
+    private bool IsRangeChecked => !(_isLayerFrame && _transform.M11 == 1 && _transform.M12 == 0 && _transform.M21 == 0 && _transform.M22 == 1);
+
     // The transformation of space the current one comes from, which the next ones are combined with
     private bool _hasTransform3D;
     private Transform3D _transform3D;
@@ -240,7 +255,7 @@ internal sealed partial class DrawingSession
             return sink;
 
         var transformed = _transformSink ??= new TransformSink();
-        transformed.Configure(sink, _transformMatrix, _transformScale);
+        transformed.Configure(sink, _transformMatrix, _transformScale, _originX, _originY, IsRangeChecked);
         return transformed;
     }
 

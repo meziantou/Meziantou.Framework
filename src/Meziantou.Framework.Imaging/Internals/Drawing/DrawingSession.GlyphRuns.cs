@@ -253,7 +253,7 @@ internal sealed partial class DrawingSession
             }
             else
             {
-                emboldener.SetOutput(_hasTransform, _transformMatrix, _transformScale);
+                emboldener.SetOutput(_hasTransform, _transformMatrix, _transformScale, _originX, _originY, IsRangeChecked);
             }
 
             emboldener.Configure(boldWidth, LineJoin.Miter, GlyphRun.BoldMiterLimit);

@@ -82,21 +82,8 @@ internal sealed partial class DrawingSession
             var frame = image.Frames[0];
             session = Begin(image, [frame], [frame.GetStorage()], _cancellationToken);
 
-            // The image is drawn as the canvas is, and holds samples of the image that is drawn on: its paints are
-            // converted to the color space of that image, and combined in its linear light
-            session._patternDepth = _patternDepth;
-            session._colorImage = _colorImage ?? _image;
-            session._imageTransfer = _imageTransfer;
-            session._imageCurves = _imageCurves;
-            session._paintPipeline = _paintPipeline;
+            InheritRendering(session);
             session._clipsGeometry = true;
-            session.CanvasWidth = CanvasWidth;
-            session.CanvasHeight = CanvasHeight;
-            session.RestoreCompositingSpace(_compositingSpace);
-            if (_isAliased)
-            {
-                session.SetAntialiasing(enabled: false);
-            }
 
             var toImage = new AffineTransform(scale, 0, 0, scale, -bounds.Left * scale, -bounds.Top * scale);
             if (!isEmpty)
@@ -112,6 +99,27 @@ internal sealed partial class DrawingSession
             session?.Dispose();
             image.Dispose();
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Gives a session on an image that stands for a part of the canvas what the draw calls of this one are rendered
+    /// with: it is drawn as the canvas is, and holds samples of the image that is drawn on, so its paints are converted
+    /// to the color space of that image and combined in its linear light.
+    /// </summary>
+    private void InheritRendering(DrawingSession session)
+    {
+        session._patternDepth = _patternDepth;
+        session._colorImage = _colorImage ?? _image;
+        session._imageTransfer = _imageTransfer;
+        session._imageCurves = _imageCurves;
+        session._paintPipeline = _paintPipeline;
+        session.CanvasWidth = CanvasWidth;
+        session.CanvasHeight = CanvasHeight;
+        session.RestoreCompositingSpace(_compositingSpace);
+        if (_isAliased)
+        {
+            session.SetAntialiasing(enabled: false);
         }
     }
 

@@ -1369,7 +1369,9 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void Antialiasing(bool enabled, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void Antialiasing<TState>(bool enabled, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void BackdropLayer(Meziantou.Framework.Imaging.Drawing.Filter? filter, Meziantou.Framework.Imaging.RectangleD bounds, double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) { }
+        public void BackdropLayer(Meziantou.Framework.Imaging.Drawing.Filter? filter, Meziantou.Framework.Imaging.RectangleD bounds, double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode, Meziantou.Framework.Imaging.Drawing.LayerOpacity opacityMode) { }
         public void BackdropLayer<TState>(Meziantou.Framework.Imaging.Drawing.Filter? filter, Meziantou.Framework.Imaging.RectangleD bounds, double opacity, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) where TState : allows ref struct { }
+        public void BackdropLayer<TState>(Meziantou.Framework.Imaging.Drawing.Filter? filter, Meziantou.Framework.Imaging.RectangleD bounds, double opacity, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode, Meziantou.Framework.Imaging.Drawing.LayerOpacity opacityMode) where TState : allows ref struct { }
         public void Blur(double blur, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void Blur<TState>(double blur, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void BlurBackdrop(double blur) { }
@@ -1417,8 +1419,12 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void InnerShadow<TState>(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void Layer(double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) { }
         public void Layer(Meziantou.Framework.Imaging.RectangleD bounds, double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) { }
+        public void Layer(double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode, Meziantou.Framework.Imaging.Drawing.LayerOpacity opacityMode) { }
+        public void Layer(Meziantou.Framework.Imaging.RectangleD bounds, double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode, Meziantou.Framework.Imaging.Drawing.LayerOpacity opacityMode) { }
         public void Layer<TState>(double opacity, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) where TState : allows ref struct { }
         public void Layer<TState>(Meziantou.Framework.Imaging.RectangleD bounds, double opacity, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) where TState : allows ref struct { }
+        public void Layer<TState>(double opacity, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode, Meziantou.Framework.Imaging.Drawing.LayerOpacity opacityMode) where TState : allows ref struct { }
+        public void Layer<TState>(Meziantou.Framework.Imaging.RectangleD bounds, double opacity, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode, Meziantou.Framework.Imaging.Drawing.LayerOpacity opacityMode) where TState : allows ref struct { }
         public void Mask(Meziantou.Framework.Imaging.Drawing.DrawingAction mask, Meziantou.Framework.Imaging.Drawing.DrawingAction content, Meziantou.Framework.Imaging.Drawing.MaskMode mode = Meziantou.Framework.Imaging.Drawing.MaskMode.Alpha) { }
         public void Mask<TState>(TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> mask, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> content, Meziantou.Framework.Imaging.Drawing.MaskMode mode = Meziantou.Framework.Imaging.Drawing.MaskMode.Alpha) where TState : allows ref struct { }
         public void PaintProfile(Meziantou.Framework.Imaging.Metadata.IccProfile profile, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.IccColorTransformOptions? options = null) { }
@@ -1658,6 +1664,12 @@ namespace Meziantou.Framework.Imaging.Drawing
         Reflect = 3,
     }
 
+    public enum LayerOpacity
+    {
+        Coverage = 0,
+        Group = 1,
+    }
+
     public enum LineCap
     {
         Butt = 0,
@@ -1773,10 +1785,17 @@ namespace Meziantou.Framework.Imaging.Drawing
         public double SpacingX { get => throw null; init { } }
         public double SpacingY { get => throw null; init { } }
         public Meziantou.Framework.Imaging.RectangleD Tile { get => throw null; }
+        public Meziantou.Framework.Imaging.Drawing.PatternTilePrecision TilePrecision { get => throw null; init { } }
         public Meziantou.Framework.Imaging.AffineTransform Transform { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.ImageWrapMode WrapModeX { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.ImageWrapMode WrapModeY { get => throw null; init { } }
         public PatternBrush(Meziantou.Framework.Imaging.RectangleD tile, Meziantou.Framework.Imaging.Drawing.DrawingAction content) { }
+    }
+
+    public enum PatternTilePrecision
+    {
+        Canvas = 0,
+        EightBit = 1,
     }
 
     public sealed class Pen

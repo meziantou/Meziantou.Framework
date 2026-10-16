@@ -1064,8 +1064,9 @@ internal sealed partial class DrawingSession : IDisposable
         }
         else if (isPlacedFirst)
         {
+            // A path that leaves the range of the coordinates is stroked as it is, and the pieces of its stroke are cut
             var placed = _strokeTransformSink ??= new TransformSink();
-            placed.Configure(sink, _transformMatrix, _transformScale, _originX, _originY, IsRangeChecked);
+            placed.Configure(sink, _transformMatrix, _transformScale, _originX, _originY, IsRangeChecked, stroker);
             placed.Tolerance = _curveTolerance;
             sink = placed;
         }

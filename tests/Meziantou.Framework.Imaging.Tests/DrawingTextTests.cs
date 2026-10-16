@@ -1034,6 +1034,21 @@ public sealed class DrawingTextTests
         Assert.Equal(expected, Render(PixelFormat.Gray8, 130, 130, canvas => canvas.FillText(White, layout, path, options)));
     }
 
+    [Fact]
+    public void AGlyphThatATransformationSendsBeyondTheRangeOfTheCoordinatesIsNotSeen()
+    {
+        // A glyph far beyond the canvas, once transformed beyond the range of the coordinates, is cut by it: the run
+        // draws what it draws without that glyph, whether its glyphs are masks (axes kept) or outlines (turned)
+        foreach (var (transform, origin) in new[] { (AffineTransform.CreateScale(32, 1), new PointD(-1, 15)), (AffineTransform.CreateRotation(30, new PointD(10, 10)).Then(AffineTransform.CreateScale(2, 2)).Then(AffineTransform.CreateTranslation(-10, -10)), new PointD(3, 15)) })
+        {
+            PositionedGlyph[] near = [new(FontSamples.BoxA, origin)];
+            PositionedGlyph[] withFar = [new(FontSamples.BoxA, origin), new(FontSamples.BoxB, new PointD(16777000, 15)), new(FontSamples.BoxA, new PointD(-16777000, 15))];
+            var expected = Render(PixelFormat.Rgba64, 40, 20, canvas => canvas.Transform(transform, moved => moved.FillGlyphs(White, Boxes, 16, near)));
+            Assert.Contains(expected, static sample => sample != 0);
+            Assert.Equal(expected, Render(PixelFormat.Rgba64, 40, 20, canvas => canvas.Transform(transform, moved => moved.FillGlyphs(White, Boxes, 16, withFar))));
+        }
+    }
+
     /// <summary>Asserts that a text of the boxes font at 16 pixels per em paints exactly the given rectangles of whole pixels.</summary>
     [Fact]
     public void AGlyphRunDrawsEachGlyphFromItsOriginOnThePixelGrid()

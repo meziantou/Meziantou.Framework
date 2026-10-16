@@ -15,7 +15,9 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// on integer coordinates is therefore filled exactly, and a one-pixel horizontal line is crisp when its path runs
 /// through the middle of a row of pixels (<c>y + 0.5</c>). Shapes are clipped to the canvas; what lies outside is
 /// ignored, and so is what lies outside the clips of <see cref="Clip(VectorPath, DrawingAction, FillRule)"/>. Every
-/// coordinate must be a finite number whose magnitude does not exceed 16777216.
+/// coordinate must be a finite number whose magnitude does not exceed 16777216. A transformation of the canvas may send
+/// a drawing beyond that range: what goes beyond it is cut by it (the canvas with a margin of millions of pixels), as
+/// browsers draw what is visible, and only a coordinate that is no longer a finite number once transformed is rejected.
 /// </para>
 /// <para>
 /// <b>Antialiasing.</b> Each pixel is painted in proportion to the area of it that the shape covers. That area is exact,
@@ -861,8 +863,8 @@ public readonly ref struct DrawingCanvas
     /// <c>o R + (1 - o) D</c>, where <c>R</c> is the layer combined with the canvas <c>D</c>. With
     /// <see cref="CompositeMode.SourceOver"/>, it is the layer faded, then drawn; with the other operators, it is not the
     /// group opacity of CSS, which fades the layer, then combines it (<see cref="CompositeMode.Plus"/> at an opacity of
-    /// 0.6 over an alpha of 0.6 gives 0.84 here, and 1 in CSS). For that result, fade the drawing in a layer of its own,
-    /// inside a layer of full opacity that has the operator.
+    /// 0.6 over an alpha of 0.6 gives 0.84 here, and 1 in CSS). The overload with a <see cref="LayerOpacity"/> gives
+    /// that result with <see cref="LayerOpacity.Group"/>.
     /// </para>
     /// <para>
     /// A clip that is active when the layer starts applies to the layer as a whole. The image of a layer is taken from
@@ -881,10 +883,35 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void Layer(double opacity, DrawingAction action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
+        => Layer(opacity, action, compositeMode, blendMode, LayerOpacity.Coverage);
+
+    /// <summary>Runs a callback whose drawings are made on a transparent layer, which is then drawn on the canvas as a whole, with an opacity that is a coverage or the group opacity of CSS.</summary>
+    /// <remarks>
+    /// <para>
+    /// See <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode)"/>. With <see cref="LayerOpacity.Group"/>,
+    /// the alpha of each pixel of the layer is multiplied by the opacity (at the precision of the canvas, as the
+    /// <see cref="Brush.Opacity"/> of a brush multiplies the alpha of its colors), then the layer is combined with the
+    /// canvas: the group compositing of CSS. <see cref="CompositeMode.Plus"/> at an opacity of 0.6 over an alpha of 0.6
+    /// gives 1, and a mask (<see cref="CompositeMode.DestinationIn"/>) at an opacity of 0.5 keeps half of what it covers
+    /// and nothing of what it does not cover, even at an opacity of 0. With <see cref="CompositeMode.SourceOver"/>,
+    /// both modes are the same, pixel for pixel. No other layer is made.
+    /// </para>
+    /// </remarks>
+    /// <param name="opacity">The opacity of the layer, from 0 to 1.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <param name="blendMode">The blend mode that mixes the colors of the layer with those of the canvas, before the operator.</param>
+    /// <param name="opacityMode">How the opacity combines with the operator.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="opacity"/> is not between 0 and 1, <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>, <paramref name="blendMode"/> is not a defined <see cref="BlendMode"/>, or <paramref name="opacityMode"/> is not a defined <see cref="LayerOpacity"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Layer(double opacity, DrawingAction action, CompositeMode compositeMode, BlendMode blendMode, LayerOpacity opacityMode)
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushLayer(opacity, compositeMode, blendMode);
+        session.PushLayer(opacity, compositeMode, blendMode, opacityMode);
         var isDrawn = false;
         try
         {
@@ -912,10 +939,28 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void Layer<TState>(double opacity, TState state, DrawingAction<TState> action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
         where TState : allows ref struct
+        => Layer(opacity, state, action, compositeMode, blendMode, LayerOpacity.Coverage);
+
+    /// <summary>Runs a callback whose drawings are made on a transparent layer, with an opacity that is a coverage or the group opacity of CSS, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="opacity">The opacity of the layer, from 0 to 1.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <param name="blendMode">The blend mode that mixes the colors of the layer with those of the canvas, before the operator.</param>
+    /// <param name="opacityMode">How the opacity combines with the operator.</param>
+    /// <remarks>See <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode, LayerOpacity)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="opacity"/> is not between 0 and 1, <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>, <paramref name="blendMode"/> is not a defined <see cref="BlendMode"/>, or <paramref name="opacityMode"/> is not a defined <see cref="LayerOpacity"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Layer<TState>(double opacity, TState state, DrawingAction<TState> action, CompositeMode compositeMode, BlendMode blendMode, LayerOpacity opacityMode)
+        where TState : allows ref struct
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushLayer(opacity, compositeMode, blendMode);
+        session.PushLayer(opacity, compositeMode, blendMode, opacityMode);
         var isDrawn = false;
         try
         {
@@ -943,8 +988,8 @@ public readonly ref struct DrawingCanvas
     /// <c>o R + (1 - o) D</c>, where <c>R</c> is the layer combined with the canvas <c>D</c>. With
     /// <see cref="CompositeMode.SourceOver"/>, it is the layer faded, then drawn; with the other operators, it is not the
     /// group opacity of CSS, which fades the layer, then combines it (<see cref="CompositeMode.Plus"/> at an opacity of
-    /// 0.6 over an alpha of 0.6 gives 0.84 here, and 1 in CSS). For that result, fade the drawing in a layer of its own,
-    /// inside a layer of full opacity that has the operator.
+    /// 0.6 over an alpha of 0.6 gives 0.84 here, and 1 in CSS). The overload with a <see cref="LayerOpacity"/> gives
+    /// that result with <see cref="LayerOpacity.Group"/>.
     /// </para>
     /// <para>Under a projective transformation, the layer holds what the canvas can show, as any layer.</para>
     /// </remarks>
@@ -960,10 +1005,27 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void Layer(RectangleD bounds, double opacity, DrawingAction action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
+        => Layer(bounds, opacity, action, compositeMode, blendMode, LayerOpacity.Coverage);
+
+    /// <summary>Runs a callback whose drawings are made on a transparent layer that holds the pixels of a rectangle only, with an opacity that is a coverage or the group opacity of CSS.</summary>
+    /// <remarks>See <see cref="Layer(RectangleD, double, DrawingAction, CompositeMode, BlendMode)"/> and, for <paramref name="opacityMode"/>, <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode, LayerOpacity)"/>.</remarks>
+    /// <param name="bounds">The rectangle the drawings of the layer are in, in the coordinates of the drawing.</param>
+    /// <param name="opacity">The opacity of the layer, from 0 to 1.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <param name="blendMode">The blend mode that mixes the colors of the layer with those of the canvas, before the operator.</param>
+    /// <param name="opacityMode">How the opacity combines with the operator.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="bounds"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of <paramref name="bounds"/> exceeds 16777216, <paramref name="opacity"/> is not between 0 and 1, <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>, <paramref name="blendMode"/> is not a defined <see cref="BlendMode"/>, or <paramref name="opacityMode"/> is not a defined <see cref="LayerOpacity"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Layer(RectangleD bounds, double opacity, DrawingAction action, CompositeMode compositeMode, BlendMode blendMode, LayerOpacity opacityMode)
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        var inner = session.PushBoundedLayer(bounds, opacity, compositeMode, blendMode);
+        var inner = session.PushBoundedLayer(bounds, opacity, compositeMode, blendMode, opacityMode);
         var isDrawn = false;
         try
         {
@@ -993,10 +1055,30 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void Layer<TState>(RectangleD bounds, double opacity, TState state, DrawingAction<TState> action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
         where TState : allows ref struct
+        => Layer(bounds, opacity, state, action, compositeMode, blendMode, LayerOpacity.Coverage);
+
+    /// <summary>Runs a callback whose drawings are made on a transparent layer that holds the pixels of a rectangle only, with an opacity that is a coverage or the group opacity of CSS, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="bounds">The rectangle the drawings of the layer are in, in the coordinates of the drawing.</param>
+    /// <param name="opacity">The opacity of the layer, from 0 to 1.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <param name="blendMode">The blend mode that mixes the colors of the layer with those of the canvas, before the operator.</param>
+    /// <param name="opacityMode">How the opacity combines with the operator.</param>
+    /// <remarks>See <see cref="Layer(RectangleD, double, DrawingAction, CompositeMode, BlendMode, LayerOpacity)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="bounds"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of <paramref name="bounds"/> exceeds 16777216, <paramref name="opacity"/> is not between 0 and 1, <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>, <paramref name="blendMode"/> is not a defined <see cref="BlendMode"/>, or <paramref name="opacityMode"/> is not a defined <see cref="LayerOpacity"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Layer<TState>(RectangleD bounds, double opacity, TState state, DrawingAction<TState> action, CompositeMode compositeMode, BlendMode blendMode, LayerOpacity opacityMode)
+        where TState : allows ref struct
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        var inner = session.PushBoundedLayer(bounds, opacity, compositeMode, blendMode);
+        var inner = session.PushBoundedLayer(bounds, opacity, compositeMode, blendMode, opacityMode);
         var isDrawn = false;
         try
         {
@@ -1495,6 +1577,13 @@ public readonly ref struct DrawingCanvas
     /// canvas instead.
     /// </para>
     /// <para>
+    /// A <see cref="DropShadowFilter"/> whose offset goes beyond that margin is cast from a window of its own: the
+    /// bounds of the clip moved back by the offset, with the reach of the blur around them (within the same limits).
+    /// The callback then runs twice, once on the layer of what the clip shows and once on that window (once, on the
+    /// window, for a shadow alone): it must draw the same thing every time. Its cost depends on what the clip shows and
+    /// on the blur, not on the length of the offset: a shape far out of view casts its shadow on the canvas.
+    /// </para>
+    /// <para>
     /// The lengths of the filter are lengths of the drawing: under a transformation that scales the axes, they are
     /// scaled with them; under one that turns, skews or puts the drawing in perspective, the drawings and the filter are
     /// made on an image of the plane of the drawing, which is then drawn transformed (see
@@ -1516,6 +1605,13 @@ public readonly ref struct DrawingCanvas
         try
         {
             action(target);
+
+            // A drop shadow cast from far away is cast from what the callback draws where the shadow comes from
+            if (session.NextFilterPass() is { } caster)
+            {
+                action(new DrawingCanvas(caster));
+            }
+
             isDrawn = true;
         }
         finally
@@ -1544,6 +1640,11 @@ public readonly ref struct DrawingCanvas
         try
         {
             action(target, state);
+            if (session.NextFilterPass() is { } caster)
+            {
+                action(new DrawingCanvas(caster), state);
+            }
+
             isDrawn = true;
         }
         finally
@@ -1586,10 +1687,28 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void BackdropLayer(Filter? filter, RectangleD bounds, double opacity, DrawingAction action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
+        => BackdropLayer(filter, bounds, opacity, action, compositeMode, blendMode, LayerOpacity.Coverage);
+
+    /// <summary>Runs a callback whose drawings are made on a layer that starts with the filtered backdrop of a rectangle, with an opacity that is a coverage or the group opacity of CSS.</summary>
+    /// <remarks>See <see cref="BackdropLayer(Drawing.Filter, RectangleD, double, DrawingAction, CompositeMode, BlendMode)"/> and, for <paramref name="opacityMode"/>, <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode, LayerOpacity)"/>.</remarks>
+    /// <param name="filter">The filter of the backdrop, or <see langword="null"/> to start with the backdrop as it is.</param>
+    /// <param name="bounds">The rectangle of the backdrop, in the coordinates of the drawing.</param>
+    /// <param name="opacity">The opacity of the layer, from 0 to 1.</param>
+    /// <param name="action">The callback that draws on the backdrop. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <param name="blendMode">The blend mode that mixes the colors of the layer with those of the canvas.</param>
+    /// <param name="opacityMode">How the opacity combines with the operator.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="bounds"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of <paramref name="bounds"/> exceeds 16777216, <paramref name="opacity"/> is not between 0 and 1, <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>, <paramref name="blendMode"/> is not a defined <see cref="BlendMode"/>, or <paramref name="opacityMode"/> is not a defined <see cref="LayerOpacity"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void BackdropLayer(Filter? filter, RectangleD bounds, double opacity, DrawingAction action, CompositeMode compositeMode, BlendMode blendMode, LayerOpacity opacityMode)
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushBackdropLayer(filter, bounds, opacity, compositeMode, blendMode);
+        session.PushBackdropLayer(filter, bounds, opacity, compositeMode, blendMode, opacityMode);
         var isDrawn = false;
         try
         {
@@ -1620,10 +1739,31 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void BackdropLayer<TState>(Filter? filter, RectangleD bounds, double opacity, TState state, DrawingAction<TState> action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
         where TState : allows ref struct
+        => BackdropLayer(filter, bounds, opacity, state, action, compositeMode, blendMode, LayerOpacity.Coverage);
+
+    /// <summary>Runs a callback whose drawings are made on a layer that starts with the filtered backdrop of a rectangle, with an opacity that is a coverage or the group opacity of CSS, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="filter">The filter of the backdrop, or <see langword="null"/> to start with the backdrop as it is.</param>
+    /// <param name="bounds">The rectangle of the backdrop, in the coordinates of the drawing.</param>
+    /// <param name="opacity">The opacity of the layer, from 0 to 1.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws on the backdrop. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <param name="blendMode">The blend mode that mixes the colors of the layer with those of the canvas.</param>
+    /// <param name="opacityMode">How the opacity combines with the operator.</param>
+    /// <remarks>See <see cref="BackdropLayer(Drawing.Filter, RectangleD, double, DrawingAction, CompositeMode, BlendMode, LayerOpacity)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="bounds"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of <paramref name="bounds"/> exceeds 16777216, <paramref name="opacity"/> is not between 0 and 1, <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>, <paramref name="blendMode"/> is not a defined <see cref="BlendMode"/>, or <paramref name="opacityMode"/> is not a defined <see cref="LayerOpacity"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void BackdropLayer<TState>(Filter? filter, RectangleD bounds, double opacity, TState state, DrawingAction<TState> action, CompositeMode compositeMode, BlendMode blendMode, LayerOpacity opacityMode)
+        where TState : allows ref struct
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushBackdropLayer(filter, bounds, opacity, compositeMode, blendMode);
+        session.PushBackdropLayer(filter, bounds, opacity, compositeMode, blendMode, opacityMode);
         var isDrawn = false;
         try
         {

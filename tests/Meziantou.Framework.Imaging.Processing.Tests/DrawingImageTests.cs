@@ -1089,7 +1089,10 @@ public sealed class DrawingImageTests
                 AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new PointD(2, 2), new PointD(12, 3), new PointD(12, 12), new PointD(2, 12), ImageSampling.Smooth, 1.5));
                 AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.DrawImage(null!, new PointD(2, 2), new PointD(12, 3), new PointD(12, 12), new PointD(2, 12)));
                 AssertThrows<InvalidOperationException>(canvas, canvas => canvas.DrawImage(image.Frames[0], new PointD(2, 2), new PointD(12, 3), new PointD(12, 12), new PointD(2, 12)));
-                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.Transform(AffineTransform.CreateScale(1e7, 1), inner => inner.DrawImage(frame, new PointD(2, 2), new PointD(12, 3), new PointD(12, 12), new PointD(2, 12))));
+
+                // Corners that a transformation sends beyond the range of the coordinates draw what the canvas shows:
+                // nothing here
+                canvas.Transform(AffineTransform.CreateScale(1e7, 1), inner => inner.DrawImage(frame, new PointD(2, 2), new PointD(12, 3), new PointD(12, 12), new PointD(2, 12)));
 
                 // Corners that are all on a line draw nothing, as an image that a transformation flattens
                 canvas.DrawImage(frame, new PointD(2, 2), new PointD(6, 6), new PointD(12, 12), new PointD(4, 4));
@@ -1226,6 +1229,71 @@ public sealed class DrawingImageTests
             actual.Draw(canvas => Draw(canvas, patternBrush), Ct);
             Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(actual.Frames[0]));
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(DrawingTestSupport.AllFormats), MemberType = typeof(DrawingTestSupport))]
+    public void APatternBrushWithEightBitTilesPaintsAsTheImageOfAnEightBitTile(PixelFormat format)
+    {
+        // Whatever the canvas: what an image brush paints with an Rgba32 image of the tile, drawn by the same callback
+        var random = new Random(4242 + (int)format);
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(5, 3), [new GradientStop(0, new Rgba64(0x1234, 0xFEDC, 0x0101, 0xFFFF)), new GradientStop(1, new Rgba64(0x8081, 0x2223, 0xCDEF, 0x7777))]);
+        void Tile(DrawingCanvas canvas)
+        {
+            canvas.Fill(gradient);
+            canvas.FillCircle(new Rgba64(0xFFFF, 0x7FFF, 0x3333, 0xC8C8), new PointD(2.5, 1.5), 1.2);
+        }
+
+        using var tile = new Image<Rgba32>(5, 3);
+        tile.Draw(Tile, Ct);
+        var placement = AffineTransform.CreateRotation(30, new PointD(3, 2)).Then(AffineTransform.CreateTranslation(2.5, -1));
+        using var expected = DrawingTestSupport.CreateRandom(format, 14, 11, random.Next);
+        using var actual = expected.Clone();
+        var imageBrush = new ImageBrush(tile.Frames[0]) { WrapMode = ImageWrapMode.Repeat, Transform = placement };
+        var patternBrush = new PatternBrush(new Rectangle(0, 0, 5, 3), Tile) { Transform = placement, TilePrecision = PatternTilePrecision.EightBit };
+        expected.Draw(canvas => canvas.FillEllipse(imageBrush, new PointD(7, 5.5), 6.2, 4.8), Ct);
+        actual.Draw(canvas => canvas.FillEllipse(patternBrush, new PointD(7, 5.5), 6.2, 4.8), Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(actual.Frames[0]));
+    }
+
+    [Fact]
+    public void ThePrecisionOfTheTileOfAPatternIsTheOneOfTheCanvasByDefault()
+    {
+        // On a 16-bit canvas, a tile of whole pixels placed on whole pixels keeps the 16-bit color of its drawing; with
+        // 8-bit samples, the color is rounded to 8 bits, (v 255 + 32767) / 65535, then read back as v 257:
+        // 0x1234 = 4660 -> 18 -> 4626, 0x5678 = 22136 -> 86 -> 22102, 0x9ABC = 39612 -> 154 -> 39578, 0x8000 -> 128 -> 32896
+        var color = new Rgba64(0x1234, 0x5678, 0x9ABC, 0x8000);
+        var canvasPrecision = new PatternBrush(new Rectangle(0, 0, 2, 2), tile => tile.Fill(color));
+        var eightBit = new PatternBrush(new Rectangle(0, 0, 2, 2), tile => tile.Fill(color)) { TilePrecision = PatternTilePrecision.EightBit };
+        Assert.Equal(PatternTilePrecision.Canvas, canvasPrecision.TilePrecision);
+        Assert.Equal(PatternTilePrecision.EightBit, eightBit.TilePrecision);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PatternBrush(new Rectangle(0, 0, 2, 2), static _ => { }) { TilePrecision = (PatternTilePrecision)2 });
+
+        // Both in one drawing, at the same size of tile: the image of one precision is not reused for the other
+        using var image = new Image<Rgba64>(4, 1);
+        image.Draw(
+            canvas =>
+            {
+                canvas.FillRectangle(canvasPrecision, new Rectangle(0, 0, 1, 1));
+                canvas.FillRectangle(eightBit, new Rectangle(1, 0, 1, 1));
+                canvas.FillRectangle(canvasPrecision, new Rectangle(2, 0, 1, 1));
+            },
+            Ct);
+        Assert.Equal(color, image.Frames[0][0, 0]);
+        Assert.Equal(new Rgba64(4626, 22102, 39578, 32896), image.Frames[0][1, 0]);
+        Assert.Equal(color, image.Frames[0][2, 0]);
+
+        // On an 8-bit color canvas, both are the same
+        using var narrow = new Image<Rgba32>(2, 1);
+        narrow.Draw(
+            canvas =>
+            {
+                canvas.FillRectangle(canvasPrecision, new Rectangle(0, 0, 1, 1));
+                canvas.FillRectangle(eightBit, new Rectangle(1, 0, 1, 1));
+            },
+            Ct);
+        Assert.Equal(new Rgba32(18, 86, 154, 128), narrow.Frames[0][0, 0]);
+        Assert.Equal(narrow.Frames[0][0, 0], narrow.Frames[0][1, 0]);
     }
 
     [Fact]

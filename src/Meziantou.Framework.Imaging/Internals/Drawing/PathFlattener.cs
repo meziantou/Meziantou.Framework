@@ -41,6 +41,9 @@ internal static class PathFlattener
     /// <summary>The deepest bisection of an arc: far more than any radius the API accepts needs.</summary>
     public const int MaxArcDepth = 24;
 
+    /// <summary>The most chords a Bézier curve is cut into: as many as a quarter of an ellipse at <see cref="MaxArcDepth"/>.</summary>
+    private const int MaxSegmentCount = 1 << MaxArcDepth;
+
     /// <summary>The largest number of chords a part of a curve drawn through a projective transformation is cut into: a part that needs more is halved.</summary>
     private const int ProjectedSegmentCount = 8;
 
@@ -394,9 +397,11 @@ internal static class PathFlattener
     /// <summary>Gets the smallest positive integer whose square is at least <paramref name="value"/>.</summary>
     private static int GetSegmentCount(double value)
     {
-        // The coordinates are bounded (DrawingGuard), so the count is: at most a few tens of thousands of chords
-        var count = (int)Math.Ceiling(Math.Sqrt(value));
-        return count < 1 ? 1 : count;
+        // The coordinates are bounded (DrawingGuard), so the count is at most a few tens of thousands of chords on the
+        // canvas. A curve that a transformation makes far larger than the range of the coordinates, whose contours
+        // are then cut by it, gets at most as many chords as a quarter of an ellipse.
+        var count = Math.Ceiling(Math.Sqrt(value));
+        return !(count >= 1) ? 1 : count >= MaxSegmentCount ? MaxSegmentCount : (int)count;
     }
 
     private static double Length(double x, double y) => Math.Sqrt((x * x) + (y * y));

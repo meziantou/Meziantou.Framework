@@ -12,7 +12,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <c>h = (th + sy) sqrt(T.M21^2 + T.M22^2)</c>. Its image has <c>W = max(1, ceil(w - 1/1024))</c> columns and <c>H</c>
 /// rows computed the same way, and is transparent before the callback draws on it, through a canvas of its own whose
 /// transformation maps the tile and its spacing to the image (a scaling by <c>W / (tw + sx)</c> and
-/// <c>H / (th + sy)</c>), with a clip of the tile when there is a spacing. The shape is then painted with that image,
+/// <c>H / (th + sy)</c>), with a clip of the tile when there is a spacing. The image has the samples of a layer (8-bit
+/// on an 8-bit color canvas, 16-bit otherwise), or 8-bit samples with <see cref="PatternTilePrecision.EightBit"/>. The shape is then painted with that image,
 /// placed by the scaling that maps it back, then by <c>T</c>, with the wrap modes of the brush and
 /// <see cref="ImageSampling.Bilinear"/>. Under a projective transformation of the canvas, <c>T</c> is the transformation
 /// of the brush followed by the scaling by the factor of the canvas where <c>W</c> is the one of the origin (see
@@ -103,8 +104,17 @@ internal sealed partial class DrawingSession
 
         var width = (int)window.Width;
         var height = (int)window.Height;
-        var isWide = _frames[0].PixelFormat is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24);
+        var isWide = brush.TilePrecision == PatternTilePrecision.Canvas && _frames[0].PixelFormat is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24);
         var image = _patternImage;
+        if (image is not null && image.PixelFormat != (isWide ? PixelFormat.Rgba64 : PixelFormat.Rgba32))
+        {
+            // The image of another precision cannot hold the tile
+            _patternImage = null;
+            _patternBrush = null;
+            image.Dispose();
+            image = null;
+        }
+
         if (image is null || image.Width != width || image.Height != height || _patternWindow != window || !ReferenceEquals(_patternBrush, brush) || _patternIsAliased != _isAliased || _patternSpace != _compositingSpace || _patternTolerance != _curveTolerance || !ReferenceEquals(_patternPipeline, _paintPipeline))
         {
             if (_patternDepth >= MaxPatternDepth)

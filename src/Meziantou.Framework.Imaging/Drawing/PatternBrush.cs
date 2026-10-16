@@ -21,7 +21,8 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// of its spacing on the canvas (and the same for its height), so that a tile whose size is a whole number of pixels is drawn on
 /// exactly that many: its pixels are then those of the drawing, exactly, when it is placed on whole pixels. Otherwise
 /// the image is interpolated (<see cref="ImageSampling.Bilinear"/>), also across the edges of the tiles. The image
-/// has colors and alpha, with 8-bit samples on an 8-bit color canvas and 16-bit samples otherwise, as a layer has.
+/// has colors and alpha, with 8-bit samples on an 8-bit color canvas and 16-bit samples otherwise, as a layer has, or
+/// 8-bit samples on every canvas with <see cref="TilePrecision"/>.
 /// The canvas the callback receives is that image: its <see cref="DrawingCanvas.Width"/> and
 /// <see cref="DrawingCanvas.Height"/> are its size in pixels, not the size of the tile, and filling it fills the tile.
 /// </para>
@@ -126,6 +127,29 @@ public sealed class PatternBrush : Brush
         init
         {
             DrawingGuard.Length(value, nameof(value));
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the samples of the image the tile is drawn on: those of the canvas (<see cref="PatternTilePrecision.Canvas"/>,
+    /// the default), or 8-bit samples on every canvas (<see cref="PatternTilePrecision.EightBit"/>), as a browser
+    /// rasterizes the drawing of a canvas into an 8-bit bitmap before it paints it.
+    /// </summary>
+    /// <remarks>
+    /// With 8-bit samples, the callback draws as on an 8-bit color canvas (its colors are rounded to 8 bits, and so is
+    /// every compositing), and the shape is painted with that image as with an <see cref="ImageBrush"/> of an
+    /// <see cref="Rgba32"/> image. On an 8-bit color canvas, both values draw the same pixels.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="PatternTilePrecision"/>.</exception>
+    public PatternTilePrecision TilePrecision
+    {
+        get;
+        init
+        {
+            if (value is not (PatternTilePrecision.Canvas or PatternTilePrecision.EightBit))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The tile precision is not valid.");
+
             field = value;
         }
     }

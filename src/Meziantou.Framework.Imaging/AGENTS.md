@@ -600,13 +600,27 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
 - A filter whose reach goes beyond the canvas draws on a bounded layer larger than the canvas (`TryGetFilterExtent`,
   `PushBoundedLevel`): `_canvasBounds` is the canvas in the coordinates of such a session (filling the canvas fills
   only it), the edge modes other than transparent still apply at the canvas, and `FilterProcessor.Extent` is what the
-  transparent mode reads. A filter graph clears its source outside its region.
+  transparent mode reads. A filter graph clears its source outside its region. A `DropShadowFilter` whose margin that
+  layer cannot hold is cast from a window of its own (`PushFarShadow`): the bounds of the clip moved back by the whole
+  part of the offset, with the reach of the blur, which the callback draws on in a second pass
+  (`NextFilterPass`, called by `DrawingCanvas.Filter`); the shadow is composited from it (`CompositeShadow` with a
+  shift). Its cost must stay what the clip shows and the blur, never the length of the offset.
 - Filters (`Filter` and its derived types, `DrawingSession.FilterEffects.cs`) run on `FilterSurface`s: premultiplied
   single-precision colors of a rectangle of the canvas, read through `ReadRgba64` and written back to a layer with the
   rounding of the blurs. `FilterProcessor` holds the edges (the canvas, or the rectangle of a backdrop, always mirrored)
   and the scales of the lengths; every neighborhood operation reads through `TryMap`. A backdrop layer has one frame per
   frame that is drawn on (`LayerLevel.Begin` with a frame count), each started with its own filtered backdrop, and is
   drawn frame by frame. `Filter(ColorMatrix)` and `BlurBackdrop` keep their own exact arithmetic: they are not filters.
+- A layer opacity of `LayerOpacity.Group` is the `alphaFactor` of `Paint` (the opacity of a brush) when the layer is
+  drawn, with a full coverage; with source-over it stays a coverage, so that both modes draw the same pixels.
+- The tile of a `PatternBrush` is an `Rgba32` image on every canvas with `PatternTilePrecision.EightBit`: the cached
+  tile image is replaced when its pixel format is not the one the brush needs.
+- Coordinates are checked once transformed, where the canvas sees them, and a vertex beyond 16777216 in magnitude is not
+  rejected: `TransformSink` starts cutting the contours of a fill by that square from it (`RangeClipSink`, streaming
+  Sutherland-Hodgman, resumed on the contour in progress), and the `Stroker` cuts each piece that leaves it (for a pen
+  that does not scale, from the first vertex of its path that leaves it: `ClipToRange`, since its dashes and joins need
+  the whole path). A contour or a piece that stays in the square must reach the edges with the same calls and
+  vertices: the pixels of the drawings that did not throw before must not change. Only non-finite values throw.
 - The transformation of the canvas (`DrawingSession.Transforms.cs`) is applied where a shape becomes edges, not where
   it is described: `BeginFill` wraps the fill sink in a `TransformSink`, the `Stroker` transforms the vertices of its
   pieces (`SetOutput`: the path is stroked in the coordinates of the drawing, so the pen is transformed with it; a pen

@@ -612,6 +612,96 @@ public sealed class DrawingCompositeTests
     }
 
     [Fact]
+    public void TheGroupOpacityOfALayerFadesItBeforeItsOperator()
+    {
+        // The alpha of the layer is multiplied by the opacity first, as the opacity of a brush: floor(255 0.6 + 1/2) =
+        // 153, added to 153 is 306, at most 255; added to 51, it is 204
+        var black = new Rgba32(0, 0, 0);
+        using var image = new Image<Rgba32>(2, 1, new Rgba32(0, 0, 0, 153));
+        image.Draw(canvas => canvas.Layer(0.6, static layer => layer.Fill(new Rgba32(0, 0, 0)), CompositeMode.Plus, BlendMode.Normal, LayerOpacity.Group), Ct);
+        Assert.Equal(255, image.Frames[0][0, 0].A);
+        image.Draw(canvas => canvas.Clear(new Rgba32(0, 0, 0, 51)), Ct);
+        image.Draw(canvas => canvas.Layer(0.6, black, static (layer, black) => layer.Fill(black), CompositeMode.Plus, BlendMode.Normal, LayerOpacity.Group), Ct);
+        Assert.Equal(204, image.Frames[0][0, 0].A);
+
+        // A mask at half its opacity keeps half of what it covers (floor(255 0.5 + 1/2) = 128) and nothing else; at an
+        // opacity of 0, it keeps nothing at all, where the coverage keeps everything
+        image.Draw(canvas => canvas.Clear(black), Ct);
+        image.Draw(canvas => canvas.Layer(0.5, static layer => layer.FillRectangle(new Rgba32(0, 0, 0), new Rectangle(0, 0, 1, 1)), CompositeMode.DestinationIn, BlendMode.Normal, LayerOpacity.Group), Ct);
+        Assert.Equal([128, 0], [image.Frames[0][0, 0].A, image.Frames[0][1, 0].A]);
+        image.Draw(canvas => canvas.Clear(black), Ct);
+        image.Draw(canvas => canvas.Layer(0, static layer => layer.Fill(new Rgba32(0, 0, 0)), CompositeMode.DestinationIn, BlendMode.Normal, LayerOpacity.Coverage), Ct);
+        Assert.Equal([255, 255], [image.Frames[0][0, 0].A, image.Frames[0][1, 0].A]);
+        image.Draw(canvas => canvas.Layer(0, static layer => layer.Fill(new Rgba32(0, 0, 0)), CompositeMode.DestinationIn, BlendMode.Normal, LayerOpacity.Group), Ct);
+        Assert.Equal([0, 0], [image.Frames[0][0, 0].A, image.Frames[0][1, 0].A]);
+
+        // On 16-bit samples: floor(65535 0.6 + 1/2) = 39321, added to 13107 (0.2) is 52428
+        using var wide = new Image<Rgba64>(1, 1, new Rgba64(0, 0, 0, 13107));
+        wide.Draw(canvas => canvas.Layer(0.6, static layer => layer.Fill(new Rgba32(0, 0, 0)), CompositeMode.Plus, BlendMode.Normal, LayerOpacity.Group), Ct);
+        Assert.Equal(52428, wide.Frames[0][0, 0].A);
+
+        // A layer of a rectangle and a backdrop layer: opaque red erased by a backdrop that is itself, at half its
+        // opacity, keeps 255 (1 - 128 / 255) = 127, where the coverage keeps 255 / 2, rounded up to 128
+        var red = new Rgba32(255, 0, 0);
+        using var bounded = new Image<Rgba32>(3, 1, red);
+        bounded.Draw(canvas => canvas.Layer(new RectangleD(0, 0, 2, 1), 0.5, static layer => layer.Fill(new Rgba32(0, 0, 0)), CompositeMode.DestinationOut, BlendMode.Normal, LayerOpacity.Group), Ct);
+        Assert.Equal([127, 127, 255], [bounded.Frames[0][0, 0].A, bounded.Frames[0][1, 0].A, bounded.Frames[0][2, 0].A]);
+        bounded.Draw(canvas => canvas.Clear(red), Ct);
+        bounded.Draw(canvas => canvas.Layer(new RectangleD(0, 0, 1, 1), 0.5, black, static (layer, black) => layer.Fill(black), CompositeMode.DestinationOut, BlendMode.Normal, LayerOpacity.Group), Ct);
+        Assert.Equal([127, 255, 255], [bounded.Frames[0][0, 0].A, bounded.Frames[0][1, 0].A, bounded.Frames[0][2, 0].A]);
+        bounded.Draw(canvas => canvas.Clear(red), Ct);
+        bounded.Draw(canvas => canvas.BackdropLayer(null, new RectangleD(0, 0, 3, 1), 0.5, static _ => { }, CompositeMode.DestinationOut, BlendMode.Normal, LayerOpacity.Group), Ct);
+        Assert.Equal(new Rgba32(255, 0, 0, 127), bounded.Frames[0][0, 0]);
+        bounded.Draw(canvas => canvas.Clear(red), Ct);
+        bounded.Draw(canvas => canvas.BackdropLayer(null, new RectangleD(0, 0, 3, 1), 0.5, 0, static (_, _) => { }, CompositeMode.DestinationOut, BlendMode.Normal, LayerOpacity.Group), Ct);
+        Assert.Equal(new Rgba32(255, 0, 0, 127), bounded.Frames[0][0, 0]);
+        bounded.Draw(canvas => canvas.Clear(red), Ct);
+        bounded.Draw(canvas => canvas.BackdropLayer(null, new RectangleD(0, 0, 3, 1), 0.5, static _ => { }, CompositeMode.DestinationOut), Ct);
+        Assert.Equal(new Rgba32(255, 0, 0, 128), bounded.Frames[0][0, 0]);
+
+        image.Draw(
+            canvas =>
+            {
+                try
+                {
+                    canvas.Layer(1, static _ => Assert.Fail("The callback ran."), CompositeMode.Plus, BlendMode.Normal, (LayerOpacity)2);
+                    Assert.Fail("The opacity mode was accepted.");
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                }
+            },
+            Ct);
+    }
+
+    [Theory]
+    [MemberData(nameof(DrawingTestSupport.AllFormats), MemberType = typeof(DrawingTestSupport))]
+    public void WithSourceOverTheGroupOpacityOfALayerIsItsCoverage(PixelFormat format)
+    {
+        // Fading the layer, then drawing it, is covering what it makes: the pixels are the same, whatever the blend mode
+        var random = new Random(1789 + (int)format);
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(9, 7), [new GradientStop(0, new Rgba32(250, 20, 100, 220)), new GradientStop(1, new Rgba32(20, 200, 90, 70))]);
+        foreach (var blend in new[] { BlendMode.Normal, BlendMode.Multiply, BlendMode.Luminosity })
+        {
+            using var expected = DrawingTestSupport.CreateRandom(format, 9, 7, random.Next);
+            using var actual = expected.Clone();
+            void Draw(DrawingCanvas canvas, LayerOpacity mode) => canvas.Layer(
+                0.37,
+                layer =>
+                {
+                    layer.Fill(gradient);
+                    layer.FillCircle(new Rgba32(255, 255, 255, 140), new PointD(4.3, 3.1), 2.6);
+                },
+                CompositeMode.SourceOver,
+                blend,
+                mode);
+            expected.Draw(canvas => Draw(canvas, LayerOpacity.Coverage), Ct);
+            actual.Draw(canvas => Draw(canvas, LayerOpacity.Group), Ct);
+            Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(actual.Frames[0]));
+        }
+    }
+
+    [Fact]
     public void TheBlendModeIsAPropertyOfTheBrushAndOfALayer()
     {
         Assert.Equal(BlendMode.Normal, new SolidBrush(new Rgba32(1, 2, 3)).BlendMode);

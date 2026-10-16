@@ -403,13 +403,9 @@ jobs:
       matrix:
         # x64, arm64
         runs-on: [ windows-2025-vs2026, ubuntu-26.04, ubuntu-26.04-arm, macos-26 ]
-        configuration: [ Debug, Release ]
+        configuration: [ Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
         test-group: ${{ fromJson(needs.compute_test_matrix.outputs.matrix) }}
-        exclude:
-          # Debug already covers the invariant globalization mode
-          - configuration: Release
-            additionalArguments: "/p:InvariantGlobalization=true"
       fail-fast: false
     env:
       RUNS_ON: ${{ matrix.runs-on }}

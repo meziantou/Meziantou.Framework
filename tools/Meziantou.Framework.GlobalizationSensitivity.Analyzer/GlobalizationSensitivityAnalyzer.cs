@@ -12,7 +12,11 @@ namespace Meziantou.Framework.Analyzers.GlobalizationSensitivity;
 /// CI only runs the tests of a project in invariant globalization mode when the project sets the
 /// <c>GlobalizationSensitive</c> MSBuild property. A project that does not set it gets a diagnostic for each ICU-dependent
 /// call, which it suppresses with a justification or answers by setting the property. A library that sets it writes
-/// <see cref="MarkerMetadataKey"/> into its assembly, so the test projects that reference it are required to set it too.
+/// <see cref="MarkerMetadataKey"/> into its assembly, so the test projects that test it, or test a library that references
+/// it, are required to set it too. The references a test project adds itself, such as test helpers, do not count. The
+/// tested assembly is the referenced assembly whose name is the longest prefix of the test assembly name, or the
+/// comma-separated assemblies listed in the <c>GlobalizationSensitiveTestedAssemblies</c> MSBuild property. The list cannot use
+/// semicolons, which start a comment in the generated .editorconfig file.
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class GlobalizationSensitivityAnalyzer : DiagnosticAnalyzer
@@ -42,8 +46,8 @@ public sealed class GlobalizationSensitivityAnalyzer : DiagnosticAnalyzer
 
     public static readonly DiagnosticDescriptor GlobalizationSensitiveReferenceRule = new(
         id: "MFGS0002",
-        title: "Test project references a globalization-sensitive assembly",
-        messageFormat: "The project references globalization-sensitive assemblies ({0}). Set GlobalizationSensitive to true in the project file so CI runs the tests in invariant globalization mode.",
+        title: "Test project tests code that depends on a globalization-sensitive assembly",
+        messageFormat: "The tested code depends on globalization-sensitive assemblies ({0}). Set GlobalizationSensitive to true in the project file so CI runs the tests in invariant globalization mode.",
         category: "Globalization",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -63,7 +67,8 @@ public sealed class GlobalizationSensitivityAnalyzer : DiagnosticAnalyzer
 
             if (IsTrue(options, "build_property.IsTestProject"))
             {
-                context.RegisterCompilationEndAction(ReportGlobalizationSensitiveReferences);
+                options.TryGetValue("build_property.GlobalizationSensitiveTestedAssemblies", out var testedAssemblyNames);
+                context.RegisterCompilationEndAction(context => ReportGlobalizationSensitiveReferences(context, testedAssemblyNames));
             }
 
             var knownTypes = new KnownTypes(context.Compilation);
@@ -79,18 +84,30 @@ public sealed class GlobalizationSensitivityAnalyzer : DiagnosticAnalyzer
         return options.TryGetValue(name, out var value) && string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static void ReportGlobalizationSensitiveReferences(CompilationAnalysisContext context)
+    private static void ReportGlobalizationSensitiveReferences(CompilationAnalysisContext context, string? testedAssemblyNames)
     {
         var compilation = context.Compilation;
+        var visited = new HashSet<IAssemblySymbol>(SymbolEqualityComparer.Default);
+        var pending = new Stack<IAssemblySymbol>(GetTestedAssemblies(compilation, testedAssemblyNames));
         var assemblyNames = new List<string>();
-        foreach (var reference in compilation.References)
+        while (pending.Count > 0)
         {
-            if (compilation.GetAssemblyOrModuleSymbol(reference) is not IAssemblySymbol assembly)
+            var assembly = pending.Pop();
+            if (!visited.Add(assembly))
                 continue;
 
             if (HasGlobalizationSensitiveMarker(assembly))
             {
                 assemblyNames.Add(assembly.Identity.Name);
+            }
+
+            // An assembly only references the assemblies its code uses, not every project it references
+            foreach (var module in assembly.Modules)
+            {
+                foreach (var referencedAssembly in module.ReferencedAssemblySymbols)
+                {
+                    pending.Push(referencedAssembly);
+                }
             }
         }
 
@@ -99,6 +116,59 @@ public sealed class GlobalizationSensitivityAnalyzer : DiagnosticAnalyzer
 
         assemblyNames.Sort(StringComparer.Ordinal);
         context.ReportDiagnostic(Diagnostic.Create(GlobalizationSensitiveReferenceRule, Location.None, string.Join(", ", assemblyNames)));
+    }
+
+    private static List<IAssemblySymbol> GetTestedAssemblies(Compilation compilation, string? testedAssemblyNames)
+    {
+        var referencedAssemblies = new List<IAssemblySymbol>();
+        foreach (var reference in compilation.References)
+        {
+            if (compilation.GetAssemblyOrModuleSymbol(reference) is IAssemblySymbol assembly)
+            {
+                referencedAssemblies.Add(assembly);
+            }
+        }
+
+        if (testedAssemblyNames is not null)
+        {
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var name in testedAssemblyNames.Split(','))
+            {
+                var trimmedName = name.Trim();
+                if (trimmedName.Length > 0)
+                {
+                    names.Add(trimmedName);
+                }
+            }
+
+            if (names.Count > 0)
+                return referencedAssemblies.Where(assembly => names.Contains(assembly.Identity.Name)).ToList();
+        }
+
+        // The tests of "Library" are named "Library.Tests", "Library.AotTests" or "LibraryTests"
+        var testAssemblyName = compilation.AssemblyName;
+        if (testAssemblyName is null)
+            return [];
+
+        IAssemblySymbol? testedAssembly = null;
+        foreach (var assembly in referencedAssemblies)
+        {
+            var name = assembly.Identity.Name;
+            if (IsTestedAssemblyName(testAssemblyName, name) && (testedAssembly is null || name.Length > testedAssembly.Identity.Name.Length))
+            {
+                testedAssembly = assembly;
+            }
+        }
+
+        return testedAssembly is null ? [] : [testedAssembly];
+    }
+
+    private static bool IsTestedAssemblyName(string testAssemblyName, string name)
+    {
+        if (name.Length >= testAssemblyName.Length || !testAssemblyName.StartsWith(name, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return testAssemblyName[name.Length] == '.' || string.Compare(testAssemblyName, name.Length, "Tests", 0, "Tests".Length, StringComparison.OrdinalIgnoreCase) == 0;
     }
 
     private static bool HasGlobalizationSensitiveMarker(IAssemblySymbol assembly)

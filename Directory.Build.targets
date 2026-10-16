@@ -58,8 +58,10 @@
   </ItemGroup>
 
   <!-- CI only runs the tests of a project in invariant globalization mode when it sets GlobalizationSensitive. The analyzer
-       reports the ICU-dependent code of the projects that do not, and the test projects that reference a library that does,
-       which the marker below identifies. Packages the analyzer cannot see into need the property set by hand. -->
+       reports the ICU-dependent code of the projects that do not, and the test projects whose tested library depends on a
+       library that does, which the marker below identifies. The tested library is found from the test project name, or from
+       GlobalizationSensitiveTestedAssemblies when the names do not match; the references a test project adds itself do not
+       count. Packages the analyzer cannot see into need the property set by hand. -->
   <PropertyGroup>
     <_RepositoryRelativeProjectPath>$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '$(MSBuildProjectFullPath)').Replace('\', '/'))</_RepositoryRelativeProjectPath>
     <EnableGlobalizationSensitivityAnalyzer Condition="'$(EnableGlobalizationSensitivityAnalyzer)' == '' AND '$(MSBuildProjectExtension)' == '.csproj' AND '$(MSBuildProjectName)' != 'Meziantou.Framework.GlobalizationSensitivity.Analyzer' AND ($(_RepositoryRelativeProjectPath.StartsWith('src/')) OR $(_RepositoryRelativeProjectPath.StartsWith('tests/')) OR $(_RepositoryRelativeProjectPath.StartsWith('fuzz/')))">true</EnableGlobalizationSensitivityAnalyzer>
@@ -73,6 +75,7 @@
                       SetTargetFramework="TargetFramework=netstandard2.0" />
     <CompilerVisibleProperty Include="GlobalizationSensitive" />
     <CompilerVisibleProperty Include="IsTestProject" />
+    <CompilerVisibleProperty Include="GlobalizationSensitiveTestedAssemblies" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(GlobalizationSensitive)' == 'true' AND '$(IsTestProject)' != 'true'">

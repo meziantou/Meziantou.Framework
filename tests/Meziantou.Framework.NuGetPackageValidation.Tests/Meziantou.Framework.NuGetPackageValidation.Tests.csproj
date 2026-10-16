@@ -1,8 +1,6 @@
 ﻿<Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
-    <!-- References Meziantou.Framework, which depends on ICU -->
-    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 

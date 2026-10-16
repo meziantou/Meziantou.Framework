@@ -1,8 +1,10 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
-    <!-- References Meziantou.Framework, Meziantou.Framework.DnsClient, Meziantou.Framework.DnsFilter, which depend on ICU -->
+    <!-- Tests Meziantou.DnsProxy, which uses Meziantou.Framework.DnsClient and Meziantou.Framework.DnsFilter, which depend on ICU -->
     <GlobalizationSensitive>true</GlobalizationSensitive>
+    <!-- The project under test does not follow the naming convention -->
+    <GlobalizationSensitiveTestedAssemblies>Meziantou.DnsProxy</GlobalizationSensitiveTestedAssemblies>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 

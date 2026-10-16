@@ -135,12 +135,45 @@ public sealed class GlobalizationSensitivityAnalyzerTests
     }
 
     [Fact]
-    public async Task ReportsTestProjectReferencingGlobalizationSensitiveAssembly()
+    public async Task ReportsTestProjectTestingGlobalizationSensitiveAssembly()
     {
         var test = CreateTest("class Sample { }", isTestProject: true);
-        test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("Sensitive", isGlobalizationSensitive: true));
+        test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("Library", isGlobalizationSensitive: true));
         test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("NotSensitive", isGlobalizationSensitive: false));
-        test.ExpectedDiagnostics.Add(new DiagnosticResult(GlobalizationSensitivityAnalyzerType.GlobalizationSensitiveReferenceRule).WithNoLocation().WithArguments("Sensitive"));
+        test.ExpectedDiagnostics.Add(new DiagnosticResult(GlobalizationSensitivityAnalyzerType.GlobalizationSensitiveReferenceRule).WithNoLocation().WithArguments("Library"));
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task ReportsTestProjectTestingAssemblyThatReferencesGlobalizationSensitiveAssembly()
+    {
+        var dependency = await CreateLibraryReferenceAsync("Dependency", isGlobalizationSensitive: true);
+        var test = CreateTest("class Sample { }", isTestProject: true);
+        test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("Library", isGlobalizationSensitive: false, dependency));
+        test.TestState.AdditionalReferences.Add(dependency);
+        test.ExpectedDiagnostics.Add(new DiagnosticResult(GlobalizationSensitivityAnalyzerType.GlobalizationSensitiveReferenceRule).WithNoLocation().WithArguments("Dependency"));
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task ReportsTransitiveGlobalizationSensitiveAssemblies()
+    {
+        var dependency = await CreateLibraryReferenceAsync("Dependency", isGlobalizationSensitive: true);
+        var intermediate = await CreateLibraryReferenceAsync("Intermediate", isGlobalizationSensitive: false, dependency);
+        var test = CreateTest("class Sample { }", isTestProject: true);
+        test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("Library", isGlobalizationSensitive: true, intermediate));
+        test.TestState.AdditionalReferences.Add(intermediate);
+        test.TestState.AdditionalReferences.Add(dependency);
+        test.ExpectedDiagnostics.Add(new DiagnosticResult(GlobalizationSensitivityAnalyzerType.GlobalizationSensitiveReferenceRule).WithNoLocation().WithArguments("Dependency, Library"));
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task DoesNotReportGlobalizationSensitiveAssemblyReferencedOnlyByTestProject()
+    {
+        var test = CreateTest("class Sample { }", isTestProject: true);
+        test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("Library", isGlobalizationSensitive: false));
+        test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("Helper", isGlobalizationSensitive: true));
         await test.RunAsync(XunitCancellationToken);
     }
 
@@ -148,7 +181,45 @@ public sealed class GlobalizationSensitivityAnalyzerTests
     public async Task DoesNotReportTestProjectReferencingOnlyInsensitiveAssemblies()
     {
         var test = CreateTest("class Sample { }", isTestProject: true);
-        test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("NotSensitive", isGlobalizationSensitive: false));
+        test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("Library", isGlobalizationSensitive: false));
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task DoesNotReportWhenNoAssemblyIsTested()
+    {
+        var test = CreateTest("class Sample { }", isTestProject: true, testAssemblyName: "Other.Tests");
+        test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("Library", isGlobalizationSensitive: true));
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Theory]
+    [InlineData("Library.Tests", "Library")]
+    [InlineData("Library.AotTests", "Library")]
+    [InlineData("LibraryTests", "Library")]
+    [InlineData("Library.Sub.Tests", "Library.Sub")]
+    [InlineData("Library.SubTests", "Library.Sub")]
+    [InlineData("Library.Subsystem.Tests", "Library")]
+    public async Task FindsTestedAssemblyFromTestAssemblyName(string testAssemblyName, string testedAssemblyName)
+    {
+        var test = CreateTest("class Sample { }", isTestProject: true, testAssemblyName: testAssemblyName);
+        foreach (var name in new[] { "Library", "Library.Sub" })
+        {
+            test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync(name, isGlobalizationSensitive: true));
+        }
+
+        test.ExpectedDiagnostics.Add(new DiagnosticResult(GlobalizationSensitivityAnalyzerType.GlobalizationSensitiveReferenceRule).WithNoLocation().WithArguments(testedAssemblyName));
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task UsesTestedAssembliesFromProperty()
+    {
+        var test = CreateTest("class Sample { }", isTestProject: true, testedAssemblies: "Other, Third");
+        test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("Library", isGlobalizationSensitive: true));
+        test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("Other", isGlobalizationSensitive: true));
+        test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("Third", isGlobalizationSensitive: true));
+        test.ExpectedDiagnostics.Add(new DiagnosticResult(GlobalizationSensitivityAnalyzerType.GlobalizationSensitiveReferenceRule).WithNoLocation().WithArguments("Other, Third"));
         await test.RunAsync(XunitCancellationToken);
     }
 
@@ -158,7 +229,7 @@ public sealed class GlobalizationSensitivityAnalyzerTests
     public async Task DoesNotReportGlobalizationSensitiveAssemblyReference(bool isTestProject, bool globalizationSensitive)
     {
         var test = CreateTest("class Sample { }", isTestProject, globalizationSensitive);
-        test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("Sensitive", isGlobalizationSensitive: true));
+        test.TestState.AdditionalReferences.Add(await CreateLibraryReferenceAsync("Library", isGlobalizationSensitive: true));
         await test.RunAsync(XunitCancellationToken);
     }
 
@@ -185,7 +256,7 @@ public sealed class GlobalizationSensitivityAnalyzerTests
         return CreateTest(source, isTestProject: false, globalizationSensitive).RunAsync(XunitCancellationToken);
     }
 
-    private static CSharpAnalyzerTest<GlobalizationSensitivityAnalyzerType, DefaultVerifier> CreateTest(string source, bool isTestProject, bool globalizationSensitive = false)
+    private static CSharpAnalyzerTest<GlobalizationSensitivityAnalyzerType, DefaultVerifier> CreateTest(string source, bool isTestProject, bool globalizationSensitive = false, string testAssemblyName = "Library.Tests", string testedAssemblies = "")
     {
         var test = new CSharpAnalyzerTest<GlobalizationSensitivityAnalyzerType, DefaultVerifier>
         {
@@ -193,25 +264,41 @@ public sealed class GlobalizationSensitivityAnalyzerTests
             ReferenceAssemblies = Net11,
         };
 
+        test.SolutionTransforms.Add((solution, projectId) => solution.WithProjectAssemblyName(projectId, testAssemblyName));
         test.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", $"""
             is_global = true
             build_property.IsTestProject = {(isTestProject ? "true" : "")}
             build_property.GlobalizationSensitive = {(globalizationSensitive ? "true" : "")}
+            build_property.GlobalizationSensitiveTestedAssemblies = {testedAssemblies}
             """));
         return test;
     }
 
-    private static async Task<MetadataReference> CreateLibraryReferenceAsync(string assemblyName, bool isGlobalizationSensitive)
+    private static async Task<MetadataReference> CreateLibraryReferenceAsync(string assemblyName, bool isGlobalizationSensitive, params MetadataReference[] references)
     {
         var source = isGlobalizationSensitive
             ? $"""[assembly: System.Reflection.AssemblyMetadata("{GlobalizationSensitivityAnalyzerType.MarkerMetadataKey}", "true")]"""
             : """[assembly: System.Reflection.AssemblyMetadata("Other", "true")]""";
 
+        // The compiler only writes a reference into the assembly when the code uses it
+        source += $$"""
+
+            namespace {{assemblyName}} { public static class Marker { } }
+            """;
+        foreach (var reference in references)
+        {
+            var referenceName = Path.GetFileNameWithoutExtension(reference.Display);
+            source += $$"""
+
+                public static class Uses{{referenceName!.Replace(".", "_", StringComparison.Ordinal)}} { public static System.Type Type => typeof({{referenceName}}.Marker); }
+                """;
+        }
+
         var frameworkReferences = await Net11.ResolveAsync(LanguageNames.CSharp, XunitCancellationToken);
         var compilation = CSharpCompilation.Create(
             assemblyName,
             [CSharpSyntaxTree.ParseText(source, cancellationToken: XunitCancellationToken)],
-            frameworkReferences,
+            [.. frameworkReferences, .. references],
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         using var stream = new MemoryStream();
@@ -219,6 +306,6 @@ public sealed class GlobalizationSensitivityAnalyzerTests
         if (!result.Success)
             throw new InvalidOperationException("The library does not compile: " + string.Join(Environment.NewLine, result.Diagnostics));
 
-        return MetadataReference.CreateFromImage(stream.ToArray());
+        return MetadataReference.CreateFromImage(stream.ToArray(), filePath: assemblyName + ".dll");
     }
 }

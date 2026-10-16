@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
   <PropertyGroup>
-    <!-- References Meziantou.Framework.Markdown, which depends on ICU -->
+    <!-- Tests Meziantou.Framework.Markdown, which depends on ICU -->
     <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>

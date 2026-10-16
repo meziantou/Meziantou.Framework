@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
   <PropertyGroup>
-    <!-- References Meziantou.Framework.Yaml, which depends on ICU -->
+    <!-- Tests Meziantou.Framework.Yaml, which depends on ICU -->
     <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <!-- 'dotnet test' runs these tests on the JIT, so CI leaves the project out of the regular test jobs: the test_aot job of ci.yml publishes it and runs the native executable. -->

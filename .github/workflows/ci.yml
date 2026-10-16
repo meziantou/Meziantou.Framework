@@ -175,7 +175,7 @@ jobs:
           test-projects-only: "true"
           # The projects whose tests also run in invariant globalization mode. The
           # Meziantou.Framework.GlobalizationSensitivity.Analyzer rules make a test project set the
-          # property when it, or a project it references, depends on ICU.
+          # property when it, or the project it tests (including that project's references), depends on ICU.
           where: "'$(PublishAot)' != 'true' AND '$(GlobalizationSensitive)' == 'true'"
           full-rebuild-triggers: |
             .github/workflows/ci.yml

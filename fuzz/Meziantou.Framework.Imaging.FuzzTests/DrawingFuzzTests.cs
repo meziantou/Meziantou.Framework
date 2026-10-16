@@ -680,7 +680,7 @@ public sealed class DrawingFuzzTests
     {
         var mode = CreateCompositeMode(random, context);
         if (random.Chance(35))
-            return new SolidBrush(CreateColor(random)) { CompositeMode = mode };
+            return new SolidBrush(CreateColor(random)) { CompositeMode = mode, Opacity = random.Chance(20) ? CreateOpacity(random) : 1 };
 
         if (random.Chance(20))
         {
@@ -713,13 +713,13 @@ public sealed class DrawingFuzzTests
             case 4:
                 // Two circles anywhere: a cone, or the same circle twice
                 var first = CreatePoint(random, canvas);
-                return new RadialGradientBrush(random.Chance(10) ? first : CreatePoint(random, canvas), CreateLength(random), stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform, FocalPoint = first, FocalRadius = CreateLength(random) };
+                return new RadialGradientBrush(random.Chance(10) ? first : CreatePoint(random, canvas), CreateLength(random), stops) { SpreadMode = spreadMode, CompositeMode = mode, Opacity = random.Chance(20) ? CreateOpacity(random) : 1, Transform = transform, FocalPoint = first, FocalRadius = CreateLength(random) };
 
             case 0:
-                return new LinearGradientBrush(CreatePoint(random, canvas), random.Chance(10) ? default : CreatePoint(random, canvas), stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform };
+                return new LinearGradientBrush(CreatePoint(random, canvas), random.Chance(10) ? default : CreatePoint(random, canvas), stops) { SpreadMode = spreadMode, CompositeMode = mode, Opacity = random.Chance(20) ? CreateOpacity(random) : 1, Transform = transform };
 
             case 1:
-                return new RadialGradientBrush(CreatePoint(random, canvas), CreateLength(random), stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform };
+                return new RadialGradientBrush(CreatePoint(random, canvas), CreateLength(random), stops) { SpreadMode = spreadMode, CompositeMode = mode, Opacity = random.Chance(20) ? CreateOpacity(random) : 1, Transform = transform };
 
             case 2:
                 // A focal point strictly inside the circle, sometimes very close to it
@@ -733,11 +733,11 @@ public sealed class DrawingFuzzTests
                     focalPoint = center;
                 }
 
-                return new RadialGradientBrush(center, radius, stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform, FocalPoint = focalPoint };
+                return new RadialGradientBrush(center, radius, stops) { SpreadMode = spreadMode, CompositeMode = mode, Opacity = random.Chance(20) ? CreateOpacity(random) : 1, Transform = transform, FocalPoint = focalPoint };
 
             default:
                 var start = CreateAngle(random);
-                return new SweepGradientBrush(CreatePoint(random, canvas), start, start + (random.Chance(10) ? 0 : NextDouble(random) * 800), stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform };
+                return new SweepGradientBrush(CreatePoint(random, canvas), start, start + (random.Chance(10) ? 0 : NextDouble(random) * 800), stops) { SpreadMode = spreadMode, CompositeMode = mode, Opacity = random.Chance(20) ? CreateOpacity(random) : 1, Transform = transform };
         }
     }
 

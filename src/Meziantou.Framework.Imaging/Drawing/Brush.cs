@@ -53,6 +53,25 @@ public abstract class Brush
         }
     }
 
+    /// <summary>Gets the opacity of the paint, from 0 (nothing is painted) to 1 (the default): <c>globalAlpha</c> of the HTML canvas.</summary>
+    /// <remarks>
+    /// The opacity multiplies the alpha of the paint at each pixel, at the precision of the frame it is drawn on: an alpha
+    /// <c>a</c> becomes <c>floor(a opacity + 1/2 + 2^-20)</c>, before the paint is combined with the pixels by its
+    /// <see cref="CompositeMode"/> and its <see cref="BlendMode"/>.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 1.</exception>
+    public double Opacity
+    {
+        get;
+        init
+        {
+            if (!(value >= 0 && value <= 1))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The opacity must be between 0 and 1.");
+
+            field = value;
+        }
+    } = 1;
+
     /// <summary>Creates a brush painting a single color.</summary>
     /// <param name="color">The color, with straight alpha.</param>
     /// <returns>A new <see cref="SolidBrush"/>.</returns>

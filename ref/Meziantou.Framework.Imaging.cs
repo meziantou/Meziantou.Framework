@@ -1236,6 +1236,7 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public Meziantou.Framework.Imaging.Drawing.BlendMode BlendMode { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.CompositeMode CompositeMode { get => throw null; init { } }
+        public double Opacity { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.Drawing.Brush FromRgba32(Meziantou.Framework.Imaging.Rgba32 color) => throw null;
         public static Meziantou.Framework.Imaging.Drawing.Brush FromRgba64(Meziantou.Framework.Imaging.Rgba64 color) => throw null;
         public static implicit operator Meziantou.Framework.Imaging.Drawing.Brush(Meziantou.Framework.Imaging.Rgba32 color) => throw null;
@@ -1621,7 +1622,7 @@ namespace Meziantou.Framework.Imaging.Drawing
 
     public sealed class ImageBrush : Meziantou.Framework.Imaging.Drawing.Brush
     {
-        public double Opacity { get => throw null; init { } }
+        public new double Opacity { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.ImageSampling Sampling { get => throw null; init { } }
         public Meziantou.Framework.Imaging.ImageFrame Source { get => throw null; }
         public Meziantou.Framework.Imaging.Rectangle? SourceRegion { get => throw null; init { } }

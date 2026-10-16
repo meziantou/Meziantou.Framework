@@ -116,21 +116,11 @@ public sealed class ImageBrush : Brush
     }
 
     /// <summary>Gets the opacity of the image, from 0 (nothing is painted) to 1 (the default: the image as it is).</summary>
-    /// <remarks>
-    /// The opacity multiplies the coverage of the shape, rounded to the nearest 1/65536: an image at half its opacity is
-    /// painted as on half of each pixel.
-    /// </remarks>
+    /// <remarks>The opacity of every brush (<see cref="Brush.Opacity"/>): it multiplies the alpha of the paint.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 1.</exception>
-    public double Opacity
+    public new double Opacity
     {
-        get;
-        init
-        {
-            OpacityCoverage = ImageEvaluator.GetOpacityCoverage(value, nameof(value));
-            field = value;
-        }
-    } = 1;
-
-    /// <summary>Gets the opacity as a coverage, from 0 to <see cref="CoverageRasterizer.FullCoverage"/>.</summary>
-    internal uint OpacityCoverage { get; private init; } = CoverageRasterizer.FullCoverage;
+        get => base.Opacity;
+        init => base.Opacity = value;
+    }
 }

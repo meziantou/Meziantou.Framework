@@ -23,6 +23,9 @@ internal sealed partial class DrawingSession
     private int _clipDepth;
     private PooledBuffer? _clipRow;
 
+    // The colors of a paint whose alpha the opacity of its brush multiplies
+    private PooledBuffer? _alphaRow;
+
     public void PushClip(RectangleD rectangle)
     {
         DrawingGuard.Rectangle(rectangle, nameof(rectangle));
@@ -256,6 +259,8 @@ internal sealed partial class DrawingSession
         _clipLevels.Clear();
         _clipDepth = 0;
         _clipRow?.Dispose();
+        _alphaRow?.Dispose();
+        _alphaRow = null;
         _clipRow = null;
     }
 

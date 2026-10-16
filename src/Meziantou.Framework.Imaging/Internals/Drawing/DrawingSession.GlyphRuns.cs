@@ -116,15 +116,14 @@ internal sealed partial class DrawingSession
 
                 if (isPaintable && !_isPreparing)
                 {
-                    var opacity = brush is ImageBrush image ? image.OpacityCoverage : CoverageRasterizer.FullCoverage;
                     if (mask is null)
                     {
                         var renderer = _glyphMasks!;
-                        PaintMask(color, evaluator, brush.CompositeMode, brush.BlendMode, opacity, pixelX + renderer.Left, pixelY + renderer.Top, renderer.Width, renderer.Height, renderer.Coverage);
+                        PaintMask(color, evaluator, brush, pixelX + renderer.Left, pixelY + renderer.Top, renderer.Width, renderer.Height, renderer.Coverage);
                     }
                     else
                     {
-                        PaintMask(color, evaluator, brush.CompositeMode, brush.BlendMode, opacity, pixelX + mask.Left, pixelY + mask.Top, mask.Width, mask.Height, mask.Coverage);
+                        PaintMask(color, evaluator, brush, pixelX + mask.Left, pixelY + mask.Top, mask.Width, mask.Height, mask.Coverage);
                     }
                 }
 
@@ -189,7 +188,7 @@ internal sealed partial class DrawingSession
     }
 
     /// <summary>Paints the coverages of a mask at a position of the canvas: row by row, through the clip and the opacity.</summary>
-    private void PaintMask(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, int left, int top, int width, int height, ReadOnlySpan<uint> coverage)
+    private void PaintMask(DrawingColor color, PaintEvaluator? evaluator, Brush brush, int left, int top, int width, int height, ReadOnlySpan<uint> coverage)
     {
         evaluator?.Begin();
         try
@@ -217,7 +216,7 @@ internal sealed partial class DrawingSession
 
                 if (start < end)
                 {
-                    PaintSpan(color, evaluator, mode, blend, opacity, y, left + start, values[start..end]);
+                    PaintSpan(color, evaluator, brush.CompositeMode, brush.BlendMode, CoverageRasterizer.FullCoverage, y, left + start, values[start..end], brush.Opacity);
                 }
             }
         }

@@ -1278,6 +1278,33 @@ public sealed class DrawingSessionTests
     }
 
     [Fact]
+    public void TheOpacityOfABrushMultipliesTheAlphaOfItsPaint()
+    {
+        // Replacing a red pixel with white at half its opacity gives white at half its opacity, as globalAlpha does: the
+        // opacity is the one of the paint, not a coverage (which would mix the white with the red)
+        using var image = new Image<Rgba32>(4, 1, new Rgba32(255, 0, 0));
+        image.Draw(static canvas => canvas.Fill(new SolidBrush(new Rgba32(255, 255, 255)) { Opacity = 0.5, CompositeMode = CompositeMode.Source }), Ct);
+        Assert.Equal(new Rgba32(255, 255, 255, 128), image.Frames[0][0, 0]);
+
+        // Over a pixel, as a translucent color; a gradient, a pattern and a pen too: floor(255 / 4 + 1/2) = 64
+        image.Draw(static canvas => canvas.Clear(Colors.Transparent), Ct);
+        image.Draw(static canvas => canvas.FillRectangle(new LinearGradientBrush(new PointD(0, 0), new PointD(4, 0), [new GradientStop(0, new Rgba32(0, 0, 255)), new GradientStop(1, new Rgba32(0, 255, 0))]) { Opacity = 0.25 }, new RectangleD(0, 0, 2, 1)), Ct);
+        image.Draw(static canvas => canvas.FillRectangle(new PatternBrush(new RectangleD(0, 0, 1, 1), static tile => tile.Fill(new Rgba32(255, 255, 0))) { Opacity = 0.25 }, new RectangleD(2, 0, 1, 1)), Ct);
+        image.Draw(static canvas => canvas.StrokeLine(new Pen(new SolidBrush(new Rgba32(0, 255, 255)) { Opacity = 0.25 }, 1), new PointD(3, 0.5), new PointD(4, 0.5)), Ct);
+        Assert.All(Enumerable.Range(0, 4), x => Assert.Equal(64, image.Frames[0][x, 0].A));
+        Assert.Equal(new Rgba32(255, 255, 0, 64), image.Frames[0][2, 0]);
+
+        // Without opacity, a paint changes nothing with the operators that keep what is under a transparent paint
+        image.Draw(static canvas => canvas.Fill(new SolidBrush(new Rgba32(255, 255, 255)) { Opacity = 0 }), Ct);
+        Assert.Equal(new Rgba32(255, 255, 0, 64), image.Frames[0][2, 0]);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SolidBrush(new Rgba32(0, 0, 0)) { Opacity = 1.5 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SolidBrush(new Rgba32(0, 0, 0)) { Opacity = double.NaN });
+        Assert.Equal(0.5, new ImageBrush(image.Frames[0]) { Opacity = 0.5 }.Opacity);
+        Assert.Equal(0.5, ((Brush)new ImageBrush(image.Frames[0]) { Opacity = 0.5 }).Opacity);
+    }
+
+    [Fact]
     public void ALayerValidatesItsArgumentsAndIsChargedToTheImage()
     {
         using (var image = new Image<Gray8>(4, 4, new Gray8(0)))

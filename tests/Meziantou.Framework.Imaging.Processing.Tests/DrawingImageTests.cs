@@ -369,11 +369,22 @@ public sealed class DrawingImageTests
         drawn.Draw(canvas => canvas.DrawImage(source.Frames[0], new Rectangle(0, 0, 8, 8)), Ct);
         Assert.Equal(DrawingTestSupport.ReadSamples(drawn.Frames[0]), DrawingTestSupport.ReadSamples(whole.Frames[0]));
 
-        // With an opacity
+        // With an opacity, which multiplies the alpha of the paint at 8 bits: the image whose alphas are halved, rounded
         using var faded = DrawingTestSupport.CreateRandom(PixelFormat.Rgba32, 8, 8, new Random(78).Next);
         using var half = DrawingTestSupport.CreateRandom(PixelFormat.Rgba32, 8, 8, new Random(78).Next);
         faded.Draw(canvas => canvas.Fill(new ImageBrush(source.Frames[0]) { Opacity = 0.5 }), Ct);
-        half.Draw(canvas => canvas.DrawImage(source.Frames[0], default(PointD), 0.5), Ct);
+        using var halved = source.CloneAs<Rgba32>();
+        halved.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                foreach (ref var pixel in pixels.GetRowSpan(y))
+                {
+                    pixel = new Rgba32(pixel.R, pixel.G, pixel.B, (byte)Math.Floor((pixel.A * 0.5) + 0.5 + (1.0 / 1048576)));
+                }
+            }
+        });
+        half.Draw(canvas => canvas.Fill(new ImageBrush(halved.Frames[0])), Ct);
         Assert.Equal(DrawingTestSupport.ReadSamples(half.Frames[0]), DrawingTestSupport.ReadSamples(faded.Frames[0]));
         Assert.NotEqual(DrawingTestSupport.ReadSamples(whole.Frames[0]), DrawingTestSupport.ReadSamples(faded.Frames[0]));
 

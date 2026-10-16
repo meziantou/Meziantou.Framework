@@ -1083,7 +1083,10 @@ canvas. A coordinate must be finite (`ArgumentException`) and no larger than 16,
 the usual helpers (`Center`, `Contains`, `Intersect`, `Union`, `Offset`, `Inflate`).
 
 **Brushes**. A brush is a `SolidBrush`, a gradient, an `ImageBrush` or a `PatternBrush` (see Images and Patterns
-below). A `SolidBrush` paints one
+below). The `Opacity` of a brush, as `globalAlpha` of the HTML canvas, multiplies the alpha of its paint at each pixel
+(at the precision of the canvas, `floor(a opacity + 1/2 + 2^-20)`), before its operator and its blend mode combine it
+with the pixels: a paint at half its opacity that replaces the pixels (`CompositeMode.Source`) leaves them at half
+their opacity. A `SolidBrush` paints one
 color (an `Rgba32` or `Rgba64` converts implicitly to a brush). A `LinearGradientBrush` (between two points), a
 `RadialGradientBrush` (around a center, up to a radius) and a `SweepGradientBrush` (around a center, by the angle) paint
 the color of their `GradientStop`s at the center of each pixel; `SpreadMode` gives the colors beyond the stops: `Pad`
@@ -1119,7 +1122,7 @@ opacity. An `ImageBrush`
 paints any shape or text with an image: `Transform` places the image on the canvas, `WrapMode` gives the colors around
 it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), or `WrapModeX` and `WrapModeY` for each direction
 (a row of tiles, as `background-repeat: repeat-x` of CSS), `Sampling` chooses how the image is read, and
-`Opacity` fades it. An image drawn on whole pixels without scaling keeps its pixels exactly; its pixels are converted
+`Opacity` fades it as the opacity of any brush does. An image drawn on whole pixels without scaling keeps its pixels exactly; its pixels are converted
 to the pixel format of the canvas like any brush color, and no color profile is applied.
 
 **Images in perspective**. `DrawImage` with four points draws the image on a quadrilateral, as a plane seen in perspective: a

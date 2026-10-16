@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Typography;
 
@@ -1126,7 +1127,7 @@ internal sealed partial class DrawingSession : IDisposable
         // A shape that is only prepared rents what it needs, and changes no pixel
         if (Prepare(brush, fillRule, out var color, out var evaluator) && !_isPreparing)
         {
-            Paint(color, evaluator, brush.CompositeMode, brush.BlendMode, brush is ImageBrush image ? image.OpacityCoverage : CoverageRasterizer.FullCoverage);
+            Paint(color, evaluator, brush.CompositeMode, brush.BlendMode, alphaFactor: brush.Opacity);
         }
     }
 
@@ -1136,13 +1137,14 @@ internal sealed partial class DrawingSession : IDisposable
     /// <param name="mode">The operator that combines the paint with the pixels.</param>
     /// <param name="blend">The blend mode that mixes the color of the paint with the color of the pixels.</param>
     /// <param name="opacity">The coverage every coverage is multiplied by.</param>
-    private void Paint(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity = CoverageRasterizer.FullCoverage)
+    /// <param name="alphaFactor">What the alpha of the colors of the evaluator is multiplied by: the opacity of a brush (the color of a solid brush has it already).</param>
+    private void Paint(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity = CoverageRasterizer.FullCoverage, double alphaFactor = 1)
     {
         // What the paint reads is held before the first pixel is changed
         evaluator?.Begin();
         try
         {
-            PaintRows(color, evaluator, mode, blend, opacity);
+            PaintRows(color, evaluator, mode, blend, opacity, alphaFactor);
         }
         finally
         {
@@ -1150,13 +1152,13 @@ internal sealed partial class DrawingSession : IDisposable
         }
     }
 
-    private void PaintRows(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity)
+    private void PaintRows(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, double alphaFactor)
     {
         RemoveStaleThumbnail();
         var rasterizer = _rasterizer!;
         while (rasterizer.MoveNext())
         {
-            PaintSpan(color, evaluator, mode, blend, opacity, rasterizer.Y, rasterizer.X, rasterizer.Coverage);
+            PaintSpan(color, evaluator, mode, blend, opacity, rasterizer.Y, rasterizer.X, rasterizer.Coverage, alphaFactor);
         }
     }
 
@@ -1171,7 +1173,7 @@ internal sealed partial class DrawingSession : IDisposable
     }
 
     /// <summary>Paints the coverages of a run of pixels of a row: through the clip and the opacity, on every frame.</summary>
-    private void PaintSpan(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, int y, int x, ReadOnlySpan<uint> coverage)
+    private void PaintSpan(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, int y, int x, ReadOnlySpan<uint> coverage, double alphaFactor = 1)
     {
         if (_clipDepth != 0 && !ApplyClip(y, ref x, ref coverage, out _))
             return;
@@ -1181,7 +1183,30 @@ internal sealed partial class DrawingSession : IDisposable
             coverage = ApplyOpacity(coverage, opacity);
         }
 
-        var source = evaluator is null ? new DrawingSource(color, mode, blend, _transfer, _curves) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend, _transfer, _curves);
+        DrawingSource source;
+        if (evaluator is null)
+        {
+            source = new DrawingSource(color, mode, blend, _transfer, _curves);
+        }
+        else
+        {
+            var colors = evaluator.Evaluate(y, x, coverage.Length);
+            if (alphaFactor != 1)
+            {
+                // The opacity of the brush multiplies the alpha of each color
+                var scaled = unsafe(MemoryMarshal.Cast<byte, ushort>(_alphaRow!.Span))[..colors.Length];
+                colors.CopyTo(scaled);
+                for (var i = 3; i < scaled.Length; i += 4)
+                {
+                    scaled[i] = ScaleAlpha(scaled[i], alphaFactor);
+                }
+
+                colors = scaled;
+            }
+
+            source = new DrawingSource(colors, mode, blend, _transfer, _curves);
+        }
+
         for (var i = 0; i < _frames.Length; i++)
         {
             _frames[i].CompositePixels(_storages[i], y, x, coverage, source);
@@ -1210,9 +1235,17 @@ internal sealed partial class DrawingSession : IDisposable
 
         // A paint without opacity changes nothing with most operators; with the others, it erases
         var isInert = DrawingKernels.IsTransparentPaintInert(brush.CompositeMode);
+        if (brush.Opacity == 0 && isInert)
+            return false;
+
         if (brush is SolidBrush solid)
         {
             color = _frames[0].ConvertDrawingColor(ToImageColor(solid.Color));
+            if (brush.Opacity != 1)
+            {
+                color = color with { Alpha = ScaleAlpha(color.Alpha, brush.Opacity) };
+            }
+
             if (color.Alpha == 0 && isInert)
                 return false;
         }
@@ -1220,14 +1253,6 @@ internal sealed partial class DrawingSession : IDisposable
         {
             var imagePaint = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
             imagePaint.Prepare(image.Source, image.SourceRegion, ToCanvasProjection(image.Transform), image.WrapModeX, image.WrapModeY, image.Sampling, _frames[0], Width, nameof(brush));
-            if (image.OpacityCoverage == 0)
-                return false;
-
-            if (image.OpacityCoverage != CoverageRasterizer.FullCoverage)
-            {
-                EnsureCoverageRow();
-            }
-
             evaluator = imagePaint;
         }
         else if (brush is PatternBrush pattern)
@@ -1251,6 +1276,15 @@ internal sealed partial class DrawingSession : IDisposable
             evaluator = gradient;
         }
 
+        if (evaluator is not null && brush.Opacity != 1)
+        {
+            // The colors of the paint are rewritten with their alpha multiplied: the row they go to is rented now
+            _alphaRow ??= ResampleWeights.Rent<ushort>(_image.Owner.Scope, 4L * Width);
+        }
+
         return true;
     }
+
+    /// <summary>Multiplies an alpha by an opacity, at the precision of the frame: <c>floor(a opacity + 1/2 + 2^-20)</c>.</summary>
+    private static ushort ScaleAlpha(ushort alpha, double opacity) => (ushort)Math.Floor((alpha * opacity) + 0.5 + (1.0 / 1048576));
 }

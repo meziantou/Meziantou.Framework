@@ -532,8 +532,10 @@ public sealed class DrawingFuzzTests
             var input2 = CreateInput(index);
             RectangleD? subregion = random.Chance(3) ? null : new RectangleD((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, NextDouble(random) * 40, NextDouble(random) * 40);
             var space = (FilterColorSpace)random.Next(2);
-            primitives[index] = random.Next(8) switch
+            primitives[index] = random.Next(10) switch
             {
+                8 => new GaussianBlurPrimitive(NextDouble(random) * 4, random.Chance(30) ? 0 : NextDouble(random) * 4) { Input = input, Subregion = subregion, ColorSpace = space, EdgeMode = (FilterEdgeMode)random.Next(4) },
+                9 => new DropShadowPrimitive(CreateColor(random), new PointD((NextDouble(random) - 0.5) * 8, (NextDouble(random) - 0.5) * 8), NextDouble(random) * 3, NextDouble(random) * 3) { Input = input, Subregion = subregion, ColorSpace = space },
                 0 => new FloodPrimitive(CreateColor(random)) { Subregion = subregion, ColorSpace = space },
                 1 => new OffsetPrimitive(new PointD((NextDouble(random) - 0.5) * 8, (NextDouble(random) - 0.5) * 8)) { Input = input, Subregion = subregion, ColorSpace = space },
                 2 => new MergePrimitive(input, input2) { Subregion = subregion, ColorSpace = space },

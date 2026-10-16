@@ -1407,6 +1407,16 @@ namespace Meziantou.Framework.Imaging.Drawing
         public DropShadowFilter(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double sigma) { }
     }
 
+    public sealed class DropShadowPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Rgba64 Color { get => throw null; }
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.PointD Offset { get => throw null; }
+        public double SigmaX { get => throw null; }
+        public double SigmaY { get => throw null; }
+        public DropShadowPrimitive(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double sigmaX, double sigmaY) { }
+    }
+
     public enum FillRule
     {
         NonZero = 0,
@@ -1488,6 +1498,16 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public Meziantou.Framework.Imaging.Rgba64 Color { get => throw null; }
         public FloodPrimitive(Meziantou.Framework.Imaging.Rgba64 color) { }
+    }
+
+    public sealed class GaussianBlurPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Drawing.FilterEdgeMode EdgeMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input { get => throw null; init { } }
+        public double SigmaX { get => throw null; }
+        public double SigmaY { get => throw null; }
+        public GaussianBlurPrimitive(double sigma) { }
+        public GaussianBlurPrimitive(double sigmaX, double sigmaY) { }
     }
 
     public abstract class GradientBrush : Meziantou.Framework.Imaging.Drawing.Brush

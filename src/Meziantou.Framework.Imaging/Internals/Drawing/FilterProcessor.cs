@@ -274,7 +274,16 @@ internal sealed class FilterProcessor : IDisposable
     }
 
     /// <summary>Draws the shadow of a surface under it, or replaces the surface by its shadow.</summary>
-    public void DropShadow(FilterSurface surface, Rgba64 color, PointD offset, double sigma, bool shadowOnly)
+    /// <param name="surface">The surface.</param>
+    /// <param name="red">The red of the shadow, as a fraction of one.</param>
+    /// <param name="green">The green of the shadow.</param>
+    /// <param name="blue">The blue of the shadow.</param>
+    /// <param name="opacity">The alpha of the shadow.</param>
+    /// <param name="offset">The offset of the shadow, in the drawing.</param>
+    /// <param name="sigmaX">The deviation of the blur of the shadow along x, in the drawing.</param>
+    /// <param name="sigmaY">The deviation of the blur of the shadow along y, in the drawing.</param>
+    /// <param name="shadowOnly"><see langword="true"/> to replace the surface by its shadow.</param>
+    public void DropShadow(FilterSurface surface, double red, double green, double blue, double opacity, PointD offset, double sigmaX, double sigmaY, bool shadowOnly)
     {
         // The offset on the canvas, through the linear part of the transformation
         var dx = (_m11 * offset.X) + (_m21 * offset.Y);
@@ -311,14 +320,10 @@ internal sealed class FilterProcessor : IDisposable
         }
 
         var mode = _edgeOverride ?? FilterEdgeMode.Transparent;
-        BlurAxis(shadow, Math.Min(sigma * _scaleX, GaussianKernel.MaxSigma), mode, horizontal: true);
-        BlurAxis(shadow, Math.Min(sigma * _scaleY, GaussianKernel.MaxSigma), mode, horizontal: false);
+        BlurAxis(shadow, Math.Min(sigmaX * _scaleX, GaussianKernel.MaxSigma), mode, horizontal: true);
+        BlurAxis(shadow, Math.Min(sigmaY * _scaleY, GaussianKernel.MaxSigma), mode, horizontal: false);
 
         // The color of the shadow, multiplied by its alpha; what casts it over it, unless the shadow is alone
-        var red = color.R / 65535.0;
-        var green = color.G / 65535.0;
-        var blue = color.B / 65535.0;
-        var opacity = color.A / 65535.0;
         for (var i = 0; i < source.Length; i += 4)
         {
             var alpha = Math.Clamp(target[i + 3] * opacity, 0, 1);

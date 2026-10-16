@@ -1262,7 +1262,9 @@ sRGB with `ColorSpace`. The primitives are `FloodPrimitive`, `OffsetPrimitive` (
 `TilePrimitive`, `ColorMatrixPrimitive` (the types `saturate`, `hueRotate` and `luminanceToAlpha` of SVG are the
 matrices `ColorMatrix.CreateSaturation`, `ColorMatrix.CreateHueRotation` and `ColorMatrix.LuminanceToAlpha`),
 `ComponentTransferPrimitive` (with a `TransferFunction` per component: table, discrete, linear or gamma),
-`CompositePrimitive` (the operators of Porter and Duff, `Lighter` and `Arithmetic`) and `BlendPrimitive`.
+`CompositePrimitive` (the operators of Porter and Duff, `Lighter` and `Arithmetic`), `BlendPrimitive`,
+`GaussianBlurPrimitive` (a deviation per axis, and an `EdgeMode` relative to the subregion of its input) and
+`DropShadowPrimitive`.
 
 <!-- snippet: draw-filters -->
 ```csharp

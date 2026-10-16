@@ -38,7 +38,8 @@ public sealed class DropShadowFilter : Filter
     /// <summary>Gets a value indicating whether the result is the shadow alone, without what casts it: the shadow of a drawing of the HTML canvas, drawn before the drawing.</summary>
     public bool ShadowOnly { get; init; }
 
-    internal override void Apply(FilterProcessor processor, FilterSurface surface) => processor.DropShadow(surface, Color, Offset, Sigma, ShadowOnly);
+    internal override void Apply(FilterProcessor processor, FilterSurface surface)
+        => processor.DropShadow(surface, Color.R / 65535.0, Color.G / 65535.0, Color.B / 65535.0, Color.A / 65535.0, Offset, Sigma, Sigma, ShadowOnly);
 
     internal override (double X, double Y) GetReach() => (GaussianKernel.GetRadius(Sigma) + Math.Abs(Offset.X), GaussianKernel.GetRadius(Sigma) + Math.Abs(Offset.Y));
 }

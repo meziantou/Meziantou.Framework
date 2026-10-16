@@ -3479,6 +3479,47 @@ public sealed class DrawingSessionTests
         Assert.Equal(default, image.Frames[0][1, 1]);
     }
 
+    [Fact]
+    public void AFilterGraphBlursAndCastsShadowsWithinTheSubregionsOfItsInputs()
+    {
+        // The blur of BlurFilter: the white pixel keeps 0.159244^2 of its alpha (41), in sRGB as in linear light since
+        // only white is mixed; with a deviation along x only, the rows above and below stay transparent
+        var center = 1 / (1 + (2 * (Math.Exp(-0.5) + Math.Exp(-2) + Math.Exp(-4.5))));
+        var pixels = DrawFiltered(new FilterGraph(new GaussianBlurPrimitive(1)));
+        Assert.Equal(new Rgba32(255, 255, 255, 41), pixels[1, 1]);
+        Assert.Equal(new Rgba32(255, 255, 255, (byte)Math.Floor((255 * center * center * Math.Exp(-0.5)) + 0.5)), pixels[2, 1]);
+        pixels = DrawFiltered(new FilterGraph(new GaussianBlurPrimitive(1, 0)));
+        Assert.Equal((byte)Math.Floor((255 * center) + 0.5), pixels[1, 1].A);
+        Assert.Equal(0, pixels[1, 0].A);
+
+        // The edges are those of the subregion of the input: a white canvas copied in its 3 by 3 pixels at the top left.
+        // Transparent beyond them, its corner fades and it spreads beyond; duplicated, it is white everywhere.
+        var white = new Rgba32(255, 255, 255);
+        var corner = new OffsetPrimitive(default) { Subregion = new RectangleD(0, 0, 3, 3) };
+        pixels = DrawFiltered(new FilterGraph(corner, new GaussianBlurPrimitive(1) { Subregion = new RectangleD(0, 0, 6, 6) }), white);
+        Assert.InRange(pixels[2, 2].A, 1, 254);
+        Assert.InRange(pixels[3, 1].A, 1, 254);
+        Assert.Equal(0, pixels[5, 5].A);
+        pixels = DrawFiltered(new FilterGraph(corner, new GaussianBlurPrimitive(1) { Subregion = new RectangleD(0, 0, 6, 6), EdgeMode = FilterEdgeMode.Duplicate }), white);
+        Assert.Equal(white, pixels[2, 2]);
+        Assert.Equal(white, pixels[5, 5]);
+
+        // A drop shadow: the white pixel over its shadow 2 pixels to the right, a gray of 128, which linear light gives back
+        pixels = DrawFiltered(new FilterGraph(new DropShadowPrimitive(new Rgba32(128, 128, 128), new PointD(2, 0), 0, 0)));
+        Assert.Equal(white, pixels[1, 1]);
+        Assert.Equal(new Rgba32(128, 128, 128), pixels[3, 1]);
+        Assert.Equal(default, pixels[2, 1]);
+        pixels = DrawFiltered(new FilterGraph(new DropShadowPrimitive(new Rgba32(0, 0, 0), new PointD(2, 0), 1, 0)));
+        Assert.Equal(new Rgba32(0, 0, 0, (byte)Math.Floor((255 * center) + 0.5)), pixels[3, 1]);
+        Assert.Equal(default, pixels[3, 2]);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GaussianBlurPrimitive(-1));
+        Assert.Throws<ArgumentException>(() => new GaussianBlurPrimitive(1, double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GaussianBlurPrimitive(1) { EdgeMode = (FilterEdgeMode)4 });
+        Assert.Throws<ArgumentException>(() => new DropShadowPrimitive(default, new PointD(double.NaN, 0), 1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new DropShadowPrimitive(default, default, 1, 10001));
+    }
+
     /// <summary>Filters a white pixel at (1, 1) of a canvas of 6 by 6 pixels, or the whole canvas painted with a color.</summary>
     private static FilteredPixels DrawFiltered(Filter filter, Rgba32? color = null)
     {

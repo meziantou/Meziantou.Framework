@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -91,6 +92,16 @@ internal sealed class HeifYuvConverter
     private readonly double _pr;
     private readonly double[]? _ictcpToLms;
     private readonly double[]? _lmsToRgb;
+
+    // The rows that the vector path converts, with the chroma coefficients of each component: every product and every sum
+    // of the conversion is proven at construction to fit in 32 bits
+    private readonly VectorKind _vectorKind;
+    private readonly int _cbR;
+    private readonly int _crR;
+    private readonly int _cbG;
+    private readonly int _crG;
+    private readonly int _cbB;
+    private readonly int _crB;
 
     /// <summary>Creates the converter of an image.</summary>
     /// <param name="binding">The format of the file, which errors report.</param>
@@ -220,6 +231,49 @@ internal sealed class HeifYuvConverter
                 _cAlpha = RoundedDivide(_outputMax * One, 219L << (alphaFormat.BitDepth - 8));
             }
         }
+
+        _vectorKind = GetVectorKind(alpha is not null);
+        if (_vectorKind is VectorKind.Matrix)
+        {
+            // U is Cg and V is Co for YCgCo
+            (_cbR, _crR, _cbG, _crG, _cbB, _crB) = _matrix is Av1Constants.McSmpteYcgco
+                ? ((int)-_cC, (int)_cC, (int)_cC, 0, (int)-_cC, (int)-_cC)
+                : (0, (int)_cRV, (int)-_cGU, (int)-_cGV, (int)_cBU, 0);
+        }
+    }
+
+    // The kinds of rows of ConvertRowVector
+    private enum VectorKind
+    {
+        None,
+        Monochrome,
+        Matrix,
+    }
+
+    // The vector path produces 8-bit pixels (Gray8, Rgb24 and Rgba32) from samples of 8 bits with the integer operations of
+    // the scalar path, when every product and every sum of the conversion fits in 32 bits
+    private VectorKind GetVectorKind(bool hasAlpha)
+    {
+        if (_outputMax is not 255 || _max is not 255 || _isPremultiplied || _usesTransfer || (hasAlpha && _alphaMax is not 255))
+            return VectorKind.None;
+
+        // The largest magnitudes of a centered luma, chroma and alpha sample
+        long lumaMagnitude = Math.Max(_yOffset, _max - _yOffset);
+        long chromaMagnitude = Math.Max(_cOffset, _max - _cOffset);
+        long alphaMagnitude = Math.Max(_alphaOffset, _alphaMax - _alphaOffset);
+        const long Limit = int.MaxValue - Half;
+        if (Math.Abs(_cY) * lumaMagnitude > Limit || Math.Abs(_cAlpha) * alphaMagnitude > Limit)
+            return VectorKind.None;
+
+        if (_monochrome)
+            return _layout is PixelFormat.Gray8 or PixelFormat.Rgba32 ? VectorKind.Monochrome : VectorKind.None;
+
+        if (_layout is not (PixelFormat.Rgb24 or PixelFormat.Rgba32) || _matrix is Av1Constants.McIdentity or Av1Constants.McSmpte2085)
+            return VectorKind.None;
+
+        // Each component adds at most two chroma products to the luma
+        var chroma = _matrix is Av1Constants.McSmpteYcgco ? 2 * Math.Abs(_cC) : Math.Max(Math.Max(Math.Abs(_cRV), Math.Abs(_cBU)), Math.Abs(_cGU) + Math.Abs(_cGV));
+        return (Math.Abs(_cY) * lumaMagnitude) + (chroma * chromaMagnitude) <= Limit ? VectorKind.Matrix : VectorKind.None;
     }
 
     /// <summary>Verifies that samples that use the matrix coefficients can be converted.</summary>
@@ -304,22 +358,109 @@ internal sealed class HeifYuvConverter
     public void UpsampleChromaRow(HeifPlanarImage image, int plane, int y, int width, int height, Span<ushort> destination)
     {
         var chroma = image.GetPlane(plane);
-        var chromaWidth = (width + _subX) >> _subX;
-        var chromaHeight = (height + _subY) >> _subY;
         if (_subX is 0)
         {
             chroma.GetRow(y)[..width].CopyTo(destination);
             return;
         }
 
+        // The chroma row nearest to the luma row, and the other row that the filter reads: the one below for co-located
+        // samples, otherwise the one on the other side of the luma row; the row itself without vertical subsampling
+        var chromaHeight = (height + _subY) >> _subY;
+        var nearIndex = y >> _subY;
+        int otherIndex;
         if (_subY is 0)
         {
-            var row = chroma.GetRow(y);
+            otherIndex = y;
+        }
+        else if (_chromaSamplePosition is Av1Constants.CspColocated)
+        {
+            otherIndex = Math.Min(nearIndex + 1, chromaHeight - 1);
+        }
+        else
+        {
+            otherIndex = Math.Clamp((y & 1) is 0 ? nearIndex - 1 : nearIndex + 1, 0, chromaHeight - 1);
+        }
+
+        UpsampleRow(chroma.GetRow(nearIndex), chroma.GetRow(otherIndex), y & 1, destination[..width]);
+    }
+
+    /// <summary>
+    /// Produces the chroma samples of a luma row from the chroma rows that the filter reads: the vector path of
+    /// <see cref="UpsampleRowScalar"/>, which it equals, for samples of at most 12 bits that are not co-located.
+    /// </summary>
+    /// <param name="near">The chroma row nearest to the luma row.</param>
+    /// <param name="other">The other chroma row: the row below for co-located samples, otherwise the row on the other side of the luma row; <paramref name="near"/> without vertical subsampling.</param>
+    /// <param name="parity">The parity of the luma row.</param>
+    /// <param name="destination">The upsampled row: the width of the image.</param>
+    internal void UpsampleRow(ReadOnlySpan<ushort> near, ReadOnlySpan<ushort> other, int parity, Span<ushort> destination)
+    {
+        var width = destination.Length;
+        if (!Vector128.IsHardwareAccelerated || _max > 4095 || (_subY is 1 && _chromaSamplePosition is Av1Constants.CspColocated))
+        {
+            UpsampleRowScalar(near, other, parity, destination, 0, width);
+            return;
+        }
+
+        // Without vertical subsampling the row is blended with itself, 3 * c + c = 4 * c, and the formulas of 4:2:2 are the
+        // ones below with both sides multiplied by 4. The blends of 8 chroma samples i give the luma samples 2 * i and
+        // 2 * i + 1, from the blends of the samples i - 1, i and i + 1: the first chroma sample and the last ones, whose
+        // neighbours are replicated, are left to the scalar path. The sums of blends of samples of at most 12 bits fit in
+        // 16 bits: 3 * 16380 + 16380 + 8 is 65528
+        var chromaWidth = (width + 1) >> 1;
+        var cosited = _subY is 0 ? _chromaSamplePosition is not Av1Constants.CspUnknown : _chromaSamplePosition is Av1Constants.CspVertical;
+        var round2 = Vector128.Create((ushort)2);
+        var round4 = Vector128.Create((ushort)4);
+        var round8 = Vector128.Create((ushort)8);
+        var i = 1;
+        for (; i + 9 <= chromaWidth && 2 * (i + 8) <= width; i += 8)
+        {
+            var current = (Vector128.Create(near[i..]) * 3) + Vector128.Create(other[i..]);
+            var next = (Vector128.Create(near[(i + 1)..]) * 3) + Vector128.Create(other[(i + 1)..]);
+            Vector128<ushort> even;
+            Vector128<ushort> odd;
+            if (cosited)
+            {
+                even = (current + round2) >>> 2;
+                odd = (current + next + round4) >>> 3;
+            }
+            else
+            {
+                var previous = (Vector128.Create(near[(i - 1)..]) * 3) + Vector128.Create(other[(i - 1)..]);
+                var center = current * 3;
+                even = (center + previous + round8) >>> 4;
+                odd = (center + next + round8) >>> 4;
+            }
+
+            // Interleaved: the even sample in the low half of each 32-bit lane
+            var (evenLow, evenHigh) = Vector128.Widen(even);
+            var (oddLow, oddHigh) = Vector128.Widen(odd);
+            (evenLow | (oddLow << 16)).AsUInt16().CopyTo(destination[(2 * i)..]);
+            (evenHigh | (oddHigh << 16)).AsUInt16().CopyTo(destination[((2 * i) + 8)..]);
+        }
+
+        UpsampleRowScalar(near, other, parity, destination, 0, Math.Min(2, width));
+        UpsampleRowScalar(near, other, parity, destination, Math.Max(2 * i, 2), width);
+    }
+
+    /// <summary>The upsampling of <see cref="UpsampleRow"/>, one sample at a time: the reference of the vector path.</summary>
+    /// <param name="near">The chroma row nearest to the luma row.</param>
+    /// <param name="other">The other chroma row.</param>
+    /// <param name="parity">The parity of the luma row.</param>
+    /// <param name="destination">The upsampled row: the width of the image.</param>
+    /// <param name="start">The first luma sample to produce.</param>
+    /// <param name="end">The luma sample after the last one to produce.</param>
+    internal void UpsampleRowScalar(ReadOnlySpan<ushort> near, ReadOnlySpan<ushort> other, int parity, Span<ushort> destination, int start, int end)
+    {
+        var chromaWidth = (destination.Length + _subX) >> _subX;
+        if (_subY is 0)
+        {
+            var row = near;
             if (_chromaSamplePosition is not Av1Constants.CspUnknown)
             {
                 // 4:2:2 with chroma samples at the position of the luma samples of even columns (HEVC): a luma sample
                 // between two of them takes their mean
-                for (var x = 0; x < width; x++)
+                for (var x = start; x < end; x++)
                 {
                     var i = x >> 1;
                     destination[x] = (x & 1) is 0 ? row[i] : (ushort)((row[i] + row[Math.Min(i + 1, chromaWidth - 1)] + 1) >> 1);
@@ -329,26 +470,24 @@ internal sealed class HeifYuvConverter
             }
 
             // 4:2:2: the chroma samples are centered between two luma samples
-            for (var x = 0; x < width; x++)
+            for (var x = start; x < end; x++)
             {
                 var i = x >> 1;
-                var other = (x & 1) is 0 ? Math.Max(i - 1, 0) : Math.Min(i + 1, chromaWidth - 1);
-                destination[x] = (ushort)(((3 * row[i]) + row[other] + 2) >> 2);
+                var neighbour = (x & 1) is 0 ? Math.Max(i - 1, 0) : Math.Min(i + 1, chromaWidth - 1);
+                destination[x] = (ushort)(((3 * row[i]) + row[neighbour] + 2) >> 2);
             }
 
             return;
         }
 
-        var nearIndex = y >> 1;
-        var near = chroma.GetRow(nearIndex);
         if (_chromaSamplePosition is Av1Constants.CspColocated)
         {
-            var below = chroma.GetRow(Math.Min(nearIndex + 1, chromaHeight - 1));
-            for (var x = 0; x < width; x++)
+            var below = other;
+            for (var x = start; x < end; x++)
             {
                 var i = x >> 1;
                 var next = Math.Min(i + 1, chromaWidth - 1);
-                if ((y & 1) is 0)
+                if (parity is 0)
                 {
                     destination[x] = (x & 1) is 0 ? near[i] : (ushort)((near[i] + near[next] + 1) >> 1);
                 }
@@ -361,9 +500,9 @@ internal sealed class HeifYuvConverter
             return;
         }
 
-        var far = chroma.GetRow(Math.Clamp((y & 1) is 0 ? nearIndex - 1 : nearIndex + 1, 0, chromaHeight - 1));
+        var far = other;
         var vertical = _chromaSamplePosition is Av1Constants.CspVertical;
-        for (var x = 0; x < width; x++)
+        for (var x = start; x < end; x++)
         {
             var i = x >> 1;
             var current = (3 * near[i]) + far[i];
@@ -381,8 +520,8 @@ internal sealed class HeifYuvConverter
             }
             else
             {
-                var other = (x & 1) is 0 ? Math.Max(i - 1, 0) : Math.Min(i + 1, chromaWidth - 1);
-                destination[x] = (ushort)(((3 * current) + (3 * near[other]) + far[other] + 8) >> 4);
+                var neighbour = (x & 1) is 0 ? Math.Max(i - 1, 0) : Math.Min(i + 1, chromaWidth - 1);
+                destination[x] = (ushort)(((3 * current) + (3 * near[neighbour]) + far[neighbour] + 8) >> 4);
             }
         }
     }
@@ -395,9 +534,119 @@ internal sealed class HeifYuvConverter
     /// <param name="destination">The pixels: one per luma sample.</param>
     public void ConvertRow(ReadOnlySpan<ushort> y, ReadOnlySpan<ushort> u, ReadOnlySpan<ushort> v, ReadOnlySpan<ushort> alpha, Span<byte> destination)
     {
+        var start = _vectorKind is not VectorKind.None && Vector128.IsHardwareAccelerated ? ConvertRowVector(y, u, v, alpha, destination) : 0;
+        ConvertRowScalar(y, u, v, alpha, destination, start);
+    }
+
+    // The conversion of 8 pixels at a time, with the 32-bit integer operations of the scalar path (GetVectorKind). Returns the
+    // number of pixels converted: the scalar path converts the others
+    private int ConvertRowVector(ReadOnlySpan<ushort> y, ReadOnlySpan<ushort> u, ReadOnlySpan<ushort> v, ReadOnlySpan<ushort> alpha, Span<byte> destination)
+    {
+        var width = y.Length;
+        var hasAlpha = !alpha.IsEmpty;
+        var x = 0;
+
+        // The Rgb24 pixels of 4 pixels are written as 16 bytes: the last 4 are overwritten by the pixels that follow
+        var end = _layout is PixelFormat.Rgb24 ? width - 10 : width - 8;
+        for (; x <= end; x += 8)
+        {
+            var (yLow, yHigh) = Vector128.Widen(Vector128.Create(y[x..]));
+            Vector128<uint> alphaLow;
+            Vector128<uint> alphaHigh;
+            if (hasAlpha)
+            {
+                (alphaLow, alphaHigh) = Vector128.Widen(Vector128.Create(alpha[x..]));
+                alphaLow = ConvertAlpha(alphaLow);
+                alphaHigh = ConvertAlpha(alphaHigh);
+            }
+            else
+            {
+                alphaLow = alphaHigh = Vector128.Create(255u);
+            }
+
+            if (_vectorKind is VectorKind.Monochrome)
+            {
+                var grayLow = ConvertGray(yLow);
+                var grayHigh = ConvertGray(yHigh);
+                if (_layout is PixelFormat.Gray8)
+                {
+                    Vector128.Narrow(Vector128.Narrow(grayLow, grayHigh), Vector128<ushort>.Zero).GetLower().CopyTo(destination[x..]);
+                }
+                else
+                {
+                    var factor = Vector128.Create(0x010101u);
+                    ((grayLow * factor) | (alphaLow << 24)).AsByte().CopyTo(destination[(4 * x)..]);
+                    ((grayHigh * factor) | (alphaHigh << 24)).AsByte().CopyTo(destination[((4 * x) + 16)..]);
+                }
+
+                continue;
+            }
+
+            var (uLow, uHigh) = Vector128.Widen(Vector128.Create(u[x..]));
+            var (vLow, vHigh) = Vector128.Widen(Vector128.Create(v[x..]));
+            var low = ConvertPixels(yLow, uLow, vLow, alphaLow);
+            var high = ConvertPixels(yHigh, uHigh, vHigh, alphaHigh);
+            if (_layout is PixelFormat.Rgba32)
+            {
+                low.AsByte().CopyTo(destination[(4 * x)..]);
+                high.AsByte().CopyTo(destination[((4 * x) + 16)..]);
+            }
+            else
+            {
+                // R, G and B of each pixel, without A
+                var indices = Vector128.Create((byte)0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 15, 15, 15, 15);
+                Vector128.Shuffle(low.AsByte(), indices).CopyTo(destination[(3 * x)..]);
+                Vector128.Shuffle(high.AsByte(), indices).CopyTo(destination[((3 * x) + 12)..]);
+            }
+        }
+
+        return x;
+    }
+
+    // Four pixels of 8-bit R, G, B and A in the bytes of their 32-bit lanes
+    private Vector128<uint> ConvertPixels(Vector128<uint> y, Vector128<uint> u, Vector128<uint> v, Vector128<uint> alpha)
+    {
+        var luma = (Vector128.Create((int)_cY) * (y.AsInt32() - Vector128.Create(_yOffset))) + Vector128.Create((int)Half);
+        var cb = u.AsInt32() - Vector128.Create(_cOffset);
+        var cr = v.AsInt32() - Vector128.Create(_cOffset);
+        var r = ClipToByte((luma + (cb * _cbR) + (cr * _crR)) >> 16);
+        var g = ClipToByte((luma + (cb * _cbG) + (cr * _crG)) >> 16);
+        var b = ClipToByte((luma + (cb * _cbB) + (cr * _crB)) >> 16);
+        return r | (g << 8) | (b << 16) | (alpha << 24);
+    }
+
+    // ConvertUnmatrixed of 8-bit samples to 8-bit samples: the samples themselves in full range
+    private Vector128<uint> ConvertGray(Vector128<uint> sample)
+    {
+        if (_fullRange)
+            return sample;
+
+        return ClipToByte(((Vector128.Create((int)_cY) * (sample.AsInt32() - Vector128.Create(_yOffset))) + Vector128.Create((int)Half)) >> 16);
+    }
+
+    // The alpha of 8-bit alpha samples: the samples themselves in full range, ( a * 255 + 127 ) / 255 being a
+    private Vector128<uint> ConvertAlpha(Vector128<uint> sample)
+    {
+        if (_alphaFullRange)
+            return sample;
+
+        return ClipToByte(((Vector128.Create((int)_cAlpha) * (sample.AsInt32() - Vector128.Create(_alphaOffset))) + Vector128.Create((int)Half)) >> 16);
+    }
+
+    private static Vector128<uint> ClipToByte(Vector128<int> value) => Vector128.Min(Vector128.Max(value, Vector128<int>.Zero), Vector128.Create(255)).AsUInt32();
+
+    /// <summary>The conversion of <see cref="ConvertRow"/>, one pixel at a time: the reference of the vector path.</summary>
+    /// <param name="y">The luma samples.</param>
+    /// <param name="u">The U samples at the resolution of the luma row; ignored for a monochrome image.</param>
+    /// <param name="v">The V samples at the resolution of the luma row.</param>
+    /// <param name="alpha">The alpha samples, or an empty span for an opaque image.</param>
+    /// <param name="destination">The pixels: one per luma sample.</param>
+    /// <param name="start">The first pixel to convert.</param>
+    internal void ConvertRowScalar(ReadOnlySpan<ushort> y, ReadOnlySpan<ushort> u, ReadOnlySpan<ushort> v, ReadOnlySpan<ushort> alpha, Span<byte> destination, int start = 0)
+    {
         var deep = _outputMax is 65535;
         var wide = deep ? unsafe(MemoryMarshal.Cast<byte, ushort>(destination)) : default;
-        for (var x = 0; x < y.Length; x++)
+        for (var x = start; x < y.Length; x++)
         {
             int r;
             int g;

@@ -29,8 +29,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Whether the decoded index count matches the image is checked by the caller (<see cref="GifDecoder"/>).
 /// </description></item>
 /// <item><description>
-/// Working memory: the code table (prefix, suffix and length per code) and one 4096-byte string buffer, rented once from the
-/// operation scope as <see cref="AllocationKind.DecoderState"/> and reused by every image.
+/// Working memory: the code table (per code: its length, its last 1 to 4 indices and the code of the rest of its string) and
+/// one 4096-byte string buffer, rented once from the operation scope as <see cref="AllocationKind.DecoderState"/> and reused
+/// by every image.
 /// </description></item>
 /// </list>
 /// </remarks>
@@ -40,10 +41,14 @@ internal sealed class GifLzwDecoder : IDisposable
     public const int MaxCodes = 4096;
 
     private const int MaxCodeSize = 12;
-    private const int PrefixOffset = 0;
+
+    // Each code keeps the last 1 to 4 indices of its string (a chunk) and the code whose string is the rest, a multiple
+    // of 4 indices long: a string is written 4 indices per step instead of one
+    private const int ChunkLength = sizeof(uint);
+    private const int HeadOffset = 0;
     private const int LengthOffset = MaxCodes * sizeof(ushort);
-    private const int SuffixOffset = LengthOffset + (MaxCodes * sizeof(ushort));
-    private const int StringOffset = SuffixOffset + MaxCodes;
+    private const int ChunkOffset = LengthOffset + (MaxCodes * sizeof(ushort));
+    private const int StringOffset = ChunkOffset + (MaxCodes * ChunkLength);
     private const int StateLength = StringOffset + MaxCodes;
 
     private PooledBuffer? _state;
@@ -86,14 +91,14 @@ internal sealed class GifLzwDecoder : IDisposable
         _pendingLength = 0;
         IsEnded = false;
 
-        // Literal codes are one-byte strings; their suffix is the index itself
+        // Literal codes are one-byte strings: their chunk is the index itself
         var state = GetState();
         var lengths = unsafe(MemoryMarshal.Cast<byte, ushort>(state.Slice(LengthOffset, MaxCodes * sizeof(ushort))));
-        var suffixes = state.Slice(SuffixOffset, MaxCodes);
+        var chunks = state.Slice(ChunkOffset, MaxCodes * ChunkLength);
         for (var code = 0; code < _clearCode; code++)
         {
             lengths[code] = 1;
-            suffixes[code] = (byte)code;
+            chunks[code * ChunkLength] = (byte)code;
         }
 
         ResetTable();
@@ -114,9 +119,10 @@ internal sealed class GifLzwDecoder : IDisposable
         }
 
         var state = GetState();
-        var prefixes = unsafe(MemoryMarshal.Cast<byte, ushort>(state.Slice(PrefixOffset, MaxCodes * sizeof(ushort))));
+        var heads = unsafe(MemoryMarshal.Cast<byte, ushort>(state.Slice(HeadOffset, MaxCodes * sizeof(ushort))));
         var lengths = unsafe(MemoryMarshal.Cast<byte, ushort>(state.Slice(LengthOffset, MaxCodes * sizeof(ushort))));
-        var suffixes = state.Slice(SuffixOffset, MaxCodes);
+        var chunkBytes = state.Slice(ChunkOffset, MaxCodes * ChunkLength);
+        var chunks = unsafe(MemoryMarshal.Cast<byte, uint>(chunkBytes));
         var buffer = state.Slice(StringOffset, MaxCodes);
         var written = 0;
 
@@ -182,18 +188,25 @@ internal sealed class GifLzwDecoder : IDisposable
                     continue;
                 }
 
-                if (code < _nextCode)
+                if (code < _clearCode)
+                {
+                    length = 1;
+                    target = destination;
+                    first = (byte)code;
+                    destination[0] = first;
+                }
+                else if (code < _nextCode)
                 {
                     length = lengths[code];
                     target = length <= destination.Length ? destination : buffer;
-                    first = Expand(prefixes, suffixes, code, target[..length]);
+                    first = Expand(heads, chunks, chunkBytes, code, target, length);
                 }
                 else if (code == _nextCode && _nextCode < MaxCodes)
                 {
                     // KwKwK: the string of the previous code followed by its own first index
                     length = lengths[previous] + 1;
                     target = length <= destination.Length ? destination : buffer;
-                    first = Expand(prefixes, suffixes, previous, target[..(length - 1)]);
+                    first = Expand(heads, chunks, chunkBytes, previous, target, length - 1);
                     target[length - 1] = first;
                 }
                 else
@@ -203,9 +216,24 @@ internal sealed class GifLzwDecoder : IDisposable
 
                 if (_nextCode < MaxCodes)
                 {
-                    prefixes[_nextCode] = (ushort)previous;
-                    suffixes[_nextCode] = first;
-                    lengths[_nextCode] = (ushort)(lengths[previous] + 1);
+                    // The string of the previous code followed by the first index of this one: the index extends the chunk of
+                    // the previous code, or starts a chunk after it when that chunk is full
+                    var next = _nextCode;
+                    var previousLength = lengths[previous];
+                    var chunkCount = ((previousLength - 1) & (ChunkLength - 1)) + 1;
+                    if (chunkCount < ChunkLength)
+                    {
+                        chunks[next] = chunks[previous];
+                        chunkBytes[(next * ChunkLength) + chunkCount] = first;
+                        heads[next] = heads[previous];
+                    }
+                    else
+                    {
+                        chunkBytes[next * ChunkLength] = first;
+                        heads[next] = (ushort)previous;
+                    }
+
+                    lengths[next] = (ushort)(previousLength + 1);
                     _nextCode++;
                     GrowCodeSize();
                 }
@@ -253,18 +281,39 @@ internal sealed class GifLzwDecoder : IDisposable
         _state = null;
     }
 
-    /// <summary>Writes the string of <paramref name="code"/> (exactly <c>target.Length</c> indices) and returns its first index.</summary>
-    private static byte Expand(ReadOnlySpan<ushort> prefixes, ReadOnlySpan<byte> suffixes, int code, Span<byte> target)
+    /// <summary>
+    /// Writes the string of <paramref name="code"/> (<paramref name="length"/> indices) at the start of <paramref name="target"/>
+    /// and returns its first index. The indices after the string may be overwritten (they are not written yet).
+    /// </summary>
+    private static byte Expand(ReadOnlySpan<ushort> heads, ReadOnlySpan<uint> chunks, ReadOnlySpan<byte> chunkBytes, int code, Span<byte> target, int length)
     {
-        for (var i = target.Length - 1; i > 0; i--)
+        // The last chunk holds 1 to 4 indices; every chunk before it is full
+        var end = length - (((length - 1) & (ChunkLength - 1)) + 1);
+        if (end <= target.Length - ChunkLength)
         {
-            target[i] = suffixes[code];
-            code = prefixes[code];
+            var last = chunks[code];
+            unsafe
+            {
+                MemoryMarshal.Write(target.Slice(end, ChunkLength), in last);
+            }
+        }
+        else
+        {
+            chunkBytes.Slice(code * ChunkLength, length - end).CopyTo(target[end..]);
         }
 
-        // The chain ends at a literal
-        target[0] = (byte)code;
-        return (byte)code;
+        while (end > 0)
+        {
+            code = heads[code];
+            end -= ChunkLength;
+            var chunk = chunks[code];
+            unsafe
+            {
+                MemoryMarshal.Write(target.Slice(end, ChunkLength), in chunk);
+            }
+        }
+
+        return target[0];
     }
 
     private void GrowCodeSize()

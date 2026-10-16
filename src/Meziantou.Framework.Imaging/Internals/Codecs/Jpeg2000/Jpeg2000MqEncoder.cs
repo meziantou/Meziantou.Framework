@@ -1,3 +1,7 @@
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -12,6 +16,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal struct Jpeg2000MqEncoder
 {
     private PooledPayloadWriter _output;
+    private uint[] _transitions;
     private int _start;
     private uint _c;
     private uint _a;
@@ -21,6 +26,7 @@ internal struct Jpeg2000MqEncoder
     public void Initialize(PooledPayloadWriter output)
     {
         _output = output;
+        _transitions = Jpeg2000MqTables.ContextTransitions;
         _start = output.Length;
         _a = 0x8000;
         _c = 0;
@@ -30,60 +36,83 @@ internal struct Jpeg2000MqEncoder
     /// <summary>Encodes one decision in a context (ENCODE).</summary>
     /// <param name="decision">The decision, 0 or 1.</param>
     /// <param name="context">The context; it is updated.</param>
+    /// <remarks>
+    /// The state, its more probable symbol and their transitions are one entry of
+    /// <see cref="Jpeg2000MqTables.ContextTransitions"/>, and RENORME shifts the registers by as many bits as the interval
+    /// needs at once, up to the bits left before the next byte is written, instead of one bit per iteration. It is
+    /// inlined, and BYTEOUT is a call that does not take the address of the encoder, so that a copy of the encoder in a
+    /// local keeps its registers in processor registers.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Encode(int decision, ref byte context)
     {
-        var state = context >> 1;
-        var moreProbable = context & 1;
-        uint probability = Jpeg2000MqTables.Probability[state];
-        _a -= probability;
-        if (decision == moreProbable)
+        var current = context;
+        var transitions = unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_transitions), current));
+        var probability = transitions & 0xFFFF;
+        var a = _a - probability;
+        if (decision == (current & 1))
         {
             // CODEMPS
-            if ((_a & 0x8000) != 0)
+            if ((a & 0x8000) != 0)
             {
+                _a = a;
                 _c += probability;
                 return;
             }
 
-            if (_a < probability)
+            if (a < probability)
             {
-                _a = probability;
+                a = probability;
             }
             else
             {
                 _c += probability;
             }
 
-            context = (byte)((Jpeg2000MqTables.NextMoreProbable[state] << 1) | moreProbable);
+            context = (byte)(transitions >> 16);
         }
         else
         {
             // CODELPS
-            if (_a < probability)
+            if (a < probability)
             {
                 _c += probability;
             }
             else
             {
-                _a = probability;
+                a = probability;
             }
 
-            var nextMoreProbable = Jpeg2000MqTables.Switch[state] != 0 ? 1 - moreProbable : moreProbable;
-            context = (byte)((Jpeg2000MqTables.NextLessProbable[state] << 1) | nextMoreProbable);
+            context = (byte)(transitions >> 24);
         }
 
-        // RENORME
-        do
+        // RENORME: a shift of n bits equals n shifts of one bit, a byte being written whenever the count reaches zero
+        var shift = BitOperations.LeadingZeroCount(a) - 16;
+        if (shift < _ct)
         {
-            _a <<= 1;
-            _c <<= 1;
-            _ct--;
+            _a = a << shift;
+            _c <<= shift;
+            _ct -= shift;
+            return;
+        }
+
+        while (true)
+        {
+            var count = Math.Min(shift, _ct);
+            a <<= count;
+            _c <<= count;
+            _ct -= count;
+            shift -= count;
             if (_ct == 0)
             {
-                ByteOut();
+                (_c, _ct) = ByteOut(_output, _start, _c);
             }
+
+            if (shift == 0)
+                break;
         }
-        while ((_a & 0x8000) == 0);
+
+        _a = a;
     }
 
     /// <summary>Terminates the codeword segment (FLUSH).</summary>
@@ -99,9 +128,9 @@ internal struct Jpeg2000MqEncoder
         }
 
         _c <<= _ct;
-        ByteOut();
+        (_c, _ct) = ByteOut(_output, _start, _c);
         _c <<= _ct;
-        ByteOut();
+        (_c, _ct) = ByteOut(_output, _start, _c);
 
         // A segment does not end with an FF byte: the decoder supplies 1 bits past the end
         if (_output.Length > _start && _output.WrittenSpan[^1] == 0xFF)
@@ -112,35 +141,32 @@ internal struct Jpeg2000MqEncoder
         return _output.Length - _start;
     }
 
-    private void ByteOut()
+    // BYTEOUT: writes the next byte of the code register; returns the code register without it and the number of bits
+    // before the next byte
+    private static (uint C, int Count) ByteOut(PooledPayloadWriter output, int start, uint c)
     {
-        var hasByte = _output.Length > _start;
-        var last = hasByte ? _output.WrittenSpan[^1] : (byte)0;
+        var hasByte = output.Length > start;
+        var last = hasByte ? output.WrittenSpan[^1] : (byte)0;
         if (last == 0xFF)
         {
             // The byte that follows an FF byte holds seven bits
-            _output.Write((byte)(_c >> 20));
-            _c &= 0xFFFFF;
-            _ct = 7;
-            return;
+            output.Write((byte)(c >> 20));
+            return (c & 0xFFFFF, 7);
         }
 
-        if (_c >= 0x8000000 && hasByte)
+        if (c >= 0x8000000 && hasByte)
         {
             // The carry goes into the last byte
-            _output.WrittenSpan[^1] = ++last;
-            _c &= 0x7FFFFFF;
+            output.WrittenSpan[^1] = ++last;
+            c &= 0x7FFFFFF;
             if (last == 0xFF)
             {
-                _output.Write((byte)(_c >> 20));
-                _c &= 0xFFFFF;
-                _ct = 7;
-                return;
+                output.Write((byte)(c >> 20));
+                return (c & 0xFFFFF, 7);
             }
         }
 
-        _output.Write((byte)(_c >> 19));
-        _c &= 0x7FFFF;
-        _ct = 8;
+        output.Write((byte)(c >> 19));
+        return (c & 0x7FFFF, 8);
     }
 }

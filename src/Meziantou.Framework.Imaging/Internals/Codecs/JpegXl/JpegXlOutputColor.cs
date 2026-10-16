@@ -1,3 +1,5 @@
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -173,21 +175,7 @@ internal sealed class JpegXlOutputColor
     /// <summary>Converts rows of XYB samples in place: the samples of the three channels, or the gray samples in the first one.</summary>
     public void Apply(Span<float> x, Span<float> y, Span<float> b)
     {
-        var m = _matrix;
-        for (var i = 0; i < x.Length; i++)
-        {
-            // The sum and the difference of Y and X, and B, are the cube roots of the responses of three cone types
-            var gammaR = (y[i] + x[i]) - _biasRoot[0];
-            var gammaG = (y[i] - x[i]) - _biasRoot[1];
-            var gammaB = b[i] - _biasRoot[2];
-            var mixedR = (gammaR * gammaR * gammaR) + _bias[0];
-            var mixedG = (gammaG * gammaG * gammaG) + _bias[1];
-            var mixedB = (gammaB * gammaB * gammaB) + _bias[2];
-            x[i] = (m[0] * mixedR) + (m[1] * mixedG) + (m[2] * mixedB);
-            y[i] = (m[3] * mixedR) + (m[4] * mixedG) + (m[5] * mixedB);
-            b[i] = (m[6] * mixedR) + (m[7] * mixedG) + (m[8] * mixedB);
-        }
-
+        XybToLinear(x, y, b, _matrix, _biasRoot, _bias);
         if (_transfer == JpegXlColorEncoding.TransferLinear)
             return;
 
@@ -208,6 +196,74 @@ internal sealed class JpegXlOutputColor
         {
             Encode(y);
             Encode(b);
+        }
+    }
+
+    /// <summary>
+    /// Converts rows of XYB samples to linear samples in place, four at a time: each lane performs the operations of
+    /// <see cref="XybToLinearScalar"/> in the same order.
+    /// </summary>
+    /// <param name="x">The X samples, replaced with the first linear channel.</param>
+    /// <param name="y">The Y samples, replaced with the second linear channel.</param>
+    /// <param name="b">The B samples, replaced with the third linear channel.</param>
+    /// <param name="matrix">The 3x3 matrix from the mixed responses to the linear channels, row by row.</param>
+    /// <param name="biasRoot">The cube roots of the biases, subtracted before the cube.</param>
+    /// <param name="bias">The biases, added after the cube.</param>
+    internal static void XybToLinear(Span<float> x, Span<float> y, Span<float> b, ReadOnlySpan<float> matrix, ReadOnlySpan<float> biasRoot, ReadOnlySpan<float> bias)
+    {
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            var m0 = Vector128.Create(matrix[0]);
+            var m1 = Vector128.Create(matrix[1]);
+            var m2 = Vector128.Create(matrix[2]);
+            var m3 = Vector128.Create(matrix[3]);
+            var m4 = Vector128.Create(matrix[4]);
+            var m5 = Vector128.Create(matrix[5]);
+            var m6 = Vector128.Create(matrix[6]);
+            var m7 = Vector128.Create(matrix[7]);
+            var m8 = Vector128.Create(matrix[8]);
+            var rootR = Vector128.Create(biasRoot[0]);
+            var rootG = Vector128.Create(biasRoot[1]);
+            var rootB = Vector128.Create(biasRoot[2]);
+            var biasR = Vector128.Create(bias[0]);
+            var biasG = Vector128.Create(bias[1]);
+            var biasB = Vector128.Create(bias[2]);
+            for (; i <= x.Length - 4; i += 4)
+            {
+                var valueX = Vector128.Create(x.Slice(i, 4));
+                var valueY = Vector128.Create(y.Slice(i, 4));
+                var gammaR = (valueY + valueX) - rootR;
+                var gammaG = (valueY - valueX) - rootG;
+                var gammaB = Vector128.Create(b.Slice(i, 4)) - rootB;
+                var mixedR = (gammaR * gammaR * gammaR) + biasR;
+                var mixedG = (gammaG * gammaG * gammaG) + biasG;
+                var mixedB = (gammaB * gammaB * gammaB) + biasB;
+                ((m0 * mixedR) + (m1 * mixedG) + (m2 * mixedB)).CopyTo(x.Slice(i, 4));
+                ((m3 * mixedR) + (m4 * mixedG) + (m5 * mixedB)).CopyTo(y.Slice(i, 4));
+                ((m6 * mixedR) + (m7 * mixedG) + (m8 * mixedB)).CopyTo(b.Slice(i, 4));
+            }
+        }
+
+        XybToLinearScalar(x[i..], y[i..], b[i..], matrix, biasRoot, bias);
+    }
+
+    /// <summary>The scalar reference of <see cref="XybToLinear"/>.</summary>
+    internal static void XybToLinearScalar(Span<float> x, Span<float> y, Span<float> b, ReadOnlySpan<float> matrix, ReadOnlySpan<float> biasRoot, ReadOnlySpan<float> bias)
+    {
+        var m = matrix[..9];
+        for (var i = 0; i < x.Length; i++)
+        {
+            // The sum and the difference of Y and X, and B, are the cube roots of the responses of three cone types
+            var gammaR = (y[i] + x[i]) - biasRoot[0];
+            var gammaG = (y[i] - x[i]) - biasRoot[1];
+            var gammaB = b[i] - biasRoot[2];
+            var mixedR = (gammaR * gammaR * gammaR) + bias[0];
+            var mixedG = (gammaG * gammaG * gammaG) + bias[1];
+            var mixedB = (gammaB * gammaB * gammaB) + bias[2];
+            x[i] = (m[0] * mixedR) + (m[1] * mixedG) + (m[2] * mixedB);
+            y[i] = (m[3] * mixedR) + (m[4] * mixedG) + (m[5] * mixedB);
+            b[i] = (m[6] * mixedR) + (m[7] * mixedG) + (m[8] * mixedB);
         }
     }
 

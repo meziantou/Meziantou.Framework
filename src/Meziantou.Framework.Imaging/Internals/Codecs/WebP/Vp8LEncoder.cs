@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -156,28 +157,93 @@ internal sealed class Vp8LEncoder : IDisposable
 
     private static bool TryBuildPalette(ReadOnlySpan<uint> argb, out uint[] palette)
     {
-        var colors = new HashSet<uint>();
-        foreach (var pixel in argb)
+        // The distinct colors, up to 257: a pixel equal to the previous one is skipped (runs are common)
+        var colors = new ColorTable();
+        var count = 0;
+        var previous = 0u;
+        for (var i = 0; i < argb.Length; i++)
         {
-            if (colors.Add(pixel) && colors.Count > 256)
+            var pixel = argb[i];
+            if (i > 0 && pixel == previous)
+                continue;
+
+            previous = pixel;
+            if (colors.Add(pixel, count) && ++count > 256)
             {
                 palette = [];
                 return false;
             }
         }
 
-        palette = [.. colors];
+        palette = colors.GetColors(count);
         Array.Sort(palette);
         return true;
     }
 
+    /// <summary>An open-addressing table of at most 257 colors and their values, with 1,024 slots.</summary>
+    private sealed class ColorTable
+    {
+        private const int SlotBits = 10;
+        private readonly uint[] _colors = new uint[1 << SlotBits];
+        private readonly int[] _values = new int[1 << SlotBits];
+        private readonly bool[] _used = new bool[1 << SlotBits];
+
+        /// <summary>Adds a color with its value.</summary>
+        /// <returns><see langword="true"/> when the color was not in the table.</returns>
+        public bool Add(uint color, int value)
+        {
+            var slot = Find(color);
+            if (_used[slot])
+                return false;
+
+            _used[slot] = true;
+            _colors[slot] = color;
+            _values[slot] = value;
+            return true;
+        }
+
+        /// <summary>Gets the value of a color of the table.</summary>
+        public int GetValue(uint color) => _values[Find(color)];
+
+        public uint[] GetColors(int count)
+        {
+            var colors = new uint[count];
+            var index = 0;
+            for (var slot = 0; slot < _used.Length; slot++)
+            {
+                if (_used[slot])
+                {
+                    colors[index++] = _colors[slot];
+                }
+            }
+
+            return colors;
+        }
+
+        // The slot of the color, or the free slot where it would be inserted
+        private int Find(uint color)
+        {
+            var mask = _used.Length - 1;
+            var slot = (int)((color * 0x9E3779B1u) >> (32 - SlotBits));
+            while (_used[slot] && _colors[slot] != color)
+            {
+                slot = (slot + 1) & mask;
+            }
+
+            return slot;
+        }
+    }
+
     private void PackIndexes(ReadOnlySpan<uint> argb, int width, int height, uint[] palette, int widthBits, Span<uint> packed, int packedWidth)
     {
-        var lookup = new Dictionary<uint, int>(palette.Length);
+        var lookup = new ColorTable();
         for (var i = 0; i < palette.Length; i++)
         {
-            lookup[palette[i]] = i;
+            lookup.Add(palette[i], i);
         }
+
+        var previousColor = palette[0];
+        var previousIndex = 0;
 
         var bitsPerIndex = 8 >> widthBits;
         var perPixel = 1 << widthBits;
@@ -194,7 +260,14 @@ internal sealed class Vp8LEncoder : IDisposable
                     var source = (x << widthBits) + k;
                     if (source < width)
                     {
-                        value |= (uint)lookup[row[source]] << (k * bitsPerIndex);
+                        var color = row[source];
+                        if (color != previousColor)
+                        {
+                            previousColor = color;
+                            previousIndex = lookup.GetValue(color);
+                        }
+
+                        value |= (uint)previousIndex << (k * bitsPerIndex);
                     }
                 }
 
@@ -248,14 +321,20 @@ internal sealed class Vp8LEncoder : IDisposable
         _writer.WriteBits((uint)(bits - 2), 3);
         EncodeSpatialImage(modes, tilesX, tilesY, isMainImage: false);
 
-        // Residuals in reverse scan order, so that every prediction reads original pixels
+        // Residuals from the last row to the first, so that every prediction reads original pixels: a row is computed whole
+        // (from its original pixels and the original row above) before it is replaced
+        Span<uint> residuals = stackalloc uint[1 << TransformTileBits];
         for (var y = height - 1; y >= 0; y--)
         {
             var row = y * width;
-            for (var x = width - 1; x >= 0; x--)
+            for (var tx = tilesX - 1; tx >= 0; tx--)
             {
-                var mode = (int)((modes[((y >> bits) * tilesX) + (x >> bits)] >> 8) & 0xF);
-                argb[row + x] = SubtractPixels(argb[row + x], Predict(argb, width, x, y, mode));
+                var x0 = tx << bits;
+                var x1 = Math.Min(width, x0 + (1 << bits));
+                var mode = (int)((modes[((y >> bits) * tilesX) + tx] >> 8) & 0xF);
+                var segment = residuals[..(x1 - x0)];
+                PredictionResiduals(argb, width, y, x0, x1, mode, segment);
+                segment.CopyTo(argb.Slice(row + x0, x1 - x0));
             }
         }
     }
@@ -272,7 +351,210 @@ internal sealed class Vp8LEncoder : IDisposable
         return Vp8LTransforms.Predict(mode, argb[index - 1], argb[index - width], argb[index - width + 1], argb[index - width - 1]);
     }
 
-    private static double TileCost(ReadOnlySpan<uint> argb, int width, int height, int tx, int ty, int bits, int mode, Span<int> histogram)
+    /// <summary>
+    /// The cost of predicting a tile with a mode: the entropy of the residual components when <paramref name="histogram"/> is
+    /// given (4 x 256 entries), otherwise the sum of their magnitudes. The residuals of each row are computed 4 at a time.
+    /// </summary>
+    internal static double TileCost(ReadOnlySpan<uint> argb, int width, int height, int tx, int ty, int bits, int mode, Span<int> histogram)
+    {
+        var x0 = tx << bits;
+        var y0 = ty << bits;
+        var x1 = Math.Min(width, x0 + (1 << bits));
+        var y1 = Math.Min(height, y0 + (1 << bits));
+        if (!histogram.IsEmpty)
+        {
+            histogram.Clear();
+        }
+
+        Span<uint> residuals = stackalloc uint[1 << TransformTileBits];
+        residuals = residuals[..(x1 - x0)];
+        long sum = 0;
+        for (var y = y0; y < y1; y++)
+        {
+            PredictionResiduals(argb, width, y, x0, x1, mode, residuals);
+            if (histogram.IsEmpty)
+            {
+                sum += MagnitudeSum(residuals);
+            }
+            else
+            {
+                foreach (var residual in residuals)
+                {
+                    histogram[(int)(residual & 0xFF)]++;
+                    histogram[256 + (int)((residual >> 8) & 0xFF)]++;
+                    histogram[512 + (int)((residual >> 16) & 0xFF)]++;
+                    histogram[768 + (int)(residual >> 24)]++;
+                }
+            }
+        }
+
+        if (histogram.IsEmpty)
+            return sum;
+
+        var count = (x1 - x0) * (y1 - y0);
+        return Entropy(histogram[..256], count) + Entropy(histogram.Slice(256, 256), count) + Entropy(histogram.Slice(512, 256), count) + Entropy(histogram.Slice(768, 256), count);
+    }
+
+    /// <summary>The sum of the magnitudes of the signed components of residuals.</summary>
+    private static long MagnitudeSum(ReadOnlySpan<uint> residuals)
+    {
+        long sum = 0;
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            // Byte magnitudes (|-128| is 128 as a byte), then the 4 bytes of each lane added: at most 1020 per lane
+            var total = Vector128<uint>.Zero;
+            var lowBytes = Vector128.Create(0x00FF00FFu);
+            for (; i <= residuals.Length - Vector128<uint>.Count; i += Vector128<uint>.Count)
+            {
+                var magnitudes = Vector128.Abs(Vector128.Create(residuals.Slice(i, Vector128<uint>.Count)).AsSByte()).AsUInt32();
+                var pairs = (magnitudes & lowBytes) + (Vector128.ShiftRightLogical(magnitudes, 8) & lowBytes);
+                total += (pairs & Vector128.Create(0xFFFFu)) + Vector128.ShiftRightLogical(pairs, 16);
+            }
+
+            sum = Vector128.Sum(total);
+        }
+
+        for (; i < residuals.Length; i++)
+        {
+            var residual = residuals[i];
+            sum += Math.Abs((int)(sbyte)residual) + Math.Abs((int)(sbyte)(residual >> 8)) + Math.Abs((int)(sbyte)(residual >> 16)) + Math.Abs((int)(sbyte)(residual >> 24));
+        }
+
+        return sum;
+    }
+
+    /// <summary>
+    /// Computes the residuals of the pixels <paramref name="x0"/> to <paramref name="x1"/> of row <paramref name="y"/> predicted
+    /// with a mode from the (original) pixels: the first row predicts from the left (black for the first pixel), the first
+    /// column from the top. Pixels that are not on the first row or column are computed 4 at a time.
+    /// </summary>
+    internal static void PredictionResiduals(ReadOnlySpan<uint> argb, int width, int y, int x0, int x1, int mode, Span<uint> residuals)
+    {
+        var row = y * width;
+        var x = x0;
+        if (y > 0 && Vector128.IsHardwareAccelerated)
+        {
+            if (x == 0)
+            {
+                residuals[0] = SubtractPixels(argb[row], argb[row - width]);
+                x = 1;
+            }
+
+            for (; x <= x1 - Vector128<uint>.Count; x += Vector128<uint>.Count)
+            {
+                var index = row + x;
+                var current = Vector128.Create(argb.Slice(index, Vector128<uint>.Count));
+                var left = Vector128.Create(argb.Slice(index - 1, Vector128<uint>.Count));
+                var top = Vector128.Create(argb.Slice(index - width, Vector128<uint>.Count));
+                var topRight = Vector128.Create(argb.Slice(index - width + 1, Vector128<uint>.Count));
+                var topLeft = Vector128.Create(argb.Slice(index - width - 1, Vector128<uint>.Count));
+                var prediction = PredictVector(mode, left, top, topRight, topLeft);
+                (current.AsByte() - prediction.AsByte()).AsUInt32().CopyTo(residuals.Slice(x - x0, Vector128<uint>.Count));
+            }
+        }
+
+        for (; x < x1; x++)
+        {
+            residuals[x - x0] = SubtractPixels(argb[row + x], Predict(argb, width, x, y, mode));
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="PredictionResiduals"/>.</summary>
+    internal static void PredictionResidualsScalar(ReadOnlySpan<uint> argb, int width, int y, int x0, int x1, int mode, Span<uint> residuals)
+    {
+        for (var x = x0; x < x1; x++)
+        {
+            residuals[x - x0] = SubtractPixels(argb[(y * width) + x], Predict(argb, width, x, y, mode));
+        }
+    }
+
+    // Vp8LTransforms.Predict for 4 pixels: the same formulas in 32-bit lanes (averages), bytes (select distances) and 16-bit
+    // lanes (clamped sums)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<uint> PredictVector(int mode, Vector128<uint> left, Vector128<uint> top, Vector128<uint> topRight, Vector128<uint> topLeft)
+    {
+        switch (mode)
+        {
+            case 1:
+                return left;
+            case 2:
+                return top;
+            case 3:
+                return topRight;
+            case 4:
+                return topLeft;
+            case 5:
+                return Average2(Average2(left, topRight), top);
+            case 6:
+                return Average2(left, topLeft);
+            case 7:
+                return Average2(left, top);
+            case 8:
+                return Average2(topLeft, top);
+            case 9:
+                return Average2(top, topRight);
+            case 10:
+                return Average2(Average2(left, topLeft), Average2(top, topRight));
+            case 11:
+            {
+                // Select: left when the distance sum |T - TL| is below |L - TL|, otherwise top
+                var distanceToLeft = ComponentDistance(top, topLeft);
+                var distanceToTop = ComponentDistance(left, topLeft);
+                return Vector128.ConditionalSelect(Vector128.LessThan(distanceToLeft, distanceToTop), left, top);
+            }
+
+            case 12:
+                return ClampedSum(left, top, topLeft);
+            case 13:
+                return ClampedHalfSum(Average2(left, top), topLeft);
+            default:
+                return Vector128.Create(Vp8LTransforms.Black);
+        }
+
+        static Vector128<uint> Average2(Vector128<uint> a, Vector128<uint> b) => Vector128.ShiftRightLogical((a ^ b) & Vector128.Create(0xFEFEFEFEu), 1) + (a & b);
+
+        static Vector128<uint> ComponentDistance(Vector128<uint> a, Vector128<uint> b)
+        {
+            var differences = Vector128.Max(a.AsByte(), b.AsByte()) - Vector128.Min(a.AsByte(), b.AsByte());
+            var lowBytes = Vector128.Create(0x00FF00FFu);
+            var pairs = (differences.AsUInt32() & lowBytes) + (Vector128.ShiftRightLogical(differences.AsUInt32(), 8) & lowBytes);
+            return (pairs & Vector128.Create(0xFFFFu)) + Vector128.ShiftRightLogical(pairs, 16);
+        }
+
+        // a + b - c per component, clamped to 0-255
+        static Vector128<uint> ClampedSum(Vector128<uint> a, Vector128<uint> b, Vector128<uint> c)
+        {
+            var low = (Widen(a, upper: false) + Widen(b, upper: false)) - Widen(c, upper: false);
+            var high = (Widen(a, upper: true) + Widen(b, upper: true)) - Widen(c, upper: true);
+            return Narrow(low, high);
+        }
+
+        // a + (a - b) / 2 per component (the division truncates toward zero), clamped to 0-255
+        static Vector128<uint> ClampedHalfSum(Vector128<uint> a, Vector128<uint> b)
+        {
+            return Narrow(Half(Widen(a, upper: false), Widen(b, upper: false)), Half(Widen(a, upper: true), Widen(b, upper: true)));
+
+            static Vector128<short> Half(Vector128<short> a, Vector128<short> b)
+            {
+                var difference = a - b;
+                var quotient = Vector128.ShiftRightArithmetic(difference + (Vector128.ShiftRightLogical(difference.AsUInt16(), 15).AsInt16()), 1);
+                return a + quotient;
+            }
+        }
+
+        static Vector128<short> Widen(Vector128<uint> value, bool upper) => (upper ? Vector128.WidenUpper(value.AsByte()) : Vector128.WidenLower(value.AsByte())).AsInt16();
+
+        static Vector128<uint> Narrow(Vector128<short> low, Vector128<short> high)
+        {
+            var zero = Vector128<short>.Zero;
+            var max = Vector128.Create((short)255);
+            return Vector128.Narrow(Vector128.Min(Vector128.Max(low, zero), max).AsUInt16(), Vector128.Min(Vector128.Max(high, zero), max).AsUInt16()).AsUInt32();
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="TileCost"/>.</summary>
+    internal static double TileCostScalar(ReadOnlySpan<uint> argb, int width, int height, int tx, int ty, int bits, int mode, Span<int> histogram)
     {
         var x0 = tx << bits;
         var y0 = ty << bits;
@@ -316,11 +598,14 @@ internal sealed class Vp8LEncoder : IDisposable
         var tilesX = Vp8LDecoder.DivRoundUp(width, bits);
         var tilesY = Vp8LDecoder.DivRoundUp(height, bits);
         var elements = RentPixels((long)tilesX * tilesY);
-        var histogram = new int[256];
+        var histogram = new int[ElementSearch.Lanes * 256];
+        var fixedHistogram = new int[256];
         var tileSize = 1 << (2 * bits);
         var green = new int[tileSize];
         var red = new int[tileSize];
         var blue = new int[tileSize];
+        var movingValues = new int[tileSize];
+        var movingMultipliers = new int[tileSize];
         for (var ty = 0; ty < tilesY; ty++)
         {
             _cancellationToken.ThrowIfCancellationRequested();
@@ -344,15 +629,15 @@ internal sealed class Vp8LEncoder : IDisposable
                 }
 
                 // Green to red first (red only depends on it), then green to blue, then red to blue on the result
-                var greenToRed = SearchColorElement(red.AsSpan(0, count), green.AsSpan(0, count), histogram);
-                var greenToBlue = SearchColorElement(blue.AsSpan(0, count), green.AsSpan(0, count), histogram);
+                var greenToRed = SearchColorElement(red.AsSpan(0, count), green.AsSpan(0, count), histogram, fixedHistogram, movingValues, movingMultipliers);
+                var greenToBlue = SearchColorElement(blue.AsSpan(0, count), green.AsSpan(0, count), histogram, fixedHistogram, movingValues, movingMultipliers);
                 for (var i = 0; i < count; i++)
                 {
                     blue[i] = (blue[i] - Vp8LTransforms.ColorTransformDelta(greenToBlue, (sbyte)green[i])) & 0xFF;
                     red[i] = (sbyte)red[i];
                 }
 
-                var redToBlue = SearchColorElement(blue.AsSpan(0, count), red.AsSpan(0, count), histogram);
+                var redToBlue = SearchColorElement(blue.AsSpan(0, count), red.AsSpan(0, count), histogram, fixedHistogram, movingValues, movingMultipliers);
                 elements[(ty * tilesX) + tx] = 0xFF000000u | ((uint)(byte)redToBlue << 16) | ((uint)(byte)greenToBlue << 8) | (byte)greenToRed;
                 for (var y = y0; y < y1; y++)
                 {
@@ -375,16 +660,36 @@ internal sealed class Vp8LEncoder : IDisposable
     /// (the color transform of one channel by one signed channel): a coarse search, then a refinement around the best value;
     /// ties keep the value searched first (zero first).
     /// </summary>
-    private static sbyte SearchColorElement(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] histogram)
+    private static sbyte SearchColorElement(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] histogram, int[] fixedHistogram, int[] movingValues, int[] movingMultipliers)
     {
+        // The values whose multiplier is zero fall in the same bin whatever t: they are counted once, and every candidate
+        // starts from their histogram (the counts, hence the costs, are the ones of counting every value)
+        Array.Clear(fixedHistogram);
+        multipliers = multipliers[..values.Length];
+        var moving = 0;
+        for (var i = 0; i < values.Length; i++)
+        {
+            if (multipliers[i] == 0)
+            {
+                fixedHistogram[values[i] & 0xFF]++;
+            }
+            else
+            {
+                movingValues[moving] = values[i];
+                movingMultipliers[moving] = multipliers[i];
+                moving++;
+            }
+        }
+
+        var search = new ElementSearch(movingValues.AsSpan(0, moving), movingMultipliers.AsSpan(0, moving), fixedHistogram, histogram, values.Length);
         var best = 0;
-        var bestCost = ElementCost(values, multipliers, histogram, 0);
+        var bestCost = search.Cost(0);
         for (var t = -96; t <= 96; t += 8)
         {
             if (t == 0)
                 continue;
 
-            var cost = ElementCost(values, multipliers, histogram, t);
+            var cost = search.Cost(t);
             if (cost < bestCost)
             {
                 bestCost = cost;
@@ -398,7 +703,7 @@ internal sealed class Vp8LEncoder : IDisposable
             if (t == center || t is < -128 or > 127)
                 continue;
 
-            var cost = ElementCost(values, multipliers, histogram, t);
+            var cost = search.Cost(t);
             if (cost < bestCost)
             {
                 bestCost = cost;
@@ -409,16 +714,55 @@ internal sealed class Vp8LEncoder : IDisposable
         return (sbyte)best;
     }
 
-    private static double ElementCost(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] histogram, int t)
+    /// <summary>The cost of the values of a channel transformed by <c>t</c>: the zero-multiplier histogram plus the other values.</summary>
+    /// <remarks>
+    /// The values are counted in <see cref="Lanes"/> interleaved histograms (consecutive values often fall in the same bin:
+    /// one histogram would make every increment wait for the previous one), added bin by bin for the entropy.
+    /// </remarks>
+    private readonly ref struct ElementSearch(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] fixedHistogram, int[] histograms, int count)
     {
-        Array.Clear(histogram);
-        multipliers = multipliers[..values.Length];
-        for (var i = 0; i < values.Length; i++)
-        {
-            histogram[(values[i] - ((t * multipliers[i]) >> 5)) & 0xFF]++;
-        }
+        public const int Lanes = 4;
 
-        return Entropy(histogram, values.Length);
+        private readonly ReadOnlySpan<int> _values = values;
+        private readonly ReadOnlySpan<int> _multipliers = multipliers;
+
+        public double Cost(int t)
+        {
+            fixedHistogram.CopyTo(histograms, 0);
+            histograms.AsSpan(256).Clear();
+            var samples = _values;
+            var factors = _multipliers[..samples.Length];
+            var h1 = histograms.AsSpan(256, 256);
+            var h2 = histograms.AsSpan(512, 256);
+            var h3 = histograms.AsSpan(768, 256);
+            var h0 = histograms.AsSpan(0, 256);
+            var i = 0;
+            for (; i <= samples.Length - Lanes; i += Lanes)
+            {
+                h0[(samples[i] - ((t * factors[i]) >> 5)) & 0xFF]++;
+                h1[(samples[i + 1] - ((t * factors[i + 1]) >> 5)) & 0xFF]++;
+                h2[(samples[i + 2] - ((t * factors[i + 2]) >> 5)) & 0xFF]++;
+                h3[(samples[i + 3] - ((t * factors[i + 3]) >> 5)) & 0xFF]++;
+            }
+
+            for (; i < samples.Length; i++)
+            {
+                h0[(samples[i] - ((t * factors[i]) >> 5)) & 0xFF]++;
+            }
+
+            // The entropy of the summed histogram, bin by bin in order (as Entropy)
+            var cost = count * Log2Count(count);
+            for (var bin = 0; bin < 256; bin++)
+            {
+                var value = h0[bin] + h1[bin] + h2[bin] + h3[bin];
+                if (value > 1)
+                {
+                    cost -= value * Log2Count(value);
+                }
+            }
+
+            return cost;
+        }
     }
 
     /// <summary>The Shannon cost in bits of the symbols of <paramref name="histogram"/> (<paramref name="count"/> in total).</summary>
@@ -1064,6 +1408,7 @@ internal sealed class Vp8LEncoder : IDisposable
                 Try(pixels, position, _width, maxLength, ref bestLength, ref bestDistance);
             }
 
+            var previous = _previous;
             var candidate = _head[Hash(position)];
             while (candidate != uint.MaxValue && chainDepth-- > 0 && bestLength < maxLength)
             {
@@ -1072,12 +1417,13 @@ internal sealed class Vp8LEncoder : IDisposable
                     break;
 
                 Try(pixels, position, distance, maxLength, ref bestLength, ref bestDistance);
-                candidate = _previous[(int)candidate];
+                candidate = previous[(int)candidate];
             }
 
             return (bestLength, bestDistance);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Try(ReadOnlySpan<uint> pixels, int position, int distance, int maxLength, ref int bestLength, ref int bestDistance)
         {
             if (distance <= 0 || distance > position || distance > MaxDistance || bestLength >= maxLength)

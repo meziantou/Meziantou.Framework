@@ -91,6 +91,53 @@ public sealed class DrawingReferenceTests
         Assert.Empty(failures.Take(3));
     }
 
+    [Theory]
+    [MemberData(nameof(AllFormats))]
+    public void WideShapesWhosePaintReplacesThePixelsMatchTheExactReference(PixelFormat format)
+    {
+        // Rows long enough for the runs of pixels covered entirely to be written at once: an opaque paint with
+        // source-over, and any paint, transparent included, with the operator that replaces the pixels
+        const int Cases = 120;
+        var failures = new List<string>();
+        for (var index = 0; index < Cases; index++)
+        {
+            var random = new Random(Seed + 9000 + index);
+            var width = random.Next(16, 80);
+            var height = random.Next(1, 6);
+            var polygons = CreatePolygons(random, width, height);
+            var evenOdd = random.Next(2) == 0;
+            var color = CreateColor(random);
+            var mode = (index % 3) switch
+            {
+                0 => CompositeMode.SourceOver,
+                _ => CompositeMode.Source,
+            };
+
+            color = (index % 4) switch
+            {
+                0 or 1 => new Rgba64(color.R, color.G, color.B, ushort.MaxValue),
+                2 => new Rgba64(color.R, color.G, color.B, 0),
+                _ => color,
+            };
+
+            using var image = DrawingTestSupport.CreateRandom(format, width, height, new Random(Seed - 9000 - index).Next);
+            var frame = image.Frames[0];
+            var before = DrawingTestSupport.ReadSamples(frame);
+            var path = DrawingTestSupport.ToPath(polygons);
+            var brush = new SolidBrush(color) { CompositeMode = mode };
+            frame.Draw(canvas => canvas.Fill(brush, path, evenOdd ? FillRule.EvenOdd : FillRule.NonZero), Ct);
+
+            var areas = ReferenceCoverage.Compute(ReferenceCoverage.FromPolygons(polygons), width, height, evenOdd);
+            var mismatch = DrawingTestSupport.Compare(frame, before, areas, DrawingTestSupport.ToPaint(color, format), ToReference(mode));
+            if (mismatch is not null)
+            {
+                failures.Add($"case {index} ({mode}, {width}x{height}, {(evenOdd ? "even-odd" : "non-zero")}, color {color}, polygons {Describe(polygons)}):{Environment.NewLine}{mismatch}");
+            }
+        }
+
+        Assert.Empty(failures.Take(3));
+    }
+
     [Fact]
     public void TheReferenceOfTheOperatorsIsTheReferenceOfSourceOver()
     {
@@ -490,7 +537,9 @@ public sealed class DrawingReferenceTests
     [MemberData(nameof(AllFormats))]
     public void RandomGradientsMatchTheExactReference(PixelFormat format)
     {
-        const int Cases = 120;
+        // The last cases are linear gradients along a vertical axis, whose rows have one color
+        const int Cases = 150;
+        const int VerticalCases = 30;
         var layout = ReferencePixelLayout.FromPixelFormat(format);
         var failures = new List<string>();
         for (var index = 0; index < Cases; index++)
@@ -504,8 +553,14 @@ public sealed class DrawingReferenceTests
             var stops = offsets.Select(offset => new GradientStop(offset, CreateColor(random))).ToArray();
             var spreadMode = (GradientSpreadMode)random.Next(4);
             double Coordinate(int size) => random.Next(3) == 0 ? random.Next(-2, size + 3) : (random.NextDouble() * (size + 4)) - 2;
-            var radial = random.Next(2) == 0;
+            var isVertical = index >= Cases - VerticalCases;
+            var radial = random.Next(2) == 0 && !isVertical;
             var (x0, y0, x1, y1) = (Coordinate(width), Coordinate(height), Coordinate(width), Coordinate(height));
+            if (isVertical)
+            {
+                x1 = x0;
+            }
+
             var radius = random.Next(4) == 0 ? random.Next(0, 6) : random.NextDouble() * 8;
             GradientBrush brush = radial
                 ? new RadialGradientBrush(new PointD(x0, y0), radius, stops) { SpreadMode = spreadMode }
@@ -552,6 +607,64 @@ public sealed class DrawingReferenceTests
     // -----------------------------------------------------------------------------------------------------------------
     // Pixel formats: the same picture whatever the layout
     // -----------------------------------------------------------------------------------------------------------------
+
+    [Theory]
+    [MemberData(nameof(AllFormats))]
+    public void GradientsPaintTheRunsOnBothSidesOfAHole(PixelFormat format)
+    {
+        // A band with a hole: the rows have two runs apart, and the pixels between them are not painted
+        const int Cases = 40;
+        var layout = ReferencePixelLayout.FromPixelFormat(format);
+        var failures = new List<string>();
+        for (var index = 0; index < Cases; index++)
+        {
+            var random = new Random(Seed + 11000 + index);
+            var width = random.Next(30, 90);
+            var height = random.Next(1, 5);
+            var holeLeft = random.Next(1, 8) + (random.Next(4) / 4.0);
+            var holeRight = width - random.Next(1, 8) - (random.Next(4) / 4.0);
+            List<IReadOnlyList<(double X, double Y)>> polygons =
+            [
+                [(0.25, -1), (width - 0.5, -1), (width - 0.5, height + 1), (0.25, height + 1)],
+                [(holeLeft, -1), (holeRight, -1), (holeRight, height + 1), (holeLeft, height + 1)],
+            ];
+            var offsets = Enumerable.Range(0, random.Next(2, 6)).Select(_ => random.Next(17) / 16.0).Order().ToArray();
+            var stops = offsets.Select(offset => new GradientStop(offset, CreateColor(random))).ToArray();
+            var spreadMode = (GradientSpreadMode)random.Next(3);
+            var (x0, y0, x1, y1) = (random.NextDouble() * width, random.NextDouble() * height, random.NextDouble() * width, random.NextDouble() * height);
+            var brush = new LinearGradientBrush(new PointD(x0, y0), new PointD(x1, y1), stops) { SpreadMode = spreadMode };
+            var referenceStops = stops.Select(stop => (stop.Offset, DrawingTestSupport.ToPaint(stop.Color, format))).ToList();
+            var referenceSpread = spreadMode switch
+            {
+                GradientSpreadMode.Pad => ReferenceSpreadMode.Pad,
+                GradientSpreadMode.Repeat => ReferenceSpreadMode.Repeat,
+                _ => ReferenceSpreadMode.Reflect,
+            };
+            var reference = ReferenceGradient.Linear(x0, y0, x1, y1, referenceStops, referenceSpread, layout);
+
+            using var image = DrawingTestSupport.CreateRandom(format, width, height, new Random(Seed - 11000 - index).Next);
+            var frame = image.Frames[0];
+            var before = DrawingTestSupport.ReadSamples(frame);
+            frame.Draw(canvas => canvas.Fill(brush, DrawingTestSupport.ToPath(polygons), FillRule.EvenOdd), Ct);
+            var after = DrawingTestSupport.ReadSamples(frame);
+            var areas = ReferenceCoverage.Compute(ReferenceCoverage.FromPolygons(polygons), width, height, evenOdd: true);
+            var channels = layout.ChannelCount;
+            for (var pixel = 0; pixel < width * height; pixel++)
+            {
+                var (x, y) = (pixel % width, pixel / width);
+                var (low, high) = ReferenceCoverage.GetAcceptedCoverage(areas[pixel]);
+                var destination = before.AsSpan(pixel * channels, channels).ToArray();
+                var actual = after.AsSpan(pixel * channels, channels).ToArray();
+                if (!ReferenceCompositor.IsAccepted(destination, actual, reference.GetAcceptedPaints(x, y), low, high, layout))
+                {
+                    failures.Add($"case {index} ({width}x{height}, hole {holeLeft:R}..{holeRight:R}, ({x0:R},{y0:R}) ({x1:R},{y1:R}), {spreadMode}, stops {string.Join(' ', stops)}), pixel ({x}, {y}): before [{string.Join(' ', destination)}], actual [{string.Join(' ', actual)}]");
+                    break;
+                }
+            }
+        }
+
+        Assert.Empty(failures.Take(3));
+    }
 
     [Fact]
     public void PixelFormatsThatStoreTheSameSamplesGiveTheSameSamples()

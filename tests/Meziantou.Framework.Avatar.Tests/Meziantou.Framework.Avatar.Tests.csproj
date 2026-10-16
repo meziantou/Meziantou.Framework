@@ -3,6 +3,8 @@
   <Import Project="../../src/Meziantou.Framework.SnapshotTesting/build/Meziantou.Framework.SnapshotTesting.targets" />
 
   <PropertyGroup>
+    <!-- References Meziantou.Framework.Avatar, which depends on ICU -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
   </PropertyGroup>

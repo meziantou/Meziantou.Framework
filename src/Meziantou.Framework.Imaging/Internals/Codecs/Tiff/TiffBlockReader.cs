@@ -1,5 +1,8 @@
+using System.Buffers;
+using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -34,6 +37,11 @@ internal sealed class TiffBlockReader : IDisposable
     private const int MaxBlockOverhead = 4096;
     private const int MaxJpegOverhead = 1024 * 1024;
 
+#if NET11_0_OR_GREATER
+    // The size of the reads of DeflateStream from its source (the length of its rented buffer)
+    private const int InflateStreamPiece = 8192;
+#endif
+
     private static readonly byte[] ReversedBits = CreateReversedBits();
 
     private readonly RandomAccessSource _source;
@@ -41,11 +49,13 @@ internal sealed class TiffBlockReader : IDisposable
     private readonly JpegBlockReceiver? _jpegReceiver;
     private readonly Jpeg2000BlockReceiver? _jpeg2000Receiver;
     private PooledBuffer? _block;
-    private PooledBuffer? _inflateScratch;
     private PooledBuffer? _units;
     private PooledBuffer? _changes;
     private PooledBuffer? _jpegRow;
     private TiffLzwDecoder? _lzw;
+#if NET11_0_OR_GREATER
+    private ZLibDecoder? _zlib;
+#endif
 
     public TiffBlockReader(RandomAccessSource source, TiffPage page)
     {
@@ -118,8 +128,10 @@ internal sealed class TiffBlockReader : IDisposable
     {
         _block?.Dispose();
         _block = null;
-        _inflateScratch?.Dispose();
-        _inflateScratch = null;
+#if NET11_0_OR_GREATER
+        _zlib?.Dispose();
+        _zlib = null;
+#endif
         _units?.Dispose();
         _units = null;
         _changes?.Dispose();
@@ -261,20 +273,28 @@ internal sealed class TiffBlockReader : IDisposable
 
     private void Inflate(PooledBuffer compressed, Span<byte> destination, int index)
     {
+#if NET11_0_OR_GREATER
+        if (TryInflate(compressed.Span, destination))
+            return;
+
+        // The stream path defines the errors: it reads the block again and reports how it fails
+#endif
+        InflateStream(compressed, destination, index);
+    }
+
+    private void InflateStream(PooledBuffer compressed, Span<byte> destination, int index)
+    {
         using var input = new MemoryStream(compressed.RawBuffer, 0, compressed.Length, writable: false);
         using var zlib = new ZLibStream(input, CompressionMode.Decompress);
         try
         {
-            var buffer = _inflateScratch ??= _source.Scope.Rent(64 * 1024, AllocationKind.DecoderState, clear: false);
             var written = 0;
             while (written < destination.Length)
             {
-                var chunk = Math.Min(buffer.Length, destination.Length - written);
-                var read = zlib.Read(buffer.Span[..chunk]);
+                var read = zlib.Read(destination[written..]);
                 if (read <= 0)
                     throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The Deflate data of the TIFF block {index} of page {_page.Index} produced {written} bytes; {destination.Length} are required."));
 
-                buffer.Span[..read].CopyTo(destination[written..]);
                 written += read;
             }
         }
@@ -283,6 +303,49 @@ internal sealed class TiffBlockReader : IDisposable
             throw new InvalidImageContentException(string.Create(CultureInfo.InvariantCulture, $"The Deflate data of the TIFF block {index} of page {_page.Index} is malformed."), ImageFormat.Tiff, exception);
         }
     }
+
+#if NET11_0_OR_GREATER
+    /// <summary>
+    /// Decompresses a block with a decoder reused by every block of the page, fed with the pieces of
+    /// <see cref="InflateStreamPiece"/> bytes in which <see cref="InflateStream"/> reads its source: the decoder sees the
+    /// same input at every step, so it fills the block exactly when the stream path does.
+    /// </summary>
+    /// <returns><see langword="false"/> when the block is malformed or too short (the stream path then reports it).</returns>
+    private bool TryInflate(ReadOnlySpan<byte> compressed, Span<byte> destination)
+    {
+        var decoder = _zlib ??= new ZLibDecoder();
+        decoder.Reset();
+        var written = 0;
+        var position = 0;
+        var pieceEnd = Math.Min(compressed.Length, InflateStreamPiece);
+        while (written < destination.Length)
+        {
+            var status = decoder.Decompress(compressed[position..pieceEnd], destination[written..], out var consumed, out var produced);
+            position += consumed;
+            written += produced;
+            switch (status)
+            {
+                case OperationStatus.Done:
+                    return written == destination.Length;
+
+                case OperationStatus.NeedMoreData:
+                    if (pieceEnd == compressed.Length)
+                        return false;
+
+                    pieceEnd = Math.Min(compressed.Length, pieceEnd + InflateStreamPiece);
+                    break;
+
+                case OperationStatus.DestinationTooSmall:
+                    break;
+
+                default:
+                    return false;
+            }
+        }
+
+        return true;
+    }
+#endif
 
     private void DecodeFax(ReadOnlySpan<byte> compressed, Span<byte> destination, int rowCount, int index)
     {
@@ -308,49 +371,94 @@ internal sealed class TiffBlockReader : IDisposable
     {
         var rowLength = _page.BlockRowLength;
         var samplesPerPixel = _page.SamplesPerPixel;
+        var is8Bit = _page.BitsPerSample == 8;
+        var bigEndian = _page.IsBigEndian;
         for (var row = 0; row < rowCount; row++)
         {
             var line = block.Slice(row * rowLength, rowLength);
-            if (_page.BitsPerSample == 8)
+            if (is8Bit)
             {
-                for (var i = samplesPerPixel; i < line.Length; i++)
-                {
-                    line[i] += line[i - samplesPerPixel];
-                }
+                // Each sample adds the sample of the same channel on its left: the PNG Sub filter with one pixel of samples
+                PngFilters.Unfilter(PngFilters.Sub, line, line, samplesPerPixel);
             }
             else
             {
-                // 16-bit samples are stored in the byte order of the file; the differences are between the 16-bit values
-                var count = line.Length / 2;
-                for (var i = samplesPerPixel; i < count; i++)
-                {
-                    var previous = ReadSample(line, i - samplesPerPixel);
-                    WriteSample(line, i, (ushort)(ReadSample(line, i) + previous));
-                }
+                UndoDifferencing16(line, samplesPerPixel, bigEndian);
             }
         }
     }
 
-    private ushort ReadSample(ReadOnlySpan<byte> line, int index)
+    /// <summary>
+    /// Undoes the horizontal differencing of one row of 16-bit samples, stored in the byte order of the file: each sample
+    /// adds the sample of the same channel on its left, modulo 2^16.
+    /// </summary>
+    /// <remarks>
+    /// With 128-bit hardware vectors, pixels of one to four samples are reconstructed one pixel per step in 16-bit lanes
+    /// (the bytes of big-endian samples are swapped around the addition); the bytes after the last whole vector go through
+    /// <see cref="UndoDifferencing16Scalar(Span{byte}, int, bool)"/>, the reference.
+    /// </remarks>
+    internal static void UndoDifferencing16(Span<byte> line, int samplesPerPixel, bool bigEndian)
     {
-        var offset = index * 2;
-        return _page.IsBigEndian
-            ? (ushort)((line[offset] << 8) | line[offset + 1])
-            : (ushort)((line[offset + 1] << 8) | line[offset]);
+        var start = 0;
+        var pixelBytes = samplesPerPixel * sizeof(ushort);
+        if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian && samplesPerPixel is >= 1 and <= 4 && line.Length >= Vector128<byte>.Count)
+        {
+            var swap = Vector128.Create((byte)1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
+            var left = Vector128<ushort>.Zero;
+            var last = line.Length - Vector128<byte>.Count;
+            for (; start <= last; start += pixelBytes)
+            {
+                var samples = Vector128.Create(line[start..]);
+                if (bigEndian)
+                {
+                    samples = Vector128.Shuffle(samples, swap);
+                }
+
+                left += samples.AsUInt16();
+                var pixel = bigEndian ? Vector128.Shuffle(left.AsByte(), swap) : left.AsByte();
+                var target = line[start..];
+                switch (pixelBytes)
+                {
+                    case 2:
+                        BinaryPrimitives.WriteUInt16LittleEndian(target, pixel.AsUInt16().ToScalar());
+                        break;
+                    case 4:
+                        BinaryPrimitives.WriteUInt32LittleEndian(target, pixel.AsUInt32().ToScalar());
+                        break;
+                    case 6:
+                        BinaryPrimitives.WriteUInt32LittleEndian(target, pixel.AsUInt32().ToScalar());
+                        BinaryPrimitives.WriteUInt16LittleEndian(target[4..], pixel.AsUInt16().GetElement(2));
+                        break;
+                    default:
+                        BinaryPrimitives.WriteUInt64LittleEndian(target, pixel.AsUInt64().ToScalar());
+                        break;
+                }
+            }
+        }
+
+        UndoDifferencing16Scalar(line, samplesPerPixel, bigEndian, start / sizeof(ushort));
     }
 
-    private void WriteSample(Span<byte> line, int index, ushort value)
+    /// <summary>The sample-at-a-time reference of <see cref="UndoDifferencing16"/>.</summary>
+    internal static void UndoDifferencing16Scalar(Span<byte> line, int samplesPerPixel, bool bigEndian)
+        => UndoDifferencing16Scalar(line, samplesPerPixel, bigEndian, start: 0);
+
+    /// <summary>Reconstructs the samples of a row from <paramref name="start"/> (a pixel boundary); the samples before it are already reconstructed.</summary>
+    private static void UndoDifferencing16Scalar(Span<byte> line, int samplesPerPixel, bool bigEndian, int start)
     {
-        var offset = index * 2;
-        if (_page.IsBigEndian)
+        var count = line.Length / 2;
+        for (var i = Math.Max(start, samplesPerPixel); i < count; i++)
         {
-            line[offset] = (byte)(value >> 8);
-            line[offset + 1] = (byte)value;
-        }
-        else
-        {
-            line[offset] = (byte)value;
-            line[offset + 1] = (byte)(value >> 8);
+            var offset = i * 2;
+            var previousOffset = (i - samplesPerPixel) * 2;
+            if (bigEndian)
+            {
+                BinaryPrimitives.WriteUInt16BigEndian(line[offset..], (ushort)(BinaryPrimitives.ReadUInt16BigEndian(line[offset..]) + BinaryPrimitives.ReadUInt16BigEndian(line[previousOffset..])));
+            }
+            else
+            {
+                BinaryPrimitives.WriteUInt16LittleEndian(line[offset..], (ushort)(BinaryPrimitives.ReadUInt16LittleEndian(line[offset..]) + BinaryPrimitives.ReadUInt16LittleEndian(line[previousOffset..])));
+            }
         }
     }
 

@@ -63,12 +63,19 @@ internal sealed class HevcCabacEncoder
         _range = 510;
     }
 
+    // The context variable that follows a context variable and a bin, at ( context << 1 ) | binVal: the state transitions
+    // of UpdateContextFromTables, without branches
+    private static readonly byte[] NextStates = CreateNextStates();
+
     /// <summary>
     /// Applies to a context variable the state transition of a bin (clause 9.3.4.3.2.2 "State transition process"), which
     /// is the one of the decoder.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void UpdateContext(ref byte context, int binVal)
+    public static void UpdateContext(ref byte context, int binVal) => context = NextStates[(context << 1) | binVal];
+
+    /// <summary>The state transition of <see cref="UpdateContext"/>, computed from the tables of the specification: the reference of <see cref="NextStates"/>.</summary>
+    internal static void UpdateContextFromTables(ref byte context, int binVal)
     {
         var pStateIdx = context >> 1;
         var valMps = context & 1;
@@ -84,6 +91,22 @@ internal sealed class HevcCabacEncoder
         }
 
         context = (byte)((HevcCabacTables.TransIdxLps[pStateIdx] << 1) | valMps);
+    }
+
+    private static byte[] CreateNextStates()
+    {
+        var states = new byte[256];
+        for (var context = 0; context < 128; context++)
+        {
+            for (var binVal = 0; binVal < 2; binVal++)
+            {
+                var state = (byte)context;
+                UpdateContextFromTables(ref state, binVal);
+                states[(context << 1) | binVal] = state;
+            }
+        }
+
+        return states;
     }
 
     /// <summary>

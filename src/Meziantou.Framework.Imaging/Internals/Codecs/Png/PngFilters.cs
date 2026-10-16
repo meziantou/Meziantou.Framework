@@ -312,6 +312,110 @@ internal static class PngFilters
         return total + GetAdaptiveCostScalar(filtered[i..]);
     }
 
+    /// <summary>
+    /// Gets the adaptive cost (<see cref="GetAdaptiveCost"/>) of the scanline filtered with each of the five filter types,
+    /// without writing the filtered bytes: one pass computes the five differences of every byte.
+    /// </summary>
+    /// <param name="row">The unfiltered bytes of the scanline.</param>
+    /// <param name="previous">The unfiltered previous scanline of the same pass, at least as long as <paramref name="row"/>.</param>
+    /// <param name="bytesPerPixel">The number of bytes per complete pixel, at least 1.</param>
+    /// <param name="costs">The five costs, indexed by filter type.</param>
+    /// <remarks>The result is identical to <see cref="GetAdaptiveCostsScalar"/>: <see cref="FilterScalar"/> then <see cref="GetAdaptiveCostScalar"/> for each type.</remarks>
+    public static void GetAdaptiveCosts(ReadOnlySpan<byte> row, ReadOnlySpan<byte> previous, int bytesPerPixel, Span<long> costs)
+    {
+        costs = costs[..5];
+        if (!Vector.IsHardwareAccelerated || row.Length < Vector<byte>.Count + bytesPerPixel)
+        {
+            GetAdaptiveCostsScalar(row, previous, bytesPerPixel, costs);
+            return;
+        }
+
+        previous = previous[..row.Length];
+        long none = 0, sub = 0, up = 0, average = 0, paeth = 0;
+
+        // The first pixel: no left neighbor (a = c = 0)
+        for (var i = 0; i < bytesPerPixel; i++)
+        {
+            none += Magnitude(row[i]);
+            sub += Magnitude(row[i]);
+            up += Magnitude((byte)(row[i] - previous[i]));
+            average += Magnitude((byte)(row[i] - (previous[i] >> 1)));
+            paeth += Magnitude((byte)(row[i] - previous[i]));
+        }
+
+        // |(sbyte)v| fits a byte; pairs of them are summed in 16-bit lanes, flushed before they can overflow
+        var count = Vector<byte>.Count;
+        var i0 = bytesPerPixel;
+        while (i0 + count <= row.Length)
+        {
+            var noneSums = Vector<ushort>.Zero;
+            var subSums = Vector<ushort>.Zero;
+            var upSums = Vector<ushort>.Zero;
+            var averageSums = Vector<ushort>.Zero;
+            var paethSums = Vector<ushort>.Zero;
+            for (var block = 0; block < 255 && i0 + count <= row.Length; block++, i0 += count)
+            {
+                var current = new Vector<byte>(row[i0..]);
+                var left = new Vector<byte>(row[(i0 - bytesPerPixel)..]);
+                var above = new Vector<byte>(previous[i0..]);
+                var upperLeft = new Vector<byte>(previous[(i0 - bytesPerPixel)..]);
+                noneSums += WidenedMagnitudes(current);
+                subSums += WidenedMagnitudes(current - left);
+                upSums += WidenedMagnitudes(current - above);
+                averageSums += WidenedMagnitudes(current - ((left & above) + Vector.ShiftRightLogical(left ^ above, 1)));
+                paethSums += WidenedMagnitudes(current - PaethVector(left, above, upperLeft));
+            }
+
+            none += Total(noneSums);
+            sub += Total(subSums);
+            up += Total(upSums);
+            average += Total(averageSums);
+            paeth += Total(paethSums);
+        }
+
+        for (var i = i0; i < row.Length; i++)
+        {
+            var left = row[i - bytesPerPixel];
+            none += Magnitude(row[i]);
+            sub += Magnitude((byte)(row[i] - left));
+            up += Magnitude((byte)(row[i] - previous[i]));
+            average += Magnitude((byte)(row[i] - ((left + previous[i]) >> 1)));
+            paeth += Magnitude((byte)(row[i] - PaethPredictor(left, previous[i], previous[i - bytesPerPixel])));
+        }
+
+        costs[None] = none;
+        costs[Sub] = sub;
+        costs[Up] = up;
+        costs[Average] = average;
+        costs[Paeth] = paeth;
+
+        static int Magnitude(byte value) => Math.Abs((int)(sbyte)value);
+
+        static Vector<ushort> WidenedMagnitudes(Vector<byte> filtered)
+        {
+            var magnitudes = Vector.AsVectorByte(Vector.Abs(Vector.AsVectorSByte(filtered)));
+            Vector.Widen(magnitudes, out var low, out var high);
+            return low + high;
+        }
+
+        static long Total(Vector<ushort> sums)
+        {
+            Vector.Widen(sums, out var low, out var high);
+            return (long)Vector.Sum(low + high);
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="GetAdaptiveCosts"/>.</summary>
+    internal static void GetAdaptiveCostsScalar(ReadOnlySpan<byte> row, ReadOnlySpan<byte> previous, int bytesPerPixel, Span<long> costs)
+    {
+        var filtered = new byte[row.Length];
+        for (byte type = None; type <= Paeth; type++)
+        {
+            FilterScalar(type, row, previous, bytesPerPixel, filtered);
+            costs[type] = GetAdaptiveCostScalar(filtered);
+        }
+    }
+
     /// <summary>The scalar reference of <see cref="GetAdaptiveCost"/>.</summary>
     internal static long GetAdaptiveCostScalar(ReadOnlySpan<byte> filtered)
     {

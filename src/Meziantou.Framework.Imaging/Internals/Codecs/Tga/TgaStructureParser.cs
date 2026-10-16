@@ -260,106 +260,126 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
     private ParseStatus ReadRawPixels(ReadOnlySpan<byte> buffer, ref int consumed)
     {
         var storedRowLength = Layout.StoredRowLength;
-        while (_rowIndex < Header.Height)
-        {
-            var remaining = buffer[consumed..];
-            if (remaining.IsEmpty)
-                return ParseStatus.NeedMoreData(1);
 
-            var take = Math.Min(remaining.Length, storedRowLength - _storedFilled);
-            if (_walk == StructureWalk.Decode)
+        // One lease of the frame for the rows of this call, taken when the first of them is complete
+        var lease = default(PixelLease);
+        try
+        {
+            while (_rowIndex < Header.Height)
             {
-                remaining[..take].CopyTo(_storedRow!.Span[_storedFilled..]);
+                var remaining = buffer[consumed..];
+                if (remaining.IsEmpty)
+                    return ParseStatus.NeedMoreData(1);
+
+                var take = Math.Min(remaining.Length, storedRowLength - _storedFilled);
+                if (_walk == StructureWalk.Decode)
+                {
+                    remaining[..take].CopyTo(_storedRow!.Span[_storedFilled..]);
+                }
+
+                _storedFilled += take;
+                Advance(ref consumed, take);
+                if (_storedFilled < storedRowLength)
+                    continue;
+
+                _storedFilled = 0;
+                EmitRow(ref lease);
             }
 
-            _storedFilled += take;
-            Advance(ref consumed, take);
-            if (_storedFilled < storedRowLength)
-                continue;
-
-            _storedFilled = 0;
-            EmitRow();
+            return ParseStatus.Complete;
         }
-
-        return ParseStatus.Complete;
+        finally
+        {
+            lease.Dispose();
+        }
     }
 
     private ParseStatus ReadRlePixels(ReadOnlySpan<byte> buffer, ref int consumed)
     {
         var bytesPerPixel = Header.BytesPerStoredPixel;
         var storedRowLength = Layout.StoredRowLength;
-        while (_rowIndex < Header.Height)
-        {
-            if (_packetRemaining == 0)
-            {
-                var remaining = buffer[consumed..];
-                if (remaining.IsEmpty)
-                    return ParseStatus.NeedMoreData(1);
 
-                var packet = remaining[0];
-                _packetIsRun = (packet & TgaFormat.RunLengthPacketFlag) != 0;
-                var count = (packet & 0x7F) + 1;
-                if (count > _pixelsLeft)
-                    throw TgaFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TGA packet of {count} pixels at offset {_position} extends past the last pixel ({_pixelsLeft} pixels are left)."));
+        // One lease of the frame for the rows of this call, taken when the first of them is complete
+        var lease = default(PixelLease);
+        try
+        {
+            while (_rowIndex < Header.Height)
+            {
+                if (_packetRemaining == 0)
+                {
+                    var remaining = buffer[consumed..];
+                    if (remaining.IsEmpty)
+                        return ParseStatus.NeedMoreData(1);
+
+                    var packet = remaining[0];
+                    _packetIsRun = (packet & TgaFormat.RunLengthPacketFlag) != 0;
+                    var count = (packet & 0x7F) + 1;
+                    if (count > _pixelsLeft)
+                        throw TgaFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TGA packet of {count} pixels at offset {_position} extends past the last pixel ({_pixelsLeft} pixels are left)."));
+
+                    if (_packetIsRun)
+                    {
+                        if (remaining.Length < 1 + bytesPerPixel)
+                            return ParseStatus.NeedMoreData(1 + bytesPerPixel);
+
+                        remaining.Slice(1, bytesPerPixel).CopyTo(_runPixel);
+                        Advance(ref consumed, 1 + bytesPerPixel);
+                    }
+                    else
+                    {
+                        Advance(ref consumed, 1);
+                    }
+
+                    _pixelsLeft -= count;
+                    _packetRemaining = count;
+                }
 
                 if (_packetIsRun)
                 {
-                    if (remaining.Length < 1 + bytesPerPixel)
-                        return ParseStatus.NeedMoreData(1 + bytesPerPixel);
+                    var count = Math.Min(_packetRemaining, Header.Width - (_storedFilled / bytesPerPixel));
+                    if (_walk == StructureWalk.Decode)
+                    {
+                        var destination = _storedRow!.Span.Slice(_storedFilled, count * bytesPerPixel);
+                        for (var offset = 0; offset < destination.Length; offset += bytesPerPixel)
+                        {
+                            _runPixel.AsSpan(0, bytesPerPixel).CopyTo(destination[offset..]);
+                        }
+                    }
 
-                    remaining.Slice(1, bytesPerPixel).CopyTo(_runPixel);
-                    Advance(ref consumed, 1 + bytesPerPixel);
+                    _storedFilled += count * bytesPerPixel;
+                    _packetRemaining -= count;
                 }
                 else
                 {
-                    Advance(ref consumed, 1);
-                }
+                    var remaining = buffer[consumed..];
+                    if (remaining.Length < bytesPerPixel)
+                        return ParseStatus.NeedMoreData(bytesPerPixel);
 
-                _pixelsLeft -= count;
-                _packetRemaining = count;
-            }
-
-            if (_packetIsRun)
-            {
-                var count = Math.Min(_packetRemaining, Header.Width - (_storedFilled / bytesPerPixel));
-                if (_walk == StructureWalk.Decode)
-                {
-                    var destination = _storedRow!.Span.Slice(_storedFilled, count * bytesPerPixel);
-                    for (var offset = 0; offset < destination.Length; offset += bytesPerPixel)
+                    var available = Math.Min(remaining.Length / bytesPerPixel, _packetRemaining);
+                    var count = Math.Min(available, Header.Width - (_storedFilled / bytesPerPixel));
+                    if (_walk == StructureWalk.Decode)
                     {
-                        _runPixel.AsSpan(0, bytesPerPixel).CopyTo(destination[offset..]);
+                        remaining[..(count * bytesPerPixel)].CopyTo(_storedRow!.Span[_storedFilled..]);
                     }
+
+                    _storedFilled += count * bytesPerPixel;
+                    _packetRemaining -= count;
+                    Advance(ref consumed, count * bytesPerPixel);
                 }
 
-                _storedFilled += count * bytesPerPixel;
-                _packetRemaining -= count;
-            }
-            else
-            {
-                var remaining = buffer[consumed..];
-                if (remaining.Length < bytesPerPixel)
-                    return ParseStatus.NeedMoreData(bytesPerPixel);
-
-                var available = Math.Min(remaining.Length / bytesPerPixel, _packetRemaining);
-                var count = Math.Min(available, Header.Width - (_storedFilled / bytesPerPixel));
-                if (_walk == StructureWalk.Decode)
+                if (_storedFilled == storedRowLength)
                 {
-                    remaining[..(count * bytesPerPixel)].CopyTo(_storedRow!.Span[_storedFilled..]);
+                    _storedFilled = 0;
+                    EmitRow(ref lease);
                 }
-
-                _storedFilled += count * bytesPerPixel;
-                _packetRemaining -= count;
-                Advance(ref consumed, count * bytesPerPixel);
             }
 
-            if (_storedFilled == storedRowLength)
-            {
-                _storedFilled = 0;
-                EmitRow();
-            }
+            return ParseStatus.Complete;
         }
-
-        return ParseStatus.Complete;
+        finally
+        {
+            lease.Dispose();
+        }
     }
 
     /// <summary>Reads the TGA 2.0 footer and the extension area it points at.</summary>
@@ -390,13 +410,19 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
             throw TgaFormat.Unsupported("The TGA extension area declares premultiplied alpha (attributes type 4); the working pixel formats store straight alpha and this version never divides it out.", "Attributes type: premultiplied alpha");
     }
 
-    private void EmitRow()
+    /// <summary>Emits the stored row through a lease of the frame, taken on the first row a parser call emits.</summary>
+    private void EmitRow(scoped ref PixelLease lease)
     {
         if (_walk == StructureWalk.Decode)
         {
             var source = _sourceRow!.Span[..Layout.SourceRowLength];
             Layout.ExpandRow(_storedRow!.Span[..Layout.StoredRowLength], source);
-            _decoder!.WriteRow(Header.IsTopToBottom ? _rowIndex : Header.Height - 1 - _rowIndex, source);
+            if (!lease.IsActive)
+            {
+                lease = _decoder!.LeaseRows();
+            }
+
+            _decoder!.WriteRow(lease, Header.IsTopToBottom ? _rowIndex : Header.Height - 1 - _rowIndex, source);
         }
 
         _rowIndex++;

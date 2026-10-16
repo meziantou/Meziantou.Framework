@@ -4526,6 +4526,33 @@ jobs:
     }
 
     [Fact]
+    public async Task GitHubActions_ParallelSteps()
+    {
+        const string Path = ".github/workflows/sample.yml";
+        const string Original = """
+name: demo
+on: [push]
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - parallel:
+                - uses: actions/setup-node@v1
+                - uses: docker://alpine:3.8
+                - parallel:
+                    - uses: actions/cache@v4
+            - uses: actions/upload-artifact@v4
+              background: true
+""";
+        AddFile(Path, Original);
+        var result = await GetDependencies<GitHubActionsScanner>();
+        Assert.Equal(
+            ["actions/cache", "actions/checkout", "actions/setup-node", "actions/upload-artifact", "alpine"],
+            result.Select(d => d.Name).Order(StringComparer.Ordinal).ToArray());
+    }
+
+    [Fact]
     public async Task GitHubActions_WrongPath_NoDependency()
     {
         const string Path = "sample/.github/workflows/sample.yml";

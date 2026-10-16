@@ -25,6 +25,8 @@ public class PngBenchmarks : IDisposable
         WorkloadChecks.RequireLossless(BenchmarkInputs.SmallPng, BenchmarkInputs.SmallPngSource);
         WorkloadChecks.RequireLossless(BenchmarkInputs.LargePng8, BenchmarkInputs.LargeRgb24Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.LargePng16, BenchmarkInputs.LargeRgba64Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.PngGrayAlpha8, BenchmarkInputs.GrayAlpha8Pixels);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.PngRgb16, BenchmarkInputs.Rgb16Pixels);
     }
 
     [GlobalCleanup]
@@ -68,6 +70,30 @@ public class PngBenchmarks : IDisposable
     public int LoadLarge16()
     {
         using var image = Image.Load<Rgba64>(BenchmarkInputs.LargePng16);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("1024x768 gray+alpha 8-bit PNG -> Rgba32")]
+    public int LoadGrayAlpha8()
+    {
+        using var image = Image.Load<Rgba32>(BenchmarkInputs.PngGrayAlpha8);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("1024x768 RGB 16-bit PNG -> Rgba64")]
+    public int LoadRgb16()
+    {
+        using var image = Image.Load<Rgba64>(BenchmarkInputs.PngRgb16);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 PNG 8-bit indexed (256 colors) -> Rgb24")]
+    public int LoadIndexed8()
+    {
+        using var image = Image.Load<Rgb24>(BenchmarkInputs.PngIndexed8);
         return image.Width;
     }
 

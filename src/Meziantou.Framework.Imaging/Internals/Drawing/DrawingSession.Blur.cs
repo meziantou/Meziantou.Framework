@@ -78,6 +78,7 @@ internal sealed partial class DrawingSession
             _thumbnailRemoved = true;
         }
 
+        MarkDrawn(area.Left, area.Top, area.Right, area.Bottom);
         for (var i = 0; i < _frames.Length; i++)
         {
             BlurPixels(_frames[i], _storages[i], sigma, bounds, area, applyClip: true);
@@ -88,11 +89,24 @@ internal sealed partial class DrawingSession
     private void BlurLayer(LayerLevel level)
     {
         var bounds = Rectangle.FromLTRB(level.Left, level.Top, level.Right, level.Bottom);
-        var area = Rectangle.FromLTRB(level.VisibleLeft, level.VisibleTop, level.VisibleRight, level.VisibleBottom);
+        if (level.DirtyRight <= level.DirtyLeft)
+            return;
+
+        // The blur of a pixel too far from every pixel that may not be transparent reads transparent pixels only: it
+        // stays as it is. The blur reads the pixels beyond the bounds as those on their edges.
+        var radius = GaussianKernel.GetRadius(level.BlurSigma);
+        var (reachLeft, reachRight) = GetReach(level.DirtyLeft, level.DirtyRight, bounds.Left, bounds.Right, radius, radius);
+        var (reachTop, reachBottom) = GetReach(level.DirtyTop, level.DirtyBottom, bounds.Top, bounds.Bottom, radius, radius);
+        var area = Rectangle.FromLTRB(
+            (int)Math.Max(level.VisibleLeft, reachLeft),
+            (int)Math.Max(level.VisibleTop, reachTop),
+            (int)Math.Min(level.VisibleRight, reachRight),
+            (int)Math.Min(level.VisibleBottom, reachBottom));
         if (area.Width <= 0 || area.Height <= 0)
             return;
 
         ReserveBlur(level.BlurSigma, bounds, area);
+        level.MarkDirty(area.Left, area.Top, area.Right, area.Bottom);
         BlurPixels(level.Frames![0], level.Storages![0], level.BlurSigma, bounds, area, applyClip: false);
     }
 
@@ -227,11 +241,7 @@ internal sealed partial class DrawingSession
                     continue;
 
                 any = true;
-                var weight = weights[tap];
-                for (var i = 0; i < blurred.Length; i++)
-                {
-                    sums[i] += weight * blurred[i];
-                }
+                BlurKernels.Accumulate(sums, weights[tap], blurred);
             }
 
             if (!any)
@@ -314,29 +324,7 @@ internal sealed partial class DrawingSession
         if (!any)
             return false;
 
-        var last = source.Length - 1;
-        for (var x = 0; x < blurred.Length / 4; x++)
-        {
-            double red = 0, green = 0, blue = 0, alpha = 0;
-            var first = firstColumn + x;
-            for (var tap = 0; tap < weights.Length; tap++)
-            {
-                var index = first + tap;
-                var entry = premultiplied.Slice((index < 0 ? 0 : index > last ? last : index) * 4, 4);
-                var weight = weights[tap];
-                red += weight * entry[0];
-                green += weight * entry[1];
-                blue += weight * entry[2];
-                alpha += weight * entry[3];
-            }
-
-            var output = blurred.Slice(x * 4, 4);
-            output[0] = (float)red;
-            output[1] = (float)green;
-            output[2] = (float)blue;
-            output[3] = (float)alpha;
-        }
-
+        BlurKernels.BlurRow(premultiplied[..(source.Length * 4)], weights, firstColumn, blurred);
         return true;
     }
 

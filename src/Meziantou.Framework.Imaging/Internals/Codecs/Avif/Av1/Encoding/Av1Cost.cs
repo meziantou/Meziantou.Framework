@@ -25,6 +25,9 @@ internal static class Av1Cost
     // Log2Table[ i ] is log2( 1 + i / 256 ) in units of 1/256
     private static readonly byte[] Log2Table = CreateLog2Table();
 
+    // The cost of every probability from 0 to 32768: the search reads one for every symbol it costs
+    private static readonly ushort[] CostTable = CreateCostTable();
+
     /// <summary>
     /// Returns the cost of <paramref name="symbol"/> for <paramref name="cdf"/>, the cumulative values of N symbols that end
     /// with 32768, followed by the adaptation counter.
@@ -36,7 +39,9 @@ internal static class Av1Cost
     }
 
     /// <summary>Returns the cost of a symbol whose probability is <paramref name="probability"/> / 32768.</summary>
-    public static int GetCost(int probability)
+    public static int GetCost(int probability) => (uint)probability <= 1 << ProbabilityBits ? CostTable[probability] : ComputeCost(probability);
+
+    private static int ComputeCost(int probability)
     {
         var p = (uint)Math.Clamp(probability, MinimumProbability, 1 << ProbabilityBits);
         var exponent = BitOperations.Log2(p);
@@ -48,6 +53,17 @@ internal static class Av1Cost
 
     /// <summary>Returns the cost of <paramref name="count"/> bits coded with equal probabilities.</summary>
     public static int GetLiteralCost(int count) => count * Scale;
+
+    private static ushort[] CreateCostTable()
+    {
+        var table = new ushort[(1 << ProbabilityBits) + 1];
+        for (var probability = 0; probability < table.Length; probability++)
+        {
+            table[probability] = (ushort)ComputeCost(probability);
+        }
+
+        return table;
+    }
 
     private static byte[] CreateLog2Table()
     {

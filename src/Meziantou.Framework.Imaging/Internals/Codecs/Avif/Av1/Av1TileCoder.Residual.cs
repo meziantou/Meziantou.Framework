@@ -111,7 +111,7 @@ internal ref partial struct Av1TileCoder
             if (eob > 0)
             {
                 var planeBuffer = _frame.GetPlane(plane);
-                Reconstruct(planeBuffer.Samples, planeBuffer.Stride, plane, startX, startY, txSz);
+                Reconstruct(planeBuffer.Samples, planeBuffer.Stride, plane, startX, startY, txSz, eob);
             }
         }
 
@@ -299,7 +299,9 @@ internal ref partial struct Av1TileCoder
         acQuantizer = Av1Reconstruction.GetAcQuantizer(_qIndex + delta.Item2, _bitDepth);
     }
 
-    private readonly void Reconstruct(Span<ushort> samples, int stride, int plane, int startX, int startY, int txSz)
+    // Quant holds the coefficients of the eob first positions of the scan order of the transform block; the other entries
+    // are not read
+    private readonly void Reconstruct(Span<ushort> samples, int stride, int plane, int startX, int startY, int txSz, int eob)
     {
         GetQuantizers(plane, out var dcQuantizer, out var acQuantizer);
         var quantizerMatrix = ReadOnlySpan<byte>.Empty;
@@ -316,7 +318,7 @@ internal ref partial struct Av1TileCoder
                 quantizerMatrix = Av1Tables.QuantizerMatrix[((((level * 2) + (plane > 0 ? 1 : 0)) * Av1Constants.QmTotalSize) + Av1Tables.QmOffset[txSz])..];
         }
 
-        Av1Reconstruction.Reconstruct(samples, stride, startX, startY, _scratch.Quant, _scratch.Transform, txSz, _planeTxType, _lossless, _bitDepth, dcQuantizer, acQuantizer, quantizerMatrix);
+        Av1Reconstruction.Reconstruct(samples, stride, startX, startY, _scratch.Quant, GetScan(txSz, _planeTxType), eob, _scratch.Transform, txSz, _planeTxType, _lossless, _bitDepth, dcQuantizer, acQuantizer, quantizerMatrix);
     }
 
     // Section 5.11.39 "Coefficients syntax"
@@ -328,9 +330,7 @@ internal ref partial struct Av1TileCoder
         var h4 = Av1Tables.TxHeight[txSz] >> 2;
         var txSzCtx = (Av1Tables.TxSizeSqr[txSz] + Av1Tables.TxSizeSqrUp[txSz] + 1) >> 1;
         var ptype = plane > 0 ? 1 : 0;
-        var segEob = txSz is Av1Constants.Tx16x64 or Av1Constants.Tx64x16 ? 512 : Math.Min(1024, Av1Tables.TxWidth[txSz] * Av1Tables.TxHeight[txSz]);
         var quant = _scratch.Quant;
-        quant[..segEob].Clear();
 
         var aboveLevel = _state.GetAboveLevelContext(plane);
         var aboveDc = _state.GetAboveDcContext(plane);
@@ -398,9 +398,14 @@ internal ref partial struct Av1TileCoder
             var coeffBaseOffset = Av1CdfLayout.CoeffBase + ((((txSzCtx * Av1Constants.PlaneTypes) + ptype) * Av1Constants.SigCoefContexts) * Av1CdfLayout.CoeffBaseSize);
             var coeffBaseEobOffset = Av1CdfLayout.CoeffBaseEob + ((((txSzCtx * Av1Constants.PlaneTypes) + ptype) * Av1Constants.SigCoefContextsEob) * Av1CdfLayout.CoeffBaseEobSize);
             var coeffBrOffset = Av1CdfLayout.CoeffBr + ((((Math.Min(txSzCtx, Av1Constants.Tx32x32) * Av1Constants.PlaneTypes) + ptype) * Av1Constants.LevelContexts) * Av1CdfLayout.CoeffBrSize);
+            var levelStride = width + Av1TileScratch.LevelMapPadding;
+            var levels = _scratch.LevelMap[..((height + Av1TileScratch.LevelMapPadding) * levelStride)];
+            levels.Clear();
             for (var c = eob - 1; c >= 0; c--)
             {
                 var pos = scan[c];
+                var row = pos >> bwl;
+                var col = pos & (width - 1);
                 int level;
                 if (c == eob - 1)
                 {
@@ -409,13 +414,13 @@ internal ref partial struct Av1TileCoder
                 }
                 else
                 {
-                    var ctx = GetCoeffBaseContext(quant, txSz, txClass, bwl, width, height, pos);
+                    var ctx = GetCoeffBaseContext(levels, txSz, txClass, levelStride, row, col);
                     level = ReadSymbol(coeffBaseOffset + (ctx * Av1CdfLayout.CoeffBaseSize), Av1CdfLayout.CoeffBaseSize);
                 }
 
                 if (level > Av1Constants.NumBaseLevels)
                 {
-                    var ctx = GetCoeffBrContext(quant, txClass, bwl, width, height, pos);
+                    var ctx = GetCoeffBrContext(levels, txClass, levelStride, row, col);
                     for (var idx = 0; idx < Av1Constants.CoeffBaseRange / (Av1Constants.BrCdfSize - 1); idx++)
                     {
                         var coeffBr = ReadSymbol(coeffBrOffset + (ctx * Av1CdfLayout.CoeffBrSize), Av1CdfLayout.CoeffBrSize);
@@ -426,6 +431,7 @@ internal ref partial struct Av1TileCoder
                 }
 
                 quant[pos] = level;
+                levels[(row * levelStride) + col] = (byte)level;
             }
 
             for (var c = 0; c < eob; c++)
@@ -569,60 +575,53 @@ internal ref partial struct Av1TileCoder
         return c <= (height * width) / 4 ? 2 : 3;
     }
 
-    // The CDF selection of coeff_base: get_coeff_base_ctx with isEob equal to 0
-    private static int GetCoeffBaseContext(ReadOnlySpan<int> quant, int txSz, int txClass, int bwl, int width, int height, int pos)
+    // The CDF selection of coeff_base: get_coeff_base_ctx with isEob equal to 0. The levels coded so far are in the level
+    // map, whose padding makes the neighbors outside the block read as zero
+    private static int GetCoeffBaseContext(ReadOnlySpan<byte> levels, int txSz, int txClass, int stride, int row, int col)
     {
-        var row = pos >> bwl;
-        var col = pos - (row << bwl);
-        var mag = 0;
-        var offsets = Av1Tables.SigRefDiffOffset.Slice(txClass * Av1Constants.SigRefDiffOffsetNum * 2, Av1Constants.SigRefDiffOffsetNum * 2);
-        for (var idx = 0; idx < Av1Constants.SigRefDiffOffsetNum; idx++)
-        {
-            var refRow = row + offsets[idx * 2];
-            var refCol = col + offsets[(idx * 2) + 1];
-            if (refRow >= 0 && refCol >= 0 && refRow < height && refCol < width)
-                mag += Math.Min(Math.Abs(quant[(refRow << bwl) + refCol]), 3);
-        }
-
-        var ctx = Math.Min((mag + 1) >> 1, 4);
+        var neighbors = levels[((row * stride) + col)..];
         if (txClass is TxClass2D)
         {
-            if (row is 0 && col is 0)
+            if ((row | col) is 0)
                 return 0;
 
-            return ctx + Av1Tables.CoeffBaseCtxOffset[(((txSz * 5) + Math.Min(row, 4)) * 5) + Math.Min(col, 4)];
+            var mag = Math.Min((int)neighbors[1], 3) + Math.Min((int)neighbors[stride], 3) + Math.Min((int)neighbors[stride + 1], 3) + Math.Min((int)neighbors[2], 3) + Math.Min((int)neighbors[2 * stride], 3);
+            return Math.Min((mag + 1) >> 1, 4) + Av1Tables.CoeffBaseCtxOffset[(((txSz * 5) + Math.Min(row, 4)) * 5) + Math.Min(col, 4)];
         }
-
-        var index = txClass is Av1Constants.TxClassVert ? row : col;
-        return ctx + Av1Tables.CoeffBasePosCtxOffset[Math.Min(index, 2)];
-    }
-
-    // The CDF selection of coeff_br
-    private static int GetCoeffBrContext(ReadOnlySpan<int> quant, int txClass, int bwl, int width, int height, int pos)
-    {
-        var row = pos >> bwl;
-        var col = pos - (row << bwl);
-        var mag = 0;
-        var offsets = Av1Tables.MagRefOffsetWithTxClass.Slice(txClass * 6, 6);
-        for (var idx = 0; idx < 3; idx++)
-        {
-            var refRow = row + offsets[idx * 2];
-            var refCol = col + offsets[(idx * 2) + 1];
-            if (refRow >= 0 && refCol >= 0 && refRow < height && refCol < width)
-                mag += Math.Min(quant[(refRow * width) + refCol], Av1Constants.CoeffBaseRange + Av1Constants.NumBaseLevels + 1);
-        }
-
-        mag = Math.Min((mag + 1) >> 1, 6);
-        if (pos is 0)
-            return mag;
-
-        if (txClass is TxClass2D)
-            return row < 2 && col < 2 ? mag + 7 : mag + 14;
 
         if (txClass is Av1Constants.TxClassHoriz)
-            return col is 0 ? mag + 7 : mag + 14;
+        {
+            var mag = Math.Min((int)neighbors[1], 3) + Math.Min((int)neighbors[stride], 3) + Math.Min((int)neighbors[2], 3) + Math.Min((int)neighbors[3], 3) + Math.Min((int)neighbors[4], 3);
+            return Math.Min((mag + 1) >> 1, 4) + Av1Tables.CoeffBasePosCtxOffset[Math.Min(col, 2)];
+        }
+        else
+        {
+            var mag = Math.Min((int)neighbors[1], 3) + Math.Min((int)neighbors[stride], 3) + Math.Min((int)neighbors[2 * stride], 3) + Math.Min((int)neighbors[3 * stride], 3) + Math.Min((int)neighbors[4 * stride], 3);
+            return Math.Min((mag + 1) >> 1, 4) + Av1Tables.CoeffBasePosCtxOffset[Math.Min(row, 2)];
+        }
+    }
 
-        return row is 0 ? mag + 7 : mag + 14;
+    // The CDF selection of coeff_br. The levels of the map are at most NUM_BASE_LEVELS + COEFF_BASE_RANGE + 1
+    private static int GetCoeffBrContext(ReadOnlySpan<byte> levels, int txClass, int stride, int row, int col)
+    {
+        var neighbors = levels[((row * stride) + col)..];
+        var mag = neighbors[1] + neighbors[stride] + txClass switch
+        {
+            TxClass2D => neighbors[stride + 1],
+            Av1Constants.TxClassHoriz => neighbors[2],
+            _ => neighbors[2 * stride],
+        };
+
+        mag = Math.Min((mag + 1) >> 1, 6);
+        if ((row | col) is 0)
+            return mag;
+
+        return txClass switch
+        {
+            TxClass2D => row < 2 && col < 2 ? mag + 7 : mag + 14,
+            Av1Constants.TxClassHoriz => col is 0 ? mag + 7 : mag + 14,
+            _ => row is 0 ? mag + 7 : mag + 14,
+        };
     }
 
     // The CDF selection of dc_sign

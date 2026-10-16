@@ -309,28 +309,38 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
     {
         var header = Layout.Header;
         var rowLength = (int)_rowLength;
-        while (_rowIndex < header.Height)
-        {
-            var remaining = buffer[consumed..];
-            if (remaining.IsEmpty)
-                return ParseStatus.NeedMoreData(1);
 
-            var take = Math.Min(remaining.Length, rowLength - _rowFilled);
-            if (_walk == StructureWalk.Decode)
+        // One lease of the frame for the rows of this call, taken when the first of them is complete
+        var lease = default(PixelLease);
+        try
+        {
+            while (_rowIndex < header.Height)
             {
-                remaining[..take].CopyTo(_rowBuffer!.Span[_rowFilled..]);
+                var remaining = buffer[consumed..];
+                if (remaining.IsEmpty)
+                    return ParseStatus.NeedMoreData(1);
+
+                var take = Math.Min(remaining.Length, rowLength - _rowFilled);
+                if (_walk == StructureWalk.Decode)
+                {
+                    remaining[..take].CopyTo(_rowBuffer!.Span[_rowFilled..]);
+                }
+
+                _rowFilled += take;
+                Advance(ref consumed, take);
+                if (_rowFilled < rowLength)
+                    continue;
+
+                _rowFilled = 0;
+                EmitRow(ref lease);
             }
 
-            _rowFilled += take;
-            Advance(ref consumed, take);
-            if (_rowFilled < rowLength)
-                continue;
-
-            _rowFilled = 0;
-            EmitRow();
+            return ParseStatus.Complete;
         }
-
-        return ParseStatus.Complete;
+        finally
+        {
+            lease.Dispose();
+        }
     }
 
     /// <summary>Walks the commands of a run-length stream up to its end-of-bitmap marker.</summary>
@@ -533,12 +543,31 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
 
     private void EmitRow()
     {
+        var lease = default(PixelLease);
+        try
+        {
+            EmitRow(ref lease);
+        }
+        finally
+        {
+            lease.Dispose();
+        }
+    }
+
+    /// <summary>Emits the current row through a lease of the frame, taken on the first row a parser call emits.</summary>
+    private void EmitRow(scoped ref PixelLease lease)
+    {
         var header = Layout.Header;
         if (_walk == StructureWalk.Decode)
         {
             var expanded = _expandedRow!.Span[..(header.Width * PixelFormats.GetBytesPerPixel(Layout.SourcePixelFormat))];
             Layout.ExpandRow(_rowBuffer!.Span[..(int)_rowLength], expanded);
-            _decoder!.WriteRow(header.IsTopDown ? _rowIndex : header.Height - 1 - _rowIndex, expanded);
+            if (!lease.IsActive)
+            {
+                lease = _decoder!.LeaseRows();
+            }
+
+            _decoder!.WriteRow(lease, header.IsTopDown ? _rowIndex : header.Height - 1 - _rowIndex, expanded);
         }
 
         _rowIndex++;

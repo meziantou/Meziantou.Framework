@@ -7,8 +7,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 /// <remarks>
 /// Call order: <see cref="OnHeaderComplete"/> once (the first image descriptor is reached; the logical screen, global color
-/// table and preceding extensions were parsed), then per image: <see cref="OnImageStart"/>, <see cref="OnImageData"/> for
-/// each data sub-block (without its length byte), <see cref="OnImageEnd"/>; finally <see cref="OnEnd"/> at the trailer.
+/// table and preceding extensions were parsed), then per image: <see cref="OnImageStart"/>, <see cref="OnImageDataBlocks"/>
+/// for each run of data sub-blocks available together (by default <see cref="OnImageData"/> for each sub-block, without its
+/// length byte), <see cref="OnImageEnd"/>; finally <see cref="OnEnd"/> at the trailer.
 /// Returning <see langword="false"/> from <see cref="OnImageEnd"/> stops the walk (frame-limit prefix selection). Spans are
 /// only valid during the call.
 /// </remarks>
@@ -26,6 +27,20 @@ internal abstract class GifDecodeObserver : IImageDecodeObserver
 
     public virtual void OnImageData(ReadOnlySpan<byte> subBlock)
     {
+    }
+
+    /// <summary>
+    /// Receives consecutive complete data sub-blocks of the current image, each with its length byte (none of them is the
+    /// terminator). By default, <see cref="OnImageData"/> is called for each of them.
+    /// </summary>
+    public virtual void OnImageDataBlocks(ReadOnlySpan<byte> subBlocks)
+    {
+        while (!subBlocks.IsEmpty)
+        {
+            var size = subBlocks[0];
+            OnImageData(subBlocks.Slice(1, size));
+            subBlocks = subBlocks[(1 + size)..];
+        }
     }
 
     /// <returns><see langword="true"/> to continue the walk; <see langword="false"/> to stop (frame limit reached).</returns>

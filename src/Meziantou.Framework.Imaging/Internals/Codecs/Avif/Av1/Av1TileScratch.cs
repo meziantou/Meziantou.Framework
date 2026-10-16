@@ -13,6 +13,9 @@ internal sealed class Av1TileScratch : IDisposable
     /// <summary>The number of entries of a row of <see cref="GetBlockDecoded"/>: columns -1 to 32.</summary>
     public const int BlockDecodedStride = SuperblockSize4 + 2;
 
+    /// <summary>The number of columns to the right and of rows below the coefficients in <see cref="LevelMap"/>.</summary>
+    public const int LevelMapPadding = 4;
+
     private const int MaxPaletteBlockSize = 64;
 
     private readonly Av1PooledArray<int> _coefficients;
@@ -24,7 +27,7 @@ internal sealed class Av1TileScratch : IDisposable
         _coefficients = Av1PooledArray<int>.Rent(scope, QuantLength + TransformLength + CflLength);
         try
         {
-            _bytes = Av1PooledArray<byte>.Rent(scope, (2 * ColorMapLength) + (3 * BlockDecodedLength) + (6 * SuperblockSize4) + SuperblockSize4 + TxTypesLength);
+            _bytes = Av1PooledArray<byte>.Rent(scope, (2 * ColorMapLength) + (3 * BlockDecodedLength) + (6 * SuperblockSize4) + SuperblockSize4 + TxTypesLength + LevelMapLength);
             _palette = Av1PooledArray<ushort>.Rent(scope, (2 * SuperblockSize4 * Av1Constants.PaletteColors) + (3 * Av1Constants.PaletteColors));
         }
         catch
@@ -45,6 +48,8 @@ internal sealed class Av1TileScratch : IDisposable
     private static int BlockDecodedLength => BlockDecodedStride * BlockDecodedStride;
 
     private static int TxTypesLength => SuperblockSize4 * SuperblockSize4;
+
+    private static int LevelMapLength => (32 + LevelMapPadding) * (32 + LevelMapPadding);
 
     /// <summary>Gets <c>Quant</c>: the coefficients of the transform block being read, Min(32, width) per row.</summary>
     public Span<int> Quant => _coefficients.Span[..QuantLength];
@@ -75,6 +80,14 @@ internal sealed class Av1TileScratch : IDisposable
 
     /// <summary>Gets <c>TxTypes</c> for the superblock being decoded: 32 entries per row of 4x4 luma blocks.</summary>
     public Span<byte> TxTypes => _bytes.Span.Slice((2 * ColorMapLength) + (3 * BlockDecodedLength) + (7 * SuperblockSize4), TxTypesLength);
+
+    /// <summary>
+    /// Gets the levels of the transform block being read for the contexts of <c>coeff_base</c> and <c>coeff_br</c>: rows of
+    /// Min(32, width) + <see cref="LevelMapPadding"/> entries, followed by <see cref="LevelMapPadding"/> rows. A block clears
+    /// its map before its coefficients are read: the neighbors of a coefficient are read without testing whether they are
+    /// in the block.
+    /// </summary>
+    public Span<byte> LevelMap => _bytes.Span.Slice((2 * ColorMapLength) + (3 * BlockDecodedLength) + (7 * SuperblockSize4) + TxTypesLength, LevelMapLength);
 
     /// <summary>
     /// Gets the palette colors of the blocks of the column to the left: for the luma (<paramref name="plane"/> 0) or the U

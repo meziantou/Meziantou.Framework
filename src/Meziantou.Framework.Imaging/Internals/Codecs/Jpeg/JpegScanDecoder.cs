@@ -192,11 +192,21 @@ internal abstract class JpegScanDecoder
     /// <param name="block">The dequantized AC coefficients (natural order), when <paramref name="hasAc"/>; cleared.</param>
     /// <param name="dc">The quantized DC coefficient.</param>
     /// <param name="hasAc">Whether an AC coefficient is not zero.</param>
-    protected static void TransformBlock(ScanComponent scanComponent, int blockRow, int blockColumn, double[] block, int dc, bool hasAc)
+    /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero (<see cref="JpegIdct.IsSparse(int)"/>).</param>
+    protected static void TransformBlock(ScanComponent scanComponent, int blockRow, int blockColumn, double[] block, int dc, bool hasAc, bool sparse)
+        => TransformBlock(scanComponent, scanComponent.Component.GetRowOffset(blockRow * 8) + (blockColumn * 8), block, dc, hasAc, sparse);
+
+    /// <summary>Writes the samples of a block of a sequential scan at an offset of the sample plane.</summary>
+    /// <param name="scanComponent">The component of the block.</param>
+    /// <param name="offset">The offset of the first sample of the block in the plane of the component.</param>
+    /// <param name="block">The dequantized AC coefficients (natural order), when <paramref name="hasAc"/>; cleared.</param>
+    /// <param name="dc">The quantized DC coefficient.</param>
+    /// <param name="hasAc">Whether an AC coefficient is not zero.</param>
+    /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero (<see cref="JpegIdct.IsSparse(int)"/>).</param>
+    protected static void TransformBlock(ScanComponent scanComponent, int offset, double[] block, int dc, bool hasAc, bool sparse)
     {
         var component = scanComponent.Component;
         var quantization = scanComponent.Quantization;
-        var offset = component.GetRowOffset(blockRow * 8) + (blockColumn * 8);
         if (hasAc)
         {
             block[0] = dc * (double)quantization[0];
@@ -206,7 +216,7 @@ internal abstract class JpegScanDecoder
             }
             else
             {
-                JpegIdct.Transform(block, component.Samples.AsSpan(offset), component.Stride);
+                JpegIdct.Transform(block, component.Samples.AsSpan(offset), component.Stride, sparse);
             }
 
             Array.Clear(block);
@@ -353,9 +363,27 @@ internal abstract class JpegScanDecoder
         /// <summary>Gets the quantization values in natural order.</summary>
         public ushort[] Quantization { get; } = quantization;
 
+        /// <summary>
+        /// Gets, for each zig-zag position, <c>(quantization value &lt;&lt; 6) | natural index</c>: the two lookups of a
+        /// coefficient in one (created on first use).
+        /// </summary>
+        public int[] ZigZagQuantization => field ??= CreateZigZagQuantization(Quantization);
+
         public int Predictor { get; set; }
 
         /// <summary>Gets the statistics and the conditioning of the component in an arithmetic-coded scan, or <see langword="null"/>.</summary>
         public JpegArithmeticConditioning? Arithmetic { get; init; }
+
+        private static int[] CreateZigZagQuantization(ushort[] quantization)
+        {
+            var zigZag = JpegIdct.ZigZag;
+            var table = new int[64];
+            for (var k = 0; k < 64; k++)
+            {
+                table[k] = (quantization[zigZag[k]] << 6) | zigZag[k];
+            }
+
+            return table;
+        }
     }
 }

@@ -1083,6 +1083,42 @@ public sealed class DrawingSessionTests
     }
 
     [Fact]
+    public void ALayerThatStartsAgainAtItsDepthStartsTransparent()
+    {
+        // The image of a layer is kept for the next layer of its depth: what a layer drew, blurred, filtered or cast
+        // a shadow with is gone when the next one starts, as in a session of its own
+        DrawingAction[] steps =
+        [
+            canvas => canvas.Layer(0.5, layer => layer.FillCircle(new Rgba32(200, 20, 20), new PointD(12, 10), 9)),
+            canvas => canvas.Clip(new RectangleD(20, 4, 15, 20), clip => clip.Layer(0.8, layer => layer.FillRectangle(new Rgba32(20, 200, 20, 150), new RectangleD(18, 8, 10, 6)))),
+            canvas => canvas.Layer(0.9, layer => layer.FillEllipse(new Rgba32(99, 9, 199, 200), new PointD(10, 24), 9, 4), CompositeMode.Xor),
+            canvas => canvas.Layer(0.6, layer => layer.FillCircle(new Rgba32(1, 2, 3), new PointD(34, 25), 3), CompositeMode.Source),
+            canvas => canvas.Blur(2.5, layer => layer.FillCircle(new Rgba32(250, 120, 0), new PointD(30, 8), 4)),
+            canvas => canvas.Shadow(new Rgba64(0, 0, 0, 50000), new PointD(3.5, -2.25), 2, layer => layer.FillRectangle(new Rgba32(0, 0, 250), new RectangleD(4, 14, 8, 6))),
+            canvas => canvas.Filter(new ColorMatrix([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0.1, 0, 0, 0, 0.5, 0.2]), layer => layer.FillCircle(new Rgba32(9, 99, 199), new PointD(20, 15), 3)),
+            canvas => canvas.Layer(1, layer => layer.FillCircle(new Rgba32(9, 199, 99, 128), new PointD(36, 4), 3)),
+            canvas => canvas.Shadow(new Rgba64(0, 0, 0, 65535), new PointD(0, 0), 3, layer => layer.FillRectangle(new Rgba32(10, 10, 10), new RectangleD(-10, 26, 60, 10))),
+            canvas => canvas.Mask(mask => mask.FillCircle(new Rgba32(0, 0, 0), new PointD(20, 15), 8), content => content.FillRectangle(new Rgba32(200, 0, 200), new RectangleD(10, 10, 20, 10))),
+        ];
+
+        using var together = new Image<Rgba32>(40, 30, new Rgba32(250, 250, 250));
+        using var apart = new Image<Rgba32>(40, 30, new Rgba32(250, 250, 250));
+        together.Draw(canvas =>
+        {
+            foreach (var step in steps)
+            {
+                step(canvas);
+            }
+        }, Ct);
+        foreach (var step in steps)
+        {
+            apart.Draw(step, Ct);
+        }
+
+        Assert.Equal(DrawingTestSupport.ReadSamples(apart.Frames[0]), DrawingTestSupport.ReadSamples(together.Frames[0]));
+    }
+
+    [Fact]
     public void ALayerIsDrawnOnEveryFrameAndDiscardedWhenItsCallbackThrows()
     {
         using var image = NewAnimation();

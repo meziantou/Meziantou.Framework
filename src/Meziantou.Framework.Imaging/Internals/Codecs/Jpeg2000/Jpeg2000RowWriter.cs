@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -276,11 +277,7 @@ internal sealed class Jpeg2000RowWriter : IDisposable
         switch (format)
         {
             case PixelFormat.Gray8:
-                for (var x = 0; x < width; x++)
-                {
-                    row[x] = (byte)first[x];
-                }
-
+                PackGray8(first, row);
                 break;
 
             case PixelFormat.Gray16:
@@ -295,24 +292,11 @@ internal sealed class Jpeg2000RowWriter : IDisposable
             }
 
             case PixelFormat.Rgb24:
-                for (var x = 0; x < width; x++)
-                {
-                    row[3 * x] = (byte)first[x];
-                    row[(3 * x) + 1] = (byte)second[x];
-                    row[(3 * x) + 2] = (byte)third[x];
-                }
-
+                PackRgb24(first, second, third, row);
                 break;
 
             case PixelFormat.Rgba32:
-                for (var x = 0; x < width; x++)
-                {
-                    row[4 * x] = (byte)first[x];
-                    row[(4 * x) + 1] = (byte)second[x];
-                    row[(4 * x) + 2] = (byte)third[x];
-                    row[(4 * x) + 3] = alpha.IsEmpty ? byte.MaxValue : (byte)alpha[x];
-                }
-
+                PackRgba32(first, second, third, alpha, row);
                 break;
 
             case PixelFormat.Rgba64:
@@ -331,6 +315,109 @@ internal sealed class Jpeg2000RowWriter : IDisposable
 
             default:
                 throw new InvalidOperationException($"The pixel format {format} is not a layout of the JPEG 2000 decoder.");
+        }
+    }
+
+    /// <summary>Packs three channels of samples into 8-bit RGB pixels: the low 8 bits of each sample.</summary>
+    /// <param name="red">The first channel.</param>
+    /// <param name="green">The second channel; as long as <paramref name="red"/>.</param>
+    /// <param name="blue">The third channel; as long as <paramref name="red"/>.</param>
+    /// <param name="row">Receives three bytes per pixel.</param>
+    internal static void PackRgb24(ReadOnlySpan<int> red, ReadOnlySpan<int> green, ReadOnlySpan<int> blue, Span<byte> row)
+    {
+        var width = red.Length;
+        green = green[..width];
+        blue = blue[..width];
+        row = row[..(3 * width)];
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+        {
+            // Four pixels are four 32-bit lanes (red, green, blue in their three low bytes) whose low three bytes are
+            // gathered into the first 12 bytes; the last 4 bytes, written past the four pixels, belong to the pixels that
+            // follow and are written after them
+            var bytes = Vector128.Create(0xFF);
+            var gather = Vector128.Create((byte)0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 0xFF, 0xFF, 0xFF, 0xFF);
+            for (; x <= width - 4 && (3 * x) + 16 <= row.Length; x += 4)
+            {
+                var pixels = (Vector128.Create(red[x..]) & bytes) | ((Vector128.Create(green[x..]) & bytes) << 8) | ((Vector128.Create(blue[x..]) & bytes) << 16);
+                Vector128.Shuffle(pixels.AsByte(), gather).CopyTo(row[(3 * x)..]);
+            }
+        }
+
+        PackRgb24Scalar(red[x..], green[x..], blue[x..], row[(3 * x)..]);
+    }
+
+    /// <summary>The scalar reference of <see cref="PackRgb24"/>.</summary>
+    internal static void PackRgb24Scalar(ReadOnlySpan<int> red, ReadOnlySpan<int> green, ReadOnlySpan<int> blue, Span<byte> row)
+    {
+        for (var x = 0; x < red.Length; x++)
+        {
+            row[3 * x] = (byte)red[x];
+            row[(3 * x) + 1] = (byte)green[x];
+            row[(3 * x) + 2] = (byte)blue[x];
+        }
+    }
+
+    /// <summary>Packs four channels of samples into 8-bit RGBA pixels: the low 8 bits of each sample, the opacity 255 when <paramref name="alpha"/> is empty.</summary>
+    internal static void PackRgba32(ReadOnlySpan<int> red, ReadOnlySpan<int> green, ReadOnlySpan<int> blue, ReadOnlySpan<int> alpha, Span<byte> row)
+    {
+        var width = red.Length;
+        green = green[..width];
+        blue = blue[..width];
+        row = row[..(4 * width)];
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+        {
+            var bytes = Vector128.Create(0xFF);
+            var opaque = Vector128.Create(unchecked((int)0xFF000000));
+            for (; x <= width - 4; x += 4)
+            {
+                var pixels = (Vector128.Create(red[x..]) & bytes) | ((Vector128.Create(green[x..]) & bytes) << 8) | ((Vector128.Create(blue[x..]) & bytes) << 16);
+                pixels |= alpha.IsEmpty ? opaque : Vector128.Create(alpha[x..]) << 24;
+                pixels.AsByte().CopyTo(row[(4 * x)..]);
+            }
+        }
+
+        PackRgba32Scalar(red[x..], green[x..], blue[x..], alpha.IsEmpty ? alpha : alpha[x..], row[(4 * x)..]);
+    }
+
+    /// <summary>The scalar reference of <see cref="PackRgba32"/>.</summary>
+    internal static void PackRgba32Scalar(ReadOnlySpan<int> red, ReadOnlySpan<int> green, ReadOnlySpan<int> blue, ReadOnlySpan<int> alpha, Span<byte> row)
+    {
+        for (var x = 0; x < red.Length; x++)
+        {
+            row[4 * x] = (byte)red[x];
+            row[(4 * x) + 1] = (byte)green[x];
+            row[(4 * x) + 2] = (byte)blue[x];
+            row[(4 * x) + 3] = alpha.IsEmpty ? byte.MaxValue : (byte)alpha[x];
+        }
+    }
+
+    /// <summary>Packs a channel of samples into 8-bit gray pixels: the low 8 bits of each sample.</summary>
+    internal static void PackGray8(ReadOnlySpan<int> gray, Span<byte> row)
+    {
+        row = row[..gray.Length];
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            var bytes = Vector128.Create(0xFF);
+            for (; x <= gray.Length - 16; x += 16)
+            {
+                var low = Vector128.Narrow(Vector128.Create(gray[x..]) & bytes, Vector128.Create(gray[(x + 4)..]) & bytes);
+                var high = Vector128.Narrow(Vector128.Create(gray[(x + 8)..]) & bytes, Vector128.Create(gray[(x + 12)..]) & bytes);
+                Vector128.Narrow(low.AsUInt16(), high.AsUInt16()).CopyTo(row[x..]);
+            }
+        }
+
+        PackGray8Scalar(gray[x..], row[x..]);
+    }
+
+    /// <summary>The scalar reference of <see cref="PackGray8"/>.</summary>
+    internal static void PackGray8Scalar(ReadOnlySpan<int> gray, Span<byte> row)
+    {
+        for (var x = 0; x < gray.Length; x++)
+        {
+            row[x] = (byte)gray[x];
         }
     }
 }

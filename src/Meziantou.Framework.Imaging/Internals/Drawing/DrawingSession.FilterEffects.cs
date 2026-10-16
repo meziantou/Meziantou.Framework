@@ -176,6 +176,7 @@ internal sealed partial class DrawingSession
                 if (surfaces[i] is { } surface)
                 {
                     FilterProcessor.Write(surface, level.Storages![i], area);
+                    level.MarkDirty(area.Left, area.Top, area.Right, area.Bottom);
                 }
             }
         }
@@ -205,6 +206,9 @@ internal sealed partial class DrawingSession
         FilterProcessor.Read(level.Frames![0], level.Storages![0], surface, unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span)));
         level.Filter!.Apply(processor, surface);
         FilterProcessor.Write(surface, level.Storages[0], bounds);
+
+        // A filter can give a color to pixels that were transparent (a flood, an image, an offset)
+        level.MarkDirty(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom);
     }
 
     /// <summary>

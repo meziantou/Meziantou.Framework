@@ -29,7 +29,7 @@ internal sealed class HevcSliceScratch : IDisposable
     /// <summary>Gets <c>TransCoeffLevel</c> of the transform block being read: the rows of the block, <c>nTbS</c> values each.</summary>
     public Span<int> Coefficients => _values.Span[..BlockLength];
 
-    /// <summary>Gets the scratch of <see cref="HevcInverseTransform.Transform"/>.</summary>
+    /// <summary>Gets the scratch of <see cref="HevcInverseTransform.Transform(Span{int}, int, int, Span{int}, int, int, int)"/>.</summary>
     public Span<int> Transform => _values.Span.Slice(BlockLength, BlockLength);
 
     /// <summary>Gets the residual samples of the luma transform block of the transform unit being decoded.</summary>

@@ -17,12 +17,14 @@ public class BmpBenchmarks : IDisposable
     private readonly MemoryStream _output = new();
     private Image<Rgb24> _photo = null!;
     private Image<Rgba32> _transparent = null!;
+    private Image<Rgb24> _indexed = null!;
 
     [GlobalSetup]
     public void Setup()
     {
         _photo = Image.ImportPixelData<Rgb24>(BenchmarkInputs.LargeRgb24Source, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight);
         _transparent = Image.ImportPixelData<Rgba32>(BenchmarkInputs.ServiceRgba32Source, BenchmarkInputs.ServiceWidth, BenchmarkInputs.ServiceHeight);
+        _indexed = Image.ImportPixelData<Rgb24>(BenchmarkInputs.IndexedRgb24Source, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight);
 
         // Untimed correctness gates: the format is lossless for these samples
         WorkloadChecks.RequireLossless(BenchmarkInputs.BmpRgb, BenchmarkInputs.LargeRgb24Source);
@@ -34,6 +36,7 @@ public class BmpBenchmarks : IDisposable
     {
         _photo?.Dispose();
         _transparent?.Dispose();
+        _indexed?.Dispose();
     }
 
     [Benchmark]
@@ -41,6 +44,14 @@ public class BmpBenchmarks : IDisposable
     public int DecodeBmpRgb()
     {
         using var image = Image.Load<Rgb24>(BenchmarkInputs.BmpRgb);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 BMP 8-bit indexed (256 colors) -> Rgb24")]
+    public int DecodeBmpIndexed8()
+    {
+        using var image = Image.Load<Rgb24>(BenchmarkInputs.BmpIndexed8);
         return image.Width;
     }
 
@@ -55,6 +66,10 @@ public class BmpBenchmarks : IDisposable
     [Benchmark]
     [Workload("2048x1536 Rgb24 -> BMP 24-bit", ReturnsOutputBytes = true)]
     public long EncodeBmpRgb() => ImageWorkloads.Encode(_photo, new BmpEncoder(), _output);
+
+    [Benchmark]
+    [Workload("2048x1536 Rgb24 of 256 colors -> BMP 8-bit indexed", ReturnsOutputBytes = true)]
+    public long EncodeBmpIndexed8() => ImageWorkloads.Encode(_indexed, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8 }, _output);
 
     [Benchmark]
     [Workload("1024x768 Rgba32 -> BMP 32-bit", ReturnsOutputBytes = true)]

@@ -30,6 +30,9 @@ internal sealed class AutoCropAnalyzer
 
     private const int BucketCount = 11;
 
+    // The number of pixels whose weights are summed in 64 bits (see AccumulateWeights)
+    private const int WeightChunkLength = 512;
+
     private readonly Size _canvas;
     private readonly Dictionary<uint, int> _indexes = [];
     private readonly uint[] _keys;
@@ -328,20 +331,30 @@ internal sealed class AutoCropAnalyzer
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
+            // The moment of the row, sum of mass * (2x + 1 - width), is 2 * sum(mass * x) + (1 - width) * sum(mass): the same
+            // integer. Both sums are accumulated in 64 bits over chunks of pixels whose sums cannot overflow (a mass is
+            // below 2^46: sum(mass) < 2^55 and sum(mass * (x - chunk start)) < 2^46 * 512 * 511 / 2 < 2^64), then in
+            // 128 bits once per chunk
             var row = lease.GetRow<TPixel>(y);
             UInt128 rowMass = 0;
-            Int128 rowMoment = 0;
-            for (var x = 0; x < row.Length; x++)
+            UInt128 rowWeightedX = 0;
+            for (var chunkStart = 0; chunkStart < row.Length; chunkStart += WeightChunkLength)
             {
-                var mass = background.GetMass(ref row[x]);
-                if (mass != 0)
+                var chunk = row.Slice(chunkStart, Math.Min(WeightChunkLength, row.Length - chunkStart));
+                ulong chunkMass = 0;
+                ulong chunkWeightedX = 0;
+                for (var x = 0; x < chunk.Length; x++)
                 {
-                    rowMass += mass;
-                    rowMoment += (Int128)mass * ((2L * x) + 1 - width);
+                    var mass = background.GetMass(ref chunk[x]);
+                    chunkMass += mass;
+                    chunkWeightedX += mass * (ulong)x;
                 }
+
+                rowMass += chunkMass;
+                rowWeightedX += chunkWeightedX + ((UInt128)chunkMass * (ulong)chunkStart);
             }
 
-            _momentX += rowMoment;
+            _momentX += (2 * (Int128)rowWeightedX) + ((1 - width) * (Int128)rowMass);
             _momentY += (Int128)rowMass * ((2L * y) + 1 - height);
         }
     }

@@ -47,6 +47,49 @@ public sealed class BenchmarkWorkloadTests
     }
 
     [Fact]
+    public void TiffInputsDecodeToTheSyntheticSources()
+    {
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffLzw, BenchmarkInputs.LargeRgb24Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffDeflate, BenchmarkInputs.LargeRgb24Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffDeflateRowStrips, BenchmarkInputs.LargeRgb24Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffPredictor8, BenchmarkInputs.LargeRgb24Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffPredictor16, BenchmarkInputs.LargeRgba64Source);
+
+        // The predictor input in the other byte order, and with an odd size
+        var source = BenchmarkPixels.Rgba64(37, 11, seed: 9, alpha: true);
+        var littleEndian = TiffPredictorInput.Encode(unsafe(MemoryMarshal.AsBytes(source.AsSpan())), 37, 11, samplesPerPixel: 4, bitsPerSample: 16, bigEndian: false);
+        WorkloadChecks.RequireLossless(littleEndian, source);
+        Assert.Equal(ImageFormat.Tiff, Image.DetectFormat(littleEndian));
+    }
+
+    [Fact]
+    public void IndexedInputsDecodeToTheReducedSource()
+    {
+        var source = BenchmarkInputs.IndexedRgb24Source;
+        Assert.HasCountLessThanOrEqual(256, source.Distinct());
+        Assert.Equal(ImageColorModel.Indexed, Image.Identify(BenchmarkInputs.BmpIndexed8).ColorModel);
+        Assert.Equal(ImageColorModel.Indexed, Image.Identify(BenchmarkInputs.PngIndexed8).ColorModel);
+        Assert.Equal(ImageColorModel.Indexed, Image.Identify(BenchmarkInputs.TiffIndexed8).ColorModel);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.PngIndexed8, source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffIndexed8, source);
+    }
+
+    [Fact]
+    public void PngLayoutInputsDecodeToTheirSources()
+    {
+        // Layouts PngEncoder never writes: gray with alpha, 16-bit RGB without alpha. The reference reader parses them
+        // (chunk CRCs; the zlib datastream of the layouts it decodes) and the library decodes them to the pixels they were made from
+        Assert.Equal(new Size(BenchmarkInputs.ServiceWidth, BenchmarkInputs.ServiceHeight), Image.Identify(BenchmarkInputs.PngGrayAlpha8).Size);
+        Assert.Equal(ImageColorModel.GrayscaleAlpha, Image.Identify(BenchmarkInputs.PngGrayAlpha8).ColorModel);
+        Assert.Equal(ImageColorModel.Rgb, Image.Identify(BenchmarkInputs.PngRgb16).ColorModel);
+        Assert.Equal(16, Image.Identify(BenchmarkInputs.PngRgb16).BitsPerComponent);
+        _ = ReferencePng.Parse(BenchmarkInputs.PngGrayAlpha8).DecodePixels();
+        _ = ReferencePng.Parse(BenchmarkInputs.PngRgb16);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.PngGrayAlpha8, BenchmarkInputs.GrayAlpha8Pixels);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.PngRgb16, BenchmarkInputs.Rgb16Pixels);
+    }
+
+    [Fact]
     public void TheBaselineJpegInputMatchesTheEncoderModel()
     {
         // The baseline input is the output of the encode workload (2048x1536 Rgb24, quality 85, 4:2:0)

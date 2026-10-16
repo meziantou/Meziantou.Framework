@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -11,10 +12,26 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
     private const int ExtraBits = 3;
     private const long Rounding = ((1 << ExtraBits) >> 1) - 1;
 
-    private readonly JpegXlWeightedPredictorHeader _header;
     private readonly int _width;
-    private readonly Av1PooledArray<int> _errors;
-    private readonly Av1PooledArray<uint> _subErrors;
+    private readonly int _rowLength;
+
+    // The parameters of the header, read once
+    private readonly long _p1;
+    private readonly long _p2;
+    private readonly long _p3a;
+    private readonly long _p3b;
+    private readonly long _p3c;
+    private readonly long _p3d;
+    private readonly long _p3e;
+    private readonly uint _weight0;
+    private readonly uint _weight1;
+    private readonly uint _weight2;
+    private readonly uint _weight3;
+
+    // Two rows (the current one and the previous one) of width + 2 entries, for the error of the prediction and, in four
+    // planes, of each sub-predictor
+    private readonly PooledBuffer _errors;
+    private readonly PooledBuffer _subErrors;
     private long _prediction;
     private long _prediction0;
     private long _prediction1;
@@ -24,20 +41,38 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
     public JpegXlWeightedPredictor(JpegXlWeightedPredictorHeader header, int width, AllocationScope scope)
     {
         ArgumentNullException.ThrowIfNull(header);
-        _header = header;
         _width = width;
+        _rowLength = width + 2;
+        _p1 = header.P1;
+        _p2 = header.P2;
+        _p3a = header.P3A;
+        _p3b = header.P3B;
+        _p3c = header.P3C;
+        _p3d = header.P3D;
+        _p3e = header.P3E;
+        _weight0 = header.Weights[0];
+        _weight1 = header.Weights[1];
+        _weight2 = header.Weights[2];
+        _weight3 = header.Weights[3];
 
-        // Two rows (the current one and the previous one) of width + 2 entries, for the error of the prediction and of each sub-predictor
-        var rowLength = (long)width + 2;
-        _errors = Av1PooledArray<int>.Rent(scope, rowLength * 2);
+        var planeLength = ((long)width + 2) * 2;
+        _errors = Rent(scope, planeLength * sizeof(int));
         try
         {
-            _subErrors = Av1PooledArray<uint>.Rent(scope, rowLength * 2 * 4);
+            _subErrors = Rent(scope, planeLength * 4 * sizeof(uint));
         }
         catch
         {
             _errors.Dispose();
             throw;
+        }
+
+        static PooledBuffer Rent(AllocationScope scope, long bytes)
+        {
+            if (bytes > CheckedSizes.MaxBufferLength)
+                throw CheckedSizes.CreateOverflowException(scope.Limits);
+
+            return scope.Rent((int)bytes, AllocationKind.DecoderState, clear: true);
         }
     }
 
@@ -66,22 +101,23 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
     /// <returns>The prediction.</returns>
     public long Predict(int x, int y, long north, long west, long northEast, long northWest, long northNorth, out int maxError)
     {
-        var rowLength = _width + 2;
-        var currentRow = (y & 1) != 0 ? 0 : rowLength;
+        var rowLength = _rowLength;
+        var planeLength = rowLength * 2;
         var previousRow = (y & 1) != 0 ? rowLength : 0;
+        var currentRow = rowLength - previousRow;
         var positionN = previousRow + x;
         var positionNE = x < _width - 1 ? positionN + 1 : positionN;
         var positionNW = x > 0 ? positionN - 1 : positionN;
-        var errors = _errors.Span;
-        var subErrors = _subErrors.Span;
-
-        Span<uint> weights = stackalloc uint[4];
-        for (var i = 0; i < 4; i++)
-        {
-            var offset = i * rowLength * 2;
-            var sum = subErrors[offset + positionN] + subErrors[offset + positionNE] + subErrors[offset + positionNW];
-            weights[i] = GetErrorWeight(sum, _header.Weights[i]);
-        }
+        var errors = unsafe(MemoryMarshal.Cast<byte, int>(_errors.RawBuffer.AsSpan()))[..planeLength];
+        var subErrors = unsafe(MemoryMarshal.Cast<byte, uint>(_subErrors.RawBuffer.AsSpan()))[..(planeLength * 4)];
+        var sub0 = subErrors[..planeLength];
+        var sub1 = subErrors.Slice(planeLength, planeLength);
+        var sub2 = subErrors.Slice(planeLength * 2, planeLength);
+        var sub3 = subErrors.Slice(planeLength * 3, planeLength);
+        var weight0 = GetErrorWeight(sub0[positionN] + sub0[positionNE] + sub0[positionNW], _weight0);
+        var weight1 = GetErrorWeight(sub1[positionN] + sub1[positionNE] + sub1[positionNW], _weight1);
+        var weight2 = GetErrorWeight(sub2[positionN] + sub2[positionNE] + sub2[positionNW], _weight2);
+        var weight3 = GetErrorWeight(sub3[positionN] + sub3[positionNE] + sub3[positionNW], _weight3);
 
         north <<= ExtraBits;
         west <<= ExtraBits;
@@ -113,56 +149,60 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
 
         maxError = (int)largest;
 
-        _prediction0 = west + northEast - north;
-        _prediction1 = north - (((sumWN + errorNE) * _header.P1) >> 5);
-        _prediction2 = west - (((sumWN + errorNW) * _header.P2) >> 5);
-        _prediction3 = north - (((errorNW * _header.P3A) + (errorN * _header.P3B) + (errorNE * _header.P3C) + ((northNorth - north) * _header.P3D) + ((northWest - west) * _header.P3E)) >> 5);
+        var prediction0 = west + northEast - north;
+        var prediction1 = north - (((sumWN + errorNE) * _p1) >> 5);
+        var prediction2 = west - (((sumWN + errorNW) * _p2) >> 5);
+        var prediction3 = north - (((errorNW * _p3a) + (errorN * _p3b) + (errorNE * _p3c) + ((northNorth - north) * _p3d) + ((northWest - west) * _p3e)) >> 5);
+        _prediction0 = prediction0;
+        _prediction1 = prediction1;
+        _prediction2 = prediction2;
+        _prediction3 = prediction3;
 
         // The weighted average: the weights are reduced to 4 bits of precision above their leading bit
-        var weightSum = weights[0] + weights[1] + weights[2] + weights[3];
-        var shift = BitOperations.Log2(weightSum) - 4;
-        weightSum = 0;
-        for (var i = 0; i < 4; i++)
-        {
-            weights[i] >>= shift;
-            weightSum += weights[i];
-        }
-
-        var total = (long)(weightSum >> 1) - 1 + (_prediction0 * weights[0]) + (_prediction1 * weights[1]) + (_prediction2 * weights[2]) + (_prediction3 * weights[3]);
-        _prediction = (total * Reciprocals[(int)weightSum - 1]) >> 24;
+        var shift = BitOperations.Log2(weight0 + weight1 + weight2 + weight3) - 4;
+        weight0 >>= shift;
+        weight1 >>= shift;
+        weight2 >>= shift;
+        weight3 >>= shift;
+        var weightSum = weight0 + weight1 + weight2 + weight3;
+        var total = (long)(weightSum >> 1) - 1 + (prediction0 * weight0) + (prediction1 * weight1) + (prediction2 * weight2) + (prediction3 * weight3);
+        var prediction = (total * Reciprocals[(int)weightSum - 1]) >> 24;
 
         // When the errors of the neighbors do not all have the same sign, the prediction is kept; otherwise it is clamped to the neighbors
-        if (((errorN ^ errorW) | (errorN ^ errorNW)) > 0)
-            return (_prediction + Rounding) >> ExtraBits;
+        if (((errorN ^ errorW) | (errorN ^ errorNW)) <= 0)
+        {
+            var max = Math.Max(west, Math.Max(northEast, north));
+            var min = Math.Min(west, Math.Min(northEast, north));
+            prediction = Math.Max(min, Math.Min(max, prediction));
+        }
 
-        var max = Math.Max(west, Math.Max(northEast, north));
-        var min = Math.Min(west, Math.Min(northEast, north));
-        _prediction = Math.Max(min, Math.Min(max, _prediction));
-        return (_prediction + Rounding) >> ExtraBits;
+        _prediction = prediction;
+        return (prediction + Rounding) >> ExtraBits;
     }
 
     /// <summary>Records the errors of the last prediction once the sample is known.</summary>
     public void Update(int value, int x, int y)
     {
-        var rowLength = _width + 2;
-        var currentRow = (y & 1) != 0 ? 0 : rowLength;
+        var rowLength = _rowLength;
+        var planeLength = rowLength * 2;
         var previousRow = (y & 1) != 0 ? rowLength : 0;
+        var currentRow = rowLength - previousRow;
         var scaled = (long)value << ExtraBits;
-        _errors.Span[currentRow + x] = (int)(_prediction - scaled);
-        var subErrors = _subErrors.Span;
-        Update(subErrors, 0, _prediction0);
-        Update(subErrors, 1, _prediction1);
-        Update(subErrors, 2, _prediction2);
-        Update(subErrors, 3, _prediction3);
+        var errors = unsafe(MemoryMarshal.Cast<byte, int>(_errors.RawBuffer.AsSpan()));
+        errors[currentRow + x] = (int)(_prediction - scaled);
+        var subErrors = unsafe(MemoryMarshal.Cast<byte, uint>(_subErrors.RawBuffer.AsSpan()))[..(planeLength * 4)];
+        Update(subErrors[..planeLength], _prediction0);
+        Update(subErrors.Slice(planeLength, planeLength), _prediction1);
+        Update(subErrors.Slice(planeLength * 2, planeLength), _prediction2);
+        Update(subErrors.Slice(planeLength * 3, planeLength), _prediction3);
 
-        void Update(Span<uint> subErrors, int index, long prediction)
+        void Update(Span<uint> subErrors, long prediction)
         {
             var error = (uint)((Math.Abs(prediction - scaled) + Rounding) >> ExtraBits);
-            var offset = index * rowLength * 2;
-            subErrors[offset + currentRow + x] = error;
+            subErrors[currentRow + x] = error;
 
             // The error also counts for the sample on the right of the one above
-            subErrors[offset + previousRow + x + 1] += error;
+            subErrors[previousRow + x + 1] += error;
         }
     }
 

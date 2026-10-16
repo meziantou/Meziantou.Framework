@@ -1,6 +1,8 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
+    <!-- References Meziantou.Framework, Meziantou.Framework.DnsClient, Meziantou.Framework.DnsFilter, which depend on ICU -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 

@@ -32,7 +32,7 @@ internal sealed class JpegArithmeticSequentialScanDecoder : JpegArithmeticScanDe
         var quantization = scanComponent.Quantization;
         var block = _block;
         var zigZag = JpegIdct.ZigZag;
-        var hasAc = false;
+        var naturalIndexes = 0;
         for (var k = 1; k < 64; k++)
         {
             if (!TryDecodeAcCoefficient(conditioning.AcStatistics, ref k, 63, conditioning.AcThreshold, out var value))
@@ -40,9 +40,9 @@ internal sealed class JpegArithmeticSequentialScanDecoder : JpegArithmeticScanDe
 
             var natural = zigZag[k];
             block[natural] = value * (double)quantization[natural];
-            hasAc = true;
+            naturalIndexes |= natural | 64;
         }
 
-        TransformBlock(scanComponent, blockRow, blockColumn, block, dc, hasAc);
+        TransformBlock(scanComponent, blockRow, blockColumn, block, dc, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));
     }
 }

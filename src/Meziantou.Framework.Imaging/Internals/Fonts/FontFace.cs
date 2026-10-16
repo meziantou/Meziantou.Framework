@@ -418,6 +418,12 @@ internal sealed class FontFace
     /// <summary>Gets the glyph of a variation sequence.</summary>
     public CmapVariation MapVariation(int codePoint, int selector, out int glyphId) => _cmap.MapVariation(codePoint, selector, out glyphId);
 
+    /// <summary>
+    /// Gets a value indicating whether the advances of the glyphs come from their outlines: an instance of a variable font
+    /// with TrueType outlines and without <c>HVAR</c> table, whose advance is the one of the phantom points of a glyph.
+    /// </summary>
+    public bool VariesAdvancesWithOutlines => _instance is not null && _hvarStore == 0 && _gvar is not null;
+
     /// <summary>Gets the advance width of a glyph, in font units.</summary>
     /// <remarks>
     /// In an instance of a variable font, the advance of the default instance varies by the delta of the <c>HVAR</c>

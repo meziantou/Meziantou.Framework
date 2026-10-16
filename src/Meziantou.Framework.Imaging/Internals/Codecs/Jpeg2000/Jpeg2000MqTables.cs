@@ -15,6 +15,14 @@ internal static class Jpeg2000MqTables
     /// <summary>The initial state of the context of a coefficient whose neighbors are all insignificant (Table D.7).</summary>
     public const int ZeroNeighborState = 4;
 
+    /// <summary>
+    /// The transitions of a context byte (the state in its seven high bits, the more probable symbol in the low one), for
+    /// the 256 values of a byte: Qe in the 16 low bits, the context after a more probable symbol that required a
+    /// renormalization in the bits 16 to 23, and the context after a less probable symbol (with the exchange of the more
+    /// probable symbol of SWITCH) in the bits 24 to 31. The values above the last state are never reached.
+    /// </summary>
+    internal static readonly uint[] ContextTransitions = CreateContextTransitions();
+
     /// <summary>Qe: the probability estimate of the less probable symbol.</summary>
     public static ReadOnlySpan<ushort> Probability =>
     [
@@ -46,4 +54,19 @@ internal static class Jpeg2000MqTables
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ];
+
+    private static uint[] CreateContextTransitions()
+    {
+        var table = new uint[256];
+        for (var context = 0; context < 2 * StateCount; context++)
+        {
+            var state = context >> 1;
+            var moreProbable = context & 1;
+            var nextMoreProbable = (NextMoreProbable[state] << 1) | moreProbable;
+            var nextLessProbable = (NextLessProbable[state] << 1) | (Switch[state] != 0 ? 1 - moreProbable : moreProbable);
+            table[context] = Probability[state] | ((uint)nextMoreProbable << 16) | ((uint)nextLessProbable << 24);
+        }
+
+        return table;
+    }
 }

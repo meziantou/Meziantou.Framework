@@ -1,3 +1,5 @@
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -244,7 +246,131 @@ internal ref struct HevcDeblockingFilter
         var dE = dSam0 && dSam3 ? 2 : 1;
         var dEp = dp < (beta + (beta >> 1)) >> 3;
         var dEq = dq < (beta + (beta >> 1)) >> 3;
-        var maxValue = (1 << _bitDepth) - 1;
+        FilterLumaLines(samples, origin, vertical, plane.Stride, dE, dEp, dEq, tC, filterP, filterQ, (1 << _bitDepth) - 1);
+        if (dE is 2)
+        {
+            _tools |= HevcTools.DeblockingStrongFilter;
+        }
+    }
+
+    /// <summary>
+    /// Filters the 4 lines of a luma edge segment (clause 8.7.2.5.7, Equations 8-389 to 8-402) with the decisions of the
+    /// segment: the 4 lines at a time, each in a lane, with the 32-bit operations of the scalar path.
+    /// </summary>
+    /// <param name="samples">The samples of the plane.</param>
+    /// <param name="origin">The position of the sample q0 of the line 0.</param>
+    /// <param name="vertical">Whether the edge is vertical: the samples of a line are consecutive, otherwise the lines are.</param>
+    /// <param name="stride">The number of samples of a row of the plane.</param>
+    /// <param name="dE">The decision: 2 for the strong filter, 1 for the weak one.</param>
+    /// <param name="dEp">Whether the weak filter modifies the samples p1.</param>
+    /// <param name="dEq">Whether the weak filter modifies the samples q1.</param>
+    /// <param name="tC">The value of the variable tC.</param>
+    /// <param name="filterP">Whether the samples p are modified: nDp is not 0.</param>
+    /// <param name="filterQ">Whether the samples q are modified: nDq is not 0.</param>
+    /// <param name="maxValue">The largest value of a sample.</param>
+    internal static void FilterLumaLines(Span<ushort> samples, int origin, bool vertical, int stride, int dE, bool dEp, bool dEq, int tC, bool filterP, bool filterQ, int maxValue)
+    {
+        if (!Vector128.IsHardwareAccelerated)
+        {
+            FilterLumaLinesScalar(samples, origin, vertical, stride, dE, dEp, dEq, tC, filterP, filterQ, maxValue);
+            return;
+        }
+
+        var sampleStep = vertical ? 1 : stride;
+        var p0 = Load(samples, origin - sampleStep, vertical, stride);
+        var p1 = Load(samples, origin - (2 * sampleStep), vertical, stride);
+        var p2 = Load(samples, origin - (3 * sampleStep), vertical, stride);
+        var q0 = Load(samples, origin, vertical, stride);
+        var q1 = Load(samples, origin + sampleStep, vertical, stride);
+        var q2 = Load(samples, origin + (2 * sampleStep), vertical, stride);
+        if (dE is 2)
+        {
+            // Equations 8-389 to 8-394: the strong filtering
+            var p3 = Load(samples, origin - (4 * sampleStep), vertical, stride);
+            var q3 = Load(samples, origin + (3 * sampleStep), vertical, stride);
+            var range = Vector128.Create(2 * tC);
+            var four = Vector128.Create(4);
+            var two = Vector128.Create(2);
+            if (filterP)
+            {
+                Store(samples, origin - sampleStep, vertical, stride, ClampAround((p2 + (p1 * 2) + (p0 * 2) + (q0 * 2) + q1 + four) >> 3, p0, range));
+                Store(samples, origin - (2 * sampleStep), vertical, stride, ClampAround((p2 + p1 + p0 + q0 + two) >> 2, p1, range));
+                Store(samples, origin - (3 * sampleStep), vertical, stride, ClampAround(((p3 * 2) + (p2 * 3) + p1 + p0 + q0 + four) >> 3, p2, range));
+            }
+
+            if (filterQ)
+            {
+                Store(samples, origin, vertical, stride, ClampAround((p1 + (p0 * 2) + (q0 * 2) + (q1 * 2) + q2 + four) >> 3, q0, range));
+                Store(samples, origin + sampleStep, vertical, stride, ClampAround((p0 + q0 + q1 + q2 + two) >> 2, q1, range));
+                Store(samples, origin + (2 * sampleStep), vertical, stride, ClampAround((p0 + q0 + q1 + (q2 * 3) + (q3 * 2) + four) >> 3, q2, range));
+            }
+
+            return;
+        }
+
+        // Equations 8-395 to 8-402: the weak filtering of the lines whose delta is below 10 * tC; the other lines are
+        // written with their own samples
+        var delta = ((((q0 - p0) * 9) - ((q1 - p1) * 3)) + Vector128.Create(8)) >> 4;
+        var filtered = Vector128.LessThan(Vector128.Abs(delta), Vector128.Create(tC * 10));
+        var tCVector = Vector128.Create(tC);
+        delta = Vector128.Min(Vector128.Max(delta, -tCVector), tCVector);
+        var max = Vector128.Create(maxValue);
+        var halfTc = Vector128.Create(tC >> 1);
+        var one = Vector128.Create(1);
+        if (filterP)
+        {
+            Store(samples, origin - sampleStep, vertical, stride, Vector128.ConditionalSelect(filtered, Clip(p0 + delta, max), p0));
+            if (dEp)
+            {
+                var deltaP = Vector128.Min(Vector128.Max(((((p2 + p0 + one) >> 1) - p1) + delta) >> 1, -halfTc), halfTc);
+                Store(samples, origin - (2 * sampleStep), vertical, stride, Vector128.ConditionalSelect(filtered, Clip(p1 + deltaP, max), p1));
+            }
+        }
+
+        if (filterQ)
+        {
+            Store(samples, origin, vertical, stride, Vector128.ConditionalSelect(filtered, Clip(q0 - delta, max), q0));
+            if (dEq)
+            {
+                var deltaQ = Vector128.Min(Vector128.Max(((((q2 + q0 + one) >> 1) - q1) - delta) >> 1, -halfTc), halfTc);
+                Store(samples, origin + sampleStep, vertical, stride, Vector128.ConditionalSelect(filtered, Clip(q1 + deltaQ, max), q1));
+            }
+        }
+
+        // The sample at position of each of the 4 lines: consecutive samples of a row for a horizontal edge, the samples of
+        // 4 rows for a vertical one
+        static Vector128<int> Load(ReadOnlySpan<ushort> samples, int position, bool vertical, int stride)
+        {
+            if (!vertical)
+                return Vector128.WidenLower(Vector128.Create(Vector64.Create(samples.Slice(position, 4)), Vector64<ushort>.Zero)).AsInt32();
+
+            return Vector128.Create(samples[position], samples[position + stride], samples[position + (2 * stride)], samples[position + (3 * stride)]);
+        }
+
+        static void Store(Span<ushort> samples, int position, bool vertical, int stride, Vector128<int> values)
+        {
+            if (!vertical)
+            {
+                Vector128.Narrow(values.AsUInt32(), Vector128<uint>.Zero).GetLower().CopyTo(samples.Slice(position, 4));
+                return;
+            }
+
+            samples[position] = (ushort)values.GetElement(0);
+            samples[position + stride] = (ushort)values.GetElement(1);
+            samples[position + (2 * stride)] = (ushort)values.GetElement(2);
+            samples[position + (3 * stride)] = (ushort)values.GetElement(3);
+        }
+
+        static Vector128<int> ClampAround(Vector128<int> value, Vector128<int> center, Vector128<int> range) => Vector128.Min(Vector128.Max(value, center - range), center + range);
+
+        static Vector128<int> Clip(Vector128<int> value, Vector128<int> max) => Vector128.Min(Vector128.Max(value, Vector128<int>.Zero), max);
+    }
+
+    /// <summary>The filtering of <see cref="FilterLumaLines"/>, one line at a time: the reference of the vector path.</summary>
+    internal static void FilterLumaLinesScalar(Span<ushort> samples, int origin, bool vertical, int stride, int dE, bool dEp, bool dEq, int tC, bool filterP, bool filterQ, int maxValue)
+    {
+        var sampleStep = vertical ? 1 : stride;
+        var lineStep = vertical ? stride : 1;
         for (var k = 0; k < 4; k++)
         {
             var q = origin + (k * lineStep);
@@ -273,7 +399,6 @@ internal ref struct HevcDeblockingFilter
                     samples[q + (2 * sampleStep)] = (ushort)Math.Clamp((p0 + q0 + q1 + (3 * q2) + (2 * q3) + 4) >> 3, q2 - (2 * tC), q2 + (2 * tC));
                 }
 
-                _tools |= HevcTools.DeblockingStrongFilter;
                 continue;
             }
 

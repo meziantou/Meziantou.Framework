@@ -504,8 +504,21 @@ internal sealed partial class DrawingSession
             return;
 
         // The layer is an image at the origin of the canvas: its pixels are those of the canvas, read as they are. A
-        // layer of several frames has one for each frame it is drawn on.
+        // layer of several frames has one for each frame it is drawn on. A transparent pixel changes nothing with an
+        // operator that keeps the pixel under a paint without opacity: only the pixels of the layer that may not be
+        // transparent are drawn then.
         var bounds = Rectangle.FromLTRB(level.Left, level.Top, level.Right, level.Bottom);
+        if (DrawingKernels.IsTransparentPaintInert(level.Mode))
+        {
+            bounds = Rectangle.FromLTRB(Math.Max(bounds.Left, level.DirtyLeft), Math.Max(bounds.Top, level.DirtyTop), Math.Min(bounds.Right, level.DirtyRight), Math.Min(bounds.Bottom, level.DirtyBottom));
+            if (bounds.Width <= 0 || bounds.Height <= 0)
+            {
+                // Drawing it would have changed no pixel, but the pixels were about to change
+                RemoveStaleThumbnail();
+                return;
+            }
+        }
+
         var layerFrames = level.Frames!;
         if (layerFrames.Length == 1)
         {
@@ -583,12 +596,36 @@ internal sealed partial class DrawingSession
         }
     }
 
+    /// <summary>Records that pixels of what the draw calls paint may have changed: those of the layer of the current depth, if any.</summary>
+    private void MarkDrawn(int left, int top, int right, int bottom)
+    {
+        if (_layerDepth != 0)
+        {
+            _layers[_layerDepth - 1].MarkDirty(left, top, right, bottom);
+        }
+    }
+
+    /// <summary>
+    /// Gets the pixels of one axis whose value a kernel that reads the pixels from <paramref name="before"/> before them
+    /// to <paramref name="after"/> after them can take from the pixels that may not be transparent, from
+    /// <paramref name="dirtyStart"/> to <paramref name="dirtyEnd"/>. The pixels beyond the bounds are read as those on
+    /// the edges: a dirty pixel on an edge reaches every pixel beyond it.
+    /// </summary>
+    private static (long Start, long End) GetReach(int dirtyStart, int dirtyEnd, int boundsStart, int boundsEnd, long before, long after)
+        => (dirtyStart <= boundsStart ? long.MinValue : dirtyStart - after, dirtyEnd >= boundsEnd ? long.MaxValue : dirtyEnd + before);
+
     /// <summary>Replaces the alpha of the pixels of a layer by their alpha multiplied by their luma.</summary>
     private void ApplyLuminance(LayerLevel level)
     {
+        // Only the pixels that may not be transparent can change
         var storage = level.Storages![0];
-        var count = level.Right - level.Left;
-        for (var y = level.Top; y < level.Bottom; y++)
+        var left = Math.Max(level.Left, level.DirtyLeft);
+        var count = Math.Min(level.Right, level.DirtyRight) - left;
+        var bottom = Math.Min(level.Bottom, level.DirtyBottom);
+        if (count <= 0)
+            return;
+
+        for (var y = Math.Max(level.Top, level.DirtyTop); y < bottom; y++)
         {
             if ((y & 63) == 0)
             {
@@ -598,7 +635,7 @@ internal sealed partial class DrawingSession
             var row = storage.GetRowSpanCore(y);
             if (storage.BytesPerPixel == 8)
             {
-                foreach (ref var pixel in unsafe(MemoryMarshal.Cast<byte, Rgba64>(row)).Slice(level.Left, count))
+                foreach (ref var pixel in unsafe(MemoryMarshal.Cast<byte, Rgba64>(row)).Slice(left, count))
                 {
                     if (pixel.A != 0)
                     {
@@ -608,7 +645,7 @@ internal sealed partial class DrawingSession
             }
             else
             {
-                foreach (ref var pixel in unsafe(MemoryMarshal.Cast<byte, Rgba32>(row)).Slice(level.Left, count))
+                foreach (ref var pixel in unsafe(MemoryMarshal.Cast<byte, Rgba32>(row)).Slice(left, count))
                 {
                     if (pixel.A != 0)
                     {
@@ -730,7 +767,40 @@ internal sealed partial class DrawingSession
 
         public int Bottom { get; private set; }
 
-        /// <summary>Creates the image of the layer if it has none, makes the pixels it can draw on transparent, and holds them until <see cref="End"/>.</summary>
+        /// <summary>
+        /// Gets the left of the pixels of the image of the layer that may not be transparent black: every pixel outside
+        /// <see cref="DirtyLeft"/>, <see cref="DirtyTop"/>, <see cref="DirtyRight"/> and <see cref="DirtyBottom"/> is.
+        /// </summary>
+        public int DirtyLeft { get; private set; }
+
+        public int DirtyTop { get; private set; }
+
+        public int DirtyRight { get; private set; }
+
+        public int DirtyBottom { get; private set; }
+
+        /// <summary>Records that pixels of the image of the layer may no longer be transparent black.</summary>
+        public void MarkDirty(int left, int top, int right, int bottom)
+        {
+            if (right <= left || bottom <= top)
+                return;
+
+            if (DirtyRight <= DirtyLeft)
+            {
+                DirtyLeft = left;
+                DirtyTop = top;
+                DirtyRight = right;
+                DirtyBottom = bottom;
+                return;
+            }
+
+            DirtyLeft = Math.Min(DirtyLeft, left);
+            DirtyTop = Math.Min(DirtyTop, top);
+            DirtyRight = Math.Max(DirtyRight, right);
+            DirtyBottom = Math.Max(DirtyBottom, bottom);
+        }
+
+        /// <summary>Creates the image of the layer if it has none, makes its pixels transparent, and holds them until <see cref="End"/>.</summary>
         public void Begin(Image owner, bool isWide, int width, int height, int left, int top, int right, int bottom, int frameCount)
         {
             if (_image is null)
@@ -765,17 +835,25 @@ internal sealed partial class DrawingSession
             Bottom = bottom;
             for (var i = 0; i < frameCount; i++)
             {
-                var storage = Storages![i];
-                _tokens![i] = storage.AcquireLease().Token;
-                if (right > left)
+                _tokens![i] = Storages![i].AcquireLease().Token;
+            }
+
+            // A new frame is transparent; the pixels the previous layer of this depth may have changed are cleared, on
+            // every frame of the image: a layer of fewer frames leaves the others as they were
+            if (DirtyRight > DirtyLeft)
+            {
+                for (var i = 0; i < _image.Frames.Count; i++)
                 {
+                    var storage = _image.Frames[i].GetStorage();
                     var bytesPerPixel = storage.BytesPerPixel;
-                    for (var y = top; y < bottom; y++)
+                    for (var y = DirtyTop; y < DirtyBottom; y++)
                     {
-                        storage.GetRowSpanCore(y).Slice(left * bytesPerPixel, (right - left) * bytesPerPixel).Clear();
+                        storage.GetRowSpanCore(y).Slice(DirtyLeft * bytesPerPixel, (DirtyRight - DirtyLeft) * bytesPerPixel).Clear();
                     }
                 }
             }
+
+            DirtyLeft = DirtyTop = DirtyRight = DirtyBottom = 0;
         }
 
         /// <summary>Releases the pixels of the layer: they can be read to draw it.</summary>
@@ -809,6 +887,7 @@ internal sealed partial class DrawingSession
             _image = null;
             Frames = null;
             Storages = null;
+            DirtyLeft = DirtyTop = DirtyRight = DirtyBottom = 0;
         }
     }
 

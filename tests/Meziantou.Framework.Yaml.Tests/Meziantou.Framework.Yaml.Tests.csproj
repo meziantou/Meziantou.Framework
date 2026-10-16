@@ -1,5 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
   <PropertyGroup>
+    <!-- Converts values with named cultures -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 

@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -398,33 +399,55 @@ internal sealed class Vp8LDecoder : IDisposable
 
     private void DecodePixels(Span<uint> pixels, int width, ReadOnlySpan<Vp8LPrefixCode> groups, ReadOnlySpan<uint> entropyImage, int entropyWidth, int prefixBits, Span<uint> cache, int cacheBits)
     {
+        // The bit reader state is held in locals (registers) and stored back on exit. Pixels and cache entries are addressed by
+        // reference: position < total, hashes and keys < cache size; prefix-code tables are addressed by their built offsets
         var reader = _reader;
-        var entries = _codes.GetEntries();
+        reader.Load(out var value, out var bits, out var bytePosition);
+        ref var data = ref unsafe(MemoryMarshal.GetArrayDataReference(reader.Data));
+        var end = reader.End;
+        ref var entries = ref unsafe(MemoryMarshal.GetReference(_codes.GetEntries()));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(pixels));
+        ref var cacheEntries = ref unsafe(MemoryMarshal.GetReference(cache));
         var total = pixels.Length;
         var position = 0;
         var x = 0;
         var y = 0;
         var blockMask = entropyImage.IsEmpty ? -1 : (1 << prefixBits) - 1;
-        var group = GetGroup(groups, entropyImage, entropyWidth, prefixBits, 0, 0);
+        ref readonly var group = ref GetGroup(groups, entropyImage, entropyWidth, prefixBits, 0, 0);
+        var literalBase = GetConstantLiteral(in group, ref entries);
         var cacheSize = cache.Length;
         while (position < total)
         {
             if ((x & blockMask) == 0)
             {
-                group = GetGroup(groups, entropyImage, entropyWidth, prefixBits, x, y);
+                group = ref GetGroup(groups, entropyImage, entropyWidth, prefixBits, x, y);
+                literalBase = GetConstantLiteral(in group, ref entries);
             }
 
-            var code = Vp8LPrefixCodes.ReadSymbol(reader, entries, group[0]);
+            var code = Vp8LPrefixCodes.ReadSymbol(ref entries, in group, ref data, end, ref value, ref bits, ref bytePosition);
             if (code < NumLiteralCodes)
             {
-                var red = Vp8LPrefixCodes.ReadSymbol(reader, entries, group[1]);
-                var blue = Vp8LPrefixCodes.ReadSymbol(reader, entries, group[2]);
-                var alpha = Vp8LPrefixCodes.ReadSymbol(reader, entries, group[3]);
-                var argb = ((uint)alpha << 24) | ((uint)red << 16) | ((uint)code << 8) | (uint)blue;
-                pixels[position++] = argb;
-                if (cacheSize != 0)
+                uint argb;
+                if (literalBase >= 0)
                 {
-                    cache[(int)ColorCacheHash(argb, cacheBits)] = argb;
+                    // Red, blue and alpha have a single symbol (zero-bit codes): only green is coded
+                    argb = (uint)literalBase | ((uint)code << 8);
+                }
+                else
+                {
+                    var red = Vp8LPrefixCodes.ReadSymbol(ref entries, in unsafe(Unsafe.Add(ref Unsafe.AsRef(in group), 1)), ref data, end, ref value, ref bits, ref bytePosition);
+                    var blue = Vp8LPrefixCodes.ReadSymbol(ref entries, in unsafe(Unsafe.Add(ref Unsafe.AsRef(in group), 2)), ref data, end, ref value, ref bits, ref bytePosition);
+                    var alpha = Vp8LPrefixCodes.ReadSymbol(ref entries, in unsafe(Unsafe.Add(ref Unsafe.AsRef(in group), 3)), ref data, end, ref value, ref bits, ref bytePosition);
+                    argb = ((uint)alpha << 24) | ((uint)red << 16) | ((uint)code << 8) | (uint)blue;
+                }
+
+                unsafe
+                {
+                    Unsafe.Add(ref output, position++) = argb;
+                    if (cacheSize != 0)
+                    {
+                        Unsafe.Add(ref cacheEntries, (int)ColorCacheHash(argb, cacheBits)) = argb;
+                    }
                 }
 
                 if (++x == width)
@@ -439,36 +462,10 @@ internal sealed class Vp8LDecoder : IDisposable
 
             if (code < NumLiteralCodes + NumLengthCodes)
             {
-                var length = ReadPrefixedValue(code - NumLiteralCodes);
-                var distanceSymbol = Vp8LPrefixCodes.ReadSymbol(reader, entries, group[4]);
-                var distance = ToPlaneDistance(ReadPrefixedValue(distanceSymbol), width);
-                if (distance > position)
-                    throw Invalid(string.Create(CultureInfo.InvariantCulture, $"A WebP lossless backward reference at pixel {position} has the distance {distance}, before the first pixel."));
-
-                if (length > total - position)
-                    throw Invalid(string.Create(CultureInfo.InvariantCulture, $"A WebP lossless backward reference at pixel {position} copies {length} pixels, past the last pixel."));
-
-                // Overlapping copies repeat the pattern: copy forward, one pixel at a time when they overlap
-                if (distance >= length)
-                {
-                    pixels.Slice(position - distance, length).CopyTo(pixels.Slice(position, length));
-                }
-                else
-                {
-                    for (var i = 0; i < length; i++)
-                    {
-                        pixels[position + i] = pixels[position + i - distance];
-                    }
-                }
-
-                if (cacheSize != 0)
-                {
-                    foreach (var argb in pixels.Slice(position, length))
-                    {
-                        cache[(int)ColorCacheHash(argb, cacheBits)] = argb;
-                    }
-                }
-
+                var length = ReadPrefixedValue(code - NumLiteralCodes, ref data, end, ref value, ref bits, ref bytePosition);
+                var distanceSymbol = Vp8LPrefixCodes.ReadSymbol(ref entries, in unsafe(Unsafe.Add(ref Unsafe.AsRef(in group), 4)), ref data, end, ref value, ref bits, ref bytePosition);
+                var distance = ToPlaneDistance(ReadPrefixedValue(distanceSymbol, ref data, end, ref value, ref bits, ref bytePosition), width);
+                CopyBackwardReference(pixels, position, distance, length, cache, cacheBits);
                 position += length;
                 x += length;
                 if (x >= width)
@@ -480,7 +477,8 @@ internal sealed class Vp8LDecoder : IDisposable
 
                 if (position < total)
                 {
-                    group = GetGroup(groups, entropyImage, entropyWidth, prefixBits, x, y);
+                    group = ref GetGroup(groups, entropyImage, entropyWidth, prefixBits, x, y);
+                    literalBase = GetConstantLiteral(in group, ref entries);
                 }
 
                 continue;
@@ -490,7 +488,11 @@ internal sealed class Vp8LDecoder : IDisposable
             if (key >= cacheSize)
                 throw Invalid("A WebP lossless color cache code is outside the color cache.");
 
-            pixels[position++] = cache[key];
+            unsafe
+            {
+                Unsafe.Add(ref output, position++) = Unsafe.Add(ref cacheEntries, key);
+            }
+
             if (++x == width)
             {
                 x = 0;
@@ -498,26 +500,80 @@ internal sealed class Vp8LDecoder : IDisposable
                 _cancellationToken.ThrowIfCancellationRequested();
             }
         }
+
+        reader.Store(value, bits, bytePosition);
     }
 
-    private static ReadOnlySpan<Vp8LPrefixCode> GetGroup(ReadOnlySpan<Vp8LPrefixCode> groups, ReadOnlySpan<uint> entropyImage, int entropyWidth, int prefixBits, int x, int y)
+    /// <summary>Copies the pixels of a backward reference and adds them to the color cache.</summary>
+    private static void CopyBackwardReference(Span<uint> pixels, int position, int distance, int length, Span<uint> cache, int cacheBits)
+    {
+        if (distance > position)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"A WebP lossless backward reference at pixel {position} has the distance {distance}, before the first pixel."));
+
+        if (length > pixels.Length - position)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"A WebP lossless backward reference at pixel {position} copies {length} pixels, past the last pixel."));
+
+        // Overlapping copies repeat the pattern: copy forward, one pixel at a time when they overlap
+        if (distance >= length)
+        {
+            pixels.Slice(position - distance, length).CopyTo(pixels.Slice(position, length));
+        }
+        else
+        {
+            for (var i = 0; i < length; i++)
+            {
+                pixels[position + i] = pixels[position + i - distance];
+            }
+        }
+
+        if (!cache.IsEmpty)
+        {
+            foreach (var argb in pixels.Slice(position, length))
+            {
+                cache[(int)ColorCacheHash(argb, cacheBits)] = argb;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the alpha, red and blue components of every literal of a group when their codes have a single symbol (they use
+    /// no bit), or -1.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static long GetConstantLiteral(in Vp8LPrefixCode group, ref uint entries)
+    {
+        ref var codes = ref unsafe(Unsafe.AsRef(in group));
+        var red = unsafe(Unsafe.Add(ref codes, 1));
+        var blue = unsafe(Unsafe.Add(ref codes, 2));
+        var alpha = unsafe(Unsafe.Add(ref codes, 3));
+        if ((red.RootBits | blue.RootBits | alpha.RootBits) != 0)
+            return -1;
+
+        // A single-symbol code is one entry holding the symbol
+        return unsafe(((Unsafe.Add(ref entries, alpha.Offset) & 0xFFFF) << 24) | ((Unsafe.Add(ref entries, red.Offset) & 0xFFFF) << 16) | (Unsafe.Add(ref entries, blue.Offset) & 0xFFFF));
+    }
+
+    /// <summary>Gets the first of the <see cref="GroupSize"/> codes of the group of a pixel (the group count is above every meta code).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ref readonly Vp8LPrefixCode GetGroup(ReadOnlySpan<Vp8LPrefixCode> groups, ReadOnlySpan<uint> entropyImage, int entropyWidth, int prefixBits, int x, int y)
     {
         if (entropyImage.IsEmpty)
-            return groups[..GroupSize];
+            return ref groups[0];
 
         var metaCode = (int)((entropyImage[((y >> prefixBits) * entropyWidth) + (x >> prefixBits)] >> 8) & 0xFFFF);
-        return groups.Slice(metaCode * GroupSize, GroupSize);
+        return ref groups.Slice(metaCode * GroupSize, GroupSize)[0];
     }
 
     /// <summary>Reads a length or distance from its prefix symbol and extra bits (specification section 5.2.2).</summary>
-    private int ReadPrefixedValue(int prefix)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int ReadPrefixedValue(int prefix, ref byte data, int end, ref ulong value, ref int bits, ref int position)
     {
         if (prefix < 4)
             return prefix + 1;
 
         var extraBits = (prefix - 2) >> 1;
         var offset = (2 + (prefix & 1)) << extraBits;
-        return offset + (int)_reader.ReadBits(extraBits) + 1;
+        return offset + (int)Vp8LBitReader.ReadBits(ref data, end, ref value, ref bits, ref position, extraBits) + 1;
     }
 
     /// <summary>Gets the neighbor offset (<c>xi</c>, <c>yi</c>) of a short distance code (1 to 120).</summary>

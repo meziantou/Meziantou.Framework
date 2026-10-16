@@ -1,6 +1,8 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
+    <!-- Npgsql needs globalization data -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <!-- All the tests are skipped when globalization is invariant -->
     <MinimumExpectedTests>0</MinimumExpectedTests>

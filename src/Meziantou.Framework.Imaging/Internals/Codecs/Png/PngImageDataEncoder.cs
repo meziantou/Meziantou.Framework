@@ -16,7 +16,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Push-model use: <see cref="Start"/> (or <see cref="StartFrameData"/>) begins a datastream; each <see cref="Encode"/> call processes a bounded band of
 /// scanlines (about <see cref="BandBytes"/> unfiltered bytes, at least one scanline, fewer when the output buffer should be
 /// flushed) read straight from the frame storage, and returns <see langword="true"/> once the zlib datastream is finished and
-/// its last chunk written. Memory is bounded by four scanlines (two for adaptive filtering), one stored row for Adam7, one
+/// its last chunk written. Memory is bounded by three scanlines (current, previous, filtered), one stored row for Adam7, one
 /// chunk buffer and the BCL deflater state, whatever the image size; the image is never copied or buffered as a whole, and
 /// neither is the compressed datastream. The pooled buffers are charged to the writer scope; the native deflater state is
 /// not (as for the decoder's inflater).
@@ -52,7 +52,6 @@ internal sealed class PngImageDataEncoder : IDisposable
     private PooledBuffer? _current;
     private PooledBuffer? _previous;
     private PooledBuffer? _filtered;
-    private PooledBuffer? _trial;
     private PooledBuffer? _row;
     private PooledBuffer? _chunkBuffer;
     private ChunkStream? _chunks;
@@ -110,11 +109,6 @@ internal sealed class PngImageDataEncoder : IDisposable
             _current = scope.Rent((int)rowLength, AllocationKind.Temporary, clear: false);
             _previous = scope.Rent((int)rowLength, AllocationKind.Temporary);
             _filtered = scope.Rent((int)rowLength + 1, AllocationKind.Temporary, clear: false);
-            if (_fixedFilter < 0)
-            {
-                _trial = scope.Rent((int)rowLength + 1, AllocationKind.Temporary, clear: false);
-            }
-
             // One stored row for Adam7, or the indexes of a scanline before they are packed
             if (interlaced || indexedRows is not null)
             {
@@ -227,8 +221,6 @@ internal sealed class PngImageDataEncoder : IDisposable
         _chunkBuffer = null;
         _row?.Dispose();
         _row = null;
-        _trial?.Dispose();
-        _trial = null;
         _filtered?.Dispose();
         _filtered = null;
         _previous?.Dispose();
@@ -301,26 +293,22 @@ internal sealed class PngImageDataEncoder : IDisposable
 
     private Span<byte> FilterAdaptive(ReadOnlySpan<byte> current, ReadOnlySpan<byte> previous, int bytesPerPixel, int length)
     {
-        var best = _filtered!;
-        var trial = _trial!;
-        var bestCost = long.MaxValue;
-        for (byte type = PngFilters.None; type <= PngFilters.Paeth; type++)
+        // The filter of the smallest cost, the lowest type on a tie; only the winner is written
+        Span<long> costs = stackalloc long[5];
+        PngFilters.GetAdaptiveCosts(current, previous, bytesPerPixel, costs);
+        byte best = PngFilters.None;
+        for (byte type = PngFilters.Sub; type <= PngFilters.Paeth; type++)
         {
-            var candidate = trial.RawBuffer.AsSpan(0, length + 1);
-            candidate[0] = type;
-            PngFilters.Filter(type, current, previous, bytesPerPixel, candidate[1..]);
-            var cost = PngFilters.GetAdaptiveCost(candidate[1..]);
-            if (cost < bestCost)
+            if (costs[type] < costs[best])
             {
-                bestCost = cost;
-                (best, trial) = (trial, best);
+                best = type;
             }
         }
 
-        // Keep the buffers attached to their fields whatever the winner
-        _filtered = best;
-        _trial = trial;
-        return best.RawBuffer.AsSpan(0, length + 1);
+        var filtered = _filtered!.RawBuffer.AsSpan(0, length + 1);
+        filtered[0] = best;
+        PngFilters.Filter(best, current, previous, bytesPerPixel, filtered[1..]);
+        return filtered;
     }
 
     private void StartNextPass()

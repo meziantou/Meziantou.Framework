@@ -29,6 +29,16 @@ internal sealed class SyllablePattern
     private readonly int _start;
     private readonly int _accept;
 
+    // The states a state leads to without reading a character, itself included, for the states a match enters: the
+    // start and the successors of the states that read a character. _closureStarts has the first one in _closures,
+    // and -1 for the states a match never enters.
+    private readonly int[] _closureStarts;
+    private readonly int[] _closureLengths;
+    private readonly int[] _closures;
+
+    // The categories a match can start with: a text that starts with another one does not match.
+    private readonly ulong _firstCategories;
+
     private SyllablePattern(List<ulong> categories, List<int> next, List<int> alternative, int start, int accept)
     {
         _categories = [.. categories];
@@ -36,6 +46,41 @@ internal sealed class SyllablePattern
         _alternative = [.. alternative];
         _start = start;
         _accept = accept;
+
+        var count = _categories.Length;
+        _closureStarts = new int[count];
+        _closureLengths = new int[count];
+        _closureStarts.AsSpan().Fill(-1);
+        var closures = new List<int>();
+        var states = new int[count];
+        var isActive = new bool[count];
+        AddClosure(_start);
+        for (var state = 0; state < count; state++)
+        {
+            if (_categories[state] != 0)
+            {
+                AddClosure(_next[state]);
+            }
+        }
+
+        _closures = [.. closures];
+        foreach (var state in _closures.AsSpan(_closureStarts[_start], _closureLengths[_start]))
+        {
+            _firstCategories |= _categories[state];
+        }
+
+        void AddClosure(int state)
+        {
+            if (state < 0 || _closureStarts[state] >= 0)
+                return;
+
+            isActive.AsSpan().Clear();
+            var length = 0;
+            Add(state, states, ref length, isActive);
+            _closureStarts[state] = closures.Count;
+            _closureLengths[state] = length;
+            closures.AddRange(states.AsSpan(0, length));
+        }
     }
 
     /// <summary>Compiles a pattern.</summary>
@@ -70,13 +115,17 @@ internal sealed class SyllablePattern
 
     private int Match(ReadOnlySpan<GlyphInfo> info, ReadOnlySpan<byte> categories, int length, int start, Span<int> states)
     {
+        // No state reads the first character: the match is empty.
+        if (start < length && (_firstCategories & (1UL << ((categories.IsEmpty ? info[start].SyllableCategory : categories[start]) & 63))) == 0)
+            return 0;
+
         var count = _categories.Length;
         var current = states[..count];
         var following = states.Slice(count, count);
         Span<bool> isActive = count <= MaxStackStates ? stackalloc bool[count] : new bool[count];
         isActive.Clear();
         var currentCount = 0;
-        Add(_start, current, ref currentCount, isActive);
+        Enter(_start, current, ref currentCount, isActive);
         var longest = 0;
         for (var i = start; ; i++)
         {
@@ -102,7 +151,7 @@ internal sealed class SyllablePattern
                 var state = current[j];
                 if ((_categories[state] & category) != 0)
                 {
-                    Add(_next[state], following, ref followingCount, isActive);
+                    Enter(_next[state], following, ref followingCount, isActive);
                 }
             }
 
@@ -117,6 +166,23 @@ internal sealed class SyllablePattern
 
     /// <summary>Gets the number of states of the automaton.</summary>
     public int StateCount => _categories.Length;
+
+    // Adds a state and the states it leads to without reading a character, from the closure of the state: the states
+    // Add would add. The set of the active states is the same: Add expands every state it activates.
+    private void Enter(int state, Span<int> states, ref int count, Span<bool> isActive)
+    {
+        if (state < 0)
+            return;
+
+        foreach (var target in _closures.AsSpan(_closureStarts[state], _closureLengths[state]))
+        {
+            if (!isActive[target])
+            {
+                isActive[target] = true;
+                states[count++] = target;
+            }
+        }
+    }
 
     // Adds a state and the states it leads to without reading a character.
     private void Add(int state, Span<int> states, ref int count, Span<bool> isActive)

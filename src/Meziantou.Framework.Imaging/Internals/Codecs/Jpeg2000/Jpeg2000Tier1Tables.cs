@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -5,9 +7,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// tables, and the update of the flags when a coefficient becomes significant.
 /// </summary>
 /// <remarks>
-/// Each coefficient of a code-block has a word of flags, in an array with a border of one coefficient on each side: the
-/// significance of its eight neighbors, the sign of the four nearest ones, and its own state. A coefficient that becomes
-/// significant updates the flags of its neighbors, so that a context is one table lookup.
+/// Each coefficient of a code-block has a word of flags: the significance of its eight neighbors, the sign of the four
+/// nearest ones, and its own state. A coefficient that becomes significant updates the flags of its neighbors, so that a
+/// context is one table lookup. The flags are stored in the order of the passes: stripe by stripe, the four words of a
+/// column of a stripe next to each other, with a border of one column on each side and of one stripe above and below.
 /// </remarks>
 internal static class Jpeg2000Tier1Tables
 {
@@ -23,8 +26,11 @@ internal static class Jpeg2000Tier1Tables
     /// <summary>The largest number of coefficients of a code-block.</summary>
     public const int MaxSamples = 4096;
 
-    /// <summary>The largest number of flags of a code-block with its border: a code-block is at most 1024 coefficients wide or high.</summary>
-    public const int MaxFlags = MaxSamples + (2 * (1024 + 4)) + 4;
+    /// <summary>
+    /// The largest number of flags of a code-block stored stripe by stripe (<see cref="GetStripeFlagCount"/>): at most
+    /// (h / 4 + 3) x (w + 2) x 4 = h x w + 2h + 12w + 24 words, with h x w at most 4096 and w and h at most 1024.
+    /// </summary>
+    public const int MaxFlags = MaxSamples + (2 * 1024) + (12 * 1024) + 24;
 
     public const uint West = 1u << 0;
     public const uint East = 1u << 1;
@@ -87,30 +93,122 @@ internal static class Jpeg2000Tier1Tables
         contexts[ContextUniform] = Jpeg2000MqTables.UniformState << 1;
     }
 
+    /// <summary>Gets the number of words of a stripe of a code-block whose flags are stored stripe by stripe: four per column, with a column of border on each side.</summary>
+    /// <param name="width">The width of the code-block.</param>
+    public static int GetStripeStride(int width) => (width + 2) * 4;
+
+    /// <summary>Gets the number of words of the flags of a code-block stored stripe by stripe, with a stripe of border above and below.</summary>
+    /// <param name="width">The width of the code-block.</param>
+    /// <param name="height">The height of the code-block.</param>
+    public static int GetStripeFlagCount(int width, int height) => (((height + 3) / 4) + 2) * GetStripeStride(width);
+
+    /// <summary>Determines whether a column of a stripe has an insignificant coefficient with a significant neighbor: a coefficient that the significance propagation pass codes.</summary>
+    /// <param name="column">The flags of the first row of the column, in the flags of the code-block stored stripe by stripe.</param>
+    /// <remarks>The rows of a last stripe of fewer than four rows are tested too: they may be reported as candidates, never hide one.</remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool HasSignificanceCandidate(ref uint column)
+    {
+        // In each word, the bit 8 of (neighbors + 0xFF) is set when a neighbor is significant, and the significance of the
+        // coefficient (the bit 12) is shifted to the bit 8
+        const ulong Neighbors = 0x000000FF_000000FFUL;
+        const ulong Candidate = 0x00000100_00000100UL;
+        var (low, high) = ReadColumn(ref column);
+        var candidates = (((low & Neighbors) + Neighbors) & ~(low >> 4)) | (((high & Neighbors) + Neighbors) & ~(high >> 4));
+        return (candidates & Candidate) != 0;
+    }
+
+    /// <summary>Determines whether a column of a stripe has a coefficient that was significant before the current bit-plane: a coefficient that the magnitude refinement pass codes.</summary>
+    /// <param name="column">The flags of the first row of the column, in the flags of the code-block stored stripe by stripe.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool HasRefinementCandidate(ref uint column)
+    {
+        // Significant (the bit 12) and not visited (the bit 13), shifted to the bit 0 of each word
+        const ulong Candidate = 0x00000001_00000001UL;
+        var (low, high) = ReadColumn(ref column);
+        var candidates = ((low >> 12) & ~(low >> 13)) | ((high >> 12) & ~(high >> 13));
+        return (candidates & Candidate) != 0;
+    }
+
+    /// <summary>Determines whether a column of a stripe has an insignificant coefficient that the significance propagation pass did not code: a coefficient that the cleanup pass codes.</summary>
+    /// <param name="column">The flags of the first row of the column, in the flags of the code-block stored stripe by stripe.</param>
+    /// <remarks>The rows of a last stripe of fewer than four rows are tested too: they may be reported as candidates, never hide one.</remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool HasCleanupCandidate(ref uint column)
+    {
+        // Neither significant (the bit 12) nor visited (the bit 13), shifted to the bit 0 of each word
+        const ulong Candidate = 0x00000001_00000001UL;
+        var (low, high) = ReadColumn(ref column);
+        var candidates = ~((low >> 12) | (low >> 13)) | ~((high >> 12) | (high >> 13));
+        return (candidates & Candidate) != 0;
+    }
+
+    /// <summary>Determines whether the four coefficients of a column of a stripe are insignificant, were not coded by the significance propagation pass and have no significant neighbor: the run-length mode of the cleanup pass (D.3.4).</summary>
+    /// <param name="column">The flags of the first row of the column, in the flags of the code-block stored stripe by stripe.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsRunLengthColumn(ref uint column)
+    {
+        const ulong Mask = (Significant | Visited | NeighborMask) * 0x00000001_00000001UL;
+        var (low, high) = ReadColumn(ref column);
+        return ((low | high) & Mask) == 0;
+    }
+
+    /// <summary>Clears the state "coded by the significance propagation pass" of the four coefficients of a column of a stripe.</summary>
+    /// <param name="column">The flags of the first row of the column, in the flags of the code-block stored stripe by stripe.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ClearVisited(ref uint column)
+    {
+        ref var second = ref unsafe(Unsafe.Add(ref column, 1));
+        ref var third = ref unsafe(Unsafe.Add(ref column, 2));
+        ref var fourth = ref unsafe(Unsafe.Add(ref column, 3));
+        column &= ~Visited;
+        second &= ~Visited;
+        third &= ~Visited;
+        fourth &= ~Visited;
+    }
+
     /// <summary>Records that a coefficient became significant, in its flags and in those of its neighbors.</summary>
-    /// <param name="flags">The flags of the code-block.</param>
-    /// <param name="index">The index of the coefficient in <paramref name="flags"/>.</param>
-    /// <param name="stride">The width of the code-block with its border.</param>
+    /// <param name="flag">The flags of the coefficient, in the flags of the code-block stored stripe by stripe.</param>
+    /// <param name="row">The row of the coefficient in its stripe, 0 to 3.</param>
+    /// <param name="stripeStride">The number of words of a stripe (<see cref="GetStripeStride"/>).</param>
     /// <param name="negative">Whether the coefficient is negative.</param>
     /// <param name="updateNorth">
     /// <see langword="false"/> for a coefficient of the first row of a stripe when the contexts are vertically causal (D.7):
     /// the coefficients of the stripe above ignore it.
     /// </param>
-    public static void SetSignificant(Span<uint> flags, int index, int stride, bool negative, bool updateNorth)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void SetSignificant(ref uint flag, int row, int stripeStride, bool negative, bool updateNorth)
     {
         var sign = negative ? 1u : 0u;
-        flags[index] |= Significant;
-        flags[index - 1] |= East | (sign << (NegativeShift + 1));
-        flags[index + 1] |= West | (sign << NegativeShift);
-        flags[index + stride] |= North | (sign << (NegativeShift + 2));
-        flags[index + stride - 1] |= NorthEast;
-        flags[index + stride + 1] |= NorthWest;
+        ref var west = ref unsafe(Unsafe.Add(ref flag, -4));
+        ref var east = ref unsafe(Unsafe.Add(ref flag, 4));
+        flag |= Significant;
+        west |= East | (sign << (NegativeShift + 1));
+        east |= West | (sign << NegativeShift);
+
+        // The coefficient below the last row of a stripe is in the next stripe, the one above the first row in the previous
+        // stripe
+        ref var south = ref unsafe(Unsafe.Add(ref flag, row == 3 ? stripeStride - 3 : 1));
+        ref var southWest = ref unsafe(Unsafe.Add(ref south, -4));
+        ref var southEast = ref unsafe(Unsafe.Add(ref south, 4));
+        south |= North | (sign << (NegativeShift + 2));
+        southWest |= NorthEast;
+        southEast |= NorthWest;
         if (!updateNorth)
             return;
 
-        flags[index - stride] |= South | (sign << (NegativeShift + 3));
-        flags[index - stride - 1] |= SouthEast;
-        flags[index - stride + 1] |= SouthWest;
+        ref var north = ref unsafe(Unsafe.Add(ref flag, row == 0 ? 3 - stripeStride : -1));
+        ref var northWest = ref unsafe(Unsafe.Add(ref north, -4));
+        ref var northEast = ref unsafe(Unsafe.Add(ref north, 4));
+        north |= South | (sign << (NegativeShift + 3));
+        northWest |= SouthEast;
+        northEast |= SouthWest;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (ulong Low, ulong High) ReadColumn(ref uint column)
+    {
+        // The rows 0 and 1 in the low and high halves of the first word, the rows 2 and 3 in the second one
+        return (column | ((ulong)unsafe(Unsafe.Add(ref column, 1)) << 32), unsafe(Unsafe.Add(ref column, 2)) | ((ulong)unsafe(Unsafe.Add(ref column, 3)) << 32));
     }
 
     private static byte[] CreateZeroCodingContexts()

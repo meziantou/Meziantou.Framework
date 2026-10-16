@@ -63,8 +63,11 @@ internal sealed class HevcPictureLayout : IDisposable
         var shift = Sps.CtbLog2SizeY - Sps.MinTbLog2SizeY;
         var ctbAddrRs = (Sps.PicWidthInCtbsY * (y >> shift)) + (x >> shift);
         var mask = (1 << shift) - 1;
-        return (CtbAddrRsToTs[ctbAddrRs] << (shift * 2)) + Interleave(x & mask) + (Interleave(y & mask) << 1);
+        return (CtbAddrRsToTs[ctbAddrRs] << (shift * 2)) + GetZScanIndex(x & mask, y & mask);
     }
+
+    /// <summary>Gets the z-scan order of the minimum transform block at ( x, y ) of a coding tree block, in units of minimum transform blocks: the part of <see cref="GetMinTbAddrZs"/> inside the coding tree block.</summary>
+    public static int GetZScanIndex(int x, int y) => Interleave(x) + (Interleave(y) << 1);
 
     /// <summary>
     /// Checks the constraints of the two parameter sets on each other, and derives the layout of the pictures that refer

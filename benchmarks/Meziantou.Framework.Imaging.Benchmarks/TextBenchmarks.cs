@@ -29,6 +29,8 @@ public class TextBenchmarks : IDisposable
 
     private static readonly TextLayoutOptions Paragraph = new() { MaxWidth = 480, Alignment = TextAlignment.Justify };
 
+    private static readonly string LongLatinText = string.Join(' ', Enumerable.Repeat(LatinText, 30));
+
     private byte[] _tibetanData = null!;
     private TextStyle _latin = null!;
     private TextStyle _arabic = null!;
@@ -78,6 +80,10 @@ public class TextBenchmarks : IDisposable
     [Benchmark(Baseline = true)]
     [Workload("Latin paragraph, 930 characters: layout")]
     public int LayoutLatin() => TextLayout.Create(LatinText, _latin, Paragraph).Lines.Count;
+
+    [Benchmark]
+    [Workload("Latin paragraph, 28,000 characters: layout")]
+    public int LayoutLongLatin() => TextLayout.Create(LongLatinText, _latin, Paragraph).Lines.Count;
 
     [Benchmark]
     [Workload("Arabic paragraph, 500 characters: layout")]

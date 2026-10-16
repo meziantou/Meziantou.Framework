@@ -49,6 +49,9 @@ internal sealed partial class DrawingSession : IDisposable
     // The draw calls prepare their shapes without painting them: the first pass of a text of several parts
     private bool _isPreparing;
 
+    /// <summary>The number of pixels without coverage from which a run painted with a color per pixel is cut in two.</summary>
+    private const int MinEvaluationGap = 16;
+
     private DrawingSession(Image image, ImageFrame[] frames, PixelStorage[] storages, CancellationToken cancellationToken)
     {
         _image = image;
@@ -728,8 +731,7 @@ internal sealed partial class DrawingSession : IDisposable
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs && !layout.HasBackgrounds && layout.OutlineCount == 0)
         {
             var glyphSink = _glyphSink ??= new GlyphPathSink();
-            var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
-            FillFrameWhenCovered(layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, brush: -1, emboldener: GetEmboldener(layout)));
+            FillFrameWhenCovered(layout.Emit(BeginFill(), glyphSink, origin.X, origin.Y, _edges, brush: -1, emboldener: GetEmboldener(layout)));
             Render(layout.BrushCount == 0 ? brush : layout.GetBrush(0) ?? brush, FillRule.NonZero);
             return;
         }
@@ -764,7 +766,6 @@ internal sealed partial class DrawingSession : IDisposable
     private void DrawTextParts(Brush brush, TextLayout layout, double originX, double originY, PathMeasure? measure, TextPathOptions? options)
     {
         var glyphSink = _glyphSink ??= new GlyphPathSink();
-        var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
         var emboldener = GetEmboldener(layout);
         if (layout.HasBackgrounds)
         {
@@ -790,8 +791,8 @@ internal sealed partial class DrawingSession : IDisposable
         for (var i = 0; i < layout.BrushCount; i++)
         {
             FillFrameWhenCovered(measure is null
-                ? layout.Emit(BeginFill(), glyphSink, scratch, originX, originY, _edges, i, skipColorGlyphs: true, emboldener)
-                : layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options!, _edges, i, skipColorGlyphs: true, emboldener));
+                ? layout.Emit(BeginFill(), glyphSink, originX, originY, _edges, i, skipColorGlyphs: true, emboldener)
+                : layout.EmitOnPath(BeginFill(), glyphSink, measure, options!, _edges, i, skipColorGlyphs: true, emboldener));
             Render(layout.GetBrush(i) ?? brush, FillRule.NonZero);
         }
 
@@ -802,11 +803,11 @@ internal sealed partial class DrawingSession : IDisposable
             var sink = BeginStroke(pen);
             if (measure is null)
             {
-                layout.Emit(sink, glyphSink, scratch, originX, originY, edges: null, brush: -1, skipColorGlyphs: true, outline: i);
+                layout.Emit(sink, glyphSink, originX, originY, edges: null, brush: -1, skipColorGlyphs: true, outline: i);
             }
             else
             {
-                layout.EmitOnPath(sink, glyphSink, scratch, measure, options!, edges: null, brush: -1, skipColorGlyphs: true, outline: i);
+                layout.EmitOnPath(sink, glyphSink, measure, options!, edges: null, brush: -1, skipColorGlyphs: true, outline: i);
             }
 
             RenderStroke(pen);
@@ -819,7 +820,7 @@ internal sealed partial class DrawingSession : IDisposable
         ArgumentNullException.ThrowIfNull(layout);
         DrawingGuard.Point(origin, nameof(origin));
         var sink = BeginStroke(pen);
-        layout.Emit(sink, _glyphSink ??= new GlyphPathSink(), _glyphScratch ??= new GlyphScratch(_image.Owner.Scope), origin.X, origin.Y, edges: null, brush: -1);
+        layout.Emit(sink, _glyphSink ??= new GlyphPathSink(), origin.X, origin.Y, edges: null, brush: -1);
         RenderStroke(pen);
     }
 
@@ -833,8 +834,7 @@ internal sealed partial class DrawingSession : IDisposable
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs && !layout.HasBackgrounds && layout.OutlineCount == 0)
         {
             var glyphSink = _glyphSink ??= new GlyphPathSink();
-            var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
-            FillFrameWhenCovered(layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, brush: -1, emboldener: GetEmboldener(layout)));
+            FillFrameWhenCovered(layout.EmitOnPath(BeginFill(), glyphSink, measure, options, _edges, brush: -1, emboldener: GetEmboldener(layout)));
             Render(layout.BrushCount == 0 ? brush : layout.GetBrush(0) ?? brush, FillRule.NonZero);
             return;
         }
@@ -849,7 +849,7 @@ internal sealed partial class DrawingSession : IDisposable
         ArgumentNullException.ThrowIfNull(path);
         var measure = Measure(path);
         var sink = BeginStroke(pen);
-        layout.EmitOnPath(sink, _glyphSink ??= new GlyphPathSink(), _glyphScratch ??= new GlyphScratch(_image.Owner.Scope), measure, options ?? TextPathOptions.Default, edges: null, brush: -1);
+        layout.EmitOnPath(sink, _glyphSink ??= new GlyphPathSink(), measure, options ?? TextPathOptions.Default, edges: null, brush: -1);
         RenderStroke(pen);
     }
 
@@ -1206,30 +1206,81 @@ internal sealed partial class DrawingSession : IDisposable
             coverage = ApplyOpacity(coverage, opacity);
         }
 
-        DrawingSource source;
+        // A paint that gives the whole row one color is composited as a single color: the same formulas
         if (evaluator is null)
         {
-            source = new DrawingSource(color, mode, blend, _transfer, _curves);
+            CompositeRun(y, x, coverage, new DrawingSource(color, mode, blend, _transfer, _curves));
+            return;
         }
-        else
+
+        if (evaluator.TryGetRowColor(y, x, out var rowColor))
         {
-            var colors = evaluator.Evaluate(y, x, coverage.Length);
             if (alphaFactor != 1)
             {
-                // The opacity of the brush multiplies the alpha of each color
-                var scaled = unsafe(MemoryMarshal.Cast<byte, ushort>(_alphaRow!.Span))[..colors.Length];
-                colors.CopyTo(scaled);
-                for (var i = 3; i < scaled.Length; i += 4)
-                {
-                    scaled[i] = ScaleAlpha(scaled[i], alphaFactor);
-                }
-
-                colors = scaled;
+                // The opacity of the brush multiplies the alpha of the color
+                rowColor = rowColor with { Alpha = ScaleAlpha(rowColor.Alpha, alphaFactor) };
             }
 
-            source = new DrawingSource(colors, mode, blend, _transfer, _curves);
+            CompositeRun(y, x, coverage, new DrawingSource(rowColor, mode, blend, _transfer, _curves));
+            return;
         }
 
+        // The colors of the pixels without coverage are not computed: the kernels do not read them. The run is cut where
+        // many of them follow one another.
+        var start = 0;
+        var search = 0;
+        while (true)
+        {
+            var gap = search < coverage.Length ? coverage[search..].IndexOf(0u) : -1;
+            if (gap < 0)
+            {
+                PaintRun(evaluator, y, x + start, coverage[start..], mode, blend, alphaFactor);
+                break;
+            }
+
+            gap += search;
+            var gapEnd = coverage[gap..].IndexOfAnyExcept(0u);
+            gapEnd = gapEnd < 0 ? coverage.Length : gap + gapEnd;
+            if (gapEnd - gap >= MinEvaluationGap)
+            {
+                if (gap > start)
+                {
+                    PaintRun(evaluator, y, x + start, coverage[start..gap], mode, blend, alphaFactor);
+                }
+
+                start = gapEnd;
+            }
+
+            search = gapEnd;
+            if (start == coverage.Length)
+                break;
+        }
+    }
+
+    /// <summary>Evaluates the colors of a run and composites it onto every frame.</summary>
+    private void PaintRun(PaintEvaluator evaluator, int y, int x, ReadOnlySpan<uint> coverage, CompositeMode mode, BlendMode blend, double alphaFactor)
+    {
+        var colors = evaluator.Evaluate(y, x, coverage.Length);
+        if (alphaFactor != 1)
+        {
+            // The opacity of the brush multiplies the alpha of each color
+            var scaled = unsafe(MemoryMarshal.Cast<byte, ushort>(_alphaRow!.Span))[..colors.Length];
+            colors.CopyTo(scaled);
+            for (var i = 3; i < scaled.Length; i += 4)
+            {
+                scaled[i] = ScaleAlpha(scaled[i], alphaFactor);
+            }
+
+            colors = scaled;
+        }
+
+        CompositeRun(y, x, coverage, new DrawingSource(colors, mode, blend, _transfer, _curves));
+    }
+
+    /// <summary>Composites a run onto every frame.</summary>
+    private void CompositeRun(int y, int x, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+    {
+        MarkDrawn(x, y, x + coverage.Length, y + 1);
         for (var i = 0; i < _frames.Length; i++)
         {
             _frames[i].CompositePixels(_storages[i], y, x, coverage, source);

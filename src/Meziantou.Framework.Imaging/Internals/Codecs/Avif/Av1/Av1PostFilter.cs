@@ -12,6 +12,7 @@ internal sealed class Av1PostFilter : IDisposable
     private Av1PooledArray<ushort>? _rows;
     private Av1PooledArray<ushort>? _boundaries;
     private Av1PooledArray<int>? _scratch;
+    private Av1PooledArray<int>? _cdefDirections;
 
     /// <summary>Applies the filters that the header of <paramref name="frame"/> enables.</summary>
     /// <param name="scope">The allocation scope of the operation.</param>
@@ -42,7 +43,7 @@ internal sealed class Av1PostFilter : IDisposable
             SaveBoundaries(scope, frame);
 
         if (useCdef)
-            Av1Cdef.Apply(frame, state, _rows!.Span, cancellationToken);
+            Av1Cdef.Apply(frame, state, _rows!.Span, cancellationToken, _cdefDirections is null ? default : _cdefDirections.Span);
 
         if (header.UseSuperres)
             Upscale(frame, useRestoration, cancellationToken);
@@ -52,6 +53,26 @@ internal sealed class Av1PostFilter : IDisposable
             _scratch ??= Av1PooledArray<int>.Rent(scope, Av1LoopRestoration.ScratchLength, clear: false);
             Restore(frame, state, cancellationToken);
         }
+    }
+
+    /// <summary>
+    /// Keeps the CDEF directions of the 8x8 blocks of <paramref name="frame"/> from one application of CDEF to the next,
+    /// until <see cref="EndCdefSearch"/>: the frame must be the same deblocked frame each time CDEF is applied (an encoder
+    /// that restores it between the strengths that it tries).
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The cache exceeds the live-allocation limit.</exception>
+    public void BeginCdefSearch(AllocationScope scope, Av1FrameBuffer frame)
+    {
+        EndCdefSearch();
+        _cdefDirections = Av1PooledArray<int>.Rent(scope, Av1Cdef.GetDirectionCacheLength(frame.Header), clear: false);
+        _cdefDirections.Span.Fill(-1);
+    }
+
+    /// <summary>Forgets the directions that <see cref="BeginCdefSearch"/> keeps.</summary>
+    public void EndCdefSearch()
+    {
+        _cdefDirections?.Dispose();
+        _cdefDirections = null;
     }
 
     /// <summary>
@@ -306,5 +327,6 @@ internal sealed class Av1PostFilter : IDisposable
         _boundaries = null;
         _scratch?.Dispose();
         _scratch = null;
+        EndCdefSearch();
     }
 }

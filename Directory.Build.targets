@@ -57,6 +57,28 @@
                       SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>
 
+  <!-- CI only runs the tests of a project in invariant globalization mode when it sets GlobalizationSensitive. The analyzer
+       reports the ICU-dependent code of the projects that do not, and the test projects that reference a library that does,
+       which the marker below identifies. Packages the analyzer cannot see into need the property set by hand. -->
+  <PropertyGroup>
+    <_RepositoryRelativeProjectPath>$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '$(MSBuildProjectFullPath)').Replace('\', '/'))</_RepositoryRelativeProjectPath>
+    <EnableGlobalizationSensitivityAnalyzer Condition="'$(EnableGlobalizationSensitivityAnalyzer)' == '' AND '$(MSBuildProjectExtension)' == '.csproj' AND '$(MSBuildProjectName)' != 'Meziantou.Framework.GlobalizationSensitivity.Analyzer' AND ($(_RepositoryRelativeProjectPath.StartsWith('src/')) OR $(_RepositoryRelativeProjectPath.StartsWith('tests/')) OR $(_RepositoryRelativeProjectPath.StartsWith('fuzz/')))">true</EnableGlobalizationSensitivityAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(EnableGlobalizationSensitivityAnalyzer)' == 'true' and '@(ProjectReference->WithMetadataValue(`Filename`, `Meziantou.Framework.GlobalizationSensitivity.Analyzer`))' == ''">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)tools/Meziantou.Framework.GlobalizationSensitivity.Analyzer/Meziantou.Framework.GlobalizationSensitivity.Analyzer.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
+    <CompilerVisibleProperty Include="GlobalizationSensitive" />
+    <CompilerVisibleProperty Include="IsTestProject" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(GlobalizationSensitive)' == 'true' AND '$(IsTestProject)' != 'true'">
+    <AssemblyMetadata Include="Meziantou.Framework.GlobalizationSensitive" Value="true" />
+  </ItemGroup>
+
   <!-- Compile the Meziantou.Framework.Roslyn sources and configure the ROSLYN_* constants -->
   <ItemGroup Condition="'$(IncludeRoslynHelpers)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)src/Meziantou.Framework.Roslyn/**/*.cs" LinkBase="Roslyn" />

@@ -1,3 +1,5 @@
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 // The search of the encoder: the coding quadtree of a coding tree unit, and the coding units coded in intra prediction
@@ -218,18 +220,22 @@ internal ref partial struct HevcSliceCoder
         var candidates = Math.Min(_decisions.IntraCandidates, 35);
         if (candidates < 35)
         {
+            // The neighbouring samples of the block, and their filtered version, are the same for every mode: they are
+            // built once, and each mode is predicted into a scratch block
+            var references = new IntraModeReferences(workspace.IntraScratch, nPbS);
+            GetIntraReferences(plane, 0, xPb, yPb, xPb, yPb, nPbS, references.Unfiltered);
             // Planar, DC, the candidate modes, which are cheap to signal, and some of the angular modes
-            EvaluateIntraLumaMode(HevcConstants.IntraPlanar, plane, source, xPb, yPb, nPbS, candModeList, costs);
-            EvaluateIntraLumaMode(HevcConstants.IntraDc, plane, source, xPb, yPb, nPbS, candModeList, costs);
+            EvaluateIntraLumaMode(HevcConstants.IntraPlanar, ref references, source, xPb, yPb, nPbS, candModeList, costs);
+            EvaluateIntraLumaMode(HevcConstants.IntraDc, ref references, source, xPb, yPb, nPbS, candModeList, costs);
             foreach (var mode in candModeList)
             {
-                EvaluateIntraLumaMode(mode, plane, source, xPb, yPb, nPbS, candModeList, costs);
+                EvaluateIntraLumaMode(mode, ref references, source, xPb, yPb, nPbS, candModeList, costs);
             }
 
             var step = _decisions.IntraModeStep;
             for (var mode = 2; mode <= 34; mode += step)
             {
-                EvaluateIntraLumaMode(mode, plane, source, xPb, yPb, nPbS, candModeList, costs);
+                EvaluateIntraLumaMode(mode, ref references, source, xPb, yPb, nPbS, candModeList, costs);
             }
 
             if (_decisions.IntraModeRefinement)
@@ -239,12 +245,12 @@ internal ref partial struct HevcSliceCoder
                 for (var delta = step >> 1; delta > 0; delta >>= 1)
                 {
                     var center = best;
-                    if (center - delta >= 2 && EvaluateIntraLumaMode(center - delta, plane, source, xPb, yPb, nPbS, candModeList, costs) < costs[best])
+                    if (center - delta >= 2 && EvaluateIntraLumaMode(center - delta, ref references, source, xPb, yPb, nPbS, candModeList, costs) < costs[best])
                     {
                         best = center - delta;
                     }
 
-                    if (center + delta <= 34 && EvaluateIntraLumaMode(center + delta, plane, source, xPb, yPb, nPbS, candModeList, costs) < costs[best])
+                    if (center + delta <= 34 && EvaluateIntraLumaMode(center + delta, ref references, source, xPb, yPb, nPbS, candModeList, costs) < costs[best])
                     {
                         best = center + delta;
                     }
@@ -317,27 +323,261 @@ internal ref partial struct HevcSliceCoder
         return minimum;
     }
 
+    // The neighbouring samples of a luma prediction block whose modes are evaluated, their filtered version once a mode
+    // needs it, and the prediction of the mode being evaluated
+    private ref struct IntraModeReferences
+    {
+        public Span<ushort> Unfiltered;
+        public Span<ushort> Filtered;
+        public Span<ushort> Prediction;
+        public bool HasFiltered;
+
+        public IntraModeReferences(Span<ushort> scratch, int nPbS)
+        {
+            var count = (nPbS * 4) + 1;
+            Unfiltered = scratch[..count];
+            Filtered = scratch.Slice(HevcIntraPredictor.MaxNeighbourCount, count);
+            Prediction = scratch.Slice(2 * HevcIntraPredictor.MaxNeighbourCount, nPbS * nPbS);
+        }
+    }
+
     // The cost of a mode from its prediction as a single block: the sum of the absolute differences with the source, and
     // the size of its syntax elements
-    private long EvaluateIntraLumaMode(int mode, Av1Plane plane, Av1Plane source, int xPb, int yPb, int nPbS, scoped ReadOnlySpan<int> candModeList, scoped Span<long> costs)
+    private long EvaluateIntraLumaMode(int mode, scoped ref IntraModeReferences references, Av1Plane source, int xPb, int yPb, int nPbS, scoped ReadOnlySpan<int> candModeList, scoped Span<long> costs)
     {
         if (costs[mode] is not long.MaxValue)
             return costs[mode];
 
-        PredictIntra(plane, 0, xPb, yPb, xPb, yPb, nPbS, mode);
-        var sad = 0L;
-        for (var y = 0; y < nPbS; y++)
+        // The intra sample prediction of PredictIntra, into the scratch block
+        ReadOnlySpan<ushort> p = references.Unfiltered;
+        if (IsIntraReferenceFiltered(0, nPbS, mode))
         {
-            var predicted = plane.Samples.Slice(((yPb + y) * plane.Stride) + xPb, nPbS);
-            var original = source.Samples.Slice(((yPb + y) * source.Stride) + xPb, nPbS);
-            for (var x = 0; x < nPbS; x++)
+            if (!references.HasFiltered)
             {
-                sad += Math.Abs(original[x] - predicted[x]);
+                FilterIntraReferences(0, nPbS, references.Unfiltered, references.Filtered);
+                references.HasFiltered = true;
+            }
+
+            p = references.Filtered;
+        }
+
+        PredictIntraSamples(0, nPbS, mode, p, references.Prediction, nPbS);
+        var sad = GetSad(references.Prediction, nPbS, source.Samples[((yPb * source.Stride) + xPb)..], source.Stride, nPbS);
+        costs[mode] = _decisions.GetMotionCost(sad, GetIntraLumaPredModeRate(mode, candModeList));
+        return costs[mode];
+    }
+
+    /// <summary>The sum of the absolute differences between two square blocks of samples: 8 samples at a time.</summary>
+    internal static long GetSad(ReadOnlySpan<ushort> first, int firstStride, ReadOnlySpan<ushort> second, int secondStride, int size)
+        => GetSad(first, firstStride, second, secondStride, size, size);
+
+    /// <summary>The sum of the absolute differences between two blocks of samples of at most 64x64 samples: 8 samples at a time.</summary>
+    internal static long GetSad(ReadOnlySpan<ushort> first, int firstStride, ReadOnlySpan<ushort> second, int secondStride, int width, int height)
+    {
+        if (!Vector128.IsHardwareAccelerated || width < 8 || width * height > 64 * 64)
+            return GetSadScalar(first, firstStride, second, secondStride, width, height);
+
+        // At most 64 * 64 differences of 16 bits: the sums fit in 32 bits
+        var sum = Vector128<uint>.Zero;
+        var sad = 0L;
+        var vectorWidth = width & ~7;
+        for (var y = 0; y < height; y++)
+        {
+            var firstRow = first.Slice(y * firstStride, width);
+            var secondRow = second.Slice(y * secondStride, width);
+            for (var x = 0; x < vectorWidth; x += 8)
+            {
+                var a = Vector128.Create(firstRow[x..]);
+                var b = Vector128.Create(secondRow[x..]);
+                var (low, high) = Vector128.Widen(Vector128.Max(a, b) - Vector128.Min(a, b));
+                sum += low + high;
+            }
+
+            for (var x = vectorWidth; x < width; x++)
+            {
+                sad += Math.Abs(secondRow[x] - firstRow[x]);
             }
         }
 
-        costs[mode] = _decisions.GetMotionCost(sad, GetIntraLumaPredModeRate(mode, candModeList));
-        return costs[mode];
+        return sad + Vector128.Sum(sum);
+    }
+
+    /// <summary>The sum of <see cref="GetSad(ReadOnlySpan{ushort}, int, ReadOnlySpan{ushort}, int, int, int)"/>, one sample at a time: the reference of the vector path.</summary>
+    internal static long GetSadScalar(ReadOnlySpan<ushort> first, int firstStride, ReadOnlySpan<ushort> second, int secondStride, int width, int height)
+    {
+        var sad = 0L;
+        for (var y = 0; y < height; y++)
+        {
+            var firstRow = first.Slice(y * firstStride, width);
+            var secondRow = second.Slice(y * secondStride, width);
+            for (var x = 0; x < width; x++)
+            {
+                sad += Math.Abs(secondRow[x] - firstRow[x]);
+            }
+        }
+
+        return sad;
+    }
+
+    /// <summary>
+    /// The sum of the squared differences between two blocks of samples of at most 64 samples across: 8 samples at a time
+    /// for samples of at most 12 bits.
+    /// </summary>
+    internal static long GetSse(ReadOnlySpan<ushort> first, int firstStride, ReadOnlySpan<ushort> second, int secondStride, int width, int height, int bitDepth)
+    {
+        if (!Vector128.IsHardwareAccelerated || width < 8 || width > 64 || bitDepth > 12)
+            return GetSseScalar(first, firstStride, second, secondStride, width, height);
+
+        // A squared difference has at most 24 bits: the 16 of a row of 64 samples that a lane adds fit in 32 bits, and so
+        // do the sums of the 4 lanes
+        var sse = 0L;
+        var vectorWidth = width & ~7;
+        for (var y = 0; y < height; y++)
+        {
+            var firstRow = first.Slice(y * firstStride, width);
+            var secondRow = second.Slice(y * secondStride, width);
+            var sum = Vector128<int>.Zero;
+            for (var x = 0; x < vectorWidth; x += 8)
+            {
+                var (firstLow, firstHigh) = Vector128.Widen(Vector128.Create(firstRow[x..]));
+                var (secondLow, secondHigh) = Vector128.Widen(Vector128.Create(secondRow[x..]));
+                var low = secondLow.AsInt32() - firstLow.AsInt32();
+                var high = secondHigh.AsInt32() - firstHigh.AsInt32();
+                sum += (low * low) + (high * high);
+            }
+
+            sse += Vector128.Sum(sum);
+            for (var x = vectorWidth; x < width; x++)
+            {
+                var difference = secondRow[x] - firstRow[x];
+                sse += difference * difference;
+            }
+        }
+
+        return sse;
+    }
+
+    /// <summary>The sum of <see cref="GetSse"/>, one sample at a time: the reference of the vector path.</summary>
+    internal static long GetSseScalar(ReadOnlySpan<ushort> first, int firstStride, ReadOnlySpan<ushort> second, int secondStride, int width, int height)
+    {
+        var sse = 0L;
+        for (var y = 0; y < height; y++)
+        {
+            var firstRow = first.Slice(y * firstStride, width);
+            var secondRow = second.Slice(y * secondStride, width);
+            for (var x = 0; x < width; x++)
+            {
+                var difference = secondRow[x] - firstRow[x];
+                sse += difference * difference;
+            }
+        }
+
+        return sse;
+    }
+
+    /// <summary>
+    /// The residual of a square block of at most 32x32 samples, the source minus its prediction, and the sum of its squares:
+    /// 8 samples at a time for samples of at most 12 bits.
+    /// </summary>
+    internal static long GetResidual(ReadOnlySpan<ushort> original, int originalStride, ReadOnlySpan<ushort> predicted, int predictedStride, Span<int> residual, int size, int bitDepth)
+    {
+        if (!Vector128.IsHardwareAccelerated || size < 8 || size > 32 || bitDepth > 12)
+            return GetResidualScalar(original, originalStride, predicted, predictedStride, residual, size);
+
+        var energy = 0L;
+        for (var y = 0; y < size; y++)
+        {
+            var originalRow = original.Slice(y * originalStride, size);
+            var predictedRow = predicted.Slice(y * predictedStride, size);
+            var row = residual.Slice(y * size, size);
+            var sum = Vector128<int>.Zero;
+            for (var x = 0; x < size; x += 8)
+            {
+                var (originalLow, originalHigh) = Vector128.Widen(Vector128.Create(originalRow[x..]));
+                var (predictedLow, predictedHigh) = Vector128.Widen(Vector128.Create(predictedRow[x..]));
+                var low = originalLow.AsInt32() - predictedLow.AsInt32();
+                var high = originalHigh.AsInt32() - predictedHigh.AsInt32();
+                low.CopyTo(row[x..]);
+                high.CopyTo(row[(x + 4)..]);
+                sum += (low * low) + (high * high);
+            }
+
+            energy += Vector128.Sum(sum);
+        }
+
+        return energy;
+    }
+
+    /// <summary>The residual of <see cref="GetResidual"/>, one sample at a time: the reference of the vector path.</summary>
+    internal static long GetResidualScalar(ReadOnlySpan<ushort> original, int originalStride, ReadOnlySpan<ushort> predicted, int predictedStride, Span<int> residual, int size)
+    {
+        var energy = 0L;
+        for (var y = 0; y < size; y++)
+        {
+            var originalRow = original.Slice(y * originalStride, size);
+            var predictedRow = predicted.Slice(y * predictedStride, size);
+            var row = residual.Slice(y * size, size);
+            for (var x = 0; x < size; x++)
+            {
+                var difference = originalRow[x] - predictedRow[x];
+                row[x] = difference;
+                energy += difference * difference;
+            }
+        }
+
+        return energy;
+    }
+
+    /// <summary>
+    /// The sum of the squared differences between the source and a square block of at most 32x32 samples reconstructed from
+    /// its prediction and a residual (clause 8.6.7): 8 samples at a time for samples of at most 12 bits.
+    /// </summary>
+    internal static long GetReconstructionSse(ReadOnlySpan<ushort> original, int originalStride, ReadOnlySpan<ushort> predicted, int predictedStride, ReadOnlySpan<int> residual, int size, int bitDepth)
+    {
+        if (!Vector128.IsHardwareAccelerated || size < 8 || size > 32 || bitDepth > 12)
+            return GetReconstructionSseScalar(original, originalStride, predicted, predictedStride, residual, size, bitDepth);
+
+        var max = Vector128.Create((1 << bitDepth) - 1);
+        var distortion = 0L;
+        for (var y = 0; y < size; y++)
+        {
+            var originalRow = original.Slice(y * originalStride, size);
+            var predictedRow = predicted.Slice(y * predictedStride, size);
+            var row = residual.Slice(y * size, size);
+            var sum = Vector128<int>.Zero;
+            for (var x = 0; x < size; x += 8)
+            {
+                var (originalLow, originalHigh) = Vector128.Widen(Vector128.Create(originalRow[x..]));
+                var (predictedLow, predictedHigh) = Vector128.Widen(Vector128.Create(predictedRow[x..]));
+                var low = originalLow.AsInt32() - Vector128.Min(Vector128.Max(predictedLow.AsInt32() + Vector128.Create(row[x..]), Vector128<int>.Zero), max);
+                var high = originalHigh.AsInt32() - Vector128.Min(Vector128.Max(predictedHigh.AsInt32() + Vector128.Create(row[(x + 4)..]), Vector128<int>.Zero), max);
+                sum += (low * low) + (high * high);
+            }
+
+            distortion += Vector128.Sum(sum);
+        }
+
+        return distortion;
+    }
+
+    /// <summary>The sum of <see cref="GetReconstructionSse"/>, one sample at a time: the reference of the vector path.</summary>
+    internal static long GetReconstructionSseScalar(ReadOnlySpan<ushort> original, int originalStride, ReadOnlySpan<ushort> predicted, int predictedStride, ReadOnlySpan<int> residual, int size, int bitDepth)
+    {
+        var maxValue = (1 << bitDepth) - 1;
+        var distortion = 0L;
+        for (var y = 0; y < size; y++)
+        {
+            var originalRow = original.Slice(y * originalStride, size);
+            var predictedRow = predicted.Slice(y * predictedStride, size);
+            var row = residual.Slice(y * size, size);
+            for (var x = 0; x < size; x++)
+            {
+                var difference = originalRow[x] - Math.Clamp(predictedRow[x] + row[x], 0, maxValue);
+                distortion += difference * difference;
+            }
+        }
+
+        return distortion;
     }
 
     // The size of prev_intra_luma_pred_flag and of mpm_idx or rem_intra_luma_pred_mode
@@ -617,19 +857,7 @@ internal ref partial struct HevcSliceCoder
         var plane = _picture.GetPlane(cIdx);
         var source = workspace.GetSourcePlane(cIdx);
         var residual = workspace.GetScratch(0)[..length];
-        var energy = 0L;
-        for (var y = 0; y < nTbS; y++)
-        {
-            var predicted = plane.Samples.Slice(((yTb + y) * plane.Stride) + xTb, nTbS);
-            var original = source.Samples.Slice(((yTb + y) * source.Stride) + xTb, nTbS);
-            var row = residual.Slice(y * nTbS, nTbS);
-            for (var x = 0; x < nTbS; x++)
-            {
-                var difference = original[x] - predicted[x];
-                row[x] = difference;
-                energy += difference * difference;
-            }
-        }
+        var energy = GetResidual(source.Samples[((yTb * source.Stride) + xTb)..], source.Stride, plane.Samples[((yTb * plane.Stride) + xTb)..], plane.Stride, residual, nTbS, _bitDepth);
 
         coded = false;
         transformSkipFlag = false;
@@ -773,23 +1001,7 @@ internal ref partial struct HevcSliceCoder
     // The sum of the squared differences between the source and a block whose prediction is in the picture, with the
     // residual that a decoder adds to it (clause 8.6.7)
     private readonly long GetDistortion(Av1Plane plane, Av1Plane source, int xTb, int yTb, int nTbS, ReadOnlySpan<int> residual)
-    {
-        var maxValue = (1 << _bitDepth) - 1;
-        var distortion = 0L;
-        for (var y = 0; y < nTbS; y++)
-        {
-            var predicted = plane.Samples.Slice(((yTb + y) * plane.Stride) + xTb, nTbS);
-            var original = source.Samples.Slice(((yTb + y) * source.Stride) + xTb, nTbS);
-            var row = residual.Slice(y * nTbS, nTbS);
-            for (var x = 0; x < nTbS; x++)
-            {
-                var difference = original[x] - Math.Clamp(predicted[x] + row[x], 0, maxValue);
-                distortion += difference * difference;
-            }
-        }
-
-        return distortion;
-    }
+        => GetReconstructionSse(source.Samples[((yTb * source.Stride) + xTb)..], source.Stride, plane.Samples[((yTb * plane.Stride) + xTb)..], plane.Stride, residual, nTbS, _bitDepth);
 
     // The sum of the squared differences between the source and the samples of a coding unit
     private readonly long GetCodingUnitDistortion(int x0, int y0, int nCbS)
@@ -800,16 +1012,7 @@ internal ref partial struct HevcSliceCoder
             var plane = _picture.GetPlane(cIdx);
             var source = _workspace.GetSourcePlane(cIdx);
             GetComponentBlock(cIdx, x0, y0, nCbS, out var x, out var y, out var width, out var height);
-            for (var row = 0; row < height; row++)
-            {
-                var reconstructed = plane.Samples.Slice(((y + row) * plane.Stride) + x, width);
-                var original = source.Samples.Slice(((y + row) * source.Stride) + x, width);
-                for (var i = 0; i < width; i++)
-                {
-                    var difference = original[i] - reconstructed[i];
-                    distortion += difference * difference;
-                }
-            }
+            distortion += GetSse(plane.Samples[((y * plane.Stride) + x)..], plane.Stride, source.Samples[((y * source.Stride) + x)..], source.Stride, width, height, _bitDepth);
         }
 
         return distortion;

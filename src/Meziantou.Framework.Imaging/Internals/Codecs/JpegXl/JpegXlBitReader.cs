@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -211,6 +212,18 @@ internal sealed class JpegXlBitReader
 
     private void Refill()
     {
+        // Eight bytes at once when they are all in the data: the whole bytes that fit are counted, and the bits above them
+        // are those of the next byte, which the next refill sets again with the same values
+        var position = _position;
+        if (position <= _end - 8)
+        {
+            _bits |= BinaryPrimitives.ReadUInt64LittleEndian(_data.AsSpan((int)position, 8)) << _bitCount;
+            var count = (63 - _bitCount) >> 3;
+            _position = position + count;
+            _bitCount += count << 3;
+            return;
+        }
+
         // Bytes past the end are zeros: BitsConsumed tells whether they were used
         while (_bitCount <= 56)
         {

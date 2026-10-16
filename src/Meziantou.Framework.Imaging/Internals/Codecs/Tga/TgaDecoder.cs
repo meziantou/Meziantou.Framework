@@ -33,7 +33,8 @@ internal sealed class TgaDecoder : IImageDecodeObserver
         _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Tga, structure.Size, structure.SourcePixelFormat, structure.SourcePixelFormat, iccProfile: null);
     }
 
-    public void WriteRow(int y, ReadOnlySpan<byte> row)
+    /// <summary>Starts the frame on its first row and leases it; dispose the lease before returning from the parser call.</summary>
+    public PixelLease LeaseRows()
     {
         var sink = _sink ?? throw new InvalidOperationException("The TGA header was not parsed.");
         if (!_frameStarted)
@@ -42,8 +43,11 @@ internal sealed class TgaDecoder : IImageDecodeObserver
             _frameStarted = true;
         }
 
-        sink.WriteRow(y, row);
+        return sink.LeaseCurrentFrame();
     }
+
+    /// <summary>Writes one row through a lease from <see cref="LeaseRows"/>.</summary>
+    public void WriteRow(scoped in PixelLease lease, int y, ReadOnlySpan<byte> row) => _sink!.WriteRow(lease, y, row);
 
     public void OnEnd(TgaStructureParser structure)
     {

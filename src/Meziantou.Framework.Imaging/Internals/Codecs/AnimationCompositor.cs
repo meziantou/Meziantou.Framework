@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -157,18 +158,132 @@ internal sealed class AnimationCompositor : IDisposable
             return;
         }
 
-        for (var i = 0; i < count; i++)
+        if (_is16Bit)
         {
-            var source = pixels.Slice(i * bytesPerPixel, bytesPerPixel);
-            var destination = row.Slice((x + (i * step)) * bytesPerPixel, bytesPerPixel);
-            if (_is16Bit)
+            for (var i = 0; i < count; i++)
             {
+                var source = pixels.Slice(i * bytesPerPixel, bytesPerPixel);
+                var destination = row.Slice((x + (i * step)) * bytesPerPixel, bytesPerPixel);
                 BlendOver16(unsafe(MemoryMarshal.Cast<byte, ushort>(source)), unsafe(MemoryMarshal.Cast<byte, ushort>(destination)));
             }
-            else
+
+            return;
+        }
+
+        if (step == 1)
+        {
+            BlendOverRow8(pixels[..(count * bytesPerPixel)], row.Slice(x * bytesPerPixel, count * bytesPerPixel));
+            return;
+        }
+
+        for (var i = 0; i < count; i++)
+        {
+            BlendOver8(pixels.Slice(i * bytesPerPixel, bytesPerPixel), row.Slice((x + (i * step)) * bytesPerPixel, bytesPerPixel));
+        }
+    }
+
+    /// <summary>
+    /// Writes the palette colors of <paramref name="indices"/> into the canvas row <paramref name="y"/> from column
+    /// <paramref name="x"/>: the result of <see cref="WritePixels"/> with the pixels <c>palette[indices[i]]</c> and a step of one,
+    /// without materializing them (8-bit canvas only).
+    /// </summary>
+    /// <param name="canvas">A lease from <see cref="LeaseCanvas"/>.</param>
+    /// <param name="x">The canvas column of the first pixel.</param>
+    /// <param name="y">The canvas row.</param>
+    /// <param name="indices">The palette index of each pixel.</param>
+    /// <param name="palette">The 256 colors, packed <see cref="PixelFormat.Rgba32"/> pixels in native byte order.</param>
+    /// <exception cref="ArgumentOutOfRangeException">A pixel lies outside the frame region (codec bug).</exception>
+    public void WriteIndexedPixels(scoped in PixelLease canvas, int x, int y, ReadOnlySpan<byte> indices, ReadOnlySpan<uint> palette)
+    {
+        if (!_frameOpen)
+            throw new InvalidOperationException("No frame was begun.");
+
+        if (_is16Bit)
+            throw new InvalidOperationException("Indexed pixels are written to an 8-bit canvas.");
+
+        if (palette.Length < 256)
+            throw new ArgumentException("The palette must have 256 entries.", nameof(palette));
+
+        var count = indices.Length;
+        if (count == 0)
+            return;
+
+        var region = _region;
+        if (y < region.Y || y >= region.Bottom || x < region.X || x + count > region.Right)
+            throw new ArgumentOutOfRangeException(nameof(x), "The pixels must lie inside the frame region.");
+
+        var row = unsafe(MemoryMarshal.Cast<byte, uint>(canvas.GetRowBytes(y).Slice(x * sizeof(uint), count * sizeof(uint))));
+        palette = palette[..256];
+        if (_blend == AnimationBlend.Source)
+        {
+            for (var i = 0; i < row.Length; i++)
             {
-                BlendOver8(source, destination);
+                row[i] = palette[indices[i]];
             }
+
+            return;
+        }
+
+        Span<byte> color = stackalloc byte[sizeof(uint)];
+        for (var i = 0; i < row.Length; i++)
+        {
+            var value = palette[indices[i]];
+            var alpha = BitConverter.IsLittleEndian ? value >> 24 : value & 0xFF;
+            if (alpha == byte.MaxValue)
+            {
+                row[i] = value;
+            }
+            else if (alpha != 0)
+            {
+                unsafe { MemoryMarshal.Write(color, in value); }
+                BlendOver8(color, unsafe(MemoryMarshal.AsBytes(row.Slice(i, 1))));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Composites a run of 8-bit straight-alpha RGBA pixels over the canvas pixels: <see cref="BlendOver8"/> per pixel.
+    /// With 128-bit hardware vectors, groups of four pixels that are all opaque are copied and groups that are all
+    /// transparent are skipped (both exact consequences of the formula); other groups go through <see cref="BlendOver8"/>.
+    /// The result equals <see cref="BlendOverRow8Scalar"/>.
+    /// </summary>
+    internal static void BlendOverRow8(ReadOnlySpan<byte> source, Span<byte> destination)
+    {
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<byte>.Count)
+        {
+            destination = destination[..source.Length];
+            var alphaMask = Vector128.Create(0, 0, 0, byte.MaxValue, 0, 0, 0, byte.MaxValue, 0, 0, 0, byte.MaxValue, 0, 0, 0, byte.MaxValue);
+            for (; i <= source.Length - Vector128<byte>.Count; i += Vector128<byte>.Count)
+            {
+                var pixels = Vector128.Create(source[i..]);
+                var alpha = pixels & alphaMask;
+                if (alpha == alphaMask)
+                {
+                    pixels.CopyTo(destination[i..]);
+                }
+                else if (alpha != Vector128<byte>.Zero)
+                {
+                    for (var p = i; p < i + Vector128<byte>.Count; p += 4)
+                    {
+                        BlendOver8(source.Slice(p, 4), destination.Slice(p, 4));
+                    }
+                }
+            }
+        }
+
+        for (; i < source.Length; i += 4)
+        {
+            BlendOver8(source.Slice(i, 4), destination.Slice(i, 4));
+        }
+    }
+
+    /// <summary>The pixel-at-a-time reference of <see cref="BlendOverRow8"/>.</summary>
+    internal static void BlendOverRow8Scalar(ReadOnlySpan<byte> source, Span<byte> destination)
+    {
+        for (var i = 0; i < source.Length; i += 4)
+        {
+            BlendOver8(source.Slice(i, 4), destination.Slice(i, 4));
         }
     }
 

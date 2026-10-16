@@ -149,6 +149,11 @@ internal ref partial struct Av1TileCoder
     private InlineArray3<int> _transformBlockCursor;
     private bool _estimating;
     private long _estimate;
+
+    // The capture of the estimate of a chroma plane with the chroma from luma prediction (see SearchCflAlphas): the number
+    // of samples captured, or -1 when the estimate cannot be captured
+    private bool _capturesCfl;
+    private int _cflCaptured;
     private long _distortion;
     private bool _hasCoefficients;
     private bool _isPredictedExactly;

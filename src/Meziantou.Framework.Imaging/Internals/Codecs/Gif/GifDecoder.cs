@@ -285,7 +285,7 @@ internal sealed class GifDecoder : GifDecodeObserver
         {
             if (_rowsDone == _height)
             {
-                // Every pixel was decoded: only clear codes, the end code (or padding bits) and ignored data may follow
+                // Every pixel was decoded: what follows is ignored
                 lzw.ReadTrailer(ref input);
                 return;
             }

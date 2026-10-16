@@ -372,8 +372,6 @@ internal static class ErrorFixtureStages
         "invalid/gif/lzw-code-out-of-range",
         "invalid/gif/lzw-end-code-too-early",
         "invalid/gif/lzw-first-code-not-literal",
-        "invalid/gif/lzw-string-exceeds-image",
-        "invalid/gif/lzw-too-many-pixels",
         "invalid/gif/lzw-truncated-without-end-code",
         "invalid/gif/missing-color-table",
         "invalid/gif/palette-index-out-of-range",

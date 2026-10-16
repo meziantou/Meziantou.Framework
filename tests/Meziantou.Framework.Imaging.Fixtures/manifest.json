@@ -53761,54 +53761,6 @@
       "notes": "Minimum code size 12: the clear code would need 13 bits (at most 11 is valid)."
     },
     {
-      "id": "invalid/gif/lzw-string-exceeds-image",
-      "kind": "invalid",
-      "format": "gif",
-      "input": {
-        "path": "invalid/gif/lzw-string-exceeds-image.gif",
-        "sha256": "78275b0c6d058942c74db9ad4b1e925740deff10a42aacc43c9d6e50369727e7",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "hand-authored",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildInvalidGifDecoding)",
-        "tools": [
-          ".NET 10.0"
-        ]
-      },
-      "expectedError": {
-        "exception": "InvalidImageContentException",
-        "format": "Gif"
-      },
-      "notes": "The second code (KwKwK) expands to two indices where one pixel remains."
-    },
-    {
-      "id": "invalid/gif/lzw-too-many-pixels",
-      "kind": "invalid",
-      "format": "gif",
-      "input": {
-        "path": "invalid/gif/lzw-too-many-pixels.gif",
-        "sha256": "13d77b4f139d4c5a5fd78c8813c8931510bf153c34489f44c2f1e9542c2daa4c",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "hand-authored",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildInvalidGifDecoding)",
-        "tools": [
-          ".NET 10.0"
-        ]
-      },
-      "expectedError": {
-        "exception": "InvalidImageContentException",
-        "format": "Gif"
-      },
-      "notes": "Three indices then the end code for a 2x1 image: more pixels than the rectangle (FFmpeg and ImageIO truncate silently)."
-    },
-    {
       "id": "invalid/gif/lzw-truncated-without-end-code",
       "kind": "invalid",
       "format": "gif",

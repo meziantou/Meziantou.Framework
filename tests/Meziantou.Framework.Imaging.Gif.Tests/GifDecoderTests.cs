@@ -302,9 +302,6 @@ public sealed class GifDecoderTests
         { "table code right after a clear code", 2, 1, [(4, 3), (6, 3), (5, 3)] },
         { "end code before the last pixel", 2, 2, [(4, 3), (0, 3), (1, 3), (5, 3)] },
         { "end of data before the last pixel", 10, 1, [(4, 3), (0, 3), (1, 3)] },
-        { "more indices than pixels", 2, 1, [(4, 3), (0, 3), (1, 3), (2, 3), (5, 3)] },
-        { "string longer than the remaining pixels", 2, 1, [(4, 3), (0, 3), (6, 3), (5, 3)] },
-        { "data code after the last pixel then more data", 2, 1, [(4, 3), (0, 3), (1, 3), (0, 3), (0, 3), (0, 3), (1, 3)] },
         { "index outside the color table", 2, 1, [(4, 3), (0, 3), (3, 3), (5, 3)] },
     };
 
@@ -350,6 +347,21 @@ public sealed class GifDecoderTests
         using (var image = Image.Load<Rgba32>(trailing))
         {
             Assert.Equal([R, G], GetPixels(image.Frames[0]));
+        }
+
+        // After the last pixel, nothing more is decoded, as browsers do: more indices than pixels, a string longer than the
+        // pixels that remain (cut), and a stream that is reset and goes on (as reset-no-gce.gif of the Web Platform Tests)
+        foreach (var (codes, expected) in new[]
+        {
+            (((int, int)[])[(4, 3), (0, 3), (1, 3), (2, 3), (5, 3)], (Rgba32[])[R, G]),
+            ([(4, 3), (0, 3), (6, 3), (5, 3)], [R, R]),
+            ([(4, 3), (0, 3), (1, 3), (0, 3), (0, 3), (0, 3), (1, 3)], [R, G]),
+            ([(4, 3), (1, 3), (0, 3), (4, 3), (1, 3), (1, 3), (1, 3), (1, 3), (1, 3)], [G, R]),
+        })
+        {
+            var data = new GifTestBuilder(2, 1, palette).ImageCodes(0, 0, 2, 1, 2, codes).ToArray();
+            using var image = Image.Load<Rgba32>(data);
+            Assert.Equal(expected, GetPixels(image.Frames[0]));
         }
 
         // An empty image rectangle: only a clear and an end code

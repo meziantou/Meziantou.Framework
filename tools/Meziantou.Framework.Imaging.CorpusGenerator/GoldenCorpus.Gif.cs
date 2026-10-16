@@ -909,10 +909,9 @@ internal static partial class GoldenCorpus
             "The end code arrives after 2 of the 4 pixels: a short image is an error, never a partial frame.");
         Add("invalid/gif/lzw-truncated-without-end-code", Single([(4, 3), (0, 3), (1, 3)], width: 10),
             "The datastream ends without an end code after 2 indices (4 counting the zero padding bits) of a 10-pixel image.");
-        Add("invalid/gif/lzw-too-many-pixels", Single([(4, 3), (0, 3), (1, 3), (2, 3), (5, 3)]),
-            "Three indices then the end code for a 2x1 image: more pixels than the rectangle (FFmpeg and ImageIO truncate silently).");
-        Add("invalid/gif/lzw-string-exceeds-image", Single([(4, 3), (0, 3), (6, 3), (5, 3)], width: 2),
-            "The second code (KwKwK) expands to two indices where one pixel remains.");
+
+        // More indices than the rectangle, or a string that runs past its last pixel, is not an error: the decoder stops at
+        // the last pixel and ignores the rest, as browsers, FFmpeg and ImageIO do (tested by the unit tests of the decoder)
         Add("invalid/gif/palette-index-out-of-range", Single([(4, 3), (0, 3), (3, 3), (5, 3)], palette: [new Px(255, 0, 0), new Px(0, 255, 0)]),
             "Index 3 with a 2-entry global color table (FFmpeg shows it transparent, ImageIO as color 0).");
         var noTable = new ByteBuilder().Ascii("GIF89a").U16LE(2).U16LE(1).Bytes([0x00, 0x00, 0x00])

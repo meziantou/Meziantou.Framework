@@ -1265,8 +1265,9 @@ matrices `ColorMatrix.CreateSaturation`, `ColorMatrix.CreateHueRotation` and `Co
 `CompositePrimitive` (the operators of Porter and Duff, `Lighter` and `Arithmetic`), `BlendPrimitive`,
 `GaussianBlurPrimitive` (a deviation per axis, and an `EdgeMode` relative to the subregion of its input),
 `DropShadowPrimitive`, `MorphologyPrimitive` (erode or dilate), `ConvolveMatrixPrimitive` (a divisor, a bias added to
-every component, `PreserveAlpha`, and an edge mode), `DisplacementMapPrimitive` and `TurbulencePrimitive` (the
-noise of the reference code of SVG, with `StitchTiles`).
+every component, `PreserveAlpha`, and an edge mode), `DisplacementMapPrimitive`, `TurbulencePrimitive` (the
+noise of the reference code of SVG, with `StitchTiles`), and `DiffuseLightingPrimitive` and `SpecularLightingPrimitive`
+with a `DistantLight`, a `PointLight` or a `SpotLight`.
 
 <!-- snippet: draw-filters -->
 ```csharp
@@ -1649,7 +1650,10 @@ public static void MarkAnimation(string inputPath, string outputPath)
   matrix are one pixel of the canvas apart; a displacement map takes the nearest pixel, and reads its map without the
   alpha of the colors, in the colors of the primitive, and its input in its own colors. A turbulence is the reference
   code of "Filter Effects Module Level 1" transcribed (additions, multiplications, divisions and square roots only), at
-  the point of the drawing of the top left corner of each pixel, at most 32 octaves.
+  the point of the drawing of the top left corner of each pixel, at most 32 octaves. A lighting takes the normals of
+  the surface from the Sobel kernels of the specification (with those of its edges and corners at the edges of the
+  region of the filter), the pixels at the top left corner of their pixel and at the height `surfaceScale A`, and the
+  height of a light multiplied by the square root of the product of the scales of the axes; its powers use `Math.Pow`.
 - **Inner shadows.** The shadow is the one of **Shadows** computed from one minus the alpha of the layer; its color
   is combined with the pixels of the layer by `SourceAtop`, with the coverage of the shadow.
 - **Aligned strokes and markers.** A stroke on one side of its path is the stroke of a pen twice as wide under a clip

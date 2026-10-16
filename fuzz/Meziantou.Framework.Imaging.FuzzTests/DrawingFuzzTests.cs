@@ -532,8 +532,10 @@ public sealed class DrawingFuzzTests
             var input2 = CreateInput(index);
             RectangleD? subregion = random.Chance(3) ? null : new RectangleD((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, NextDouble(random) * 40, NextDouble(random) * 40);
             var space = (FilterColorSpace)random.Next(2);
-            primitives[index] = random.Next(14) switch
+            primitives[index] = random.Next(16) switch
             {
+                14 => new DiffuseLightingPrimitive(CreateLight(), CreateColor(random)) { Input = input, Subregion = subregion, ColorSpace = space, SurfaceScale = (NextDouble(random) - 0.5) * 20, DiffuseConstant = NextDouble(random) * 3 },
+                15 => new SpecularLightingPrimitive(CreateLight(), CreateColor(random)) { Input = input, Subregion = subregion, ColorSpace = space, SurfaceScale = (NextDouble(random) - 0.5) * 20, SpecularConstant = NextDouble(random) * 3, SpecularExponent = 1 + (NextDouble(random) * 127) },
                 13 => new TurbulencePrimitive((FilterTurbulenceType)random.Next(2), NextDouble(random) * 0.5, NextDouble(random) * 0.5, random.Next(5), random.Next(-5, 100)) { Subregion = subregion, ColorSpace = space, StitchTiles = random.Chance(3) },
                 10 => new MorphologyPrimitive((FilterMorphologyOperator)random.Next(2), NextDouble(random) * 4, NextDouble(random) * 4) { Input = input, Subregion = subregion, ColorSpace = space },
                 11 => CreateConvolveMatrix(input, subregion, space),
@@ -570,6 +572,17 @@ public sealed class DrawingFuzzTests
         }
 
         return random.Chance(3) ? new FilterGraph(primitives) { Region = new RectangleD((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, NextDouble(random) * 60, NextDouble(random) * 60) } : new FilterGraph(primitives);
+
+        FilterLightSource CreateLight() => random.Next(3) switch
+        {
+            0 => new DistantLight(NextDouble(random) * 360, (NextDouble(random) - 0.2) * 120),
+            1 => new PointLight((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 100),
+            _ => new SpotLight((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 100, NextDouble(random) * 30, NextDouble(random) * 30, 0)
+            {
+                SpecularExponent = NextDouble(random) * 40,
+                LimitingConeAngle = random.Chance(2) ? NextDouble(random) * 90 : null,
+            },
+        };
 
         ConvolveMatrixPrimitive CreateConvolveMatrix(FilterInput input, RectangleD? subregion, FilterColorSpace space)
         {

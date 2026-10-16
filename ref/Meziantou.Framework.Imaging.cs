@@ -1330,6 +1330,16 @@ namespace Meziantou.Framework.Imaging.Drawing
         public static bool operator !=(Meziantou.Framework.Imaging.Drawing.CornerRadii left, Meziantou.Framework.Imaging.Drawing.CornerRadii right) => throw null;
     }
 
+    public sealed class DiffuseLightingPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Rgba64 Color { get => throw null; }
+        public double DiffuseConstant { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.FilterLightSource Light { get => throw null; }
+        public double SurfaceScale { get => throw null; init { } }
+        public DiffuseLightingPrimitive(Meziantou.Framework.Imaging.Drawing.FilterLightSource light, Meziantou.Framework.Imaging.Rgba64 color) { }
+    }
+
     public sealed class DisplacementMapPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
     {
         public Meziantou.Framework.Imaging.Drawing.FilterInput Input { get => throw null; init { } }
@@ -1338,6 +1348,13 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Drawing.FilterChannel XChannel { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.FilterChannel YChannel { get => throw null; init { } }
         public DisplacementMapPrimitive(double scale, Meziantou.Framework.Imaging.Drawing.FilterInput map) { }
+    }
+
+    public sealed class DistantLight : Meziantou.Framework.Imaging.Drawing.FilterLightSource
+    {
+        public double Azimuth { get => throw null; }
+        public double Elevation { get => throw null; }
+        public DistantLight(double azimuth, double elevation) { }
     }
 
     public delegate void DrawingAction(Meziantou.Framework.Imaging.Drawing.DrawingCanvas canvas);
@@ -1519,6 +1536,10 @@ namespace Meziantou.Framework.Imaging.Drawing
         SourceGraphic = 1,
         SourceAlpha = 2,
         Result = 3,
+    }
+
+    public abstract class FilterLightSource
+    {
     }
 
     public enum FilterMorphologyOperator
@@ -1763,6 +1784,14 @@ namespace Meziantou.Framework.Imaging.Drawing
         Outside = 2,
     }
 
+    public sealed class PointLight : Meziantou.Framework.Imaging.Drawing.FilterLightSource
+    {
+        public double X { get => throw null; }
+        public double Y { get => throw null; }
+        public double Z { get => throw null; }
+        public PointLight(double x, double y, double z) { }
+    }
+
     public sealed class RadialGradientBrush : Meziantou.Framework.Imaging.Drawing.GradientBrush
     {
         public Meziantou.Framework.Imaging.PointD Center { get => throw null; }
@@ -1776,6 +1805,30 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public Meziantou.Framework.Imaging.Rgba64 Color { get => throw null; }
         public SolidBrush(Meziantou.Framework.Imaging.Rgba64 color) { }
+    }
+
+    public sealed class SpecularLightingPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Rgba64 Color { get => throw null; }
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.FilterLightSource Light { get => throw null; }
+        public double SpecularConstant { get => throw null; init { } }
+        public double SpecularExponent { get => throw null; init { } }
+        public double SurfaceScale { get => throw null; init { } }
+        public SpecularLightingPrimitive(Meziantou.Framework.Imaging.Drawing.FilterLightSource light, Meziantou.Framework.Imaging.Rgba64 color) { }
+    }
+
+    public sealed class SpotLight : Meziantou.Framework.Imaging.Drawing.FilterLightSource
+    {
+        public double? LimitingConeAngle { get => throw null; init { } }
+        public double PointsAtX { get => throw null; }
+        public double PointsAtY { get => throw null; }
+        public double PointsAtZ { get => throw null; }
+        public double SpecularExponent { get => throw null; init { } }
+        public double X { get => throw null; }
+        public double Y { get => throw null; }
+        public double Z { get => throw null; }
+        public SpotLight(double x, double y, double z, double pointsAtX, double pointsAtY, double pointsAtZ) { }
     }
 
     public sealed class SweepGradientBrush : Meziantou.Framework.Imaging.Drawing.GradientBrush

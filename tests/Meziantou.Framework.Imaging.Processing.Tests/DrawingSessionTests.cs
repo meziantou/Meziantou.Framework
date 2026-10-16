@@ -3624,6 +3624,51 @@ public sealed class DrawingSessionTests
             => DrawFiltered(new FilterGraph(new TurbulencePrimitive(type, frequencyX, frequencyY, octaves, seed) { StitchTiles = stitch, ColorSpace = FilterColorSpace.Srgb }));
     }
 
+    [Fact]
+    public void AFilterGraphLightsTheSurfaceOfTheAlpha()
+    {
+        var white = new Rgba32(255, 255, 255);
+        var orange = new Rgba32(200, 100, 50);
+
+        // A flat surface (an opaque canvas) lit from above is the color of the light, to its corners; from 45 degrees,
+        // N.L = cos(45) (180)
+        Assert.Equal(orange, Diffuse(new DistantLight(0, 90), orange, white)[0, 0]);
+        Assert.Equal(orange, Diffuse(new DistantLight(0, 90), orange, white)[3, 3]);
+        Assert.Equal(new Rgba32(180, 180, 180), Diffuse(new DistantLight(0, 45), white, white)[2, 2]);
+
+        // The slope on the right of the white pixel: Nx = -1/4 (2 (0 - 1)) = 1/2, so N.L = 1 / sqrt(1.25) (228)
+        Assert.Equal(new Rgba32(228, 228, 228), Diffuse(new DistantLight(0, 90), white, color: null)[2, 1]);
+
+        // A point light 5 above (3, 3), the surface 1 high: straight above, all of it; 3 pixels away, 4 / 5 (204). A spot
+        // toward the surface below it, in a cone of 10 degrees, does not reach (0, 3), where -L.S = 4 / 5; without a
+        // cone, it reaches it with 4 / 5 of its light, at 4 / 5 (163)
+        Assert.Equal(white, Diffuse(new PointLight(3, 3, 5), white, white)[3, 3]);
+        Assert.Equal(new Rgba32(204, 204, 204), Diffuse(new PointLight(3, 3, 5), white, white)[0, 3]);
+        var spot = new SpotLight(3, 3, 5, 3, 3, 0) { LimitingConeAngle = 10 };
+        Assert.Equal(white, Diffuse(spot, white, white)[3, 3]);
+        Assert.Equal(new Rgba32(0, 0, 0), Diffuse(spot, white, white)[0, 3]);
+        Assert.Equal(new Rgba32(163, 163, 163), Diffuse(new SpotLight(3, 3, 5, 3, 3, 0), white, white)[0, 3]);
+
+        // A specular light has the alpha of its largest component: (200, 100, 50) is (1, 0.5, 0.25) at 200. From 45
+        // degrees, N.H = cos(22.5), squared 0.8536 (218).
+        Assert.Equal(new Rgba32(255, 128, 64, 200), Specular(new DistantLight(0, 90), orange, exponent: 1)[2, 2]);
+        Assert.Equal(new Rgba32(255, 255, 255, 218), Specular(new DistantLight(0, 45), white, exponent: 2)[2, 2]);
+
+        Assert.Throws<ArgumentNullException>(() => new DiffuseLightingPrimitive(null!, white));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new DiffuseLightingPrimitive(new DistantLight(0, 0), white) { DiffuseConstant = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SpecularLightingPrimitive(new DistantLight(0, 0), white) { SpecularExponent = 0.5 });
+        Assert.Throws<ArgumentException>(() => new SpecularLightingPrimitive(new DistantLight(0, 0), white) { SurfaceScale = double.NaN });
+        Assert.Throws<ArgumentException>(() => new DistantLight(double.NaN, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PointLight(0, 0, 1e9));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SpotLight(0, 0, 0, 0, 0, 0) { SpecularExponent = 200 });
+
+        static FilteredPixels Diffuse(FilterLightSource light, Rgba32 lightColor, Rgba32? color)
+            => DrawFiltered(new FilterGraph(new DiffuseLightingPrimitive(light, lightColor) { ColorSpace = FilterColorSpace.Srgb }), color);
+
+        static FilteredPixels Specular(FilterLightSource light, Rgba32 lightColor, double exponent)
+            => DrawFiltered(new FilterGraph(new SpecularLightingPrimitive(light, lightColor) { SpecularExponent = exponent, ColorSpace = FilterColorSpace.Srgb }), new Rgba32(255, 255, 255));
+    }
+
     /// <summary>Filters a white pixel at (1, 1) of a canvas of 6 by 6 pixels, or the whole canvas painted with a color.</summary>
     private static FilteredPixels DrawFiltered(Filter filter, Rgba32? color = null)
     {

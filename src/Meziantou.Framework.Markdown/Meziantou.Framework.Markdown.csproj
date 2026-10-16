@@ -1,5 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
+    <!-- Normalizes link labels and converts internationalized domain names with IdnMapping -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

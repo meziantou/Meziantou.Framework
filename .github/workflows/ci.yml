@@ -12,6 +12,11 @@ on:
   pull_request:
     branches:
       - '*'
+  # Pull requests and manual runs only test the projects that set GlobalizationSensitive in invariant
+  # globalization mode. This run tests all of them in that mode, so a failure means the analyzer that
+  # requires the property is missing a rule.
+  schedule:
+    - cron: '0 3 * * 1' # weekly
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -27,6 +32,7 @@ defaults:
 
 jobs:
   build_eng_scripts:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
@@ -42,6 +48,7 @@ jobs:
           }
 
   validate_generated_files:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
@@ -52,6 +59,7 @@ jobs:
         run: dotnet run ./eng/update-all.cs
 
   run_analyzers:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
@@ -151,6 +159,24 @@ jobs:
           # "dotnet test" runs a test project on the JIT, which validates nothing for the ones
           # meant to be published with Native AOT. The test_aot job runs them as native executables.
           where: "'$(PublishAot)' != 'true'"
+          full-rebuild-triggers: |
+            .github/workflows/ci.yml
+            eng/**/*.proj
+
+      - name: List affected globalization-sensitive test projects
+        id: affected-globalization-sensitive-tests
+        uses: $/.github/actions/deltabuild
+        with:
+          input-project: eng/build.proj
+          properties: SkipUnsupportedPlatforms=false
+          output-project: affected-globalization-sensitive-test-projects.json
+          base-commit: ${{ steps.base-commit.outputs.base-commit }}
+          run-generate: "true"
+          test-projects-only: "true"
+          # The projects whose tests also run in invariant globalization mode. The
+          # Meziantou.Framework.GlobalizationSensitivity.Analyzer rules make a test project set the
+          # property when it, or a project it references, depends on ICU.
+          where: "'$(PublishAot)' != 'true' AND '$(GlobalizationSensitive)' == 'true'"
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj
@@ -258,100 +284,124 @@ jobs:
             }
           }
 
-          $affected = @()
-          if (Test-Path -LiteralPath "affected-test-projects.json") {
-            $affected = @(
-              Get-Content -Raw -LiteralPath "affected-test-projects.json"
+          function Read-ProjectList([string] $path) {
+            if (-not (Test-Path -LiteralPath $path)) {
+              return @()
+            }
+
+            return @(
+              Get-Content -Raw -LiteralPath $path
               | ConvertFrom-Json
               | ForEach-Object { $_.Replace('\', '/') }
             )
           }
 
+          $affected = @(Read-ProjectList "affected-test-projects.json")
           Write-Host "Affected test projects: $($affected.Count)"
-
-          $groups = @()
-          $isolated = @($IsolatedProjects | Where-Object { $affected -contains $_ })
-          foreach ($project in $isolated) {
-            # tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj -> SnapshotTesting
-            $id = [System.IO.Path]::GetFileNameWithoutExtension($project) -replace '^Meziantou\.Framework\.', '' -replace '\.Tests$', ''
-            $groups += [pscustomobject]@{ id = $id; projects = $project }
-          }
-
-          $dns = @($DnsProjects | Where-Object { $affected -contains $_ })
-          if ($dns.Count -gt 0) {
-            $groups += [pscustomobject]@{ id = "Dns"; projects = ($dns -join "`n") }
-          }
 
           $unlistedImaging = @($affected | Where-Object { [System.IO.Path]::GetFileName($_) -like 'Meziantou.Framework.Imaging.*' -and -not $ImagingProjects.Contains($_) })
           if ($unlistedImaging.Count -gt 0) {
             throw "Imaging test projects must be listed in `$ImagingProjects with their cost: $($unlistedImaging -join ', ')"
           }
 
-          # Most expensive first, each into the group that is the cheapest so far: the largest
-          # project sets the duration of the longest job, and the small ones level the others
-          $imaging = @(
-            $ImagingProjects.Keys
-            | Where-Object { $affected -contains $_ }
-            | Sort-Object -Property @{ Expression = { $ImagingProjects[$_] }; Descending = $true }, @{ Expression = { $_ } }
-          )
-          if ($imaging.Count -gt 0) {
-            $imagingGroups = @(1..[Math]::Min($ImagingGroupCount, $imaging.Count) | ForEach-Object { [pscustomobject]@{ Cost = 0; Projects = [System.Collections.Generic.List[string]]::new() } })
-            foreach ($project in $imaging) {
-              $cheapest = $imagingGroups[0]
-              foreach ($group in $imagingGroups) {
-                if ($group.Cost -lt $cheapest.Cost) {
-                  $cheapest = $group
+          if ($env:GITHUB_EVENT_NAME -eq "schedule") {
+            # The scheduled run checks that the projects without GlobalizationSensitive pass in invariant
+            # globalization mode. The other runs already test everything in the normal mode.
+            $normalProjects = @()
+            $invariantProjects = $affected
+          }
+          else {
+            $normalProjects = $affected
+            $invariantProjects = @(Read-ProjectList "affected-globalization-sensitive-test-projects.json")
+          }
+
+          Write-Host "Test projects to run in invariant globalization mode: $($invariantProjects.Count)"
+
+          # Splits the projects into the groups of the matrix. Each job of the matrix runs one group on one OS.
+          function Get-TestGroups([string[]] $affected, [bool] $invariant) {
+            $groups = @()
+            $isolated = @($IsolatedProjects | Where-Object { $affected -contains $_ })
+            foreach ($project in $isolated) {
+              # tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj -> SnapshotTesting
+              $id = [System.IO.Path]::GetFileNameWithoutExtension($project) -replace '^Meziantou\.Framework\.', '' -replace '\.Tests$', ''
+              $groups += [pscustomobject]@{ id = $id; projects = $project; invariant = $invariant }
+            }
+
+            $dns = @($DnsProjects | Where-Object { $affected -contains $_ })
+            if ($dns.Count -gt 0) {
+              $groups += [pscustomobject]@{ id = "Dns"; projects = ($dns -join "`n"); invariant = $invariant }
+            }
+
+            # Most expensive first, each into the group that is the cheapest so far: the largest
+            # project sets the duration of the longest job, and the small ones level the others
+            $imaging = @(
+              $ImagingProjects.Keys
+              | Where-Object { $affected -contains $_ }
+              | Sort-Object -Property @{ Expression = { $ImagingProjects[$_] }; Descending = $true }, @{ Expression = { $_ } }
+            )
+            if ($imaging.Count -gt 0) {
+              $imagingGroups = @(1..[Math]::Min($ImagingGroupCount, $imaging.Count) | ForEach-Object { [pscustomobject]@{ Cost = 0; Projects = [System.Collections.Generic.List[string]]::new() } })
+              foreach ($project in $imaging) {
+                $cheapest = $imagingGroups[0]
+                foreach ($group in $imagingGroups) {
+                  if ($group.Cost -lt $cheapest.Cost) {
+                    $cheapest = $group
+                  }
+                }
+
+                $cheapest.Projects.Add($project)
+                $cheapest.Cost += $ImagingProjects[$project]
+              }
+
+              for ($i = 0; $i -lt $imagingGroups.Count; $i++) {
+                $groups += [pscustomobject]@{ id = "Imaging-$($i + 1)"; projects = ($imagingGroups[$i].Projects -join "`n"); invariant = $invariant }
+              }
+            }
+
+            $rest = @($affected | Where-Object { $isolated -notcontains $_ -and $dns -notcontains $_ -and $imaging -notcontains $_ } | Sort-Object)
+            if ($rest.Count -gt 0) {
+              $shardCount = [int][Math]::Min($MaxShards, [Math]::Max(1, [Math]::Ceiling($rest.Count / $ProjectsPerShard)))
+              $shards = @(1..$shardCount | ForEach-Object { ,[System.Collections.Generic.List[string]]::new() })
+
+              # Deal the heavy projects out in boustrophedon order: the first pass walks the shards
+              # forwards, the next one backwards, so shard 1 gets ranks 1 and 4 while shard 2 gets
+              # ranks 2 and 3. Plain round-robin pairs rank 1 with rank 3 and rank 2 with rank 4,
+              # which is lopsided whenever the costs drop off sharply, as they do here.
+              $heavy = @($HeavyProjects | Where-Object { $rest -contains $_ })
+              for ($i = 0; $i -lt $heavy.Count; $i++) {
+                $position = $i % $shardCount
+                $isReversePass = [Math]::Floor($i / $shardCount) % 2 -eq 1
+                $index = $(if ($isReversePass) { $shardCount - 1 - $position } else { $position })
+                $shards[$index].Add($heavy[$i])
+              }
+
+              # Split the remaining projects into contiguous blocks of equal size
+              $remaining = @($rest | Where-Object { $heavy -notcontains $_ })
+              $minimumShardSize = [int][Math]::Floor($remaining.Count / $shardCount)
+              $shardCountWithExtraProject = $remaining.Count % $shardCount
+              $currentIndex = 0
+              for ($i = 0; $i -lt $shardCount; $i++) {
+                $shardSize = $minimumShardSize + $(if ($i -lt $shardCountWithExtraProject) { 1 } else { 0 })
+                for ($j = 0; $j -lt $shardSize; $j++) {
+                  $shards[$i].Add($remaining[$currentIndex])
+                  $currentIndex++
                 }
               }
 
-              $cheapest.Projects.Add($project)
-              $cheapest.Cost += $ImagingProjects[$project]
-            }
-
-            for ($i = 0; $i -lt $imagingGroups.Count; $i++) {
-              $groups += [pscustomobject]@{ id = "Imaging-$($i + 1)"; projects = ($imagingGroups[$i].Projects -join "`n") }
-            }
-          }
-
-          $rest = @($affected | Where-Object { $isolated -notcontains $_ -and $dns -notcontains $_ -and $imaging -notcontains $_ } | Sort-Object)
-          if ($rest.Count -gt 0) {
-            $shardCount = [int][Math]::Min($MaxShards, [Math]::Max(1, [Math]::Ceiling($rest.Count / $ProjectsPerShard)))
-            $shards = @(1..$shardCount | ForEach-Object { ,[System.Collections.Generic.List[string]]::new() })
-
-            # Deal the heavy projects out in boustrophedon order: the first pass walks the shards
-            # forwards, the next one backwards, so shard 1 gets ranks 1 and 4 while shard 2 gets
-            # ranks 2 and 3. Plain round-robin pairs rank 1 with rank 3 and rank 2 with rank 4,
-            # which is lopsided whenever the costs drop off sharply, as they do here.
-            $heavy = @($HeavyProjects | Where-Object { $rest -contains $_ })
-            for ($i = 0; $i -lt $heavy.Count; $i++) {
-              $position = $i % $shardCount
-              $isReversePass = [Math]::Floor($i / $shardCount) % 2 -eq 1
-              $index = $(if ($isReversePass) { $shardCount - 1 - $position } else { $position })
-              $shards[$index].Add($heavy[$i])
-            }
-
-            # Split the remaining projects into contiguous blocks of equal size
-            $remaining = @($rest | Where-Object { $heavy -notcontains $_ })
-            $minimumShardSize = [int][Math]::Floor($remaining.Count / $shardCount)
-            $shardCountWithExtraProject = $remaining.Count % $shardCount
-            $currentIndex = 0
-            for ($i = 0; $i -lt $shardCount; $i++) {
-              $shardSize = $minimumShardSize + $(if ($i -lt $shardCountWithExtraProject) { 1 } else { 0 })
-              for ($j = 0; $j -lt $shardSize; $j++) {
-                $shards[$i].Add($remaining[$currentIndex])
-                $currentIndex++
+              for ($i = 0; $i -lt $shardCount; $i++) {
+                if ($shards[$i].Count -gt 0) {
+                  $groups += [pscustomobject]@{ id = "shard-$($i + 1)"; projects = ($shards[$i] -join "`n"); invariant = $invariant }
+                }
               }
             }
 
-            for ($i = 0; $i -lt $shardCount; $i++) {
-              if ($shards[$i].Count -gt 0) {
-                $groups += [pscustomobject]@{ id = "shard-$($i + 1)"; projects = ($shards[$i] -join "`n") }
-              }
-            }
+            return $groups
           }
+
+          $groups = @(Get-TestGroups $normalProjects $false) + @(Get-TestGroups $invariantProjects $true)
 
           foreach ($group in $groups) {
-            Write-Host "Group '$($group.id)':"
+            Write-Host "Group '$($group.id)'$(if ($group.invariant) { ' (invariant globalization)' }):"
             $group.projects -split "`n" | ForEach-Object { Write-Host "  $_" }
           }
 
@@ -396,7 +446,7 @@ jobs:
   build_and_test:
     needs: [ compute_test_matrix ]
     if: needs.compute_test_matrix.outputs.has-tests == 'true'
-    name: build_and_test (${{ matrix.runs-on }}, ${{ matrix.configuration }}${{ case(matrix.additionalArguments == '', '', ', invariant') }}, ${{ matrix.test-group.id }})
+    name: build_and_test (${{ matrix.runs-on }}, ${{ matrix.configuration }}${{ case(matrix.test-group.invariant, ', invariant', '') }}, ${{ matrix.test-group.id }})
     runs-on: ${{ matrix.runs-on }}
     timeout-minutes: 120
     strategy:
@@ -404,11 +454,12 @@ jobs:
         # x64, arm64
         runs-on: [ windows-2025-vs2026, ubuntu-26.04, ubuntu-26.04-arm, macos-26 ]
         configuration: [ Release ]
-        additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
+        # A group runs either in the normal mode or in invariant globalization mode, see compute_test_matrix
         test-group: ${{ fromJson(needs.compute_test_matrix.outputs.matrix) }}
       fail-fast: false
     env:
       RUNS_ON: ${{ matrix.runs-on }}
+      ADDITIONAL_ARGUMENTS: ${{ case(matrix.test-group.invariant, '/p:InvariantGlobalization=true', '') }}
       TestResultsDirectory: ${{ github.workspace}}/TestResults
       MEZIANTOU_PUBLIC_API_TEST_CACHE_DIRECTORY: ${{ github.workspace}}/.cache/public-api-generator-tests
       EnableCodeCoverage: ${{ case(github.event_name == 'workflow_dispatch' && inputs.enable_code_coverage, 'true', 'false') }}
@@ -417,7 +468,7 @@ jobs:
       - id: compute-artifact-name
         name: Compute artifact name
         run: |
-          $SanitizedName = "${{ matrix.runs-on }}-${{ matrix.configuration }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
+          $SanitizedName = "${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ env.ADDITIONAL_ARGUMENTS }}".Replace(":", "_").Replace("/", "_")
           "artifact-name=test-results-$SanitizedName-${{ matrix.test-group.id }}" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -439,7 +490,7 @@ jobs:
           # Lets eng/build.proj drop the projects whose tests cannot run in invariant globalization
           # mode. A group left with nothing to run skips its steps instead of failing the job with
           # "Zero tests ran".
-          properties: ${{ case(matrix.additionalArguments == '/p:InvariantGlobalization=true', 'InvariantGlobalization=true', '') }}
+          properties: ${{ case(matrix.test-group.invariant, 'InvariantGlobalization=true', '') }}
           # The projects of the group are the only candidates, so the generated project contains
           # exactly the projects computed by the compute_test_matrix job.
           include: ${{ matrix.test-group.projects }}
@@ -480,12 +531,12 @@ jobs:
 
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
+        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl ${{ env.ADDITIONAL_ARGUMENTS }}
 
       - name: Run tests
         if: steps.build-project.outputs.has-project == 'true'
         run: |
-          dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ matrix.additionalArguments }}
+          dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ env.ADDITIONAL_ARGUMENTS }}
 
           # Exit code 8 is 'zero tests ran'. A delta build can legitimately select only projects that
           # skip every test on this leg, such as the TDS tests, which need ICU and are therefore all
@@ -527,6 +578,7 @@ jobs:
                 **/*.coverage
 
   test_trimming:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-26.04
     timeout-minutes: 60
     strategy:
@@ -541,6 +593,7 @@ jobs:
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
+    if: github.event_name != 'schedule'
     runs-on: windows-2025-vs2026
     timeout-minutes: 60
     strategy:
@@ -559,7 +612,7 @@ jobs:
   # console application, and runs the native executable.
   test_aot:
     needs: [ compute_test_matrix ]
-    if: needs.compute_test_matrix.outputs.has-aot-projects == 'true'
+    if: needs.compute_test_matrix.outputs.has-aot-projects == 'true' && github.event_name != 'schedule'
     name: test_aot (${{ matrix.runs-on }}, ${{ matrix.aot-project.id }})
     runs-on: ${{ matrix.runs-on }}
     timeout-minutes: 60

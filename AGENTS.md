@@ -34,3 +34,5 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 Do not consider solution files (sln, slnx) in the slnx folders. These files are automatically generated and only for developers working on the project.
 
 Do not manually update files under the `ref/` folder. Their content is generated when building the solution, and any resulting changes must be committed to git.
+
+CI only runs the tests of a project in invariant globalization mode (`/p:InvariantGlobalization=true`) when the test project sets `<GlobalizationSensitive>true</GlobalizationSensitive>`. The `MFGS0001` diagnostic reports code that depends on ICU (named cultures, linguistic comparisons, string normalization, time zone names and ID conversion, `IdnMapping`). Either suppress it with a justification explaining why the result does not depend on ICU, or set the property in the project. A library that sets the property makes `MFGS0002` require it in every test project that references the library. Set the property by hand when the ICU dependency is inside a package, such as a database client.

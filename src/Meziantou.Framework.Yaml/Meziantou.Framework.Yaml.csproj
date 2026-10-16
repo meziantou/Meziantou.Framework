@@ -1,5 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
+    <!-- Converts culture names to CultureInfo -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
     <Description>A high-performance .NET YAML library providing parsing and serialization of object graphs, NativeAOT ready.</Description>

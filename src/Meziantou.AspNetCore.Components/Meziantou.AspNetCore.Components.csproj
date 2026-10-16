@@ -1,6 +1,8 @@
 <Project Sdk="Meziantou.NET.Sdk.Razor">
 
   <PropertyGroup>
+    <!-- TimeZoneService resolves the IANA time zone of the browser -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
 
     <Version>3.0.9</Version>

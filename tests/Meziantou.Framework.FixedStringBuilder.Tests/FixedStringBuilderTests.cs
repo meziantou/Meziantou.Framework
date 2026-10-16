@@ -368,6 +368,7 @@ public sealed class FixedStringBuilderTests
         Assert.Equal("  FF", value.ToString(null, null));
     }
 
+    [SuppressMessage("Globalization", "MFGS0001", Justification = "The expected value comes from string.Equals with the same comparison, so it follows the globalization mode.")]
     [Theory]
     [InlineData("AbC", "aBc", StringComparison.Ordinal)]
     [InlineData("AbC", "aBc", StringComparison.OrdinalIgnoreCase)]

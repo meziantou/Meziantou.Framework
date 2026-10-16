@@ -1,6 +1,8 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Validates the host from Uri.IdnHost -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>2.0.5</Version>
     <IsTrimmable>true</IsTrimmable>

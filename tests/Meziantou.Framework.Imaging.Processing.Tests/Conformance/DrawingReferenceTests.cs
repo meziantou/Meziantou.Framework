@@ -653,6 +653,13 @@ public sealed class DrawingReferenceTests
 
         cases.Add(("sharp-Miter-Butt-limit-1", sharp, new Pen(white, 3) { MiterLimit = 1 }));
         cases.Add(("sharp-Miter-Butt-limit-20", sharp, new Pen(white, 2) { MiterLimit = 20 }));
+
+        // Pens wider than the curves: the perpendiculars to the curve cross beyond its center
+        var tight = new VectorPathBuilder().AddArc(new PointD(24, 26), 7, 7, 20, 250).LineTo(40, 40).Build();
+        var loop = new VectorPathBuilder().MoveTo(8, 30).CubicBezierTo(30, 2, 40, 40, 20, 24).Build();
+        cases.Add(("tight-Miter-Butt-18", tight, new Pen(white, 18)));
+        cases.Add(("tight-Round-Square-15", tight, new Pen(white, 15) { LineJoin = LineJoin.Round, LineCap = LineCap.Square }));
+        cases.Add(("loop-Bevel-Butt-14", loop, new Pen(white, 14) { LineJoin = LineJoin.Bevel }));
         return cases;
     }
 

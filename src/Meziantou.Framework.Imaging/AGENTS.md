@@ -554,7 +554,16 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   through `EnumerateSegments`; numbers are parsed and formatted by the runtime with the invariant culture (correctly
   rounded on every platform). The reader rejects the whole text on an error, with its position.
 - A stroke is a union of convex pieces with one orientation (`Stroker`): overlaps are harmless because the coverage is
-  the area of the union. The 1/16 pixel flattening tolerance is public; the positions of the chord vertices are not.
+  the area of the union. The 1/16 pixel flattening tolerance is public (`canvas.Flattening` makes it finer: it is
+  `PathSink.Tolerance`, set by the session on every sink it hands a flattener, and inherited by the sessions of
+  layers, planes and tiles); the positions of the chord vertices are not. A chord next to a smooth vertex is not a
+  rectangle: it is swept by the perpendicular to the curve (the bisector of the chord normals, and at a curve end the
+  end chord turned back by half the next turn), split into two triangles where the perpendiculars cross within the
+  pen (a pen wider than the arc, the WPT `2d.path.arc.*` cases), plus the half rectangle on the outer side; a body is
+  made when the vertex at its end is known, the first chord of a contour when the contour ends. `ReferenceStroke`
+  models the same definition: change both together. `Offset` and the emboldening of glyphs (`Configure(width, join,
+  miterLimit)`) keep the rectangles: they need the Minkowski band, and the folded lobes meet at points that the grid of
+  `PathCombiner` parts into slivers.
 - Dashes are cut before the stroker (`Dasher`), which strokes each dash as an open contour. The first dash of a contour
   is held back until the contour ends, because the last dash of a closed contour continues with it. On a canvas, only
   the parts of a segment whose dashes can change a pixel are cut (the canvas seen along the segment, plus the reach of
@@ -575,6 +584,9 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   is a rectangle of whole pixels, a mask of coverages rasterized once, when the clip starts, by the same rasterizer.
   Draw calls multiply their coverage by the mask row by row (`ApplyClip`), into a row of the session: they rent nothing.
   Every path that composites pixels (`PaintRows`, the color glyphs) must go through `ApplyClip`.
+- A pattern whose tile image would be far larger than what the clip shows draws a window of the pattern instead
+  (`TryGetPatternWindow`), at the same pixel scale, running the callback once per visible tile: keep it bit for bit
+  with the whole tile image (`ATileLargerThanWhatTheCanvasShowsIsDrawnWhereTheCanvasShowsIt`).
 - A layer (`DrawingSession.Layers.cs`) replaces what the draw calls paint (`_frames`, `_storages`: never assume they
   are the frames of the image) by an internal image created from the scope of the image, one per depth, kept until
   the session ends. Starting a layer pushes a clip of whole pixels with the bounds of the clip under it (its mask is
@@ -585,6 +597,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   drawn: the layer covers a margin around the bounds of the clip (the reach of the blur and of the offset), and the
   blur reads beyond it as its edge pixels (a shape that leaves the canvas keeps its shadow along the edge). The
   weights are those of `GaussianKernel`, shared with `GaussianBlur`: computed without `Math.Exp`.
+- A filter whose reach goes beyond the canvas draws on a bounded layer larger than the canvas (`TryGetFilterExtent`,
+  `PushBoundedLevel`): `_canvasBounds` is the canvas in the coordinates of such a session (filling the canvas fills
+  only it), the edge modes other than transparent still apply at the canvas, and `FilterProcessor.Extent` is what the
+  transparent mode reads. A filter graph clears its source outside its region.
 - Filters (`Filter` and its derived types, `DrawingSession.FilterEffects.cs`) run on `FilterSurface`s: premultiplied
   single-precision colors of a rectangle of the canvas, read through `ReadRgba64` and written back to a layer with the
   rounding of the blurs. `FilterProcessor` holds the edges (the canvas, or the rectangle of a backdrop, always mirrored)

@@ -51,7 +51,12 @@ public sealed class ColorFontConformanceTests
             // renderer draws the images of bitmap glyphs one pixel higher than the font places them: the renders of
             // the bitmap fonts, which have nothing else, say so.
             var origin = new PointD(render.Margin, render.Margin + render.Ascent - layout.Baseline + render.ImageShift);
-            actual.Draw(canvas => canvas.FillText(foreground, layout, origin), TestContext.Current.CancellationToken);
+
+            // The reference renderer gives the alpha of the color of the text to the parts of a glyph that take that
+            // color, where a solid brush fades the whole glyph as browsers do: a gradient of that one color does what
+            // the reference renderer does
+            Brush brush = foreground.A == 255 ? new SolidBrush(foreground) : new LinearGradientBrush(default, new PointD(1, 0), [new GradientStop(0, foreground), new GradientStop(1, foreground)]);
+            actual.Draw(canvas => canvas.FillText(brush, layout, origin), TestContext.Current.CancellationToken);
 
             var statistics = Compare(expected, actual);
             if (statistics.Mean > MaxMean || statistics.FarFraction > MaxFarFraction || statistics.LargestFarBlock > MaxFarBlock)

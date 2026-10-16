@@ -22,7 +22,8 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// <para>
 /// An image drawn smaller than it is skips pixels: each pixel of the canvas reads four pixels of the image at most.
 /// <see cref="ImageSampling.Smooth"/> reads every pixel a pixel of the canvas covers instead, for a result without
-/// aliasing; reduce an image that is drawn many times first (<c>Resize</c>).
+/// aliasing, and <see cref="ImageSampling.Box"/> averages them; reduce an image that is drawn many times first
+/// (<c>Resize</c>).
 /// </para>
 /// <para>
 /// <b>Lifetime.</b> The brush refers to the frame and does not own it. The pixels are read when a shape is drawn: the

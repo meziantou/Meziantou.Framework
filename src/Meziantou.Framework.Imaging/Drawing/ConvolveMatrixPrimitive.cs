@@ -8,7 +8,9 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// With a matrix of <c>orderX</c> columns and <c>orderY</c> rows and a target <c>(tx, ty)</c>, a pixel of the result is
 /// <c>sum(I(x - tx + j, y - ty + i) K(orderX - j - 1, orderY - i - 1)) / divisor + bias</c>: the matrix is turned by a
 /// half turn, as in SVG. The weights are one pixel of the canvas apart, whatever the transformation. What is read
-/// beyond the subregion of the input is given by <see cref="EdgeMode"/> (the nearest pixel by default, as in SVG).
+/// beyond the subregion of the primitive is given by <see cref="EdgeMode"/> (the nearest pixel by default, as in SVG);
+/// inside it, an input is transparent outside its own subregion, so that a bias colors the pixels around a smaller
+/// input, as browsers do.
 /// </para>
 /// <para>
 /// The bias is added to every component. Without <see cref="PreserveAlpha"/>, the four components, the colors multiplied
@@ -112,7 +114,7 @@ public sealed class ConvolveMatrixPrimitive : FilterPrimitive
         }
     }
 
-    /// <summary>Gets what is read beyond the subregion of the input: <c>edgeMode</c>. Defaults to <see cref="FilterEdgeMode.Duplicate"/>.</summary>
+    /// <summary>Gets what is read beyond the subregion of the primitive: <c>edgeMode</c>. Defaults to <see cref="FilterEdgeMode.Duplicate"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="FilterEdgeMode"/>.</exception>
     public FilterEdgeMode EdgeMode
     {
@@ -143,7 +145,7 @@ public sealed class ConvolveMatrixPrimitive : FilterPrimitive
         var input = context.GetInput(0);
         var source = input.Values;
         var bounds = input.Bounds;
-        var edges = context.GetInputSubregion(0);
+        var edges = context.Subregion;
         var mode = context.Processor.EdgeOverride ?? EdgeMode;
         var divisor = Divisor ?? GetSum(_kernel);
         var values = result.Values;

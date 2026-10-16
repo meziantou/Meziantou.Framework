@@ -68,7 +68,7 @@ public sealed class ColorFontTests
     {
         // Opaque layers on whole pixels: the same samples as the rectangles, in every pixel format.
         var pixelFormat = (PixelFormat)format;
-        var blue = new Rgba64(0, 0, 65535, 40000);
+        var blue = new Rgba64(0, 0, 65535, 65535);
         using var actual = DrawingTestSupport.Create(pixelFormat, 20, 16);
         actual.Draw(canvas => canvas.FillText(blue, "A", ColorBoxes, 16, new PointD(0, 0)), Ct);
         using var expected = DrawingTestSupport.Create(pixelFormat, 20, 16);
@@ -77,38 +77,36 @@ public sealed class ColorFontTests
             {
                 canvas.FillRectangle(Red, Outer);
                 canvas.FillRectangle(Green, Middle);
-            },
-            Ct);
-
-        // The inner rectangle has the color of the text, which is translucent here: over the green of the glyph, not
-        // over the image.
-        var samples = DrawingTestSupport.ReadSamples(actual.Frames[0]);
-        var reference = DrawingTestSupport.ReadSamples(expected.Frames[0]);
-        var channels = samples.Length / (20 * 16);
-        for (var y = 0; y < 16; y++)
-        {
-            for (var x = 0; x < 20; x++)
-            {
-                if (x is >= 6 and < 10 && y is >= 5 and < 9)
-                    continue;
-
-                Assert.Equal(reference.AsSpan(((y * 20) + x) * channels, channels).ToArray(), samples.AsSpan(((y * 20) + x) * channels, channels).ToArray());
-            }
-        }
-
-        using var over = DrawingTestSupport.Create(pixelFormat, 20, 16);
-        over.Draw(
-            canvas =>
-            {
-                canvas.FillRectangle(Green, Middle);
                 canvas.FillRectangle(blue, Inner);
             },
             Ct);
-        var overSamples = DrawingTestSupport.ReadSamples(over.Frames[0]);
-        var max = pixelFormat is PixelFormat.Rgba64 or PixelFormat.Gray16 ? 65535 : 255;
-        for (var c = 0; c < channels; c++)
+        Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(actual.Frames[0]));
+    }
+
+    [Fact]
+    public void ATranslucentTextFadesTheGlyphsThatHaveTheirOwnColors()
+    {
+        // As browsers draw an emoji in a translucent color: the glyph is composed with the color of the text opaque,
+        // then faded as a whole by the alpha of that color and by the opacity of the brush. The inner rectangle is
+        // blue, not blue over green, and the red and the green show the image through them.
+        var faded = Draw(20, 16, canvas => canvas.Layer(0.6, layer =>
         {
-            Assert.Equal(overSamples[(((6 * 20) + 7) * channels) + c], samples[(((6 * 20) + 7) * channels) + c], max / 255.0);
+            layer.FillRectangle(Red, Outer);
+            layer.FillRectangle(Green, Middle);
+            layer.FillRectangle(new Rgba32(0, 0, 255), Inner);
+        }));
+        AssertClose(faded, Draw(20, 16, canvas => canvas.FillText(new Rgba32(0, 0, 255, 153), "A", ColorBoxes, 16, new PointD(0, 0))), tolerance: 1);
+        AssertClose(faded, Draw(20, 16, canvas => canvas.FillText(new SolidBrush(new Rgba32(0, 0, 255)) { Opacity = 0.6 }, "A", ColorBoxes, 16, new PointD(0, 0))), tolerance: 1);
+        Assert.Equal(new Rgba32(255, 102, 102), GetPixel(faded, 20, 2, 1));
+
+        // A glyph the font gives as an image fades the same way
+        var bitmaps = FontTestSupport.Load(FontSamples.BitmapBoxes());
+        var opaque = Draw(20, 16, canvas => canvas.FillText(Black, "A", bitmaps, 16, new PointD(0, 0)));
+        var image = Draw(20, 16, canvas => canvas.FillText(new SolidBrush(Black) { Opacity = 0.5 }, "A", bitmaps, 16, new PointD(0, 0)));
+        Assert.Contains(opaque, sample => sample != 255);
+        for (var i = 0; i < opaque.Length; i++)
+        {
+            Assert.InRange(image[i], ((opaque[i] + 255) / 2) - 1, ((opaque[i] + 255) / 2) + 1);
         }
     }
 

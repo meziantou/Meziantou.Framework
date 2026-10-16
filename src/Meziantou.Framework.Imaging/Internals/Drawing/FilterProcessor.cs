@@ -27,6 +27,7 @@ internal sealed class FilterProcessor : IDisposable
     private PooledBuffer? _weights;
     private FilterSurface? _scratch;
     private Rectangle _edges;
+    private Rectangle _extent;
     private FilterEdgeMode? _edgeOverride;
     private double _scaleX = 1;
     private double _scaleY = 1;
@@ -61,6 +62,7 @@ internal sealed class FilterProcessor : IDisposable
         _offsetX = offsetX;
         _offsetY = offsetY;
         _edges = edges;
+        _extent = edges;
         _edgeOverride = edgeOverride;
         _scaleX = scaleX;
         _scaleY = scaleY;
@@ -71,11 +73,21 @@ internal sealed class FilterProcessor : IDisposable
         _cancellationToken = cancellationToken;
     }
 
-    /// <summary>Gets or sets the rectangle the edge modes apply to.</summary>
+    /// <summary>Gets or sets the rectangle the edge modes apply to; setting it sets <see cref="Extent"/> too.</summary>
     public Rectangle Edges
     {
         get => _edges;
-        set => _edges = value;
+        set => _edges = _extent = value;
+    }
+
+    /// <summary>
+    /// Gets or sets the rectangle beyond which a filter whose edge mode is transparent reads transparent pixels: the
+    /// edges, or a layer that holds what is drawn beyond the canvas, which such a filter reads.
+    /// </summary>
+    public Rectangle Extent
+    {
+        get => _extent;
+        set => _extent = value;
     }
 
     /// <summary>Gets the edge mode of every filter, or <see langword="null"/> for the one of each filter: mirrored for a backdrop.</summary>
@@ -462,8 +474,9 @@ internal sealed class FilterProcessor : IDisposable
         var values = surface.Values;
         var stride = horizontal ? 4 : 4 * bounds.Width;
         var start = horizontal ? bounds.Left : bounds.Top;
-        var edgeStart = horizontal ? _edges.Left : _edges.Top;
-        var edgeEnd = horizontal ? _edges.Right : _edges.Bottom;
+        var edges = mode == FilterEdgeMode.Transparent ? _extent : _edges;
+        var edgeStart = horizontal ? edges.Left : edges.Top;
+        var edgeEnd = horizontal ? edges.Right : edges.Bottom;
         for (var index = 0; index < lines; index++)
         {
             if ((index & 15) == 0)
@@ -525,8 +538,9 @@ internal sealed class FilterProcessor : IDisposable
         var values = surface.Values;
         var stride = horizontal ? 4 : 4 * bounds.Width;
         var start = horizontal ? bounds.Left : bounds.Top;
-        var edgeStart = horizontal ? _edges.Left : _edges.Top;
-        var edgeEnd = horizontal ? _edges.Right : _edges.Bottom;
+        var edges = mode == FilterEdgeMode.Transparent ? _extent : _edges;
+        var edgeStart = horizontal ? edges.Left : edges.Top;
+        var edgeEnd = horizontal ? edges.Right : edges.Bottom;
         var size = before + after + 1;
         Span<double> sum = stackalloc double[4];
         for (var index = 0; index < lines; index++)
@@ -582,7 +596,8 @@ internal sealed class FilterProcessor : IDisposable
     private float ReadAlpha(FilterSurface surface, int x, int y, FilterEdgeMode mode)
     {
         mode = _edgeOverride ?? mode;
-        if (!TryMap(ref x, _edges.Left, _edges.Right, mode) || !TryMap(ref y, _edges.Top, _edges.Bottom, mode))
+        var edges = mode == FilterEdgeMode.Transparent ? _extent : _edges;
+        if (!TryMap(ref x, edges.Left, edges.Right, mode) || !TryMap(ref y, edges.Top, edges.Bottom, mode))
             return 0;
 
         var bounds = surface.Bounds;

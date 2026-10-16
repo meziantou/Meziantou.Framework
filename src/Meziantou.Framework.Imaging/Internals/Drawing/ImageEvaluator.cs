@@ -107,6 +107,10 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private double _spanY;
     private bool _isProjective;
     private bool _isSmooth;
+
+    // A reduced image is averaged over what a pixel of the canvas covers of it (ImageSampling.Box), instead of weighted
+    // by the stretched interpolation
+    private bool _isBox;
     private double _h0;
     private double _h1;
     private double _h2;
@@ -191,7 +195,8 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
 
         // What a pixel of the canvas covers of the image: more than a pixel when the image is reduced
         _isReduced = false;
-        if (sampling == ImageSampling.Smooth && !_isEmpty)
+        _isBox = sampling == ImageSampling.Box;
+        if (sampling is ImageSampling.Smooth or ImageSampling.Box && !_isEmpty)
         {
             _spanX = Math.Min(Math.Sqrt((_inverse.A * _inverse.A) + (_inverse.C * _inverse.C)), _regionWidth);
             _spanY = Math.Min(Math.Sqrt((_inverse.B * _inverse.B) + (_inverse.D * _inverse.D)), _regionHeight);
@@ -261,7 +266,8 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         _isNearest = sampling == ImageSampling.Nearest;
         _isBicubic = sampling == ImageSampling.Bicubic;
         _hasDomain = false;
-        _isSmooth = sampling == ImageSampling.Smooth;
+        _isSmooth = sampling is ImageSampling.Smooth or ImageSampling.Box;
+        _isBox = sampling == ImageSampling.Box;
         _isProjective = true;
         if (!transform.TryInvert(out var inverse))
         {
@@ -295,7 +301,8 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         _isNearest = sampling == ImageSampling.Nearest;
         _isBicubic = sampling == ImageSampling.Bicubic;
         _hasDomain = false;
-        _isSmooth = sampling == ImageSampling.Smooth;
+        _isSmooth = sampling is ImageSampling.Smooth or ImageSampling.Box;
+        _isBox = sampling == ImageSampling.Box;
         _isProjective = true;
         if (inverse.IsEmpty)
         {
@@ -785,15 +792,34 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         return ToColor(alpha, red, green, blue, totalX * totalY);
     }
 
-    /// <summary>Gets the rows or the columns of the image a pixel of the canvas reads when the image is reduced: those whose center is within the span of its position.</summary>
-    private static void GetSupport(double position, double span, out int first, out int last)
+    /// <summary>
+    /// Gets the rows or the columns of the image a pixel of the canvas reads when the image is reduced: those whose
+    /// center is within the span of its position, or, with a box, those that overlap the span centered on it.
+    /// </summary>
+    private void GetSupport(double position, double span, out int first, out int last)
     {
+        if (_isBox)
+        {
+            first = (int)Math.Floor(position - (span / 2));
+            last = (int)Math.Ceiling(position + (span / 2)) - 1;
+            return;
+        }
+
         first = (int)Math.Floor(position - span - 0.5) + 1;
         last = (int)Math.Ceiling(position + span - 0.5) - 1;
     }
 
-    /// <summary>Gets the weight of a row or of a column of the image for a position: 1 at its center, 0 a span away.</summary>
-    private static double GetWeight(int index, double position, double span) => 1 - (Math.Abs(index + 0.5 - position) / span);
+    /// <summary>
+    /// Gets the weight of a row or of a column of the image for a position: 1 at its center, 0 a span away, or, with a
+    /// box, the length of the part of it inside the span centered on the position.
+    /// </summary>
+    private double GetWeight(int index, double position, double span)
+    {
+        if (_isBox)
+            return Math.Min(index + 1, position + (span / 2)) - Math.Max(index, position - (span / 2));
+
+        return 1 - (Math.Abs(index + 0.5 - position) / span);
+    }
 
     /// <summary>Brings a coordinate of the image within the positions that count. Written so that a coordinate that is not a number is far away.</summary>
     private static double Limit(double coordinate) => Math.Abs(coordinate) < MaxPosition ? coordinate : coordinate < 0 ? -MaxPosition : MaxPosition;

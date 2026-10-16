@@ -7,11 +7,20 @@ namespace Meziantou.Framework.Imaging.TestHarness.Drawing;
 /// <remarks>
 /// <para>
 /// The region is the union of convex sets, each described by inequalities: for a segment, the points within half the
-/// width of its line and between the perpendiculars at its ends; for a vertex, on the outer side of the turn, the
+/// width of its line and between the perpendiculars at its ends; for a segment of a curve (next to a smooth vertex), the
+/// points swept by the segment of the width of the stroke perpendicular to the curve, from its start to its end (two
+/// triangles when the perpendiculars cross within the width, beyond the center of a curve narrower than the stroke),
+/// with the half of the band of the segment on the outer side of its turns; for a vertex, on the outer side of the turn, the
 /// triangle between the vertex and the two outer corners (bevel), the same completed up to the intersection of the two
 /// outer edges (miter, when the miter length does not exceed the limit), or the points of the disk centered on the
 /// vertex that are beyond the end of the first segment and before the start of the second (round); for the end of an
 /// open polyline, nothing (butt), a square extension (square) or the half disk beyond the end (round).
+/// </para>
+/// <para>
+/// The perpendicular to a curve at a smooth vertex bisects the angle of the normals of its two segments; at the end of a
+/// curve (a vertex that is not smooth next to one that is), it is the normal of the direction of the curve there: the
+/// direction of the end segment turned away from the next one by half the angle between them. The joins and the caps at
+/// the end of a curve take that direction.
 /// </para>
 /// <para>
 /// <see cref="GetSignedDistance"/> returns a lower bound of the distance to the boundary of the region, positive
@@ -82,9 +91,36 @@ public sealed class ReferenceStroke
             var a = vertices[i];
             var b = vertices[(i + 1) % vertices.Count];
             var length = Math.Sqrt(((b.X - a.X) * (b.X - a.X)) + ((b.Y - a.Y) * (b.Y - a.Y)));
-            var d = ((b.X - a.X) / length, (b.Y - a.Y) / length);
-            directions[i] = d;
-            _sets.Add(Body((a.X, a.Y), (b.X, b.Y), d, h));
+            directions[i] = ((b.X - a.X) / length, (b.Y - a.Y) / length);
+        }
+
+        // The vertices between two segments of a curve; the ends of an open polyline are not
+        bool IsSmooth(int index) => (closed || (index > 0 && index < vertices.Count - 1)) && vertices[index % vertices.Count].Smooth;
+
+        var startDirections = new (double X, double Y)[segmentCount];
+        var endDirections = new (double X, double Y)[segmentCount];
+        for (var i = 0; i < segmentCount; i++)
+        {
+            var a = vertices[i];
+            var b = vertices[(i + 1) % vertices.Count];
+            var d = directions[i];
+            var previous = directions[(i + segmentCount - 1) % segmentCount];
+            var next = directions[(i + 1) % segmentCount];
+            var startSmooth = IsSmooth(i);
+            var endSmooth = IsSmooth(i + 1);
+            startDirections[i] = !startSmooth && endSmooth ? Turn(d, -GetAngle(d, next) / 2) : d;
+            endDirections[i] = startSmooth && !endSmooth ? Turn(d, GetAngle(previous, d) / 2) : d;
+            if (!startSmooth && !endSmooth)
+            {
+                _sets.Add(Body((a.X, a.Y), (b.X, b.Y), d, h));
+                continue;
+            }
+
+            var normalA = startSmooth ? Bisect((-previous.Y, previous.X), (-d.Y, d.X)) : (-startDirections[i].Y, startDirections[i].X);
+            var normalB = endSmooth ? Bisect((-d.Y, d.X), (-next.Y, next.X)) : (-endDirections[i].Y, endDirections[i].X);
+            var turnA = startSmooth ? GetAngle(previous, d) : GetAngle(d, next);
+            var turnB = endSmooth ? GetAngle(d, next) : GetAngle(previous, d);
+            AddSwept((a.X, a.Y), (b.X, b.Y), d, normalA, normalB, turnA, turnB, h);
         }
 
         for (var i = 0; i < segmentCount; i++)
@@ -95,13 +131,13 @@ public sealed class ReferenceStroke
                 break;
 
             var vertex = vertices[(i + 1) % vertices.Count];
-            AddJoin((vertex.X, vertex.Y), directions[i], directions[next], h, vertex.Smooth ? ReferenceLineJoin.Round : join, miterLimit);
+            AddJoin((vertex.X, vertex.Y), endDirections[i], startDirections[next], h, vertex.Smooth ? ReferenceLineJoin.Round : join, miterLimit);
         }
 
         if (!closed)
         {
-            AddCap((vertices[0].X, vertices[0].Y), (-directions[0].X, -directions[0].Y), h, cap);
-            AddCap((vertices[^1].X, vertices[^1].Y), directions[^1], h, cap);
+            AddCap((vertices[0].X, vertices[0].Y), (-startDirections[0].X, -startDirections[0].Y), h, cap);
+            AddCap((vertices[^1].X, vertices[^1].Y), endDirections[^1], h, cap);
         }
     }
 
@@ -129,6 +165,65 @@ public sealed class ReferenceStroke
         set.AddHalfPlane(n, (a.X + (h * n.X), a.Y + (h * n.Y)));
         set.AddHalfPlane((-n.X, -n.Y), (a.X - (h * n.X), a.Y - (h * n.Y)));
         return set;
+    }
+
+    /// <summary>Gets the angle from one direction to another, from -pi to pi.</summary>
+    private static double GetAngle((double X, double Y) from, (double X, double Y) to)
+        => Math.Atan2((from.X * to.Y) - (from.Y * to.X), (from.X * to.X) + (from.Y * to.Y));
+
+    /// <summary>Turns a direction by an angle.</summary>
+    private static (double X, double Y) Turn((double X, double Y) d, double angle)
+        => ((d.X * Math.Cos(angle)) - (d.Y * Math.Sin(angle)), (d.X * Math.Sin(angle)) + (d.Y * Math.Cos(angle)));
+
+    /// <summary>Gets the unit vector halfway between two unit vectors.</summary>
+    private static (double X, double Y) Bisect((double X, double Y) a, (double X, double Y) b)
+    {
+        var angle = Math.Atan2(a.Y, a.X) + (GetAngle(a, b) / 2);
+        return (Math.Cos(angle), Math.Sin(angle));
+    }
+
+    /// <summary>
+    /// Adds what a segment of a curve sweeps: the perpendicular of the width of the stroke at each point, from the
+    /// normal at its start to the one at its end, and the half of its band on the outer side of the turns.
+    /// </summary>
+    private void AddSwept((double X, double Y) a, (double X, double Y) b, (double X, double Y) d, (double X, double Y) normalA, (double X, double Y) normalB, double turnA, double turnB, double h)
+    {
+        // The band of the segment on the side away from the centers of its turns: +n when it turns toward -n
+        (double X, double Y) n = (-d.Y, d.X);
+        foreach (var side in (int[])[1, -1])
+        {
+            if (side * turnA < 0 || side * turnB < 0)
+            {
+                var set = new ConvexSet();
+                set.AddHalfPlane((-d.X, -d.Y), a);
+                set.AddHalfPlane(d, b);
+                set.AddHalfPlane((side * n.X, side * n.Y), (a.X + (side * h * n.X), a.Y + (side * h * n.Y)));
+                set.AddHalfPlane((-side * n.X, -side * n.Y), a);
+                _sets.Add(set);
+            }
+        }
+
+        (double X, double Y) outerA = (a.X + (h * normalA.X), a.Y + (h * normalA.Y));
+        (double X, double Y) innerA = (a.X - (h * normalA.X), a.Y - (h * normalA.Y));
+        (double X, double Y) outerB = (b.X + (h * normalB.X), b.Y + (h * normalB.Y));
+        (double X, double Y) innerB = (b.X - (h * normalB.X), b.Y - (h * normalB.Y));
+
+        // The perpendiculars meet at a + s normalA = b + t normalB
+        var determinant = (normalA.X * normalB.Y) - (normalA.Y * normalB.X);
+        if (determinant != 0)
+        {
+            var s = (((b.X - a.X) * normalB.Y) - ((b.Y - a.Y) * normalB.X)) / determinant;
+            var t = (((b.X - a.X) * normalA.Y) - ((b.Y - a.Y) * normalA.X)) / determinant;
+            if (Math.Abs(s) < h && Math.Abs(t) < h)
+            {
+                (double X, double Y) meeting = (a.X + (s * normalA.X), a.Y + (s * normalA.Y));
+                _sets.Add(ConvexSet.FromPolygon([outerA, meeting, outerB]));
+                _sets.Add(ConvexSet.FromPolygon([innerA, meeting, innerB]));
+                return;
+            }
+        }
+
+        _sets.Add(ConvexSet.FromPolygon([outerA, innerA, innerB, outerB]));
     }
 
     private void AddJoin((double X, double Y) v, (double X, double Y) d0, (double X, double Y) d1, double h, ReferenceLineJoin join, double miterLimit)

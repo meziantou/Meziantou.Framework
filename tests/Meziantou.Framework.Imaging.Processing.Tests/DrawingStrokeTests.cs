@@ -374,6 +374,48 @@ public sealed class DrawingStrokeTests
         Assert.Equal(0, frame[8, 1].Value);
     }
 
+    [Fact]
+    public void APenWiderThanACurveSweepsThePerpendicularToTheCurve()
+    {
+        // The arcs of html/canvas/element/path-objects of the web-platform-tests, on a canvas of 100 by 50. A stroke is
+        // what the segment of the width of the pen perpendicular to the path sweeps: on the other side of the center of
+        // an arc narrower than the pen, it reaches the width minus the radius, and its ends are perpendicular to the arc.
+        // 2d.path.arc.shape.3: a pen of 100 on an arc of radius 50 around (0, 50), the long way from 0 to -90 degrees,
+        // leaves the quarter between those angles unpainted, up to the center
+        AssertStroke(new Pen(White, 100), path => path.AddArc(new PointD(0, 50), 50, 50, 0, 270), painted: [], unpainted: [(50, 25), (1, 1), (98, 1), (1, 48), (98, 48)]);
+
+        // 2d.path.arc.shape.4: a pen of 150 on the quarter of radius 100 around (-50, 50) covers the canvas
+        AssertStroke(new Pen(White, 150), path => path.AddArc(new PointD(-50, 50), 100, 100, 0, -90), painted: [(50, 25), (1, 1), (98, 1), (1, 48), (98, 48)], unpainted: []);
+
+        // 2d.path.arc.selfintersect.1 and .2: pens of 200 and 180 on quarters of radius 25
+        AssertStroke(new Pen(White, 200), path => path.AddArc(new PointD(100, 50), 25, 25, 0, -90).AddArc(new PointD(0, 0), 25, 25, 0, -90), painted: [], unpainted: [(1, 1), (50, 25)]);
+        AssertStroke(new Pen(White, 180), path => path.AddArc(new PointD(-50, 50), 25, 25, 0, -90).AddArc(new PointD(100, 0), 25, 25, 0, -90), painted: [(50, 25), (90, 10), (97, 1), (97, 2), (97, 3), (2, 48)], unpainted: []);
+
+        // 2d.path.arc.scale.2: scaled by 100, a pen of 1.2 on a quarter of radius 0.6 around the origin covers the canvas
+        using var image = NewBlack(100, 50);
+        image.Frames[0].Draw(canvas => canvas.Transform(AffineTransform.CreateScale(100, 100), scaled => scaled.StrokeArc(new Pen(White, 1.2), default, 0.6, 0, 90)), Ct);
+        foreach (var (x, y) in new[] { (1, 1), (50, 1), (98, 1), (1, 25), (50, 25), (98, 25), (1, 48), (50, 48), (98, 48) })
+        {
+            Assert.Equal((x, y, 255), (x, y, (int)image.Frames[0][x, y].Value));
+        }
+
+        static void AssertStroke(Pen pen, Func<VectorPathBuilder, VectorPathBuilder> build, (int X, int Y)[] painted, (int X, int Y)[] unpainted)
+        {
+            using var image = NewBlack(100, 50);
+            var path = build(new VectorPathBuilder()).Build();
+            image.Frames[0].Draw(canvas => canvas.Stroke(pen, path), Ct);
+            foreach (var (x, y) in painted)
+            {
+                Assert.Equal((x, y, 255), (x, y, (int)image.Frames[0][x, y].Value));
+            }
+
+            foreach (var (x, y) in unpainted)
+            {
+                Assert.Equal((x, y, 0), (x, y, (int)image.Frames[0][x, y].Value));
+            }
+        }
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // Dashes
     // -----------------------------------------------------------------------------------------------------------------

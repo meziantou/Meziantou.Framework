@@ -124,14 +124,21 @@ internal sealed partial class DrawingSession
         DrawColorGlyph(surface, glyph, face, placement, CompositeMode.SourceOver, BlendMode.Normal, paint: true);
     }
 
-    /// <summary>Gives the surface the color of the text: the one of a solid brush, or the gradient of a gradient brush, in canvas coordinates; black for the other brushes.</summary>
+    /// <summary>
+    /// Gives the surface the color of the text: the one of a solid brush, or the gradient of a gradient brush, in canvas
+    /// coordinates; black for the other brushes. The alpha of a solid color and the opacity of the brush fade the whole
+    /// glyph, as browsers draw a color glyph with a translucent text color: the parts of the glyph that take the color
+    /// of the text take it opaque.
+    /// </summary>
     private void SetForeground(ColorSurface surface, Brush brush)
     {
+        surface.Opacity = brush.Opacity;
         if (brush is SolidBrush solid)
         {
             var color = solid.Color;
-            surface.Foreground = (color.R / 65535.0, color.G / 65535.0, color.B / 65535.0, color.A / 65535.0);
+            surface.Foreground = (color.R / 65535.0, color.G / 65535.0, color.B / 65535.0, 1);
             surface.ForegroundGradient = null;
+            surface.Opacity = color.A / 65535.0 * brush.Opacity;
             return;
         }
 

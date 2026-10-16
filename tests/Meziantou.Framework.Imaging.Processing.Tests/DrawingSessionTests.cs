@@ -2606,6 +2606,46 @@ public sealed class DrawingSessionTests
     // -----------------------------------------------------------------------------------------------------------------
 
     [Fact]
+    public void AFinerToleranceBringsTheChordsOfACurveCloserToIt()
+    {
+        // The area of a disk of radius 20 is 1256.6 pixels. Its chords stay within 1/16 of a pixel of the circle by
+        // default, and its polygon misses 2 pixels of it; within 1/1024, almost nothing.
+        var exact = Math.PI * 400;
+        Assert.InRange(exact - Area(canvas => canvas.FillCircle(White, new PointD(25, 25), 20)), 1, 4);
+        Assert.InRange(exact - Area(canvas => canvas.Flattening(1.0 / 1024, inner => inner.FillCircle(White, new PointD(25, 25), 20))), -0.3, 0.3);
+
+        // So do strokes, their round joins and caps, and texts on a path; the canvas has its tolerance again after the callback
+        var pen = new Pen(White, 6) { LineCap = LineCap.Round };
+        var arc = new VectorPathBuilder().AddArc(new PointD(25, 25), 15, 15, 0, 180).Build();
+        var coarse = Area(canvas => canvas.Stroke(pen, arc));
+        var fine = Area(canvas => canvas.Flattening(1.0 / 256, inner => inner.Stroke(pen, arc)));
+        Assert.True(fine > coarse, $"{fine} {coarse}");
+        Assert.Equal(coarse, Area(canvas =>
+        {
+            canvas.Flattening(1.0 / 256, static _ => { });
+            canvas.Stroke(pen, arc);
+        }));
+
+        using var image = new Image<Rgba32>(4, 4);
+        image.Draw(
+            canvas =>
+            {
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Flattening(1.0 / 2048, static _ => { }));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Flattening(0.125, static _ => { }));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.Flattening(double.NaN, static _ => { }));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Flattening(1.0 / 64, null!));
+            },
+            Ct);
+
+        static double Area(DrawingAction action)
+        {
+            using var image = new Image<Rgba64>(50, 50);
+            image.Draw(action, Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]).Chunk(4).Sum(pixel => pixel[3] / 65535.0);
+        }
+    }
+
+    [Fact]
     public void WithoutAntialiasingAPixelIsPaintedWhenItsCenterIsInside()
     {
         // Random polygons on a grid of a quarter of a pixel, whose sides often go through the centers of pixels, with
@@ -3549,6 +3589,51 @@ public sealed class DrawingSessionTests
     }
 
     [Fact]
+    public void AFilterMovesAndBlursWhatIsDrawnBeyondTheCanvasIntoIt()
+    {
+        // A square entirely above and to the left of the canvas casts its shadow on it, as the element of a page that is
+        // scrolled out of view does
+        var green = new Rgba32(0, 255, 0);
+        using var image = new Image<Rgba32>(40, 40);
+        image.Draw(canvas => canvas.Filter(new DropShadowFilter(green, new PointD(15, 15), 0), layer => layer.FillRectangle(new Rgba32(255, 0, 0), new RectangleD(-10, -10, 5, 5))), Ct);
+        Assert.Equal(green, image.Frames[0][7, 7]);
+        Assert.Equal(default, image.Frames[0][4, 4]);
+        Assert.Equal(default, image.Frames[0][11, 11]);
+
+        // A white rectangle that goes beyond the left edge stays white there when it is blurred, and fades where it ends
+        // on the canvas. Filling the canvas fills the canvas only: it fades at its edges (see above).
+        using var band = new Image<Rgba32>(40, 6);
+        band.Draw(canvas => canvas.Filter(new BlurFilter(1), layer => layer.FillRectangle(White, new RectangleD(-5, -5, 35, 16))), Ct);
+        Assert.Equal(new Rgba32(255, 255, 255), band.Frames[0][0, 3]);
+        Assert.Equal(new Rgba32(255, 255, 255), band.Frames[0][0, 0]);
+        Assert.InRange(band.Frames[0][29, 3].A, 1, 254);
+
+        // The other edge modes extend the canvas as they do without such drawings: what is drawn beyond it is replaced.
+        // Two columns of white end a pixel before the canvas: a blur of 1 brings some of them in, the edge pixel of the
+        // canvas, which is transparent, does not.
+        foreach (var (mode, isSeen) in new[] { (FilterEdgeMode.Transparent, true), (FilterEdgeMode.Duplicate, false), (FilterEdgeMode.Mirror, false) })
+        {
+            band.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
+            band.Draw(canvas => canvas.Filter(new BlurFilter(1) { EdgeMode = mode }, layer => layer.FillRectangle(White, new RectangleD(-3, 0, 2, 6))), Ct);
+            Assert.Equal(isSeen, band.Frames[0][0, 3].A != 0, $"{mode}");
+        }
+
+        // A filter graph reads them within its region: by default the canvas, where an offset brings nothing in
+        var offset = new OffsetPrimitive(new PointD(10, 0));
+        using var graph = new Image<Rgba32>(20, 4);
+        graph.Draw(canvas => canvas.Filter(new FilterGraph(offset), layer => layer.FillRectangle(White, new RectangleD(-8, 0, 4, 4))), Ct);
+        Assert.Equal(default, graph.Frames[0][4, 1]);
+        graph.Draw(canvas => canvas.Filter(new FilterGraph(offset) { Region = new RectangleD(-10, -10, 40, 24) }, layer => layer.FillRectangle(White, new RectangleD(-8, 0, 4, 4))), Ct);
+        Assert.Equal(new Rgba32(255, 255, 255), graph.Frames[0][4, 1]);
+        Assert.Equal(default, graph.Frames[0][1, 1]);
+
+        // Moved by a transformation, the drawing is beyond the canvas as well
+        image.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
+        image.Draw(canvas => canvas.Transform(AffineTransform.CreateTranslation(-30, -30), moved => moved.Filter(new DropShadowFilter(green, new PointD(15, 15), 0), layer => layer.FillRectangle(new Rgba32(255, 0, 0), new RectangleD(20, 20, 5, 5)))), Ct);
+        Assert.Equal(green, image.Frames[0][7, 7]);
+    }
+
+    [Fact]
     public void ABackdropLayerStartsWithWhatIsBehindItFiltered()
     {
         // Red on the left half, blue on the right one; the backdrop is the rectangle from x = 4 to x = 12
@@ -3778,6 +3863,29 @@ public sealed class DrawingSessionTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new GaussianBlurPrimitive(1) { EdgeMode = (FilterEdgeMode)4 });
         Assert.Throws<ArgumentException>(() => new DropShadowPrimitive(default, new PointD(double.NaN, 0), 1, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => new DropShadowPrimitive(default, default, 1, 10001));
+    }
+
+    [Fact]
+    public void AConvolutionExtendsItsInputAtItsOwnSubregion()
+    {
+        // feconvolve-region-002 of the web-platform-tests, at a smaller size: a blue flood in the middle, convolved by
+        // a box of 9 with a bias of 0.5 over a larger subregion, over light green. The input is transparent around the
+        // flood, inside the subregion of the convolution: the bias alone colors it, (0.5, 0.5, 0.5, 0.5) in linear light,
+        // white at half its opacity (the reference of the test is (211, 246, 204), with a tolerance of 38). On the flood,
+        // blue plus 0.5 in linear light is (0.5, 0.5, 1): (188, 188, 255). Outside the region, nothing changes.
+        var lightGreen = new Rgba32(144, 238, 144);
+        using var image = new Image<Rgba32>(60, 60, lightGreen);
+        var graph = new FilterGraph(
+            new FloodPrimitive(new Rgba32(0, 0, 255)) { Subregion = new RectangleD(20, 20, 20, 20) },
+            new ConvolveMatrixPrimitive(3, 3, [1, 1, 1, 1, 1, 1, 1, 1, 1]) { Bias = 0.5, Subregion = new RectangleD(10, 10, 40, 40) })
+        {
+            Region = new RectangleD(10, 10, 40, 40),
+        };
+        image.Draw(canvas => canvas.Filter(graph, layer => layer.FillRectangle(new Rgba32(0, 0, 0), new RectangleD(1, 1, 1, 1))), Ct);
+        Assert.Equal(new Rgba32(200, 247, 200), image.Frames[0][12, 12]);
+        Assert.Equal(new Rgba32(200, 247, 200), image.Frames[0][17, 30]);
+        Assert.Equal(new Rgba32(188, 188, 255), image.Frames[0][30, 30]);
+        Assert.Equal(lightGreen, image.Frames[0][5, 5]);
     }
 
     [Fact]

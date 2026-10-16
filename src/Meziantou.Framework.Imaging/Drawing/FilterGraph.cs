@@ -56,7 +56,8 @@ public sealed class FilterGraph : Filter
 
     /// <summary>
     /// Gets the rectangle of the drawing the filter draws in (the filter region of SVG), or <see langword="null"/> (the
-    /// default) for the whole canvas.
+    /// default) for the whole canvas. The rectangle can go beyond the canvas: what is drawn there, within the reach of
+    /// the filter, is read by the primitives.
     /// </summary>
     /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>

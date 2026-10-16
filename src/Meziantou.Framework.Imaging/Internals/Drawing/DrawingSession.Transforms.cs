@@ -59,6 +59,10 @@ internal sealed partial class DrawingSession
     // Where the frames of a session on the image of a layer of a rectangle are on the canvas: the largest coordinate is
     // checked on the canvas, so that the layer rejects what the canvas rejects
     private double _originX;
+
+    // The pixels of the canvas in the frame of the session: the frame, unless it is the image of a layer that holds pixels
+    // beyond the canvas
+    private Rectangle _canvasBounds;
     private double _originY;
 
     // A session on the image of a layer of a rectangle, whose transformation starts with the translation to that image
@@ -248,6 +252,7 @@ internal sealed partial class DrawingSession
         {
             var projected = _projectiveSink ??= new ProjectiveSink();
             projected.Configure(sink, GeometryView, isPolyline: false);
+            projected.Tolerance = _curveTolerance;
             return projected;
         }
 
@@ -256,6 +261,7 @@ internal sealed partial class DrawingSession
 
         var transformed = _transformSink ??= new TransformSink();
         transformed.Configure(sink, _transformMatrix, _transformScale, _originX, _originY, IsRangeChecked);
+        transformed.Tolerance = _curveTolerance;
         return transformed;
     }
 
@@ -265,6 +271,7 @@ internal sealed partial class DrawingSession
     private void SetDrawingScale(PathSink sink, double reach)
     {
         sink.Scale = _transformScale;
+        sink.Tolerance = _curveTolerance;
         sink.Projection = UsesProjectiveGeometry ? GeometryView.Inflate(0, reach) : null;
     }
 

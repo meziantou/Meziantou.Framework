@@ -1279,9 +1279,11 @@ public sealed class DrawingPathTests
         Assert.Equal(expected.X, start.X, 1e-9);
         Assert.Equal(expected.Y, start.Y, 1e-9);
 
-        // The vertices of the chords are vertices of the part: joined as the library joins them, the part is the path
-        var pen = new Pen(White, 1.5) { LineJoin = LineJoin.Round };
-        AssertSamePixels(canvas => canvas.Stroke(pen, curve), canvas => canvas.Stroke(pen, curve.Trim(0, length)));
+        // The vertices of the chords are vertices of the part: the whole part is the polygon the path is drawn with. Its
+        // stroke is the stroke of that polygon, whose vertices are corners: the stroke of the curve follows the curve.
+        var whole = curve.Trim(0, length);
+        Assert.Equal(Flatten(curve), Flatten(whole));
+        AssertSamePixels(canvas => canvas.Fill(White, curve), canvas => canvas.Fill(White, whole));
 
         static string[] Describe(VectorPath path) => [.. path.EnumerateSegments().Select(segment => segment.ToString())];
     }

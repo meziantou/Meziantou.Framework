@@ -588,6 +588,30 @@ public sealed class DrawingCompositeTests
     }
 
     [Fact]
+    public void TheOpacityOfALayerIsTheCoverageOfWhatItsOperatorMakes()
+    {
+        // With an operator other than source over, a layer at an opacity o gives o (the layer combined with the canvas)
+        // + (1 - o) (the canvas), as the edge of a shape does: opaque black added to an alpha of 0.6 at an opacity of
+        // 0.6 is 0.6 + 0.4 0.6 = 0.84 (214). The group opacity of CSS fades the layer first: 0.6 + 0.6, at most 1. That
+        // is a faded layer inside a layer that is combined.
+        using var image = new Image<Rgba32>(2, 1, new Rgba32(0, 0, 0, 153));
+        image.Draw(canvas => canvas.Layer(0.6, static layer => layer.Fill(new Rgba32(0, 0, 0)), CompositeMode.Plus), Ct);
+        Assert.Equal(214, image.Frames[0][0, 0].A);
+        image.Draw(canvas => canvas.Clear(new Rgba32(0, 0, 0, 153)), Ct);
+        image.Draw(canvas => canvas.Layer(1, static outer => outer.Layer(0.6, static layer => layer.Fill(new Rgba32(0, 0, 0))), CompositeMode.Plus), Ct);
+        Assert.Equal(255, image.Frames[0][0, 0].A);
+
+        // A mask at half its opacity keeps half of what it does not cover, and all of what it covers; a faded mask keeps
+        // half of what it covers, and nothing else
+        image.Draw(canvas => canvas.Clear(new Rgba32(0, 0, 0)), Ct);
+        image.Draw(canvas => canvas.Layer(0.5, static layer => layer.FillRectangle(new Rgba32(0, 0, 0), new Rectangle(0, 0, 1, 1)), CompositeMode.DestinationIn), Ct);
+        Assert.Equal([255, 128], [image.Frames[0][0, 0].A, image.Frames[0][1, 0].A]);
+        image.Draw(canvas => canvas.Clear(new Rgba32(0, 0, 0)), Ct);
+        image.Draw(canvas => canvas.Layer(1, static outer => outer.Layer(0.5, static layer => layer.FillRectangle(new Rgba32(0, 0, 0), new Rectangle(0, 0, 1, 1))), CompositeMode.DestinationIn), Ct);
+        Assert.Equal([128, 0], [image.Frames[0][0, 0].A, image.Frames[0][1, 0].A]);
+    }
+
+    [Fact]
     public void TheBlendModeIsAPropertyOfTheBrushAndOfALayer()
     {
         Assert.Equal(BlendMode.Normal, new SolidBrush(new Rgba32(1, 2, 3)).BlendMode);

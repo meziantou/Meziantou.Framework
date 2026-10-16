@@ -646,7 +646,8 @@ public readonly ref struct DrawingCanvas
     /// across it, as browsers do, and its coverage is computed once per position in a pixel when
     /// <see cref="GlyphRunOptions.Cache"/> keeps it: the pixels are the same with or without a cache. The glyphs a font
     /// draws with its own colors (<c>COLR</c>, <c>sbix</c>, <c>CBDT</c>) are drawn with them, from the palette of the
-    /// options; a variable font draws the glyphs of its instance (<see cref="Font.WithVariations(ReadOnlySpan{FontVariationSetting})"/>).
+    /// options, then faded by the alpha of a solid brush and the opacity of the brush, as browsers draw an emoji in a
+    /// translucent color; a variable font draws the glyphs of its instance (<see cref="Font.WithVariations(ReadOnlySpan{FontVariationSetting})"/>).
     /// </para>
     /// </remarks>
     /// <param name="brush">The paint of the glyphs, and the color of the glyphs a font draws with its own colors where they ask for the color of the text.</param>
@@ -856,6 +857,14 @@ public readonly ref struct DrawingCanvas
     /// <see cref="DrawImage(ImageFrame, PointD, double)"/> does. When the callback fails, the layer is not drawn.
     /// </para>
     /// <para>
+    /// The opacity is a coverage of what the operator makes, as the edge of a shape is: a pixel gets
+    /// <c>o R + (1 - o) D</c>, where <c>R</c> is the layer combined with the canvas <c>D</c>. With
+    /// <see cref="CompositeMode.SourceOver"/>, it is the layer faded, then drawn; with the other operators, it is not the
+    /// group opacity of CSS, which fades the layer, then combines it (<see cref="CompositeMode.Plus"/> at an opacity of
+    /// 0.6 over an alpha of 0.6 gives 0.84 here, and 1 in CSS). For that result, fade the drawing in a layer of its own,
+    /// inside a layer of full opacity that has the operator.
+    /// </para>
+    /// <para>
     /// A clip that is active when the layer starts applies to the layer as a whole. The image of a layer is taken from
     /// the allocation scope of the image when a layer first starts at its depth, and kept until the drawing ends; a
     /// layer costs the clearing and the drawing of the pixels the clip can show: start a layer inside
@@ -928,6 +937,14 @@ public readonly ref struct DrawingCanvas
     /// The memory of the layer is the one of that box, rented when the layer starts and released when it ends, which
     /// suits a small group of drawings on a large canvas (an element of a page with an opacity). Its drawings are made
     /// by a canvas of their own, whose coordinates are those of this one: the callback receives it.
+    /// </para>
+    /// <para>
+    /// The opacity is a coverage of what the operator makes, as the edge of a shape is: a pixel gets
+    /// <c>o R + (1 - o) D</c>, where <c>R</c> is the layer combined with the canvas <c>D</c>. With
+    /// <see cref="CompositeMode.SourceOver"/>, it is the layer faded, then drawn; with the other operators, it is not the
+    /// group opacity of CSS, which fades the layer, then combines it (<see cref="CompositeMode.Plus"/> at an opacity of
+    /// 0.6 over an alpha of 0.6 gives 0.84 here, and 1 in CSS). For that result, fade the drawing in a layer of its own,
+    /// inside a layer of full opacity that has the operator.
     /// </para>
     /// <para>Under a projective transformation, the layer holds what the canvas can show, as any layer.</para>
     /// </remarks>
@@ -1469,7 +1486,13 @@ public readonly ref struct DrawingCanvas
     /// holds the pixels the clip can show and, around them, as far as the filter moves what it filters (the reach of a
     /// blur, the offset and the blur of a shadow). When the callback returns, the layer goes through the filter (see
     /// <see cref="Drawing.Filter"/> for the arithmetic), then it is drawn on the canvas. What a filter reads beyond the
-    /// edges of the canvas is given by its edge mode: transparent by default.
+    /// edges of the canvas is given by its edge mode: by default (<see cref="FilterEdgeMode.Transparent"/>), what the
+    /// callback draws there, within the reach of the filter, and transparent pixels beyond it: a shape out of view casts
+    /// its shadow on the canvas, and a shape that goes beyond an edge stays opaque there when it is blurred. The layer is
+    /// then an image of its own, of the bounds of the clip with a margin of that reach (at most the largest side of the
+    /// canvas, and while it has at most four times the pixels of the bounds of the clip and 65,536, within the limits of
+    /// the image), and filling the whole canvas in it fills the canvas. The other edge modes extend the edges of the
+    /// canvas instead.
     /// </para>
     /// <para>
     /// The lengths of the filter are lengths of the drawing: under a transformation that scales the axes, they are
@@ -1836,6 +1859,66 @@ public readonly ref struct DrawingCanvas
         finally
         {
             session.RestoreAntialiasing(previous);
+        }
+    }
+
+    /// <summary>Runs a callback whose curves are replaced by chords closer to them than the 1/16 of a pixel a canvas starts with.</summary>
+    /// <remarks>
+    /// <para>
+    /// Curves, ellipses, arcs and the round joins and caps of the pens are drawn as chords that stay within a tolerance
+    /// of them on the canvas. A finer tolerance makes antialiased edges closer to the curves, so that a shape drawn as
+    /// different curves (a reference made of other elements) gives closer pixels, at the cost of more chords: halving
+    /// the tolerance multiplies their number by about 1.4. This applies to the shapes, the strokes, the texts and the
+    /// clips drawn while the callback runs, and to the tiles of the patterns they paint; the queries of a
+    /// <see cref="VectorPath"/> keep the tolerance of 1/16.
+    /// </para>
+    /// </remarks>
+    /// <param name="tolerance">The largest distance between a curve and its chords, in pixels of the canvas: from 1/1024 to 1/16.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="tolerance"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="tolerance"/> is less than 1/1024 or more than 1/16.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Flattening(double tolerance, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var previous = session.SetFlattening(tolerance);
+        try
+        {
+            action(this);
+        }
+        finally
+        {
+            session.RestoreFlattening(previous);
+        }
+    }
+
+    /// <summary>Runs a callback whose curves are replaced by chords closer to them, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="tolerance">The largest distance between a curve and its chords, in pixels of the canvas: from 1/1024 to 1/16.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Flattening(double, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="tolerance"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="tolerance"/> is less than 1/1024 or more than 1/16.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Flattening<TState>(double tolerance, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var previous = session.SetFlattening(tolerance);
+        try
+        {
+            action(this, state);
+        }
+        finally
+        {
+            session.RestoreFlattening(previous);
         }
     }
 

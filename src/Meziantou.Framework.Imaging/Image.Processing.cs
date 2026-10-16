@@ -396,7 +396,8 @@ public abstract partial class Image
     /// <summary>
     /// Gets the color space that the CICP color description gives to the stored pixels, when it is what describes them:
     /// an image without ICC profile whose description is not the one of sRGB or of linear sRGB samples, which keep
-    /// their built-in profiles (<see cref="GetSourceColorProfile"/>).
+    /// their built-in profiles (<see cref="GetSourceColorProfile"/>), or an image whose ICC profile has a <c>cicp</c> tag
+    /// of high dynamic range samples (PQ, HLG), whose curves the profile only approximates.
     /// </summary>
     /// <remarks>
     /// Unspecified code points (2) say nothing: the primaries are then those of BT.709 and the function is the sRGB
@@ -416,8 +417,23 @@ public abstract partial class Image
     {
         colorSpace = default;
         toneMapping = null;
-        if (_metadata.IccProfile is not null || _metadata.Cicp is not { } cicp)
+        CicpColorDescription cicp;
+        if (_metadata.IccProfile is { } profile)
+        {
+            // A profile on samples labeled as linear light is ambiguous (GetSourceColorProfile)
+            if (profile.Cicp is not { } tag || !CicpTransfer.IsHdr(tag.TransferCharacteristics) || _metadata.TransferFunction == ColorTransferFunction.Linear)
+                return false;
+
+            cicp = tag;
+        }
+        else if (_metadata.Cicp is { } description)
+        {
+            cicp = description;
+        }
+        else
+        {
             return false;
+        }
 
         var isGray = PixelFormats.IsGrayscale(PixelFormat);
         var isLabeledLinear = _metadata.TransferFunction == ColorTransferFunction.Linear;
@@ -515,6 +531,10 @@ public abstract partial class Image
 
         if (_metadata.IccProfile is { } profile)
         {
+            // A profile of high dynamic range samples names their function in its cicp tag
+            if (profile.Cicp is { } tag && CicpTransfer.IsHdr(tag.TransferCharacteristics))
+                return tag.TransferCharacteristics;
+
             if (!SrgbProfileRecognition.IsSrgb(profile, PixelFormat))
                 throw new UnsupportedImageFeatureException(
                     $"Linear-light {operation} assumes sRGB pixels, but the ICC profile ({profile.ColorSpace} color space) is not recognized as sRGB for {PixelFormat} pixels. No ICC transform is applied implicitly: convert the image to sRGB with ConvertColorProfile first, {verb} in the encoded working space, or remove the profile if the pixels are sRGB.",

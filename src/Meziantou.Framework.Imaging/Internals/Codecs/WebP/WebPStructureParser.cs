@@ -139,6 +139,18 @@ internal sealed class WebPStructureParser : ImageParser<ImageInfo>
     /// <summary>Gets a value indicating whether the file is an animation (the <c>VP8X</c> animation flag).</summary>
     public bool IsAnimated => (Flags & AnimationFlag) != 0;
 
+    /// <summary>
+    /// Gets the still image whose bitstream was being received when the input ended: its frame, its alpha data and the
+    /// part of its bitstream that was received.
+    /// </summary>
+    public bool TryGetPartialStillImage(out WebPFrameInfo frame, out WebPPayloadBuffer? alpha, [NotNullWhen(true)] out WebPPayloadBuffer? bitstream)
+    {
+        frame = _frame;
+        alpha = _frame.IsLossless ? null : _alpha;
+        bitstream = _bitstream;
+        return bitstream is not null && _payload == bitstream && !_inFrame && !IsAnimated;
+    }
+
     /// <summary>Gets the <c>ANIM</c> loop count (0 is infinite).</summary>
     public ushort LoopCount { get; private set; }
 

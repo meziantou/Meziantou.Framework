@@ -23,10 +23,13 @@ internal sealed partial class DrawingSession
     private int _clipDepth;
     private PooledBuffer? _clipRow;
 
+    // The colors of a paint whose alpha the opacity of its brush multiplies
+    private PooledBuffer? _alphaRow;
+
     public void PushClip(RectangleD rectangle)
     {
         DrawingGuard.Rectangle(rectangle, nameof(rectangle));
-        if (_hasTransform || !IsWhole(rectangle.Left) || !IsWhole(rectangle.Top) || !IsWhole(rectangle.Right) || !IsWhole(rectangle.Bottom))
+        if (_hasTransform || _isProjective || !IsWhole(rectangle.Left) || !IsWhole(rectangle.Top) || !IsWhole(rectangle.Right) || !IsWhole(rectangle.Bottom))
         {
             var sink = BeginFill();
             AddRectangle(sink, rectangle);
@@ -98,7 +101,7 @@ internal sealed partial class DrawingSession
             parent = null;
         }
 
-        if (_edges.Count != 0 && rasterizer.Begin(_edges, fillRule, _cancellationToken))
+        if (_edges.Count != 0 && rasterizer.Begin(_edges, fillRule, _isAliased, _cancellationToken))
         {
             while (rasterizer.MoveNext())
             {
@@ -114,14 +117,7 @@ internal sealed partial class DrawingSession
                     continue;
 
                 var row = mask.Slice(((y - top) * width) + (start - left), end - start);
-                if (_isAliased)
-                {
-                    RemoveAntialiasing(coverage.Slice(start - x, end - start), row);
-                }
-                else
-                {
-                    coverage.Slice(start - x, end - start).CopyTo(row);
-                }
+                coverage.Slice(start - x, end - start).CopyTo(row);
 
                 if (parent is not null)
                 {
@@ -263,6 +259,8 @@ internal sealed partial class DrawingSession
         _clipLevels.Clear();
         _clipDepth = 0;
         _clipRow?.Dispose();
+        _alphaRow?.Dispose();
+        _alphaRow = null;
         _clipRow = null;
     }
 

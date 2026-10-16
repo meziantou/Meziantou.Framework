@@ -6,13 +6,17 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <para>
 /// <b>Contract.</b> With <c>T</c> the transformation that places the pattern on the canvas (the one of the brush, then
-/// the one of the canvas), a tile of <c>tw</c> by <c>th</c> has, on the canvas, the width
-/// <c>w = tw sqrt(T.M11^2 + T.M12^2)</c> and the height <c>h = th sqrt(T.M21^2 + T.M22^2)</c>. Its image has
-/// <c>W = max(1, ceil(w - 1/1024))</c> columns and <c>H</c> rows computed the same way, and is transparent before the
-/// callback draws on it, through a canvas of its own whose transformation maps the tile to the image
-/// (a scaling by <c>W / tw</c> and <c>H / th</c>). The shape is then painted with that image, placed by the scaling
-/// that maps it back to the tile, then by <c>T</c>, with <see cref="ImageWrapMode.Repeat"/> and
-/// <see cref="ImageSampling.Bilinear"/>.
+/// the one of the canvas), a tile of <c>tw</c> by <c>th</c> followed by its spacing <c>sx</c> and <c>sy</c> has, on the
+/// canvas, the width <c>w = (tw + sx) sqrt(T.M11^2 + T.M12^2)</c> and the height
+/// <c>h = (th + sy) sqrt(T.M21^2 + T.M22^2)</c>. Its image has <c>W = max(1, ceil(w - 1/1024))</c> columns and <c>H</c>
+/// rows computed the same way, and is transparent before the callback draws on it, through a canvas of its own whose
+/// transformation maps the tile and its spacing to the image (a scaling by <c>W / (tw + sx)</c> and
+/// <c>H / (th + sy)</c>), with a clip of the tile when there is a spacing. The shape is then painted with that image,
+/// placed by the scaling that maps it back, then by <c>T</c>, with the wrap modes of the brush and
+/// <see cref="ImageSampling.Bilinear"/>. Under a projective transformation of the canvas, <c>T</c> is the transformation
+/// of the brush followed by the scaling by the factor of the canvas where <c>W</c> is the one of the origin (see
+/// <see cref="GetLocalScale"/>), and the image is placed by the scaling, the transformation of the brush, then the
+/// projective one.
 /// </para>
 /// <para>
 /// The image of the last tile is kept until the session ends: the shapes that follow with the same brush at the same
@@ -36,13 +40,19 @@ internal sealed partial class DrawingSession
     /// <returns>The frame that holds the tile, or <see langword="null"/> when the pattern paints nothing.</returns>
     /// <exception cref="InvalidOperationException">The pattern is drawn inside too many patterns.</exception>
     /// <exception cref="ImageResourceLimitException">The image of the tile exceeds the limits of the image that is drawn on.</exception>
-    private ImageFrame? PreparePattern(PatternBrush brush, out AffineTransform placement)
+    private ImageFrame? PreparePattern(PatternBrush brush, out ProjectiveTransform placement)
     {
         placement = default;
-        var transform = ToCanvas(brush.Transform);
+
+        // Under a projective transformation, the tile has the size the factor of the transformation where W is the one
+        // of the origin gives it
+        var transform = _isProjective ? brush.Transform.Then(AffineTransform.CreateScale(_transformScale, _transformScale)) : ToCanvas(brush.Transform);
+        // The tile and the spacing after it repeat together
         var tile = brush.Tile;
-        var tileWidth = tile.Width * Math.Sqrt((transform.M11 * transform.M11) + (transform.M12 * transform.M12));
-        var tileHeight = tile.Height * Math.Sqrt((transform.M21 * transform.M21) + (transform.M22 * transform.M22));
+        var periodWidth = tile.Width + brush.SpacingX;
+        var periodHeight = tile.Height + brush.SpacingY;
+        var tileWidth = periodWidth * Math.Sqrt((transform.M11 * transform.M11) + (transform.M12 * transform.M12));
+        var tileHeight = periodHeight * Math.Sqrt((transform.M21 * transform.M21) + (transform.M22 * transform.M22));
 
         // Written so that a size that is not a number paints nothing
         if (!(tileWidth > 0 && tileHeight > 0) || !double.IsFinite(tileWidth) || !double.IsFinite(tileHeight) || transform.Determinant == 0)
@@ -79,14 +89,15 @@ internal sealed partial class DrawingSession
                 }
             }
 
-            DrawTile(brush, image, width / tile.Width, height / tile.Height);
+            DrawTile(brush, image, width / periodWidth, height / periodHeight);
             _patternBrush = brush;
             _patternIsAliased = _isAliased;
             _patternSpace = _compositingSpace;
             _patternPipeline = _paintPipeline;
         }
 
-        placement = new AffineTransform(tile.Width / width, 0, 0, tile.Height / height, tile.X, tile.Y).Then(transform);
+        var toTile = new AffineTransform(periodWidth / width, 0, 0, periodHeight / height, tile.X, tile.Y);
+        placement = _isProjective ? ((ProjectiveTransform)toTile.Then(brush.Transform)).Then(_projection) : toTile.Then(transform);
         return image.Frames[0];
     }
 
@@ -111,6 +122,12 @@ internal sealed partial class DrawingSession
 
         var tile = brush.Tile;
         session.PushTransform(new AffineTransform(scaleX, 0, 0, scaleY, -tile.X * scaleX, -tile.Y * scaleY));
+        if (brush.SpacingX != 0 || brush.SpacingY != 0)
+        {
+            // The spacing stays transparent: only the tile shows what the callback draws
+            session.PushClip(tile);
+        }
+
         brush.Content(new DrawingCanvas(session));
     }
 

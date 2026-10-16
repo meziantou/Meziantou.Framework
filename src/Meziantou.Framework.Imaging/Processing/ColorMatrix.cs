@@ -230,6 +230,19 @@ public sealed class ColorMatrix
         ]);
     }
 
+    /// <summary>
+    /// Gets the matrix that makes the luminance of the color the alpha of a black: <c>luminanceToAlpha</c> of the
+    /// <c>feColorMatrix</c> filter of SVG, <c>A' = 0.2125 R + 0.7154 G + 0.0721 B</c>, the colors zero. It turns an image
+    /// into a mask: white is opaque, black transparent.
+    /// </summary>
+    public static ColorMatrix LuminanceToAlpha { get; } = new(
+    [
+        0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
+        0.2125, 0.7154, 0.0721, 0, 0,
+    ]);
+
     /// <summary>Creates the matrix that replaces the colors by their gray level, entirely or in part: <c>grayscale()</c> in CSS.</summary>
     /// <remarks>
     /// With an amount of 1, the gray level is the Rec. 709 luma of the stored sample values, with the rounding of

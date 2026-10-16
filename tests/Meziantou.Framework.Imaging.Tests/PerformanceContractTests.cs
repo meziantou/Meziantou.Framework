@@ -175,6 +175,19 @@ public sealed class PerformanceContractTests
                 turned.Clip(state.Path, state, static (clipped, state) => clipped.Transform(AffineTransform.CreateTranslation(2.5, -1), state, static (moved, state) => moved.Fill(state.Focal)));
                 turned.Shadow(new Rgba32(0, 0, 0, 100), new PointD(2, 1), 0.75, state, static (shadowed, state) => shadowed.FillCircle(state.Solid, new PointD(20, 20), 6));
             });
+            // In perspective: the shapes are cut where they have no image, and their curves cut for what is seen of them
+            canvas.Transform(new ProjectiveTransform(1.1, 0.05, 0.004, -0.1, 0.9, 0.002, 3, 2, 1), state, static (plane, state) =>
+            {
+                plane.Fill(state.Gradient, state.Path);
+                plane.Stroke(state.Pen, state.Path);
+                plane.Stroke(state.DashedPen, state.Path);
+                plane.FillRoundedRectangle(state.Sweep, new RectangleD(3.5, 2.25, 40, 30), 6.5);
+                plane.FillText(state.Solid, state.RichText, new PointD(2, 3));
+                plane.StrokeText(state.Pen, state.CffText, new PointD(3, 30));
+                plane.DrawImage(state.Sprite, new RectangleD(-5, 6.5, 30, 20), ImageSampling.Smooth, 0.9);
+                plane.Fill(state.Tile, state.Path);
+                plane.Clip(state.Path, state, static (clipped, state) => clipped.Fill(state.Focal));
+            });
             canvas.Clip(new Rectangle(10, 8, 30, 24), state, static (clipped, state) => clipped.Shadow(new Rgba32(255, 255, 0), default, 0.8, state, static (glow, state) => glow.Stroke(state.Pen, state.Path)));
             canvas.Clip(state.Path, state, static (clipped, state) =>
             {
@@ -408,6 +421,59 @@ public sealed class PerformanceContractTests
         image.Save(stream, new PngEncoder());
         return stream.ToArray();
     }
+
+    [Fact]
+    public void GlyphRunsAllocateNothingOnceTheirScratchAndTheirCacheAreWarm()
+    {
+        // The masks of the glyphs on the pixels, uncached (computed in the scratch of the session) and cached (with a
+        // synthetic bold), the shapes of glyphs on a turned canvas, a stroke, and the glyphs of colors and of images,
+        // whose display lists only a cache keeps
+        using var image = DrawingTestSupport.Create(PixelFormat.Rgba32, 64, 48);
+        var state = new GlyphState(
+            FontTestSupport.Load(FontSamples.Boxes()),
+            FontTestSupport.Load(FontSamples.ColorBoxes()),
+            FontTestSupport.Load(FontSamples.BitmapBoxes()),
+            [new(FontSamples.BoxA, new PointD(2.3, 14)), new(FontSamples.TriangleD, new PointD(18.6, 14.5)), new(FontSamples.FrameE, new PointD(27, 30.2)), new(FontSamples.BoxA, new PointD(40.3, 14))],
+            [new(FontSamples.ColorA, new PointD(2, 30)), new(FontSamples.ColorB, new PointD(20.5, 30))],
+            [new(FontSamples.BitmapA, new PointD(30, 45)), new(FontSamples.BitmapB, new PointD(46, 45))],
+            new GlyphRunOptions { Cache = new GlyphCache(1 << 20), Synthesis = FontSynthesis.Bold },
+            new SolidBrush(new Rgba32(10, 200, 30, 120)),
+            new LinearGradientBrush(new PointD(0, 0), new PointD(64, 48), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 255))]),
+            new Pen(new SolidBrush(new Rgba32(0, 0, 0)), 1.25),
+            new StrongBox<long>(long.MaxValue));
+        for (var round = 0; round < 40 && state.Allocated.Value != 0; round++)
+        {
+            image.Draw(state, static (canvas, state) =>
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    Paint(canvas, state);
+                }
+
+                var before = GC.GetAllocatedBytesForCurrentThread();
+                for (var i = 0; i < 20; i++)
+                {
+                    Paint(canvas, state);
+                }
+
+                state.Allocated.Value = Math.Min(state.Allocated.Value, GC.GetAllocatedBytesForCurrentThread() - before);
+            });
+        }
+
+        Assert.Equal(0, state.Allocated.Value);
+
+        static void Paint(DrawingCanvas canvas, GlyphState state)
+        {
+            canvas.FillGlyphs(state.Solid, state.Boxes, 16, state.Glyphs);
+            canvas.FillGlyphs(state.Gradient, state.Boxes, 16, state.Glyphs, state.Options);
+            canvas.FillGlyphs(state.Gradient, state.Colors, 16, state.ColorGlyphs, state.Options);
+            canvas.FillGlyphs(state.Solid, state.Bitmaps, 16, state.BitmapGlyphs, state.Options);
+            canvas.StrokeGlyphs(state.Pen, state.Boxes, 16, state.Glyphs);
+            canvas.Transform(AffineTransform.CreateRotation(20, new PointD(32, 24)), state, static (turned, state) => turned.FillGlyphs(state.Solid, state.Boxes, 16, state.Glyphs, state.Options));
+        }
+    }
+
+    private sealed record GlyphState(Font Boxes, Font Colors, Font Bitmaps, PositionedGlyph[] Glyphs, PositionedGlyph[] ColorGlyphs, PositionedGlyph[] BitmapGlyphs, GlyphRunOptions Options, SolidBrush Solid, GradientBrush Gradient, Pen Pen, StrongBox<long> Allocated);
 
     private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, TextLayout RichText, TextLayout VariableText, TextLayout BlendedText, TextLayout ColorText, TextLayout BitmapText, TextLayout ScaledBitmapText, TextPathOptions PathOptions, Pen DashedPen, SweepGradientBrush Sweep, RadialGradientBrush Focal, Brush Eraser, ImageFrame Sprite, ImageBrush Tile, StrongBox<long> Allocated);
 }

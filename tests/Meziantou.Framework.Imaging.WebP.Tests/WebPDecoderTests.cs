@@ -168,6 +168,59 @@ public sealed class WebPDecoderTests
     }
 
     [Fact]
+    public void ATruncatedLossyImageIsShownAsFarAsItWasDecodedThenReported()
+    {
+        // Prefixes that end in the bitstream of a still lossy image: the rendering has the macroblock rows whose data was
+        // received, as the complete file decodes them (but the last rows of the last one, which the loop filter and the
+        // chroma upsampling of the next one change), the other rows being zero; the next read reports the truncation
+        var pixels = new Rgba32[24 * 160];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var noise = (uint)i * 2654435761u;
+            pixels[i] = new Rgba32((byte)(noise >> 24), (byte)(i / 24), (byte)(noise >> 16), 255);
+        }
+
+        using var source = Image.ImportPixelData<Rgba32>(pixels, 24, 160);
+        using var stream = new MemoryStream();
+        source.Save(stream, new WebPEncoder { Compression = WebPCompression.Lossy, Quality = 90 });
+        var data = stream.ToArray();
+        using var complete = Image.Load<Rgba32>(data);
+        var expected = new Rgba32[24 * 160];
+        complete.Frames[0].CopyPixelDataTo(expected);
+        var partials = 0;
+        for (var length = 40; length < data.Length - 1; length += 5)
+        {
+            using var reader = Image.OpenReader<Rgba32>(new MemoryStream(data[..length]));
+            using var destination = new Image<Rgba32>(24, 160, new Rgba32(1, 2, 3, 4));
+            FrameRefinement? refinement;
+            try
+            {
+                refinement = reader.ReadFrameRefinementInto(destination);
+            }
+            catch (InvalidImageContentException)
+            {
+                continue;
+            }
+
+            Assert.NotNull(refinement);
+            Assert.False(refinement.IsFinal);
+            var actual = new Rgba32[24 * 160];
+            destination.Frames[0].CopyPixelDataTo(actual);
+            var rows = Enumerable.Range(0, 160).TakeWhile(y => actual.AsSpan(y * 24, 24).IndexOfAnyExcept(Transparent) >= 0).Count();
+            Assert.True(rows % 16 == 0 && rows > 0, $"length {length}: {rows} rows");
+            Assert.True(actual.AsSpan(rows * 24).IndexOfAnyExcept(Transparent) < 0, $"length {length}");
+            var exact = rows == 160 ? 160 : rows - 4;
+            Assert.True(actual.AsSpan(0, exact * 24).SequenceEqual(expected.AsSpan(0, exact * 24)), $"length {length}");
+            partials++;
+
+            Assert.Throws<InvalidImageContentException>(() => reader.ReadFrameRefinementInto(destination));
+            Assert.Throws<InvalidOperationException>(() => reader.ReadFrameRefinementInto(destination));
+        }
+
+        Assert.True(partials > 20, $"{partials} of {data.Length} bytes");
+    }
+
+    [Fact]
     public void LimitsChargeFullCanvasFramesBeforeDecoding()
     {
         var data = CreateLargeAnimation(frameCount: 6, width: 4, height: 3);

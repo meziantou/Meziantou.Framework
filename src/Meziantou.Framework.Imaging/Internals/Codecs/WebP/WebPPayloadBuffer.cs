@@ -27,6 +27,9 @@ internal sealed class WebPPayloadBuffer : IDisposable
     /// <summary>Gets the number of bytes received.</summary>
     public int Length { get; private set; }
 
+    /// <summary>Gets the number of bytes the chunk declares.</summary>
+    public long DeclaredLength => _declaredLength;
+
     /// <summary>Gets a value indicating whether every declared byte was received.</summary>
     public bool IsComplete => Length == _declaredLength;
 

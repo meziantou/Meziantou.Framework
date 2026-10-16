@@ -34,8 +34,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// is <c>Tc / Ta</c>, rounded as above.
 /// </para>
 /// <para>
-/// A pixel outside the region of the image is, by wrap mode: transparent, the nearest pixel of the region, or the
-/// pixel the repeated or mirrored region has there. The colors are converted to the pixel format of the frame last, as
+/// A pixel outside the region of the image is, by the wrap mode of each axis (a column by the one of x, a row by the
+/// one of y): transparent, the nearest pixel of the region, or the pixel the repeated or mirrored region has there. The colors are converted to the pixel format of the frame last, as
 /// any brush color is.
 /// </para>
 /// <para>
@@ -47,6 +47,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// image changes from a pixel to the next: <c>sx</c> and <c>sy</c> are the lengths of the derivatives of <c>u</c> and
 /// of <c>v</c> at the center of the pixel, <c>sqrt(((h0 - h6 u) / w)^2 + ((h1 - h7 u) / w)^2)</c> and
 /// <c>sqrt(((h3 - h6 v) / w)^2 + ((h4 - h7 v) / w)^2)</c>.
+/// </para>
+/// <para>
+/// An image placed by a projective transformation of the canvas (the one of a brush, then the one of the canvas) is
+/// read the same way, with the nine numbers of the inverse of that transformation, and the region and the wrap mode
+/// of the brush.
 /// </para>
 /// <para>
 /// <b>Method.</b> When the rows of the canvas stay rows of the image (no rotation, no skew), the two rows of the image
@@ -85,8 +90,18 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private Affine2D _inverse;
     private bool _isEmpty;
     private bool _keepsRows;
-    private ImageWrapMode _wrapMode;
+    private ImageWrapMode _wrapModeX;
+    private ImageWrapMode _wrapModeY;
     private bool _isNearest;
+    private bool _isBicubic;
+
+    // The rectangle of the image the positions are brought into, when an image is drawn from a rectangle of its pixels
+    // that is not made of whole pixels
+    private bool _hasDomain;
+    private double _domainLeft;
+    private double _domainTop;
+    private double _domainRight;
+    private double _domainBottom;
     private bool _isReduced;
     private double _spanX;
     private double _spanY;
@@ -134,6 +149,22 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     /// <exception cref="ArgumentOutOfRangeException">The region is not inside the frame.</exception>
     /// <exception cref="ImageResourceLimitException">The rows exceed the allocation limit.</exception>
     public void Prepare(ImageFrame source, Rectangle? region, AffineTransform transform, ImageWrapMode wrapMode, ImageSampling sampling, ImageFrame destination, int width, string regionParameterName)
+        => Prepare(source, region, transform, wrapMode, wrapMode, sampling, destination, width, regionParameterName);
+
+    /// <summary>Sets the image and its placement, with a wrap mode per axis, and rents the rows the evaluation needs. The image is not read yet.</summary>
+    /// <param name="source">The frame whose pixels are painted.</param>
+    /// <param name="region">The pixels of the frame that are painted, or <see langword="null"/> for all of them.</param>
+    /// <param name="transform">The transformation that places the image on the canvas.</param>
+    /// <param name="wrapModeX">What is painted on the left and on the right of the region.</param>
+    /// <param name="wrapModeY">What is painted above and below the region.</param>
+    /// <param name="sampling">How the image is read between the centers of its pixels.</param>
+    /// <param name="destination">A frame that is drawn on: the colors are converted to its pixel format.</param>
+    /// <param name="width">The width of the canvas.</param>
+    /// <param name="regionParameterName">The name of the parameter the region comes from, for the exception.</param>
+    /// <exception cref="ObjectDisposedException">The frame no longer belongs to a live image.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The region is not inside the frame.</exception>
+    /// <exception cref="ImageResourceLimitException">The rows exceed the allocation limit.</exception>
+    public void Prepare(ImageFrame source, Rectangle? region, AffineTransform transform, ImageWrapMode wrapModeX, ImageWrapMode wrapModeY, ImageSampling sampling, ImageFrame destination, int width, string regionParameterName)
     {
         var storage = source.GetStorage();
         var area = region ?? new Rectangle(0, 0, storage.Width, storage.Height);
@@ -147,8 +178,11 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         _top = area.Top;
         _regionWidth = area.Width;
         _regionHeight = area.Height;
-        _wrapMode = wrapMode;
+        _wrapModeX = wrapModeX;
+        _wrapModeY = wrapModeY;
         _isNearest = sampling == ImageSampling.Nearest;
+        _isBicubic = sampling == ImageSampling.Bicubic;
+        _hasDomain = false;
         _isProjective = false;
         _isEmpty = area.IsEmpty || !new Affine2D(transform.M11, transform.M12, transform.M21, transform.M22, transform.OffsetX, transform.OffsetY).TryInvert(out _inverse);
 
@@ -196,6 +230,57 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         }
     }
 
+    /// <summary>Sets the image and its placement by a transformation that may be projective, and rents the rows the evaluation needs. The image is not read yet.</summary>
+    /// <param name="source">The frame whose pixels are painted.</param>
+    /// <param name="region">The pixels of the frame that are painted, or <see langword="null"/> for all of them.</param>
+    /// <param name="transform">The transformation that places the image on the canvas.</param>
+    /// <param name="wrapMode">What is painted outside the region.</param>
+    /// <param name="sampling">How the image is read between the centers of its pixels.</param>
+    /// <param name="destination">A frame that is drawn on: the colors are converted to its pixel format.</param>
+    /// <param name="width">The width of the canvas.</param>
+    /// <param name="regionParameterName">The name of the parameter the region comes from, for the exception.</param>
+    /// <exception cref="ObjectDisposedException">The frame no longer belongs to a live image.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The region is not inside the frame.</exception>
+    /// <exception cref="ImageResourceLimitException">The rows exceed the allocation limit.</exception>
+    public void Prepare(ImageFrame source, Rectangle? region, in ProjectiveTransform transform, ImageWrapMode wrapMode, ImageSampling sampling, ImageFrame destination, int width, string regionParameterName)
+        => Prepare(source, region, transform, wrapMode, wrapMode, sampling, destination, width, regionParameterName);
+
+    /// <summary>Sets the image and its placement by a transformation that may be projective, with a wrap mode per axis. The image is not read yet.</summary>
+    /// <exception cref="ObjectDisposedException">The frame no longer belongs to a live image.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The region is not inside the frame.</exception>
+    /// <exception cref="ImageResourceLimitException">The rows exceed the allocation limit.</exception>
+    public void Prepare(ImageFrame source, Rectangle? region, in ProjectiveTransform transform, ImageWrapMode wrapModeX, ImageWrapMode wrapModeY, ImageSampling sampling, ImageFrame destination, int width, string regionParameterName)
+    {
+        if (transform.TryGetExactAffine(out var affine))
+        {
+            Prepare(source, region, affine, wrapModeX, wrapModeY, sampling, destination, width, regionParameterName);
+            return;
+        }
+
+        Prepare(source, region, AffineTransform.Identity, wrapModeX, wrapModeY, ImageSampling.Bilinear, destination, width, regionParameterName);
+        _isNearest = sampling == ImageSampling.Nearest;
+        _isBicubic = sampling == ImageSampling.Bicubic;
+        _hasDomain = false;
+        _isSmooth = sampling == ImageSampling.Smooth;
+        _isProjective = true;
+        if (!transform.TryInvert(out var inverse))
+        {
+            _isEmpty = true;
+            return;
+        }
+
+        // The inverse keeps the sign of W: a pixel whose center comes from a point in front of the viewer has a positive one
+        _h0 = inverse.M11;
+        _h1 = inverse.M21;
+        _h2 = inverse.M31;
+        _h3 = inverse.M12;
+        _h4 = inverse.M22;
+        _h5 = inverse.M32;
+        _h6 = inverse.M13;
+        _h7 = inverse.M23;
+        _h8 = inverse.M33;
+    }
+
     /// <summary>Sets an image that is placed by a projective transformation, its pixels on the edges extended. The image is not read yet.</summary>
     /// <param name="source">The frame whose pixels are painted, all of them.</param>
     /// <param name="inverse">The nine numbers that bring a position of the canvas back to the image, row by row; empty when the image is flattened to a line: it paints nothing.</param>
@@ -208,6 +293,8 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     {
         Prepare(source, region: null, AffineTransform.Identity, ImageWrapMode.Pad, ImageSampling.Bilinear, destination, width, nameof(source));
         _isNearest = sampling == ImageSampling.Nearest;
+        _isBicubic = sampling == ImageSampling.Bicubic;
+        _hasDomain = false;
         _isSmooth = sampling == ImageSampling.Smooth;
         _isProjective = true;
         if (inverse.IsEmpty)
@@ -258,7 +345,15 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         }
 
         var samples = Samples[..count];
-        if (_isProjective)
+        if (_hasDomain)
+        {
+            EvaluateInDomain(y, x, samples);
+        }
+        else if (_isBicubic)
+        {
+            EvaluateBicubic(y, x, samples);
+        }
+        else if (_isProjective)
         {
             EvaluateProjected(y, x, samples);
         }
@@ -308,12 +403,12 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         var centerY = y + 0.5;
         var v = _inverse.TransformY(x + 0.5, centerY);
         Split(v, out var row, out var fy);
-        var hasRow0 = TryWrap(row, _top, _regionHeight, out var row0);
+        var hasRow0 = TryWrap(row, _top, _regionHeight, _wrapModeY, out var row0);
         var hasRow1 = false;
         var row1 = 0;
         if (fy != 0)
         {
-            hasRow1 = TryWrap(row + 1, _top, _regionHeight, out row1);
+            hasRow1 = TryWrap(row + 1, _top, _regionHeight, _wrapModeY, out row1);
         }
 
         if (!hasRow0 && !hasRow1)
@@ -329,12 +424,12 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         {
             var u = _inverse.TransformX(x + i + 0.5, centerY);
             Split(u, out var column, out var fx);
-            var hasColumn0 = TryWrap(column, _left, _regionWidth, out var column0);
+            var hasColumn0 = TryWrap(column, _left, _regionWidth, _wrapModeX, out var column0);
             var hasColumn1 = false;
             var column1 = 0;
             if (fx != 0)
             {
-                hasColumn1 = TryWrap(column + 1, _left, _regionWidth, out column1);
+                hasColumn1 = TryWrap(column + 1, _left, _regionWidth, _wrapModeX, out column1);
             }
 
             if (fx == 0 && fy == 0)
@@ -424,6 +519,129 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         }
     }
 
+    /// <summary>
+    /// Brings the positions the pixels read into a rectangle of the image, as browsers draw a rectangle of an image that
+    /// is not made of whole pixels: to <c>[left + 1/2, right - 1/2]</c> (the middle of the rectangle when it is narrower
+    /// than a pixel) when the image is interpolated, filtered or reduced, so that what is around the rectangle weighs as
+    /// little as it can, and to <c>[left, right)</c> for the nearest pixel. Set after <see cref="Prepare(ImageFrame, Rectangle?, AffineTransform, ImageWrapMode, ImageWrapMode, ImageSampling, ImageFrame, int, string)"/>.
+    /// </summary>
+    public void SetDomain(RectangleD domain)
+    {
+        _hasDomain = true;
+        if (_isNearest)
+        {
+            _domainLeft = domain.Left;
+            _domainTop = domain.Top;
+            _domainRight = Math.BitDecrement(domain.Right);
+            _domainBottom = Math.BitDecrement(domain.Bottom);
+            return;
+        }
+
+        (_domainLeft, _domainRight) = domain.Width >= 1 ? (domain.Left + 0.5, domain.Right - 0.5) : ((domain.Left + domain.Right) / 2, (domain.Left + domain.Right) / 2);
+        (_domainTop, _domainBottom) = domain.Height >= 1 ? (domain.Top + 0.5, domain.Bottom - 0.5) : ((domain.Top + domain.Bottom) / 2, (domain.Top + domain.Bottom) / 2);
+    }
+
+    /// <summary>Evaluates a run whose positions are brought into the rectangle of <see cref="SetDomain"/>: each pixel on its own.</summary>
+    private void EvaluateInDomain(int y, int x, Span<Rgba64> samples)
+    {
+        var centerY = y + 0.5;
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var centerX = x + i + 0.5;
+            var u = Math.Clamp(_inverse.TransformX(centerX, centerY), _domainLeft, _domainRight);
+            var v = Math.Clamp(_inverse.TransformY(centerX, centerY), _domainTop, _domainBottom);
+            samples[i] = _isBicubic ? Bicubic(u, v) : _isReduced ? Reduce(u, v, _spanX, _spanY) : Interpolate(u, v);
+        }
+    }
+
+    /// <summary>Evaluates a run with the cubic filter: each pixel at its position, placed by the transformation, affine or projective.</summary>
+    private void EvaluateBicubic(int y, int x, Span<Rgba64> samples)
+    {
+        var centerY = y + 0.5;
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var centerX = x + i + 0.5;
+            double u, v;
+            if (_isProjective)
+            {
+                var w = ((_h6 * centerX) + (_h7 * centerY)) + _h8;
+
+                // Written so that a value that is not a number has no color
+                if (!(w > 0))
+                {
+                    samples[i] = default;
+                    continue;
+                }
+
+                u = (((_h0 * centerX) + (_h1 * centerY)) + _h2) / w;
+                v = (((_h3 * centerX) + (_h4 * centerY)) + _h5) / w;
+            }
+            else
+            {
+                u = _inverse.TransformX(centerX, centerY);
+                v = _inverse.TransformY(centerX, centerY);
+            }
+
+            samples[i] = Bicubic(u, v);
+        }
+    }
+
+    /// <summary>
+    /// Gets the color of the image at a position with the filter of Mitchell and Netravali (<c>B = C = 1/3</c>): with
+    /// <c>i = floor(u - 1/2)</c> and <c>fx = u - 1/2 - i</c>, the columns <c>i - 1</c> to <c>i + 2</c> have the weights
+    /// <c>k(1 + fx)</c>, <c>k(fx)</c>, <c>k(1 - fx)</c> and <c>k(2 - fx)</c>, and the rows the same. The alpha is the weighted
+    /// sum of the alphas, clamped to the range from 0 to 1, and each color the weighted sum of the colors multiplied by their
+    /// alpha, clamped to the range from 0 to that alpha, divided by it, rounded as the bilinear colors are.
+    /// </summary>
+    private Rgba64 Bicubic(double u, double v)
+    {
+        // Written so that a coordinate that is not a number is far away
+        u = Math.Abs(u) < MaxPosition ? u : (u < 0 ? -MaxPosition : MaxPosition);
+        v = Math.Abs(v) < MaxPosition ? v : (v < 0 ? -MaxPosition : MaxPosition);
+        var column = (int)Math.Floor(u - 0.5);
+        var row = (int)Math.Floor(v - 0.5);
+        var fx = u - 0.5 - column;
+        var fy = v - 0.5 - row;
+        Span<double> weightsX = [Kernel(1 + fx), Kernel(fx), Kernel(1 - fx), Kernel(2 - fx)];
+        Span<double> weightsY = [Kernel(1 + fy), Kernel(fy), Kernel(1 - fy), Kernel(2 - fy)];
+        double alpha = 0, red = 0, green = 0, blue = 0;
+        for (var j = 0; j < 4; j++)
+        {
+            for (var i = 0; i < 4; i++)
+            {
+                if (!TryRead(column - 1 + i, row - 1 + j, out var color))
+                    continue;
+
+                var weight = weightsX[i] * weightsY[j] * color.A;
+                alpha += weight;
+                red += weight * color.R;
+                green += weight * color.G;
+                blue += weight * color.B;
+            }
+        }
+
+        // The sums are of 16-bit values times 16-bit alphas: the alpha is up to 65535, each color up to 65535 times it
+        var a = Math.Clamp(alpha, 0, 65535);
+        var resultAlpha = Round(a);
+        if (resultAlpha == 0)
+            return default;
+
+        return new Rgba64(Round(Math.Clamp(red, 0, 65535 * a) / a), Round(Math.Clamp(green, 0, 65535 * a) / a), Round(Math.Clamp(blue, 0, 65535 * a) / a), resultAlpha);
+
+        // The cubic of Mitchell and Netravali for B = C = 1/3, of a distance
+        static double Kernel(double distance)
+        {
+            var t = Math.Abs(distance);
+            if (t < 1)
+                return ((((7 * t) - 12) * t * t) + (16.0 / 3)) / 6;
+
+            if (t < 2)
+                return (((((-7.0 / 3) * t) + 12) * t * t) - (20 * t) + (32.0 / 3)) / 6;
+
+            return 0;
+        }
+    }
+
     /// <summary>Gets the color of the image at a position: the pixel that contains it, or the four pixels around it, interpolated.</summary>
     private Rgba64 Interpolate(double u, double v)
     {
@@ -477,7 +695,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
                 continue;
 
             totalY += weightY;
-            var hasRow = TryWrap(row, _top, _regionHeight, out var wrapped);
+            var hasRow = TryWrap(row, _top, _regionHeight, _wrapModeY, out var wrapped);
             if (hasRow)
             {
                 _source!.ReadRgba64(_storage!, _top + wrapped, _left, rows);
@@ -495,7 +713,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
                         continue;
 
                     sum.Total += weightX;
-                    if (hasRow && TryWrap(column, _left, _regionWidth, out var index))
+                    if (hasRow && TryWrap(column, _left, _regionWidth, _wrapModeX, out var index))
                     {
                         sum.Add(rows[index], weightX);
                     }
@@ -626,9 +844,10 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     /// <param name="index">The row or the column, in the coordinates of the frame.</param>
     /// <param name="origin">The first row or column of the region.</param>
     /// <param name="size">The height or the width of the region.</param>
+    /// <param name="mode">The wrap mode of the axis.</param>
     /// <param name="result">The row or the column, from the first one of the region.</param>
     /// <returns><see langword="false"/> when there is no pixel there: outside the region, without wrapping.</returns>
-    private bool TryWrap(int index, int origin, int size, out int result)
+    private static bool TryWrap(int index, int origin, int size, ImageWrapMode mode, out int result)
     {
         var offset = (long)index - origin;
         if ((ulong)offset < (ulong)size)
@@ -637,7 +856,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             return true;
         }
 
-        switch (_wrapMode)
+        switch (mode)
         {
             case ImageWrapMode.Pad:
                 result = offset < 0 ? 0 : size - 1;
@@ -697,7 +916,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private bool TryRead(int column, int row, out Rgba64 color)
     {
         color = default;
-        if (!TryWrap(column, _left, _regionWidth, out var x) || !TryWrap(row, _top, _regionHeight, out var y))
+        if (!TryWrap(column, _left, _regionWidth, _wrapModeX, out var x) || !TryWrap(row, _top, _regionHeight, _wrapModeY, out var y))
             return false;
 
         _source!.ReadRgba64(_storage!, _top + y, _left + x, new Span<Rgba64>(ref color));

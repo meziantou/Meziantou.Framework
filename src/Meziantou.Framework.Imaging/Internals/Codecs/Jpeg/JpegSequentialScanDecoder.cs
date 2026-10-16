@@ -25,6 +25,26 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
     {
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the AC coefficients whose code and magnitude fit in the lookup bits are decoded by one
+    /// lookup (<see cref="JpegHuffmanTable.FastAc"/>), which needs a table per AC table. The coefficients are the same.
+    /// </summary>
+    public bool UsesFastAc
+    {
+        get;
+        init
+        {
+            field = value;
+            if (value)
+            {
+                foreach (var component in Components)
+                {
+                    component.AcTable!.PrepareFastAc();
+                }
+            }
+        }
+    }
+
     protected override void DecodeBlock(ScanComponent scanComponent, int blockRow, int blockColumn)
     {
         var reader = Reader;
@@ -48,6 +68,21 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         var hasAc = false;
         for (var k = 1; k < 64;)
         {
+            // Most coefficients: the code and the magnitude in one lookup
+            var fast = UsesFastAc ? reader.DecodeFastAc(acTable) : 0;
+            if (fast != 0)
+            {
+                k += (fast >> 4) & 0x0F;
+                if (k > 63)
+                    throw Invalid("The JPEG AC coefficients run past the end of the block.");
+
+                var position = zigZag[k];
+                block[position] = (fast >> 8) * (double)quantization[position];
+                hasAc = true;
+                k++;
+                continue;
+            }
+
             var symbol = reader.DecodeHuffman(acTable);
             var run = symbol >> 4;
             var size = symbol & 0x0F;

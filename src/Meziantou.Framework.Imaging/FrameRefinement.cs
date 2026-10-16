@@ -5,8 +5,10 @@ namespace Meziantou.Framework.Imaging;
 /// intermediate rendering, computed from the part of the frame that was received, or the frame itself.
 /// </summary>
 /// <remarks>
-/// A format that stores an image at increasing levels of detail (a progressive JPEG XL file) gives intermediate renderings
-/// before the frame; any other input gives the frame at once, with <see cref="IsFinal"/> set. The number of intermediate
+/// A format that stores an image at increasing levels of detail (a progressive JPEG XL or JPEG file, an interlaced PNG file)
+/// gives intermediate renderings before the frame; any other input gives the frame at once, with <see cref="IsFinal"/> set.
+/// An input that ends before the frame may give a last intermediate rendering of what was decoded before the read that
+/// reports the truncation. The number of intermediate
 /// renderings of a file and their pixels are not part of the contract of the library: only the final rendering is the
 /// frame that <see cref="ImageReader{TPixel}.ReadFrameInto"/> returns.
 /// </remarks>

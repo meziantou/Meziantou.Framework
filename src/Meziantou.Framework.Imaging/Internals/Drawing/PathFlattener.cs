@@ -22,6 +22,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// gets chords that much closer to the curve: every length that is compared with the tolerance is multiplied by that
 /// factor, which is 1, and changes nothing, without transformation.
 /// </para>
+/// <para>
+/// Under a projective transformation (<see cref="PathSink.Projection"/>), the factor depends on the place in the plane,
+/// and only what is seen matters (<see cref="ProjectiveView"/>): a Bézier curve is halved (de Casteljau) until each part
+/// needs at most <see cref="ProjectedSegmentCount"/> chords for the factor on its own control points, then cut at
+/// uniform parameters; an arc is halved while its chord is further from it than the tolerance over the factor on the
+/// triangle that contains it. A part of the plane that is not seen is cut with few chords, which stay in the convex
+/// hull of its control points.
+/// </para>
 /// <para>Only additions, multiplications, divisions and square roots are used: the vertices do not depend on the platform.</para>
 /// </remarks>
 internal static class PathFlattener
@@ -31,6 +39,9 @@ internal static class PathFlattener
 
     /// <summary>The deepest bisection of an arc: far more than any radius the API accepts needs.</summary>
     public const int MaxArcDepth = 24;
+
+    /// <summary>The largest number of chords a part of a curve drawn through a projective transformation is cut into: a part that needs more is halved.</summary>
+    private const int ProjectedSegmentCount = 8;
 
     /// <summary>Sends the contours of a path to a sink.</summary>
     public static void Flatten(VectorPath path, PathSink sink)
@@ -105,6 +116,13 @@ internal static class PathFlattener
     /// <summary>Sends the chords of a quadratic Bézier curve, from the current point of the sink (the first control point).</summary>
     public static void Quadratic(PathSink sink, double x0, double y0, double x1, double y1, double x2, double y2)
     {
+        if (sink.Projection is not null)
+        {
+            var started = false;
+            ProjectedQuadratic(sink, x0, y0, x1, y1, x2, y2, depth: 0, ref started);
+            return;
+        }
+
         var count = GetSegmentCount(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2) * sink.Scale / (4 * Tolerance));
         for (var i = 1; i < count; i++)
         {
@@ -122,6 +140,13 @@ internal static class PathFlattener
     /// <summary>Sends the chords of a cubic Bézier curve, from the current point of the sink (the first control point).</summary>
     public static void Cubic(PathSink sink, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3)
     {
+        if (sink.Projection is not null)
+        {
+            var started = false;
+            ProjectedCubic(sink, x0, y0, x1, y1, x2, y2, x3, y3, depth: 0, ref started);
+            return;
+        }
+
         var deviation = Math.Max(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2), Length(x1 - (2 * x2) + x3, y1 - (2 * y2) + y3));
         var count = GetSegmentCount(3 * deviation * sink.Scale / (4 * Tolerance));
         for (var i = 1; i < count; i++)
@@ -141,6 +166,12 @@ internal static class PathFlattener
     /// <summary>Sends a closed ellipse as one contour starting at the right end of its horizontal axis.</summary>
     public static void Ellipse(PathSink sink, double centerX, double centerY, double radiusX, double radiusY)
     {
+        if (sink.Projection is not null)
+        {
+            ProjectedEllipse(sink, centerX, centerY, radiusX, 0, 0, radiusY);
+            return;
+        }
+
         var depth = GetArcDepth(Math.Max(radiusX, radiusY) * sink.Scale);
         sink.MoveTo(centerX + radiusX, centerY);
         for (var quadrant = 0; quadrant < 4; quadrant++)
@@ -162,6 +193,12 @@ internal static class PathFlattener
     /// </remarks>
     public static void Ellipse(PathSink sink, double centerX, double centerY, double ux, double uy, double vx, double vy)
     {
+        if (sink.Projection is not null)
+        {
+            ProjectedEllipse(sink, centerX, centerY, ux, uy, vx, vy);
+            return;
+        }
+
         var depth = GetArcDepth(GetLargestRadius(ux, uy, vx, vy) * sink.Scale);
         sink.MoveTo(centerX + ux, centerY + uy);
         for (var quadrant = 0; quadrant < 4; quadrant++)
@@ -183,10 +220,145 @@ internal static class PathFlattener
     /// </remarks>
     public static void Arc(PathSink sink, scoped in ArcPiece piece)
     {
-        var radius = GetLargestRadius(piece.Ux, piece.Uy, piece.Vx, piece.Vy) * sink.Scale;
         var smooth = piece.IsContinuation;
-        ArcInterior(sink, piece, radius, piece.Ax, piece.Ay, piece.Bx, piece.By, depth: 0, ref smooth);
+        if (sink.Projection is not null)
+        {
+            ProjectedArcInterior(sink, piece.CenterX, piece.CenterY, piece.Ux, piece.Uy, piece.Vx, piece.Vy, piece.Ax, piece.Ay, piece.Bx, piece.By, depth: 0, ref smooth);
+        }
+        else
+        {
+            var radius = GetLargestRadius(piece.Ux, piece.Uy, piece.Vx, piece.Vy) * sink.Scale;
+            ArcInterior(sink, piece, radius, piece.Ax, piece.Ay, piece.Bx, piece.By, depth: 0, ref smooth);
+        }
+
         sink.LineTo(piece.EndX, piece.EndY, smooth);
+    }
+
+    /// <summary>
+    /// Sends the chords of a quadratic curve drawn through a projective transformation: a part of the curve whose
+    /// chords would be more than a few is cut in two halves (de Casteljau), each cut for the factor of the
+    /// transformation on its own control points, so that only what is seen enlarged is cut finely.
+    /// </summary>
+    private static void ProjectedQuadratic(PathSink sink, double x0, double y0, double x1, double y1, double x2, double y2, int depth, ref bool started)
+    {
+        var scale = sink.GetScale(Math.Min(x0, Math.Min(x1, x2)), Math.Min(y0, Math.Min(y1, y2)), Math.Max(x0, Math.Max(x1, x2)), Math.Max(y0, Math.Max(y1, y2)));
+        var count = GetSegmentCount(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2) * scale / (4 * Tolerance));
+        if (count > ProjectedSegmentCount && depth < MaxArcDepth)
+        {
+            var ax = (x0 + x1) / 2;
+            var ay = (y0 + y1) / 2;
+            var bx = (x1 + x2) / 2;
+            var by = (y1 + y2) / 2;
+            var mx = (ax + bx) / 2;
+            var my = (ay + by) / 2;
+            ProjectedQuadratic(sink, x0, y0, ax, ay, mx, my, depth + 1, ref started);
+            ProjectedQuadratic(sink, mx, my, bx, by, x2, y2, depth + 1, ref started);
+            return;
+        }
+
+        for (var i = 1; i <= count; i++)
+        {
+            var t = i / (double)count;
+            var s = 1 - t;
+            var a = s * s;
+            var b = 2 * s * t;
+            var c = t * t;
+            sink.LineTo(i == count ? x2 : (a * x0) + (b * x1) + (c * x2), i == count ? y2 : (a * y0) + (b * y1) + (c * y2), smooth: started);
+            started = true;
+        }
+    }
+
+    /// <summary>Sends the chords of a cubic curve drawn through a projective transformation: see <see cref="ProjectedQuadratic"/>.</summary>
+    private static void ProjectedCubic(PathSink sink, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3, int depth, ref bool started)
+    {
+        var deviation = Math.Max(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2), Length(x1 - (2 * x2) + x3, y1 - (2 * y2) + y3));
+        var scale = sink.GetScale(Math.Min(Math.Min(x0, x1), Math.Min(x2, x3)), Math.Min(Math.Min(y0, y1), Math.Min(y2, y3)), Math.Max(Math.Max(x0, x1), Math.Max(x2, x3)), Math.Max(Math.Max(y0, y1), Math.Max(y2, y3)));
+        var count = GetSegmentCount(3 * deviation * scale / (4 * Tolerance));
+        if (count > ProjectedSegmentCount && depth < MaxArcDepth)
+        {
+            var ax = (x0 + x1) / 2;
+            var ay = (y0 + y1) / 2;
+            var bx = (x1 + x2) / 2;
+            var by = (y1 + y2) / 2;
+            var cx = (x2 + x3) / 2;
+            var cy = (y2 + y3) / 2;
+            var dx = (ax + bx) / 2;
+            var dy = (ay + by) / 2;
+            var ex = (bx + cx) / 2;
+            var ey = (by + cy) / 2;
+            var mx = (dx + ex) / 2;
+            var my = (dy + ey) / 2;
+            ProjectedCubic(sink, x0, y0, ax, ay, dx, dy, mx, my, depth + 1, ref started);
+            ProjectedCubic(sink, mx, my, ex, ey, cx, cy, x3, y3, depth + 1, ref started);
+            return;
+        }
+
+        for (var i = 1; i <= count; i++)
+        {
+            var t = i / (double)count;
+            var s = 1 - t;
+            var a = s * s * s;
+            var b = 3 * s * s * t;
+            var c = 3 * s * t * t;
+            var d = t * t * t;
+            sink.LineTo(i == count ? x3 : (a * x0) + (b * x1) + (c * x2) + (d * x3), i == count ? y3 : (a * y0) + (b * y1) + (c * y2) + (d * y3), smooth: started);
+            started = true;
+        }
+    }
+
+    /// <summary>Sends a closed ellipse drawn through a projective transformation: its four quarters, each cut where it needs to be (<see cref="ProjectedArcInterior"/>).</summary>
+    private static void ProjectedEllipse(PathSink sink, double centerX, double centerY, double ux, double uy, double vx, double vy)
+    {
+        sink.MoveTo(centerX + ux, centerY + uy);
+        var smooth = true;
+        for (var quadrant = 0; quadrant < 4; quadrant++)
+        {
+            var (ax, ay, bx, by) = quadrant switch
+            {
+                0 => (1d, 0d, 0d, 1d),
+                1 => (0d, 1d, -1d, 0d),
+                2 => (-1d, 0d, 0d, -1d),
+                _ => (0d, -1d, 1d, 0d),
+            };
+            ProjectedArcInterior(sink, centerX, centerY, ux, uy, vx, vy, ax, ay, bx, by, depth: 0, ref smooth);
+            sink.LineTo(centerX + ((ux * bx) + (vx * by)), centerY + ((uy * bx) + (vy * by)), smooth: true);
+        }
+
+        sink.Close(smooth: true);
+    }
+
+    /// <summary>
+    /// Sends the vertices strictly between the unit vectors <c>a</c> and <c>b</c> (at most a quarter of a turn apart) of
+    /// an arc of the ellipse <c>center + x u + y v</c> drawn through a projective transformation: the arc is halved while
+    /// its chord is further from it than the tolerance divided by the factor of the transformation on the triangle of
+    /// its ends and of the meeting point of its tangents, which contains it.
+    /// </summary>
+    private static void ProjectedArcInterior(PathSink sink, double centerX, double centerY, double ux, double uy, double vx, double vy, double ax, double ay, double bx, double by, int depth, ref bool smooth)
+    {
+        var mx = ax + bx;
+        var my = ay + by;
+        var length = Length(mx, my);
+        if (depth >= MaxArcDepth)
+            return;
+
+        // The ends of the arc, and where their tangents meet: (a + b) / (1 + a . b) on the unit circle
+        var toTangents = 2 / (length * length);
+        var x0 = centerX + ((ux * ax) + (vx * ay));
+        var y0 = centerY + ((uy * ax) + (vy * ay));
+        var x1 = centerX + ((ux * bx) + (vx * by));
+        var y1 = centerY + ((uy * bx) + (vy * by));
+        var tx = centerX + (((ux * mx) + (vx * my)) * toTangents);
+        var ty = centerY + (((uy * mx) + (vy * my)) * toTangents);
+        var scale = sink.GetScale(Math.Min(x0, Math.Min(x1, tx)), Math.Min(y0, Math.Min(y1, ty)), Math.Max(x0, Math.Max(x1, tx)), Math.Max(y0, Math.Max(y1, ty)));
+        if (!(GetLargestRadius(ux, uy, vx, vy) * scale * (1 - (length / 2)) > Tolerance))
+            return;
+
+        mx /= length;
+        my /= length;
+        ProjectedArcInterior(sink, centerX, centerY, ux, uy, vx, vy, ax, ay, mx, my, depth + 1, ref smooth);
+        sink.LineTo(centerX + ((ux * mx) + (vx * my)), centerY + ((uy * mx) + (vy * my)), smooth);
+        smooth = true;
+        ProjectedArcInterior(sink, centerX, centerY, ux, uy, vx, vy, mx, my, bx, by, depth + 1, ref smooth);
     }
 
     /// <summary>

@@ -47,7 +47,7 @@ internal sealed class MarkerSink : PathSink, IDisposable
         _stroker = stroker;
         _start = pen.StartMarker;
         _end = pen.EndMarker;
-        _width = pen.Width;
+        _width = pen.StrokeWidth;
         _hasContour = false;
         _vertices.Count = 0;
     }
@@ -224,7 +224,16 @@ internal sealed class MarkerSink : PathSink, IDisposable
         if (marker.Shape.IsEmpty)
             return;
 
-        _shape.Begin(_stroker, new Affine2D(_width * directionX, _width * directionY, -_width * directionY, _width * directionX, x, y), _width * _stroker.Scale);
+        var scale = _stroker.Scale;
+        if (_stroker.Projection is not null)
+        {
+            // Under a projective transformation, the factor around the marker: it is within that distance of its point
+            var bounds = marker.Shape.Bounds;
+            var reach = _width * (Math.Max(Math.Abs(bounds.Left), Math.Abs(bounds.Right)) + Math.Max(Math.Abs(bounds.Top), Math.Abs(bounds.Bottom)));
+            scale = _stroker.GetScale(x - reach, y - reach, x + reach, y + reach);
+        }
+
+        _shape.Begin(_stroker, new Affine2D(_width * directionX, _width * directionY, -_width * directionY, _width * directionX, x, y), _width * scale);
         PathFlattener.Flatten(marker.Shape, _shape);
     }
 

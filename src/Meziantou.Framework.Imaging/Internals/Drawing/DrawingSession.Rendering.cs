@@ -7,10 +7,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <content>How the draw calls of a callback are rendered: with or without antialiasing, and in which space their paints are combined with the pixels.</content>
 /// <remarks>
 /// <para>
-/// <b>Contract.</b> Without antialiasing, the coverage of a pixel is all or nothing: a pixel whose exact coverage,
-/// rounded as usual, is at least half (<c>32768 / 65536</c>) is covered entirely, and the others not at all. This
-/// applies to the shapes, the strokes, the texts and the images that are drawn, and to the clips that start, while
-/// antialiasing is off; a clip keeps the coverages it started with. The opacities (of a paint, of an image, of a
+/// <b>Contract.</b> Without antialiasing, the coverage of a pixel is all or nothing, as browsers draw hard edges: a
+/// pixel is covered entirely when its center is inside, a center on the top or the left side of a shape being outside
+/// and one on its bottom or its right side inside (<see cref="CoverageRasterizer"/>). This applies to the shapes, the
+/// strokes, the texts and the images that are drawn, and to the clips that start, while antialiasing is off; a clip
+/// keeps the coverages it started with. The opacities (of a paint, of an image, of a
 /// layer) and the blur of a shadow are not edges: they are unchanged, and so are the glyphs a font draws with its
 /// own colors.
 /// </para>
@@ -34,8 +35,6 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed partial class DrawingSession
 {
-    private const uint HalfCoverage = CoverageRasterizer.FullCoverage / 2;
-
     private bool _isAliased;
     // The transfer characteristics whose function decodes the samples to the light they are combined in, or 0 when
     // they are combined as they are stored, or when the tone curves of an ICC profile decode them
@@ -62,16 +61,9 @@ internal sealed partial class DrawingSession
 
     /// <summary>Turns antialiasing on or off for the draw calls that follow.</summary>
     /// <returns>Whether antialiasing was on.</returns>
-    /// <exception cref="ImageResourceLimitException">The row the coverages are written to exceeds the allocation limit.</exception>
     public bool SetAntialiasing(bool enabled)
     {
         _cancellationToken.ThrowIfCancellationRequested();
-        if (!enabled)
-        {
-            // The coverages of a run are rewritten: the row they go to is rented before a draw call needs it
-            EnsureCoverageRow();
-        }
-
         var previous = !_isAliased;
         _isAliased = !enabled;
         return previous;
@@ -144,28 +136,5 @@ internal sealed partial class DrawingSession
 
         _imageCurves = null;
         _curves = null;
-    }
-
-    /// <summary>Makes the coverages of a run all or nothing, into the row of the session.</summary>
-    /// <returns><see langword="false"/> when no pixel of the run is covered.</returns>
-    private bool RemoveAntialiasing(ref ReadOnlySpan<uint> coverage)
-    {
-        var row = unsafe(MemoryMarshal.Cast<byte, uint>(_clipRow!.Span))[..coverage.Length];
-        var any = RemoveAntialiasing(coverage, row);
-        coverage = row;
-        return any;
-    }
-
-    private static bool RemoveAntialiasing(ReadOnlySpan<uint> coverage, Span<uint> result)
-    {
-        var any = false;
-        for (var i = 0; i < coverage.Length; i++)
-        {
-            var isCovered = coverage[i] >= HalfCoverage;
-            result[i] = isCovered ? CoverageRasterizer.FullCoverage : 0;
-            any |= isCovered;
-        }
-
-        return any;
     }
 }

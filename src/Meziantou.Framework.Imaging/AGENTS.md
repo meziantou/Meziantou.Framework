@@ -447,7 +447,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - A conversion is a list of `IccStage` evaluated in `double`, one color at a time (`ColorConversionKernels.ConvertScalar`
   is the numerical reference). Both profiles meet in CIEXYZ relative to D50. A faster kernel must be bit-identical and
   proven so in `VectorizedKernelTests`.
-- The source of `ConvertColorProfile` may be the CICP color description of an image without profile
+- The source of `ConvertColorProfile` may be the CICP color description of an image without profile, or the `cicp`
+  tag of an ICC profile of PQ or HLG samples (`IccProfile.Cicp`, whose curves only approximate the functions)
   (`CicpColorSpace`, `IccPipeline.Create(CicpColorSpace, ...)`): a `CicpDecodeStage` (the functions of
   `CicpTransfer`, Rec. ITU-T H.273 table 3), the matrix of the primaries (`CicpPrimaries`, table 2) adapted to D50 with
   the linear Bradford transform, then the destination half of the ICC pipeline. Descriptions equivalent to sRGB keep
@@ -478,6 +479,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
 `GradientEvaluator` for gradients -> `DrawingKernels` (compositing on each frame).
 
 - Written from first principles: never port code from another rasterizer or stroker (FreeType, Skia, AGG, stb, ...).
+  The one exception is the managed rasterizer of Meziantou.Framework.WebPlatform (same author), whose semantics
+  (validated on the web-platform-tests) are the reference of what a browser engine needs: its code may be ported where
+  it fits the rules of this library, which win where they differ (exact areas, no functions of the platform in the
+  geometry, 16-bit precision).
 - The numerical contract is documented in `readme.md` ("Rendering") and in the XML documentation of
   `CoverageRasterizer`, `DrawingKernels` and `GradientEvaluator`: change it only with them and the tests.
   - Coverage is the exact area of the pixel inside the shape (the union of overlapping contours), in 1/65536 steps,
@@ -580,6 +585,12 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   drawn: the layer covers a margin around the bounds of the clip (the reach of the blur and of the offset), and the
   blur reads beyond it as its edge pixels (a shape that leaves the canvas keeps its shadow along the edge). The
   weights are those of `GaussianKernel`, shared with `GaussianBlur`: computed without `Math.Exp`.
+- Filters (`Filter` and its derived types, `DrawingSession.FilterEffects.cs`) run on `FilterSurface`s: premultiplied
+  single-precision colors of a rectangle of the canvas, read through `ReadRgba64` and written back to a layer with the
+  rounding of the blurs. `FilterProcessor` holds the edges (the canvas, or the rectangle of a backdrop, always mirrored)
+  and the scales of the lengths; every neighborhood operation reads through `TryMap`. A backdrop layer has one frame per
+  frame that is drawn on (`LayerLevel.Begin` with a frame count), each started with its own filtered backdrop, and is
+  drawn frame by frame. `Filter(ColorMatrix)` and `BlurBackdrop` keep their own exact arithmetic: they are not filters.
 - The transformation of the canvas (`DrawingSession.Transforms.cs`) is applied where a shape becomes edges, not where
   it is described: `BeginFill` wraps the fill sink in a `TransformSink`, the `Stroker` transforms the vertices of its
   pieces (`SetOutput`: the path is stroked in the coordinates of the drawing, so the pen is transformed with it; a pen
@@ -589,8 +600,21 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   The flatteners read `PathSink.Scale` of the sink they emit to, and cut curves that much finer; it is 1 without
   transformation, where nothing may change (every product by it is exact). What is given in pixels must use
   `BeginDeviceFill`: the frame, a layer that ends, the outlines of a color glyph (whose placement is composed with
-  the transformation instead, because its paints are evaluated in pixels). The whole-frame test of the stroker and
-  the canvas-aware cutting of the dasher are off under a transformation.
+  the transformation instead, because its paints are evaluated in pixels). The whole-frame test of the stroker is off
+  under an affine transformation; the dasher cuts the dashes the canvas shows through the four half-planes of the
+  drawing whose image is on the canvas (`Dasher.Configure` with a `ProjectiveView`).
+- A projective transformation of the canvas (`ProjectiveTransform`, `Transform3D`: the WebPlatform rasterizer of the
+  same author is the reference of its semantics) is not affine anywhere in the session: `_hasTransform` is false and
+  `_isProjective` true, so every use of the transformation must test both. One that is affine up to a positive `W`
+  takes the affine paths, bit for bit. Shapes go through `ProjectiveSink` (each contour, or each piece of a stroke,
+  cut by four half-planes in the coordinates of the drawing, then divided by `W`: never reject, never clamp a vertex
+  that is not on the border), curves are cut adaptively for the factor `ProjectiveView.GetScale` bounds on what is
+  seen of each part (`PathFlattener.Projected*`, the arcs of the stroker): a uniform cut of a large curve at the
+  largest factor near the viewer made millions of chords. What has a size in the drawing that is not a shape (the
+  blur and the offset of a shadow, a blur, color glyphs) is drawn by a session on an image of the plane
+  (`DrawingSession.Projections.cs`), then drawn in perspective; a plane seen from its edge (`IsFlat`) draws nothing,
+  since its pieces on one line would cross each other everywhere. Transformations of space nest in 4x4
+  (`_transform3D`), so that z is kept.
 - Every rental of a draw call happens before its first pixel write (edges, then the sweep and gradient scratch in
   `Render`). Draw calls allocate nothing once the scratch of the session has grown (`PerformanceContractTests`).
 - The cost of a shape follows its edges and their crossings. Keep the events of the sweep logarithmic: no pass over

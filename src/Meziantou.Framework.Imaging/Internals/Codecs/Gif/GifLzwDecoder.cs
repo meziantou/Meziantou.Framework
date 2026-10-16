@@ -24,9 +24,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// <item><description>
 /// After the end code, the remaining input (padding bits and any further sub-blocks) is ignored, like the reference decoders.
-/// After the last pixel of the image, <see cref="ReadTrailer"/> accepts only clear codes and the end code, or the end of the
-/// datastream (a missing end code: the unused bits of the last byte are padding). Whether the decoded index count matches the
-/// image is checked by the caller (<see cref="GifDecoder"/>).
+/// After the last pixel of the image, <see cref="ReadTrailer"/> ignores everything, as browsers do: a string longer than the
+/// pixels that remain is cut, and data codes after the last pixel (a stream that is reset and goes on) are not decoded.
+/// Whether the decoded index count matches the image is checked by the caller (<see cref="GifDecoder"/>).
 /// </description></item>
 /// <item><description>
 /// Working memory: the code table (prefix, suffix and length per code) and one 4096-byte string buffer, rented once from the
@@ -45,7 +45,6 @@ internal sealed class GifLzwDecoder : IDisposable
     private const int SuffixOffset = LengthOffset + (MaxCodes * sizeof(ushort));
     private const int StringOffset = SuffixOffset + MaxCodes;
     private const int StateLength = StringOffset + MaxCodes;
-    private const string TooManyPixels = "The GIF image data decodes to more pixels than the image rectangle.";
 
     private PooledBuffer? _state;
     private int _clearCode;
@@ -59,8 +58,6 @@ internal sealed class GifLzwDecoder : IDisposable
     private int _bitCount;
     private int _pendingStart;
     private int _pendingLength;
-    private int _trailerBytes;
-    private bool _paddingCode;
 
     /// <summary>Allocates the code table.</summary>
     /// <exception cref="ImageResourceLimitException">The table exceeds the live-allocation limit.</exception>
@@ -87,8 +84,6 @@ internal sealed class GifLzwDecoder : IDisposable
         _bitCount = 0;
         _pendingStart = 0;
         _pendingLength = 0;
-        _trailerBytes = 0;
-        _paddingCode = false;
         IsEnded = false;
 
         // Literal codes are one-byte strings; their suffix is the index itself
@@ -242,80 +237,14 @@ internal sealed class GifLzwDecoder : IDisposable
     }
 
     /// <summary>
-    /// Reads the codes that follow the last pixel of the image: only clear codes and the end code may follow, then anything is
-    /// ignored. The datastream may also end without an end code; the unused bits of its last byte are padding (a data code
-    /// formed from them alone is not an error unless more data follows).
+    /// Reads what follows the last pixel of the image: nothing more is decoded, as browsers do. The codes that follow (an end
+    /// code, clear codes, data codes or the rest of a string longer than the image) and the further sub-blocks are ignored.
     /// </summary>
-    /// <exception cref="InvalidImageContentException">The datastream decodes to more indices than the image (a data code is followed by more data, or a string exceeds the image).</exception>
     public void ReadTrailer(ref ReadOnlySpan<byte> input)
     {
-        if (IsEnded)
-        {
-            input = default;
-            return;
-        }
-
-        if (_pendingLength > 0 || (_paddingCode && !input.IsEmpty))
-            throw Invalid(TooManyPixels);
-
-        var bits = _bits;
-        var bitCount = _bitCount;
-        var offset = 0;
-        try
-        {
-            while (true)
-            {
-                while (bitCount < _codeSize)
-                {
-                    if (offset == input.Length)
-                        return;
-
-                    bits |= (ulong)input[offset++] << bitCount;
-                    bitCount += 8;
-                    _trailerBytes++;
-                }
-
-                var code = (int)(bits & (uint)_codeMask);
-                bits >>= _codeSize;
-                bitCount -= _codeSize;
-                if (_paddingCode)
-                {
-                    // Scanning the rest of the final byte: an end code proves that the data code was not padding
-                    if (code == _endCode)
-                        throw Invalid(TooManyPixels);
-
-                    continue;
-                }
-
-                if (code == _clearCode)
-                {
-                    ResetTable();
-                    continue;
-                }
-
-                if (code == _endCode)
-                {
-                    IsEnded = true;
-                    offset = input.Length;
-                    return;
-                }
-
-                if (_trailerBytes == 0 && offset == input.Length)
-                {
-                    // Only unused bits of the last byte read so far: padding if the datastream ends here (no end code)
-                    _paddingCode = true;
-                    continue;
-                }
-
-                throw Invalid(TooManyPixels);
-            }
-        }
-        finally
-        {
-            _bits = bits;
-            _bitCount = bitCount;
-            input = input[offset..];
-        }
+        IsEnded = true;
+        _pendingLength = 0;
+        input = default;
     }
 
     public void Dispose()

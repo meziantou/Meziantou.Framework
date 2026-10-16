@@ -61,6 +61,22 @@ public sealed class MetadataTests
     }
 
     [Fact]
+    public void IccProfileExposesItsCicpTag()
+    {
+        // ICC.1:2022 section 10.3: type signature, 4 reserved bytes, primaries, transfer, matrix, full range flag
+        var srgb = IccProfile.Srgb;
+        Assert.Null(srgb.Cicp);
+        Assert.Equal(new CicpColorDescription(9, 16, 0, fullRange: true), IccTestProfiles.WithTag(srgb, "cicp", IccTestProfiles.CicpTag(9, 16, 0, 1)).Cicp);
+        Assert.Equal(new CicpColorDescription(12, 18, 9, fullRange: false), IccTestProfiles.WithTag(srgb, "cicp", IccTestProfiles.CicpTag(12, 18, 9, 0)).Cicp);
+
+        // A flag other than 0 and 1, another type or a short tag is not a description
+        Assert.Null(IccTestProfiles.WithTag(srgb, "cicp", IccTestProfiles.CicpTag(9, 16, 0, 2)).Cicp);
+        Assert.Null(IccTestProfiles.WithTag(srgb, "cicp", [.. "curv"u8, 0, 0, 0, 0, 9, 16, 0, 1]).Cicp);
+        Assert.Null(IccTestProfiles.WithTag(srgb, "cicp", IccTestProfiles.CicpTag(9, 16, 0, 1)[..11]).Cicp);
+        Assert.Null(new IccProfile(new MetadataBlob(new byte[128])).Cicp);
+    }
+
+    [Fact]
     public void IccProfileExposesDeclaredHeaderFields()
     {
         // ICC.1:2022 section 7.2: version at offset 8 (major, then minor and bug fix nibbles), class at 12, intent at 64

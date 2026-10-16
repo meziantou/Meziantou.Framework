@@ -50,6 +50,17 @@ internal sealed partial class DrawingSession
                     continue;
                 }
 
+                if (_isProjective)
+                {
+                    // Drawn on an image of the plane of the drawing, then in perspective: only when it is painted
+                    if (paint && !glyph.IsEmpty)
+                    {
+                        DrawProjectedColorGlyph(layout.GetBrush(runBrush) ?? brush, glyph, face, placement, mode, blend);
+                    }
+
+                    continue;
+                }
+
                 // A color glyph is drawn in the pixels of the canvas: its placement includes the transformation
                 placement = ToCanvas(placement);
 
@@ -65,6 +76,52 @@ internal sealed partial class DrawingSession
                 DrawColorGlyph(surface, glyph, face, placement, mode, blend, paint);
             }
         }
+    }
+
+    /// <summary>Draws a color glyph on an image of the plane of the drawing around its box, then that image in perspective.</summary>
+    private void DrawProjectedColorGlyph(Brush brush, ColorGlyph glyph, FontFace face, in Affine2D placement, CompositeMode mode, BlendMode blend)
+    {
+        var minX = double.PositiveInfinity;
+        var minY = double.PositiveInfinity;
+        var maxX = double.NegativeInfinity;
+        var maxY = double.NegativeInfinity;
+        for (var corner = 0; corner < 4; corner++)
+        {
+            var x = (corner & 1) == 0 ? glyph.XMin : glyph.XMax;
+            var y = (corner & 2) == 0 ? glyph.YMin : glyph.YMax;
+            var px = placement.TransformX(x, y);
+            var py = placement.TransformY(x, y);
+            minX = Math.Min(minX, px);
+            minY = Math.Min(minY, py);
+            maxX = Math.Max(maxX, px);
+            maxY = Math.Max(maxY, py);
+        }
+
+        // A pixel of the image around the box: its edges are antialiased
+        var pixel = 2 / _transformScale;
+        var scope = BeginProjectedScope(RectangleD.FromLTRB(minX - pixel, minY - pixel, maxX + pixel, maxY + pixel), margin: 0);
+        var isDrawn = false;
+        try
+        {
+            scope.Session.DrawColorGlyph(brush, glyph, face, placement);
+            isDrawn = true;
+        }
+        finally
+        {
+            EndProjectedScope(scope, isDrawn, mode, blend);
+        }
+    }
+
+    /// <summary>Draws one color glyph, placed in the drawing, with the operator and the blend mode that combine it with what is under it.</summary>
+    private void DrawColorGlyph(Brush brush, ColorGlyph glyph, FontFace face, Affine2D placement)
+    {
+        placement = ToCanvas(placement);
+        var surface = _colorSurface ??= new ColorSurface(_image.Owner.Scope);
+        if (!surface.Reserve(glyph, placement, Width, Height))
+            return;
+
+        SetForeground(surface, brush);
+        DrawColorGlyph(surface, glyph, face, placement, CompositeMode.SourceOver, BlendMode.Normal, paint: true);
     }
 
     /// <summary>Gives the surface the color of the text: the one of a solid brush, or the gradient of a gradient brush, in canvas coordinates; black for the other brushes.</summary>

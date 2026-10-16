@@ -146,6 +146,11 @@ internal abstract class DecodedFrameSink : IDisposable
     /// </summary>
     public virtual void BeginRefinement(FrameDuration duration) => throw new NotSupportedException("Only a sequential reader shows a frame before it is complete.");
 
+    /// <summary>Registers the decoder that shows the frame it is decoding when the input ends before it: only a sequential reader asks for it.</summary>
+    public virtual void SetPartialFrameRenderer(IPartialFrameRenderer renderer)
+    {
+    }
+
     /// <summary>Ends the intermediate rendering that was started.</summary>
     /// <param name="downsampling">The factor by which the rendering reduces the resolution of the frame.</param>
     /// <param name="passCount">The number of passes the rendering holds.</param>

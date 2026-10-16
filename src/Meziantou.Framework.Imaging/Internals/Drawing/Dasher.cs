@@ -30,6 +30,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// stroker needs to draw the join or the cap. Once the stroke covers the whole canvas, nothing more is cut. The
 /// cancellation token is checked every few hundred dashes.
 /// </para>
+/// <para>
+/// Under a transformation of the canvas, affine or projective, the dashes are cut in the coordinates of the drawing,
+/// where the part of the drawing whose image is on the canvas (with a pixel around it) is the intersection of four
+/// half-planes. A segment is cut where it is within the reach of a body of every half-plane, plus the reach of a cap
+/// along it, and next to an end that is within the reach of a join of every half-plane; the reaches are lengths of the
+/// drawing, enlarged by what the pen reaches beyond its width (<see cref="ProjectiveView.Reach"/>).
+/// </para>
 /// </remarks>
 internal sealed class Dasher : PathSink, IDisposable
 {
@@ -52,6 +59,11 @@ internal sealed class Dasher : PathSink, IDisposable
     private bool _hasCanvas;
     private double _canvasWidth;
     private double _canvasHeight;
+
+    // Under a transformation of the canvas: the four half-planes of the drawing whose image is on the canvas, as
+    // (a, b, c) with a x + b y + c the distance to the border of the half-plane, positive inside
+    private bool _hasPlanes;
+    private readonly double[] _planes = new double[12];
     private double _acrossReach;
     private double _alongReach;
     private double _vertexReach;
@@ -98,13 +110,54 @@ internal sealed class Dasher : PathSink, IDisposable
         // The body of a dash is within half the width of the pen of its segment; a cap goes that far beyond its end; a
         // miter goes as far as the miter limit allows from its vertex, and the corner of a square cap or of a square dot
         // the diagonal of half the width. One more pixel than needed never shows.
-        var half = pen.Width * widthFactor / 2;
+        var half = pen.StrokeWidth * widthFactor / 2;
         _hasCanvas = true;
         _canvasWidth = width;
         _canvasHeight = height;
         _acrossReach = half + 1;
         _alongReach = (pen.LineCap == LineCap.Butt ? 0 : half) + 1;
         _vertexReach = (half * Math.Max(pen.LineJoin == LineJoin.Miter ? pen.MiterLimit : 1, 2)) + 1;
+    }
+
+    /// <summary>
+    /// Sets the pen and the stroker of the next path, drawn in the coordinates of a drawing that a transformation places
+    /// on a canvas: the part of the drawing that is seen is the intersection of the half-planes of the view, whose
+    /// functions are affine in the coordinates of the drawing whatever the transformation.
+    /// </summary>
+    public void Configure(Pen pen, Stroker stroker, in ProjectiveView view, CancellationToken cancellationToken, double widthFactor = 1)
+    {
+        Configure(pen, stroker, cancellationToken);
+        var half = pen.StrokeWidth * widthFactor / 2;
+        _hasPlanes = true;
+        _acrossReach = half + view.Reach;
+        _alongReach = (pen.LineCap == LineCap.Butt ? 0 : half) + view.Reach;
+        _vertexReach = (half * Math.Max(pen.LineJoin == LineJoin.Miter ? pen.MiterLimit : 1, 2)) + view.Reach;
+        var transform = view.Transform;
+        for (var plane = 0; plane < 4; plane++)
+        {
+            // X - Left W, Right W - X, Y - Top W, Bottom W - Y, as functions of the point of the drawing
+            var (sign, limit, column) = plane switch
+            {
+                0 => (1d, view.Left, 0),
+                1 => (-1d, view.Right, 0),
+                2 => (1d, view.Top, 1),
+                _ => (-1d, view.Bottom, 1),
+            };
+            var a = sign * ((column == 0 ? transform.M11 : transform.M12) - (limit * transform.M13));
+            var b = sign * ((column == 0 ? transform.M21 : transform.M22) - (limit * transform.M23));
+            var c = sign * ((column == 0 ? transform.M31 : transform.M32) - (limit * transform.M33));
+            var norm = Math.Sqrt((a * a) + (b * b));
+            if (norm > 0)
+            {
+                a /= norm;
+                b /= norm;
+                c /= norm;
+            }
+
+            _planes[3 * plane] = a;
+            _planes[(3 * plane) + 1] = b;
+            _planes[(3 * plane) + 2] = c;
+        }
     }
 
     /// <summary>Sets the pen and the stroker of the next path, wherever it is: every dash of the path is cut.</summary>
@@ -116,6 +169,7 @@ internal sealed class Dasher : PathSink, IDisposable
         _cancellationToken = cancellationToken;
         _dashCount = 0;
         _hasCanvas = false;
+        _hasPlanes = false;
         _hasCurrent = false;
         _index = 0;
         _remaining = _pattern[0];
@@ -419,6 +473,9 @@ internal sealed class Dasher : PathSink, IDisposable
     /// <returns>The number of parts; each one takes two values of <paramref name="ranges"/>.</returns>
     private int GetVisibleRanges(double startX, double startY, double endX, double endY, double ux, double uy, double length, Span<double> ranges)
     {
+        if (_hasPlanes)
+            return GetVisibleRangesInPlanes(startX, startY, endX, endY, ux, uy, length, ranges);
+
         if (!_hasCanvas)
         {
             ranges[0] = 0;
@@ -472,6 +529,76 @@ internal sealed class Dasher : PathSink, IDisposable
         }
 
         return count;
+    }
+
+    /// <summary>The same, when the canvas is the intersection of four half-planes of the drawing.</summary>
+    private int GetVisibleRangesInPlanes(double startX, double startY, double endX, double endY, double ux, double uy, double length, Span<double> ranges)
+    {
+        // Where the segment, moved across by the reach of the bodies, is in every half-plane
+        double low = 0;
+        double high = length;
+        for (var plane = 0; plane < 4 && low <= high; plane++)
+        {
+            var a = _planes[3 * plane];
+            var b = _planes[(3 * plane) + 1];
+            var start = (a * startX) + (b * startY) + _planes[(3 * plane) + 2] + _acrossReach;
+            var slope = (a * ux) + (b * uy);
+
+            // Written so that a value that is not a number leaves the whole segment
+            if (slope > 0)
+            {
+                low = Math.Max(low, -start / slope);
+            }
+            else if (slope < 0)
+            {
+                high = Math.Min(high, start / -slope);
+            }
+            else if (start < 0)
+            {
+                high = -1;
+            }
+        }
+
+        double from = 0;
+        double to = -1;
+        if (low <= high)
+        {
+            from = Math.Max(low - _alongReach, 0);
+            to = Math.Min(high + _alongReach, length);
+        }
+
+        var count = 0;
+        if (IsNearPlanes(startX, startY))
+        {
+            ranges[0] = 0;
+            ranges[1] = Math.Min(VertexLength, length);
+            count = 1;
+        }
+
+        if (from < to)
+        {
+            count = AddRange(ranges, count, from, to);
+        }
+
+        if (IsNearPlanes(endX, endY))
+        {
+            count = AddRange(ranges, count, Math.Max(length - VertexLength, 0), length);
+        }
+
+        return count;
+    }
+
+    /// <summary>Gets a value indicating whether a join or a cap at a point can change a pixel of the canvas seen through the half-planes.</summary>
+    private bool IsNearPlanes(double x, double y)
+    {
+        for (var plane = 0; plane < 4; plane++)
+        {
+            // Written so that a value that is not a number is near
+            if ((_planes[3 * plane] * x) + (_planes[(3 * plane) + 1] * y) + _planes[(3 * plane) + 2] + _vertexReach < 0)
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>Adds a part that starts at or after the start of the last one, merging them when they touch.</summary>

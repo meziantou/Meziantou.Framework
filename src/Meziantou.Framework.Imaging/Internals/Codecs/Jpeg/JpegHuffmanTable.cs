@@ -23,6 +23,10 @@ internal sealed class JpegHuffmanTable
 
     private readonly byte[] _values;
 
+    // AC tables of sequential scans: (coefficient << 8) | (run << 4) | (code length + magnitude bits) for the lookup indexes
+    // whose code and magnitude bits fit in LookupBits, else 0 (built on first use)
+    private int[]? _fastAc;
+
     private JpegHuffmanTable(byte[] values)
     {
         _values = values;
@@ -107,6 +111,39 @@ internal sealed class JpegHuffmanTable
     /// <summary>Gets the lookup entry of the next <see cref="LookupBits"/> bits: <c>(length &lt;&lt; 8) | symbol</c>, or 0 for a longer code.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Lookup(int bits) => _lookup[bits];
+
+    /// <summary>
+    /// Gets the AC coefficient whose code and magnitude bits are the first ones of the next <see cref="LookupBits"/> bits:
+    /// <c>(coefficient &lt;&lt; 8) | (run &lt;&lt; 4) | bit count</c>, or 0 when the code or its magnitude is longer
+    /// (<see cref="PrepareFastAc"/> was called).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int FastAc(int bits) => _fastAc![bits];
+
+    /// <summary>Builds the table of <see cref="FastAc"/>, for a table that codes AC coefficients.</summary>
+    public void PrepareFastAc()
+    {
+        if (_fastAc is not null)
+            return;
+
+        var fastAc = new int[1 << LookupBits];
+        for (var bits = 0; bits < fastAc.Length; bits++)
+        {
+            var entry = _lookup[bits];
+            var length = entry >> 8;
+            var run = (entry >> 4) & 0x0F;
+            var size = entry & 0x0F;
+            if (entry == 0 || size == 0 || length + size > LookupBits)
+                continue;
+
+            // The magnitude bits follow the code; values below 2^(size-1) are negative (T.81 F.2.2.1, EXTEND)
+            var magnitude = (bits >> (LookupBits - length - size)) & ((1 << size) - 1);
+            var coefficient = magnitude < (1 << (size - 1)) ? magnitude - (1 << size) + 1 : magnitude;
+            fastAc[bits] = (coefficient << 8) | (run << 4) | (length + size);
+        }
+
+        _fastAc = fastAc;
+    }
 
     /// <summary>Resolves a code longer than <see cref="LookupBits"/> from the next 16 bits.</summary>
     /// <param name="bits16">The next 16 bits, most significant first.</param>

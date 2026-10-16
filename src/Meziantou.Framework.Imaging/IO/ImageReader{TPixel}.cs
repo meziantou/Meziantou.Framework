@@ -119,14 +119,21 @@ public sealed class ImageReader<TPixel> : IDisposable, IAsyncDisposable
     /// <remarks>
     /// <para>
     /// Call the method until it returns a final rendering to show an image while its data arrive: a progressive JPEG XL frame
-    /// gives the image at one eighth of its detail, then one rendering for each of its passes, then the frame. Other formats,
-    /// and frames that are not progressive, give the frame at once. <see cref="ReadFrame"/> and <see cref="ReadFrameInto"/>
-    /// may be called at any time: they read the frame itself.
+    /// gives the image at one eighth of its detail, then one rendering for each of its passes, then the frame; a progressive
+    /// JPEG frame gives one rendering after each scan once every component has its DC coefficients; an interlaced PNG image
+    /// gives the Adam7 passes completed so far, every other pixel taking the value of the pixel of its block in them. Other
+    /// formats, and frames that are not progressive, give the frame at once. <see cref="ReadFrame"/> and
+    /// <see cref="ReadFrameInto"/> may be called at any time: they read the frame itself. The destination may change
+    /// between two reads.
     /// </para>
     /// <para>
-    /// An input that ends before the frame is complete is malformed: the renderings that were returned stay valid, and the
-    /// read that reaches the end of the input throws <see cref="InvalidImageContentException"/>. The intermediate
-    /// renderings of a frame count toward <see cref="ImageResourceLimits.MaxTotalPixels"/>.
+    /// An input that ends before the frame is complete is malformed: the renderings that were returned stay valid. The read
+    /// that reaches the end of the input returns a last intermediate rendering of what was decoded, when the format allows
+    /// it (the rows decoded so far of a GIF image, of a PNG image that is not interlaced, of a JPEG frame coded in one scan
+    /// and of a still lossy WebP image, the other rows being zero; the passes of an interlaced PNG image; the coefficients
+    /// of a progressive JPEG frame), and the next read throws <see cref="InvalidImageContentException"/>; otherwise that read
+    /// throws. The renderings of the passes and the scans of a frame count toward
+    /// <see cref="ImageResourceLimits.MaxTotalPixels"/>.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="destination"/> does not have the canvas size, has several frames, a poster frame, or animation settings.</exception>

@@ -23,4 +23,16 @@ public enum ImageSampling
     /// which also has better filters.
     /// </remarks>
     Smooth = 2,
+
+    /// <summary>
+    /// The sixteen pixels around the position, with the weights of the cubic filter of Mitchell and Netravali
+    /// (<c>B = C = 1/3</c>), as browsers draw a scaled image with high quality: smoother than <see cref="Bilinear"/>
+    /// when the image is enlarged, without its blur.
+    /// </summary>
+    /// <remarks>
+    /// The filter has negative weights: the alpha is clamped to the range from 0 to 1, and each color, multiplied by the
+    /// alpha, to the range from 0 to the alpha. At the center of a pixel, the color mixes it with its neighbors (the
+    /// filter does not interpolate). An image that is reduced is read at the position, as with <see cref="Bilinear"/>.
+    /// </remarks>
+    Bicubic = 3,
 }

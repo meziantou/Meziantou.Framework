@@ -118,6 +118,10 @@ public sealed class ReferenceGradient
 
     private List<ReferencePaint> Evaluate(Fraction parameter)
     {
+        // Outside the range of a transparent spread, the gradient paints nothing
+        if (_spreadMode == ReferenceSpreadMode.Transparent && (parameter < 0 || parameter > 1))
+            return [new ReferencePaint(new int[_layout.ColorChannels], 0)];
+
         var t = _spreadMode switch
         {
             ReferenceSpreadMode.Repeat => parameter - new Fraction(parameter.Floor(), 1),

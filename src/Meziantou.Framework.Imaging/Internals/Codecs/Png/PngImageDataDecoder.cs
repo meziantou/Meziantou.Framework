@@ -13,8 +13,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Push-model use: <see cref="Feed"/> copies a bounded piece of compressed data, then <see cref="TryReadRow"/> returns the
 /// reconstructed rows that piece completes, until the inflater starves; finally <see cref="Complete"/> validates the end of
 /// the datastream. Memory is bounded by two scanlines, one expanded row (none when the scanline bytes already are the
-/// source pixels), one compressed piece and the inflater window, whatever the image or chunk sizes; every buffer is charged
-/// to the operation scope as decoder state. The two scanline buffers are swapped after each row instead of being copied.
+/// source pixels), one compressed piece, one piece of decompressed data and the inflater window, whatever the image or
+/// chunk sizes; every buffer is charged to the operation scope as decoder state. The two scanline buffers are swapped
+/// after each row instead of being copied. The inflater is asked for pieces of up to
+/// <see cref="InflatedCapacity"/> bytes, never past the size of the image, rather than for each scanline: each call
+/// costs as much as tens of bytes of data.
 /// </para>
 /// <para>
 /// Validation (every failure is <see cref="InvalidImageContentException"/>): invalid zlib data (header, deflate blocks,
@@ -28,6 +31,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class PngImageDataDecoder : IDisposable
 {
     private const int FeedCapacity = 32 * 1024;
+    private const int InflatedCapacity = 32 * 1024;
 
     private readonly ImageCodecContext _context;
     private readonly PngSampleFormat _format;
@@ -39,6 +43,12 @@ internal sealed class PngImageDataDecoder : IDisposable
     private PooledBuffer? _previousBuffer;
     private PooledBuffer? _pixelBuffer;
     private PooledBuffer? _feedBuffer;
+
+    // Decompressed bytes not yet copied to a scanline: [_inflatedStart, _inflatedEnd)
+    private PooledBuffer? _inflatedBuffer;
+    private int _inflatedStart;
+    private int _inflatedEnd;
+    private long _remainingBytes;
     private InflateFeedStream? _feed;
     private ZLibStream? _zlib;
 
@@ -79,6 +89,7 @@ internal sealed class PngImageDataDecoder : IDisposable
             if (passWidth > 0)
             {
                 _totalScanlines += passHeight;
+                _remainingBytes += passHeight * (format.GetScanlineLength(passWidth) + 1);
             }
         }
 
@@ -99,6 +110,7 @@ internal sealed class PngImageDataDecoder : IDisposable
             }
 
             _feedBuffer = scope.Rent(FeedCapacity, AllocationKind.DecoderState, clear: false);
+            _inflatedBuffer = scope.Rent((int)Math.Min(InflatedCapacity, _remainingBytes), AllocationKind.DecoderState, clear: false);
             _feed = new InflateFeedStream(_feedBuffer.RawBuffer);
             _zlib = new ZLibStream(_feed, CompressionMode.Decompress, leaveOpen: true);
         }
@@ -116,6 +128,12 @@ internal sealed class PngImageDataDecoder : IDisposable
 
     /// <summary>Gets a value indicating whether every scanline was decoded.</summary>
     public bool IsComplete => _done;
+
+    /// <summary>
+    /// Gets the pass whose scanlines are being decoded (0 when the datastream is not interlaced; the number of passes
+    /// once every scanline was decoded), and the number of its rows that were read.
+    /// </summary>
+    public (int Pass, int Rows) Progress => _done ? (_passCount, 0) : (_pass, _passRow);
 
     /// <summary>Copies the next piece of compressed data. Call <see cref="TryReadRow"/> until it returns <see langword="false"/> before the next call.</summary>
     /// <returns>The number of bytes taken (at most an internal bound); feed the rest afterward.</returns>
@@ -166,13 +184,25 @@ internal sealed class PngImageDataDecoder : IDisposable
         }
 
         var scanline = _scanlineBuffer!.RawBuffer.AsSpan(0, _scanlineLength);
+        var inflated = _inflatedBuffer!.RawBuffer;
         while (_filled < _scanlineLength)
         {
-            var read = Inflate(zlib, scanline[_filled..]);
-            if (read == 0)
-                return false;
+            if (_inflatedStart == _inflatedEnd)
+            {
+                // Never past the image: what follows it is checked once every scanline was read (EnsureNoExtraData)
+                var read = Inflate(zlib, inflated.AsSpan(0, (int)Math.Min(inflated.Length, _remainingBytes)));
+                if (read == 0)
+                    return false;
 
-            _filled += read;
+                _remainingBytes -= read;
+                _inflatedStart = 0;
+                _inflatedEnd = read;
+            }
+
+            var count = Math.Min(_scanlineLength - _filled, _inflatedEnd - _inflatedStart);
+            inflated.AsSpan(_inflatedStart, count).CopyTo(scanline[_filled..]);
+            _inflatedStart += count;
+            _filled += count;
         }
 
         _context.CancellationToken.ThrowIfCancellationRequested();
@@ -236,6 +266,8 @@ internal sealed class PngImageDataDecoder : IDisposable
         _feed = null;
         _feedBuffer?.Dispose();
         _feedBuffer = null;
+        _inflatedBuffer?.Dispose();
+        _inflatedBuffer = null;
         _pixelBuffer?.Dispose();
         _pixelBuffer = null;
         _previousBuffer?.Dispose();

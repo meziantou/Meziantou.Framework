@@ -406,6 +406,52 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>The filters of CSS: frosted glass behind a card (backdrop-filter) and a drop shadow under a badge (filter).</summary>
+    // begin-snippet: draw-filters
+    public static void DrawFrostedCard(string photoPath, string outputPath)
+    {
+        using var image = Image.Load(photoPath);
+        var card = new RectangleD(24, 24, image.Width - 48, 80);
+        var shape = new VectorPathBuilder().AddRoundedRectangle(card, 16).Build();
+
+        // backdrop-filter: blur(16px) saturate(1.4), and filter: drop-shadow(0 4px 12px rgb(0 0 0 / 47%))
+        var glass = new FilterChain(new BlurFilter(8), new ColorMatrixFilter(ColorMatrix.CreateSaturation(1.4)));
+        var lift = new DropShadowFilter(new Rgba32(0, 0, 0, 120), new PointD(0, 4), 6);
+
+        image.Draw(canvas =>
+        {
+            // The card starts with what is behind it, blurred, inside its rounded corners, then is lightened
+            canvas.Clip(shape, clipped => clipped.BackdropLayer(glass, card, 1, panel => panel.Fill(new Rgba32(255, 255, 255, 60))));
+
+            // The badge and its shadow, as a whole
+            canvas.Filter(lift, badge => badge.FillCircle(Colors.Gold, new PointD(card.Right - 30, card.Bottom - 30), 14));
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>An SVG filter: a ring that glows, from a blurred and colored copy of its own shape under it.</summary>
+    // begin-snippet: draw-filter-graph
+    public static void DrawGlowingRing(string outputPath)
+    {
+        using var image = new Image<Rgba32>(160, 160, new Rgba32(16, 20, 40));
+
+        // <feMorphology in="SourceAlpha" operator="dilate" radius="3"/> <feGaussianBlur stdDeviation="6"/>
+        // <feFlood flood-color="#33ccff"/> <feComposite operator="in" in2="(the blur)"/>
+        // <feMerge> <feMergeNode in="(the glow)"/> <feMergeNode in="SourceGraphic"/> </feMerge>
+        var glow = new FilterGraph(
+            new MorphologyPrimitive(FilterMorphologyOperator.Dilate, 3, 3) { Input = FilterInput.SourceAlpha },
+            new GaussianBlurPrimitive(6),
+            new FloodPrimitive(new Rgba32(51, 204, 255)),
+            new CompositePrimitive(FilterCompositeOperator.In, FilterInput.FromResult(1)),
+            new MergePrimitive(FilterInput.FromResult(3), FilterInput.SourceGraphic));
+
+        image.Draw(canvas => canvas.Filter(glow, ring => ring.StrokeCircle(new Pen(new Rgba32(255, 255, 255), 6), new PointD(80, 80), 40)));
+        image.Save(outputPath);
+    }
+    // end-snippet
+
     /// <summary>An image drawn on a quadrilateral, as a plane seen in perspective: a screenshot on the screen of a photo.</summary>
     // begin-snippet: draw-perspective
     public static void DrawOnScreen(string photoPath, string screenshotPath, string outputPath)
@@ -424,6 +470,32 @@ internal static class Examples
             ImageSampling.Smooth));
 
         photo.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>A card turned in three dimensions and seen in perspective, as the 3D transforms of CSS draw it.</summary>
+    // begin-snippet: draw-3d
+    public static void DrawTiltedCard(string outputPath)
+    {
+        using var image = new Image<Rgba32>(240, 160, Colors.WhiteSmoke);
+        var card = new RectangleD(60, 30, 120, 100);
+        var face = new LinearGradientBrush(new PointD(60, 0), new PointD(180, 0), [new GradientStop(0, Colors.SteelBlue), new GradientStop(1, Colors.MidnightBlue)]);
+
+        // "perspective: 300px" and "transform: rotateY(40deg)", both around the center of the image: the turn of the
+        // card applies first, then the perspective, combined in three dimensions
+        var toCenter = Transform3D.CreateTranslation(-120, -80, 0);
+        var fromCenter = Transform3D.CreateTranslation(120, 80, 0);
+        var perspective = toCenter.Then(Transform3D.CreatePerspective(300)).Then(fromCenter);
+        var turn = toCenter.Then(Transform3D.CreateRotationY(40)).Then(fromCenter);
+
+        image.Draw(canvas => canvas.Transform(perspective, viewer => viewer.Transform(turn, plane =>
+        {
+            // Everything is drawn in the plane of the card: its shadow, its gradient, its border
+            plane.Shadow(new Rgba32(0, 0, 0, 90), new PointD(0, 6), 6, shadowed => shadowed.FillRoundedRectangle(face, card, 12));
+            plane.StrokeRoundedRectangle(new Pen(Colors.White, 3), card.Inflate(-10, -10), 6);
+        })));
+
+        image.Save(outputPath);
     }
     // end-snippet
 
@@ -823,8 +895,8 @@ internal static class Examples
         // label, as an ICC profile is: the matrix and the range were applied to produce RGB, nothing else was converted.
         var description = $"{image.Width}x{image.Height} {image.PixelFormat}, frames: {image.Frames.Count}, color: {image.Metadata.Cicp}";
 
-        // PNG keeps 16-bit samples, alpha and animations, without loss. It cannot store a color description
-        // that is not sRGB, so a strict save of an HDR image fails instead of relabeling its samples.
+        // PNG keeps 16-bit samples, alpha and animations, without loss, and the primaries and the transfer
+        // characteristics of the description (cICP chunk), so the samples of an HDR image keep their meaning.
         image.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
         return description;
     }

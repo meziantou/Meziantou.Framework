@@ -96,6 +96,35 @@ public sealed class JpegDecoderTests
         }
     }
 
+    [Theory]
+    [InlineData("4:2:0", 8)]
+    [InlineData("4:4:4", 8)]
+    [InlineData("gray", 8)]
+    [InlineData("4:2:2", 12)]
+    public void LargeFramesDecodeTheirShortAcCodesInOneLookup(string layout, int precision)
+    {
+        // From 128x128 pixels, the AC coefficients whose code and magnitude bits fit in the lookup bits are decoded by one
+        // lookup: dense coefficients and every code length from 2 to 16 bits give both paths
+        var sampling = Layouts[layout];
+        foreach (var (width, height) in new[] { (128, 128), (161, 137) })
+        {
+            var image = JpegTestImage.CreateRandom(width, height, sampling, seed: width + height + precision, acDensity: 0.7, dcOnlyProbability: 0.05, precision: precision);
+            var expected = image.GetExpectedPixels();
+            for (var seed = 0; seed < 3; seed++)
+            {
+                foreach (var options in new[]
+                {
+                    new JpegTestEncodeOptions { Huffman = JpegTestHuffmanStyle.Skewed, HuffmanSeed = seed, FrameMarker = precision == 8 ? (byte)0xC0 : (byte)0xC1 },
+                    new JpegTestEncodeOptions { Huffman = JpegTestHuffmanStyle.Skewed, HuffmanSeed = seed + 10, RestartInterval = 1, FrameMarker = 0xC1 },
+                })
+                {
+                    using var decoded = Image.Load(image.Encode(options));
+                    AssertPixels(expected, decoded, $"{layout} {width}x{height}, {precision} bits, Huffman seed {options.HuffmanSeed}");
+                }
+            }
+        }
+    }
+
     public static TheoryData<string, int, int> DeepLayoutCases
     {
         get
@@ -1049,6 +1078,41 @@ public sealed class JpegDecoderTests
             using var reader = Image.OpenReader<Rgb24>(new MemoryStream(data));
             using var frame = reader.ReadFrame();
         });
+    }
+
+    [Fact]
+    public void ATruncatedFrameIsShownAsFarAsItWasDecodedThenReported()
+    {
+        // Prefixes that end in the scan of a streamed frame: the rendering has the MCU rows that were written (one behind
+        // the decoded ones, and the decoder waits for the largest size of an MCU), the other rows being zero; the next
+        // read reports the truncation
+        var image = JpegTestImage.CreateRandom(21, 250, Layouts["4:2:0"], seed: 9);
+        var expected = image.GetExpectedPixels();
+        var data = image.Encode();
+        var sos = FindSegment(data, 0xDA);
+        var rowLength = 21 * 3;
+        var partials = 0;
+        for (var length = sos + 14; length < data.Length - 2; length += 7)
+        {
+            using var reader = Image.OpenReader<Rgb24>(new MemoryStream(data[..length]));
+            using var destination = new Image<Rgb24>(21, 250, new Rgb24(1, 2, 3));
+            var refinement = reader.ReadFrameRefinementInto(destination);
+            Assert.NotNull(refinement);
+            Assert.False(refinement.IsFinal);
+            var pixels = GetBytes(destination);
+            var rows = Enumerable.Range(0, 250).TakeWhile(y => pixels.AsSpan(y * rowLength, rowLength).SequenceEqual(expected.AsSpan(y * rowLength, rowLength))).Count();
+            Assert.True(rows % 16 == 0 || rows == 250, $"length {length}: {rows} rows");
+            Assert.True(pixels.AsSpan(rows * rowLength).IndexOfAnyExcept((byte)0) < 0, $"length {length}");
+            if (rows > 0)
+            {
+                partials++;
+            }
+
+            Assert.Throws<InvalidImageContentException>(() => reader.ReadFrameRefinementInto(destination));
+            Assert.Throws<InvalidOperationException>(() => reader.ReadFrameRefinementInto(destination));
+        }
+
+        Assert.True(partials > 10, $"{partials} of {data.Length} bytes");
     }
 
     [Fact]

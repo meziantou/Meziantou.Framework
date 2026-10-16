@@ -2431,10 +2431,71 @@ public sealed class DrawingSessionTests
     // -----------------------------------------------------------------------------------------------------------------
 
     [Fact]
+    public void WithoutAntialiasingAPixelIsPaintedWhenItsCenterIsInside()
+    {
+        // Random polygons on a grid of a quarter of a pixel, whose sides often go through the centers of pixels, with
+        // both fill rules. The oracle counts, in integers, the sides that cross the row of centers (top excluded,
+        // bottom included) strictly on the left of each center.
+        var random = new Random(12);
+        for (var iteration = 0; iteration < 200; iteration++)
+        {
+            var points = new (int X, int Y)[random.Next(3, 9)];
+            for (var i = 0; i < points.Length; i++)
+            {
+                points[i] = (random.Next(-8, 4 * 12 + 8), random.Next(-8, 4 * 10 + 8));
+            }
+
+            var fillRule = random.Next(2) == 0 ? FillRule.NonZero : FillRule.EvenOdd;
+            var builder = new VectorPathBuilder().MoveTo(points[0].X / 4.0, points[0].Y / 4.0);
+            foreach (var point in points.AsSpan(1))
+            {
+                builder.LineTo(point.X / 4.0, point.Y / 4.0);
+            }
+
+            var path = builder.Close().Build();
+            using var image = new Image<Gray8>(12, 10, new Gray8(0));
+            image.Draw(canvas => canvas.Antialiasing(enabled: false, hard => hard.Fill(White, path, fillRule)), Ct);
+            for (var y = 0; y < 10; y++)
+            {
+                for (var x = 0; x < 12; x++)
+                {
+                    var expected = IsCenterInside(points, (4 * x) + 2, (4 * y) + 2, fillRule) ? 255 : 0;
+                    Assert.Equal(expected, (int)image.Frames[0][x, y].Value, message: $"iteration {iteration}, pixel ({x}, {y})");
+                }
+            }
+        }
+
+        static bool IsCenterInside((int X, int Y)[] points, long centerX, long centerY, FillRule fillRule)
+        {
+            var winding = 0;
+            for (var i = 0; i < points.Length; i++)
+            {
+                var (x0, y0) = points[i];
+                var (x1, y1) = points[(i + 1) % points.Length];
+                var direction = 1;
+                if (y0 > y1)
+                {
+                    (x0, y0, x1, y1) = (x1, y1, x0, y0);
+                    direction = -1;
+                }
+
+                // The crossing x0 + (cy - y0) (x1 - x0) / (y1 - y0), strictly on the left of the center
+                if (y0 < centerY && centerY <= y1 && ((long)x0 * (y1 - y0)) + ((centerY - y0) * (x1 - x0)) < centerX * (y1 - y0))
+                {
+                    winding += direction;
+                }
+            }
+
+            return fillRule == FillRule.EvenOdd ? (winding & 1) != 0 : winding != 0;
+        }
+    }
+
+    [Fact]
     public void WithoutAntialiasingAPixelIsPaintedEntirelyOrNotAtAll()
     {
-        // A rectangle from 0.4 to 10.4: it covers 0.6 of the first pixel, which is painted, and 0.4 of the pixel 10,
-        // which is not. From 0.5 to 10.5, it covers half of both: both are painted.
+        // A pixel is painted when its center is inside, as browsers draw hard edges. A rectangle from 0.4 to 10.4
+        // contains the centers of the pixels 0 to 9. From 0.5 to 10.5, the center of the first pixel is on its left side,
+        // outside, and the one of the pixel 10 on its right side, inside: the pixels 1 to 10, as positions rounded half up.
         using var image = new Image<Gray8>(12, 4, new Gray8(0));
         image.Draw(
             canvas =>
@@ -2453,7 +2514,7 @@ public sealed class DrawingSessionTests
             },
             Ct);
         Assert.Equal([255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0], Enumerable.Range(0, 12).Select(x => (int)image.Frames[0][x, 0].Value));
-        Assert.Equal([255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0], Enumerable.Range(0, 12).Select(x => (int)image.Frames[0][x, 1].Value));
+        Assert.Equal([0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0], Enumerable.Range(0, 12).Select(x => (int)image.Frames[0][x, 1].Value));
         Assert.Equal([153, 255, 255, 255, 255, 255, 255, 255, 255, 255, 102, 0], Enumerable.Range(0, 12).Select(x => (int)image.Frames[0][x, 2].Value));
         Assert.Equal([153, 255, 255, 255, 255, 255, 255, 255, 255, 255, 102, 0], Enumerable.Range(0, 12).Select(x => (int)image.Frames[0][x, 3].Value));
 
@@ -2486,11 +2547,20 @@ public sealed class DrawingSessionTests
             {
                 hard.Fill(new Rgba32(255, 255, 255, 128));
 
-                // Thinner than half a pixel: no pixel is covered by half
+                // A line 0.4 wide on the centers of the row covers all of them: white, through the antialiased clip
                 hard.StrokeLine(new Pen(White, 0.4), new PointD(0, 0.5), new PointD(3, 0.5));
             })),
             Ct);
-        Assert.Equal([128, 77, 0], Enumerable.Range(0, 3).Select(x => (int)opacity.Frames[0][x, 0].Value));
+        Assert.Equal([255, 184, 0], Enumerable.Range(0, 3).Select(x => (int)opacity.Frames[0][x, 0].Value));
+
+        // The rows follow the same rule, and so does a clip that starts without antialiasing: from 0.5 to 2.5 along
+        // both axes, the pixels 1 and 2
+        using var clip = new Image<Gray8>(4, 4, new Gray8(0));
+        clip.Draw(canvas => canvas.Antialiasing(enabled: false, hard => hard.Clip(new RectangleD(0.5, 0.5, 2, 2), clipped => clipped.Fill(White))), Ct);
+        Assert.Equal([0, 0, 0, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 0, 0, 0], DrawingTestSupport.ReadSamples(clip.Frames[0]));
+        clip.Draw(canvas => canvas.Clear(new Rgba32(0, 0, 0)), Ct);
+        clip.Draw(canvas => canvas.Antialiasing(enabled: false, hard => hard.Clip(new VectorPathBuilder().AddRectangle(new RectangleD(0.5, 0.5, 2, 2)).Build(), clipped => clipped.Fill(White))), Ct);
+        Assert.Equal([0, 0, 0, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 0, 0, 0], DrawingTestSupport.ReadSamples(clip.Frames[0]));
 
         // A callback that fails leaves antialiasing as it was
         using var restored = new Image<Gray8>(2, 1, new Gray8(0));

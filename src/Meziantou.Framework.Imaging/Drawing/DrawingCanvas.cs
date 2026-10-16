@@ -1644,23 +1644,22 @@ public readonly ref struct DrawingCanvas
     /// <summary>Runs a callback whose drawings have hard edges, or antialiased ones: pixel art, a mask of whole pixels, an image whose colors must stay those of a palette.</summary>
     /// <remarks>
     /// <para>
-    /// Without antialiasing, a pixel is painted entirely or not at all: it is painted when the shape covers at least
-    /// half of it (its exact coverage, rounded to the nearest 1/65536, is at least 32768/65536). An opaque paint then
-    /// writes its color and nothing else: no pixel gets a color between the paint and what was under it. This applies
-    /// to the shapes, the strokes, the texts and the edges of the images that are drawn while the callback runs, and
-    /// to the clips that start in it.
+    /// Without antialiasing, a pixel is painted entirely or not at all, as browsers draw hard edges: it is painted when
+    /// its center is inside the shape, a center on the top or the left side of the shape being outside and one on its
+    /// bottom or its right side inside. An opaque paint then writes its color and nothing else: no pixel gets a color
+    /// between the paint and what was under it. This applies to the shapes, the strokes, the texts and the edges of the
+    /// images that are drawn while the callback runs, and to the clips that start in it.
     /// </para>
     /// <para>
     /// What is not an edge is unchanged: the opacity of a paint, of an image or of a layer, the blur of a shadow, the
-    /// pixels inside an image, and the glyphs a font draws with its own colors. A line thinner than half a pixel
-    /// covers no pixel by half, and is not drawn.
+    /// pixels inside an image, and the glyphs a font draws with its own colors. A thin line is drawn where it covers the
+    /// centers of pixels: a horizontal line one pixel wide between two rows of centers covers one of them.
     /// </para>
     /// </remarks>
     /// <param name="enabled"><see langword="false"/> for hard edges; <see langword="true"/> (what a canvas starts with) for antialiased ones, inside a callback that turned them off.</param>
     /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
-    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. The callback is not run.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void Antialiasing(bool enabled, DrawingAction action)
     {
@@ -1685,7 +1684,6 @@ public readonly ref struct DrawingCanvas
     /// <remarks>See <see cref="Antialiasing(bool, DrawingAction)"/>.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
-    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. The callback is not run.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void Antialiasing<TState>(bool enabled, TState state, DrawingAction<TState> action)
         where TState : allows ref struct

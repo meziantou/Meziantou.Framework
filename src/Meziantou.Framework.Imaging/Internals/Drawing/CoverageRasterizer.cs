@@ -36,6 +36,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// negligible area, and a pair found in the wrong order is swapped at once. The order in which the events of a row are
 /// processed is fully determined (ties included), so the sums do not depend on the platform.
 /// </para>
+/// <para>
+/// <b>Without antialiasing</b> (<see cref="Begin(EdgeBuilder, FillRule, bool, CancellationToken)"/> with <c>isAliased</c>), a pixel is covered entirely when its center
+/// is inside, and not at all otherwise, as browsers draw hard edges: on the row <c>Y</c>, the edges whose range of
+/// heights contains <c>Y + 1/2</c> (the top excluded, the bottom included) are crossed at that height, and between two
+/// crossings where the region starts at <c>xa</c> and ends at <c>xb</c>, the pixels from <c>floor(xa + 1/2)</c> to
+/// <c>floor(xb + 1/2)</c> excluded are covered: a center on the left side of a shape is outside, one on its right side
+/// inside, as with the rounding of positions half up.
+/// </para>
 /// </remarks>
 internal sealed class CoverageRasterizer : IDisposable
 {
@@ -72,6 +80,7 @@ internal sealed class CoverageRasterizer : IDisposable
 
     private EdgeBuilder? _edges;
     private bool _evenOdd;
+    private bool _isAliased;
     private int _edgeCount;
     private int _firstRow;
     private int _lastRow;
@@ -188,8 +197,17 @@ internal sealed class CoverageRasterizer : IDisposable
     /// </summary>
     /// <returns><see langword="false"/> if there is nothing to rasterize.</returns>
     /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
-    public bool Begin(EdgeBuilder edges, FillRule fillRule, CancellationToken cancellationToken)
+    public bool Begin(EdgeBuilder edges, FillRule fillRule, CancellationToken cancellationToken) => Begin(edges, fillRule, isAliased: false, cancellationToken);
+
+    /// <summary>
+    /// Prepares the rasterization of a set of edges, with antialiasing or with the centers of the pixels only: sorts them
+    /// by first row and rents the scratch of the sweep, sized for the largest number of edges on one row.
+    /// </summary>
+    /// <returns><see langword="false"/> if there is nothing to rasterize.</returns>
+    /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
+    public bool Begin(EdgeBuilder edges, FillRule fillRule, bool isAliased, CancellationToken cancellationToken)
     {
+        _isAliased = isAliased;
         var rowCounts = Rows[..(_height + 1)];
         var deltas = Rows[(_height + 1)..];
         if (_firstRow < _lastRow)
@@ -206,6 +224,11 @@ internal sealed class CoverageRasterizer : IDisposable
             ResetDirtyRange();
         }
 
+        if (!isAliased)
+        {
+            ClipHeights(edges);
+        }
+
         _edges = edges;
         _evenOdd = fillRule == FillRule.EvenOdd;
         _cancellationToken = cancellationToken;
@@ -220,8 +243,8 @@ internal sealed class CoverageRasterizer : IDisposable
         var list = edges.Edges;
         foreach (ref readonly var edge in list)
         {
-            var first = (int)edge.Y0;
-            var end = (int)Math.Ceiling(edge.Y1);
+            var first = GetFirstRow(edge);
+            var end = (int)Math.Ceiling(Math.Min(edge.Y1, _height));
             rowCounts[first]++;
             deltas[first]++;
             deltas[end]--;
@@ -250,7 +273,7 @@ internal sealed class CoverageRasterizer : IDisposable
         var order = Order;
         for (var i = 0; i < list.Length; i++)
         {
-            order[rowCounts[(int)list[i].Y0]++] = i;
+            order[rowCounts[GetFirstRow(list[i])]++] = i;
         }
 
         // Every slot is free; the first ones are taken first
@@ -277,7 +300,7 @@ internal sealed class CoverageRasterizer : IDisposable
                 _cancellationToken.ThrowIfCancellationRequested();
             }
 
-            if (ProcessRow(row))
+            if (_isAliased ? ProcessAliasedRow(row) : ProcessRow(row))
                 return true;
         }
 
@@ -305,6 +328,161 @@ internal sealed class CoverageRasterizer : IDisposable
         var grown = Math.Max(required, 16);
         buffer = ResampleWeights.Rent<byte>(_scope, (long)grown * elementSize);
         capacity = grown;
+    }
+
+    /// <summary>Gets the first row of the frame an edge is on.</summary>
+    private static int GetFirstRow(in DrawingEdge edge) => edge.Y0 > 0 ? (int)edge.Y0 : 0;
+
+    /// <summary>
+    /// Cuts the edges at the top and at the bottom of the frame, for the areas: then an edge entirely to the right of the
+    /// frame is dropped, and one entirely to the left of it is moved onto its left side, which keeps the winding number of
+    /// every point of the frame.
+    /// </summary>
+    private void ClipHeights(EdgeBuilder edges)
+    {
+        var list = edges.Edges;
+        var kept = 0;
+        for (var i = 0; i < list.Length; i++)
+        {
+            var edge = list[i];
+            if (edge.Y0 < 0 || edge.Y1 > _height)
+            {
+                var top = edge.Y0;
+                var left = edge.X0;
+                var slope = (edge.X1 - edge.X0) / (edge.Y1 - edge.Y0);
+                if (edge.Y0 < 0)
+                {
+                    edge.X0 = left - (top * slope);
+                    edge.Y0 = 0;
+                }
+
+                if (edge.Y1 > _height)
+                {
+                    edge.X1 = left + ((_height - top) * slope);
+                    edge.Y1 = _height;
+                }
+
+                if (!(edge.Y0 < edge.Y1) || Math.Min(edge.X0, edge.X1) >= _width)
+                    continue;
+
+                edge.Slope = (edge.X1 - edge.X0) / (edge.Y1 - edge.Y0);
+            }
+
+            if (Math.Max(edge.X0, edge.X1) <= 0)
+            {
+                edge.X0 = 0;
+                edge.X1 = 0;
+                edge.Slope = 0;
+            }
+
+            list[kept++] = edge;
+        }
+
+        edges.Truncate(kept);
+    }
+
+    /// <summary>Covers the pixels of a row whose centers are inside: the edges are crossed at the height of the centers.</summary>
+    private bool ProcessAliasedRow(int row)
+    {
+        var edges = _edges!.Edges;
+        var center = row + 0.5;
+
+        // The edges that ended leave the active ones (in the slots of the sweep line), then those that start in the row
+        // join them: there are never more than the edges of one row
+        var active = SlotEdge;
+        for (var i = 0; i < _lineCount; i++)
+        {
+            if (edges[active[i]].Y1 < center)
+            {
+                active[i--] = active[--_lineCount];
+            }
+        }
+
+        var order = Order;
+        while (_nextEdge < _edgeCount && GetFirstRow(edges[order[_nextEdge]]) <= row)
+        {
+            active[_lineCount++] = order[_nextEdge++];
+        }
+
+        var positions = SinceY;
+        var directions = SlotSign;
+        var count = 0;
+        for (var i = 0; i < _lineCount; i++)
+        {
+            ref readonly var edge = ref edges[active[i]];
+            if (edge.Y0 < center && center <= edge.Y1)
+            {
+                // Sorted as they come: by position, then by insertion. The crossing is one rounded division: when it is
+                // exactly the center of a pixel, which decides whether that pixel is inside, it is found exactly.
+                var x = edge.X0 + (((center - edge.Y0) * (edge.X1 - edge.X0)) / (edge.Y1 - edge.Y0));
+                var position = count++;
+                while (position > 0 && positions[position - 1] > x)
+                {
+                    positions[position] = positions[position - 1];
+                    directions[position] = directions[position - 1];
+                    position--;
+                }
+
+                positions[position] = x;
+                directions[position] = edge.Direction;
+            }
+        }
+
+        // The spans between the crossings where the region starts and ends
+        var coverage = CoverageRow;
+        var first = -1;
+        var last = -1;
+        var winding = 0;
+        double start = 0;
+        for (var i = 0; i < count; i++)
+        {
+            var wasInside = IsInside(winding);
+            winding += directions[i];
+            var isInside = IsInside(winding);
+            if (!wasInside && isInside)
+            {
+                start = positions[i];
+            }
+            else if (wasInside && !isInside)
+            {
+                AddSpan(coverage, start, positions[i], ref first, ref last);
+            }
+        }
+
+        // An edge on the right of the frame was dropped: what is inside after the last crossing is inside up to the right side
+        if (IsInside(winding))
+        {
+            AddSpan(coverage, start, _width, ref first, ref last);
+        }
+
+        if (first < 0)
+            return false;
+
+        Y = row;
+        X = first;
+        Count = last - first;
+        return true;
+    }
+
+    /// <summary>Covers the pixels whose centers are between two crossings, and clears those between the previous span and this one.</summary>
+    private void AddSpan(Span<uint> coverage, double start, double end, ref int first, ref int last)
+    {
+        var from = (int)Math.Clamp(Math.Floor(start + 0.5), 0, _width);
+        var to = (int)Math.Clamp(Math.Floor(end + 0.5), 0, _width);
+        if (from >= to)
+            return;
+
+        if (first < 0)
+        {
+            first = from;
+        }
+        else if (from > last)
+        {
+            coverage[last..from].Clear();
+        }
+
+        coverage[from..to].Fill(FullCoverage);
+        last = Math.Max(last, to);
     }
 
     /// <summary>Sweeps a row and turns what it accumulated into coverages.</summary>

@@ -198,7 +198,7 @@ internal sealed partial class DrawingSession : IDisposable
             EnsureCoverageRow();
         }
 
-        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _cancellationToken))
+        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _isAliased, _cancellationToken))
         {
             Paint(default, evaluator, mode, blend, coverage);
         }
@@ -280,7 +280,7 @@ internal sealed partial class DrawingSession : IDisposable
             EnsureCoverageRow();
         }
 
-        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _cancellationToken))
+        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _isAliased, _cancellationToken))
         {
             Paint(default, evaluator, CompositeMode.SourceOver, BlendMode.Normal, coverage);
         }
@@ -392,7 +392,7 @@ internal sealed partial class DrawingSession : IDisposable
             EnsureCoverageRow();
         }
 
-        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _cancellationToken))
+        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _isAliased, _cancellationToken))
         {
             Paint(default, evaluator, CompositeMode.SourceOver, BlendMode.Normal, coverage);
         }
@@ -1122,9 +1122,6 @@ internal sealed partial class DrawingSession : IDisposable
             var y = rasterizer.Y;
             var x = rasterizer.X;
             var coverage = rasterizer.Coverage;
-            if (_isAliased && !RemoveAntialiasing(ref coverage))
-                continue;
-
             if (_clipDepth != 0 && !ApplyClip(y, ref x, ref coverage, out _))
                 continue;
 
@@ -1194,6 +1191,6 @@ internal sealed partial class DrawingSession : IDisposable
             evaluator = gradient;
         }
 
-        return _rasterizer!.Begin(edges, fillRule, _cancellationToken);
+        return _rasterizer!.Begin(edges, fillRule, _isAliased, _cancellationToken);
     }
 }

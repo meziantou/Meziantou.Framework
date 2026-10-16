@@ -7,10 +7,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// storage grows to the largest draw call of the session and is released with it.
 /// </summary>
 /// <remarks>
-/// Clipping keeps the winding number of every point of the frame: an edge is cut at the top and at the bottom of the
-/// frame, dropped when it lies entirely to the right of the frame (it has no point of the frame on its right), and moved
-/// onto the left side of the frame when it lies entirely to the left of it (every point of the frame is on its right
-/// either way).
+/// Clipping keeps the winding number of every point of the frame: an edge is dropped when it is entirely above or below
+/// the frame, or entirely to the right of it (it has no point of the frame on its right), and moved onto the left side
+/// of the frame when it lies entirely to the left of it (every point of the frame is on its right either way). An edge
+/// keeps its heights: <see cref="CoverageRasterizer"/> cuts them at the top and the bottom of the frame for the areas,
+/// and crosses the edges at the centers of the pixels exactly as they are given without antialiasing.
 /// </remarks>
 internal sealed class EdgeBuilder : IDisposable
 {
@@ -66,25 +67,7 @@ internal sealed class EdgeBuilder : IDisposable
             direction = -1;
         }
 
-        if (y1 <= 0 || y0 >= _height)
-            return;
-
-        var top = y0;
-        var left = x0;
-        var slope = (x1 - x0) / (y1 - y0);
-        if (y0 < 0)
-        {
-            x0 = left - (top * slope);
-            y0 = 0;
-        }
-
-        if (y1 > _height)
-        {
-            x1 = left + ((_height - top) * slope);
-            y1 = _height;
-        }
-
-        if (!(y0 < y1) || Math.Min(x0, x1) >= _width)
+        if (!(y1 > 0 && y0 < _height) || Math.Min(x0, x1) >= _width)
             return;
 
         if (Math.Max(x0, x1) <= 0)

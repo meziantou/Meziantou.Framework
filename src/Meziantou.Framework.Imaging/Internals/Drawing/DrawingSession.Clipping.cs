@@ -98,7 +98,7 @@ internal sealed partial class DrawingSession
             parent = null;
         }
 
-        if (_edges.Count != 0 && rasterizer.Begin(_edges, fillRule, _cancellationToken))
+        if (_edges.Count != 0 && rasterizer.Begin(_edges, fillRule, _isAliased, _cancellationToken))
         {
             while (rasterizer.MoveNext())
             {
@@ -114,14 +114,7 @@ internal sealed partial class DrawingSession
                     continue;
 
                 var row = mask.Slice(((y - top) * width) + (start - left), end - start);
-                if (_isAliased)
-                {
-                    RemoveAntialiasing(coverage.Slice(start - x, end - start), row);
-                }
-                else
-                {
-                    coverage.Slice(start - x, end - start).CopyTo(row);
-                }
+                coverage.Slice(start - x, end - start).CopyTo(row);
 
                 if (parent is not null)
                 {

@@ -19,6 +19,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// same metadata.
 /// </description></item>
 /// <item><description>
+/// When the input ends in the bitstream of a still lossy image, a sequential reader that asks for renderings gets the
+/// macroblock rows whose data was received (<see cref="Vp8Decoder.DecodePartial"/>), the other rows being zero.
+/// </description></item>
+/// <item><description>
 /// Animations: the canvas starts transparent black. Each frame rectangle is drawn with alpha blending (the exact OVER contract
 /// of the library) or replaces the canvas ("do not blend"); the first frame is always drawn with SOURCE (on the
 /// cleared canvas both display the same image, and SOURCE keeps the encoded colors of fully transparent pixels). The whole
@@ -33,7 +37,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// </list>
 /// </remarks>
-internal sealed class WebPDecoder : WebPDecodeObserver
+internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
 {
     private const int BytesPerPixel = 4;
 
@@ -59,6 +63,7 @@ internal sealed class WebPDecoder : WebPDecodeObserver
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
         _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.WebP, structure.Size, structure.DefaultPixelFormat, PixelFormat.Rgba32, structure.Metadata.IccProfile);
+        _sink.SetPartialFrameRenderer(this);
     }
 
     public override bool OnFrame(WebPFrameInfo frame, WebPPayloadBuffer? alpha, WebPPayloadBuffer bitstream)
@@ -114,6 +119,40 @@ internal sealed class WebPDecoder : WebPDecodeObserver
         }
     }
 
+    /// <summary>The rows of a still lossy image whose data was received, when the input ends in its bitstream.</summary>
+    public bool TryRenderPartialFrame()
+    {
+        if (_structure is not { } structure || _sink is not { } sink || !structure.TryGetPartialStillImage(out var frame, out var alpha, out var bitstream) || frame.IsLossless || alpha is { IsComplete: false })
+            return false;
+
+        var planes = Vp8Decoder.DecodePartial(_context.Scope, bitstream.Data, 0, bitstream.Length, (int)bitstream.DeclaredLength, _context.CancellationToken, out var rows);
+        if (planes is null)
+            return false;
+
+        using var image = CreateLossyImage(frame, alpha, planes);
+        EnsureRows(structure.Width);
+        var row = _row!.RawBuffer.AsSpan(0, frame.Width * BytesPerPixel);
+        sink.BeginRefinement(FrameDuration.Zero);
+        using (var target = sink.LeaseCurrentFrame())
+        {
+            for (var y = 0; y < frame.Height; y++)
+            {
+                if (y < rows)
+                {
+                    image.ReadRow(y, row, _scratch!.RawBuffer);
+                    sink.WriteRow(target, y, row);
+                }
+                else
+                {
+                    target.GetRowBytes(y).Clear();
+                }
+            }
+        }
+
+        sink.EndRefinement(downsampling: 1, passCount: 0);
+        return true;
+    }
+
     public override Image GetResult()
     {
         var structure = _structure ?? throw new InvalidOperationException("The WebP file was not decoded.");
@@ -156,13 +195,18 @@ internal sealed class WebPDecoder : WebPDecodeObserver
             return new DecodedWebPImage(frame.Width, pixels, opaque: !_structure!.IsAnimated && !frame.HasAlpha);
         }
 
-        var planes = Vp8Decoder.Decode(scope, bitstream.Data, 0, bitstream.Length, cancellationToken);
+        return CreateLossyImage(frame, alpha, Vp8Decoder.Decode(scope, bitstream.Data, 0, bitstream.Length, cancellationToken));
+    }
+
+    /// <summary>Decodes the alpha data of a lossy image, if any: the image owns the planes, which are disposed on failure.</summary>
+    private DecodedWebPImage CreateLossyImage(WebPFrameInfo frame, WebPPayloadBuffer? alpha, Vp8Planes planes)
+    {
         PooledBuffer? alphaPlane = null;
         try
         {
             if (alpha is not null)
             {
-                alphaPlane = WebPAlphaDecoder.Decode(scope, alpha.Data, 0, alpha.Length, frame.Width, frame.Height, cancellationToken);
+                alphaPlane = WebPAlphaDecoder.Decode(_context.Scope, alpha.Data, 0, alpha.Length, frame.Width, frame.Height, _context.CancellationToken);
             }
 
             return new DecodedWebPImage(planes, alphaPlane);

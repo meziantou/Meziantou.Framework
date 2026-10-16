@@ -61,7 +61,7 @@ public sealed class DrawingReferenceTests
     [MemberData(nameof(AllFormats))]
     public void RandomPolygonsWithEveryOperatorMatchTheExactReference(PixelFormat format)
     {
-        const int Cases = 330;
+        const int Cases = 360;
         var failures = new List<string>();
         for (var index = 0; index < Cases; index++)
         {
@@ -71,7 +71,7 @@ public sealed class DrawingReferenceTests
             var polygons = CreatePolygons(random, width, height);
             var evenOdd = random.Next(2) == 0;
             var color = CreateColor(random);
-            var mode = (CompositeMode)(index % 11);
+            var mode = (CompositeMode)(index % 12);
 
             using var image = DrawingTestSupport.CreateRandom(format, width, height, new Random(Seed - 7000 - index).Next);
             var frame = image.Frames[0];
@@ -226,6 +226,7 @@ public sealed class DrawingReferenceTests
         CompositeMode.DestinationAtop => ReferenceCompositeMode.DestinationAtop,
         CompositeMode.Xor => ReferenceCompositeMode.Xor,
         CompositeMode.Clear => ReferenceCompositeMode.Clear,
+        CompositeMode.Plus => ReferenceCompositeMode.Plus,
         _ => throw new ArgumentOutOfRangeException(nameof(mode)),
     };
 
@@ -550,7 +551,7 @@ public sealed class DrawingReferenceTests
             // Offsets on sixteenths, so that hard stops, single stops and pixel centers exactly on a stop all happen
             var offsets = Enumerable.Range(0, random.Next(1, 6)).Select(_ => random.Next(17) / 16.0).Order().ToArray();
             var stops = offsets.Select(offset => new GradientStop(offset, CreateColor(random))).ToArray();
-            var spreadMode = (GradientSpreadMode)random.Next(3);
+            var spreadMode = (GradientSpreadMode)random.Next(4);
             double Coordinate(int size) => random.Next(3) == 0 ? random.Next(-2, size + 3) : (random.NextDouble() * (size + 4)) - 2;
             var isVertical = index >= Cases - VerticalCases;
             var radial = random.Next(2) == 0 && !isVertical;
@@ -570,6 +571,7 @@ public sealed class DrawingReferenceTests
             {
                 GradientSpreadMode.Pad => ReferenceSpreadMode.Pad,
                 GradientSpreadMode.Repeat => ReferenceSpreadMode.Repeat,
+                GradientSpreadMode.Transparent => ReferenceSpreadMode.Transparent,
                 _ => ReferenceSpreadMode.Reflect,
             };
             var reference = radial

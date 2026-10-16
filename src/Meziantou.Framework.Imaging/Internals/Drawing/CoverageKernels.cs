@@ -3,8 +3,7 @@ using System.Runtime.Intrinsics;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Products of coverages (clip masks, opacities) and the coverages of the drawings without antialiasing, four at a time
-/// with the scalar loops as their references.
+/// Products of coverages (clip masks, opacities), four at a time with the scalar loops as their references.
 /// </summary>
 /// <remarks>
 /// A coverage is at most <see cref="CoverageRasterizer.FullCoverage"/> (2^16): the product of a coverage by a factor
@@ -77,41 +76,5 @@ internal static class CoverageKernels
         {
             product[i] = (uint)((((ulong)coverage[i] * opacity) + (Full / 2)) >> 16);
         }
-    }
-
-    /// <summary>Makes coverages all or nothing: a coverage of at least half is full, the others are zero.</summary>
-    /// <returns><see langword="false"/> when no coverage is full.</returns>
-    public static bool Threshold(ReadOnlySpan<uint> coverage, Span<uint> result)
-    {
-        var i = 0;
-        var any = Vector128<uint>.Zero;
-        if (Vector128.IsHardwareAccelerated)
-        {
-            var full = Vector128.Create(Full);
-            var half = Vector128.Create(Full / 2);
-            for (; i + 4 <= coverage.Length; i += 4)
-            {
-                var value = Vector128.GreaterThanOrEqual(Vector128.Create(coverage.Slice(i, 4)), half) & full;
-                value.CopyTo(result.Slice(i, 4));
-                any |= value;
-            }
-        }
-
-        var tail = ThresholdScalar(coverage[i..], result[i..]);
-        return tail || any != Vector128<uint>.Zero;
-    }
-
-    /// <summary>The scalar reference of <see cref="Threshold"/>.</summary>
-    public static bool ThresholdScalar(ReadOnlySpan<uint> coverage, Span<uint> result)
-    {
-        var any = false;
-        for (var i = 0; i < coverage.Length; i++)
-        {
-            var isCovered = coverage[i] >= Full / 2;
-            result[i] = isCovered ? Full : 0;
-            any |= isCovered;
-        }
-
-        return any;
     }
 }

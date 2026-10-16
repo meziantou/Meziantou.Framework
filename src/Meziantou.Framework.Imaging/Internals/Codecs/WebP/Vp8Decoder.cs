@@ -81,6 +81,7 @@ internal sealed class Vp8Decoder : IDisposable
     private readonly List<PooledBuffer> _buffers = [];
     private Vp8BoolDecoder _header;
     private Vp8BoolDecoder[] _partitions = [];
+    private bool[] _truncatedPartitions = [];
 
     // Frame settings
     private int _width;
@@ -166,7 +167,25 @@ internal sealed class Vp8Decoder : IDisposable
     public static Vp8Planes Decode(AllocationScope scope, byte[] data, int offset, int length, CancellationToken cancellationToken)
     {
         using var decoder = new Vp8Decoder(scope, data, cancellationToken);
-        return decoder.DecodeFrame(offset, length);
+        return decoder.DecodeFrame(offset, length, length, out _)!;
+    }
+
+    /// <summary>
+    /// Decodes the macroblock rows of a VP8 chunk payload received in part whose data was all received (the first
+    /// partition must be complete), and applies the loop filter to them.
+    /// </summary>
+    /// <param name="scope">The scope charged with the planes.</param>
+    /// <param name="data">The payload.</param>
+    /// <param name="offset">The offset of the payload in <paramref name="data"/>.</param>
+    /// <param name="receivedLength">The number of bytes of the payload that were received.</param>
+    /// <param name="length">The declared length of the payload.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="decodedRows">The number of pixel rows that were decoded.</param>
+    /// <returns>The planes, the caller disposes them; <see langword="null"/> when no macroblock row could be decoded.</returns>
+    public static Vp8Planes? DecodePartial(AllocationScope scope, byte[] data, int offset, int receivedLength, int length, CancellationToken cancellationToken, out int decodedRows)
+    {
+        using var decoder = new Vp8Decoder(scope, data, cancellationToken);
+        return decoder.DecodeFrame(offset, length, receivedLength, out decodedRows);
     }
 
     public void Dispose()
@@ -181,16 +200,24 @@ internal sealed class Vp8Decoder : IDisposable
         _planes = null;
     }
 
-    private Vp8Planes DecodeFrame(int offset, int length)
+    private Vp8Planes? DecodeFrame(int offset, int length, int receivedLength, out int decodedRows)
     {
+        decodedRows = 0;
+        var isPartial = receivedLength < length;
+        if (isPartial && receivedLength < FrameHeaderLength)
+            return null;
+
         var frame = ReadFrameHeader(_data.AsSpan(offset, Math.Min(length, FrameHeaderLength)), length);
+        if (isPartial && receivedLength < FrameHeaderLength + frame.FirstPartitionSize)
+            return null;
+
         _width = frame.Width;
         _height = frame.Height;
         _mbWidth = (_width + 15) >> 4;
         _mbHeight = (_height + 15) >> 4;
         _header = new Vp8BoolDecoder(_data, offset + FrameHeaderLength, frame.FirstPartitionSize);
         ParseFrameHeader();
-        SetupPartitions(offset + FrameHeaderLength + frame.FirstPartitionSize, length - FrameHeaderLength - frame.FirstPartitionSize);
+        SetupPartitions(offset + FrameHeaderLength + frame.FirstPartitionSize, length - FrameHeaderLength - frame.FirstPartitionSize, offset + receivedLength);
 
         _planes = Vp8Planes.Create(_scope, _width, _height);
         _aboveModes = new byte[_mbWidth * 4];
@@ -198,10 +225,12 @@ internal sealed class Vp8Decoder : IDisposable
         var filterBuffer = _scope.Rent(_mbWidth * _mbHeight, AllocationKind.DecoderState, clear: true);
         _buffers.Add(filterBuffer);
         _filterInfo = filterBuffer.RawBuffer;
+        var mbRows = _mbHeight;
         for (var mbY = 0; mbY < _mbHeight; mbY++)
         {
             _cancellationToken.ThrowIfCancellationRequested();
-            ref var tokens = ref _partitions[mbY & (_partitions.Length - 1)];
+            var partition = mbY & (_partitions.Length - 1);
+            ref var tokens = ref _partitions[partition];
             Array.Clear(_leftModes);
             Array.Clear(_leftNonZero);
             for (var mbX = 0; mbX < _mbWidth; mbX++)
@@ -209,16 +238,27 @@ internal sealed class Vp8Decoder : IDisposable
                 DecodeMacroblock(mbX, mbY, ref tokens);
             }
 
-            if (_header.OverrunBytes > MaxOverrunBytes || tokens.OverrunBytes > MaxOverrunBytes)
-                throw Invalid("The VP8 data is truncated (a partition ends before the last macroblock that uses it).");
+            // A partition received in part has no byte past what was received: a row that read one is not decoded
+            if (_header.OverrunBytes > MaxOverrunBytes || tokens.OverrunBytes > (_truncatedPartitions[partition] ? 0 : MaxOverrunBytes))
+            {
+                if (!isPartial)
+                    throw Invalid("The VP8 data is truncated (a partition ends before the last macroblock that uses it).");
+
+                mbRows = mbY;
+                break;
+            }
         }
+
+        if (mbRows == 0)
+            return null;
 
         if (_filterLevel != 0)
         {
             _cancellationToken.ThrowIfCancellationRequested();
-            Vp8LoopFilter.Apply(_planes, _filterInfo, _mbWidth, _mbHeight, _simpleFilter, _sharpness);
+            Vp8LoopFilter.Apply(_planes, _filterInfo, _mbWidth, mbRows, _simpleFilter, _sharpness);
         }
 
+        decodedRows = Math.Min(_height, mbRows * 16);
         var planes = _planes;
         _planes = null;
         return planes;
@@ -339,9 +379,10 @@ internal sealed class Vp8Decoder : IDisposable
         }
     }
 
-    private void SetupPartitions(int start, int length)
+    private void SetupPartitions(int start, int length, int receivedEnd)
     {
         var count = _partitions.Length;
+        _truncatedPartitions = new bool[count];
         var tableLength = 3 * (count - 1);
         if (length < tableLength)
             throw Invalid("The VP8 partition size table extends past the end of the chunk.");
@@ -365,7 +406,10 @@ internal sealed class Vp8Decoder : IDisposable
                     throw Invalid("The last VP8 token partition is empty: the data is truncated.");
             }
 
-            _partitions[i] = new Vp8BoolDecoder(_data, position, size);
+            // The bytes of the partition that were received
+            var received = Math.Clamp(receivedEnd - position, 0, size);
+            _truncatedPartitions[i] = received < size;
+            _partitions[i] = new Vp8BoolDecoder(_data, Math.Min(position, receivedEnd), received);
             position += size;
         }
     }

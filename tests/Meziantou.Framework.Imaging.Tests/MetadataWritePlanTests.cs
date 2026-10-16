@@ -12,7 +12,7 @@ public sealed class MetadataWritePlanTests
     private static readonly Size Canvas = new(4, 3);
 
     // Only AVIF stores a content light level, a mastering display color volume and the shape of the pixels
-    private static readonly ImageFormat[] FormatsWithoutHighDynamicRangeFields = [.. Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Avif))];
+    private static readonly ImageFormat[] FormatsWithoutHighDynamicRangeFields = [.. Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Avif or ImageFormat.Png))];
 
     [Fact]
     public void ValidIccProfilePassesValidation()
@@ -252,9 +252,9 @@ public sealed class MetadataWritePlanTests
     [InlineData(0, 13)] // reserved primaries
     public void CicpDescriptionThatIsNotSrgbEquivalentIsUnsupportedMetadata(int colorPrimaries, int transferCharacteristics)
     {
-        // No format stores the description: without it the samples would be displayed as sRGB
+        // These formats do not store the description: without it the samples would be displayed as sRGB
         var metadata = new ImageMetadata { Cicp = new CicpColorDescription((byte)colorPrimaries, (byte)transferCharacteristics, matrixCoefficients: 1, fullRange: false) };
-        foreach (var format in new[] { ImageFormat.Png, ImageFormat.Jpeg, ImageFormat.Gif })
+        foreach (var format in new[] { ImageFormat.Jpeg, ImageFormat.Gif, ImageFormat.WebP })
         {
             var exception = Assert.Throws<UnsupportedImageFeatureException>(() => MetadataWritePlan.Create(metadata, format, MetadataHandling.Strict, Canvas));
             Assert.Equal(format, exception.Format);
@@ -265,6 +265,11 @@ public sealed class MetadataWritePlanTests
             _ = MetadataWritePlan.Create(metadata, format, MetadataHandling.DiscardUnsupported, Canvas);
             _ = MetadataWritePlan.Create(metadata, format, MetadataHandling.Strip, Canvas);
         }
+
+        // PNG stores it in a cICP chunk, unless an ICC profile is written, which then describes the colors
+        Assert.Same(metadata.Cicp, MetadataWritePlan.Create(metadata, ImageFormat.Png, MetadataHandling.Strict, Canvas).Cicp);
+        var withProfile = new ImageMetadata { Cicp = metadata.Cicp, IccProfile = new IccProfile(new MetadataBlob(IccTestBlobs.Create("RGB "))) };
+        Assert.Null(MetadataWritePlan.Create(withProfile, ImageFormat.Png, MetadataHandling.Strict, Canvas).Cicp);
     }
 
     [Theory]
@@ -309,6 +314,21 @@ public sealed class MetadataWritePlanTests
             var square = MetadataWritePlan.Create(new ImageMetadata { PixelAspectRatio = new PixelAspectRatio(3, 3) }, format, MetadataHandling.Strict, Canvas);
             Assert.Null(square.PixelAspectRatio);
         }
+    }
+
+    [Fact]
+    public void PngStoresLightLevelsAndTheMasteringDisplayOfAColorDescription()
+    {
+        // mDCV needs the cICP chunk, which is written when no ICC profile is
+        var lightLevel = new ContentLightLevel(1000, 400);
+        var display = new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50);
+        var plan = MetadataWritePlan.Create(new ImageMetadata { Cicp = new CicpColorDescription(9, 16, 0, fullRange: true), ContentLightLevel = lightLevel, MasteringDisplay = display }, ImageFormat.Png, MetadataHandling.Strict, Canvas);
+        Assert.Same(lightLevel, plan.ContentLightLevel);
+        Assert.Same(display, plan.MasteringDisplay);
+
+        Assert.Same(lightLevel, MetadataWritePlan.Create(new ImageMetadata { ContentLightLevel = lightLevel }, ImageFormat.Png, MetadataHandling.Strict, Canvas).ContentLightLevel);
+        AssertUnsupported(new ImageMetadata { MasteringDisplay = display }, ImageFormat.Png, "mastering display color volume");
+        AssertUnsupported(new ImageMetadata { PixelAspectRatio = new PixelAspectRatio(2, 1) }, ImageFormat.Png, "pixel aspect ratio");
     }
 
     [Fact]
@@ -427,17 +447,17 @@ public sealed class MetadataWritePlanTests
         using var image = new Image<Rgb24>(2, 2);
         image.Metadata.Cicp = new CicpColorDescription(colorPrimaries: 9, transferCharacteristics: 16, matrixCoefficients: 9, fullRange: false);
 
-        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(new MemoryStream(), new PngEncoder()));
-        Assert.Equal(ImageFormat.Png, exception.Format);
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(new MemoryStream(), new JpegEncoder()));
+        Assert.Equal(ImageFormat.Jpeg, exception.Format);
 
         using var stream = new MemoryStream();
-        image.Save(stream, new PngEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported });
+        image.Save(stream, new JpegEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported });
         using var reloaded = Image.Load(stream.ToArray());
         Assert.Null(reloaded.Metadata.Cicp);
 
         // An sRGB label is saved without any setting: nothing is lost
         image.Metadata.Cicp = new CicpColorDescription(colorPrimaries: 1, transferCharacteristics: 13, matrixCoefficients: 6, fullRange: true);
-        image.Save(new MemoryStream(), new PngEncoder());
+        image.Save(new MemoryStream(), new JpegEncoder());
     }
 
     private static void AssertUnsupported(ImageMetadata metadata, ImageFormat format, string feature)

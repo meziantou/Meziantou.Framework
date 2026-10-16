@@ -116,7 +116,7 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
 
         var reader = Reader.GetCursor();
         var zigZag = JpegIdct.ZigZag;
-        var fastAc = table.FastAc!;
+        var fastAc = table.FastAc;
         var end = _end;
         var low = _low;
         for (var k = _start; k <= end;)

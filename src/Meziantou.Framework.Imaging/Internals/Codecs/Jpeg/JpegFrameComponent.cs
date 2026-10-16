@@ -207,6 +207,13 @@ internal sealed class JpegFrameComponent : IDisposable
     /// <summary>Gets a sample row of a precision other than 8 bits, at most <see cref="Width"/> valid samples.</summary>
     public ReadOnlySpan<ushort> GetDeepRow(int row) => DeepSamples.Slice(GetRowOffset(row), Width);
 
+    /// <summary>Releases the plane, keeping the coefficients of a progressive frame.</summary>
+    public void ReleasePlane()
+    {
+        _plane?.Dispose();
+        _plane = null;
+    }
+
     public void Dispose()
     {
         _plane?.Dispose();

@@ -1197,6 +1197,47 @@ public sealed class ProcessingTests
         }
     }
 
+    [Fact]
+    public void ConvertColorProfileUsesTheCicpTagOfAHighDynamicRangeProfile()
+    {
+        // A profile of PQ or HLG samples only approximates their function: the samples are converted from the color space
+        // of its cicp tag, as when the image has that CICP description and no profile. The tag of other samples is not used.
+        var options = new IccColorTransformOptions { BlackPointCompensation = false, ToneMapping = new HdrToneMappingOptions { SourcePeakLuminance = 1000 } };
+        var approximation = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.Gamma(512));
+        foreach (var transfer in new byte[] { 16, 18 })
+        {
+            using var described = Build<Rgba64>(Source4X3);
+            described.Metadata.Cicp = new CicpColorDescription(9, transfer, 0, fullRange: true);
+            described.ConvertColorProfile(IccProfile.Srgb, options, Ct);
+
+            using var tagged = Build<Rgba64>(Source4X3);
+            tagged.Metadata.IccProfile = IccTestProfiles.WithTag(approximation, "cicp", IccTestProfiles.CicpTag(9, transfer, 0, 1));
+            tagged.ConvertColorProfile(IccProfile.Srgb, options, Ct);
+            Assert.Equal(Pixels(described), Pixels(tagged));
+            Assert.Same(IccProfile.Srgb, tagged.Metadata.IccProfile);
+
+            // Without tone mapping, the samples are refused like the ones of a CICP description
+            using var refused = Build<Rgba64>(Source4X3);
+            refused.Metadata.IccProfile = IccTestProfiles.WithTag(approximation, "cicp", IccTestProfiles.CicpTag(9, transfer, 0, 1));
+            Assert.Throws<UnsupportedImageFeatureException>(() => refused.ConvertColorProfile(IccProfile.Srgb, new IccColorTransformOptions(), Ct));
+        }
+
+        using var standard = Build<Rgba64>(Source4X3);
+        standard.Metadata.IccProfile = approximation;
+        standard.ConvertColorProfile(IccProfile.Srgb, options, Ct);
+        using var standardTagged = Build<Rgba64>(Source4X3);
+        standardTagged.Metadata.IccProfile = IccTestProfiles.WithTag(approximation, "cicp", IccTestProfiles.CicpTag(12, 1, 0, 1));
+        standardTagged.ConvertColorProfile(IccProfile.Srgb, options, Ct);
+        Assert.Equal(Pixels(standard), Pixels(standardTagged));
+
+        static Rgba64[] Pixels(Image<Rgba64> image)
+        {
+            var pixels = new Rgba64[image.Width * image.Height];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            return pixels;
+        }
+    }
+
     public static TheoryData<byte, HdrToneMappingOperator> ToneMappingCases
     {
         get

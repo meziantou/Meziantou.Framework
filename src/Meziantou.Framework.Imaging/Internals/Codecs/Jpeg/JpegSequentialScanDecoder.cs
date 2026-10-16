@@ -50,7 +50,7 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         ref var block = ref unsafe(MemoryMarshal.GetArrayDataReference(_block));
         var zigZagQuantization = scanComponent.ZigZagQuantization;
         var acTable = scanComponent.AcTable!;
-        var fastAc = acTable.FastAc!;
+        var fastAc = acTable.FastAc;
 
         // The natural indexes of the non-zero AC coefficients ORed together, with bit 6 set when there is one
         var naturalIndexes = 0;

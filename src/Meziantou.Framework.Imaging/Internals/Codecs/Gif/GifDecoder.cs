@@ -42,7 +42,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// </list>
 /// </remarks>
-internal sealed class GifDecoder : GifDecodeObserver
+internal sealed class GifDecoder : GifDecodeObserver, IPartialFrameRenderer
 {
     private const int BytesPerPixel = 4;
 
@@ -88,6 +88,7 @@ internal sealed class GifDecoder : GifDecodeObserver
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
         _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Gif, structure.Size, DefaultPixelFormats.Gif, PixelFormat.Rgba32, structure.Metadata.IccProfile);
+        _sink.SetPartialFrameRenderer(this);
     }
 
     public override void OnImageStart(GifImageDescriptor descriptor, ReadOnlySpan<byte> localColorTable, GifGraphicControl? control, int lzwMinimumCodeSize)
@@ -185,6 +186,17 @@ internal sealed class GifDecoder : GifDecodeObserver
         }
 
         return sink.EndImage();
+    }
+
+    /// <summary>The canvas with the rows of the image decoded so far, over what the images before it left.</summary>
+    public bool TryRenderPartialFrame()
+    {
+        if (!_imageOpen || _compositor is null || _sink is null)
+            return false;
+
+        _compositor.CopyTo(_sink);
+        _sink.EndRefinement(downsampling: 1, passCount: 0);
+        return true;
     }
 
     public override Image GetResult()
@@ -297,7 +309,7 @@ internal sealed class GifDecoder : GifDecodeObserver
         {
             if (_rowsDone == _height)
             {
-                // Every pixel was decoded: only clear codes, the end code (or padding bits) and ignored data may follow
+                // Every pixel was decoded: what follows is ignored
                 lzw.ReadTrailer(ref input);
                 return;
             }

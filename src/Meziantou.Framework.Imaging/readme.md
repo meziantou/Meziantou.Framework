@@ -852,6 +852,49 @@ and the blur of a shadow. A drawing is flattened for the size the transformation
 they are enlarged, and straight sides are placed exactly where `VectorPath.Transform` places them. Transformations
 nest (the inner one applies first), with clips and layers in any order.
 
+**Perspective and three dimensions**. A `ProjectiveTransform` keeps straight lines straight, but not parallel lines
+parallel: it draws a plane seen in perspective. A point `(x, y)` becomes `(X / W, Y / W)`, with
+`X = x M11 + y M21 + M31`, `Y = x M12 + y M22 + M32` and `W = x M13 + y M23 + M33`; an `AffineTransform` converts to
+the one whose `W` is 1, and `ProjectiveTransform.CreateFromQuadrilateral` gives the one that maps a rectangle to four
+points. A `Transform3D` is a 4x4 matrix as the 3D transforms of CSS: `CreateTranslation`, `CreateScale`,
+`CreateRotationX`, `CreateRotationY`, `CreateRotationZ`, `CreateRotation` around an axis, `CreatePerspective` (the
+distance from the viewer to the plane), combined with `Then`; the drawing is its plane `z = 0`, and
+`ToProjectiveTransform` gives what the matrix does to it.
+
+`canvas.Transform` takes both: everything the callback draws is drawn in perspective, the paints of the brushes
+included. What is on the other side of the horizon of the plane (where `W` is not positive: behind the viewer) has no
+image: a drawing that crosses the horizon is cut there, and nothing is rejected. Transformations of space started
+inside each other are combined in three dimensions, so that a rotation inside a perspective shows the side that comes
+closer larger, as the transforms of nested elements of CSS do. The blur and the offset of a shadow, a blur and the
+glyphs a font draws with its own colors are drawn in the plane, on an image of it, then that image is drawn in
+perspective. `DrawImage` takes a `ProjectiveTransform` too.
+
+<!-- snippet: draw-3d -->
+```csharp
+public static void DrawTiltedCard(string outputPath)
+{
+    using var image = new Image<Rgba32>(240, 160, Colors.WhiteSmoke);
+    var card = new RectangleD(60, 30, 120, 100);
+    var face = new LinearGradientBrush(new PointD(60, 0), new PointD(180, 0), [new GradientStop(0, Colors.SteelBlue), new GradientStop(1, Colors.MidnightBlue)]);
+
+    // "perspective: 300px" and "transform: rotateY(40deg)", both around the center of the image: the turn of the
+    // card applies first, then the perspective, combined in three dimensions
+    var toCenter = Transform3D.CreateTranslation(-120, -80, 0);
+    var fromCenter = Transform3D.CreateTranslation(120, 80, 0);
+    var perspective = toCenter.Then(Transform3D.CreatePerspective(300)).Then(fromCenter);
+    var turn = toCenter.Then(Transform3D.CreateRotationY(40)).Then(fromCenter);
+
+    image.Draw(canvas => canvas.Transform(perspective, viewer => viewer.Transform(turn, plane =>
+    {
+        // Everything is drawn in the plane of the card: its shadow, its gradient, its border
+        plane.Shadow(new Rgba32(0, 0, 0, 90), new PointD(0, 6), 6, shadowed => shadowed.FillRoundedRectangle(face, card, 12));
+        plane.StrokeRoundedRectangle(new Pen(Colors.White, 3), card.Inflate(-10, -10), 6);
+    })));
+
+    image.Save(outputPath);
+}
+```
+
 <!-- snippet: draw-watermark -->
 ```csharp
 public static void DrawWatermark(string fontPath, string inputPath, string outputPath)
@@ -1040,11 +1083,15 @@ canvas. A coordinate must be finite (`ArgumentException`) and no larger than 16,
 the usual helpers (`Center`, `Contains`, `Intersect`, `Union`, `Offset`, `Inflate`).
 
 **Brushes**. A brush is a `SolidBrush`, a gradient, an `ImageBrush` or a `PatternBrush` (see Images and Patterns
-below). A `SolidBrush` paints one
+below). The `Opacity` of a brush, as `globalAlpha` of the HTML canvas, multiplies the alpha of its paint at each pixel
+(at the precision of the canvas, `floor(a opacity + 1/2 + 2^-20)`), before its operator and its blend mode combine it
+with the pixels: a paint at half its opacity that replaces the pixels (`CompositeMode.Source`) leaves them at half
+their opacity. A `SolidBrush` paints one
 color (an `Rgba32` or `Rgba64` converts implicitly to a brush). A `LinearGradientBrush` (between two points), a
 `RadialGradientBrush` (around a center, up to a radius) and a `SweepGradientBrush` (around a center, by the angle) paint
 the color of their `GradientStop`s at the center of each pixel; `SpreadMode` gives the colors beyond the stops: `Pad`
-(default), `Repeat` or `Reflect`. Gradients are positioned in canvas coordinates, whatever the shape they fill. Two
+(default), `Repeat`, `Reflect`, or `Transparent` (nothing is painted where the parameter is outside the range from 0
+to 1: a gradient that ends at its first and its last offsets). Gradients are positioned in canvas coordinates, whatever the shape they fill. Two
 stops with the same offset make a hard edge, and stops are interpolated on alpha-premultiplied values, so a transparent
 stop does not tint its neighbors.
 
@@ -1054,10 +1101,14 @@ paints of light do: the yellow (188, 188, 0). `Oklab` mixes in a space made for 
 change evenly: (208, 168, 0), with no dull band between two saturated colors. The stops are taken as sRGB colors; at
 a stop, the color is the color of the stop in every space.
 
-A radial gradient can spread from a `FocalPoint` that is not its center (a highlight on a sphere): the point must be
-strictly inside the circle. With a `FocalRadius`, it starts on a circle around that point instead of at the point:
-the gradient between two circles of SVG 2 (`fr`) and of the HTML canvas, the first circle strictly inside the second
-one. Inside the first circle, the color is the first stop (or the gradient goes on, with the other spread modes). A
+A radial gradient can spread from a `FocalPoint` that is not its center (a highlight on a sphere). With a
+`FocalRadius`, it starts on a circle around that point instead of at the point: the gradient between two circles of
+SVG 2 (`fr`) and of the HTML canvas (`createRadialGradient`). Inside the first circle, the color is the first stop (or
+the gradient goes on, with the other spread modes). The circles can be anywhere: when the first one is not inside
+the second one, the circles of the gradient form a cone, a position has the color of the largest parameter whose
+circle goes through it (its radius not negative), as the HTML canvas defines, and what is outside the cone is not
+painted. Two circles of the same center and the same radius paint the first stop inside and the last one outside
+with `Pad`, and nothing with the other spread modes. A
 sweep gradient goes around its center clockwise on the image, from `StartAngle` to
 `EndAngle` (a full turn from the right of the center by default); its colors change abruptly at its start angle unless
 it ends on the color it starts with, and that edge is not antialiased. Every gradient has a `Transform` that places it
@@ -1069,11 +1120,12 @@ rectangle, a region of it stretched to a rectangle (a sprite of a sheet), or pla
 skewed, mirrored: its edges are antialiased, and a quarter turn or a mirror keeps its pixels exactly), with an optional
 opacity. An `ImageBrush`
 paints any shape or text with an image: `Transform` places the image on the canvas, `WrapMode` gives the colors around
-it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), `Sampling` chooses how the image is read, and
-`Opacity` fades it. An image drawn on whole pixels without scaling keeps its pixels exactly; its pixels are converted
+it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), or `WrapModeX` and `WrapModeY` for each direction
+(a row of tiles, as `background-repeat: repeat-x` of CSS), `Sampling` chooses how the image is read, and
+`Opacity` fades it as the opacity of any brush does. An image drawn on whole pixels without scaling keeps its pixels exactly; its pixels are converted
 to the pixel format of the canvas like any brush color, and no color profile is applied.
 
-**Perspective**. `DrawImage` with four points draws the image on a quadrilateral, as a plane seen in perspective: a
+**Images in perspective**. `DrawImage` with four points draws the image on a quadrilateral, as a plane seen in perspective: a
 screenshot on the screen of a photograph, a label on a wall. The four corners of the image go to the four points
 (top-left, top-right, bottom-right, bottom-left), straight lines stay straight, and what is further away is smaller.
 The points must be the corners of a convex quadrilateral, in order around it (the other way around mirrors the
@@ -1109,11 +1161,21 @@ transformation of the brush, then the one of the canvas), then repeated like the
 that is enlarged stays as sharp as its drawing, and a tile of a whole number of pixels placed on whole pixels keeps
 the pixels of its drawing exactly. What the callback draws outside the tile is not painted. The callback must draw
 the same thing every time (it runs again when the size of the tile changes, or after another pattern was painted),
-and can use any brush but, directly or not, its own pattern. A callback is also what replays a drawing: keep a
-`DrawingAction`, and call it inside `canvas.Transform` wherever the drawing is needed, at any size.
+and can use any brush but, directly or not, its own pattern. `WrapModeX` and `WrapModeY` say how the tile is laid in
+each direction (`Repeat` by default; `Transparent` paints it once in that direction), and `SpacingX` and `SpacingY`
+leave a gap after each tile, where nothing is painted: the spacing `background-repeat: space` of CSS computes. A
+callback is also what replays a drawing: keep a `DrawingAction`, and call it inside `canvas.Transform` wherever the
+drawing is needed, at any size.
 
 An `ImageSampling` is `Bilinear` (the default: the four pixels around a position, interpolated), `Nearest` (the pixel
-that contains the position: an enlarged image keeps its pixels as squares) or `Smooth`. With the first two, an image
+that contains the position: an enlarged image keeps its pixels as squares), `Bicubic` (the sixteen pixels around a
+position with the cubic filter of Mitchell and Netravali, `B = C = 1/3`, as browsers draw a scaled image with high
+quality: the alpha clamped to the range from 0 to 1 and each color, multiplied by the alpha, to the alpha) or `Smooth`.
+A rectangle of an image that is not made of whole pixels, as the source rectangle of `drawImage` of the HTML canvas,
+is drawn by `DrawImage(frame, RectangleD sourceRegion, destination, sampling)`: the position each pixel reads is brought
+into it, to `[left + 1/2, right - 1/2]` when the image is interpolated (the middle when it is narrower than a pixel) and
+to `[left, right)` for the nearest pixel, so that the pixels around it weigh as little as they can.
+With the first three samplings, an image
 that is drawn much smaller than it is skips pixels. `Smooth` reads every pixel of the image a pixel of the canvas
 covers, with the weights of the interpolation stretched over them, so that a photograph drawn as a thumbnail has no
 aliasing; an image that is not reduced is interpolated as with `Bilinear`, bit for bit. `DrawImage` takes the sampling
@@ -1160,7 +1222,11 @@ any drawing, a text included, and `DestinationOut` an eraser. A layer starts tra
 the canvas; layers and clips nest, and a clip that is active when a layer starts applies to the layer as a whole. The
 image of a layer comes from the allocation scope of the image (4 bytes per pixel on an 8-bit color canvas, 8 bytes
 otherwise) and is kept while the canvas lasts; a layer costs the clearing and the drawing of the pixels the clip can
-show, so start a layer inside `Clip` when it covers a small part of a large canvas.
+show, so start a layer inside `Clip` when it covers a small part of a large canvas. `canvas.Layer(bounds, opacity, callback)` makes a
+layer that holds the pixels of a rectangle only (the box of the rectangle on the canvas that the clip can show): its
+image is rented when it starts and released when it ends, and what the callback draws outside it is not kept. Its
+drawings are made by a canvas of their own, with the coordinates of the canvas, and give the pixels of a layer of the
+whole canvas: an element of a page with an opacity costs the pixels of its box, however large the page.
 
 **Shadows**. `canvas.Shadow(color, offset, blur, callback)` draws what the callback draws with its shadow under it: a
 drop shadow, or a glow when there is no offset. The drawings are made on a layer; the shadow is the alpha of that layer
@@ -1189,6 +1255,80 @@ photograph drawn in gray levels, an icon drawn in the color of a theme and a dis
 `canvas.FilterBackdrop(matrix)` gives new colors to what is already drawn instead, where the clip lets a drawing
 through: the page behind a dialog that is dimmed, a region shown in gray levels, with the antialiased edge of the
 clip.
+
+**Filters and backdrops**. A `Filter` is what the `filter` and `backdrop-filter` properties of CSS apply: a
+`BlurFilter` (a Gaussian blur, with one standard deviation or one per axis, and an `EdgeMode` for what it reads beyond
+the edges of the canvas: transparent by default, the edges extended, wrapped or mirrored), a `ColorMatrixFilter` (the
+filter functions that change colors), a `DropShadowFilter` (a shadow of the alpha, moved, blurred and colored, under
+the drawing, or alone with `ShadowOnly`, as the shadows of the HTML canvas), and a `FilterChain` of them, applied one
+after the other. `canvas.Filter(filter, callback)` draws the callback on a layer that holds what the clip can show and
+what the filter moves into it, then filters the layer and draws it. `canvas.BackdropLayer(filter, bounds, opacity,
+callback)` starts a layer with what is already drawn behind a rectangle, filtered (its pixels mirrored beyond its edges,
+so that a blurred backdrop does not fade there): the callback draws on it, then it is drawn with its opacity, and the
+clip around it gives it its shape. The lengths of a filter are lengths of the drawing: a transformation of the canvas
+that enlarges the drawing enlarges its blurs and its offsets.
+
+A `FilterGraph` is the `filter` element of SVG: primitives computed in order, each one reading the drawing
+(`FilterInput.SourceGraphic`), its alpha (`FilterInput.SourceAlpha`), the result of the primitive before it (the
+default) or of any earlier one (`FilterInput.FromResult(index)`), in its `Subregion` of the drawing and within the
+`Region` of the filter. A primitive computes in linear light by default, as `color-interpolation-filters` of SVG, or in
+sRGB with `ColorSpace`. The primitives are `FloodPrimitive`, `OffsetPrimitive` (between pixels too), `MergePrimitive`,
+`TilePrimitive`, `ColorMatrixPrimitive` (the types `saturate`, `hueRotate` and `luminanceToAlpha` of SVG are the
+matrices `ColorMatrix.CreateSaturation`, `ColorMatrix.CreateHueRotation` and `ColorMatrix.LuminanceToAlpha`),
+`ComponentTransferPrimitive` (with a `TransferFunction` per component: table, discrete, linear or gamma),
+`CompositePrimitive` (the operators of Porter and Duff, `Lighter` and `Arithmetic`), `BlendPrimitive`,
+`GaussianBlurPrimitive` (a deviation per axis, and an `EdgeMode` relative to the subregion of its input),
+`DropShadowPrimitive`, `MorphologyPrimitive` (erode or dilate), `ConvolveMatrixPrimitive` (a divisor, a bias added to
+every component, `PreserveAlpha`, and an edge mode), `DisplacementMapPrimitive`, `TurbulencePrimitive` (the
+noise of the reference code of SVG, with `StitchTiles`), and `DiffuseLightingPrimitive` and `SpecularLightingPrimitive`
+with a `DistantLight`, a `PointLight` or a `SpotLight`, and `ImagePrimitive`, whose result is what a callback draws
+(an image, or an element that `feImage` refers to).
+
+<!-- snippet: draw-filter-graph -->
+```csharp
+public static void DrawGlowingRing(string outputPath)
+{
+    using var image = new Image<Rgba32>(160, 160, new Rgba32(16, 20, 40));
+
+    // <feMorphology in="SourceAlpha" operator="dilate" radius="3"/> <feGaussianBlur stdDeviation="6"/>
+    // <feFlood flood-color="#33ccff"/> <feComposite operator="in" in2="(the blur)"/>
+    // <feMerge> <feMergeNode in="(the glow)"/> <feMergeNode in="SourceGraphic"/> </feMerge>
+    var glow = new FilterGraph(
+        new MorphologyPrimitive(FilterMorphologyOperator.Dilate, 3, 3) { Input = FilterInput.SourceAlpha },
+        new GaussianBlurPrimitive(6),
+        new FloodPrimitive(new Rgba32(51, 204, 255)),
+        new CompositePrimitive(FilterCompositeOperator.In, FilterInput.FromResult(1)),
+        new MergePrimitive(FilterInput.FromResult(3), FilterInput.SourceGraphic));
+
+    image.Draw(canvas => canvas.Filter(glow, ring => ring.StrokeCircle(new Pen(new Rgba32(255, 255, 255), 6), new PointD(80, 80), 40)));
+    image.Save(outputPath);
+}
+```
+
+<!-- snippet: draw-filters -->
+```csharp
+public static void DrawFrostedCard(string photoPath, string outputPath)
+{
+    using var image = Image.Load(photoPath);
+    var card = new RectangleD(24, 24, image.Width - 48, 80);
+    var shape = new VectorPathBuilder().AddRoundedRectangle(card, 16).Build();
+
+    // backdrop-filter: blur(16px) saturate(1.4), and filter: drop-shadow(0 4px 12px rgb(0 0 0 / 47%))
+    var glass = new FilterChain(new BlurFilter(8), new ColorMatrixFilter(ColorMatrix.CreateSaturation(1.4)));
+    var lift = new DropShadowFilter(new Rgba32(0, 0, 0, 120), new PointD(0, 4), 6);
+
+    image.Draw(canvas =>
+    {
+        // The card starts with what is behind it, blurred, inside its rounded corners, then is lightened
+        canvas.Clip(shape, clipped => clipped.BackdropLayer(glass, card, 1, panel => panel.Fill(new Rgba32(255, 255, 255, 60))));
+
+        // The badge and its shadow, as a whole
+        canvas.Filter(lift, badge => badge.FillCircle(Colors.Gold, new PointD(card.Right - 30, card.Bottom - 30), 14));
+    });
+
+    image.Save(outputPath);
+}
+```
 
 **Masks**. `canvas.Mask(mask, content, mode)` keeps what one callback draws only where another one draws: the content
 is drawn on a layer, the mask on a layer of its own, and each pixel of the content is kept in proportion to the mask
@@ -1271,8 +1411,9 @@ public static void DrawGlassPanel(string photoPath, string outputPath)
 otherwise. The modes are the compositing operators of Porter and Duff: `Source` replaces the pixels, alpha included (a
 transparent color erases), `DestinationOut` erases them where the paint is opaque (an eraser, with any shape and any
 gradient), `DestinationOver` paints behind them, `DestinationIn` keeps them where the paint is opaque (a mask),
-`SourceIn`, `SourceOut`, `SourceAtop`, `DestinationAtop` and `Xor` combine both, and `Clear` erases whatever the paint
-is. An operator gives the result where a shape covers a pixel entirely; a pixel covered in part is that result for the
+`SourceIn`, `SourceOut`, `SourceAtop`, `DestinationAtop` and `Xor` combine both, `Clear` erases whatever the paint
+is, and `Plus` adds the paint to the pixels, light to light, up to white (`plus-lighter` of CSS, `lighter` of the
+HTML canvas). An operator gives the result where a shape covers a pixel entirely; a pixel covered in part is that result for the
 part that is covered and what it was for the rest, so a pixel the shape does not touch never changes. `canvas.Clear`
 replaces every pixel by a color (`Colors.Transparent` erases the canvas).
 
@@ -1305,7 +1446,9 @@ contour.
 then stroked, so the width, the dashes and the markers of the pen stay in pixels. A chart, a map or an icon that is
 drawn in coordinates of its own, inside `canvas.Transform`, then has lines of the same width at every scale, where
 the default pen is enlarged with the drawing (and is wider in one direction when the scaling is not the same along
-both axes).
+both axes). A pen of width 0 is a hairline, as in Skia: one pixel of the canvas wide whatever the transformation,
+the pen of width 1 that the transformation does not apply to. A dash of length 0 is drawn by its caps alone, turned
+to the direction of the path at its point: a dot for round caps, a square for square caps, nothing for butt caps.
 
 **Dashes**. `Pen.DashPattern` cuts a stroke into dashes: a list of lengths in pixels, alternately of a dash and of a
 gap, repeated along each contour (`[6, 3]` is dashes of 6 and gaps of 3; a pattern of an odd number of lengths is used
@@ -1315,8 +1458,15 @@ a dash of length zero is drawn by its caps alone (`[0, 5]` with round caps is a 
 contour continues with the first one, as one dash, when the contour ends in the middle of a dash. Lengths are measured
 along the path as it is drawn, and are not rounded; a pattern must be at least 1/1024 of a pixel long.
 
-**Antialiasing and linear light**. `canvas.Antialiasing(false, callback)` draws with hard edges: a pixel is painted
-entirely when the shape covers at least half of it, and not at all otherwise. An opaque paint then writes its color
+**Precision**. On a canvas of 8-bit samples, every draw call rounds its result to 8 bits, and many translucent
+drawings on top of each other, nested layers and filters accumulate those roundings. `canvas.HighPrecision(callback)`
+draws the callback on a copy of the pixels the clip can show with 16-bit samples and alpha (layers started in it have
+16-bit samples too), which starts with the pixels of the canvas and replaces them when the callback returns, as
+`CompositeMode.Source` does through the clip: each color is rounded once. It costs 8 bytes per pixel the clip shows,
+for each frame, while the callback runs; on a canvas of 16-bit samples, the callback draws on the canvas itself.
+
+**Antialiasing and linear light**. `canvas.Antialiasing(false, callback)` draws with hard edges, as browsers do: a
+pixel is painted entirely when its center is inside the shape, and not at all otherwise. An opaque paint then writes its color
 and nothing else, which pixel art, masks of whole pixels and images that keep the colors of a palette need.
 `canvas.Compositing(CompositingSpace.LinearSrgb, callback)` combines the paints with the pixels in linear light
 instead of on the stored sample values: the samples are decoded with the transfer function of the image, combined
@@ -1421,7 +1571,8 @@ public static void MarkAnimation(string inputPath, string outputPath)
   contours over the same half of a pixel cover half of it, not all of it. A pixel that is not covered is left
   untouched, bit for bit.
 - **Curves.** Curves, ellipses, arcs, round joins and round caps are replaced by chords that stay within 1/16 of a pixel of
-  them. The vertices of the chords are not part of the contract.
+  them. A part of a round join or cap whose box is outside the canvas may be replaced by a single chord: what is between
+  them is not seen. The vertices of the chords are not part of the contract.
 - **Colors.** Brush colors are sample values in the color space of the image: no color profile is applied, unless
   `PaintProfile` gives one. A color of a profile is its 16-bit red, green and blue values converted as
   `IccColorTransform` converts them, from the profile to the ICC profile of the image, or to its CICP color space (the
@@ -1439,7 +1590,8 @@ public static void MarkAnimation(string inputPath, string outputPath)
   boundary can differ by one from a platform to another.
 - **Operators.** The other compositing operators use the same exact arithmetic and the same rounding. A pixel whose
   alpha becomes zero becomes transparent black. A frame without alpha stays opaque: its pixels get the color the result
-  would have over black, so an eraser darkens them.
+  would have over black, so an eraser darkens them. `Plus` clips its sums to one: the alpha of the result is
+  `min(as + ad, 1)`, and each of its colors multiplied by its alpha `min(as sc + ad dc, 1)`.
 - **Blend modes.** With the colors as fractions of one, a paint `s` on a pixel `d` of alpha `ad` takes the color
   `(1 - ad) s + ad B(s, d)`, where `B` is the function of the mode in "Compositing and Blending Level 1" of the W3C. It
   is computed in double precision with additions, multiplications, divisions and square roots only, rounded to the
@@ -1467,7 +1619,27 @@ public static void MarkAnimation(string inputPath, string outputPath)
   then its vertices are transformed: on the canvas the chords stay within 1/16 of a pixel. A stroke is the stroke of
   the path as it is given, transformed the same way; with a pen that does not scale with the transformation, it is
   the stroke of the path flattened that way, its vertices transformed first. A brush is placed by its own transformation, then by the one of
-  the canvas. A shape with straight sides is, bit for bit, the transformed path.
+  the canvas. A shape with straight sides is, bit for bit, the transformed path. A dashed stroke is cut into the
+  dashes that can change a pixel of the canvas: the part of the drawing the canvas shows is the intersection of four
+  half-planes of the drawing, around which the dashes are cut.
+- **Projective transformations.** A projective transformation whose `W` is the same positive number everywhere is the
+  affine transformation it divides to, bit for bit. Otherwise, each contour of a shape, and each piece of a stroke,
+  is cut in the coordinates of the drawing by the four half-planes where `|X| <= 16777216 W` and
+  `|Y| <= 16777216 W`, then its vertices are divided by `W`: a polygon is, bit for bit, the polygon of the images of
+  its vertices. A Bézier curve is halved until each part needs at most 8 chords, cut at uniform parameters, for a
+  bound of the factor the transformation enlarges a length by on the part of the rectangle of its control points
+  that is seen (`(|A| + D |c|) / W`, `A` the four coefficients of x and y, `c = (M13, M23)`, `D` the distance from
+  the origin to a corner of the canvas, `W` its smallest value there); an arc is halved while its chord is further
+  from it than 1/16 of a pixel divided by that bound on the triangle that contains it. The bound is limited to
+  65536, and a part that is not seen gets 1/1024. The color of a brush is its color at the point the center of the
+  pixel comes from through the inverse of the transformation; where that point is beyond the horizon, the pixel has
+  no color. A shadow, a blur and a color glyph are drawn on an image of a rectangle of the plane (the part of it the
+  clip shows, with the reach of the effect around it, or the box of the glyph), scaled by the largest singular value
+  of the four coefficients of x and y divided by `|M33|` (between 1/1024 and 1024, and smaller when the image would
+  have more than 4,194,304 pixels, or more than 16 times the pixels of the bounds of the clip), then that image is drawn as an image is, placed by the transformation of its
+  pixels, with smooth sampling and nothing around it; the tile of a pattern has the size that scaling gives it. A
+  transformation whose determinant is at most 2^-40 of the product of the lengths of its rows shows the plane from
+  its edge, and draws nothing.
 - **Clips.** The coverage of a pixel under a clip is the product of the coverage of the shape and of the coverage of
   the clip, rounded to the nearest 1/65536 (ties upward). It is the area of what the shape and the clip have in common
   wherever one of them covers the pixel entirely; on a pixel that both only cover in part, it is the product of the two
@@ -1476,10 +1648,11 @@ public static void MarkAnimation(string inputPath, string outputPath)
   the image to the four points: the color of a pixel is the color the image has at the position its center comes
   from, by the rules of any image. With smooth sampling, `sx` and `sy` are the lengths of the derivatives of that
   position at the center of the pixel.
-- **Patterns.** With `w` and `h` the width and the height the tile has on the canvas, its image has
+- **Patterns.** With `w` and `h` the width and the height the tile and its spacing have on the canvas, its image has
   `max(1, ceil(w - 1/1024))` columns and as many rows computed from `h`, with colors and alpha (8-bit samples on an
   8-bit color canvas, 16-bit samples otherwise). The callback draws on it through a transformation that maps the
-  tile to the image, and the shape is painted with that image, repeated, with bilinear interpolation.
+  tile and its spacing to the image, clipped to the tile when there is a spacing, and the shape is painted with that
+  image, laid by the wrap modes of the brush, with bilinear interpolation.
 - **Masks.** A mask is a layer combined with the layer of its content by `DestinationIn`. A luminance mask first
   replaces the alpha `a` of each of its pixels by `round(a Y / M)`, where `Y` is the Rec. 709 luma of the pixel on
   its stored samples (the gray level of `Grayscale`) and `M` the largest sample value.
@@ -1494,6 +1667,38 @@ public static void MarkAnimation(string inputPath, string outputPath)
   16-bit samples otherwise. A pixel the clip covers entirely gets the samples of the result; a pixel on the edge of
   the clip is replaced in proportion to the coverage of the clip, as a paint of that color drawn with
   `CompositeMode.Source` replaces it.
+- **Filters.** The pixels of a filtered layer, or of a backdrop, are read as 16-bit colors, each multiplied by its
+  alpha, as fractions of one in single precision. A blur of a deviation `s` under 2 pixels adds the pixels with the
+  weights of `GaussianKernel` in double precision; from 2 pixels, it is three box blurs of `d = floor(3 sqrt(2 pi) s / 4 + 1/2)`
+  pixels (centered when `d` is odd; otherwise ending on the pixel, starting on it, then of `d + 1` pixels centered on
+  it), as SVG defines it; the rows then the columns, the pixels beyond the canvas (or the rectangle of a backdrop) given by the edge
+  mode and those beyond the layer being transparent. A color matrix is applied to the colors without alpha, clipped to
+  the range from 0 to 1. A drop shadow is the alpha at the position the offset moves each pixel from (the four pixels
+  around it, interpolated), blurred with transparent edges, multiplied by the color of the shadow, under the pixels
+  unless the shadow is alone. The result is rounded to the samples of the layer: the alpha as
+  `floor(M a + 1/2 + 2^-20)` and the colors as `floor(M p / a + 1/2 + 2^-20)`. Under a transformation that scales the
+  axes, the lengths of a filter of a layer are multiplied by the scale of their axis and its offsets by the
+  transformation; under one that turns, skews or is projective, the layer is drawn and filtered on an image of the plane
+  of the drawing, which is then drawn transformed. The lengths of a filter of a backdrop go through the linear part of
+  the transformation.
+- **Filter graphs.** Every primitive of a `FilterGraph` has a result of the size of the filtered surface, in single
+  precision, transparent outside its subregion: the pixels whose center is in the box of the image of its rectangle on
+  the canvas, within the region of the filter. A primitive that computes in linear light reads each input converted
+  once (each color divided by the alpha, decoded by the transfer function of sRGB with `Math.Pow`, multiplied by the
+  alpha again), and its result is encoded the same way when a primitive in sRGB reads it, or at the end; an offset, a
+  tile and a flood are not converted. An offset interpolates the four pixels around the position it reads; a
+  composite, a merge and a blend work on colors multiplied by their alpha (a blend with the straight colors of
+  `BlendMode`); a color matrix and the transfer functions work on straight colors and are clamped to the range from 0
+  to 1, and an arithmetic composite is clamped and each of its colors limited to its alpha. Sums are made in double
+  precision and kept in single precision; the result is rounded as the result of any filter. A morphology works on
+  colors multiplied by their alpha, with radii rounded to whole pixels of the canvas; the weights of a convolution
+  matrix are one pixel of the canvas apart; a displacement map takes the nearest pixel, and reads its map without the
+  alpha of the colors, in the colors of the primitive, and its input in its own colors. A turbulence is the reference
+  code of "Filter Effects Module Level 1" transcribed (additions, multiplications, divisions and square roots only), at
+  the point of the drawing of the top left corner of each pixel, at most 32 octaves. A lighting takes the normals of
+  the surface from the Sobel kernels of the specification (with those of its edges and corners at the edges of the
+  region of the filter), the pixels at the top left corner of their pixel and at the height `surfaceScale A`, and the
+  height of a light multiplied by the square root of the product of the scales of the axes; its powers use `Math.Pow`.
 - **Inner shadows.** The shadow is the one of **Shadows** computed from one minus the alpha of the layer; its color
   is combined with the pixels of the layer by `SourceAtop`, with the coverage of the shadow.
 - **Aligned strokes and markers.** A stroke on one side of its path is the stroke of a pen twice as wide under a clip
@@ -1501,8 +1706,12 @@ public static void MarkAnimation(string inputPath, string outputPath)
   point `(x, y)` of a marker is drawn at `P + w (x d + y n)`, with `P` the end of the contour, `w` the width of the
   pen, `d` the unit vector of the direction of the contour there and `n = (-d.y, d.x)`; the stroke goes from the
   distance `w i0` to the distance `L - w i1` along a contour of length `L`, for the insets `i0` and `i1`.
-- **Hard edges.** Without antialiasing, a coverage of at least 32768/65536, after its usual rounding, becomes a full
-  coverage, and any other becomes none, before the clip and the opacity of a paint apply.
+- **Hard edges.** Without antialiasing, a pixel is covered entirely when its center is inside the shape (with its fill
+  rule), and not at all otherwise, before the clip and the opacity of a paint apply. On the row `Y`, the edges whose
+  range of heights contains `Y + 1/2`, the top excluded and the bottom included, are crossed at that height, and the
+  pixels from `floor(xa + 1/2)` to `floor(xb + 1/2)` excluded are covered between a crossing `xa` where the shape starts
+  and one `xb` where it ends: a center on the top or the left side of a shape is outside, one on its bottom or its
+  right side inside, as when positions are rounded half up. Clips made without antialiasing follow the same rule.
 - **Linear light.** Every color sample of the paint and of the pixel is decoded by the transfer function of the
   image (sRGB when it declares none), or by the tone curve of its channel in an ICC profile that is not the one of
   sRGB (evaluated as a color conversion evaluates it, and inverted the same way), the blend mode and the
@@ -1518,7 +1727,9 @@ public static void MarkAnimation(string inputPath, string outputPath)
 the width and height of the canvas, and to the number of edges of the shape), and each `Draw` call allocates a few small
 objects; the shapes themselves allocate nothing once that storage has grown to the largest of them, so reuse brushes,
 pens and paths and use the overloads with a state and a static callback. A pattern brush is the exception: drawing
-its tile allocates a few objects each time the tile is drawn. The time to draw a shape grows with the number
+its tile allocates a few objects each time the tile is drawn. So do a shadow, a blur and a glyph a font draws with
+its own colors under a projective transformation: each is drawn on an image of the plane of its own, rented when it
+starts and released when it ends. The time to draw a shape grows with the number
 of its edges and with the number of points where they cross each other, which the exact area depends on. One family of
 shapes has millions of crossings: a pen far wider than the bends of a long curve it follows. A dashed stroke has the
 edges of every dash the canvas shows: what cannot change a pixel of the canvas is not cut into dashes, whatever the
@@ -1820,7 +2031,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 | Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
 | Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
 | Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
-| Drawing | Under a transformation of the canvas, every dash of a dashed stroke is cut, also those the canvas does not show; composited on the encoded sample values unless linear light is asked for; sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image or a pattern gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
+| Drawing | Composited on the encoded sample values unless linear light is asked for; sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image or a pattern gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
 | Fonts made before OpenType Layout | The marks of a font without positioning table are placed from the shapes of the glyphs; the letters of an Arabic font without substitution table take the presentation forms the font has as characters, with the ligatures of lam and alef; the marks of a Thai font without substitution table take the forms the font has in the private use area |
 
 The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of
@@ -2095,6 +2306,21 @@ of their characters and were not compared with a font.
 - **Limits.** `MaxTextLength` (UTF-16 code units), `MaxTextGlyphs`, `MaxTextLines` and `MaxGlyphComplexity`, from the
   configuration the primary font of the first span was loaded with.
 
+**Glyph runs**. A caller that shapes text itself, a browser engine for example, draws the glyphs it placed with
+`canvas.FillGlyphs(brush, font, size, glyphs, options)`: each `PositionedGlyph` is a glyph of the font and its origin
+on the baseline, in the coordinates of the drawing. Each glyph is filled on its own, over the ones before it, as
+browsers draw a text. Under a transformation that keeps the axes (or swaps them), the origin of a glyph on the canvas
+is moved to the nearest quarter of a pixel along the line and to the nearest pixel across it (to the nearest pixel
+without antialiasing), and the glyph is painted from its coverage in the pixels around the pixel of its origin; under
+a transformation that turns, skews or is projective, and for a glyph larger than 128 by 128 pixels, it is filled as a
+shape where it is. `GlyphRunOptions` gives a synthetic bold and oblique (with the width and the shear browsers use when
+they differ from those of `FontSynthesis`), the palette of the glyphs a font draws with its own colors (`COLR`,
+`sbix`, `CBDT`, which are drawn as a text draws them), and a `GlyphCache`. A cache, owned by the caller and bounded in
+bytes, keeps the coverage of a glyph for each font object, size, transformation, position in a pixel, antialiasing and
+bold, and the display lists of the glyphs of colors and of images: the pixels are the same with or without it, and a
+run whose glyphs are in the cache allocates nothing. `canvas.StrokeGlyphs(pen, font, size, glyphs, options)` strokes
+the outlines of a run as one shape, as `StrokeText` does. A variable font draws the glyphs of its instance.
+
 What text layout does not do yet: letter spacing is added between the letters of
 every script, including those that join. Justification does not lengthen Arabic words (kashida). The advances of a
 bitmap strike are not used. Lines are broken one after the other, each as full as
@@ -2127,13 +2353,15 @@ content light level, the mastering display color volume and text entries.
   encoding with the sRGB primaries and a linear transfer function). Only `ConvertColorProfile` converts the pixels (and
   resets the label); linear-light resizing filters `Linear` samples directly. Only QOI and JPEG XL store the label: the
   other encoders treat `Linear` as metadata they cannot store, so the samples are never silently relabeled as sRGB.
-- **CICP color descriptions are labels too.** `Metadata.Cicp` holds the code points of ITU-T H.273 that an AVIF or HEIC
-  file declares, or that are equivalent to the enumerated color encoding of a JPEG XL file: color primaries, transfer
+- **CICP color descriptions are labels too.** `Metadata.Cicp` holds the code points of ITU-T H.273 that an AVIF, HEIC or
+  PNG (`cICP`) file declares, or that are equivalent to the enumerated color encoding of a JPEG XL file: color primaries, transfer
   characteristics, matrix coefficients and range. The decoder applies the matrix and the range to produce RGB; the
   primaries and the transfer characteristics are not applied when a file is read or written (the samples of an HDR
   image are returned as they are stored). `ConvertColorProfile` converts the pixels from the color space they
   describe, and linear-light processing decodes the samples with their transfer function. The AVIF and HEIC encoders
-  store the description (with the matrix and the range that it used), and the JPEG XL encoder stores it when the
+  store the description (with the matrix and the range that it used), the PNG encoder stores its primaries and its
+  transfer characteristics when no ICC profile is written (a `cICP` chunk takes precedence over `iCCP`, so the PNG
+  decoder does not adopt the profile of a file that has both), and the JPEG XL encoder stores it when the
   format can enumerate it (full-range RGB with the sRGB, Display P3, DCI-P3 or BT.2020 primaries). For the other
   encoders, a description that is not equivalent to sRGB is metadata the format cannot store, unless an ICC profile is
   written.
@@ -2142,8 +2370,9 @@ content light level, the mastering display color volume and text entries.
   range of the display, as the integers of SMPTE ST 2086) describe high dynamic range samples as they were mastered;
   nothing computes them from the pixels. `Metadata.PixelAspectRatio` is the relative width and height of a pixel:
   nothing resamples the pixels to make them square, and an operation that swaps the axes of the image (a quarter turn,
-  `AutoOrient()` for the orientations that transpose) swaps its terms. Only AVIF stores the three of them; for the
-  other encoders they are metadata the format cannot store (a ratio of square pixels excepted).
+  `AutoOrient()` for the orientations that transpose) swaps its terms. AVIF stores the three of them; PNG stores the
+  light levels (`cLLI`, in whole cd/m2 once read) and the mastering display (`mDCV`, only with the `cICP` chunk it
+  completes); for the other encoders they are metadata the format cannot store (a ratio of square pixels excepted).
 - **Orientation is reported, never applied by decoders.** `Metadata.Orientation` reports the EXIF orientation;
   `AutoOrient()` transforms the pixels for all eight orientations and resets it to `TopLeft`. On save, the typed
   orientation is authoritative: EXIF orientation and dimension tags are rewritten and thumbnails made stale by geometry
@@ -2163,6 +2392,7 @@ content light level, the mastering display color volume and text entries.
 | EXIF and orientation | `eXIf` | not stored (orientation must be `TopLeft`) | APP1 (at most 65,527 bytes) | `EXIF` | not stored (orientation must be `TopLeft`) | not stored (orientation must be `TopLeft`) | not stored (orientation must be `TopLeft`) | not stored (orientation must be `TopLeft`) |
 | XMP | `iTXt` `XML:com.adobe.xmp` | not stored | APP1, standard XMP only (at most 65,504 bytes, no extended XMP) | `XMP ` | not stored | not stored | not stored | not stored |
 | Text | `tEXt`/`zTXt`/`iTXt` | Comment extension (`Comment` entries, Latin-1) | COM (`Comment` entries, Latin-1, at most 65,533 characters) | not stored | not stored | not stored | not stored | not stored |
+| CICP color description, light levels, mastering display | `cICP` (without ICC profile), `cLLI`, `mDCV` (with `cICP`) | not stored | not stored | not stored | not stored | not stored | not stored | not stored |
 | Resolution | `pHYs` (pixels per meter) | not stored | JFIF density | not stored | not stored | `biXPelsPerMeter`/`biYPelsPerMeter` | not stored | not stored |
 | Linear transfer function | not stored | not stored | not stored | not stored | header colorspace 1 | not stored | not stored | not stored |
 
@@ -2235,7 +2465,10 @@ public static void ConvertToSrgb(string inputPath, string outputPath)
 
 High dynamic range samples (the PQ and HLG transfer characteristics, 16 and 18) are not converted implicitly: an ICC
 profile describes a standard dynamic range, and compressing highlights into it changes the look of the image.
-`ConvertColorProfile` rejects them unless `IccColorTransformOptions.ToneMapping` says how:
+`ConvertColorProfile` rejects them unless `IccColorTransformOptions.ToneMapping` says how. They are the samples of an
+image whose CICP color description says so and that has no ICC profile, or of an image whose ICC profile has a `cicp`
+tag (ICC.1:2022, version 4.4) that says so (`IccProfile.Cicp`): the curves of such a profile only approximate the
+functions, and the samples are converted from the color space of the tag.
 
 - PQ samples are the light of a display, up to 10,000 cd/m2. HLG samples are the light of a scene, turned into the
   light of a display by the opto-optical transfer function of Rec. ITU-R BT.2100 for the peak of the source.
@@ -2449,10 +2682,19 @@ argument errors are thrown synchronously.
   valid, and it stays charged to its own owner.
 - `ReadFrameRefinementInto(destination)` writes the next rendering of the current frame to a caller-owned image and tells
   what it is (`FrameRefinement`: `IsFinal`, `Downsampling`, `CompletedPasses`). A format that stores a frame at increasing
-  levels of detail gives intermediate renderings before the frame itself, each a full image at the size of the frame (see
-  [JPEG XL](#jpeg-xl)); any other input gives the frame at once, with `IsFinal` set. After a final rendering, the next read
-  starts the next frame; `ReadFrame` and `ReadFrameInto` can be called at any time and read the frame itself. The number
-  of intermediate renderings and their pixels are not part of the contract; they count toward `MaxTotalPixels`.
+  levels of detail gives intermediate renderings before the frame itself, each a full image at the size of the frame: a
+  progressive [JPEG XL](#jpeg-xl) frame, a progressive [JPEG](#jpeg) frame (after each scan, once every component has its
+  DC coefficients) and an interlaced [PNG](#png-and-apng) image (the Adam7 passes completed so far, every other pixel
+  taking the value of the pixel of its block in them). Any other input gives the frame at once, with `IsFinal` set. After
+  a final rendering, the next read starts the next frame; `ReadFrame` and `ReadFrameInto` can be called at any time and
+  read the frame itself, and the destination may change between two reads. The number of intermediate renderings and
+  their pixels are not part of the contract; the renderings of passes and scans count toward `MaxTotalPixels`.
+- An input that ends before the frame is complete is malformed. With `ReadFrameRefinementInto`, the read that reaches its
+  end first returns a rendering of what was decoded when the format allows it, as a browser shows a partial download, and
+  the next read throws `InvalidImageContentException`: the rows decoded so far of a GIF image (over what the previous
+  frames left), of a PNG image that is not interlaced, of a JPEG frame coded in one scan and of a still lossy WebP image
+  (the other rows are zero), the passes of an interlaced PNG image, and the coefficients of a progressive JPEG frame
+  decoded so far. The other reads throw at once.
 - `null`/`false` always means a clean end. Malformed data, limits, I/O errors and cancellation throw and fault the reader
   (later calls throw `InvalidOperationException`); argument errors leave it usable.
 - TIFF, ICO and CUR are rejected explicitly: their entries are pages or representations, not a frame sequence (use
@@ -2648,10 +2890,10 @@ public static bool SaveIndexedPng(string inputPath, string outputPath)
 | Grayscale 1/2/4/8/16-bit | Sub-byte samples scaled exactly to `Gray8`; 16-bit kept in `Gray16`; a `tRNS` key gives `Rgba32`/`Rgba64` | `Gray8` → gray 8, `Gray16` → gray 16 (all 16 bits kept) |
 | RGB / RGBA 8/16-bit, gray+alpha | 16-bit precision preserved, gray+alpha expanded to RGBA | `Rgb24` → RGB 8, `Rgba32`/`Bgra32` → RGBA 8, `Rgba64` → RGBA 16; fixed mapping, no data-dependent reduction; RGB 16 and gray+alpha are not produced |
 | Palette + `tRNS` | 1/2/4/8-bit, partial `tRNS`, out-of-range indices rejected | `PngPixelLayout.Indexed`, from any pixel format: exact palette of at most 256 colors with per-entry alpha (`tRNS` only for the entries that are not opaque), smallest bit depth, one palette per file; never selected automatically and never reducing colors |
-| Adam7 interlacing | Empty passes, pass rows scattered directly into the frame (no intermediate image) | Option; pass rows gathered from the frame storage, empty passes have no scanline |
+| Adam7 interlacing | Empty passes, pass rows scattered directly into the frame (no intermediate image); with `ReadFrameRefinementInto`, a rendering of the passes completed by each piece of the data, every other pixel taking the value of the top left pixel of its block in them (the passes are then decoded into an image of the decoder, from which the renderings and the frame are written) | Option; pass rows gathered from the frame storage, empty passes have no scanline |
 | Filters | All five; invalid types rejected | Adaptive minimum-sum-of-absolute-differences heuristic, or one fixed type for every scanline; indexed output uses type 0 (None) instead of the heuristic, as the specification recommends |
 | zlib datastream | Truncation, extra data, Adler-32 and expansion (bounded by the image size) validated; streamed with bounded memory | BCL zlib at the four `CompressionLevel` values; `IDAT` chunks of at most 32 KiB, streamed in bounded bands |
-| Metadata (`iCCP`, `eXIf`, XMP `iTXt`, `tEXt`/`zTXt`/`iTXt`, `pHYs`) | Bounded; metadata after `IDAT` included | Written before `IDAT`; typed orientation and canvas reconciled into EXIF; incompatible ICC profiles and invalid text entries follow `MetadataHandling`; long texts compressed |
+| Metadata (`iCCP`, `cICP`, `mDCV`, `cLLI`, `eXIf`, XMP `iTXt`, `tEXt`/`zTXt`/`iTXt`, `pHYs`) | Bounded; metadata after `IDAT` included; a `cICP` chunk takes precedence over `iCCP` (the profile is not adopted), one whose matrix coefficients are not 0 is skipped, and narrow-range samples are rejected with `UnsupportedImageFeatureException` | Written before `IDAT`; `cICP` (matrix coefficients 0, full range) when no ICC profile is written; typed orientation and canvas reconciled into EXIF; incompatible ICC profiles and invalid text entries follow `MetadataHandling`; long texts compressed |
 | APNG animations | Full-canvas displayed frames from one compositor (SOURCE/OVER blending with an exact rounding contract at 8 and 16 bits, NONE/BACKGROUND/PREVIOUS disposal; BACKGROUND clears to transparent black), every color type and bit depth, Adam7 frame regions, partial rectangles, split `fdAT` chunks, exact rational delays, total plays; control-data errors are never reported as a clean end or a still image | Every displayed frame written as a full-canvas `SOURCE` frame with freshly computed control data, so decoded delta/disposal/blend data never survives an edit; exact delays (`RequireExact`, default) or `RoundToNearest` (nearest 16-bit fraction, ties to the longer delay); writers require `ExpectedFrameCount` and stream to non-seekable outputs |
 | APNG poster frame | `PosterFrame`, excluded from `Frames.Count`; a default image with an `fcTL` is frame zero | The `IDAT` image without a preceding `fcTL`, written once before frame zero, not counted in `num_frames` |
 | APNG delta-rectangle optimization | — | Not supported (full-canvas frames) |
@@ -2664,7 +2906,7 @@ public static bool SaveIndexedPng(string inputPath, string outputPath)
 
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
-| GIF87a / GIF89a, LZW | Minimum code sizes 1-11, codes up to 12 bits, clear codes anywhere, full tables without clear; a missing end code after a complete image and data after the end code are tolerated; invalid codes, short or overlong data, out-of-table indices and images without a color table are `InvalidImageContentException` | GIF89a, no global color table, one full-canvas image per frame, LZW with a clear code on a full table, 255-byte sub-blocks |
+| GIF87a / GIF89a, LZW | Minimum code sizes 1-11, codes up to 12 bits, clear codes anywhere, full tables without clear; a missing end code after a complete image, data after the end code and any data after the last pixel (more indices, a string running past the image, a reset stream that goes on, as browsers decode it) are ignored; invalid codes, short data, out-of-table indices and images without a color table are `InvalidImageContentException` | GIF89a, no global color table, one full-canvas image per frame, LZW with a clear code on a full table, 255-byte sub-blocks |
 | Palettes | Global and local, per image; output always `Rgba32` | One local palette per frame of at most `MaxColors` entries (2–256, the transparent entry included); exact palette when the frame's colors fit, otherwise a deterministic variance-based median cut; nearest-color mapping. Lossy by design |
 | Interlacing | Four passes, any height | `GifEncoder.Interlaced` |
 | Transparency and disposal | Full-canvas displayed frames from one compositor (partial rectangles clipped to the screen, the transparent index keeps the canvas); the canvas and disposal 2 are transparent black (the background color index is never painted); disposal 3 restores (first image: clears); undefined 4 is "restore previous", 5–7 "none" | Recomputed from the displayed frames: every frame covers the canvas with disposal 2, so pixels that become transparent never show the previous frame; alpha thresholded (default 128) or flattened onto an explicit background, never partial |
@@ -2681,7 +2923,7 @@ public static bool SaveIndexedPng(string inputPath, string outputPath)
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
 | Sequential Huffman | Baseline (SOF0) and extended sequential (SOF1): 8/16-bit DQT, DHT identifiers 0-3, tables redefined between scans, interleaved or non-interleaved scans, double-precision IDCT with documented rounding; streamed with three MCU rows of decoder state (full planes for multi-scan frames) | Baseline (SOF0), the default `JpegEncoder.Process`: one interleaved scan, Annex K typical Huffman tables (no optimized tables), Annex K quantization tables scaled by `Quality` 1-100 (default 90), double-precision forward DCT with documented rounding, no restart markers; streamed by MCU rows |
-| Progressive Huffman (SOF2) | DC and AC first and refinement scans, spectral selection, EOB runs, successive approximation, restart intervals, partial progressions, every sampling layout and color model of the sequential decoder; scan parameters validated from the scan headers (also by a full `Identify`). Not row-streamed: the 16-bit coefficients of the whole image (about 2 bytes per sample and component) are kept until the end of the image | `JpegEncodingProcess.Progressive`: the quantized coefficients of the baseline output (so the same decoded pixels), in ten scans for a color image and six for a grayscale one: the DC coefficients without their lowest bit, the AC coefficients 1-5 of the luminance without their two lowest bits, the chrominance (Cr, then Cb) without its lowest bit, the AC coefficients 6-63 of the luminance, then the missing bits (luminance bit 1, DC bit 0, chrominance bit 0, luminance bit 0). The Huffman tables of each scan are computed from its own symbols (each scan is coded twice), which the end-of-band runs require and which usually makes the file smaller than the baseline one; no restart markers. Not streamed by MCU rows: the 16-bit coefficients of the whole image are kept until the last scan and charged to the writer |
+| Progressive Huffman (SOF2) | DC and AC first and refinement scans, spectral selection, EOB runs, successive approximation, restart intervals, partial progressions, every sampling layout and color model of the sequential decoder; scan parameters validated from the scan headers (also by a full `Identify`). Not row-streamed: the 16-bit coefficients of the whole image (about 2 bytes per sample and component) are kept until the end of the image. `ReadFrameRefinementInto` renders the coefficients decoded so far after each scan, once every component has its DC coefficients (`Downsampling` is 8 until an AC scan) | `JpegEncodingProcess.Progressive`: the quantized coefficients of the baseline output (so the same decoded pixels), in ten scans for a color image and six for a grayscale one: the DC coefficients without their lowest bit, the AC coefficients 1-5 of the luminance without their two lowest bits, the chrominance (Cr, then Cb) without its lowest bit, the AC coefficients 6-63 of the luminance, then the missing bits (luminance bit 1, DC bit 0, chrominance bit 0, luminance bit 0). The Huffman tables of each scan are computed from its own symbols (each scan is coded twice), which the end-of-band runs require and which usually makes the file smaller than the baseline one; no restart markers. Not streamed by MCU rows: the 16-bit coefficients of the whole image are kept until the last scan and charged to the writer |
 | 12-bit samples | Extended sequential and progressive frames with a sample precision of 12 bits (a baseline frame that declares 12 bits is read as an extended sequential one, as common decoders do): DC differences of up to 15 bits and AC coefficients of up to 14 bits, the same inverse DCT, upsampling filters and color conversion at the precision of the samples (level shift and chroma center 2048, range 0-4095), then each sample `s` scaled to 16 bits as `(s * 65535 + 2047) / 4095`, so that 0 and 4095 are exact. `ImageInfo.BitsPerComponent` is 12; grayscale loads as `Gray16`, the other color models as opaque `Rgba64` (there is no 16-bit RGB format); CMYK and YCCK inks are scaled, then converted by the 16-bit ICC conversion. Decodes like libjpeg-turbo within three units of a 12-bit sample | Not supported |
 | Lossless (SOF3) | The lossless process of T.81 Annex H, Huffman coded: samples of any precision from 2 to 16 bits, the seven predictors, the point transform (the output is multiplied back by `2^Pt`, so its low bits are zero), restart intervals, interleaved and non-interleaved scans, subsampled components (the samples that complete an MCU are decoded and removed). Every sample is decoded exactly. 8-bit samples load as `Gray8`/`Rgb24`; any other precision `P` loads as `Gray16`, or opaque `Rgba64`, each sample `s` scaled to 16 bits as `(s * 65535 + (2^P - 1) / 2) / (2^P - 1)`, which keeps every sample distinct, 0 and the largest one exact, and a 16-bit sample unchanged; `ImageInfo.BitsPerComponent` is `P`. The components mean what they mean in the other frames: three components are YCbCr (converted to RGB, with subsampled chroma upsampled by the same filters) unless the file says RGB, which is what lossless encoders write. A predictor outside 1-7, a point transform that leaves no bit, a restart interval that is not a whole number of MCU rows, a difference category above 16 and a sample that does not fit in its `P - Pt` bits are `InvalidImageContentException`. Streamed with three MCU rows of decoder state, an MCU row being one to four lines. The lossless process with arithmetic coding (SOF11) is `UnsupportedImageFeatureException` | Not supported |
 | Arithmetic coding | Sequential (SOF9) and progressive (SOF10) frames, of 8-bit or 12-bit samples and every color model, sampling layout and scan structure of the Huffman-coded frames (they hold the same coefficients, so they decode to the same pixels): DC and AC conditioning tables (DAC: bounds `0 <= L <= U <= 15`, threshold `1 <= Kx <= 63`, the defaults `L = 0`, `U = 1`, `Kx = 5` otherwise), statistics that start again at each restart marker; a scan uses the conditioning defined when it starts, and a DAC segment that defines no table is read (the JPEG reference software writes one before the scans that use no conditioning). Invalid conditioning tables, magnitudes beyond those of the sample precision and runs of zeros past the end of a block or of a band are `InvalidImageContentException`. Entropy-coded data that ends early is not detected: an encoder may omit the final zero bytes of a segment, so the missing bytes read as zeros (T.81 D.2.6) and decode to something, as in other decoders; a file that is cut is still invalid (no EOI marker). The decoder buffers up to 4 KiB per block of an MCU before decoding it, since arithmetic coding has no small bound on the size of a block | Not supported |
@@ -3016,8 +3258,8 @@ public static string ConvertAvif(string avifPath, string pngPath)
     // label, as an ICC profile is: the matrix and the range were applied to produce RGB, nothing else was converted.
     var description = $"{image.Width}x{image.Height} {image.PixelFormat}, frames: {image.Frames.Count}, color: {image.Metadata.Cicp}";
 
-    // PNG keeps 16-bit samples, alpha and animations, without loss. It cannot store a color description
-    // that is not sRGB, so a strict save of an HDR image fails instead of relabeling its samples.
+    // PNG keeps 16-bit samples, alpha and animations, without loss, and the primaries and the transfer
+    // characteristics of the description (cICP chunk), so the samples of an HDR image keep their meaning.
     image.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
     return description;
 }
@@ -3358,7 +3600,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | PNG/APNG | Palette output is opt-in and exact only (`PngPixelLayout.Indexed`: no color reduction or dithering, and a sequential writer cannot declare colors beyond its first image), no grayscale output below 8 bits, no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
-| Drawing | Sequential; affine transformations of the canvas only (perspective is for an image drawn on a quadrilateral); no mesh gradient, and a radial gradient between two circles needs the first one strictly inside the second one; a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, a pixel is painted when at least half of it is covered (not when its center is), and the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 |
+| Drawing | Sequential; under a projective transformation of the canvas (or, for filters, one that turns or skews), shadows, blurs, filters and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 4,194,304 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; a filter graph has no input `BackgroundImage`, `BackgroundAlpha`, `FillPaint` or `StrokePaint`, and its region defaults to the canvas (not to the box of the drawing); no mesh gradient; a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 |
 | Processing | No floating-point or scene-referred pixel format (HDR samples are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping), no custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, or temporal motion vector prediction. Three tools were implemented, measured with the `avif-quality` report and left out because they did not make its sequences smaller: key frames at scene changes (the key frame of an image that follows a cut is 0.3 to 1.7% larger than the inter frame whose blocks are all intra, since it gives up the probabilities that the previous images adapted; `KeyFrameInterval` is how a sequence gets seek points), the split of the transform blocks of an inter block (0.01% in total: it keeps the largest transform of its size) and an interpolation filter per block (the same size at equal quality, for several times the encoding time). Intra block copy is for lossless images only (a frame that copies blocks has no in-loop filter), and its delay of five superblocks leaves small images out. The loop restoration is the Wiener filter, in units of 256x256 samples, at the efforts 0 to 2 only (it recovered nothing above them in the report), and never the self-guided filter. Not used: quantizer deltas, quantization matrices, CDEF strengths per block (one pair per frame), super-resolution and film grain. No layered (progressive) output, and no grid for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: more than eight nested derivations, an image built from images of several color descriptions, an overlay whose sRGB fill color shows on an image that is not an sRGB one, an alpha plane of an overlay or of a grid of derived images, a derived image with more than 1,024 input images, an alpha plane that is not presented as its derived color image, movie fragments that do not follow each other, have composition time offsets, precede their `moov` box or follow their samples, an edit list that selects a part of a fragmented sequence, edit lists that do not play the media forward at its rate (empty edits, a media rate other than 1, edits out of order or overlapping), an alpha track with another edit list than its color track, image sequences whose images change size, clean apertures that do not select whole samples, grid tiles that declare other transformations than their grid, large scale tile streams, reserved matrix coefficients, and matrix coefficients without the transfer characteristics or the primaries they are defined with (constant luminance without a transfer function, ICtCp with other transfer characteristics than PQ and HLG, chromaticity-derived coefficients without chromaticities). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, a `tkhd` matrix that is not a quarter turn or a mirror (the images are returned as stored), the content color volume (`cclv`) and the light levels and the mastering display of AV1 metadata units. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: tone mapping is an explicit `ConvertColorProfile` with `ToneMapping` options |

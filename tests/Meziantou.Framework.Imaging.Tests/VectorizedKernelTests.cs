@@ -1690,9 +1690,6 @@ public sealed class VectorizedKernelTests
                 CoverageKernels.Scale(coverage, opacity, actual);
                 Assert.Equal(expected, actual);
 
-                Assert.Equal(CoverageKernels.ThresholdScalar(coverage, expected), CoverageKernels.Threshold(coverage, actual));
-                Assert.Equal(expected, actual);
-
                 // In place, as the clip and the opacity use them
                 var inPlace = (uint[])coverage.Clone();
                 CoverageKernels.Multiply(inPlace, mask, inPlace);

@@ -21,17 +21,14 @@ public sealed class Pen
 
     /// <summary>Initializes a new instance of the <see cref="Pen"/> class.</summary>
     /// <param name="brush">The paint of the stroke. A color converts implicitly.</param>
-    /// <param name="width">The width of the stroke, in pixels. Must be positive.</param>
+    /// <param name="width">The width of the stroke, in pixels, or 0 for a hairline: a stroke one pixel of the canvas wide, whatever the transformation.</param>
     /// <exception cref="ArgumentNullException"><paramref name="brush"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="width"/> is not a finite number.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> is not positive, or exceeds 16777216.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> is negative, or exceeds 16777216.</exception>
     public Pen(Brush brush, double width)
     {
         ArgumentNullException.ThrowIfNull(brush);
         DrawingGuard.Length(width, nameof(width));
-        if (width == 0)
-            throw new ArgumentOutOfRangeException(nameof(width), width, "The width must be positive.");
-
         Brush = brush;
         Width = width;
     }
@@ -39,8 +36,19 @@ public sealed class Pen
     /// <summary>Gets the paint of the stroke.</summary>
     public Brush Brush { get; }
 
-    /// <summary>Gets the width of the stroke, in pixels.</summary>
+    /// <summary>Gets the width of the stroke, in pixels, or 0 for a hairline.</summary>
+    /// <remarks>
+    /// A hairline, as the hairlines of Skia, is the stroke of a pen one pixel wide that the transformation of the canvas
+    /// does not apply to (<see cref="ScalesWithTransform"/> off, whatever it says): the path is placed on the canvas,
+    /// then stroked one pixel wide, its dashes and its markers measured in pixels of the canvas.
+    /// </remarks>
     public double Width { get; }
+
+    /// <summary>Gets the width the stroke has: <see cref="Width"/>, or 1 for a hairline.</summary>
+    internal double StrokeWidth => Width == 0 ? 1 : Width;
+
+    /// <summary>Gets a value indicating whether the transformation of the canvas applies to the pen: not to a hairline.</summary>
+    internal bool IsScaled => ScalesWithTransform && Width != 0;
 
     /// <summary>Gets the shape of the corners. Defaults to <see cref="Drawing.LineJoin.Miter"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Drawing.LineJoin"/>.</exception>

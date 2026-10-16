@@ -279,6 +279,93 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawTiltedCardShowsTheSideThatComesCloserLarger()
+    {
+        var output = GetPath("tilted.png");
+        Examples.DrawTiltedCard(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(240, 160), image.Size);
+        var frame = image.Frames[0];
+
+        // Turned by 40 degrees, the card is 120 cos(40) = 92 pixels wide in the plane of the image, and the perspective
+        // moves its sides: the left one comes toward the viewer (from 74 to 67), the right one goes away (from 166 to
+        // 161). The left side is taller than the right one.
+        Assert.True(IsCard(frame[69, 80]));
+        Assert.False(IsCard(frame[64, 80]));
+        Assert.True(IsCard(frame[158, 80]));
+        Assert.False(IsCard(frame[163, 80]));
+        Assert.True(Height(frame, 70) > Height(frame, 150) + 15);
+
+        static bool IsCard(Rgba32 pixel) => pixel.B > pixel.R + 40;
+
+        static int Height(ImageFrame<Rgba32> frame, int x)
+        {
+            var count = 0;
+            for (var y = 0; y < frame.Height; y++)
+            {
+                count += IsCard(frame[x, y]) ? 1 : 0;
+            }
+
+            return count;
+        }
+    }
+
+    [Fact]
+    public void DrawGlowingRingGlowsAroundTheRingAndNotFarFromIt()
+    {
+        var output = GetPath("glow.png");
+        Examples.DrawGlowingRing(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        var frame = image.Frames[0];
+
+        // The ring is white over its glow; 10 pixels outside it, the glow is blue; at the center, the background
+        Assert.Equal(new Rgba32(255, 255, 255), frame[80, 40]);
+        Assert.True(frame[80, 30].B > 80 && frame[80, 30].G > frame[80, 30].R + 20, $"{frame[80, 30]}");
+        Assert.Equal(new Rgba32(16, 20, 40), frame[80, 80]);
+        Assert.Equal(new Rgba32(16, 20, 40), frame[2, 2]);
+    }
+
+    [Fact]
+    public void DrawFrostedCardBlursWhatIsBehindTheCardAndShadowsTheBadge()
+    {
+        // A photo of stripes of one pixel
+        var photoPath = GetPath("stripes-card.png");
+        using (var photo = new Image<Rgba32>(200, 130))
+        {
+            photo.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = (x & 1) == 0 ? new Rgba32(20, 40, 160) : new Rgba32(230, 240, 255);
+                    }
+                }
+            });
+            photo.Save(photoPath);
+        }
+
+        var output = GetPath("frosted.png");
+        Examples.DrawFrostedCard(photoPath, output);
+
+        using var image = Image.Load<Rgba32>(output);
+        var frame = image.Frames[0];
+
+        // Outside the card, the stripes are untouched; inside, they are one color, from its edge to its middle
+        Assert.Equal(new Rgba32(20, 40, 160), frame[10, 10]);
+        Assert.Equal(new Rgba32(230, 240, 255), frame[11, 10]);
+        Assert.InRange(Math.Abs(frame[80, 60].R - frame[81, 60].R), 0, 2);
+        Assert.InRange(Math.Abs(frame[30, 60].B - frame[31, 60].B), 0, 3);
+
+        // The badge is gold, and its shadow darkens the card below it, more than above it
+        Assert.Equal(Colors.Gold, frame[146, 74]);
+        Assert.True(frame[146, 92].R < frame[146, 56].R - 10, $"{frame[146, 92]} {frame[146, 56]}");
+    }
+
+    [Fact]
     public void DrawOnScreenDrawsTheScreenshotBetweenItsFourCorners()
     {
         var photoPath = GetPath("desk.png");
@@ -1053,17 +1140,18 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
-    public void ConvertAvifDoesNotRelabelAnHdrImage()
+    public void ConvertAvifKeepsTheColorDescriptionOfAnHdrImage()
     {
-        // BT.2020 primaries with the PQ transfer characteristics: PNG cannot store that description, and the strict save
-        // of the example fails instead of writing the samples as if they were sRGB
+        // BT.2020 primaries with the PQ transfer characteristics: PNG stores them in a cICP chunk, with the matrix of RGB
+        // samples and their full range, so the samples are not relabeled as sRGB
         var fixture = GoldenCorpus.Default.Get("avif/lossy-420-bt2020-limited-10bit");
         var png = GetPath("hdr.png");
-        Assert.Throws<UnsupportedImageFeatureException>(() => Examples.ConvertAvif(fixture.InputPath, png));
-        Assert.False(File.Exists(png));
+        Assert.EndsWith("color: 9/16/9 limited", Examples.ConvertAvif(fixture.InputPath, png), StringComparison.Ordinal);
 
         using var image = Image.Load(fixture.InputPath);
-        Assert.Equal(new CicpColorDescription(9, 16, 9, fullRange: false), image.Metadata.Cicp);
+        using var converted = Image.Load(png);
+        Assert.Equal(new CicpColorDescription(9, 16, 0, fullRange: true), converted.Metadata.Cicp);
+        Assert.Equal(ImageSnapshots.CaptureFrame(image.Frames[0]).Span.ToArray(), ImageSnapshots.CaptureFrame(converted.Frames[0]).Span.ToArray());
     }
 
     [Fact]

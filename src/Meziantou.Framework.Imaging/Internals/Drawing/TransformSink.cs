@@ -12,15 +12,24 @@ internal sealed class TransformSink : PathSink
 {
     private PathSink? _target;
     private Affine2D _transform;
+    private double _originX;
+    private double _originY;
+    private bool _isChecked;
 
     /// <summary>Sets the sink the transformed vertices go to, and the transformation.</summary>
     /// <param name="target">The sink of the fill.</param>
     /// <param name="transform">The transformation.</param>
     /// <param name="scale">The largest factor by which the transformation enlarges a length.</param>
-    public void Configure(PathSink target, in Affine2D transform, double scale)
+    /// <param name="originX">Where the frame of the vertices is on the canvas the largest coordinate is checked on, along x: not zero for the image of a layer of a rectangle.</param>
+    /// <param name="originY">Where the frame of the vertices is on that canvas, along y.</param>
+    /// <param name="isChecked"><see langword="false"/> when the vertices are those of the canvas, only moved to the image of a layer of a rectangle: the canvas does not check them.</param>
+    public void Configure(PathSink target, in Affine2D transform, double scale, double originX, double originY, bool isChecked)
     {
         _target = target;
         _transform = transform;
+        _originX = originX;
+        _originY = originY;
+        _isChecked = isChecked;
         Scale = scale;
     }
 
@@ -51,8 +60,8 @@ internal sealed class TransformSink : PathSink
         var py = _transform.TransformY(x, y);
 
         // Written so that a value that is not a number is rejected too
-        if (!(Math.Abs(px) <= DrawingGuard.MaxCoordinate && Math.Abs(py) <= DrawingGuard.MaxCoordinate))
-            ThrowOutOfRange(Math.Abs(px) <= DrawingGuard.MaxCoordinate ? py : px);
+        if (_isChecked && !(Math.Abs(px + _originX) <= DrawingGuard.MaxCoordinate && Math.Abs(py + _originY) <= DrawingGuard.MaxCoordinate))
+            ThrowOutOfRange(Math.Abs(px + _originX) <= DrawingGuard.MaxCoordinate ? py + _originY : px + _originX);
 
         x = px;
         y = py;

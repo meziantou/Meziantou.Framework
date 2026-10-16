@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Typography;
 
@@ -61,6 +62,8 @@ internal sealed partial class DrawingSession : IDisposable
         _cancellationToken = cancellationToken;
         Width = image.Width;
         Height = image.Height;
+        CanvasWidth = Width;
+        CanvasHeight = Height;
     }
 
     /// <summary>Gets the width of the canvas.</summary>
@@ -137,6 +140,49 @@ internal sealed partial class DrawingSession : IDisposable
         DrawImageCore(source, sourceRegion, destination, sampling, opacity);
     }
 
+    public void DrawImageRectangle(ImageFrame source, RectangleD sourceRegion, RectangleD destination, ImageSampling sampling, double opacity)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        DrawingGuard.Rectangle(sourceRegion, nameof(sourceRegion));
+        DrawingGuard.Rectangle(destination, nameof(destination));
+        ValidateSampling(sampling);
+        if (sourceRegion.Left < 0 || sourceRegion.Top < 0 || sourceRegion.Right > source.Width || sourceRegion.Bottom > source.Height)
+            throw new ArgumentOutOfRangeException(nameof(sourceRegion), sourceRegion, "The region is not inside the frame.");
+
+        var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
+        var sink = BeginFill();
+        AddRectangle(sink, destination);
+        sink.End();
+
+        // The rectangle of the image is stretched to the destination; the pixels it touches are read, and the positions
+        // are brought into it
+        var pixels = Rectangle.FromLTRB((int)Math.Floor(sourceRegion.Left), (int)Math.Floor(sourceRegion.Top), (int)Math.Ceiling(sourceRegion.Right), (int)Math.Ceiling(sourceRegion.Bottom));
+        var isEmpty = sourceRegion.IsEmpty || destination.IsEmpty;
+        var transform = default(AffineTransform);
+        if (!isEmpty)
+        {
+            var scaleX = destination.Width / sourceRegion.Width;
+            var scaleY = destination.Height / sourceRegion.Height;
+            transform = new AffineTransform(scaleX, 0, 0, scaleY, destination.X - (sourceRegion.X * scaleX), destination.Y - (sourceRegion.Y * scaleY));
+        }
+
+        var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
+        evaluator.Prepare(source, pixels, ToCanvasProjection(transform), ImageWrapMode.Pad, ImageWrapMode.Pad, sampling, _frames[0], Width, nameof(sourceRegion));
+        if (coverage == 0 || isEmpty || _edges!.Count == 0)
+            return;
+
+        evaluator.SetDomain(sourceRegion);
+        if (coverage != CoverageRasterizer.FullCoverage)
+        {
+            EnsureCoverageRow();
+        }
+
+        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _isAliased, _cancellationToken))
+        {
+            Paint(default, evaluator, CompositeMode.SourceOver, BlendMode.Normal, coverage);
+        }
+    }
+
     public void DrawImage(ImageFrame source, AffineTransform transform, ImageSampling sampling, double opacity)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -164,6 +210,47 @@ internal sealed partial class DrawingSession : IDisposable
         PaintImage(source, new Rectangle(0, 0, width, height), transform, sampling, coverage, isEmpty: false, nameof(source));
     }
 
+    public void DrawImage(ImageFrame source, ProjectiveTransform transform, ImageSampling sampling, double opacity)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ValidateSampling(sampling);
+        if (transform.TryGetExactAffine(out var affine))
+        {
+            DrawImage(source, affine, sampling, opacity);
+            return;
+        }
+
+        var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
+        DrawProjectedImage(source, transform.Then(GetProjection()), ImageWrapMode.Pad, sampling, coverage, CompositeMode.SourceOver, BlendMode.Normal);
+    }
+
+    /// <summary>
+    /// Draws a frame placed on the canvas by a projective transformation of its pixels: its rectangle is cut where it
+    /// has no image, and each pixel of the canvas reads the frame through the inverse of the transformation, with its
+    /// pixels on the edges extended (<see cref="ImageWrapMode.Pad"/>) or nothing around it.
+    /// </summary>
+    private void DrawProjectedImage(ImageFrame source, in ProjectiveTransform toCanvas, ImageWrapMode wrapMode, ImageSampling sampling, uint coverage, CompositeMode mode, BlendMode blend)
+    {
+        var sink = _projectiveSink ??= new ProjectiveSink();
+        sink.Configure(BeginDeviceFill(), new ProjectiveView(toCanvas, -1, -1, Width + 1, Height + 1, reach: 0), isPolyline: false);
+        AddRectangle(sink, new RectangleD(0, 0, source.Width, source.Height));
+        sink.End();
+        var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
+        evaluator.Prepare(source, region: null, toCanvas, wrapMode, sampling, _frames[0], Width, nameof(source));
+        if (coverage == 0 || _edges!.Count == 0)
+            return;
+
+        if (coverage != CoverageRasterizer.FullCoverage)
+        {
+            EnsureCoverageRow();
+        }
+
+        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _isAliased, _cancellationToken))
+        {
+            Paint(default, evaluator, mode, blend, coverage);
+        }
+    }
+
     public void DrawImage(ImageFrame source, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft, ImageSampling sampling, double opacity)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -185,6 +272,20 @@ internal sealed partial class DrawingSession : IDisposable
 
         var width = source.Width;
         var height = source.Height;
+        if (_isProjective)
+        {
+            // In a plane seen in perspective: the projective transformation of the quadrilateral, then the one of the canvas
+            if (isFlat || width == 0 || height == 0)
+            {
+                _ = BeginCall();
+                return;
+            }
+
+            var quadrilateral = ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, width, height), topLeft, topRight, bottomRight, bottomLeft);
+            DrawProjectedImage(source, quadrilateral.Then(_projection), ImageWrapMode.Pad, sampling, coverage, CompositeMode.SourceOver, BlendMode.Normal);
+            return;
+        }
+
         if (!isFlat && topLeft.X - topRight.X + bottomRight.X - bottomLeft.X == 0 && topLeft.Y - topRight.Y + bottomRight.Y - bottomLeft.Y == 0)
         {
             // A parallelogram: the image is not seen in perspective, and an affine transformation places it
@@ -226,7 +327,7 @@ internal sealed partial class DrawingSession : IDisposable
             EnsureCoverageRow();
         }
 
-        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _cancellationToken))
+        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _isAliased, _cancellationToken))
         {
             Paint(default, evaluator, CompositeMode.SourceOver, BlendMode.Normal, coverage);
         }
@@ -299,7 +400,7 @@ internal sealed partial class DrawingSession : IDisposable
     private static void ValidateSampling(ImageSampling sampling)
     {
         // Not Enum.IsDefined: a draw call allocates nothing
-        if (sampling is not (ImageSampling.Bilinear or ImageSampling.Nearest or ImageSampling.Smooth))
+        if (sampling is not (ImageSampling.Bilinear or ImageSampling.Nearest or ImageSampling.Smooth or ImageSampling.Bicubic))
             throw new ArgumentOutOfRangeException(nameof(sampling), sampling, "The sampling is not valid.");
     }
 
@@ -329,7 +430,7 @@ internal sealed partial class DrawingSession : IDisposable
     private void PaintImage(ImageFrame source, Rectangle region, AffineTransform transform, ImageSampling sampling, uint coverage, bool isEmpty, string regionParameterName)
     {
         var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-        evaluator.Prepare(source, region, ToCanvas(transform), ImageWrapMode.Pad, sampling, _frames[0], Width, regionParameterName);
+        evaluator.Prepare(source, region, ToCanvasProjection(transform), ImageWrapMode.Pad, sampling, _frames[0], Width, regionParameterName);
         if (coverage == 0 || isEmpty || _edges!.Count == 0)
             return;
 
@@ -338,7 +439,7 @@ internal sealed partial class DrawingSession : IDisposable
             EnsureCoverageRow();
         }
 
-        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _cancellationToken))
+        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _isAliased, _cancellationToken))
         {
             Paint(default, evaluator, CompositeMode.SourceOver, BlendMode.Normal, coverage);
         }
@@ -772,7 +873,16 @@ internal sealed partial class DrawingSession : IDisposable
             return null;
 
         var stroker = _stroker ??= new Stroker(_edges!);
-        stroker.SetOutput(_hasTransform, _transformMatrix, _transformScale);
+        if (UsesProjectiveGeometry)
+        {
+            // The thickness of a glyph is small: its curves are cut for the whole plane
+            stroker.SetOutput(GeometryView.Inflate(0, DrawingGuard.MaxCoordinate));
+        }
+        else
+        {
+            stroker.SetOutput(_hasTransform, _transformMatrix, _transformScale, _originX, _originY, IsRangeChecked);
+        }
+
         return stroker;
     }
 
@@ -780,7 +890,9 @@ internal sealed partial class DrawingSession : IDisposable
     private PathMeasure Measure(VectorPath path)
     {
         var measure = _pathMeasure ??= new PathMeasure(_image.Owner.Scope);
-        measure.Scale = _transformScale;
+
+        // The glyphs along the path can be seen where the path is not
+        SetDrawingScale(measure, DrawingGuard.MaxCoordinate);
         measure.Reset();
         PathFlattener.Flatten(path, measure);
         return measure;
@@ -866,7 +978,7 @@ internal sealed partial class DrawingSession : IDisposable
         _cancellationToken.ThrowIfCancellationRequested();
         var recorder = _strokeRecorder ??= new PathRecorder(_image.Owner.Scope);
         recorder.Reset();
-        recorder.Scale = _transformScale;
+        SetDrawingScale(recorder, GetStrokeReach(pen, widthFactor: 2));
         return recorder;
     }
 
@@ -878,19 +990,31 @@ internal sealed partial class DrawingSession : IDisposable
         // A pen the transformation does not apply to strokes the path as it is on the canvas: the vertices of the
         // path are transformed before they reach the pen, and nothing after it
         var isPlacedFirst = IsPlacedBeforeStroke(pen);
-        var hasOutputTransform = _hasTransform && !isPlacedFirst;
+        var hasOutputTransform = (_hasTransform || _isProjective) && !isPlacedFirst;
         var scale = hasOutputTransform ? _transformScale : 1;
-        stroker.SetOutput(hasOutputTransform, _transformMatrix, _transformScale);
+        ProjectiveView? projection = hasOutputTransform && UsesProjectiveGeometry ? GeometryView.Inflate(0, GetStrokeReach(pen, widthFactor)) : null;
+        if (projection is { } outputProjection)
+        {
+            stroker.SetOutput(outputProjection);
+        }
+        else
+        {
+            stroker.SetOutput(hasOutputTransform, _transformMatrix, _transformScale, _originX, _originY, IsRangeChecked);
+        }
+
         stroker.Configure(pen, widthFactor);
         PathSink sink = stroker;
         if (pen.IsDashed)
         {
             var dasher = _dasher ??= new Dasher(_image.Owner.Scope);
             dasher.Scale = scale;
+            dasher.Projection = projection;
             if (hasOutputTransform)
             {
-                // The dashes are cut in the coordinates of the drawing, where the canvas is not a rectangle: all of them
-                dasher.Configure(pen, stroker, _cancellationToken);
+                // The dashes are cut in the coordinates of the drawing, where the canvas is the intersection of four
+                // half-planes: those the canvas shows
+                var view = GeometryView;
+                dasher.Configure(pen, stroker, view, _cancellationToken, widthFactor);
             }
             else
             {
@@ -904,22 +1028,34 @@ internal sealed partial class DrawingSession : IDisposable
         {
             var markers = _markers ??= new MarkerSink(_image.Owner.Scope);
             markers.Scale = scale;
+            markers.Projection = projection;
             markers.Configure(pen, stroker, sink);
             sink = markers;
         }
 
-        if (isPlacedFirst)
+        if (isPlacedFirst && UsesProjectiveGeometry)
+        {
+            // The path is placed on the canvas and cut where it has no image, as a line: what remains is stroked
+            var placed = _strokeProjectiveSink ??= new ProjectiveSink();
+            placed.Configure(sink, GeometryView.Inflate(GetStrokeReach(pen, widthFactor), 0), isPolyline: true);
+            sink = placed;
+        }
+        else if (isPlacedFirst)
         {
             var placed = _strokeTransformSink ??= new TransformSink();
-            placed.Configure(sink, _transformMatrix, _transformScale);
+            placed.Configure(sink, _transformMatrix, _transformScale, _originX, _originY, IsRangeChecked);
             sink = placed;
         }
 
         return sink;
     }
 
+    /// <summary>Gets the distance from its path a stroke can reach: half its width, its miters, or anywhere with markers.</summary>
+    private static double GetStrokeReach(Pen pen, double widthFactor)
+        => pen.HasMarkers ? DrawingGuard.MaxCoordinate : pen.StrokeWidth * widthFactor * Math.Max(pen.MiterLimit, 1) / 2;
+
     /// <summary>Gets a value indicating whether the path of a stroke is placed on the canvas before the pen strokes it: the pen is then not transformed with the path.</summary>
-    private bool IsPlacedBeforeStroke(Pen pen) => _hasTransform && !pen.ScalesWithTransform;
+    private bool IsPlacedBeforeStroke(Pen pen) => (_hasTransform || _isProjective) && !pen.IsScaled;
 
     /// <summary>Renders the pieces the stroker emitted, or the whole frame when one of them contains it.</summary>
     private void RenderStroke(Pen pen)
@@ -939,8 +1075,13 @@ internal sealed partial class DrawingSession : IDisposable
         if (isOutside)
         {
             // What a stroke reaches around its path: its joins and its caps, and its markers anywhere
-            var reach = pen.HasMarkers ? DrawingGuard.MaxCoordinate : pen.Width * Math.Max(pen.MiterLimit, 2);
-            if (IsPlacedBeforeStroke(pen))
+            var reach = pen.HasMarkers ? DrawingGuard.MaxCoordinate : pen.StrokeWidth * Math.Max(pen.MiterLimit, 2);
+            if (IsPlacedBeforeStroke(pen) && _isProjective)
+            {
+                // A distance of the canvas is any distance of the drawing near the horizon of the plane
+                reach = DrawingGuard.MaxCoordinate;
+            }
+            else if (IsPlacedBeforeStroke(pen))
             {
                 // The reach is a distance of the canvas, and the bounds are those of the drawing: the distance of
                 // the drawing that the transformation shortens the most to it. Written so that a transformation
@@ -986,7 +1127,7 @@ internal sealed partial class DrawingSession : IDisposable
         // A shape that is only prepared rents what it needs, and changes no pixel
         if (Prepare(brush, fillRule, out var color, out var evaluator) && !_isPreparing)
         {
-            Paint(color, evaluator, brush.CompositeMode, brush.BlendMode, brush is ImageBrush image ? image.OpacityCoverage : CoverageRasterizer.FullCoverage);
+            Paint(color, evaluator, brush.CompositeMode, brush.BlendMode, alphaFactor: brush.Opacity);
         }
     }
 
@@ -996,13 +1137,14 @@ internal sealed partial class DrawingSession : IDisposable
     /// <param name="mode">The operator that combines the paint with the pixels.</param>
     /// <param name="blend">The blend mode that mixes the color of the paint with the color of the pixels.</param>
     /// <param name="opacity">The coverage every coverage is multiplied by.</param>
-    private void Paint(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity = CoverageRasterizer.FullCoverage)
+    /// <param name="alphaFactor">What the alpha of the colors of the evaluator is multiplied by: the opacity of a brush (the color of a solid brush has it already).</param>
+    private void Paint(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity = CoverageRasterizer.FullCoverage, double alphaFactor = 1)
     {
         // What the paint reads is held before the first pixel is changed
         evaluator?.Begin();
         try
         {
-            PaintRows(color, evaluator, mode, blend, opacity);
+            PaintRows(color, evaluator, mode, blend, opacity, alphaFactor);
         }
         finally
         {
@@ -1010,7 +1152,17 @@ internal sealed partial class DrawingSession : IDisposable
         }
     }
 
-    private void PaintRows(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity)
+    private void PaintRows(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, double alphaFactor)
+    {
+        RemoveStaleThumbnail();
+        var rasterizer = _rasterizer!;
+        while (rasterizer.MoveNext())
+        {
+            PaintSpan(color, evaluator, mode, blend, opacity, rasterizer.Y, rasterizer.X, rasterizer.Coverage, alphaFactor);
+        }
+    }
+
+    private void RemoveStaleThumbnail()
     {
         if (!_thumbnailRemoved)
         {
@@ -1018,67 +1170,89 @@ internal sealed partial class DrawingSession : IDisposable
             _image.Metadata.RemoveStaleThumbnail();
             _thumbnailRemoved = true;
         }
+    }
 
-        var rasterizer = _rasterizer!;
-        while (rasterizer.MoveNext())
+    /// <summary>Paints the coverages of a run of pixels of a row: through the clip and the opacity, on every frame.</summary>
+    private void PaintSpan(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, int y, int x, ReadOnlySpan<uint> coverage, double alphaFactor = 1)
+    {
+        if (_clipDepth != 0 && !ApplyClip(y, ref x, ref coverage, out _))
+            return;
+
+        if (opacity != CoverageRasterizer.FullCoverage)
         {
-            var y = rasterizer.Y;
-            var x = rasterizer.X;
-            var coverage = rasterizer.Coverage;
-            if (_isAliased && !RemoveAntialiasing(ref coverage))
-                continue;
+            coverage = ApplyOpacity(coverage, opacity);
+        }
 
-            if (_clipDepth != 0 && !ApplyClip(y, ref x, ref coverage, out _))
-                continue;
+        // A paint that gives the whole row one color is composited as a single color: the same formulas
+        if (evaluator is null)
+        {
+            CompositeRun(y, x, coverage, new DrawingSource(color, mode, blend, _transfer, _curves));
+            return;
+        }
 
-            if (opacity != CoverageRasterizer.FullCoverage)
+        if (evaluator.TryGetRowColor(y, x, out var rowColor))
+        {
+            if (alphaFactor != 1)
             {
-                coverage = ApplyOpacity(coverage, opacity);
+                // The opacity of the brush multiplies the alpha of the color
+                rowColor = rowColor with { Alpha = ScaleAlpha(rowColor.Alpha, alphaFactor) };
             }
 
-            // A paint that gives the whole row one color is composited as a single color: the same formulas
-            if (evaluator is null || evaluator.TryGetRowColor(y, x, out color))
+            CompositeRun(y, x, coverage, new DrawingSource(rowColor, mode, blend, _transfer, _curves));
+            return;
+        }
+
+        // The colors of the pixels without coverage are not computed: the kernels do not read them. The run is cut where
+        // many of them follow one another.
+        var start = 0;
+        var search = 0;
+        while (true)
+        {
+            var gap = search < coverage.Length ? coverage[search..].IndexOf(0u) : -1;
+            if (gap < 0)
             {
-                CompositeRun(y, x, coverage, new DrawingSource(color, mode, blend, _transfer, _curves));
-                continue;
+                PaintRun(evaluator, y, x + start, coverage[start..], mode, blend, alphaFactor);
+                break;
             }
 
-            // The colors of the pixels without coverage are not computed: the kernels do not read them. The run is
-            // cut where many of them follow one another.
-            var start = 0;
-            var search = 0;
-            while (true)
+            gap += search;
+            var gapEnd = coverage[gap..].IndexOfAnyExcept(0u);
+            gapEnd = gapEnd < 0 ? coverage.Length : gap + gapEnd;
+            if (gapEnd - gap >= MinEvaluationGap)
             {
-                var gap = search < coverage.Length ? coverage[search..].IndexOf(0u) : -1;
-                if (gap < 0)
+                if (gap > start)
                 {
-                    PaintRun(evaluator, y, x + start, coverage[start..], mode, blend);
-                    break;
+                    PaintRun(evaluator, y, x + start, coverage[start..gap], mode, blend, alphaFactor);
                 }
 
-                gap += search;
-                var gapEnd = coverage[gap..].IndexOfAnyExcept(0u);
-                gapEnd = gapEnd < 0 ? coverage.Length : gap + gapEnd;
-                if (gapEnd - gap >= MinEvaluationGap)
-                {
-                    if (gap > start)
-                    {
-                        PaintRun(evaluator, y, x + start, coverage[start..gap], mode, blend);
-                    }
-
-                    start = gapEnd;
-                }
-
-                search = gapEnd;
-                if (start == coverage.Length)
-                    break;
+                start = gapEnd;
             }
+
+            search = gapEnd;
+            if (start == coverage.Length)
+                break;
         }
     }
 
     /// <summary>Evaluates the colors of a run and composites it onto every frame.</summary>
-    private void PaintRun(PaintEvaluator evaluator, int y, int x, ReadOnlySpan<uint> coverage, CompositeMode mode, BlendMode blend)
-        => CompositeRun(y, x, coverage, new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend, _transfer, _curves));
+    private void PaintRun(PaintEvaluator evaluator, int y, int x, ReadOnlySpan<uint> coverage, CompositeMode mode, BlendMode blend, double alphaFactor)
+    {
+        var colors = evaluator.Evaluate(y, x, coverage.Length);
+        if (alphaFactor != 1)
+        {
+            // The opacity of the brush multiplies the alpha of each color
+            var scaled = unsafe(MemoryMarshal.Cast<byte, ushort>(_alphaRow!.Span))[..colors.Length];
+            colors.CopyTo(scaled);
+            for (var i = 3; i < scaled.Length; i += 4)
+            {
+                scaled[i] = ScaleAlpha(scaled[i], alphaFactor);
+            }
+
+            colors = scaled;
+        }
+
+        CompositeRun(y, x, coverage, new DrawingSource(colors, mode, blend, _transfer, _curves));
+    }
 
     /// <summary>Composites a run onto every frame.</summary>
     private void CompositeRun(int y, int x, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
@@ -1100,26 +1274,36 @@ internal sealed partial class DrawingSession : IDisposable
         if (edges.Count == 0)
             return false;
 
+        return PrepareBrush(brush, out color, out evaluator) && _rasterizer!.Begin(edges, fillRule, _isAliased, _cancellationToken);
+    }
+
+    /// <summary>Prepares the paint of a brush: every rental happens here, and no pixel is changed.</summary>
+    /// <returns><see langword="false"/> when the brush paints nothing.</returns>
+    private bool PrepareBrush(Brush brush, out DrawingColor color, out PaintEvaluator? evaluator)
+    {
+        color = default;
+        evaluator = null;
+
         // A paint without opacity changes nothing with most operators; with the others, it erases
         var isInert = DrawingKernels.IsTransparentPaintInert(brush.CompositeMode);
+        if (brush.Opacity == 0 && isInert)
+            return false;
+
         if (brush is SolidBrush solid)
         {
             color = _frames[0].ConvertDrawingColor(ToImageColor(solid.Color));
+            if (brush.Opacity != 1)
+            {
+                color = color with { Alpha = ScaleAlpha(color.Alpha, brush.Opacity) };
+            }
+
             if (color.Alpha == 0 && isInert)
                 return false;
         }
         else if (brush is ImageBrush image)
         {
             var imagePaint = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-            imagePaint.Prepare(image.Source, image.SourceRegion, ToCanvas(image.Transform), image.WrapMode, image.Sampling, _frames[0], Width, nameof(brush));
-            if (image.OpacityCoverage == 0)
-                return false;
-
-            if (image.OpacityCoverage != CoverageRasterizer.FullCoverage)
-            {
-                EnsureCoverageRow();
-            }
-
+            imagePaint.Prepare(image.Source, image.SourceRegion, ToCanvasProjection(image.Transform), image.WrapModeX, image.WrapModeY, image.Sampling, _frames[0], Width, nameof(brush));
             evaluator = imagePaint;
         }
         else if (brush is PatternBrush pattern)
@@ -1129,20 +1313,29 @@ internal sealed partial class DrawingSession : IDisposable
                 return false;
 
             var imagePaint = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-            imagePaint.Prepare(tile, region: null, placement, ImageWrapMode.Repeat, ImageSampling.Bilinear, _frames[0], Width, nameof(brush));
+            imagePaint.Prepare(tile, region: null, placement, pattern.WrapModeX, pattern.WrapModeY, ImageSampling.Bilinear, _frames[0], Width, nameof(brush));
             evaluator = imagePaint;
         }
         else
         {
             var gradient = _gradient ??= new GradientEvaluator(_image.Owner.Scope);
             var gradientBrush = (GradientBrush)brush;
-            gradient.Prepare(gradientBrush, ToCanvas(gradientBrush.Transform), _frames[0], Width, _paintPipeline);
+            gradient.Prepare(gradientBrush, ToCanvasProjection(gradientBrush.Transform), _frames[0], Width, _paintPipeline);
             if (gradient.IsTransparent && isInert)
                 return false;
 
             evaluator = gradient;
         }
 
-        return _rasterizer!.Begin(edges, fillRule, _cancellationToken);
+        if (evaluator is not null && brush.Opacity != 1)
+        {
+            // The colors of the paint are rewritten with their alpha multiplied: the row they go to is rented now
+            _alphaRow ??= ResampleWeights.Rent<ushort>(_image.Owner.Scope, 4L * Width);
+        }
+
+        return true;
     }
+
+    /// <summary>Multiplies an alpha by an opacity, at the precision of the frame: <c>floor(a opacity + 1/2 + 2^-20)</c>.</summary>
+    private static ushort ScaleAlpha(ushort alpha, double opacity) => (ushort)Math.Floor((alpha * opacity) + 0.5 + (1.0 / 1048576));
 }

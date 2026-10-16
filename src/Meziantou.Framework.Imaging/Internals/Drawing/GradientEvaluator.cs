@@ -10,8 +10,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <b>Contract.</b> The color of a pixel is the color of the gradient at its center <c>(x + 1/2, y + 1/2)</c>. The
 /// parameter is <c>((p - start) . (end - start)) / |end - start|^2</c> for a linear gradient and
 /// <c>|p - center| / radius</c> for a radial one, computed for each pixel on its own (no running sum), then brought into
-/// <c>[0, 1]</c>: clamped (pad), <c>t - floor(t)</c> (repeat), or <c>u = t - 2 floor(t / 2)</c> folded as
-/// <c>u &lt;= 1 ? u : 2 - u</c> (reflect).
+/// <c>[0, 1]</c>: clamped (pad), <c>t - floor(t)</c> (repeat), <c>u = t - 2 floor(t / 2)</c> folded as
+/// <c>u &lt;= 1 ? u : 2 - u</c> (reflect), or left out when it is outside (transparent: the pixel has no color).
 /// </para>
 /// <para>
 /// A radial gradient with a focal point <c>f</c> has, with <c>e = center - f</c>, <c>d = p - f</c> and
@@ -19,10 +19,15 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// which <c>p</c> is on the circle of center <c>f + t e</c> and radius <c>t radius</c>. With a focal radius <c>fr</c>,
 /// <c>g = radius - fr</c>, <c>a = g^2 - |e|^2</c> and <c>b = (d . e) + fr g</c>, the parameter is
 /// <c>(sqrt(b^2 + a (|d|^2 - fr^2)) - b) / a</c>: the <c>t</c> for which <c>p</c> is on the circle of center
-/// <c>f + t e</c> and radius <c>fr + t g</c>, that radius being positive. A sweep gradient has the
+/// <c>f + t e</c> and radius <c>fr + t g</c>, that radius being positive. When the circle of the focal point is not
+/// inside the circle of the gradient, the parameter is the largest root of <c>a t^2 - 2 b t + c = 0</c> with
+/// <c>a = |e|^2 - g^2</c>, <c>b = (d . e) + fr g</c> and <c>c = |d|^2 - fr^2</c> whose radius <c>fr + t g</c> is not negative
+/// (see <see cref="GetConeParameter"/>); a position without such a root has no color. A sweep gradient has the
 /// parameter <c>(angle(p - center) - start) mod 360 / (end - start)</c>, the angle being the one of
 /// <see cref="DeterministicAngle.Atan2"/>. When the brush has a transformation, <c>p</c> is the center of the pixel
 /// brought back through the inverse of that transformation; a transformation without inverse makes a degenerate gradient.
+/// A projective transformation brings the center back to <c>(X / W, Y / W)</c>; where <c>W</c> is not positive (beyond
+/// the horizon of the plane), the pixel has no color.
 /// </para>
 /// <para>
 /// With <c>i</c> the last stop whose offset is not greater than the parameter: before the first stop the color is the
@@ -76,6 +81,8 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     private bool _degenerate;
     private bool _hasTransform;
     private Affine2D _inverse;
+    private bool _isProjective;
+    private ProjectiveTransform _projectiveInverse;
     private GradientSpreadMode _spreadMode;
     private double _originX;
     private double _originY;
@@ -107,6 +114,30 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     {
         _paintPipeline = paintPipeline;
         Prepare(brush, transform, frame, width, (1 << PixelFormats.GetBitsPerComponent(frame.PixelFormat)) - 1);
+    }
+
+    /// <summary>Converts the stops of a brush placed by a projective transformation, and rents the row of colors.</summary>
+    /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
+    /// <param name="brush">The gradient.</param>
+    /// <param name="transform">The transformation that places the gradient on the canvas: the one of the brush, then the one of the canvas.</param>
+    /// <param name="frame">A frame that is drawn on.</param>
+    /// <param name="width">The width of the canvas.</param>
+    /// <param name="paintPipeline">The conversion that brings the colors of the stops to the color space of the image, or <see langword="null"/> when they are colors of the image.</param>
+    public void Prepare(GradientBrush brush, in ProjectiveTransform transform, ImageFrame frame, int width, IccPipeline? paintPipeline = null)
+    {
+        if (transform.TryGetExactAffine(out var affine))
+        {
+            Prepare(brush, affine, frame, width, paintPipeline);
+            return;
+        }
+
+        _paintPipeline = paintPipeline;
+        Prepare(brush, AffineTransform.Identity, frame, width, (1 << PixelFormats.GetBitsPerComponent(frame.PixelFormat)) - 1);
+        _isProjective = true;
+        if (!transform.TryInvert(out _projectiveInverse))
+        {
+            _degenerate = true;
+        }
     }
 
     /// <summary>
@@ -197,6 +228,18 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                 _divisor = (_axisX * _axisX) + (_axisY * _axisY);
                 break;
 
+            case RadialGradientBrush radial when !IsFirstCircleInside(radial):
+                // Two circles anywhere: the cone of their circles, solved for the largest parameter
+                _kind = GradientKind.Cone;
+                _originX = radial.FocalPoint.X;
+                _originY = radial.FocalPoint.Y;
+                _axisX = radial.Center.X - radial.FocalPoint.X;
+                _axisY = radial.Center.Y - radial.FocalPoint.Y;
+                _focalRadius = radial.FocalRadius;
+                _focalGrowth = radial.Radius - radial.FocalRadius;
+                _divisor = ((_axisX * _axisX) + (_axisY * _axisY)) - (_focalGrowth * _focalGrowth);
+                break;
+
             case RadialGradientBrush radial when radial.FocalRadius != 0:
                 // The circles from the one of the focal point to the one of the gradient
                 _kind = GradientKind.TwoCircles;
@@ -236,7 +279,8 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                 break;
         }
 
-        _degenerate = !(_divisor > 0);
+        _degenerate = _kind != GradientKind.Cone && !(_divisor > 0);
+        _isProjective = false;
         _hasTransform = !transform.IsIdentity;
         if (_hasTransform)
         {
@@ -259,7 +303,9 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             return colors;
         }
 
-        if (_degenerate || last == 0)
+        // One stop is the same color everywhere, but where the gradient has no color: outside the range of a transparent
+        // spread, beyond the horizon of a projective transformation, outside a cone
+        if (_degenerate || (last == 0 && _spreadMode != GradientSpreadMode.Transparent && !_isProjective && _kind != GradientKind.Cone))
         {
             for (var i = 0; i < count; i++)
             {
@@ -277,6 +323,13 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         {
             var t = parameters[i];
             var output = colors.Slice(i * 4, 4);
+            if (double.IsNaN(t))
+            {
+                // A position without color: beyond the horizon of a plane seen in perspective
+                output.Clear();
+                continue;
+            }
+
             if (t < firstOffset)
             {
                 WriteStop(stops, 0, output);
@@ -321,14 +374,16 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     }
 
     /// <remarks>
-    /// The color does not depend on the column for a degenerate gradient, a gradient of one stop, and a linear
-    /// gradient without transformation whose axis is vertical: its parameter is
+    /// The color does not depend on the column for a degenerate gradient, a gradient of one stop that gives every pixel a
+    /// color, and a linear gradient without transformation whose axis is vertical: its parameter is
     /// <c>((px 0) + (py ay)) / |a|^2</c>, where <c>px 0</c> is a zero for every finite <c>px</c> and the sign of a zero
-    /// does not change any rounded sample. The color of the first pixel is then the color of the row.
+    /// does not change any rounded sample; with a transparent spread, the whole row has a color or none. The color of the
+    /// first pixel is then the color of the row.
     /// </remarks>
     public override bool TryGetRowColor(int y, int x, out DrawingColor color)
     {
-        if (_degenerate || _stopCount == 1 || (_kind == GradientKind.Linear && !_hasTransform && _axisX == 0))
+        var isOneColor = _stopCount == 1 && _spreadMode != GradientSpreadMode.Transparent && !_isProjective && _kind != GradientKind.Cone;
+        if (_degenerate || isOneColor || (_kind == GradientKind.Linear && !_hasTransform && !_isProjective && _axisX == 0))
         {
             var samples = Evaluate(y, x, 1);
             color = new DrawingColor(samples[0], samples[1], samples[2], samples[3]);
@@ -357,7 +412,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     private void GetParameters(int y, int x, Span<double> parameters)
     {
         var centerY = y + 0.5;
-        if (_kind == GradientKind.Linear && !_hasTransform)
+        if (_kind == GradientKind.Linear && !_hasTransform && !_isProjective)
         {
             var along = (centerY - _originY) * _axisY;
             for (var i = 0; i < parameters.Length; i++)
@@ -366,7 +421,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                 parameters[i] = ((px * _axisX) + along) / _divisor;
             }
         }
-        else if (_kind == GradientKind.Radial && !_hasTransform)
+        else if (_kind == GradientKind.Radial && !_hasTransform && !_isProjective)
         {
             var py = centerY - _originY;
             var squared = py * py;
@@ -408,6 +463,18 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
 
                 break;
 
+            case GradientSpreadMode.Transparent:
+                // The parameters of these gradients are numbers: outside the range, the pixel has no color
+                foreach (ref var t in parameters)
+                {
+                    if (t < 0 || t > 1)
+                    {
+                        t = double.NaN;
+                    }
+                }
+
+                break;
+
             default:
                 foreach (ref var t in parameters)
                 {
@@ -418,7 +485,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         }
     }
 
-    /// <summary>Gets the parameter of the center of a pixel, brought into the range of the stops by the spread mode.</summary>
+    /// <summary>Gets the parameter of the center of a pixel, brought into the range of the stops by the spread mode; not a number where the gradient has no color.</summary>
     private double GetParameter(double centerX, double centerY)
     {
         var t = GetUnspreadParameter(centerX, centerY);
@@ -437,6 +504,13 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
 
                 break;
 
+            case GradientSpreadMode.Transparent:
+                // Written so that a value that is not a number stays one
+                if (t < 0 || t > 1)
+                    return double.NaN;
+
+                break;
+
             default:
                 t = t < 0 ? 0 : t > 1 ? 1 : t;
                 break;
@@ -445,13 +519,24 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         return t;
     }
 
-    /// <summary>Gets the parameter of the center of a pixel, before the spread mode.</summary>
+    /// <summary>Gets the parameter of the center of a pixel, before the spread mode; not a number where the gradient has no color.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private double GetUnspreadParameter(double centerX, double centerY)
     {
         double px;
         var py = centerY - _originY;
-        if (_hasTransform)
+        if (_isProjective)
+        {
+            var w = _projectiveInverse.TransformW(centerX, centerY);
+
+            // Written so that a value that is not a number has no color: what is beyond the horizon is not painted
+            if (!(w > 0))
+                return double.NaN;
+
+            px = (_projectiveInverse.TransformX(centerX, centerY) / w) - _originX;
+            py = (_projectiveInverse.TransformY(centerX, centerY) / w) - _originY;
+        }
+        else if (_hasTransform)
         {
             px = _inverse.TransformX(centerX, centerY) - _originX;
             py = _inverse.TransformY(centerX, centerY) - _originY;
@@ -477,6 +562,13 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                 t = (Math.Sqrt((along * along) + (_divisor * ((px * px) + (py * py)))) - along) / _divisor;
                 break;
 
+            case GradientKind.Cone:
+                t = GetConeParameter(px, py);
+                if (double.IsNaN(t))
+                    return t;
+
+                break;
+
             case GradientKind.TwoCircles:
                 // The circles are inside each other: every position is on one of them, and the root is real. A
                 // rounding that makes it slightly negative under the square root is the position where it is zero.
@@ -495,6 +587,68 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         return t;
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the first circle of a radial gradient is inside the second one, as the gradients
+    /// of the first versions of the library required: every position then has a parameter, given by the formulas of
+    /// those versions.
+    /// </summary>
+    private static bool IsFirstCircleInside(RadialGradientBrush radial)
+        => (radial.FocalPoint == radial.Center && radial.FocalRadius == 0) || radial.FocalPoint.DistanceTo(radial.Center) + radial.FocalRadius < radial.Radius;
+
+    /// <summary>
+    /// Gets the parameter of a position relative to the first circle of a cone: the largest <c>t</c> for which the
+    /// position is on the circle of center <c>t e</c> and radius <c>r0 + t g</c>, that radius not being negative; not a
+    /// number when there is none.
+    /// </summary>
+    /// <remarks>
+    /// With <c>a = |e|^2 - g^2</c>, <c>b = p . e + r0 g</c> and <c>c = |p|^2 - r0^2</c>, the parameters are the roots of
+    /// <c>a t^2 - 2 b t + c = 0</c>. Concentric circles have <c>t = (|p| - r0) / g</c>, or, with the same radius, 0
+    /// strictly inside and 1 elsewhere (with the pad spread mode only). Circles that touch inside each other
+    /// (<c>a = 0</c>) have the one root <c>c / (2 b)</c>.
+    /// </remarks>
+    private double GetConeParameter(double px, double py)
+    {
+        var distanceSquared = (px * px) + (py * py);
+        var growth = _focalGrowth;
+        if (_axisX == 0 && _axisY == 0)
+        {
+            if (growth == 0)
+            {
+                // The same circle twice: inside or not, and nothing without padding
+                return _spreadMode == GradientSpreadMode.Pad && _focalRadius > 0 ? (distanceSquared < _focalRadius * _focalRadius ? 0 : 1) : double.NaN;
+            }
+
+            return (Math.Sqrt(distanceSquared) - _focalRadius) / growth;
+        }
+
+        var a = _divisor;
+        var b = ((px * _axisX) + (py * _axisY)) + (_focalRadius * growth);
+        var c = distanceSquared - (_focalRadius * _focalRadius);
+        double t;
+        if (a == 0)
+        {
+            if (b == 0)
+                return double.NaN;
+
+            t = c / (2 * b);
+            return _focalRadius + (t * growth) >= 0 ? t : double.NaN;
+        }
+
+        var discriminant = (b * b) - (a * c);
+        if (!(discriminant >= 0))
+            return double.NaN;
+
+        var root = Math.Sqrt(discriminant);
+        var first = (b + root) / a;
+        var second = (b - root) / a;
+        var larger = Math.Max(first, second);
+        var smaller = Math.Min(first, second);
+        if (_focalRadius + (larger * growth) >= 0)
+            return larger;
+
+        return _focalRadius + (smaller * growth) >= 0 ? smaller : double.NaN;
+    }
+
     /// <summary>Computes the colors of a run of pixels of a gradient that mixes its stops in linear light or in Oklab.</summary>
     private void EvaluateInColorSpace(int y, int x, int count, Span<ushort> colors)
     {
@@ -507,6 +661,12 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         for (var i = 0; i < count; i++)
         {
             var t = GetParameter(x + i + 0.5, centerY);
+            if (double.IsNaN(t))
+            {
+                samples[i] = default;
+                continue;
+            }
+
             if (t < stops[0])
             {
                 samples[i] = colorStops[0].Color;
@@ -650,6 +810,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         Radial,
         Focal,
         TwoCircles,
+        Cone,
         Sweep,
     }
 }

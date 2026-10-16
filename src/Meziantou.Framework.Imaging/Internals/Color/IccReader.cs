@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -37,6 +38,7 @@ internal static class IccReader
     public const uint TagBlueCurve = 0x62545243; // 'bTRC'
     public const uint TagGrayCurve = 0x6B545243; // 'kTRC'
     public const uint TagMediaWhitePoint = 0x77747074; // 'wtpt'
+    public const uint TagCicp = 0x63696370; // 'cicp'
     public const uint TagAToB0 = 0x41324230; // 'A2B0'
     public const uint TagAToB1 = 0x41324231; // 'A2B1'
     public const uint TagAToB2 = 0x41324232; // 'A2B2'
@@ -51,6 +53,7 @@ internal static class IccReader
     public const uint TypeLut16 = 0x6D667432; // 'mft2'
     public const uint TypeLutAToB = 0x6D414220; // 'mAB '
     public const uint TypeLutBToA = 0x6D424120; // 'mBA '
+    public const uint TypeCicp = 0x63696370; // 'cicp'
 
     /// <summary>Reads a big-endian 16-bit unsigned number.</summary>
     public static ushort ReadUInt16(ReadOnlySpan<byte> data) => BinaryPrimitives.ReadUInt16BigEndian(data);
@@ -89,6 +92,23 @@ internal static class IccReader
     /// <param name="tag">The tag data: type signature, four reserved bytes, then the type-specific content.</param>
     /// <returns><see langword="true"/> if the tag exists and is inside the profile.</returns>
     public static bool TryGetTag(ReadOnlySpan<byte> data, uint signature, out ReadOnlySpan<byte> tag)
+        => TryGetTagCore(data, signature, out tag);
+
+    /// <summary>
+    /// Reads the <c>cicp</c> tag (ICC.1:2022 section 9.2.17, type section 10.3): the color primaries, the transfer
+    /// characteristics, the matrix coefficients and the full range flag of Rec. ITU-T H.273.
+    /// </summary>
+    /// <param name="data">The profile bytes.</param>
+    /// <returns>The description, or <see langword="null"/> when the profile has no valid <c>cicp</c> tag.</returns>
+    public static CicpColorDescription? ReadCicp(ReadOnlySpan<byte> data)
+    {
+        if (!TryGetTagCore(data, TagCicp, out var tag) || tag.Length < 12 || ReadUInt32(tag) != TypeCicp || tag[11] > 1)
+            return null;
+
+        return new CicpColorDescription(tag[8], tag[9], tag[10], fullRange: tag[11] == 1);
+    }
+
+    private static bool TryGetTagCore(ReadOnlySpan<byte> data, uint signature, out ReadOnlySpan<byte> tag)
     {
         if (TryFindTag(data, signature, out var offset, out var length))
         {

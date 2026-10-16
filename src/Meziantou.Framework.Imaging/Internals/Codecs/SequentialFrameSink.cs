@@ -33,6 +33,9 @@ internal sealed class SequentialFrameSink : DecodedFrameSink
     private bool _discard;
     private FrameDuration _duration;
     private Point? _hotspot;
+
+    // The frame that a rendering interrupted before any of its rows was written: begun again after the rendering
+    private (FrameDuration Duration, Point? Hotspot)? _resumedFrame;
     private Image? _ownedImage;
     private Image? _destination;
     private ImageFrame? _target;
@@ -56,9 +59,22 @@ internal sealed class SequentialFrameSink : DecodedFrameSink
 
     public override bool WantsRefinement => _session.Request == SequentialRequest.FrameRefinement;
 
+    public override void SetPartialFrameRenderer(IPartialFrameRenderer renderer) => _session.PartialFrameRenderer = renderer;
+
     public override void BeginRefinement(FrameDuration duration)
     {
         Context.CancellationToken.ThrowIfCancellationRequested();
+
+        // A rendering of a frame that was begun but has no row yet (its rows are written at its end): the frame is begun
+        // again after the rendering
+        if (_imageOpen)
+        {
+            if (_bound || _isPoster)
+                throw new InvalidOperationException("A rendering cannot start once the rows of the frame are written.");
+
+            _resumedFrame = (_duration, _hotspot);
+        }
+
         OpenImage(isPoster: false, duration, hotspot: null);
     }
 
@@ -76,6 +92,11 @@ internal sealed class SequentialFrameSink : DecodedFrameSink
         _bound = false;
         image.CopyImageStateFrom(_metadata.Clone(), animation: null);
         _session.OnRefinement(downsampling, passCount);
+        if (_resumedFrame is var (frameDuration, frameHotspot))
+        {
+            _resumedFrame = null;
+            OpenImage(isPoster: false, frameDuration, frameHotspot);
+        }
     }
 
     private protected override void OnBeginFrame(FrameDuration duration, Point? hotspot) => OpenImage(isPoster: false, duration, hotspot);

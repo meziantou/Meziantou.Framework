@@ -435,6 +435,35 @@ public sealed class PngEncoderTests
     }
 
     [Fact]
+    public void ColorDescriptionsAndLightLevelsAreWrittenWithoutProfile()
+    {
+        // cICP takes precedence over iCCP: it is written when no profile is, with matrix 0 and full range (the samples are
+        // RGB and full range, whatever the file they came from), then mDCV (which needs it) and cLLI (0.0001 cd/m2)
+        using var image = CreateWithColors(PixelFormat.Rgba64, 3, 2, colors: 4, seed: 5);
+        image.Metadata.Cicp = new CicpColorDescription(9, 16, 9, fullRange: false);
+        image.Metadata.MasteringDisplay = new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50);
+        image.Metadata.ContentLightLevel = new ContentLightLevel(1000, 400);
+        var png = Encode(image, new PngEncoder());
+        var reference = ReferencePng.Parse(png);
+        Assert.Equal(["IHDR", "cICP", "mDCV", "cLLI", "IDAT", "IEND"], reference.ChunkTypes);
+        Assert.Equal([9, 16, 0, 1], reference.GetChunks("cICP").Single().Data.ToArray());
+        Assert.Equal([0x8A, 0x48, 0x39, 0x08, 0x21, 0x34, 0x9B, 0xAA, 0x19, 0x96, 0x08, 0xFC, 0x3D, 0x13, 0x40, 0x42, 0x00, 0x98, 0x96, 0x80, 0x00, 0x00, 0x00, 0x32], reference.GetChunks("mDCV").Single().Data.ToArray());
+        Assert.Equal([0x00, 0x98, 0x96, 0x80, 0x00, 0x3D, 0x09, 0x00], reference.GetChunks("cLLI").Single().Data.ToArray());
+        using (var reloaded = Image.Load(png))
+        {
+            Assert.Equal(new CicpColorDescription(9, 16, 0, fullRange: true), reloaded.Metadata.Cicp);
+            Assert.Equal(image.Metadata.MasteringDisplay, reloaded.Metadata.MasteringDisplay);
+            Assert.Equal(image.Metadata.ContentLightLevel, reloaded.Metadata.ContentLightLevel);
+        }
+
+        // With a profile, the profile describes the colors: no cICP chunk, so no mDCV chunk
+        image.Metadata.IccProfile = new IccProfile(new MetadataBlob(IccTestBlobs.Create("RGB ")));
+        Assert.Equal("Metadata: mastering display color volume", Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new PngEncoder())).Feature);
+        var discarded = Encode(image, new PngEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported });
+        Assert.Equal(["IHDR", "cLLI", "iCCP", "IDAT", "IEND"], ReferencePng.Parse(discarded).ChunkTypes);
+    }
+
+    [Fact]
     public void IndexedLayoutLabelsItsRgbPaletteWhateverThePixelFormat()
     {
         // A palette holds RGB colors: a grayscale profile cannot describe an indexed file, an RGB profile can

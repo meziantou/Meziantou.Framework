@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -35,6 +36,9 @@ internal sealed class ImageReaderCore : IDisposable, IAsyncDisposable
     private readonly CmykConversionOptions? _cmykConversion;
     private SequentialDecodeParser? _parser;
     private ReaderState _state;
+
+    // The truncation of the input, reported by the next read after the rendering of what was decoded of the frame
+    private ExceptionDispatchInfo? _pendingFailure;
     private int _busy;
     private bool _posterWindowClosed;
 
@@ -401,10 +405,19 @@ internal sealed class ImageReaderCore : IDisposable, IAsyncDisposable
 
     private SequentialDecodeEvent Run(SequentialRequest request, Image? destination)
     {
+        ThrowPendingFailure();
         _session.BeginRequest(request, destination);
         try
         {
             return ImageInputPump.Run(_input, _parser!, _context);
+        }
+        catch (InvalidImageContentException exception) when (request == SequentialRequest.FrameRefinement && _session.IsTruncated)
+        {
+            if (TryRenderTruncatedFrame(exception))
+                return SequentialDecodeEvent.Refinement;
+
+            Fault();
+            throw;
         }
         catch
         {
@@ -419,10 +432,19 @@ internal sealed class ImageReaderCore : IDisposable, IAsyncDisposable
 
     private async ValueTask<SequentialDecodeEvent> RunAsync(SequentialRequest request, Image? destination)
     {
+        ThrowPendingFailure();
         _session.BeginRequest(request, destination);
         try
         {
             return await ImageInputPump.RunAsync(_input, _parser!, _context).ConfigureAwait(false);
+        }
+        catch (InvalidImageContentException exception) when (request == SequentialRequest.FrameRefinement && _session.IsTruncated)
+        {
+            if (TryRenderTruncatedFrame(exception))
+                return SequentialDecodeEvent.Refinement;
+
+            Fault();
+            throw;
         }
         catch
         {
@@ -479,6 +501,40 @@ internal sealed class ImageReaderCore : IDisposable, IAsyncDisposable
             default:
                 Fault();
                 throw new InvalidOperationException("The decoder reported its header twice.");
+        }
+    }
+
+    /// <summary>
+    /// Shows what the decoder decoded of the frame whose input ended, as an intermediate rendering: the truncation is
+    /// reported by the next read.
+    /// </summary>
+    private bool TryRenderTruncatedFrame(InvalidImageContentException exception)
+    {
+        if (_session.PartialFrameRenderer is not { } renderer)
+            return false;
+
+        try
+        {
+            if (!renderer.TryRenderPartialFrame() || !_session.TryTakeEvent(out var result) || result != SequentialDecodeEvent.Refinement)
+                return false;
+        }
+        catch (Exception rendering) when (rendering is ImageException or InvalidOperationException)
+        {
+            return false;
+        }
+
+        _pendingFailure = ExceptionDispatchInfo.Capture(exception);
+        return true;
+    }
+
+    /// <summary>Reports the truncation of the input after the rendering of what was decoded of the frame was returned.</summary>
+    private void ThrowPendingFailure()
+    {
+        if (_pendingFailure is { } failure)
+        {
+            _pendingFailure = null;
+            Fault();
+            failure.Throw();
         }
     }
 

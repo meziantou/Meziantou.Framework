@@ -13,10 +13,12 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// </para>
 /// <para>
 /// <b>Rendering.</b> When a shape is painted, the tile is drawn once, on an image of the size the transformation
-/// (the one of the brush, then the one of the canvas) gives it, then that image is repeated over the shape like the
-/// image of an <see cref="ImageBrush"/> with <see cref="ImageWrapMode.Repeat"/>: a pattern that is enlarged stays as
-/// sharp as its drawing. The image has the width <c>ceil(w - 1/1024)</c>, where <c>w</c> is the width of the tile on
-/// the canvas (and the same for its height), so that a tile whose size is a whole number of pixels is drawn on
+/// (the one of the brush, then the one of the canvas) gives it, with the spacing (<see cref="SpacingX"/>,
+/// <see cref="SpacingY"/>) on its right and below it, transparent, then that image is laid over the shape like the
+/// image of an <see cref="ImageBrush"/> with the wrap modes of the pattern (<see cref="ImageWrapMode.Repeat"/> by
+/// default): a pattern that is enlarged stays as
+/// sharp as its drawing. The image has the width <c>ceil(w - 1/1024)</c>, where <c>w</c> is the width of the tile and
+/// of its spacing on the canvas (and the same for its height), so that a tile whose size is a whole number of pixels is drawn on
 /// exactly that many: its pixels are then those of the drawing, exactly, when it is placed on whole pixels. Otherwise
 /// the image is interpolated (<see cref="ImageSampling.Bilinear"/>), also across the edges of the tiles. The image
 /// has colors and alpha, with 8-bit samples on an 8-bit color canvas and 16-bit samples otherwise, as a layer has.
@@ -58,4 +60,66 @@ public sealed class PatternBrush : Brush
     /// <summary>Gets the transformation that places the pattern on the canvas. Defaults to the identity.</summary>
     /// <remarks>With a transformation that flattens the plane to a line or a point, the brush paints nothing.</remarks>
     public AffineTransform Transform { get; init; }
+
+    /// <summary>
+    /// Gets how the tile is laid along x: <see cref="ImageWrapMode.Repeat"/> (the default) lays it side by side,
+    /// <see cref="ImageWrapMode.Transparent"/> paints the tile once along x (<c>background-repeat: repeat-y</c> of CSS
+    /// with <see cref="WrapModeY"/> left to repeat), <see cref="ImageWrapMode.Reflect"/> mirrors every other tile, and
+    /// <see cref="ImageWrapMode.Pad"/> extends the pixels of the edges of the image of the tile.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="ImageWrapMode"/>.</exception>
+    public ImageWrapMode WrapModeX
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The wrap mode is not valid.");
+
+            field = value;
+        }
+    } = ImageWrapMode.Repeat;
+
+    /// <summary>Gets how the tile is laid along y. Defaults to <see cref="ImageWrapMode.Repeat"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="ImageWrapMode"/>.</exception>
+    public ImageWrapMode WrapModeY
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The wrap mode is not valid.");
+
+            field = value;
+        }
+    } = ImageWrapMode.Repeat;
+
+    /// <summary>
+    /// Gets the gap between two tiles along x, in the coordinates of the pattern: nothing is painted there
+    /// (<c>background-repeat: space</c> of CSS, once the gap is computed). Defaults to 0.
+    /// </summary>
+    /// <exception cref="ArgumentException">The value is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative or exceeds 16777216.</exception>
+    public double SpacingX
+    {
+        get;
+        init
+        {
+            DrawingGuard.Length(value, nameof(value));
+            field = value;
+        }
+    }
+
+    /// <summary>Gets the gap between two tiles along y, in the coordinates of the pattern. Defaults to 0.</summary>
+    /// <exception cref="ArgumentException">The value is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative or exceeds 16777216.</exception>
+    public double SpacingY
+    {
+        get;
+        init
+        {
+            DrawingGuard.Length(value, nameof(value));
+            field = value;
+        }
+    }
 }

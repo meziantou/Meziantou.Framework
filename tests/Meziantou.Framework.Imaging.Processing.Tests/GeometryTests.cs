@@ -358,4 +358,177 @@ public sealed class GeometryTests
         Assert.Throws<ArgumentOutOfRangeException>(() => AffineTransform.CreateSkew(0, -90));
         Assert.Throws<ArgumentException>(() => AffineTransform.CreateScale(1e200, 1).Then(AffineTransform.CreateScale(1e200, 1)));
     }
+
+    [Fact]
+    public void TheDefaultProjectiveTransformIsTheIdentity()
+    {
+        var identity = default(ProjectiveTransform);
+        Assert.True(identity.IsIdentity);
+        Assert.True(identity.IsAffine);
+        Assert.Equal(ProjectiveTransform.Identity, identity);
+        Assert.Equal(new ProjectiveTransform(1, 0, 0, 0, 1, 0, 0, 0, 1), identity);
+        Assert.Equal(identity.GetHashCode(), new ProjectiveTransform(1, 0, 0, 0, 1, 0, 0, 0, 1).GetHashCode());
+        Assert.Equal(1, identity.Determinant);
+        Assert.Equal("[1 0 0 0 1 0 0 0 1]", identity.ToString());
+        Assert.True(identity.TryTransform(new PointD(3, -4), out var point));
+        Assert.Equal(new PointD(3, -4), point);
+    }
+
+    [Fact]
+    public void ProjectiveTransformsMapPointsAsDocumented()
+    {
+        // ((x M11 + y M21 + M31) / W, (x M12 + y M22 + M32) / W), W = x M13 + y M23 + M33
+        var transform = new ProjectiveTransform(2, 3, 0.25, 5, 7, 0.5, 11, 13, 1);
+        Assert.False(transform.IsAffine);
+        Assert.True(transform.TryTransform(new PointD(2, 1), out var point));
+        Assert.Equal(new PointD(20.0 / 2, 26.0 / 2), point);
+
+        // Where W is not positive, there is no image
+        Assert.False(transform.TryTransform(new PointD(-4, 0), out var none));
+        Assert.Equal(default, none);
+        Assert.False(transform.TryTransform(new PointD(-8, 0), out _));
+
+        // An affine transformation converts exactly, and maps points as it does
+        var affine = new AffineTransform(2, 3, 5, 7, 11, 13);
+        ProjectiveTransform converted = affine;
+        Assert.Equal(new ProjectiveTransform(2, 3, 0, 5, 7, 0, 11, 13, 1), converted);
+        Assert.True(converted.IsAffine);
+        Assert.True(converted.TryTransform(new PointD(1, 10), out var mapped));
+        Assert.Equal(affine.Transform(new PointD(1, 10)), mapped);
+        Assert.Equal(affine.Determinant, converted.Determinant);
+        Assert.False(new ProjectiveTransform(1, 0, 0, 0, 1, 0, 0, 0, -1).IsAffine);
+    }
+
+    [Fact]
+    public void ComposedProjectiveTransformsApplyTheFirstOneFirst()
+    {
+        // Every value below is exact in binary
+        var a = new ProjectiveTransform(2, 0, 0.125, 0, 2, 0.25, 1, -1, 1);
+        var b = new ProjectiveTransform(1, 0.5, 0, -0.5, 1, 0.0625, 3, 4, 2);
+        var point = new PointD(1, 2);
+        Assert.True(a.TryTransform(point, out var first));
+        Assert.True(b.TryTransform(first, out var expected));
+        Assert.True(a.Then(b).TryTransform(point, out var actual));
+        Assert.Equal(expected.X, actual.X, 1e-14);
+        Assert.Equal(expected.Y, actual.Y, 1e-14);
+        Assert.Equal(a.Then(b), a * b);
+        Assert.Equal(a.Then(b), ProjectiveTransform.Multiply(a, b));
+        Assert.Equal(a, a.Then(ProjectiveTransform.Identity));
+
+        // An inverse brings every point back, with a positive W
+        Assert.True(a.TryInvert(out var inverse));
+        Assert.True(inverse.TryTransform(first, out var back));
+        Assert.Equal(point.X, back.X, 1e-14);
+        Assert.Equal(point.Y, back.Y, 1e-14);
+        var identity = a.Then(inverse);
+        Assert.Equal(1, identity.M11 / identity.M33, 1e-14);
+        Assert.Equal(0, identity.M13 / identity.M33, 1e-14);
+        Assert.False(new ProjectiveTransform(1, 2, 3, 2, 4, 6, 5, 6, 7).TryInvert(out var none));
+        Assert.Equal(ProjectiveTransform.Identity, none);
+        Assert.Equal(0, new ProjectiveTransform(1, 2, 3, 2, 4, 6, 5, 6, 7).Determinant);
+    }
+
+    [Fact]
+    public void AQuadrilateralIsTheImageOfARectangle()
+    {
+        var transform = ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(10, 20, 40, 30), new PointD(2, 2), new PointD(12, 3), new PointD(10, 9), new PointD(3, 7));
+        AssertMaps(new PointD(10, 20), new PointD(2, 2));
+        AssertMaps(new PointD(50, 20), new PointD(12, 3));
+        AssertMaps(new PointD(50, 50), new PointD(10, 9));
+        AssertMaps(new PointD(10, 50), new PointD(3, 7));
+
+        // A straight line stays straight: the middle of a side of the rectangle is on the side of the quadrilateral
+        Assert.True(transform.TryTransform(new PointD(30, 20), out var middle));
+        Assert.Equal(0, ((middle.X - 2) * (3 - 2)) - ((middle.Y - 2) * (12 - 2)), 1e-12);
+
+        // The corners must be those of a convex quadrilateral, in order
+        Assert.Throws<ArgumentException>(() => ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, 1, 1), new PointD(0, 0), new PointD(10, 10), new PointD(10, 0), new PointD(0, 10)));
+        Assert.Throws<ArgumentException>(() => ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, 1, 1), new PointD(0, 0), new PointD(1, 1), new PointD(2, 2), new PointD(3, 3)));
+        Assert.Throws<ArgumentException>(() => ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, 0, 1), new PointD(0, 0), new PointD(1, 0), new PointD(1, 1), new PointD(0, 1)));
+        Assert.Throws<ArgumentException>(() => ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, 1, 1), new PointD(double.NaN, 0), new PointD(1, 0), new PointD(1, 1), new PointD(0, 1)));
+
+        void AssertMaps(PointD source, PointD expected)
+        {
+            Assert.True(transform.TryTransform(source, out var actual));
+            Assert.Equal(expected.X, actual.X, 1e-12);
+            Assert.Equal(expected.Y, actual.Y, 1e-12);
+        }
+    }
+
+    [Fact]
+    public void ProjectiveTransformCoefficientsMustBeFinite()
+    {
+        foreach (var invalid in new[] { double.NaN, double.PositiveInfinity, double.NegativeInfinity })
+        {
+            Assert.Throws<ArgumentException>(() => new ProjectiveTransform(invalid, 0, 0, 0, 1, 0, 0, 0, 1));
+            Assert.Throws<ArgumentException>(() => new ProjectiveTransform(1, 0, 0, 0, 1, 0, 0, 0, invalid));
+            Assert.Throws<ArgumentException>(() => new Transform3D(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, invalid, 0, 0, 0, 1));
+            Assert.Throws<ArgumentException>(() => Transform3D.CreateRotationY(invalid));
+            Assert.Throws<ArgumentException>(() => Transform3D.CreateRotation(invalid, 0, 1, 10));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Transform3D.CreatePerspective(invalid));
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => Transform3D.CreatePerspective(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Transform3D.CreatePerspective(-1));
+        Assert.Throws<ArgumentException>(() => new ProjectiveTransform(1e200, 0, 0, 0, 1, 0, 0, 0, 1).Then(new ProjectiveTransform(1e200, 0, 0, 0, 1, 0, 0, 0, 1)));
+        Assert.Throws<ArgumentException>(() => Transform3D.CreateScale(1e200, 1, 1).Then(Transform3D.CreateScale(1e200, 1, 1)));
+    }
+
+    [Fact]
+    public void TransformsOfSpaceAreThoseOfCss()
+    {
+        var identity = default(Transform3D);
+        Assert.True(identity.IsIdentity);
+        Assert.Equal(Transform3D.Identity, identity);
+        Assert.Equal(new Transform3D(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1), identity);
+        Assert.Equal(identity.GetHashCode(), new Transform3D(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1).GetHashCode());
+        Assert.Equal(ProjectiveTransform.Identity, identity.ToProjectiveTransform());
+        Assert.Equal("[1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1]", identity.ToString());
+
+        // Quarter turns are exact: rotateX brings y toward the viewer (z), rotateY brings x away from it, rotateZ is the
+        // rotation of the plane
+        Assert.Equal(new Transform3D(1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1), Transform3D.CreateRotationX(90));
+        Assert.Equal(new Transform3D(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1), Transform3D.CreateRotationY(90));
+        Assert.Equal((Transform3D)AffineTransform.CreateRotation(90), Transform3D.CreateRotationZ(90));
+        AssertClose(Transform3D.CreateRotationY(30), Transform3D.CreateRotation(0, 2, 0, 30));
+        AssertClose(Transform3D.CreateRotationX(-40), Transform3D.CreateRotation(-3, 0, 0, 40));
+        AssertClose(Transform3D.CreateRotationZ(75), Transform3D.CreateRotation(0, 0, 1, 75));
+        Assert.Equal(Transform3D.Identity, Transform3D.CreateRotation(0, 0, 0, 30));
+
+        // A perspective divides by 1 - z / d: what comes closer is larger
+        var perspective = Transform3D.CreatePerspective(100);
+        Assert.Equal(new Transform3D(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, -0.01, 0, 0, 0, 1), perspective);
+        Assert.Equal(new Transform3D(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 3, 4, 5, 1), Transform3D.CreateTranslation(3, 4, 5));
+        Assert.Equal(new Transform3D(2, 0, 0, 0, 0, 3, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1), Transform3D.CreateScale(2, 3, 4));
+
+        // A rotation around the y axis, then the perspective: on the plane z = 0, W = 1 + x sin(a) / d, so the side
+        // that turns away from the viewer is smaller. The plane alone (rotation, then perspective, both flattened)
+        // would lose that
+        var turned = Transform3D.CreateRotationY(90).Then(perspective);
+        Assert.Equal(new ProjectiveTransform(0, 0, 0.01, 0, 1, 0, 0, 0, 1), turned.ToProjectiveTransform());
+        Assert.Equal(new ProjectiveTransform(0, 0, 0, 0, 1, 0, 0, 0, 1), Transform3D.CreateRotationY(90).ToProjectiveTransform().Then(perspective.ToProjectiveTransform()));
+        Assert.Equal(turned, Transform3D.CreateRotationY(90) * perspective);
+        Assert.Equal(turned, Transform3D.Multiply(Transform3D.CreateRotationY(90), perspective));
+
+        // The transformations of the plane convert as the transformations of space they are
+        var affine = new AffineTransform(2, 3, 5, 7, 11, 13);
+        Assert.Equal((ProjectiveTransform)affine, ((Transform3D)affine).ToProjectiveTransform());
+        var projective = new ProjectiveTransform(2, 3, 0.25, 5, 7, 0.5, 11, 13, 1);
+        Assert.Equal(projective, ((Transform3D)projective).ToProjectiveTransform());
+        Assert.Equal(projective.Then(projective), ((Transform3D)projective).Then(projective).ToProjectiveTransform());
+
+        static void AssertClose(Transform3D expected, Transform3D actual)
+        {
+            Assert.Equal(expected.M11, actual.M11, 1e-15);
+            Assert.Equal(expected.M12, actual.M12, 1e-15);
+            Assert.Equal(expected.M13, actual.M13, 1e-15);
+            Assert.Equal(expected.M21, actual.M21, 1e-15);
+            Assert.Equal(expected.M22, actual.M22, 1e-15);
+            Assert.Equal(expected.M23, actual.M23, 1e-15);
+            Assert.Equal(expected.M31, actual.M31, 1e-15);
+            Assert.Equal(expected.M32, actual.M32, 1e-15);
+            Assert.Equal(expected.M33, actual.M33, 1e-15);
+            Assert.Equal(expected.M44, actual.M44, 1e-15);
+        }
+    }
 }

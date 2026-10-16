@@ -236,6 +236,37 @@ public sealed class ColorFontTests
     }
 
     [Fact]
+    public void AColorGlyphInPerspectiveIsDrawnInThePlaneOfTheText()
+    {
+        var layout = TextLayout.Create("A", ColorBoxes, 16);
+
+        // A transformation whose W changes by a billionth: the glyph is drawn on an image of the plane, at the scale
+        // of the transformation and on the pixels of the canvas, then that image in perspective. The result is the one
+        // of the affine transformation, up to rounding.
+        var expected = Draw(40, 32, canvas => canvas.Transform(new AffineTransform(2, 0, 0, 2, 3, 1), inner => inner.FillText(Black, layout, new PointD(0, 0))));
+        var actual = Draw(40, 32, canvas => canvas.Transform(new ProjectiveTransform(2, 0, 1e-9, 0, 2, 0, 3, 1, 1), inner => inner.FillText(Black, layout, new PointD(0, 0))));
+        AssertClose(expected, actual, tolerance: 2);
+
+        // In a strong perspective, the inside of each layer has its color: the pixels that the middle of the red, the
+        // green and the black parts of the plane are drawn on. A pixel shows about a third of a unit of the plane,
+        // read from an image of the plane of about three pixels per unit.
+        var plane = ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, 16, 16), new PointD(3, 6), new PointD(50, 2), new PointD(58, 50), new PointD(2, 44));
+        actual = Draw(64, 56, canvas => canvas.Transform(plane, inner => inner.FillText(Black, layout, new PointD(0, 0))));
+        AssertColor(new PointD(3, 7), Red);
+        AssertColor(new PointD(13, 7), Red);
+        AssertColor(new PointD(5, 7), Green);
+        AssertColor(new PointD(8, 4), Green);
+        AssertColor(new PointD(8, 7), Black);
+        AssertColor(new PointD(8, 15), White);
+
+        void AssertColor(PointD point, Rgba32 color)
+        {
+            Assert.True(plane.TryTransform(point, out var pixel));
+            Assert.Equal(color, GetPixel(actual, 64, (int)pixel.X, (int)pixel.Y));
+        }
+    }
+
+    [Fact]
     public void ThePaintsOfAGlyphAreTransformedClippedAndComposed()
     {
         // Glyph 3 is the outer rectangle of A, (128, 0)-(896, 768); glyph 4 its middle one, (256, 128)-(768, 640);

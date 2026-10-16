@@ -10,6 +10,20 @@ internal abstract class PathSink
     /// </summary>
     public double Scale { get; set; } = 1;
 
+    /// <summary>
+    /// Gets or sets the projective transformation what the sink receives goes through before it is drawn, with the
+    /// part of the canvas that is seen, or <see langword="null"/>: the factor by which it enlarges a length then depends
+    /// on the position, and <see cref="GetScale"/> bounds it on the part of the plane a curve is in.
+    /// </summary>
+    public ProjectiveView? Projection { get; set; }
+
+    /// <summary>
+    /// Gets the factor by which what is drawn in a rectangle is enlarged at most before it is drawn: <see cref="Scale"/>,
+    /// unless there is a <see cref="Projection"/>.
+    /// </summary>
+    public double GetScale(double minX, double minY, double maxX, double maxY)
+        => Projection is { } projection ? projection.GetScale(minX, minY, maxX, maxY) : Scale;
+
     /// <summary>Starts a contour; the previous contour, if any, ends open.</summary>
     public abstract void MoveTo(double x, double y);
 

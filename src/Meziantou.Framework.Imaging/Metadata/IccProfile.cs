@@ -34,6 +34,7 @@ public sealed class IccProfile
             ProfileClass = header.GetProfileClass();
             Version = header.Version;
             RenderingIntent = header.GetRenderingIntent();
+            Cicp = IccReader.ReadCicp(data.Span);
         }
         else
         {
@@ -90,4 +91,16 @@ public sealed class IccProfile
     /// profile supports.
     /// </summary>
     public IccRenderingIntent? RenderingIntent { get; }
+
+    /// <summary>
+    /// Gets the CICP color description of the <c>cicp</c> tag (ICC.1:2022, profile version 4.4), or <see langword="null"/>
+    /// when the profile has none or it is malformed.
+    /// </summary>
+    /// <remarks>
+    /// The tag describes the color space of the profile with the code points of Rec. ITU-T H.273. A profile of high dynamic
+    /// range samples (the PQ and HLG transfer characteristics) is an approximation of the functions the tag names:
+    /// <see cref="ImageProcessingExtensions.ConvertColorProfile"/> converts the samples of an image labeled with such a
+    /// profile from the color space of the tag, as for an image whose <see cref="ImageMetadata.Cicp"/> describes them.
+    /// </remarks>
+    public CicpColorDescription? Cicp { get; }
 }

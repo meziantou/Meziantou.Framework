@@ -7,8 +7,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// Incremental PNG/APNG chunk walker (W3C PNG specification, APNG specification): signature, chunk lengths and types,
 /// CRCs, critical-chunk order, IHDR/PLTE/tRNS validity, APNG <c>acTL</c>/<c>fcTL</c>/<c>fdAT</c> sequence numbers and
-/// frame bounds, and the supported metadata chunks (<c>iCCP</c>, <c>eXIf</c>, <c>pHYs</c>, <c>tEXt</c>, <c>zTXt</c>,
-/// <c>iTXt</c> including XMP). It never decompresses or allocates pixel data.
+/// frame bounds, and the supported metadata chunks (<c>iCCP</c>, <c>cICP</c>, <c>mDCV</c>, <c>cLLI</c>, <c>eXIf</c>,
+/// <c>pHYs</c>, <c>tEXt</c>, <c>zTXt</c>, <c>iTXt</c> including XMP). It never decompresses or allocates pixel data.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
@@ -21,6 +21,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <see cref="UnsupportedImageFeatureException"/>. Unknown ancillary chunks, misplaced or duplicate ancillary chunks and
 /// invalid metadata payloads are skipped (streamed, never buffered). An <c>acTL</c> after the first <c>IDAT</c> is ignored
 /// (the file is a static PNG, as for non-APNG decoders); <c>fcTL</c>/<c>fdAT</c> are then ignored as ancillary chunks.
+/// A <c>cICP</c> chunk takes precedence over <c>iCCP</c> (PNG third edition, section 4.3): the profile is then not
+/// adopted. Its matrix coefficients must be 0 (RGB), else the chunk is skipped; a narrow range is an
+/// <see cref="UnsupportedImageFeatureException"/>, since decoded samples are always full range.
 /// </remarks>
 internal sealed class PngStructureParser : ImageParser<ImageInfo>
 {
@@ -31,6 +34,9 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
     private const uint ChunkTrns = 0x74524E53;
     private const uint ChunkPhys = 0x70485973;
     private const uint ChunkIccp = 0x69434350;
+    private const uint ChunkCicp = 0x63494350;
+    private const uint ChunkMdcv = 0x6D444356;
+    private const uint ChunkClli = 0x634C4C49;
     private const uint ChunkExif = 0x65584966;
     private const uint ChunkText = 0x74455874;
     private const uint ChunkZtxt = 0x7A545874;
@@ -60,6 +66,9 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
     private bool _seenTrns;
     private bool _seenPhys;
     private bool _seenIccp;
+    private bool _seenCicp;
+    private bool _seenMdcv;
+    private bool _seenClli;
     private bool _seenActl;
     private bool _seenExif;
 
@@ -255,6 +264,11 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
 
                     consumed += piece.Length;
                     _chunkRemaining -= piece.Length;
+
+                    // A rendering of the image that the data completed (sequential readers) is returned at once
+                    if (_deliverChunkData && TryYield())
+                        return ParseStatus.Complete;
+
                     break;
                 }
 
@@ -447,6 +461,16 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
             case ChunkIccp:
                 return _seenIdat || _seenIccp ? ChunkAction.Stream : ChunkAction.Buffer;
 
+            // The color description and the light levels precede the palette and the image data
+            case ChunkCicp:
+                return _seenIdat || _seenCicp || !Palette.IsEmpty || length != 4 ? ChunkAction.Stream : ChunkAction.Buffer;
+
+            case ChunkMdcv:
+                return _seenIdat || _seenMdcv || !Palette.IsEmpty || length != 24 ? ChunkAction.Stream : ChunkAction.Buffer;
+
+            case ChunkClli:
+                return _seenIdat || _seenClli || !Palette.IsEmpty || length != 8 ? ChunkAction.Stream : ChunkAction.Buffer;
+
             case ChunkExif:
                 return _seenExif ? ChunkAction.Stream : ChunkAction.Buffer;
 
@@ -503,6 +527,31 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
             case ChunkIccp:
                 _seenIccp = true;
                 ProcessIccProfile(data);
+                break;
+
+            case ChunkCicp:
+                _seenCicp = true;
+                ProcessColorDescription(data);
+                break;
+
+            case ChunkMdcv:
+                _seenMdcv = true;
+                _metadata.Metadata.MasteringDisplay = new MasteringDisplayColorVolume(
+                    BinaryPrimitives.ReadUInt16BigEndian(data),
+                    BinaryPrimitives.ReadUInt16BigEndian(data[2..]),
+                    BinaryPrimitives.ReadUInt16BigEndian(data[4..]),
+                    BinaryPrimitives.ReadUInt16BigEndian(data[6..]),
+                    BinaryPrimitives.ReadUInt16BigEndian(data[8..]),
+                    BinaryPrimitives.ReadUInt16BigEndian(data[10..]),
+                    BinaryPrimitives.ReadUInt16BigEndian(data[12..]),
+                    BinaryPrimitives.ReadUInt16BigEndian(data[14..]),
+                    BinaryPrimitives.ReadUInt32BigEndian(data[16..]),
+                    BinaryPrimitives.ReadUInt32BigEndian(data[20..]));
+                break;
+
+            case ChunkClli:
+                _seenClli = true;
+                _metadata.Metadata.ContentLightLevel = new ContentLightLevel(ToCandelasPerSquareMeter(BinaryPrimitives.ReadUInt32BigEndian(data)), ToCandelasPerSquareMeter(BinaryPrimitives.ReadUInt32BigEndian(data[4..])));
                 break;
 
             case ChunkExif:
@@ -772,8 +821,30 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
             mode);
     }
 
+    /// <summary>Converts a light level of <c>cLLI</c> (units of 0.0001 cd/m2) to whole candelas per square meter, to the nearest.</summary>
+    private static ushort ToCandelasPerSquareMeter(uint value) => (ushort)Math.Min(ushort.MaxValue, (value + 5_000L) / 10_000);
+
+    private void ProcessColorDescription(ReadOnlySpan<byte> data)
+    {
+        // Color primaries, transfer function, matrix coefficients (0: RGB is the only color model of PNG), full range flag
+        if (data[2] != 0 || data[3] > 1)
+            return;
+
+        if (data[3] == 0)
+            throw new UnsupportedImageFeatureException("The PNG cICP chunk declares narrow-range samples: only full-range samples are decoded.", ImageFormat.Png, "PNG narrow-range cICP");
+
+        _metadata.Metadata.Cicp = new CicpColorDescription(data[0], data[1], matrixCoefficients: 0, fullRange: true);
+
+        // The color description takes precedence over the ICC profile
+        _metadata.Metadata.IccProfile = null;
+    }
+
     private void ProcessIccProfile(ReadOnlySpan<byte> data)
     {
+        // A color description takes precedence over the profile
+        if (_metadata.Metadata.Cicp is not null)
+            return;
+
         // Profile name (1-79 bytes), NUL, compression method 0, zlib datastream
         var separator = data.IndexOf((byte)0);
         if (separator is < 1 or > 79 || separator + 2 > data.Length || data[separator + 1] != 0)

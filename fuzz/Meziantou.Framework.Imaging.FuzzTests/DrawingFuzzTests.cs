@@ -30,6 +30,11 @@ public sealed class DrawingFuzzTests
 {
     private const double MaxCoordinate = 16777216;
 
+    // In perspective, coordinates and lengths of the size of the canvas: a shape of 2^24 pixels whose far end is drawn
+    // at the vanishing point of the canvas is millions of chords and dashes there, which the limits of the image refuse
+    [ThreadStatic]
+    private static bool s_isInPerspective;
+
     [Fact]
     public void RandomDrawingsCompleteAndKeepTheirInvariants()
     {
@@ -194,7 +199,7 @@ public sealed class DrawingFuzzTests
         var count = random.Next(1, 7);
         for (var i = 0; i < count; i++)
         {
-            switch (random.Next(22))
+            switch (random.Next(24))
             {
                 case 0:
                     canvas.Fill(CreateBrush(random, canvas, context));
@@ -280,8 +285,18 @@ public sealed class DrawingFuzzTests
 
                     break;
                 case 18:
-                    switch (random.Next(3))
+                    switch (random.Next(4))
                     {
+                        case 3:
+                            {
+                                // A rectangle of the sprite that is not made of whole pixels
+                                var left = NextDouble(random) * context.Sprite.Width;
+                                var top = NextDouble(random) * context.Sprite.Height;
+                                var region = new RectangleD(left, top, NextDouble(random) * (context.Sprite.Width - left), NextDouble(random) * (context.Sprite.Height - top));
+                                canvas.DrawImage(context.Sprite, region, CreateRectangle(random, canvas), (ImageSampling)random.Next(4), CreateOpacity(random));
+                                break;
+                            }
+
                         case 0:
                             canvas.DrawImage(context.Sprite, random.Chance(50) ? CreatePoint(random, canvas) : new PointD(random.Next(-4, canvas.Width + 2), random.Next(-4, canvas.Height + 2)), CreateOpacity(random));
                             break;
@@ -310,10 +325,76 @@ public sealed class DrawingFuzzTests
                 case 20:
                     Measure(canvas, random, context);
                     break;
+                case 22:
+                    // A filtered drawing, a layer that holds the pixels of a rectangle, a scope of 16-bit samples, or a
+                    // layer that starts with the filtered backdrop of a rectangle
+                    if (depth >= 3)
+                    {
+                        canvas.Fill(CreateBrush(random, canvas, context));
+                    }
+                    else if (random.Chance(40))
+                    {
+                        canvas.Filter(CreateFilter(random), inner => Paint(inner, random, context, depth + 1));
+                    }
+                    else if (random.Chance(40))
+                    {
+                        canvas.Layer(CreateRectangle(random, canvas), CreateOpacity(random), inner => Paint(inner, random, context, depth + 1), CreateCompositeMode(random, context), (BlendMode)random.Next(16));
+                    }
+                    else if (random.Chance(30))
+                    {
+                        canvas.HighPrecision(inner => Paint(inner, random, context, depth + 1));
+                    }
+                    else
+                    {
+                        canvas.BackdropLayer(random.Chance(10) ? null : CreateFilter(random), CreateRectangle(random, canvas), CreateOpacity(random), inner => Paint(inner, random, context, depth + 1));
+                    }
+
+                    break;
+                case 21:
+                    // A plane seen in perspective: what crosses its horizon is cut, nothing is rejected
+                    if (depth >= 3)
+                    {
+                        canvas.Fill(CreateBrush(random, canvas, context));
+                    }
+                    else if (random.Chance(50))
+                    {
+                        var transform = CreateProjectiveTransform(random, canvas);
+                        PaintInPerspective(inner => inner.Transform(transform, plane => Paint(plane, random, context, depth + 1)), canvas);
+                    }
+                    else
+                    {
+                        var center = Transform3D.CreateTranslation(-canvas.Width / 2.0, -canvas.Height / 2.0, 0);
+                        var back = Transform3D.CreateTranslation(canvas.Width / 2.0, canvas.Height / 2.0, 0);
+                        // Not a multiple of half a turn, which makes the transformation affine (it rejects what it sends
+                        // beyond the largest coordinate), and not near a quarter turn, which shows the plane from its
+                        // edge: what is long in the plane is then a few pixels long on the canvas, and a dashed path
+                        // millions of dashes
+                        var angle = 1 + (NextDouble(random) * 74);
+                        angle = random.Chance(50) ? angle : -angle;
+                        var turn = random.Chance(50) ? Transform3D.CreateRotationX(angle) : Transform3D.CreateRotationY(angle);
+                        var perspective = center.Then(Transform3D.CreatePerspective(10 + (NextDouble(random) * 100))).Then(back);
+                        PaintInPerspective(outer => outer.Transform(perspective, viewer => viewer.Transform(center.Then(turn).Then(back), plane => Paint(plane, random, context, depth + 1))), canvas);
+                    }
+
+                    break;
                 default:
                     canvas.Stroke(CreateDashedPen(random, canvas, context), CreatePath(random, canvas));
                     break;
             }
+        }
+    }
+
+    private static void PaintInPerspective(DrawingAction action, DrawingCanvas canvas)
+    {
+        var previous = s_isInPerspective;
+        s_isInPerspective = true;
+        try
+        {
+            action(canvas);
+        }
+        finally
+        {
+            s_isInPerspective = previous;
         }
     }
 
@@ -361,6 +442,7 @@ public sealed class DrawingFuzzTests
     /// <summary>A coordinate: mostly around the canvas, sometimes on a pixel boundary, sometimes far away, sometimes an extreme.</summary>
     private static double CreateCoordinate(FuzzRandom random, int size) => random.Next(20) switch
     {
+        0 or 1 or 2 when s_isInPerspective => (NextDouble(random) - 0.5) * 8 * (size + 1),
         0 => random.Chance(50) ? MaxCoordinate : -MaxCoordinate,
         1 => (NextDouble(random) - 0.5) * 2 * MaxCoordinate,
         2 => (NextDouble(random) - 0.5) * 4000,
@@ -429,6 +511,134 @@ public sealed class DrawingFuzzTests
         return transform;
     }
 
+    /// <summary>
+    /// A projective transformation that is never affine: a turn, a scaling by up to 2, a translation, then a perspective
+    /// whose horizon may cross the canvas. What the transformation enlarges or reduces a lot near its horizon costs what
+    /// a pen or a pattern of that size costs, as the generator of pens keeps in mind.
+    /// </summary>
+    private static ProjectiveTransform CreateProjectiveTransform(FuzzRandom random, DrawingCanvas canvas)
+    {
+        var scale = 0.5 + (NextDouble(random) * 1.5);
+        var plane = AffineTransform.CreateRotation(CreateAngle(random), CreatePoint(random, canvas))
+            .Then(AffineTransform.CreateScale(scale, random.Chance(50) ? scale : 0.5 + (NextDouble(random) * 1.5)))
+            .Then(AffineTransform.CreateTranslation(random.Next(-8, 9), random.Next(-8, 9)));
+        var p = ((NextDouble(random) * 0.1) - 0.05) + (random.Chance(50) ? 1e-3 : -1e-3);
+        var q = random.Chance(30) ? 0 : (NextDouble(random) * 0.1) - 0.05;
+        return ((ProjectiveTransform)plane).Then(new ProjectiveTransform(1, 0, p, 0, 1, q, 0, 0, 1));
+    }
+
+    /// <summary>A filter of a few pixels of reach: a blur, a color matrix, a shadow, or a chain of them.</summary>
+    private static Filter CreateFilter(FuzzRandom random) => random.Next(5) switch
+    {
+        3 => CreateFilterGraph(random),
+        0 => new BlurFilter(NextDouble(random) * 4, random.Chance(30) ? 0 : NextDouble(random) * 4) { EdgeMode = (FilterEdgeMode)random.Next(4) },
+        1 => new ColorMatrixFilter(random.Next(3) switch
+        {
+            0 => ColorMatrix.CreateInvert(),
+            1 => ColorMatrix.CreateSaturation(NextDouble(random) * 3),
+            _ => ColorMatrix.CreateOpacity(NextDouble(random)),
+        }),
+        2 => new DropShadowFilter(CreateColor(random), new PointD((NextDouble(random) - 0.5) * 8, (NextDouble(random) - 0.5) * 8), NextDouble(random) * 3) { ShadowOnly = random.Chance(30) },
+        _ => new FilterChain(CreateFilter(random), CreateFilter(random)),
+    };
+
+    private static FilterGraph CreateFilterGraph(FuzzRandom random)
+    {
+        var primitives = new FilterPrimitive[random.Next(1, 5)];
+        for (var index = 0; index < primitives.Length; index++)
+        {
+            var input = CreateInput(index);
+            var input2 = CreateInput(index);
+            RectangleD? subregion = random.Chance(3) ? null : new RectangleD((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, NextDouble(random) * 40, NextDouble(random) * 40);
+            var space = (FilterColorSpace)random.Next(2);
+            var drawn = new RectangleD((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, NextDouble(random) * 30, NextDouble(random) * 30);
+            var drawnColor = CreateColor(random);
+            primitives[index] = random.Next(17) switch
+            {
+                16 => new ImagePrimitive(canvas => canvas.FillEllipse(drawnColor, new PointD(drawn.X, drawn.Y), drawn.Width, drawn.Height)) { Subregion = subregion },
+                14 => new DiffuseLightingPrimitive(CreateLight(), CreateColor(random)) { Input = input, Subregion = subregion, ColorSpace = space, SurfaceScale = (NextDouble(random) - 0.5) * 20, DiffuseConstant = NextDouble(random) * 3 },
+                15 => new SpecularLightingPrimitive(CreateLight(), CreateColor(random)) { Input = input, Subregion = subregion, ColorSpace = space, SurfaceScale = (NextDouble(random) - 0.5) * 20, SpecularConstant = NextDouble(random) * 3, SpecularExponent = 1 + (NextDouble(random) * 127) },
+                13 => new TurbulencePrimitive((FilterTurbulenceType)random.Next(2), NextDouble(random) * 0.5, NextDouble(random) * 0.5, random.Next(5), random.Next(-5, 100)) { Subregion = subregion, ColorSpace = space, StitchTiles = random.Chance(3) },
+                10 => new MorphologyPrimitive((FilterMorphologyOperator)random.Next(2), NextDouble(random) * 4, NextDouble(random) * 4) { Input = input, Subregion = subregion, ColorSpace = space },
+                11 => CreateConvolveMatrix(input, subregion, space),
+                12 => new DisplacementMapPrimitive((NextDouble(random) - 0.5) * 20, input2) { Input = input, Subregion = subregion, ColorSpace = space, XChannel = (FilterChannel)random.Next(4), YChannel = (FilterChannel)random.Next(4) },
+                8 => new GaussianBlurPrimitive(NextDouble(random) * 4, random.Chance(30) ? 0 : NextDouble(random) * 4) { Input = input, Subregion = subregion, ColorSpace = space, EdgeMode = (FilterEdgeMode)random.Next(4) },
+                9 => new DropShadowPrimitive(CreateColor(random), new PointD((NextDouble(random) - 0.5) * 8, (NextDouble(random) - 0.5) * 8), NextDouble(random) * 3, NextDouble(random) * 3) { Input = input, Subregion = subregion, ColorSpace = space },
+                0 => new FloodPrimitive(CreateColor(random)) { Subregion = subregion, ColorSpace = space },
+                1 => new OffsetPrimitive(new PointD((NextDouble(random) - 0.5) * 8, (NextDouble(random) - 0.5) * 8)) { Input = input, Subregion = subregion, ColorSpace = space },
+                2 => new MergePrimitive(input, input2) { Subregion = subregion, ColorSpace = space },
+                3 => new TilePrimitive { Input = input, Subregion = subregion, ColorSpace = space },
+                4 => new ColorMatrixPrimitive(random.Chance(2) ? ColorMatrix.LuminanceToAlpha : ColorMatrix.CreateHueRotation(NextDouble(random) * 360)) { Input = input, Subregion = subregion, ColorSpace = space },
+                5 => new ComponentTransferPrimitive
+                {
+                    Input = input,
+                    Subregion = subregion,
+                    ColorSpace = space,
+                    Red = TransferFunction.CreateTable(NextDouble(random), NextDouble(random), NextDouble(random)),
+                    Green = TransferFunction.CreateDiscrete(NextDouble(random), NextDouble(random)),
+                    Blue = TransferFunction.CreateLinear((NextDouble(random) - 0.5) * 4, NextDouble(random) - 0.5),
+                    Alpha = TransferFunction.CreateGamma(NextDouble(random) * 2, NextDouble(random) * 4, NextDouble(random) - 0.5),
+                },
+                6 => new CompositePrimitive((FilterCompositeOperator)random.Next(7), input2)
+                {
+                    Input = input,
+                    Subregion = subregion,
+                    ColorSpace = space,
+                    K1 = (NextDouble(random) - 0.5) * 4,
+                    K2 = (NextDouble(random) - 0.5) * 4,
+                    K3 = (NextDouble(random) - 0.5) * 4,
+                    K4 = NextDouble(random) - 0.5,
+                },
+                _ => new BlendPrimitive((BlendMode)random.Next(16), input2) { Input = input, Subregion = subregion, ColorSpace = space },
+            };
+        }
+
+        return random.Chance(3) ? new FilterGraph(primitives) { Region = new RectangleD((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, NextDouble(random) * 60, NextDouble(random) * 60) } : new FilterGraph(primitives);
+
+        FilterLightSource CreateLight() => random.Next(3) switch
+        {
+            0 => new DistantLight(NextDouble(random) * 360, (NextDouble(random) - 0.2) * 120),
+            1 => new PointLight((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 100),
+            _ => new SpotLight((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 100, NextDouble(random) * 30, NextDouble(random) * 30, 0)
+            {
+                SpecularExponent = NextDouble(random) * 40,
+                LimitingConeAngle = random.Chance(2) ? NextDouble(random) * 90 : null,
+            },
+        };
+
+        ConvolveMatrixPrimitive CreateConvolveMatrix(FilterInput input, RectangleD? subregion, FilterColorSpace space)
+        {
+            var orderX = random.Next(1, 5);
+            var orderY = random.Next(1, 5);
+            var kernel = new double[orderX * orderY];
+            for (var i = 0; i < kernel.Length; i++)
+            {
+                kernel[i] = (NextDouble(random) - 0.3) * 4;
+            }
+
+            return new ConvolveMatrixPrimitive(orderX, orderY, kernel)
+            {
+                Input = input,
+                Subregion = subregion,
+                ColorSpace = space,
+                Bias = random.Chance(3) ? NextDouble(random) - 0.5 : 0,
+                Divisor = random.Chance(3) ? NextDouble(random) + 0.5 : null,
+                TargetX = random.Next(orderX),
+                TargetY = random.Next(orderY),
+                EdgeMode = (FilterEdgeMode)random.Next(4),
+                PreserveAlpha = random.Chance(2),
+            };
+        }
+
+        FilterInput CreateInput(int index) => random.Next(4) switch
+        {
+            0 => FilterInput.SourceGraphic,
+            1 => FilterInput.SourceAlpha,
+            2 when index > 0 => FilterInput.FromResult(random.Next(index)),
+            _ => FilterInput.Previous,
+        };
+    }
+
     private static RectangleD CreateRectangle(FuzzRandom random, DrawingCanvas canvas)
     {
         var a = CreatePoint(random, canvas);
@@ -439,6 +649,7 @@ public sealed class DrawingFuzzTests
     private static double CreateLength(FuzzRandom random) => random.Next(12) switch
     {
         0 => 0,
+        1 or 2 when s_isInPerspective => NextDouble(random) * 60,
         1 => MaxCoordinate,
         2 => NextDouble(random) * 5000,
         3 => NextDouble(random) * 1e-6,
@@ -457,17 +668,19 @@ public sealed class DrawingFuzzTests
         return new Rgba64((ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536), alpha);
     }
 
+    /// <summary>Creates an operator: one that never lowers the alpha of a pixel, unless the case erases.</summary>
+    private static CompositeMode CreateCompositeMode(FuzzRandom random, FuzzContext context) => context.Erases ? (CompositeMode)random.Next(12) : random.Next(6) switch
+    {
+        0 => CompositeMode.DestinationOver,
+        1 => CompositeMode.SourceAtop,
+        _ => CompositeMode.SourceOver,
+    };
+
     private static Brush CreateBrush(FuzzRandom random, DrawingCanvas canvas, FuzzContext context)
     {
-        // The operators that never lower the alpha of a pixel, unless the case erases
-        var mode = context.Erases ? (CompositeMode)random.Next(11) : random.Next(6) switch
-        {
-            0 => CompositeMode.DestinationOver,
-            1 => CompositeMode.SourceAtop,
-            _ => CompositeMode.SourceOver,
-        };
+        var mode = CreateCompositeMode(random, context);
         if (random.Chance(35))
-            return new SolidBrush(CreateColor(random)) { CompositeMode = mode };
+            return new SolidBrush(CreateColor(random)) { CompositeMode = mode, Opacity = random.Chance(20) ? CreateOpacity(random) : 1 };
 
         if (random.Chance(20))
         {
@@ -478,8 +691,9 @@ public sealed class DrawingFuzzTests
                 CompositeMode = mode,
                 SourceRegion = random.Chance(30) ? new Rectangle(x, y, random.Next(0, context.Sprite.Width - x + 1), random.Next(0, context.Sprite.Height - y + 1)) : null,
                 Transform = random.Chance(60) ? CreateTransform(random, canvas) : AffineTransform.Identity,
-                WrapMode = (ImageWrapMode)random.Next(4),
-                Sampling = (ImageSampling)random.Next(2),
+                WrapModeX = (ImageWrapMode)random.Next(4),
+                WrapModeY = (ImageWrapMode)random.Next(4),
+                Sampling = random.Chance(20) ? ImageSampling.Bicubic : (ImageSampling)random.Next(2),
                 Opacity = CreateOpacity(random),
             };
         }
@@ -492,15 +706,20 @@ public sealed class DrawingFuzzTests
 
         Array.Sort(offsets);
         var stops = offsets.Select(offset => new GradientStop(offset, CreateColor(random))).ToArray();
-        var spreadMode = (GradientSpreadMode)random.Next(3);
+        var spreadMode = (GradientSpreadMode)random.Next(4);
         var transform = random.Chance(25) ? CreateTransform(random, canvas) : AffineTransform.Identity;
-        switch (random.Next(4))
+        switch (random.Next(5))
         {
+            case 4:
+                // Two circles anywhere: a cone, or the same circle twice
+                var first = CreatePoint(random, canvas);
+                return new RadialGradientBrush(random.Chance(10) ? first : CreatePoint(random, canvas), CreateLength(random), stops) { SpreadMode = spreadMode, CompositeMode = mode, Opacity = random.Chance(20) ? CreateOpacity(random) : 1, Transform = transform, FocalPoint = first, FocalRadius = CreateLength(random) };
+
             case 0:
-                return new LinearGradientBrush(CreatePoint(random, canvas), random.Chance(10) ? default : CreatePoint(random, canvas), stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform };
+                return new LinearGradientBrush(CreatePoint(random, canvas), random.Chance(10) ? default : CreatePoint(random, canvas), stops) { SpreadMode = spreadMode, CompositeMode = mode, Opacity = random.Chance(20) ? CreateOpacity(random) : 1, Transform = transform };
 
             case 1:
-                return new RadialGradientBrush(CreatePoint(random, canvas), CreateLength(random), stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform };
+                return new RadialGradientBrush(CreatePoint(random, canvas), CreateLength(random), stops) { SpreadMode = spreadMode, CompositeMode = mode, Opacity = random.Chance(20) ? CreateOpacity(random) : 1, Transform = transform };
 
             case 2:
                 // A focal point strictly inside the circle, sometimes very close to it
@@ -514,11 +733,11 @@ public sealed class DrawingFuzzTests
                     focalPoint = center;
                 }
 
-                return new RadialGradientBrush(center, radius, stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform, FocalPoint = focalPoint };
+                return new RadialGradientBrush(center, radius, stops) { SpreadMode = spreadMode, CompositeMode = mode, Opacity = random.Chance(20) ? CreateOpacity(random) : 1, Transform = transform, FocalPoint = focalPoint };
 
             default:
                 var start = CreateAngle(random);
-                return new SweepGradientBrush(CreatePoint(random, canvas), start, start + (random.Chance(10) ? 0 : NextDouble(random) * 800), stops) { SpreadMode = spreadMode, CompositeMode = mode, Transform = transform };
+                return new SweepGradientBrush(CreatePoint(random, canvas), start, start + (random.Chance(10) ? 0 : NextDouble(random) * 800), stops) { SpreadMode = spreadMode, CompositeMode = mode, Opacity = random.Chance(20) ? CreateOpacity(random) : 1, Transform = transform };
         }
     }
 
@@ -549,6 +768,19 @@ public sealed class DrawingFuzzTests
         }
 
         var pen = CreatePen(random, canvas, context, widest: random.Chance(10));
+
+        // A pen far wider than the canvas with dashes far shorter than its width cuts every curve near the canvas into
+        // slivers across the whole canvas, at as many angles: the exact area of their union costs the square of their
+        // number, legitimately. Its pattern is at least a thousandth of its width.
+        if (pen.Width > 100000 && total < pen.Width / 1000)
+        {
+            var factor = pen.Width / 1000 / Math.Max(total, 0.5);
+            for (var i = 0; i < pattern.Length; i++)
+            {
+                pattern[i] *= factor;
+            }
+        }
+
         return new Pen(pen.Brush, pen.Width)
         {
             LineJoin = pen.LineJoin,
@@ -564,7 +796,7 @@ public sealed class DrawingFuzzTests
         var width = random.Next(10) switch
         {
             0 => widest ? MaxCoordinate : 1 + (NextDouble(random) * 100),
-            1 => 1e-9 + (NextDouble(random) * 1e-3),
+            1 => random.Chance(3) ? 0 : 1e-9 + (NextDouble(random) * 1e-3),
             2 => 1 + (NextDouble(random) * (widest ? 100000 : 100)),
             _ => 0.05 + (NextDouble(random) * 6),
         };

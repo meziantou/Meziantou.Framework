@@ -50,10 +50,10 @@ public readonly ref struct DrawingCanvas
     }
 
     /// <summary>Gets the width of the canvas, in pixels (0 for a default instance).</summary>
-    public int Width => _session?.Width ?? 0;
+    public int Width => _session?.CanvasWidth ?? 0;
 
     /// <summary>Gets the height of the canvas, in pixels (0 for a default instance).</summary>
-    public int Height => _session?.Height ?? 0;
+    public int Height => _session?.CanvasHeight ?? 0;
 
     /// <summary>Replaces every pixel of the canvas by a color, alpha included: a transparent color erases the canvas.</summary>
     /// <remarks>
@@ -211,6 +211,30 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void DrawImage(ImageFrame source, Rectangle sourceRegion, RectangleD destination, ImageSampling sampling, double opacity = 1) => GetSession().DrawImage(source, sourceRegion, destination, sampling, opacity);
 
+    /// <summary>Draws a rectangle of a frame of another image that need not be made of whole pixels, stretched to a rectangle: <c>drawImage</c> of the HTML canvas with a source rectangle.</summary>
+    /// <remarks>
+    /// The pixels the rectangle touches are read, and the position each pixel of the canvas reads is brought into the
+    /// rectangle, as browsers do: to <c>[left + 1/2, right - 1/2]</c> (the middle of the rectangle when it is narrower
+    /// than a pixel) with <see cref="ImageSampling.Bilinear"/>, <see cref="ImageSampling.Bicubic"/> and
+    /// <see cref="ImageSampling.Smooth"/>, so that the pixels around it weigh as little as they can, and to
+    /// <c>[left, right)</c> with <see cref="ImageSampling.Nearest"/>. With a rectangle of whole pixels, the pixels are the ones
+    /// of <see cref="DrawImage(ImageFrame, Rectangle, RectangleD, ImageSampling, double)"/> except near its edges, where
+    /// this one does not extend the pixels of the edges but clamps the positions.
+    /// </remarks>
+    /// <param name="source">The frame to draw.</param>
+    /// <param name="sourceRegion">The rectangle of the frame that is drawn, in its pixels.</param>
+    /// <param name="destination">The rectangle of the canvas the region fills.</param>
+    /// <param name="sampling">How the image is read between the centers of its pixels.</param>
+    /// <param name="opacity">The opacity of the image, from 0 to 1.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="sourceRegion"/> is not inside the frame, the magnitude of a coordinate exceeds 16777216, <paramref name="sampling"/> is not a defined <see cref="ImageSampling"/>, or <paramref name="opacity"/> is not between 0 and 1.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned, or <paramref name="source"/> is a frame that is being drawn on or whose pixels are being accessed.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void DrawImage(ImageFrame source, RectangleD sourceRegion, RectangleD destination, ImageSampling sampling, double opacity = 1) => GetSession().DrawImageRectangle(source, sourceRegion, destination, sampling, opacity);
+
     /// <summary>Draws the pixels of a frame of another image, placed on the canvas by a transformation, read in a given way.</summary>
     /// <remarks>See <see cref="DrawImage(ImageFrame, AffineTransform, double)"/> and <see cref="DrawImage(ImageFrame, RectangleD, ImageSampling, double)"/>.</remarks>
     /// <param name="source">The frame to draw.</param>
@@ -224,6 +248,32 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void DrawImage(ImageFrame source, AffineTransform transform, ImageSampling sampling, double opacity = 1) => GetSession().DrawImage(source, transform, sampling, opacity);
+
+    /// <summary>Draws the pixels of a frame of another image, placed on the canvas by a projective transformation: the image seen in perspective.</summary>
+    /// <remarks>
+    /// <para>
+    /// The pixel <c>(x, y)</c> of the frame covers the square from <c>(x, y)</c> to <c>(x + 1, y + 1)</c>, which the
+    /// transformation places on the canvas (then the transformation of the canvas). What is on the other side of the
+    /// horizon of the transformation (where its <c>W</c> is not positive) is not drawn. The edges of the image are
+    /// antialiased, and its pixels on the edges are extended, as for the other ways of drawing an image. An affine transformation draws what
+    /// <see cref="DrawImage(ImageFrame, AffineTransform, ImageSampling, double)"/> draws, with the same pixels.
+    /// </para>
+    /// <para>
+    /// With <see cref="ImageSampling.Smooth"/>, each pixel of the canvas reads what it covers of the image, which
+    /// changes from the near side to the far side: use it for an image that the perspective reduces.
+    /// </para>
+    /// </remarks>
+    /// <param name="source">The frame to draw.</param>
+    /// <param name="transform">The transformation that places the pixels of the frame on the canvas.</param>
+    /// <param name="sampling">How the image is read between the centers of its pixels.</param>
+    /// <param name="opacity">The opacity of the image, from 0 to 1.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="sampling"/> is not a defined <see cref="ImageSampling"/>, <paramref name="opacity"/> is not between 0 and 1, or the transformation is affine and moves a corner of the image beyond 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned, or <paramref name="source"/> is a frame that is being drawn on or whose pixels are being accessed.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void DrawImage(ImageFrame source, ProjectiveTransform transform, ImageSampling sampling, double opacity = 1) => GetSession().DrawImage(source, transform, sampling, opacity);
 
     /// <summary>Draws a frame of another image on a quadrilateral, as it is seen in perspective: on a screen, a page or a wall of a photograph.</summary>
     /// <remarks>
@@ -588,6 +638,47 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void StrokeText(Pen pen, TextLayout layout, PointD origin) => GetSession().StrokeText(pen, layout, origin);
 
+    /// <summary>Fills a run of glyphs placed by the caller: the glyphs of a font at the positions a text shaper gives.</summary>
+    /// <remarks>
+    /// <para>
+    /// Each glyph is filled on its own, over the ones before it. Under a transformation that keeps the axes (or swaps
+    /// them), the origin of a glyph is moved to the nearest quarter of a pixel along the line and to the nearest pixel
+    /// across it, as browsers do, and its coverage is computed once per position in a pixel when
+    /// <see cref="GlyphRunOptions.Cache"/> keeps it: the pixels are the same with or without a cache. The glyphs a font
+    /// draws with its own colors (<c>COLR</c>, <c>sbix</c>, <c>CBDT</c>) are drawn with them, from the palette of the
+    /// options; a variable font draws the glyphs of its instance (<see cref="Font.WithVariations(ReadOnlySpan{FontVariationSetting})"/>).
+    /// </para>
+    /// </remarks>
+    /// <param name="brush">The paint of the glyphs, and the color of the glyphs a font draws with its own colors where they ask for the color of the text.</param>
+    /// <param name="font">The font.</param>
+    /// <param name="size">The size of the text: the length of an em, in units of the drawing.</param>
+    /// <param name="glyphs">The glyphs and their origins, in the coordinates of the drawing.</param>
+    /// <param name="options">The synthesis, the palette and the cache, or <see langword="null"/> for none.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="brush"/> or <paramref name="font"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The size or a coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A glyph is not a glyph of the font, the size is negative, or the magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidImageContentException">The outline or the display list of a glyph is malformed.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void FillGlyphs(Brush brush, Font font, double size, ReadOnlySpan<PositionedGlyph> glyphs, GlyphRunOptions? options = null) => GetSession().FillGlyphs(brush, font, size, glyphs, options);
+
+    /// <summary>Strokes the outlines of a run of glyphs placed by the caller, as one shape: <c>strokeText</c> of the HTML canvas.</summary>
+    /// <remarks>A synthetic oblique shears the outlines; a synthetic bold does not widen the pen, as for <see cref="StrokeText(Pen, TextLayout, PointD)"/>. The glyphs a font draws with its own colors are stroked as their outlines.</remarks>
+    /// <param name="pen">The pen.</param>
+    /// <param name="font">The font.</param>
+    /// <param name="size">The size of the text: the length of an em, in units of the drawing.</param>
+    /// <param name="glyphs">The glyphs and their origins, in the coordinates of the drawing.</param>
+    /// <param name="options">The synthesis, or <see langword="null"/> for none.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> or <paramref name="font"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The size or a coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A glyph is not a glyph of the font, the size is negative, or the magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidImageContentException">The outline of a glyph is malformed.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokeGlyphs(Pen pen, Font font, double size, ReadOnlySpan<PositionedGlyph> glyphs, GlyphRunOptions? options = null) => GetSession().StrokeGlyphs(pen, font, size, glyphs, options);
+
     /// <summary>Paints the glyphs of a text layout along a path.</summary>
     /// <param name="brush">The paint of the spans that have none.</param>
     /// <param name="layout">The text, laid out.</param>
@@ -828,6 +919,79 @@ public readonly ref struct DrawingCanvas
         }
     }
 
+    /// <summary>Runs a callback whose drawings are made on a transparent layer that holds the pixels of a rectangle only, which is then drawn on the canvas as a whole.</summary>
+    /// <remarks>
+    /// <para>
+    /// The layer is drawn as the one of <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode)"/> is, with the
+    /// same pixels when the drawings are inside the rectangle, but it holds the pixels of the box of the rectangle on the
+    /// canvas that the clip can show, instead of the pixels of the whole canvas: what is drawn outside them is not kept.
+    /// The memory of the layer is the one of that box, rented when the layer starts and released when it ends, which
+    /// suits a small group of drawings on a large canvas (an element of a page with an opacity). Its drawings are made
+    /// by a canvas of their own, whose coordinates are those of this one: the callback receives it.
+    /// </para>
+    /// <para>Under a projective transformation, the layer holds what the canvas can show, as any layer.</para>
+    /// </remarks>
+    /// <param name="bounds">The rectangle the drawings of the layer are in, in the coordinates of the drawing.</param>
+    /// <param name="opacity">The opacity of the layer, from 0 (nothing is drawn; the callback still runs) to 1.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <param name="blendMode">The blend mode that mixes the colors of the layer with those of the canvas, before the operator.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="bounds"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of <paramref name="bounds"/> exceeds 16777216, <paramref name="opacity"/> is not between 0 and 1, <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>, or <paramref name="blendMode"/> is not a defined <see cref="BlendMode"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Layer(RectangleD bounds, double opacity, DrawingAction action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var inner = session.PushBoundedLayer(bounds, opacity, compositeMode, blendMode);
+        var isDrawn = false;
+        try
+        {
+            action(new DrawingCanvas(inner));
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are made on a transparent layer that holds the pixels of a rectangle only, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="bounds">The rectangle the drawings of the layer are in, in the coordinates of the drawing.</param>
+    /// <param name="opacity">The opacity of the layer, from 0 (nothing is drawn; the callback still runs) to 1.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <param name="blendMode">The blend mode that mixes the colors of the layer with those of the canvas, before the operator.</param>
+    /// <remarks>See <see cref="Layer(RectangleD, double, DrawingAction, CompositeMode, BlendMode)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="bounds"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of <paramref name="bounds"/> exceeds 16777216, <paramref name="opacity"/> is not between 0 and 1, <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>, or <paramref name="blendMode"/> is not a defined <see cref="BlendMode"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Layer<TState>(RectangleD bounds, double opacity, TState state, DrawingAction<TState> action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var inner = session.PushBoundedLayer(bounds, opacity, compositeMode, blendMode);
+        var isDrawn = false;
+        try
+        {
+            action(new DrawingCanvas(inner), state);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
     /// <summary>Runs a callback whose drawings are transformed: moved, turned, scaled, skewed or mirrored.</summary>
     /// <remarks>
     /// <para>
@@ -847,8 +1011,12 @@ public readonly ref struct DrawingCanvas
     /// </para>
     /// <para>
     /// The coordinates given to a draw call are validated as they are without transformation, and a coordinate that
-    /// the transformation moves beyond 16777216 is rejected, before the call changes a pixel. A dashed stroke has
-    /// every dash of its path cut, even those the canvas does not show.
+    /// the transformation moves beyond 16777216 is rejected, before the call changes a pixel. A dashed stroke is cut
+    /// into the dashes the canvas can show, as without transformation.
+    /// </para>
+    /// <para>
+    /// <see cref="Transform(ProjectiveTransform, DrawingAction)"/> and <see cref="Transform(Transform3D, DrawingAction)"/>
+    /// draw in perspective.
     /// </para>
     /// </remarks>
     /// <param name="transform">The transformation.</param>
@@ -898,6 +1066,133 @@ public readonly ref struct DrawingCanvas
         }
     }
 
+    /// <summary>Runs a callback whose drawings are transformed by a projective transformation: drawn on a plane seen in perspective.</summary>
+    /// <remarks>
+    /// <para>
+    /// Everything <see cref="Transform(AffineTransform, DrawingAction)"/> transforms is transformed: shapes, strokes,
+    /// the paints of the brushes, images, texts, clips and layers. A straight line stays straight, and what is further
+    /// away is smaller. A point whose <c>W</c> is not positive (on the other side of the horizon of the plane, behind
+    /// the viewer) has no image: a drawing that crosses the horizon is cut there, and the paint of a brush has no
+    /// color beyond it. Nothing is rejected because of the transformation: what it sends beyond 16777216 is cut off.
+    /// </para>
+    /// <para>
+    /// Curves are cut into chords that stay within 1/16 of a pixel of them on the canvas, wherever the transformation
+    /// enlarges a length by less than 65536. What has a size in the drawing (the blur and the offset of a shadow, a
+    /// blur, the glyphs a font draws with its own colors) is drawn on an image of the plane of the drawing, then that
+    /// image is drawn in perspective; that image has the resolution the transformation has where <c>W</c> is the one of
+    /// the origin, and at most 4,194,304 pixels. A pattern is drawn at that resolution too.
+    /// </para>
+    /// <para>
+    /// An affine transformation (whose third column is <c>(0, 0, 1)</c>) draws what
+    /// <see cref="Transform(AffineTransform, DrawingAction)"/> draws, bit for bit. Inside a transformation of space
+    /// (<see cref="Transform(Transform3D, DrawingAction)"/>), the transformation is combined as the transformation of
+    /// space it is.
+    /// </para>
+    /// </remarks>
+    /// <param name="transform">The transformation.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coefficient of the transformation, combined with the one it starts in, is not a finite number.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Transform(ProjectiveTransform transform, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushTransform(transform);
+        try
+        {
+            action(this);
+        }
+        finally
+        {
+            session.PopTransform();
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are transformed by a projective transformation, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="transform">The transformation.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Transform(ProjectiveTransform, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coefficient of the transformation, combined with the one it starts in, is not a finite number.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Transform<TState>(ProjectiveTransform transform, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushTransform(transform);
+        try
+        {
+            action(this, state);
+        }
+        finally
+        {
+            session.PopTransform();
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are the plane <c>z = 0</c> transformed by a transformation of space: turned in three dimensions and seen in perspective, as by the 3D transforms of CSS.</summary>
+    /// <remarks>
+    /// <para>
+    /// The drawings are transformed by what the transformation does to the plane <c>z = 0</c>
+    /// (<see cref="Transform3D.ToProjectiveTransform"/>), as <see cref="Transform(ProjectiveTransform, DrawingAction)"/>
+    /// transforms them. A transformation started inside this one is combined with it in three dimensions
+    /// (<see cref="Transform3D.Then"/>), whatever its kind: what an inner rotation does to z reaches an outer
+    /// perspective, as the transforms of nested elements of CSS do.
+    /// </para>
+    /// </remarks>
+    /// <param name="transform">The transformation of space.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coefficient of the transformation, combined with the one it starts in, is not a finite number.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Transform(Transform3D transform, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushTransform(transform);
+        try
+        {
+            action(this);
+        }
+        finally
+        {
+            session.PopTransform();
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are transformed by a transformation of space, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="transform">The transformation of space.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Transform(Transform3D, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coefficient of the transformation, combined with the one it starts in, is not a finite number.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Transform<TState>(Transform3D transform, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushTransform(transform);
+        try
+        {
+            action(this, state);
+        }
+        finally
+        {
+            session.PopTransform();
+        }
+    }
+
     /// <summary>Runs a callback whose drawings are drawn with their shadow: a drop shadow, or a glow without offset.</summary>
     /// <remarks>
     /// <para>
@@ -929,11 +1224,11 @@ public readonly ref struct DrawingCanvas
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushShadow(color, offset, blur);
+        var target = new DrawingCanvas(session.PushShadow(color, offset, blur));
         var isDrawn = false;
         try
         {
-            action(this);
+            action(target);
             isDrawn = true;
         }
         finally
@@ -961,11 +1256,11 @@ public readonly ref struct DrawingCanvas
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushShadow(color, offset, blur);
+        var target = new DrawingCanvas(session.PushShadow(color, offset, blur));
         var isDrawn = false;
         try
         {
-            action(this, state);
+            action(target, state);
             isDrawn = true;
         }
         finally
@@ -1100,11 +1395,11 @@ public readonly ref struct DrawingCanvas
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushBlur(blur);
+        var target = new DrawingCanvas(session.PushBlur(blur));
         var isDrawn = false;
         try
         {
-            action(this);
+            action(target);
             isDrawn = true;
         }
         finally
@@ -1130,11 +1425,11 @@ public readonly ref struct DrawingCanvas
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushBlur(blur);
+        var target = new DrawingCanvas(session.PushBlur(blur));
         var isDrawn = false;
         try
         {
-            action(this, state);
+            action(target, state);
             isDrawn = true;
         }
         finally
@@ -1166,6 +1461,157 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void BlurBackdrop(double blur) => GetSession().BlurBackdrop(blur);
+
+    /// <summary>Runs a callback whose drawings go through a filter, as a whole, before they are drawn on the canvas: the <c>filter</c> property of CSS.</summary>
+    /// <remarks>
+    /// <para>
+    /// The drawings are made on a layer (see <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode)"/>) that
+    /// holds the pixels the clip can show and, around them, as far as the filter moves what it filters (the reach of a
+    /// blur, the offset and the blur of a shadow). When the callback returns, the layer goes through the filter (see
+    /// <see cref="Drawing.Filter"/> for the arithmetic), then it is drawn on the canvas. What a filter reads beyond the
+    /// edges of the canvas is given by its edge mode: transparent by default.
+    /// </para>
+    /// <para>
+    /// The lengths of the filter are lengths of the drawing: under a transformation that scales the axes, they are
+    /// scaled with them; under one that turns, skews or puts the drawing in perspective, the drawings and the filter are
+    /// made on an image of the plane of the drawing, which is then drawn transformed (see
+    /// <see cref="Transform(ProjectiveTransform, DrawingAction)"/>).
+    /// </para>
+    /// </remarks>
+    /// <param name="filter">The filter.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="filter"/> or <paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Filter(Filter filter, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var target = new DrawingCanvas(session.PushFilter(filter));
+        var isDrawn = false;
+        try
+        {
+            action(target);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings go through a filter before they are drawn, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="filter">The filter.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Filter(Drawing.Filter, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="filter"/> or <paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Filter<TState>(Filter filter, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var target = new DrawingCanvas(session.PushFilter(filter));
+        var isDrawn = false;
+        try
+        {
+            action(target, state);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>
+    /// Runs a callback whose drawings are made on a layer that starts with what is already drawn behind a rectangle,
+    /// filtered: the <c>backdrop-filter</c> property of CSS (frosted glass, a dimmed or grayed backdrop, the shadow of
+    /// what is behind).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The backdrop is the pixels already drawn (on the canvas, or on the layer this one starts in) whose center is in
+    /// the rectangle on the canvas (in the box of its image under a transformation of the canvas). It goes through the
+    /// filter as an image of its own, whose pixels are mirrored beyond its edges, whatever the edge modes of the filter:
+    /// a blur of a backdrop does not fade at its edges. The result is the start of a layer (see
+    /// <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode)"/>), transparent around it; the callback draws
+    /// on it, then the layer is drawn on the canvas with the opacity, the operator and the blend mode. A clip that is
+    /// active when the layer starts (the rounded corners of a panel) applies to the layer as a whole.
+    /// </para>
+    /// <para>
+    /// The lengths of the filter are lengths of the drawing, which the linear part of the transformation of the canvas
+    /// scales: a deviation along an axis by the length of the image of the unit vector of that axis. When an image of
+    /// several frames is drawn on, each frame starts with its own backdrop.
+    /// </para>
+    /// </remarks>
+    /// <param name="filter">The filter of the backdrop, or <see langword="null"/> to start with the backdrop as it is.</param>
+    /// <param name="bounds">The rectangle of the backdrop, in the coordinates of the drawing.</param>
+    /// <param name="opacity">The opacity of the layer, from 0 to 1.</param>
+    /// <param name="action">The callback that draws on the backdrop. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <param name="blendMode">The blend mode that mixes the colors of the layer with those of the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="bounds"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of <paramref name="bounds"/> exceeds 16777216, <paramref name="opacity"/> is not between 0 and 1, <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>, or <paramref name="blendMode"/> is not a defined <see cref="BlendMode"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void BackdropLayer(Filter? filter, RectangleD bounds, double opacity, DrawingAction action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushBackdropLayer(filter, bounds, opacity, compositeMode, blendMode);
+        var isDrawn = false;
+        try
+        {
+            action(this);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are made on a layer that starts with the filtered backdrop of a rectangle, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="filter">The filter of the backdrop, or <see langword="null"/> to start with the backdrop as it is.</param>
+    /// <param name="bounds">The rectangle of the backdrop, in the coordinates of the drawing.</param>
+    /// <param name="opacity">The opacity of the layer, from 0 to 1.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws on the backdrop. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <param name="blendMode">The blend mode that mixes the colors of the layer with those of the canvas.</param>
+    /// <remarks>See <see cref="BackdropLayer(Drawing.Filter, RectangleD, double, DrawingAction, CompositeMode, BlendMode)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="bounds"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of <paramref name="bounds"/> exceeds 16777216, <paramref name="opacity"/> is not between 0 and 1, <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>, or <paramref name="blendMode"/> is not a defined <see cref="BlendMode"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void BackdropLayer<TState>(Filter? filter, RectangleD bounds, double opacity, TState state, DrawingAction<TState> action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushBackdropLayer(filter, bounds, opacity, compositeMode, blendMode);
+        var isDrawn = false;
+        try
+        {
+            action(this, state);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
 
     /// <summary>Runs a callback whose drawings get new colors, as a whole, before they are drawn on the canvas: a photograph in gray levels, an icon in another color, a drawing that is dimmed.</summary>
     /// <remarks>
@@ -1288,11 +1734,11 @@ public readonly ref struct DrawingCanvas
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushShadow(color, offset, blur, isInner: true);
+        var target = new DrawingCanvas(session.PushShadow(color, offset, blur, isInner: true));
         var isDrawn = false;
         try
         {
-            action(this);
+            action(target);
             isDrawn = true;
         }
         finally
@@ -1320,11 +1766,11 @@ public readonly ref struct DrawingCanvas
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushShadow(color, offset, blur, isInner: true);
+        var target = new DrawingCanvas(session.PushShadow(color, offset, blur, isInner: true));
         var isDrawn = false;
         try
         {
-            action(this, state);
+            action(target, state);
             isDrawn = true;
         }
         finally
@@ -1336,23 +1782,22 @@ public readonly ref struct DrawingCanvas
     /// <summary>Runs a callback whose drawings have hard edges, or antialiased ones: pixel art, a mask of whole pixels, an image whose colors must stay those of a palette.</summary>
     /// <remarks>
     /// <para>
-    /// Without antialiasing, a pixel is painted entirely or not at all: it is painted when the shape covers at least
-    /// half of it (its exact coverage, rounded to the nearest 1/65536, is at least 32768/65536). An opaque paint then
-    /// writes its color and nothing else: no pixel gets a color between the paint and what was under it. This applies
-    /// to the shapes, the strokes, the texts and the edges of the images that are drawn while the callback runs, and
-    /// to the clips that start in it.
+    /// Without antialiasing, a pixel is painted entirely or not at all, as browsers draw hard edges: it is painted when
+    /// its center is inside the shape, a center on the top or the left side of the shape being outside and one on its
+    /// bottom or its right side inside. An opaque paint then writes its color and nothing else: no pixel gets a color
+    /// between the paint and what was under it. This applies to the shapes, the strokes, the texts and the edges of the
+    /// images that are drawn while the callback runs, and to the clips that start in it.
     /// </para>
     /// <para>
     /// What is not an edge is unchanged: the opacity of a paint, of an image or of a layer, the blur of a shadow, the
-    /// pixels inside an image, and the glyphs a font draws with its own colors. A line thinner than half a pixel
-    /// covers no pixel by half, and is not drawn.
+    /// pixels inside an image, and the glyphs a font draws with its own colors. A thin line is drawn where it covers the
+    /// centers of pixels: a horizontal line one pixel wide between two rows of centers covers one of them.
     /// </para>
     /// </remarks>
     /// <param name="enabled"><see langword="false"/> for hard edges; <see langword="true"/> (what a canvas starts with) for antialiased ones, inside a callback that turned them off.</param>
     /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
-    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. The callback is not run.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void Antialiasing(bool enabled, DrawingAction action)
     {
@@ -1377,7 +1822,6 @@ public readonly ref struct DrawingCanvas
     /// <remarks>See <see cref="Antialiasing(bool, DrawingAction)"/>.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
-    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. The callback is not run.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void Antialiasing<TState>(bool enabled, TState state, DrawingAction<TState> action)
         where TState : allows ref struct
@@ -1438,6 +1882,79 @@ public readonly ref struct DrawingCanvas
         finally
         {
             session.RestoreCompositingSpace(previous);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are made with 16-bit samples, and rounded to the samples of the canvas once when it returns.</summary>
+    /// <remarks>
+    /// <para>
+    /// On a canvas of 8-bit samples, every draw call rounds its result to 8 bits: many translucent drawings on top of
+    /// each other, layers inside layers and filters accumulate those roundings. Inside the callback, the drawings are
+    /// made on a copy of the pixels the clip can show with 16-bit samples and alpha, which starts with the pixels of the
+    /// canvas; layers started in it have 16-bit samples too. When the callback returns, the copy replaces the pixels as
+    /// <see cref="CompositeMode.Source"/> does, through the clip: each color is rounded once. The coordinates do not
+    /// change. On a canvas of 16-bit samples, the callback draws on the canvas itself.
+    /// </para>
+    /// <para>The copy is rented when the callback starts and released when it returns: 8 bytes per pixel the clip can show, for each frame.</para>
+    /// </remarks>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The copy or the working storage would exceed the allocation limit. The callback is not run.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void HighPrecision(DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        if (session.HasSixteenBitSamples)
+        {
+            action(this);
+            return;
+        }
+
+        var inner = session.PushPrecisionScope();
+        var isDrawn = false;
+        try
+        {
+            action(new DrawingCanvas(inner));
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are made with 16-bit samples, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="HighPrecision(DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The copy or the working storage would exceed the allocation limit. The callback is not run.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void HighPrecision<TState>(TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        if (session.HasSixteenBitSamples)
+        {
+            action(this, state);
+            return;
+        }
+
+        var inner = session.PushPrecisionScope();
+        var isDrawn = false;
+        try
+        {
+            action(new DrawingCanvas(inner), state);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
         }
     }
 

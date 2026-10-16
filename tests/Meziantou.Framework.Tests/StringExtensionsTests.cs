@@ -9,10 +9,35 @@ public class StringExtensionsTests
     [InlineData("abc", "abc")]
     [InlineData("abcé", "abce")]
     [InlineData("abce\u0301", "abce")]
+    [InlineData("\u00c0\u1ea0\u01d5", "AAU")]
+    [InlineData("\u0623\u0929\uf900", "\u0627\u0928\u8c48")] // Lo
+    [InlineData("\u2260\u226e", "=<")] // Sm
+    [InlineData("\u1fed\u0385", "\u00a8\u00a8")] // Sk
+    [InlineData("\u037e", ";")] // Po
     public void RemoveDiacritics_Test(string str, string expected)
     {
         var actual = str.RemoveDiacritics();
         Assert.Equal(expected, actual);
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void RemoveDiacritic_MatchesNormalization()
+    {
+        for (var i = 0; i <= char.MaxValue; i++)
+        {
+            var c = (char)i;
+            // string.Normalize rejects the noncharacters
+            if (char.IsSurrogate(c) || c is (>= '\uFDD0' and <= '\uFDEF') or '\uFFFE' or '\uFFFF')
+                continue;
+
+            // A character the runtime does not decompose may come from a newer version of Unicode than the one of the runtime
+            var expected = c.ToString().RemoveDiacritics();
+            if (expected == c.ToString())
+                continue;
+
+            var expectedChar = expected.Length == 1 ? expected[0] : c;
+            Assert.Equal(expectedChar, StringExtensions.RemoveDiacritic(c));
+        }
     }
 
     [Theory]

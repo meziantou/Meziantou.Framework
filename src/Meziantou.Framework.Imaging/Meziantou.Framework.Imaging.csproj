@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
     <Description>Fully managed, performance-oriented image library for .NET: PNG, APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF, HEIC and JPEG 2000 decoding/encoding, JPEG XL decoding and lossless/lossy encoding, lossless JPEG recompression as JPEG XL, animation-aware processing, vector drawing, ICC color conversion, and bounded-memory streaming.</Description>
     <PackageTags>image;imaging;png;apng;gif;jpeg;webp;qoi;bmp;tga;netpbm;tiff;ico;cur;ani;cursor;avif;av1;heic;heif;hevc;jpegxl;jxl;jpeg2000;jp2;j2k;htj2k;animation;resize;drawing;icc;color-management</PackageTags>
 

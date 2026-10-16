@@ -1625,6 +1625,12 @@ namespace Meziantou.Framework.Imaging.Drawing
         public ImageBrush(Meziantou.Framework.Imaging.ImageFrame source) { }
     }
 
+    public sealed class ImagePrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Drawing.DrawingAction Drawing { get => throw null; }
+        public ImagePrimitive(Meziantou.Framework.Imaging.Drawing.DrawingAction drawing) { }
+    }
+
     public enum ImageSampling
     {
         Bilinear = 0,

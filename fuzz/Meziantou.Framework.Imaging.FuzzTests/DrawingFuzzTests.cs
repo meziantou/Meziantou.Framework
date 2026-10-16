@@ -532,8 +532,11 @@ public sealed class DrawingFuzzTests
             var input2 = CreateInput(index);
             RectangleD? subregion = random.Chance(3) ? null : new RectangleD((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, NextDouble(random) * 40, NextDouble(random) * 40);
             var space = (FilterColorSpace)random.Next(2);
-            primitives[index] = random.Next(16) switch
+            var drawn = new RectangleD((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, NextDouble(random) * 30, NextDouble(random) * 30);
+            var drawnColor = CreateColor(random);
+            primitives[index] = random.Next(17) switch
             {
+                16 => new ImagePrimitive(canvas => canvas.FillEllipse(drawnColor, new PointD(drawn.X, drawn.Y), drawn.Width, drawn.Height)) { Subregion = subregion },
                 14 => new DiffuseLightingPrimitive(CreateLight(), CreateColor(random)) { Input = input, Subregion = subregion, ColorSpace = space, SurfaceScale = (NextDouble(random) - 0.5) * 20, DiffuseConstant = NextDouble(random) * 3 },
                 15 => new SpecularLightingPrimitive(CreateLight(), CreateColor(random)) { Input = input, Subregion = subregion, ColorSpace = space, SurfaceScale = (NextDouble(random) - 0.5) * 20, SpecularConstant = NextDouble(random) * 3, SpecularExponent = 1 + (NextDouble(random) * 127) },
                 13 => new TurbulencePrimitive((FilterTurbulenceType)random.Next(2), NextDouble(random) * 0.5, NextDouble(random) * 0.5, random.Next(5), random.Next(-5, 100)) { Subregion = subregion, ColorSpace = space, StitchTiles = random.Chance(3) },

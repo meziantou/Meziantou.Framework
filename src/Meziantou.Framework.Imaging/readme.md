@@ -1267,7 +1267,29 @@ matrices `ColorMatrix.CreateSaturation`, `ColorMatrix.CreateHueRotation` and `Co
 `DropShadowPrimitive`, `MorphologyPrimitive` (erode or dilate), `ConvolveMatrixPrimitive` (a divisor, a bias added to
 every component, `PreserveAlpha`, and an edge mode), `DisplacementMapPrimitive`, `TurbulencePrimitive` (the
 noise of the reference code of SVG, with `StitchTiles`), and `DiffuseLightingPrimitive` and `SpecularLightingPrimitive`
-with a `DistantLight`, a `PointLight` or a `SpotLight`.
+with a `DistantLight`, a `PointLight` or a `SpotLight`, and `ImagePrimitive`, whose result is what a callback draws
+(an image, or an element that `feImage` refers to).
+
+<!-- snippet: draw-filter-graph -->
+```csharp
+public static void DrawGlowingRing(string outputPath)
+{
+    using var image = new Image<Rgba32>(160, 160, new Rgba32(16, 20, 40));
+
+    // <feMorphology in="SourceAlpha" operator="dilate" radius="3"/> <feGaussianBlur stdDeviation="6"/>
+    // <feFlood flood-color="#33ccff"/> <feComposite operator="in" in2="(the blur)"/>
+    // <feMerge> <feMergeNode in="(the glow)"/> <feMergeNode in="SourceGraphic"/> </feMerge>
+    var glow = new FilterGraph(
+        new MorphologyPrimitive(FilterMorphologyOperator.Dilate, 3, 3) { Input = FilterInput.SourceAlpha },
+        new GaussianBlurPrimitive(6),
+        new FloodPrimitive(new Rgba32(51, 204, 255)),
+        new CompositePrimitive(FilterCompositeOperator.In, FilterInput.FromResult(1)),
+        new MergePrimitive(FilterInput.FromResult(3), FilterInput.SourceGraphic));
+
+    image.Draw(canvas => canvas.Filter(glow, ring => ring.StrokeCircle(new Pen(new Rgba32(255, 255, 255), 6), new PointD(80, 80), 40)));
+    image.Save(outputPath);
+}
+```
 
 <!-- snippet: draw-filters -->
 ```csharp

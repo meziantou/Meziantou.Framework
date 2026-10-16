@@ -312,6 +312,22 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawGlowingRingGlowsAroundTheRingAndNotFarFromIt()
+    {
+        var output = GetPath("glow.png");
+        Examples.DrawGlowingRing(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        var frame = image.Frames[0];
+
+        // The ring is white over its glow; 10 pixels outside it, the glow is blue; at the center, the background
+        Assert.Equal(new Rgba32(255, 255, 255), frame[80, 40]);
+        Assert.True(frame[80, 30].B > 80 && frame[80, 30].G > frame[80, 30].R + 20, $"{frame[80, 30]}");
+        Assert.Equal(new Rgba32(16, 20, 40), frame[80, 80]);
+        Assert.Equal(new Rgba32(16, 20, 40), frame[2, 2]);
+    }
+
+    [Fact]
     public void DrawFrostedCardBlursWhatIsBehindTheCardAndShadowsTheBadge()
     {
         // A photo of stripes of one pixel

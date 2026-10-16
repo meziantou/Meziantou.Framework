@@ -165,7 +165,7 @@ internal sealed partial class DrawingSession
             _filterRow = ResampleWeights.Rent<Rgba64>(_image.Owner.Scope, Math.Max(width, Width));
         }
 
-        return _filterProcessor ??= new FilterProcessor(_image.Owner.Scope);
+        return _filterProcessor ??= new FilterProcessor(_image.Owner.Scope, _image.Configuration);
     }
 
     /// <summary>Gets the linear part of the transformation of the canvas, divided by <c>M33</c> when it is projective.</summary>

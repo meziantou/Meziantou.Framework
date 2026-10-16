@@ -3669,6 +3669,35 @@ public sealed class DrawingSessionTests
             => DrawFiltered(new FilterGraph(new SpecularLightingPrimitive(light, lightColor) { SpecularExponent = exponent, ColorSpace = FilterColorSpace.Srgb }), new Rgba32(255, 255, 255));
     }
 
+    [Fact]
+    public void AFilterGraphDrawsWhatACallbackDraws()
+    {
+        // What the callback draws, in the subregion, and nothing of the drawing
+        var red = new Rgba32(255, 0, 0);
+        DrawingAction square = canvas => canvas.FillRectangle(red, new Rectangle(2, 2, 2, 2));
+        var pixels = DrawFiltered(new FilterGraph(new ImagePrimitive(square)));
+        Assert.Equal(red, pixels[2, 2]);
+        Assert.Equal(red, pixels[3, 3]);
+        Assert.Equal(default, pixels[1, 1]);
+        pixels = DrawFiltered(new FilterGraph(new ImagePrimitive(square) { Subregion = new RectangleD(0, 0, 3, 3) }));
+        Assert.Equal(red, pixels[2, 2]);
+        Assert.Equal(default, pixels[3, 3]);
+
+        // Under the drawing, then read in linear light: the same colors
+        pixels = DrawFiltered(new FilterGraph(new ImagePrimitive(square), new MergePrimitive(FilterInput.FromResult(0), FilterInput.SourceGraphic), new ColorMatrixPrimitive(ColorMatrix.CreateBrightness(1.0000001))));
+        Assert.Equal(red, pixels[3, 2]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[1, 1]);
+
+        // Through the transformation of the canvas: scaled by 2, the square of 1 at (1, 1) is the square of 2 at (2, 2)
+        using var image = new Image<Rgba32>(6, 6);
+        image.Draw(canvas => canvas.Transform(AffineTransform.CreateScale(2, 2), scaled => scaled.Filter(new FilterGraph(new ImagePrimitive(inner => inner.FillRectangle(red, new Rectangle(1, 1, 1, 1)))), static _ => { })), Ct);
+        Assert.Equal(red, image.Frames[0][2, 2]);
+        Assert.Equal(red, image.Frames[0][3, 3]);
+        Assert.Equal(default, image.Frames[0][4, 4]);
+
+        Assert.Throws<ArgumentNullException>(() => new ImagePrimitive(null!));
+    }
+
     /// <summary>Filters a white pixel at (1, 1) of a canvas of 6 by 6 pixels, or the whole canvas painted with a color.</summary>
     private static FilteredPixels DrawFiltered(Filter filter, Rgba32? color = null)
     {

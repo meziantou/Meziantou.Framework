@@ -431,6 +431,27 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>An SVG filter: a ring that glows, from a blurred and colored copy of its own shape under it.</summary>
+    // begin-snippet: draw-filter-graph
+    public static void DrawGlowingRing(string outputPath)
+    {
+        using var image = new Image<Rgba32>(160, 160, new Rgba32(16, 20, 40));
+
+        // <feMorphology in="SourceAlpha" operator="dilate" radius="3"/> <feGaussianBlur stdDeviation="6"/>
+        // <feFlood flood-color="#33ccff"/> <feComposite operator="in" in2="(the blur)"/>
+        // <feMerge> <feMergeNode in="(the glow)"/> <feMergeNode in="SourceGraphic"/> </feMerge>
+        var glow = new FilterGraph(
+            new MorphologyPrimitive(FilterMorphologyOperator.Dilate, 3, 3) { Input = FilterInput.SourceAlpha },
+            new GaussianBlurPrimitive(6),
+            new FloodPrimitive(new Rgba32(51, 204, 255)),
+            new CompositePrimitive(FilterCompositeOperator.In, FilterInput.FromResult(1)),
+            new MergePrimitive(FilterInput.FromResult(3), FilterInput.SourceGraphic));
+
+        image.Draw(canvas => canvas.Filter(glow, ring => ring.StrokeCircle(new Pen(new Rgba32(255, 255, 255), 6), new PointD(80, 80), 40)));
+        image.Save(outputPath);
+    }
+    // end-snippet
+
     /// <summary>An image drawn on a quadrilateral, as a plane seen in perspective: a screenshot on the screen of a photo.</summary>
     // begin-snippet: draw-perspective
     public static void DrawOnScreen(string photoPath, string screenshotPath, string outputPath)

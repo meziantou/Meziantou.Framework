@@ -22,6 +22,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class FilterProcessor : IDisposable
 {
     private readonly AllocationScope _scope;
+    private readonly ImageConfiguration _configuration;
     private PooledBuffer? _row;
     private PooledBuffer? _weights;
     private FilterSurface? _scratch;
@@ -37,9 +38,10 @@ internal sealed class FilterProcessor : IDisposable
     private double _offsetY;
     private CancellationToken _cancellationToken;
 
-    public FilterProcessor(AllocationScope scope)
+    public FilterProcessor(AllocationScope scope, ImageConfiguration configuration)
     {
         _scope = scope;
+        _configuration = configuration;
     }
 
     /// <summary>Sets what the next filters read beyond the surface, and how their lengths become pixels.</summary>
@@ -93,6 +95,32 @@ internal sealed class FilterProcessor : IDisposable
 
     /// <summary>Gets the image on the canvas of a vector of the drawing: through the linear part of the transformation.</summary>
     public (double X, double Y) MapVector(PointD vector) => ((_m11 * vector.X) + (_m21 * vector.Y), (_m12 * vector.X) + (_m22 * vector.Y));
+
+    /// <summary>
+    /// Draws a callback on a rectangle of a surface, through the transformation of the canvas: on an image of the
+    /// rectangle, 16-bit, then read as colors multiplied by their alpha.
+    /// </summary>
+    public void Draw(DrawingAction action, FilterSurface surface, Rectangle area)
+    {
+        using var image = new Image<Rgba64>(_configuration, new Size(area.Width, area.Height), _scope, layoutOptions: null);
+        var placement = new AffineTransform(_m11, _m12, _m21, _m22, _offsetX - area.Left, _offsetY - area.Top);
+        var frame = image.Frames[0];
+        frame.Draw(canvas => canvas.Transform(placement, action), _cancellationToken);
+        var values = surface.Values;
+        for (var y = 0; y < area.Height; y++)
+        {
+            var offset = surface.IndexOf(area.Left, area.Top + y);
+            for (var x = 0; x < area.Width; x++)
+            {
+                var pixel = frame[x, y];
+                var alpha = pixel.A / 65535.0;
+                values[offset + (4 * x)] = (float)(pixel.R / 65535.0 * alpha);
+                values[offset + (4 * x) + 1] = (float)(pixel.G / 65535.0 * alpha);
+                values[offset + (4 * x) + 2] = (float)(pixel.B / 65535.0 * alpha);
+                values[offset + (4 * x) + 3] = (float)alpha;
+            }
+        }
+    }
 
     /// <summary>Gets the image on the canvas of a point of the drawing.</summary>
     public (double X, double Y) ToCanvas(double x, double y) => ((_m11 * x) + (_m21 * y) + _offsetX, (_m12 * x) + (_m22 * y) + _offsetY);

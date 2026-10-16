@@ -187,7 +187,7 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     for the tape too: `Av1EncoderRoundTripTests.SyntaxElementsWrittenAfterTheFrameAreTheSameBytes` compares both. The
     filters are proposed by least squares (`Av1RestorationSearch`) and judged with the filter of the decoder, on the
     stripes that `Av1PostFilter.TryGetRestorationStripe` builds for both.
-  - A tool is enabled at the efforts where the `avif-quality` report (`benchmarks/ImagingBenchmarks`) shows that it
+  - A tool is enabled at the efforts where the `avif-quality` report (`benchmarks/Meziantou.Framework.Imaging.Benchmarks`) shows that it
     makes its inputs smaller at equal quality, and stays out otherwise: the Limitations row of the readme lists the
     tools that were measured and left out, with their figures. Measure before and after with the report (it takes a
     filter on the names of its inputs), and add an input when the tool needs content that the report does not have.
@@ -1003,16 +1003,16 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).
 - This repository builds with the updated memory-safety rules: wrap `MemoryMarshal`, `Unsafe` and `Vector*.LoadUnsafe` /
   `StoreUnsafe` calls in `unsafe(...)`, or in an `unsafe { }` block for a statement.
-- Benchmarks (BenchmarkDotNet, `benchmarks/ImagingBenchmarks`) are compared on the same machine only:
+- Benchmarks (BenchmarkDotNet, `benchmarks/Meziantou.Framework.Imaging.Benchmarks`) are compared on the same machine only:
 
   ```shell
-  dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- --inProcess --filter "*PngBenchmarks*"
-  dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- service --seconds 10
-  dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- webp-quality 512 3
-  dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- jxl-quality 512 3
-  dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 20
-  dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 50x
-  dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile TextBenchmarks.LayoutTibetan 200x
+  dotnet run -c Release --project benchmarks/Meziantou.Framework.Imaging.Benchmarks -f net10.0 -- --inProcess --filter "*PngBenchmarks*"
+  dotnet run -c Release --project benchmarks/Meziantou.Framework.Imaging.Benchmarks -f net10.0 -- service --seconds 10
+  dotnet run -c Release --project benchmarks/Meziantou.Framework.Imaging.Benchmarks -f net10.0 -- webp-quality 512 3
+  dotnet run -c Release --project benchmarks/Meziantou.Framework.Imaging.Benchmarks -f net10.0 -- jxl-quality 512 3
+  dotnet run -c Release --project benchmarks/Meziantou.Framework.Imaging.Benchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 20
+  dotnet run -c Release --project benchmarks/Meziantou.Framework.Imaging.Benchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 50x
+  dotnet run -c Release --project benchmarks/Meziantou.Framework.Imaging.Benchmarks -f net10.0 -- profile TextBenchmarks.LayoutTibetan 200x
   dotnet run eng/compare-benchmarks.cs -- <baseline>/results <current>/results
   ```
 
@@ -1021,7 +1021,7 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
   `profile` prints the mean, the minimum and the median time of an iteration, the managed bytes allocated per iteration and
   what the shared buffer pool did. `<n>x` runs a fixed number of iterations instead of a duration: on a busy machine,
   compare two builds with a process counter that does not depend on the load (`/usr/bin/time -l dotnet
-  ImagingBenchmarks.dll profile <Class.Method> <n>x` reports the retired instructions and the cycles on macOS; subtract a
+  Meziantou.Framework.Imaging.Benchmarks.dll profile <Class.Method> <n>x` reports the retired instructions and the cycles on macOS; subtract a
   `1x` run to remove the setup) rather than with wall-clock times.
 - The stack sampler of `dotnet-trace` blames the method that holds the next safe point, and it also samples the setup of
   the benchmark class: confirm a hot spot by timing the stage (temporary `Stopwatch` counters) before optimizing it.
@@ -1043,7 +1043,7 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 | `tools/Meziantou.Framework.Imaging.CorpusGenerator` | The reviewed recipe of every fixture; never run by the tests |
 | `tools/Meziantou.Framework.Imaging.Av1TableExtractor` | Generates the constant tables of the AV1 decoder from the AV1 specification |
 | `samples/Meziantou.Framework.Imaging.Samples` | Usage examples: the source of every C# block of the documentation |
-| `benchmarks/ImagingBenchmarks` | BenchmarkDotNet workloads |
+| `benchmarks/Meziantou.Framework.Imaging.Benchmarks` | BenchmarkDotNet workloads |
 
 ## Tests
 

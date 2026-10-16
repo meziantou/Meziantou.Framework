@@ -1,3 +1,4 @@
+using System.Text;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
 
@@ -75,6 +76,11 @@ internal static partial class GoldenCorpus
         ["jpeg/precision12-gray-odd"] = (1, 0.0051),
         ["jpeg/progressive-precision12-420"] = (1, 0.0071),
         ["jpeg/progressive-precision12-gray-refinement"] = (1, 0.0045),
+        ["jpeg/precision12-rgb-adobe"] = (1, 0.0029),
+        // 12-bit samples with arithmetic coding
+        ["jpeg/arithmetic-precision12-420-restart-rows"] = (1, 0.0084),
+        ["jpeg/arithmetic-precision12-444-detail"] = (1, 0.0054),
+        ["jpeg/progressive-arithmetic-precision12-gray-refinement"] = (1, 0.0041),
     };
 
     // Hard ceilings enforced by the managed validator (ComparisonPolicy): maxAbsoluteError <= 12, maxMeanAbsoluteError <= 2
@@ -271,8 +277,7 @@ internal static partial class GoldenCorpus
                 "12-bit samples with libjpeg-turbo's default progression.", Precision: 12),
             // Arithmetic coding (SOF9 and SOF10): the coefficients of the Huffman-coded frames, coded as binary decisions
             // with adaptive probability estimates; the statistics start again at each restart marker. cjpeg writes no
-            // DAC segment (the default conditioning) and omits the final zero bytes of each entropy-coded segment. The
-            // unit tests cover arithmetic coding of 12-bit samples
+            // DAC segment (the default conditioning) and omits the final zero bytes of each entropy-coded segment
             new("jpeg/arithmetic-444-detail", CommonCorpus.PatternDetailColor(24, 16, 91), ["-quality", "95", "-sample", "1x1", "-arithmetic"], "4:4:4", null, null,
                 "Arithmetic coding (SOF9) on high-frequency content, without chroma subsampling."),
             // Even dimensions with chroma subsampling: FFmpeg's conversion of odd chroma planes would leave no cross-check
@@ -288,6 +293,17 @@ internal static partial class GoldenCorpus
                 "Progressive arithmetic coding with a custom scan script: interleaved DC scans refined from bit 3 to bit 0, a luma band 1-9 refined from bit 4, chroma AC refined from bit 1, one restart interval per MCU row."),
             new("jpeg/progressive-arithmetic-gray-refinement", CommonCorpus.PatternDetailGray(23, 17, 97), ["-quality", "75", "-arithmetic", "-restart", "3B"], "gray", null, ProgressiveGrayScript,
                 "Progressive arithmetic-coded grayscale frame with a custom scan script: DC from bit 2, luma band 1-5 refined from bit 3, band 6-63 from bit 1, restart interval of 3 blocks."),
+            // 12-bit samples with arithmetic coding, and 12-bit RGB samples: the ISO JPEG reference codec is the decoder that
+            // checks them independently of libjpeg-turbo (FFmpeg reads the Huffman-coded rewrite of an arithmetic-coded file and
+            // reads 12-bit RGB samples as YCbCr; Apple ImageIO rejects 12-bit arithmetic coding)
+            new("jpeg/arithmetic-precision12-444-detail", CommonCorpus.Deepen(CommonCorpus.PatternDetailColor(24, 16, 98)), ["-precision", "12", "-quality", "95", "-sample", "1x1", "-arithmetic"], "4:4:4", null, null,
+                "12-bit samples with arithmetic coding (SOF9) on high-frequency content, without chroma subsampling.", Precision: 12),
+            new("jpeg/arithmetic-precision12-420-restart-rows", CommonCorpus.Deepen(CommonCorpus.PatternDetailColor(36, 20, 99)), ["-precision", "12", "-quality", "85", "-sample", "2x2", "-arithmetic", "-restart", "1"], "4:2:0", null, null,
+                "12-bit samples with arithmetic coding and 4:2:0, partial MCUs on both edges, one restart interval per MCU row: the decisions of DC differences and AC coefficients that have four more bits.", Precision: 12),
+            new("jpeg/progressive-arithmetic-precision12-gray-refinement", CommonCorpus.Deepen(CommonCorpus.PatternDetailGray(17, 9, 100)), ["-precision", "12", "-quality", "80", "-arithmetic", "-restart", "3B"], "gray", null, ProgressiveGrayScript,
+                "12-bit grayscale samples with progressive arithmetic coding (SOF10) and a custom scan script: DC from bit 2, luma band 1-5 refined from bit 3, band 6-63 from bit 1, restart interval of 3 blocks.", Precision: 12),
+            new("jpeg/precision12-rgb-adobe", CommonCorpus.Deepen(CommonCorpus.PatternDetailColor(12, 10, 101)), ["-precision", "12", "-quality", "90", "-rgb"], "4:4:4", null, null,
+                "12-bit RGB samples (no color transform): Adobe APP14 transform 0, component identifiers R, G, B, no JFIF segment.", Precision: 12),
             new("jpeg/progressive-precision12-gray-refinement", CommonCorpus.Deepen(CommonCorpus.PatternDetailGray(17, 9, 86)), ["-precision", "12", "-quality", "80", "-restart", "3B"], "gray", null, ProgressiveGrayScript,
                 "12-bit grayscale samples with a custom scan script: DC from bit 2, luma band 1-5 refined from bit 3, band 6-63 from bit 1, restart interval of 3 blocks.", Precision: 12),
         ];
@@ -407,7 +423,17 @@ internal static partial class GoldenCorpus
             };
             var horizontal = sampling switch { "4:2:0" => 2, "4:2:2" => 2, "4:1:1" => 4, _ => 1 };
             var vertical = sampling switch { "4:2:0" => 2, "4:4:0" => 2, _ => 1 };
-            if (img.Width % horizontal != 0 || img.Height % vertical != 0)
+            var rgb = arguments.Contains("-rgb", StringComparer.Ordinal);
+            if (deep && rgb)
+            {
+                // A version that reads them as RGB must be recorded as a cross-check
+                Py.Assert(maxError > 12, $"{fixtureId}: {t.FfmpegLabel} decodes 12-bit RGB samples as RGB: record it as a cross-check.");
+                check["excludedFromTolerance"] = true;
+                check["result"] = "differs";
+                check["notes"] = "FFmpeg converts the 12-bit samples from YCbCr to RGB: it ignores the Adobe transform 0 of 12-bit RGB samples, " +
+                                 "so it does not decode this file and does not justify the tolerance.";
+            }
+            else if (img.Width % horizontal != 0 || img.Height % vertical != 0)
             {
                 check["excludedFromTolerance"] = true;
                 check["result"] = "differs";
@@ -424,50 +450,127 @@ internal static partial class GoldenCorpus
             // FFmpeg reads back without loss
             var bmp = c.Scratch / (stem + (deep ? ".png" : ".bmp"));
             List<string> sipsCommand = [t.Sips, "-s", "format", deep ? "png" : "bmp", path.Value, "--out", bmp.Value];
-            Proc.Run(sipsCommand);
-            if (deep)
+            var sipsDisplay = CommonCorpus.Display(sipsCommand, t, [(path.Value, "{input}"), (bmp.Value, deep ? "{output}.png" : "{output}.bmp")]);
+            if (deep && arithmetic)
             {
-                var (png, _) = CommonCorpus.FfmpegDecode(t, bmp, "rgba64le", img.Width, img.Height, 8, false);
-                (maxError, meanError, _) = JpegCompare(referenceRgba, png[0], sampleBytes);
+                // A version that decodes them must be recorded as a cross-check
+                if (Proc.Exec(sipsCommand).ExitCode == 0)
+                    throw new FatalException($"{fixtureId}: Apple ImageIO decodes 12-bit arithmetic-coded JPEG: record it as a cross-check.");
+
+                check = new Obj
+                {
+                    ["decoder"] = $"Apple ImageIO ({t.MacOS}, {t.SipsVersion})",
+                    ["command"] = sipsDisplay,
+                    ["result"] = "differs",
+                    ["excludedFromTolerance"] = true,
+                    ["notes"] = "ImageIO rejects 12-bit samples with arithmetic coding (sips fails): it does not decode this file.",
+                };
             }
             else
             {
-                var apple = CommonCorpus.Unrotate(CommonCorpus.ReadBmp(File.ReadAllBytes(bmp)), orientation);
-                Py.Assert((apple.Width, apple.Height) == (img.Width, img.Height), fixtureId);
-                (maxError, meanError, _) = CommonCorpus.Compare(referenceRgba, apple.Model != "rgb" ? apple.Raw("rgba8") :
-                    new Img(apple.Width, apple.Height, "rgba", 8, apple.Rgba()).Raw("rgba8"), 1);
-            }
+                Proc.Run(sipsCommand);
+                if (deep)
+                {
+                    var (png, _) = CommonCorpus.FfmpegDecode(t, bmp, "rgba64le", img.Width, img.Height, 8, false);
+                    (maxError, meanError, _) = JpegCompare(referenceRgba, png[0], sampleBytes);
+                }
+                else
+                {
+                    var apple = CommonCorpus.Unrotate(CommonCorpus.ReadBmp(File.ReadAllBytes(bmp)), orientation);
+                    Py.Assert((apple.Width, apple.Height) == (img.Width, img.Height), fixtureId);
+                    (maxError, meanError, _) = CommonCorpus.Compare(referenceRgba, apple.Model != "rgb" ? apple.Raw("rgba8") :
+                        new Img(apple.Width, apple.Height, "rgba", 8, apple.Rgba()).Raw("rgba8"), 1);
+                }
 
-            check = new Obj
-            {
-                ["decoder"] = $"Apple ImageIO ({t.MacOS}, {t.SipsVersion})",
-                ["command"] = CommonCorpus.Display(sipsCommand, t, [(path.Value, "{input}"), (bmp.Value, deep ? "{output}.png" : "{output}.bmp")]) +
-                              (deep ? " (16-bit PNG, read back with FFmpeg)" : "") +
-                              (orientation is not null and not 0 ? $" (EXIF orientation {CommonCorpus.Str(orientation.Value)} applied by ImageIO is undone before comparing)" : ""),
-                ["result"] = maxError == 0 ? "exact" : "within-tolerance",
-                ["maxAbsoluteError"] = maxError,
-                ["meanAbsoluteError"] = Py.Round(meanError, 4),
-            };
-            if (arithmetic)
-            {
-                // Exact on files without chroma subsampling, where it differs for Huffman-coded files of the same content
-                check["excludedFromTolerance"] = true;
-                check["result"] = maxError == 0 ? "exact" : "differs";
-                check["notes"] = "ImageIO agrees exactly with the reference on the arithmetic-coded files that have no chroma subsampling, where its " +
-                                 "own decoder differs by a few units on Huffman-coded files of the same content: it does not decode " +
-                                 "arithmetic coding with an implementation of its own, so it is recorded but is not an independent " +
-                                 "decoder and does not justify the tolerance (with chroma subsampling it upsamples differently).";
-            }
-            else if (iccLabel != "none" && maxError != 0)
-            {
-                check["excludedFromTolerance"] = true;
-                check["result"] = "differs";
-                check["notes"] = $"ImageIO converts the samples from the embedded {iccLabel.ToUpperInvariant()} ICC test profile to its output color space " +
-                                 "(color management); decoders of this library preserve profiles and never apply them, so this " +
-                                 "is not a decoding difference and does not justify the tolerance.";
+                check = new Obj
+                {
+                    ["decoder"] = $"Apple ImageIO ({t.MacOS}, {t.SipsVersion})",
+                    ["command"] = sipsDisplay +
+                                  (deep ? " (16-bit PNG, read back with FFmpeg)" : "") +
+                                  (orientation is not null and not 0 ? $" (EXIF orientation {CommonCorpus.Str(orientation.Value)} applied by ImageIO is undone before comparing)" : ""),
+                    ["result"] = maxError == 0 ? "exact" : "within-tolerance",
+                    ["maxAbsoluteError"] = maxError,
+                    ["meanAbsoluteError"] = Py.Round(meanError, 4),
+                };
+                if (deep && rgb)
+                {
+                    // A version that reads them as RGB must be recorded as a cross-check
+                    Py.Assert(maxError > 12, $"{fixtureId}: Apple ImageIO decodes 12-bit RGB samples as RGB: record it as a cross-check.");
+                    check["excludedFromTolerance"] = true;
+                    check["result"] = "differs";
+                    check["notes"] = "ImageIO converts the 12-bit samples from YCbCr to RGB: it ignores the Adobe transform 0 of 12-bit RGB samples, " +
+                                     "so it does not decode this file and does not justify the tolerance.";
+                }
+                else if (arithmetic)
+                {
+                    // Exact on files without chroma subsampling, where it differs for Huffman-coded files of the same content
+                    check["excludedFromTolerance"] = true;
+                    check["result"] = maxError == 0 ? "exact" : "differs";
+                    check["notes"] = "ImageIO agrees exactly with the reference on the arithmetic-coded files that have no chroma subsampling, where its " +
+                                     "own decoder differs by a few units on Huffman-coded files of the same content: it does not decode " +
+                                     "arithmetic coding with an implementation of its own, so it is recorded but is not an independent " +
+                                     "decoder and does not justify the tolerance (with chroma subsampling it upsamples differently).";
+                }
+                else if (iccLabel != "none" && maxError != 0)
+                {
+                    check["excludedFromTolerance"] = true;
+                    check["result"] = "differs";
+                    check["notes"] = $"ImageIO converts the samples from the embedded {iccLabel.ToUpperInvariant()} ICC test profile to its output color space " +
+                                     "(color management); decoders of this library preserve profiles and never apply them, so this " +
+                                     "is not a decoding difference and does not justify the tolerance.";
+                }
             }
 
             checks.Add(check);
+
+            // Cross-check 3, for the arithmetic-coded and 12-bit files: the ISO JPEG reference codec, which shares no code with
+            // libjpeg-turbo (the only arithmetic decoder independent of it)
+            if (arithmetic || deep)
+            {
+                var isoOutput = c.Scratch / (stem + ".iso.pnm");
+                List<string> isoCommand = [t.IsoJpeg, path.Value, isoOutput.Value];
+                var iso = IsoJpegDecode(isoCommand, isoOutput);
+                var sameAsHuffman = "";
+                if (arithmetic)
+                {
+                    // The Huffman-coded rewrite has the same coefficients: the same pixels show that the arithmetic decoding
+                    // agrees, whatever the reconstruction
+                    var huffmanOutput = c.Scratch / (stem + ".huffman.iso.pnm");
+                    IsoJpegDecode([t.IsoJpeg, ffmpegInput.Value, huffmanOutput.Value], huffmanOutput);
+                    Py.Assert(File.ReadAllBytes(isoOutput).AsSpan().SequenceEqual(File.ReadAllBytes(huffmanOutput)), $"{fixtureId}: the ISO JPEG reference codec decodes the arithmetic-coded file and its Huffman-coded rewrite differently.");
+                    sameAsHuffman = "; it decodes the file to the same pixels as the Huffman-coded rewrite of jpegtran, which has the same coefficients";
+                }
+
+                if (deep)
+                {
+                    Py.Assert(iso.Depth == 16);
+                    iso = CommonCorpus.ScaleToSixteenBits(iso, (1 << precision) - 1);
+                }
+
+                (maxError, meanError, _) = JpegCompare(referenceRgba, iso.Raw(canonical), sampleBytes);
+                check = new Obj
+                {
+                    ["decoder"] = t.IsoJpegLabel + (deep ? "; each 12-bit sample scaled to 16 bits like the reference" : ""),
+                    ["command"] = CommonCorpus.Display(isoCommand, t, [(path.Value, "{input}"), (isoOutput.Value, "{output}.pnm")]),
+                    ["result"] = maxError == 0 ? "exact" : "within-tolerance",
+                    ["maxAbsoluteError"] = maxError,
+                    ["meanAbsoluteError"] = Py.Round(meanError, 4),
+                };
+                if (sampling is not ("4:4:4" or "gray"))
+                {
+                    check["excludedFromTolerance"] = true;
+                    check["result"] = maxError == 0 ? "exact" : "differs";
+                    check["notes"] = "The reference codec upsamples the chroma with a filter of its own, which differs from the triangle filters of " +
+                                     "libjpeg-turbo and of the library by more than the IDCT and color conversion do: recorded as an independent decoding" +
+                                     sameAsHuffman + ", it does not justify the tolerance.";
+                }
+                else if (sameAsHuffman.Length > 0)
+                {
+                    check["notes"] = "Independent decoding of the arithmetic coding" + sameAsHuffman + ".";
+                }
+
+                checks.Add(check);
+            }
 
             var policy = JpegPolicy(fixtureId, checks, sampling);
             var (_, _, justifiedMax, justifiedMean) = CommonCorpus.JpegJustifiedTolerance(checks);
@@ -508,11 +611,25 @@ internal static partial class GoldenCorpus
                 c.Provenance("generated", (ffmpegEncoded ? "BuildJpegFfmpegDecoding " : "BuildJpeg ") + img.PatternName,
                     new Obj { ["width"] = img.Width, ["height"] = img.Height },
                     [.. ffmpegEncoded ? [t.FfmpegLabel, $"libjpeg-turbo {t.DjpegVersion} djpeg"] : arithmetic ? [t.LibjpegLabel, $"libjpeg-turbo {t.JpegtranVersion} jpegtran (cross-check only)", t.FfmpegLabel + " (cross-check only)"] : new[] { t.LibjpegLabel, t.FfmpegLabel + " (cross-check only)" },
-                     $"Apple ImageIO {t.MacOS} {t.SipsVersion} (cross-check only)", ToolSet.RuntimeLabel], commands),
+                     $"Apple ImageIO {t.MacOS} {t.SipsVersion} (cross-check only)", .. arithmetic || deep ? [t.IsoJpegLabel + " (cross-check only)"] : Array.Empty<string>(), ToolSet.RuntimeLabel], commands),
                 reference2, features, comparison: policy, layouts: layouts, notes: notes);
         }
 
         BuildUnsupportedJpeg(c);
+    }
+
+    /// <summary>
+    /// Decodes a JPEG file with the ISO JPEG reference codec to a Netpbm file. The tool exits with 0 when it fails and leaves
+    /// an existing output as it is: the output is deleted first and must exist afterwards.
+    /// </summary>
+    private static Img IsoJpegDecode(IReadOnlyList<string> command, FullPath output)
+    {
+        File.Delete(output);
+        var result = Proc.Exec(command);
+        if (result.ExitCode != 0 || !File.Exists(output) || new FileInfo(output).Length == 0)
+            throw new ToolException($"The ISO JPEG reference codec failed: {string.Join(' ', command)}: {Encoding.UTF8.GetString(result.Stdout)}{Encoding.UTF8.GetString(result.Stderr)}");
+
+        return CommonCorpus.ReadPnm(File.ReadAllBytes(output));
     }
 
     /// <summary>Compares two raw buffers on the 8-bit scale, like every tolerance of the corpus: the errors of 16-bit samples

@@ -101,6 +101,52 @@ public sealed class JpegEncoderInteropTests
     }
 
     [Theory]
+    [InlineData("444", 50)]
+    [InlineData("444", 90)]
+    [InlineData("422", 90)]
+    [InlineData("420", 50)]
+    [InlineData("420", 90)]
+    [InlineData("gray", 90)]
+    public async Task EncodedImagesDecodeWithTheIsoReferenceDecoder(string sampling, int quality)
+    {
+        // The ISO JPEG reference codec shares no code with libjpeg-turbo, whose tools checked the encoder when it was written
+        var isoJpeg = await RequiredTools.IsoJpegAsync();
+        var gray = sampling == "gray";
+        var source = JpegTestPatterns.PhotoLike(96, 64, seed: 7);
+        if (gray)
+        {
+            source = JpegTestPatterns.ToGray(source);
+        }
+
+        int[]? baselinePixels = null;
+        foreach (var process in new[] { JpegEncodingProcess.Baseline, JpegEncodingProcess.Progressive })
+        {
+            var encoder = new JpegEncoder { Quality = quality, ChromaSubsampling = GetSubsampling(sampling), Process = process };
+            var name = string.Create(CultureInfo.InvariantCulture, $"iso-photo-{sampling}-q{quality}-{process}");
+            var path = await EncodeToFileAsync(source, gray ? PixelFormat.Gray8 : PixelFormat.Rgb24, encoder, name);
+            var reference = JpegDecoderDifferentialTests.GetSamples(await isoJpeg.DecodeAsync(path, XunitCancellationToken), 255);
+
+            // Both processes code the same coefficients: the reference decoder returns the same pixels
+            baselinePixels ??= reference;
+            Assert.Equal(baselinePixels, reference);
+
+            using var image = Image.Load(path);
+            var (max, mean, excluded) = JpegDecoderDifferentialTests.Compare(JpegDecoderDifferentialTests.GetSamples(image, 255), reference, 255);
+            var description = string.Create(CultureInfo.InvariantCulture, $"{name}: library vs reference decoder max {max}, mean {mean:F4}, {excluded} pixels at an end of the range left out");
+            TestContext.Current.TestOutputHelper?.WriteLine(description);
+            // The measured maximum plus one unit: chroma upsampling filters differ most
+            var allowed = sampling switch
+            {
+                "gray" => 2,
+                "444" => 3,
+                "420" => 4,
+                _ => 6,
+            };
+            Assert.True(max <= allowed && mean <= 0.8 && excluded <= 96 * 64 / 20, description);
+        }
+    }
+
+    [Theory]
     [InlineData("444")]
     [InlineData("422")]
     [InlineData("420")]

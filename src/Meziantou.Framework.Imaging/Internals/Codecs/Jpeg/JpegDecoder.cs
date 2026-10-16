@@ -416,9 +416,13 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     }
 
     /// <summary>Parses the tables of a DAC segment (T.81 B.2.4.3): class 0 (DC) or 1 (AC), identifier 0-3 and the conditioning value.</summary>
+    /// <remarks>
+    /// A segment may define no table, unlike a DQT or a DHT segment: the JPEG reference software writes such a segment before
+    /// each scan that uses no conditioning (the refinement scans of a progressive frame), and other decoders read it.
+    /// </remarks>
     private void ParseArithmeticConditioning(ReadOnlySpan<byte> payload)
     {
-        if (payload.IsEmpty || payload.Length % 2 != 0)
+        if (payload.Length % 2 != 0)
             throw Invalid("The JPEG DAC segment does not hold a whole number of conditioning tables.");
 
         for (; !payload.IsEmpty; payload = payload[2..])

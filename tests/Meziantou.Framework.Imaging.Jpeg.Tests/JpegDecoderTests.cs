@@ -429,10 +429,21 @@ public sealed class JpegDecoderTests
             AssertPixels(expected, decoded, "DAC in a Huffman-coded file");
         }
 
+        // A segment without any table is valid and defines nothing: the conditioning defined before it still applies
+        using (var decoded = Image.Load(Insert(data, FindSegment(data, 0xDA), JpegTestImage.Segment(0xCC, []))))
+        {
+            AssertPixels(expected, decoded, "DAC without table after the conditioning of the scan");
+        }
+
+        foreach (var arithmetic in new[] { false, true })
+        {
+            using var decoded = Image.Load(image.Encode(new JpegTestEncodeOptions { Arithmetic = arithmetic, SegmentsBeforeFrame = [JpegTestImage.Segment(0xCC, [])] }));
+            AssertPixels(expected, decoded, "DAC without table before the frame header");
+        }
+
         // Defects of a table are found by decoding, whatever the entropy coding of the file
         var defects = new (string Name, byte[] Payload)[]
         {
-            ("empty", []),
             ("half a table", [0x00]),
             ("a table and a half", [0x00, 0x10, 0x10]),
             ("class 2", [0x20, 0x10]),

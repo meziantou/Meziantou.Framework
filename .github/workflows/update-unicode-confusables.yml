@@ -64,6 +64,10 @@ jobs:
             dotnet test --project "$PWD/tests/Meziantou.Framework.Unicode.Tests/Meziantou.Framework.Unicode.Tests.csproj" --configuration Release
             $testsPassed = $LASTEXITCODE -eq 0
 
+            # The generator also writes the diacritic table of StringExtensions.RemoveDiacritics in Meziantou.Framework
+            dotnet test --project "$PWD/tests/Meziantou.Framework.Tests/Meziantou.Framework.Tests.csproj" --configuration Release --filter-class Meziantou.Framework.Tests.StringExtensionsTests
+            $testsPassed = $testsPassed -and $LASTEXITCODE -eq 0
+
             git config --global user.email "git@meziantou.net"
             git config --global user.name "meziantou"
             git checkout -b $branch
@@ -78,9 +82,9 @@ jobs:
             git push origin $branch --force
             $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             if ($testsPassed) {
-              $body = "$title`n`nThe Meziantou.Framework.Unicode tests pass with the new data.`n`nCreated by: $runUrl"
+              $body = "$title`n`nThe Meziantou.Framework.Unicode and StringExtensions tests pass with the new data.`n`nCreated by: $runUrl"
             } else {
-              $body = "$title`n`n**The Meziantou.Framework.Unicode tests fail with the new data**: the library needs an update before this can be merged. See the test output of the run.`n`nCreated by: $runUrl"
+              $body = "$title`n`n**The Meziantou.Framework.Unicode or StringExtensions tests fail with the new data**: the library needs an update before this can be merged. See the test output of the run.`n`nCreated by: $runUrl"
             }
 
             # The branch is reused every week, so update the pull request when one is already open

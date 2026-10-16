@@ -159,6 +159,17 @@ public sealed class JpegProgressiveDecoderTests
             using var decoded = Image.Load(data);
             Assert.Equal(image.PixelFormat, decoded.PixelFormat);
             AssertPixels(expected, decoded, $"arithmetic {precision}-bit {layout} {width}x{height}, {name}");
+
+            // The JPEG reference software writes a DAC segment without any table before the scans that use no conditioning:
+            // such a segment before every scan changes nothing, the conditioning of the earlier segments still applies
+            var withEmptySegments = data;
+            foreach (var scan in FindSegments(data, 0xDA).Reverse())
+            {
+                withEmptySegments = Insert(withEmptySegments, scan, JpegTestImage.Segment(0xCC, []));
+            }
+
+            using var decodedWithEmptySegments = Image.Load(withEmptySegments);
+            AssertPixels(expected, decodedWithEmptySegments, $"arithmetic {precision}-bit {layout} {width}x{height}, {name}, DAC segments without table");
         }
     }
 

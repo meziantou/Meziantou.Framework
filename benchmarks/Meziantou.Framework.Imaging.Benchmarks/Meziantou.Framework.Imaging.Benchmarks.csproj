@@ -1,0 +1,44 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\JpegTestImage.cs" Link="Workloads\TestEncoders\JpegTestImage.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\JpegTestArithmeticCoder.cs" Link="Workloads\TestEncoders\JpegTestArithmeticCoder.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\JpegTestEncodeOptions.cs" Link="Workloads\TestEncoders\JpegTestEncodeOptions.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\JpegTestHuffmanStyle.cs" Link="Workloads\TestEncoders\JpegTestHuffmanStyle.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\JpegTestInkCoding.cs" Link="Workloads\TestEncoders\JpegTestInkCoding.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\JpegTestProgressiveScan.cs" Link="Workloads\TestEncoders\JpegTestProgressiveScan.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The AVIF decoding workloads wrap AV1 streams of the golden corpus, written by libaom, into AVIF files -->
+    <Compile Include="..\..\fuzz\Meziantou.Framework.Imaging.FuzzTests\FuzzAvifContainer.cs" Link="Workloads\TestEncoders\FuzzAvifContainer.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\av1\lr-switchable-luma-420-384x216.obu" LogicalName="av1/lr-switchable-luma-420-384x216.obu" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\av1\lr-switchable-chroma-444-384x216.obu" LogicalName="av1/lr-switchable-chroma-444-384x216.obu" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\av1\inter-alt-ref-420-8bit-176x144.obu" LogicalName="av1/inter-alt-ref-420-8bit-176x144.obu" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The HEIC decoding workloads wrap HEVC streams of the golden corpus, written by x265, into HEIC files -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\hevc\x265-benchmark-intra-420-384x216.hevc" LogicalName="hevc/x265-benchmark-intra-420-384x216.hevc" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\hevc\x265-benchmark-intra-444-384x216.hevc" LogicalName="hevc/x265-benchmark-intra-444-384x216.hevc" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\hevc\x265-benchmark-inter-420-176x144.hevc" LogicalName="hevc/x265-benchmark-inter-420-176x144.hevc" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The text workloads use fonts of the test corpus -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-sans\NotoSans-Regular.subset.ttf" LogicalName="fonts/NotoSans-Regular.subset.ttf" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-naskh-arabic\NotoNaskhArabic-Regular.subset.ttf" LogicalName="fonts/NotoNaskhArabic-Regular.subset.ttf" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-sans-devanagari\NotoSansDevanagari-Regular.ttf" LogicalName="fonts/NotoSansDevanagari-Regular.ttf" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-serif-tibetan\NotoSerifTibetan-Regular.ttf" LogicalName="fonts/NotoSerifTibetan-Regular.ttf" />
+  </ItemGroup>
+</Project>

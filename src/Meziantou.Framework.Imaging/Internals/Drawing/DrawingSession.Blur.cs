@@ -66,10 +66,14 @@ internal sealed partial class DrawingSession
             bounds = Rectangle.FromLTRB(level.Left, level.Top, level.Right, level.Bottom);
         }
 
-        var area = Rectangle.FromLTRB(Math.Max(left, bounds.Left), Math.Max(top, bounds.Top), Math.Min(right, bounds.Right), Math.Min(bottom, bounds.Bottom));
-        if (area.Width <= 0 || area.Height <= 0)
+        left = Math.Max(left, bounds.Left);
+        top = Math.Max(top, bounds.Top);
+        right = Math.Min(right, bounds.Right);
+        bottom = Math.Min(bottom, bounds.Bottom);
+        if (right <= left || bottom <= top)
             return;
 
+        var area = Rectangle.FromLTRB(left, top, right, bottom);
         ReserveBlur(sigma, bounds, area);
         if (!_thumbnailRemoved)
         {
@@ -97,14 +101,14 @@ internal sealed partial class DrawingSession
         var radius = GaussianKernel.GetRadius(level.BlurSigma);
         var (reachLeft, reachRight) = GetReach(level.DirtyLeft, level.DirtyRight, bounds.Left, bounds.Right, radius, radius);
         var (reachTop, reachBottom) = GetReach(level.DirtyTop, level.DirtyBottom, bounds.Top, bounds.Bottom, radius, radius);
-        var area = Rectangle.FromLTRB(
-            (int)Math.Max(level.VisibleLeft, reachLeft),
-            (int)Math.Max(level.VisibleTop, reachTop),
-            (int)Math.Min(level.VisibleRight, reachRight),
-            (int)Math.Min(level.VisibleBottom, reachBottom));
-        if (area.Width <= 0 || area.Height <= 0)
+        var left = (int)Math.Max(level.VisibleLeft, reachLeft);
+        var top = (int)Math.Max(level.VisibleTop, reachTop);
+        var right = (int)Math.Min(level.VisibleRight, reachRight);
+        var bottom = (int)Math.Min(level.VisibleBottom, reachBottom);
+        if (right <= left || bottom <= top)
             return;
 
+        var area = Rectangle.FromLTRB(left, top, right, bottom);
         ReserveBlur(level.BlurSigma, bounds, area);
         level.MarkDirty(area.Left, area.Top, area.Right, area.Bottom);
         BlurPixels(level.Frames![0], level.Storages![0], level.BlurSigma, bounds, area, applyClip: false);

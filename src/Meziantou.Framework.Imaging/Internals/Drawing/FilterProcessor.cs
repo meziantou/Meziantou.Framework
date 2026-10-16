@@ -94,6 +94,18 @@ internal sealed class FilterProcessor : IDisposable
     /// <summary>Gets the image on the canvas of a vector of the drawing: through the linear part of the transformation.</summary>
     public (double X, double Y) MapVector(PointD vector) => ((_m11 * vector.X) + (_m21 * vector.Y), (_m12 * vector.X) + (_m22 * vector.Y));
 
+    /// <summary>Gets the image on the canvas of a point of the drawing.</summary>
+    public (double X, double Y) ToCanvas(double x, double y) => ((_m11 * x) + (_m21 * y) + _offsetX, (_m12 * x) + (_m22 * y) + _offsetY);
+
+    /// <summary>Gets the point of the drawing whose image is a point of the canvas.</summary>
+    public (double X, double Y) ToDrawing(double x, double y)
+    {
+        var determinant = (_m11 * _m22) - (_m12 * _m21);
+        var dx = x - _offsetX;
+        var dy = y - _offsetY;
+        return (((_m22 * dx) - (_m21 * dy)) / determinant, ((_m11 * dy) - (_m12 * dx)) / determinant);
+    }
+
     /// <summary>Gets the pixels of the canvas whose center is in the box of the image of a rectangle of the drawing.</summary>
     public Rectangle ToPixels(RectangleD rectangle)
     {

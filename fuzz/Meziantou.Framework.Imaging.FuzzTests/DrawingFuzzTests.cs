@@ -532,8 +532,9 @@ public sealed class DrawingFuzzTests
             var input2 = CreateInput(index);
             RectangleD? subregion = random.Chance(3) ? null : new RectangleD((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, NextDouble(random) * 40, NextDouble(random) * 40);
             var space = (FilterColorSpace)random.Next(2);
-            primitives[index] = random.Next(13) switch
+            primitives[index] = random.Next(14) switch
             {
+                13 => new TurbulencePrimitive((FilterTurbulenceType)random.Next(2), NextDouble(random) * 0.5, NextDouble(random) * 0.5, random.Next(5), random.Next(-5, 100)) { Subregion = subregion, ColorSpace = space, StitchTiles = random.Chance(3) },
                 10 => new MorphologyPrimitive((FilterMorphologyOperator)random.Next(2), NextDouble(random) * 4, NextDouble(random) * 4) { Input = input, Subregion = subregion, ColorSpace = space },
                 11 => CreateConvolveMatrix(input, subregion, space),
                 12 => new DisplacementMapPrimitive((NextDouble(random) - 0.5) * 20, input2) { Input = input, Subregion = subregion, ColorSpace = space, XChannel = (FilterChannel)random.Next(4), YChannel = (FilterChannel)random.Next(4) },

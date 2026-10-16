@@ -3597,6 +3597,33 @@ public sealed class DrawingSessionTests
         Assert.Equal((1, 1, FilterEdgeMode.Duplicate), (new ConvolveMatrixPrimitive(3, 3, new double[9]).TargetX, new ConvolveMatrixPrimitive(3, 3, new double[9]).TargetY, new ConvolveMatrixPrimitive(3, 3, new double[9]).EdgeMode));
     }
 
+    [Fact]
+    public void AFilterGraphMakesTheNoiseOfTheReferenceCode()
+    {
+        // At the origin, every octave of the noise is zero: the fractal noise is one half, and the turbulence nothing
+        var pixels = DrawFiltered(new FilterGraph(new TurbulencePrimitive(FilterTurbulenceType.FractalNoise, 0.1, 0.1, 2, 0) { ColorSpace = FilterColorSpace.Srgb }));
+        Assert.Equal(new Rgba32(128, 128, 128, 128), pixels[0, 0]);
+        pixels = DrawFiltered(new FilterGraph(new TurbulencePrimitive(FilterTurbulenceType.Turbulence, 0.1, 0.1, 2, 0) { ColorSpace = FilterColorSpace.Srgb }));
+        Assert.Equal(default, pixels[0, 0]);
+
+        // The values of a transcription of the reference code of "Filter Effects Module Level 1" in another language,
+        // at the top left corner of a pixel, with seeds 0 (taken as 1) and 7, with tiles stitched on the canvas (a
+        // frequency of 0.4 is 2 cycles on 6 pixels, 1/3)
+        Assert.Equal(new Rgba32(157, 73, 135, 120), Noise(FilterTurbulenceType.FractalNoise, 0.1, 0.1, 2, 0, stitch: false)[3, 2]);
+        Assert.Equal(new Rgba32(27, 54, 81, 89), Noise(FilterTurbulenceType.Turbulence, 0.25, 0.15, 3, 0, stitch: false)[5, 1]);
+        Assert.Equal(new Rgba32(102, 103, 157, 102), Noise(FilterTurbulenceType.FractalNoise, 0.05, 0.2, 1, 7, stitch: false)[4, 4]);
+        Assert.Equal(new Rgba32(121, 133, 121, 142), Noise(FilterTurbulenceType.FractalNoise, 0.4, 0.25, 2, 3, stitch: true)[5, 2]);
+        Assert.Equal(new Rgba32(122, 71, 113, 172), Noise(FilterTurbulenceType.Turbulence, 0.4, 0.25, 2, 3, stitch: true)[1, 4]);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TurbulencePrimitive((FilterTurbulenceType)2, 0, 0, 1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TurbulencePrimitive(FilterTurbulenceType.Turbulence, -1, 0, 1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TurbulencePrimitive(FilterTurbulenceType.Turbulence, 0, double.NaN, 1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TurbulencePrimitive(FilterTurbulenceType.Turbulence, 0, 0, -1, 0));
+
+        static FilteredPixels Noise(FilterTurbulenceType type, double frequencyX, double frequencyY, int octaves, int seed, bool stitch)
+            => DrawFiltered(new FilterGraph(new TurbulencePrimitive(type, frequencyX, frequencyY, octaves, seed) { StitchTiles = stitch, ColorSpace = FilterColorSpace.Srgb }));
+    }
+
     /// <summary>Filters a white pixel at (1, 1) of a canvas of 6 by 6 pixels, or the whole canvas painted with a color.</summary>
     private static FilteredPixels DrawFiltered(Filter filter, Rgba32? color = null)
     {

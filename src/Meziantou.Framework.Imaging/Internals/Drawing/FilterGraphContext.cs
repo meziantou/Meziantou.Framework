@@ -36,6 +36,7 @@ internal sealed class FilterGraphContext : IDisposable
         _source = source;
         _primitives = primitives;
         Region = region is { } rectangle ? Rectangle.Intersect(processor.ToPixels(rectangle), processor.Edges) : processor.Edges;
+        RegionRectangle = region ?? GetDrawingBox(processor, processor.Edges);
         _results = new Entry[primitives.Count];
         _lastUses = new int[primitives.Count];
         _sourceGraphic = new Entry { Subregion = Region, Space = FilterColorSpace.Srgb, Kind = FilterInputKind.SourceGraphic };
@@ -60,6 +61,9 @@ internal sealed class FilterGraphContext : IDisposable
 
     /// <summary>Gets the processor of the filters, for the lengths of the primitives and the operations they share.</summary>
     public FilterProcessor Processor => _processor;
+
+    /// <summary>Gets the region of the filter in the drawing: its <see cref="FilterGraph.Region"/>, or the box of the rectangle of the edges.</summary>
+    public RectangleD RegionRectangle { get; }
 
     /// <summary>Gets the pixels of the filter region, which may go beyond the filtered surface.</summary>
     public Rectangle Region { get; }
@@ -187,6 +191,25 @@ internal sealed class FilterGraphContext : IDisposable
 
         _sourceGraphic.Dispose();
         _sourceAlpha.Dispose();
+    }
+
+    /// <summary>Gets the box, in the drawing, of a rectangle of the canvas.</summary>
+    private static RectangleD GetDrawingBox(FilterProcessor processor, Rectangle rectangle)
+    {
+        var minX = double.PositiveInfinity;
+        var minY = double.PositiveInfinity;
+        var maxX = double.NegativeInfinity;
+        var maxY = double.NegativeInfinity;
+        for (var corner = 0; corner < 4; corner++)
+        {
+            var (x, y) = processor.ToDrawing((corner & 1) == 0 ? rectangle.Left : rectangle.Right, (corner & 2) == 0 ? rectangle.Top : rectangle.Bottom);
+            minX = Math.Min(minX, x);
+            minY = Math.Min(minY, y);
+            maxX = Math.Max(maxX, x);
+            maxY = Math.Max(maxY, y);
+        }
+
+        return RectangleD.FromLTRB(minX, minY, maxX, maxY);
     }
 
     /// <summary>Gets the index of the result an input is, or -1 for the drawing or its alpha.</summary>

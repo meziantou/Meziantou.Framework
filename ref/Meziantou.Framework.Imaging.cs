@@ -1533,6 +1533,12 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.RectangleD? Subregion { get => throw null; init { } }
     }
 
+    public enum FilterTurbulenceType
+    {
+        Turbulence = 0,
+        FractalNoise = 1,
+    }
+
     public sealed class FloodPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
     {
         public Meziantou.Framework.Imaging.Rgba64 Color { get => throw null; }
@@ -1838,6 +1844,17 @@ namespace Meziantou.Framework.Imaging.Drawing
         Discrete = 2,
         Linear = 3,
         Gamma = 4,
+    }
+
+    public sealed class TurbulencePrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public double BaseFrequencyX { get => throw null; }
+        public double BaseFrequencyY { get => throw null; }
+        public int Octaves { get => throw null; }
+        public int Seed { get => throw null; }
+        public bool StitchTiles { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.FilterTurbulenceType Type { get => throw null; }
+        public TurbulencePrimitive(Meziantou.Framework.Imaging.Drawing.FilterTurbulenceType type, double baseFrequencyX, double baseFrequencyY, int octaves, int seed) { }
     }
 
     public sealed class VectorPath

@@ -5,7 +5,7 @@
     <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
 
-    <Version>3.0.9</Version>
+    <Version>3.0.10</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Components and services for Blazor</Description>
     <PackageTags>aspnetcore, blazor, components, razor, ui</PackageTags>

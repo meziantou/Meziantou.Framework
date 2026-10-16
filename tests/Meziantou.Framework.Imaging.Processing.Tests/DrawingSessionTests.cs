@@ -1082,6 +1082,53 @@ public sealed class DrawingSessionTests
         }
     }
 
+    [Theory]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Rgba64)]
+    public void ALayerThatDrawsNothingTheClipShowsChangesNoPixel(PixelFormat format)
+    {
+        // The clip shows the pixels from y = 6 to y = 14 and from x = 0 to x = 10: a layer that draws nothing, or only
+        // above, below or on the right of them, has no pixel that may not be transparent where it is drawn. The
+        // drawings are far enough from the clip for a blur of 0.5 not to reach it.
+        var red = new SolidBrush(new Rgba64(65535, 0, 0, 65535));
+        var clip = new RectangleD(0, 6, 10, 8);
+        DrawingAction[] outside =
+        [
+            static _ => { },
+            layer => layer.FillRectangle(red, new RectangleD(0, 17, 10, 3)),
+            layer => layer.FillRectangle(red, new RectangleD(0, 0, 10, 3)),
+            layer => layer.FillRectangle(red, new RectangleD(13, 6, 7, 8)),
+        ];
+
+        DrawingAction[] layers =
+        [
+            .. outside.Select(static action => (DrawingAction)(canvas => canvas.Layer(1, action))),
+            .. outside.Select(static action => (DrawingAction)(canvas => canvas.Layer(0.5, action))),
+            .. outside.Select(static action => (DrawingAction)(canvas => canvas.Layer(0.5, action, CompositeMode.Xor))),
+            .. outside.Select(static action => (DrawingAction)(canvas => canvas.Layer(new RectangleD(0, 0, 20, 20), 1, action))),
+            .. outside.Select(static action => (DrawingAction)(canvas => canvas.Layer(new RectangleD(0, 16, 20, 4), 0.5, action))),
+            .. outside.Select(static action => (DrawingAction)(canvas => canvas.Filter(ColorMatrix.CreateInvert(), action))),
+            .. outside.Select(static action => (DrawingAction)(canvas => canvas.Filter(new ColorMatrix([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0.5, 0]), action))),
+            .. outside.Select(static action => (DrawingAction)(canvas => canvas.Filter(new BlurFilter(0.5), action))),
+            .. outside.Select(static action => (DrawingAction)(canvas => canvas.Filter(new ColorMatrixFilter(ColorMatrix.CreateInvert()), action))),
+            .. outside.Select(static action => (DrawingAction)(canvas => canvas.Blur(0.5, action))),
+            .. outside.Select(static action => (DrawingAction)(canvas => canvas.Shadow(new Rgba64(0, 0, 0, 65535), new PointD(0, 0), 0.5, action))),
+            .. outside.Select(static action => (DrawingAction)(canvas => canvas.Shadow(new Rgba64(0, 0, 0, 65535), new PointD(40, 0), 0.5, action))),
+            .. outside.Select(static action => (DrawingAction)(canvas => canvas.BackdropLayer(new ColorMatrixFilter(ColorMatrix.CreateInvert()), new RectangleD(0, 17, 20, 3), 1, action))),
+            .. outside.Select(static action => (DrawingAction)(canvas => canvas.BackdropLayer(null, new RectangleD(12, 0, 8, 20), 0.5, action))),
+        ];
+
+        for (var i = 0; i < layers.Length; i++)
+        {
+            using var image = DrawingTestSupport.Create(format, 20, 20);
+            image.Draw(canvas => canvas.Fill(new SolidBrush(new Rgba64(0x1234, 0x5678, 0x9ABC, 0xC000))), Ct);
+            var expected = DrawingTestSupport.ReadSamples(image.Frames[0]);
+            var layer = layers[i];
+            image.Frames[0].Draw(canvas => canvas.Clip(clip, clipped => layer(clipped)), Ct);
+            Assert.Equal(expected, DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+    }
+
     [Fact]
     public void ALayerThatStartsAgainAtItsDepthStartsTransparent()
     {

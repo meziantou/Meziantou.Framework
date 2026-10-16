@@ -510,13 +510,19 @@ internal sealed partial class DrawingSession
         var bounds = Rectangle.FromLTRB(level.Left, level.Top, level.Right, level.Bottom);
         if (DrawingKernels.IsTransparentPaintInert(level.Mode))
         {
-            bounds = Rectangle.FromLTRB(Math.Max(bounds.Left, level.DirtyLeft), Math.Max(bounds.Top, level.DirtyTop), Math.Min(bounds.Right, level.DirtyRight), Math.Min(bounds.Bottom, level.DirtyBottom));
-            if (bounds.Width <= 0 || bounds.Height <= 0)
+            // The layer may have drawn nothing, or only outside the pixels it can draw on
+            var left = Math.Max(bounds.Left, level.DirtyLeft);
+            var top = Math.Max(bounds.Top, level.DirtyTop);
+            var right = Math.Min(bounds.Right, level.DirtyRight);
+            var bottom = Math.Min(bounds.Bottom, level.DirtyBottom);
+            if (right <= left || bottom <= top)
             {
                 // Drawing it would have changed no pixel, but the pixels were about to change
                 RemoveStaleThumbnail();
                 return;
             }
+
+            bounds = Rectangle.FromLTRB(left, top, right, bottom);
         }
 
         var layerFrames = level.Frames!;

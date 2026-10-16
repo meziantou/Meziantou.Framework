@@ -83,19 +83,18 @@ public static class ReferenceCompositor
         var sourceAlpha = new Fraction(paint.Alpha, max);
         var destinationAlpha = layout.HasAlpha ? new Fraction(destination[layout.ColorChannels], max) : one;
         var kept = (one - covered) * destinationAlpha;
-        var outputAlpha = zero;
         var premultiplied = new Fraction[layout.ColorChannels];
         if (mode == ReferenceCompositeMode.Plus)
         {
             var sum = sourceAlpha + destinationAlpha;
-            outputAlpha = kept + (covered * (sum > one ? one : sum));
+            var plusAlpha = kept + (covered * (sum > one ? one : sum));
             for (var c = 0; c < layout.ColorChannels; c++)
             {
                 var light = (sourceAlpha * paint.Color[c]) + (destinationAlpha * destination[c]);
                 premultiplied[c] = (kept * destination[c]) + (covered * (light > max ? max : light));
             }
 
-            return Finish(result, destination, premultiplied, outputAlpha, layout);
+            return Finish(result, destination, premultiplied, plusAlpha, layout);
         }
 
         var (sourceFactor, destinationFactor) = mode switch
@@ -117,7 +116,7 @@ public static class ReferenceCompositor
         // What the pixel keeps of what it was, and what the operator gives where the shape is
         var fromSource = covered * sourceFactor * sourceAlpha;
         var fromDestination = covered * destinationFactor * destinationAlpha;
-        outputAlpha = kept + fromSource + fromDestination;
+        var outputAlpha = kept + fromSource + fromDestination;
         for (var c = 0; c < layout.ColorChannels; c++)
         {
             premultiplied[c] = ((kept + fromDestination) * destination[c]) + (fromSource * paint.Color[c]);

@@ -33,7 +33,7 @@ public sealed class DrawingFuzzTests
     // In perspective, coordinates and lengths of the size of the canvas: a shape of 2^24 pixels whose far end is drawn
     // at the vanishing point of the canvas is millions of chords and dashes there, which the limits of the image refuse
     [ThreadStatic]
-    private static bool t_isInPerspective;
+    private static bool s_isInPerspective;
 
     [Fact]
     public void RandomDrawingsCompleteAndKeepTheirInvariants()
@@ -386,15 +386,15 @@ public sealed class DrawingFuzzTests
 
     private static void PaintInPerspective(DrawingAction action, DrawingCanvas canvas)
     {
-        var previous = t_isInPerspective;
-        t_isInPerspective = true;
+        var previous = s_isInPerspective;
+        s_isInPerspective = true;
         try
         {
             action(canvas);
         }
         finally
         {
-            t_isInPerspective = previous;
+            s_isInPerspective = previous;
         }
     }
 
@@ -442,7 +442,7 @@ public sealed class DrawingFuzzTests
     /// <summary>A coordinate: mostly around the canvas, sometimes on a pixel boundary, sometimes far away, sometimes an extreme.</summary>
     private static double CreateCoordinate(FuzzRandom random, int size) => random.Next(20) switch
     {
-        0 or 1 or 2 when t_isInPerspective => (NextDouble(random) - 0.5) * 8 * (size + 1),
+        0 or 1 or 2 when s_isInPerspective => (NextDouble(random) - 0.5) * 8 * (size + 1),
         0 => random.Chance(50) ? MaxCoordinate : -MaxCoordinate,
         1 => (NextDouble(random) - 0.5) * 2 * MaxCoordinate,
         2 => (NextDouble(random) - 0.5) * 4000,
@@ -649,7 +649,7 @@ public sealed class DrawingFuzzTests
     private static double CreateLength(FuzzRandom random) => random.Next(12) switch
     {
         0 => 0,
-        1 or 2 when t_isInPerspective => NextDouble(random) * 60,
+        1 or 2 when s_isInPerspective => NextDouble(random) * 60,
         1 => MaxCoordinate,
         2 => NextDouble(random) * 5000,
         3 => NextDouble(random) * 1e-6,

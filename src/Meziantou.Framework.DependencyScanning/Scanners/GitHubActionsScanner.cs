@@ -94,11 +94,19 @@ public sealed class GitHubActionsScanner : DependencyScanner
     private void ExtractSteps(YamlFile yaml, YamlMapping node)
     {
         var stepsNode = GetProperty(node, "steps", StringComparison.OrdinalIgnoreCase);
+        ExtractSteps(yaml, stepsNode);
+    }
+
+    private void ExtractSteps(YamlFile yaml, YamlElement? stepsNode)
+    {
         if (stepsNode is YamlSequence steps)
         {
             foreach (var step in steps.OfType<YamlMapping>())
             {
                 ExtractUsesProperty(yaml, step);
+
+                // Parallel steps: - parallel: [ steps... ]
+                ExtractSteps(yaml, GetProperty(step, "parallel", StringComparison.OrdinalIgnoreCase));
             }
         }
     }

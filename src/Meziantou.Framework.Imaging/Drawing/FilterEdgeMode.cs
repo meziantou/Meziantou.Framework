@@ -3,7 +3,10 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// <summary>What a filter reads beyond the edges of what it filters: the pixels a blur or an offset reaches there.</summary>
 public enum FilterEdgeMode
 {
-    /// <summary>Transparent pixels: what is filtered fades at its edges (<c>edgeMode="none"</c> of SVG). This is the default.</summary>
+    /// <summary>
+    /// Transparent pixels: what is filtered fades at its edges (<c>edgeMode="none"</c> of SVG). This is the default. A
+    /// filter of a drawing reads what is drawn beyond the canvas, within its reach, before the transparent pixels.
+    /// </summary>
     Transparent = 0,
 
     /// <summary>The pixels of the edges, extended (<c>edgeMode="duplicate"</c> of SVG).</summary>

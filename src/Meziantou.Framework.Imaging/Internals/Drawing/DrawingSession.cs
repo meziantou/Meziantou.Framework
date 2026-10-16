@@ -64,6 +64,7 @@ internal sealed partial class DrawingSession : IDisposable
         Height = image.Height;
         CanvasWidth = Width;
         CanvasHeight = Height;
+        _canvasBounds = new Rectangle(0, 0, Width, Height);
     }
 
     /// <summary>Gets the width of the canvas.</summary>
@@ -109,13 +110,13 @@ internal sealed partial class DrawingSession : IDisposable
     public void Fill(Brush brush)
     {
         ArgumentNullException.ThrowIfNull(brush);
-        AddFrame(BeginCall());
+        AddCanvas(BeginCall());
         Render(brush, FillRule.NonZero);
     }
 
     public void Clear(Rgba64 color)
     {
-        AddFrame(BeginCall());
+        AddCanvas(BeginCall());
         var converted = _frames[0].ConvertDrawingColor(ToImageColor(color));
         if (_rasterizer!.Begin(_edges!, FillRule.NonZero, _cancellationToken))
         {
@@ -400,7 +401,7 @@ internal sealed partial class DrawingSession : IDisposable
     private static void ValidateSampling(ImageSampling sampling)
     {
         // Not Enum.IsDefined: a draw call allocates nothing
-        if (sampling is not (ImageSampling.Bilinear or ImageSampling.Nearest or ImageSampling.Smooth or ImageSampling.Bicubic))
+        if (sampling is not (ImageSampling.Bilinear or ImageSampling.Nearest or ImageSampling.Smooth or ImageSampling.Bicubic or ImageSampling.Box))
             throw new ArgumentOutOfRangeException(nameof(sampling), sampling, "The sampling is not valid.");
     }
 
@@ -883,6 +884,7 @@ internal sealed partial class DrawingSession : IDisposable
             stroker.SetOutput(_hasTransform, _transformMatrix, _transformScale, _originX, _originY, IsRangeChecked);
         }
 
+        stroker.Tolerance = _curveTolerance;
         return stroker;
     }
 
@@ -952,6 +954,20 @@ internal sealed partial class DrawingSession : IDisposable
         edges.Add(Width, Height, Width, 0);
     }
 
+    /// <summary>
+    /// Adds the outline of the pixels of the canvas: the whole frame, unless the frame is the image of a layer that holds
+    /// pixels beyond the canvas (around a filter), where filling the canvas fills its part of the layer.
+    /// </summary>
+    private void AddCanvas(EdgeBuilder edges)
+    {
+        var bounds = Rectangle.Intersect(_canvasBounds, new Rectangle(0, 0, Width, Height));
+        if (bounds.IsEmpty)
+            return;
+
+        edges.Add(bounds.Left, bounds.Top, bounds.Left, bounds.Bottom);
+        edges.Add(bounds.Right, bounds.Bottom, bounds.Right, bounds.Top);
+    }
+
     /// <summary>Starts a draw call: the arguments are valid, nothing was changed yet.</summary>
     private EdgeBuilder BeginCall()
     {
@@ -965,7 +981,9 @@ internal sealed partial class DrawingSession : IDisposable
     private FillSink BeginDeviceFill()
     {
         var edges = BeginCall();
-        return _fillSink ??= new FillSink(edges);
+        var sink = _fillSink ??= new FillSink(edges);
+        sink.Tolerance = _curveTolerance;
+        return sink;
     }
 
     /// <summary>Gets the sink the path of a stroke is sent to; <see cref="RenderStroke"/> then paints the stroke.</summary>
@@ -1003,11 +1021,13 @@ internal sealed partial class DrawingSession : IDisposable
         }
 
         stroker.Configure(pen, widthFactor);
+        stroker.Tolerance = _curveTolerance;
         PathSink sink = stroker;
         if (pen.IsDashed)
         {
             var dasher = _dasher ??= new Dasher(_image.Owner.Scope);
             dasher.Scale = scale;
+            dasher.Tolerance = _curveTolerance;
             dasher.Projection = projection;
             if (hasOutputTransform)
             {
@@ -1028,6 +1048,7 @@ internal sealed partial class DrawingSession : IDisposable
         {
             var markers = _markers ??= new MarkerSink(_image.Owner.Scope);
             markers.Scale = scale;
+            markers.Tolerance = _curveTolerance;
             markers.Projection = projection;
             markers.Configure(pen, stroker, sink);
             sink = markers;
@@ -1038,12 +1059,14 @@ internal sealed partial class DrawingSession : IDisposable
             // The path is placed on the canvas and cut where it has no image, as a line: what remains is stroked
             var placed = _strokeProjectiveSink ??= new ProjectiveSink();
             placed.Configure(sink, GeometryView.Inflate(GetStrokeReach(pen, widthFactor), 0), isPolyline: true);
+            placed.Tolerance = _curveTolerance;
             sink = placed;
         }
         else if (isPlacedFirst)
         {
             var placed = _strokeTransformSink ??= new TransformSink();
             placed.Configure(sink, _transformMatrix, _transformScale, _originX, _originY, IsRangeChecked);
+            placed.Tolerance = _curveTolerance;
             sink = placed;
         }
 
@@ -1309,11 +1332,11 @@ internal sealed partial class DrawingSession : IDisposable
         else if (brush is PatternBrush pattern)
         {
             // The tile is drawn first: it is an image when the shape is painted
-            if (PreparePattern(pattern, out var placement) is not { } tile)
+            if (PreparePattern(pattern, out var placement, out var wrapModeX, out var wrapModeY) is not { } tile)
                 return false;
 
             var imagePaint = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-            imagePaint.Prepare(tile, region: null, placement, pattern.WrapModeX, pattern.WrapModeY, ImageSampling.Bilinear, _frames[0], Width, nameof(brush));
+            imagePaint.Prepare(tile, region: null, placement, wrapModeX, wrapModeY, ImageSampling.Bilinear, _frames[0], Width, nameof(brush));
             evaluator = imagePaint;
         }
         else

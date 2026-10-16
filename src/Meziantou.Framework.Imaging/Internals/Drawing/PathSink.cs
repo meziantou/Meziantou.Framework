@@ -11,6 +11,12 @@ internal abstract class PathSink
     public double Scale { get; set; } = 1;
 
     /// <summary>
+    /// Gets or sets the largest distance between a curve and its chords on the canvas: <see cref="PathFlattener.Tolerance"/>,
+    /// unless the drawing asks for a finer one.
+    /// </summary>
+    public double Tolerance { get; set; } = PathFlattener.Tolerance;
+
+    /// <summary>
     /// Gets or sets the projective transformation what the sink receives goes through before it is drawn, with the
     /// part of the canvas that is seen, or <see langword="null"/>: the factor by which it enlarges a length then depends
     /// on the position, and <see cref="GetScale"/> bounds it on the part of the plane a curve is in.

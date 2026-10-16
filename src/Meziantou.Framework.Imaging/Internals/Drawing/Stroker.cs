@@ -27,7 +27,17 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// A vertex flagged as smooth was created by flattening a curve: it is joined with a round join whatever the pen says,
-/// because the stroke of a smooth curve has no corner there.
+/// because the stroke of a smooth curve has no corner there. A chord next to such a vertex is not a rectangle: its
+/// body is what the segment of the width of the pen perpendicular to the curve sweeps, from the normal at its start to
+/// the one at its end (between the normals of the chords at a smooth vertex), with the half of its rectangle on the
+/// outer side of the turns. A pen wider than the curve sweeps beyond its center: the two perpendiculars cross within the
+/// pen, and the body is two triangles that meet there, as the canvas of HTML defines a stroke. At the end of a curve,
+/// the direction of the stroke (its end, its cap, the join with what follows) is the direction of the curve as its
+/// chords give it: the end chord turned away from the next one by half the angle between them, not the chord itself.
+/// The body of a chord is made when the vertex at its end is known, and the first chord of a contour when the contour
+/// ends, which says whether its start is a corner. The stroke that moves an outline (<see cref="PathOffsetter"/>) and
+/// thickens a glyph keeps the rectangles and the directions of the chords: what it needs is what is within a distance
+/// of the outline, not what a pen sweeps.
 /// </para>
 /// <para>
 /// The pieces go to the edges of a draw call, or to a path as closed contours (<see cref="VectorPath.Widen"/>): the same
@@ -54,6 +64,10 @@ internal sealed class Stroker : PathSink
     private LineJoin _join;
     private LineCap _cap;
     private double _miterLimitSquared;
+
+    // Whether the chords of a curve are swept by the perpendicular to the curve (the stroke of a pen), or are rectangles
+    // (what is within a distance of an outline)
+    private bool _sweepsCurves;
     private bool _hasOutputTransform;
     private Affine2D _outputTransform;
     private double _originX;
@@ -74,10 +88,15 @@ internal sealed class Stroker : PathSink
     private double _startY;
     private double _x;
     private double _y;
-    private double _firstDirectionX;
-    private double _firstDirectionY;
-    private double _lastDirectionX;
-    private double _lastDirectionY;
+
+    // The chords whose pieces wait for the vertex at their end: the last one, and the first one of the contour (whose
+    // start is only known when the contour ends: a closed curve has no corner there)
+    private Chord _last;
+    private Chord _first;
+    private bool _isLastFirst;
+    private bool _firstEndSmooth;
+    private double _firstNextX;
+    private double _firstNextY;
 
     // The piece being emitted
     private double _pieceStartX;
@@ -158,6 +177,7 @@ internal sealed class Stroker : PathSink
         _join = pen.LineJoin;
         _cap = pen.LineCap;
         _miterLimitSquared = pen.MiterLimit * pen.MiterLimit;
+        _sweepsCurves = true;
         _hasStart = false;
     }
 
@@ -170,6 +190,7 @@ internal sealed class Stroker : PathSink
         _join = join;
         _cap = LineCap.Butt;
         _miterLimitSquared = miterLimit * miterLimit;
+        _sweepsCurves = false;
         _hasStart = false;
     }
 
@@ -204,19 +225,42 @@ internal sealed class Stroker : PathSink
         var length = Math.Sqrt(lengthSquared);
         directionX /= length;
         directionY /= length;
-        AddBody(_x, _y, x, y, directionX, directionY);
+        var chord = new Chord { StartX = _x, StartY = _y, EndX = x, EndY = y, DirectionX = directionX, DirectionY = directionY };
         if (_hasSegment)
         {
-            AddJoin(_x, _y, _lastDirectionX, _lastDirectionY, directionX, directionY, smooth);
-        }
-        else
-        {
-            _firstDirectionX = directionX;
-            _firstDirectionY = directionY;
+            // The vertex between the last chord and this one: the pieces of the last chord can be made
+            chord.StartSmooth = smooth;
+            chord.PreviousX = _last.DirectionX;
+            chord.PreviousY = _last.DirectionY;
+            double endX, endY;
+            if (_isLastFirst)
+            {
+                _first = _last;
+                _firstEndSmooth = smooth;
+                _firstNextX = directionX;
+                _firstNextY = directionY;
+                GetEndDirection(in _last, smooth, out endX, out endY);
+            }
+            else
+            {
+                AddChord(in _last, smooth, directionX, directionY, out _, out _, out endX, out endY);
+            }
+
+            if (smooth)
+            {
+                AddJoin(_x, _y, _last.DirectionX, _last.DirectionY, directionX, directionY, smooth: true);
+            }
+            else
+            {
+                // The join needs the direction the stroke starts this chord with, known at its end
+                chord.HasJoin = true;
+                chord.JoinX = endX;
+                chord.JoinY = endY;
+            }
         }
 
-        _lastDirectionX = directionX;
-        _lastDirectionY = directionY;
+        _isLastFirst = !_hasSegment;
+        _last = chord;
         _x = x;
         _y = y;
         _hasSegment = true;
@@ -235,7 +279,31 @@ internal sealed class Stroker : PathSink
 
         if (_hasSegment)
         {
-            AddJoin(_startX, _startY, _lastDirectionX, _lastDirectionY, _firstDirectionX, _firstDirectionY, smooth);
+            if (_isLastFirst)
+            {
+                // One chord, which ends where it starts: it cannot be, a chord without length is skipped
+                AddChord(in _last, endSmooth: false, 0, 0, out _, out _, out _, out _);
+            }
+            else
+            {
+                // The last chord ends where the first one starts
+                AddChord(in _last, smooth, _first.DirectionX, _first.DirectionY, out _, out _, out var endX, out var endY);
+                _first.StartSmooth = smooth;
+                _first.PreviousX = _last.DirectionX;
+                _first.PreviousY = _last.DirectionY;
+                if (smooth)
+                {
+                    AddJoin(_startX, _startY, _last.DirectionX, _last.DirectionY, _first.DirectionX, _first.DirectionY, smooth: true);
+                }
+                else
+                {
+                    _first.HasJoin = true;
+                    _first.JoinX = endX;
+                    _first.JoinY = endY;
+                }
+
+                AddChord(in _first, _firstEndSmooth, _firstNextX, _firstNextY, out _, out _, out _, out _);
+            }
         }
         else if (!_implicitStart)
         {
@@ -262,8 +330,19 @@ internal sealed class Stroker : PathSink
 
         if (_hasSegment)
         {
-            AddCap(_startX, _startY, -_firstDirectionX, -_firstDirectionY);
-            AddCap(_x, _y, _lastDirectionX, _lastDirectionY);
+            double startX, startY, endX, endY;
+            if (_isLastFirst)
+            {
+                AddChord(in _last, endSmooth: false, 0, 0, out startX, out startY, out endX, out endY);
+            }
+            else
+            {
+                AddChord(in _last, endSmooth: false, 0, 0, out _, out _, out endX, out endY);
+                AddChord(in _first, _firstEndSmooth, _firstNextX, _firstNextY, out startX, out startY, out _, out _);
+            }
+
+            AddCap(_startX, _startY, -startX, -startY);
+            AddCap(_x, _y, endX, endY);
         }
         else if (!_implicitStart)
         {
@@ -289,6 +368,224 @@ internal sealed class Stroker : PathSink
 
         ClosePiece();
         _testFrame = testFrame;
+    }
+
+    /// <summary>
+    /// Adds the pieces of a chord, once the vertex at its end is known: the join that waits at its start, then its
+    /// body. Gives the directions the stroke has at both ends of the chord, for its joins and its caps.
+    /// </summary>
+    /// <param name="chord">The chord.</param>
+    /// <param name="endSmooth">Whether the vertex at its end was created by flattening a curve.</param>
+    /// <param name="nextX">The direction of the chord after it, when there is one.</param>
+    /// <param name="nextY">The direction of the chord after it, along y.</param>
+    /// <param name="startX">The direction of the stroke at the start of the chord.</param>
+    /// <param name="startY">The direction of the stroke at the start of the chord, along y.</param>
+    /// <param name="endX">The direction of the stroke at the end of the chord.</param>
+    /// <param name="endY">The direction of the stroke at the end of the chord, along y.</param>
+    private void AddChord(in Chord chord, bool endSmooth, double nextX, double nextY, out double startX, out double startY, out double endX, out double endY)
+    {
+        startX = chord.DirectionX;
+        startY = chord.DirectionY;
+        var startCorrected = false;
+        if (_sweepsCurves && !chord.StartSmooth && endSmooth && TryGetCurveEnd(chord.DirectionX, chord.DirectionY, nextX, nextY, out var curveX, out var curveY))
+        {
+            (startX, startY) = (curveX, curveY);
+            startCorrected = true;
+        }
+
+        var endCorrected = GetEndDirection(in chord, endSmooth, out endX, out endY);
+        if (chord.HasJoin)
+        {
+            AddJoin(chord.StartX, chord.StartY, chord.JoinX, chord.JoinY, startX, startY, smooth: false);
+        }
+
+        var dx = chord.DirectionX;
+        var dy = chord.DirectionY;
+        if (!_sweepsCurves || (!chord.StartSmooth && !endSmooth))
+        {
+            AddBody(chord.StartX, chord.StartY, chord.EndX, chord.EndY, dx, dy);
+            return;
+        }
+
+        // The normals at both ends: between those of the chords at a vertex of a curve, of the direction of the curve
+        // at its end
+        var (startNormalX, startNormalY) = chord.StartSmooth ? GetBisector(-chord.PreviousY, chord.PreviousX, -dy, dx) : (-startY, startX);
+        var (endNormalX, endNormalY) = endSmooth ? GetBisector(-dy, dx, -nextY, nextX) : (-endY, endX);
+
+        // How the curve turns at each end: toward +n when the cross product is positive
+        var startTurn = chord.StartSmooth ? Cross(chord.PreviousX, chord.PreviousY, dx, dy) : startCorrected ? Cross(dx, dy, nextX, nextY) : 0;
+        var endTurn = endSmooth ? Cross(dx, dy, nextX, nextY) : endCorrected ? Cross(chord.PreviousX, chord.PreviousY, dx, dy) : 0;
+        AddSweptBody(chord.StartX, chord.StartY, chord.EndX, chord.EndY, dx, dy, startNormalX, startNormalY, endNormalX, endNormalY, startTurn, endTurn);
+    }
+
+    /// <summary>Gets the direction of the stroke at the end of a chord: the direction of the curve there when the chord ends a curve, the one of the chord otherwise.</summary>
+    /// <returns><see langword="true"/> when the direction of the curve is used.</returns>
+    private bool GetEndDirection(in Chord chord, bool endSmooth, out double endX, out double endY)
+    {
+        if (_sweepsCurves && chord.StartSmooth && !endSmooth && TryGetCurveEnd(chord.DirectionX, chord.DirectionY, chord.PreviousX, chord.PreviousY, out endX, out endY))
+            return true;
+
+        endX = chord.DirectionX;
+        endY = chord.DirectionY;
+        return false;
+    }
+
+    /// <summary>
+    /// Gets the direction of a curve at the end of its chord <c>d</c>, from the chord <c>e</c> next to it: <c>d</c> turned
+    /// away from <c>e</c> by half the turn between them, the reflection of their bisector across <c>d</c>. The end of the
+    /// stroke of a curve is perpendicular to the curve, not to its last chord.
+    /// </summary>
+    private static bool TryGetCurveEnd(double dx, double dy, double ex, double ey, out double x, out double y)
+    {
+        var mx = dx + ex;
+        var my = dy + ey;
+        var length = Math.Sqrt((mx * mx) + (my * my));
+        if (length > 0)
+        {
+            mx /= length;
+            my /= length;
+            var dot = 2 * ((dx * mx) + (dy * my));
+            x = (dot * dx) - mx;
+            y = (dot * dy) - my;
+            return true;
+        }
+
+        x = dx;
+        y = dy;
+        return false;
+    }
+
+    /// <summary>
+    /// Adds the body of a chord of a curve: the area swept by the segment of the width of the pen perpendicular to the
+    /// curve, from the normal at its start to the one at its end, with the half of the rectangle of the chord on the
+    /// outer side of its turns, which the round joins continue. When the two normals cross within the pen (on the other
+    /// side of the center of a curve narrower than the pen), the area swept is two triangles that meet there.
+    /// </summary>
+    private void AddSweptBody(double ax, double ay, double bx, double by, double dx, double dy, double nax, double nay, double nbx, double nby, double startTurn, double endTurn)
+    {
+        var h = _halfWidth;
+        var nx = -dy * h;
+        var ny = dx * h;
+        var outerAX = ax + (h * nax);
+        var outerAY = ay + (h * nay);
+        var innerAX = ax - (h * nax);
+        var innerAY = ay - (h * nay);
+        var outerBX = bx + (h * nbx);
+        var outerBY = by + (h * nby);
+        var innerBX = bx - (h * nbx);
+        var innerBY = by - (h * nby);
+
+        // The side away from the center of the turns: +n when the curve turns toward -n. A chord between two turns of
+        // opposite directions has both.
+        var outerPlus = startTurn < 0 || endTurn < 0;
+        var outerMinus = startTurn > 0 || endTurn > 0;
+        Span<double> points = stackalloc double[12];
+        if (outerPlus && outerMinus)
+        {
+            AddBody(ax, ay, bx, by, dx, dy);
+            outerPlus = false;
+            outerMinus = false;
+        }
+
+        // Where the two normals meet: A + s nA = B + t nB
+        var denominator = Cross(nax, nay, nbx, nby);
+        if (denominator != 0)
+        {
+            var s = Cross(bx - ax, by - ay, nbx, nby) / denominator;
+            var t = Cross(bx - ax, by - ay, nax, nay) / denominator;
+            if (Math.Abs(s) < h && Math.Abs(t) < h)
+            {
+                var crossX = ax + (s * nax);
+                var crossY = ay + (s * nay);
+                if (outerPlus)
+                {
+                    SetPoints(points[..10], outerAX, outerAY, crossX, crossY, outerBX, outerBY, bx + nx, by + ny, ax + nx, ay + ny);
+                    AddOrientedPiece(points[..10]);
+                }
+                else
+                {
+                    SetPoints(points[..6], outerAX, outerAY, crossX, crossY, outerBX, outerBY);
+                    AddOrientedPiece(points[..6]);
+                }
+
+                if (outerMinus)
+                {
+                    SetPoints(points[..10], crossX, crossY, innerBX, innerBY, bx - nx, by - ny, ax - nx, ay - ny, innerAX, innerAY);
+                    AddOrientedPiece(points[..10]);
+                }
+                else
+                {
+                    SetPoints(points[..6], crossX, crossY, innerBX, innerBY, innerAX, innerAY);
+                    AddOrientedPiece(points[..6]);
+                }
+
+                return;
+            }
+        }
+
+        if (outerPlus)
+        {
+            SetPoints(points, outerAX, outerAY, innerAX, innerAY, innerBX, innerBY, outerBX, outerBY, bx + nx, by + ny, ax + nx, ay + ny);
+            AddOrientedPiece(points);
+        }
+        else if (outerMinus)
+        {
+            SetPoints(points, outerAX, outerAY, innerAX, innerAY, ax - nx, ay - ny, bx - nx, by - ny, innerBX, innerBY, outerBX, outerBY);
+            AddOrientedPiece(points);
+        }
+        else
+        {
+            SetPoints(points[..8], outerAX, outerAY, innerAX, innerAY, innerBX, innerBY, outerBX, outerBY);
+            AddOrientedPiece(points[..8]);
+        }
+    }
+
+    /// <summary>Adds a polygon as a piece with the orientation of the pieces (a positive shoelace sum), reversed when it turns the other way; nothing when it has no area.</summary>
+    private void AddOrientedPiece(ReadOnlySpan<double> points)
+    {
+        var count = points.Length / 2;
+        var area = 0d;
+        for (var i = 0; i < count; i++)
+        {
+            var j = i + 1 == count ? 0 : i + 1;
+            area += (points[2 * i] * points[(2 * j) + 1]) - (points[2 * j] * points[(2 * i) + 1]);
+        }
+
+        // Written so that an area that is not a number is skipped too
+        if (!(area > 0 || area < 0))
+            return;
+
+        if (area > 0)
+        {
+            BeginPiece(points[0], points[1]);
+            for (var i = 1; i < count; i++)
+            {
+                PieceLineTo(points[2 * i], points[(2 * i) + 1]);
+            }
+        }
+        else
+        {
+            BeginPiece(points[0], points[1]);
+            for (var i = count - 1; i > 0; i--)
+            {
+                PieceLineTo(points[2 * i], points[(2 * i) + 1]);
+            }
+        }
+
+        ClosePiece();
+    }
+
+    private static void SetPoints(Span<double> points, params ReadOnlySpan<double> values) => values.CopyTo(points);
+
+    private static double Cross(double ax, double ay, double bx, double by) => (ax * by) - (ay * bx);
+
+    /// <summary>Gets the unit vector between two unit normals, or the second one when they are opposite.</summary>
+    private static (double X, double Y) GetBisector(double ax, double ay, double bx, double by)
+    {
+        var x = ax + bx;
+        var y = ay + by;
+        var length = Math.Sqrt((x * x) + (y * y));
+        return length > 0 ? (x / length, y / length) : (bx, by);
     }
 
     /// <summary>Adds the rectangle of a segment: with the normal <c>n</c> of length half the width, <c>A + n, A - n, B - n, B + n</c>.</summary>
@@ -469,7 +766,7 @@ internal sealed class Stroker : PathSink
             scale = _pieceView.GetScale(Math.Min(x0, Math.Min(x1, tx)), Math.Min(y0, Math.Min(y1, ty)), Math.Max(x0, Math.Max(x1, tx)), Math.Max(y0, Math.Max(y1, ty)));
         }
 
-        if (depth >= PathFlattener.MaxArcDepth || !(_halfWidth * scale * (1 - (length / 2)) > PathFlattener.Tolerance) || IsArcOutsideFrame(centerX, centerY, ux, uy, vx, vy, mx, my, length))
+        if (depth >= PathFlattener.MaxArcDepth || !(_halfWidth * scale * (1 - (length / 2)) > Tolerance) || IsArcOutsideFrame(centerX, centerY, ux, uy, vx, vy, mx, my, length))
         {
             PieceLineTo(centerX + (_halfWidth * vx), centerY + (_halfWidth * vy));
             return;
@@ -662,6 +959,28 @@ internal sealed class Stroker : PathSink
             _bottomLeftInside &= (dx * bottom) - (dy * left) > 0;
             _bottomRightInside &= (dx * bottom) - (dy * right) > 0;
         }
+    }
+
+    /// <summary>A chord of a contour, with what its pieces need to know about the vertex at its start.</summary>
+    private struct Chord
+    {
+        public double StartX;
+        public double StartY;
+        public double EndX;
+        public double EndY;
+        public double DirectionX;
+        public double DirectionY;
+
+        // Whether the vertex at its start was created by flattening a curve, and the chord before it
+        public bool StartSmooth;
+        public double PreviousX;
+        public double PreviousY;
+
+        // A join at its start, a corner, waits for the direction the stroke starts the chord with; it comes from the
+        // direction the stroke ends the chord before it with
+        public bool HasJoin;
+        public double JoinX;
+        public double JoinY;
     }
 
     /// <summary>Receives the pieces of the stroke once they are cut and transformed by a projective transformation.</summary>

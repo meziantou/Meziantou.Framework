@@ -1164,13 +1164,19 @@ the same thing every time (it runs again when the size of the tile changes, or a
 and can use any brush but, directly or not, its own pattern. `WrapModeX` and `WrapModeY` say how the tile is laid in
 each direction (`Repeat` by default; `Transparent` paints it once in that direction), and `SpacingX` and `SpacingY`
 leave a gap after each tile, where nothing is painted: the spacing `background-repeat: space` of CSS computes. A
+tile whose image would be much larger than what the canvas shows of it (more than four times the pixels of the bounds
+of the clip and 65,536, or beyond the limits of the image) is drawn where the canvas shows it: along each axis where the
+canvas shows less than a tile, the callback draws the tiles it shows (two at most, a mirrored one for `Reflect`), each
+clipped to its tile, on an image of that part, at the same scale, so that the pixels are those of the whole tile. In
+perspective, its image is drawn at the resolution those limits allow instead. A
 callback is also what replays a drawing: keep a `DrawingAction`, and call it inside `canvas.Transform` wherever the
 drawing is needed, at any size.
 
 An `ImageSampling` is `Bilinear` (the default: the four pixels around a position, interpolated), `Nearest` (the pixel
 that contains the position: an enlarged image keeps its pixels as squares), `Bicubic` (the sixteen pixels around a
 position with the cubic filter of Mitchell and Netravali, `B = C = 1/3`, as browsers draw a scaled image with high
-quality: the alpha clamped to the range from 0 to 1 and each color, multiplied by the alpha, to the alpha) or `Smooth`.
+quality: the alpha clamped to the range from 0 to 1 and each color, multiplied by the alpha, to the alpha), `Smooth` or
+`Box`.
 A rectangle of an image that is not made of whole pixels, as the source rectangle of `drawImage` of the HTML canvas,
 is drawn by `DrawImage(frame, RectangleD sourceRegion, destination, sampling)`: the position each pixel reads is brought
 into it, to `[left + 1/2, right - 1/2]` when the image is interpolated (the middle when it is narrower than a pixel) and
@@ -1178,7 +1184,13 @@ to `[left, right)` for the nearest pixel, so that the pixels around it weigh as 
 With the first three samplings, an image
 that is drawn much smaller than it is skips pixels. `Smooth` reads every pixel of the image a pixel of the canvas
 covers, with the weights of the interpolation stretched over them, so that a photograph drawn as a thumbnail has no
-aliasing; an image that is not reduced is interpolated as with `Bilinear`, bit for bit. `DrawImage` takes the sampling
+aliasing; an image that is not reduced is interpolated as with `Bilinear`, bit for bit. `Box` is the same, but a pixel
+of the canvas is the average of what it covers of the image (each pixel of the image weighs the part of it inside the
+columns and the rows covered), as the box-filtered mipmaps of browsers approximate it: the filter of `Smooth` is twice
+as wide, and blends the edges of stripes that a reduction by a whole factor keeps aligned, which `Box` keeps sharp.
+A position on the edge between two pixels takes half of each with the interpolation (a quarter of each of four on
+their corner: the pixel of a canvas whose center comes from the corner of a black square in a blue image is three
+quarters blue), and the pixel after the edge with `Nearest`. `DrawImage` takes the sampling
 as an argument. Painting a pixel then costs as many pixels of the image as it covers: `Resize` an image that is drawn
 many times, which also has sharper filters. The frame is read while it is drawn: it cannot be one of the frames the canvas draws on, but
 it can be another frame of the same image when the drawing is on one frame (`ImageFrame.Draw`).
@@ -1228,6 +1240,14 @@ image is rented when it starts and released when it ends, and what the callback 
 drawings are made by a canvas of their own, with the coordinates of the canvas, and give the pixels of a layer of the
 whole canvas: an element of a page with an opacity costs the pixels of its box, however large the page.
 
+The opacity of a layer is a coverage of what its operator makes, as the edge of a shape is: a pixel gets
+`o R + (1 - o) D`, where `R` is the layer combined with the canvas `D` by the operator and the blend mode. With
+source-over, this is the layer faded, then drawn. With the other operators it is not the group opacity of CSS, which
+fades the layer, then combines it: with `CompositeMode.Plus`, opaque white at an opacity of 0.6 over an alpha of 0.6
+gives an alpha of 0.84, where CSS gives 1, and a mask (`DestinationIn`) at half its opacity keeps half of what it does
+not cover. For the result of CSS, fade the drawing in a layer of its own and combine that one:
+`canvas.Layer(1, outer => outer.Layer(0.6, draw), CompositeMode.Plus)`.
+
 **Shadows**. `canvas.Shadow(color, offset, blur, callback)` draws what the callback draws with its shadow under it: a
 drop shadow, or a glow when there is no offset. The drawings are made on a layer; the shadow is the alpha of that layer
 (the shape of everything the callback drew, as a whole), blurred by a Gaussian blur of the given standard deviation,
@@ -1258,11 +1278,18 @@ clip.
 
 **Filters and backdrops**. A `Filter` is what the `filter` and `backdrop-filter` properties of CSS apply: a
 `BlurFilter` (a Gaussian blur, with one standard deviation or one per axis, and an `EdgeMode` for what it reads beyond
-the edges of the canvas: transparent by default, the edges extended, wrapped or mirrored), a `ColorMatrixFilter` (the
+the edges of the canvas: by default what is drawn there and transparent beyond it, or the edges of the canvas extended,
+wrapped or mirrored), a `ColorMatrixFilter` (the
 filter functions that change colors), a `DropShadowFilter` (a shadow of the alpha, moved, blurred and colored, under
 the drawing, or alone with `ShadowOnly`, as the shadows of the HTML canvas), and a `FilterChain` of them, applied one
 after the other. `canvas.Filter(filter, callback)` draws the callback on a layer that holds what the clip can show and
-what the filter moves into it, then filters the layer and draws it. `canvas.BackdropLayer(filter, bounds, opacity,
+what the filter moves into it, then filters the layer and draws it. That includes what is drawn beyond the canvas
+within the reach of the filter (its blurs, three deviations, and its offsets): a shape out of view casts its shadow on
+the canvas, and a shape that goes beyond an edge stays opaque there when it is blurred, as the element of a page that
+is scrolled does. The layer is then an image of its own, of the bounds of the clip with a margin of that reach (at most
+the largest side of the canvas, and while it has at most four times the pixels of the bounds of the clip and 65,536,
+within the limits of the image); filling the whole canvas in it fills the canvas, which fades at its edges.
+`canvas.BackdropLayer(filter, bounds, opacity,
 callback)` starts a layer with what is already drawn behind a rectangle, filtered (its pixels mirrored beyond its edges,
 so that a blurred backdrop does not fade there): the callback draws on it, then it is drawn with its opacity, and the
 clip around it gives it its shape. The lengths of a filter are lengths of the drawing: a transformation of the canvas
@@ -1271,7 +1298,7 @@ that enlarges the drawing enlarges its blurs and its offsets.
 A `FilterGraph` is the `filter` element of SVG: primitives computed in order, each one reading the drawing
 (`FilterInput.SourceGraphic`), its alpha (`FilterInput.SourceAlpha`), the result of the primitive before it (the
 default) or of any earlier one (`FilterInput.FromResult(index)`), in its `Subregion` of the drawing and within the
-`Region` of the filter. A primitive computes in linear light by default, as `color-interpolation-filters` of SVG, or in
+`Region` of the filter: the canvas by default, or a rectangle that can go beyond it, within the reach of the filter. A primitive computes in linear light by default, as `color-interpolation-filters` of SVG, or in
 sRGB with `ColorSpace`. The primitives are `FloodPrimitive`, `OffsetPrimitive` (between pixels too), `MergePrimitive`,
 `TilePrimitive`, `ColorMatrixPrimitive` (the types `saturate`, `hueRotate` and `luminanceToAlpha` of SVG are the
 matrices `ColorMatrix.CreateSaturation`, `ColorMatrix.CreateHueRotation` and `ColorMatrix.LuminanceToAlpha`),
@@ -1279,7 +1306,8 @@ matrices `ColorMatrix.CreateSaturation`, `ColorMatrix.CreateHueRotation` and `Co
 `CompositePrimitive` (the operators of Porter and Duff, `Lighter` and `Arithmetic`), `BlendPrimitive`,
 `GaussianBlurPrimitive` (a deviation per axis, and an `EdgeMode` relative to the subregion of its input),
 `DropShadowPrimitive`, `MorphologyPrimitive` (erode or dilate), `ConvolveMatrixPrimitive` (a divisor, a bias added to
-every component, `PreserveAlpha`, and an edge mode), `DisplacementMapPrimitive`, `TurbulencePrimitive` (the
+every component, `PreserveAlpha`, and an edge mode relative to its own subregion, in which an input is transparent
+outside its subregion: the bias colors what is around a smaller input, as browsers do), `DisplacementMapPrimitive`, `TurbulencePrimitive` (the
 noise of the reference code of SVG, with `StitchTiles`), and `DiffuseLightingPrimitive` and `SpecularLightingPrimitive`
 with a `DistantLight`, a `PointLight` or a `SpotLight`, and `ImagePrimitive`, whose result is what a callback draws
 (an image, or an element that `feImage` refers to).
@@ -1428,7 +1456,11 @@ nothing to mix it with. `canvas.Layer` takes a blend mode too, and mixes a whole
 
 **Pens**. A `Pen` is a brush and a width, centered on the path, with a `LineJoin` for the corners (`Miter` by default,
 beveled beyond `MiterLimit`; `Round`; `Bevel`) and a `LineCap` for the ends of open contours (`Butt` by default; `Round`;
-`Square`). The parts of a stroke that overlap are painted once, also with a translucent paint.
+`Square`). The parts of a stroke that overlap are painted once, also with a translucent paint. A stroke is what the
+segment of the width of the pen perpendicular to the path sweeps along it, as the HTML canvas defines it: along a
+curve, the ends of the stroke, its caps and the joins with what follows are perpendicular to the curve (not to its
+last chord), and a pen wider than the diameter of an arc reaches beyond its center, up to half the width minus the
+radius, without painting the rest of the disk around the center.
 
 `Pen.Alignment` puts the stroke on one side of its path: `Inside` what the path fills (an outline that does not make
 a shape larger, or go over what is next to it) or `Outside` it (an outline that does not cover the shape: the outline
@@ -1571,8 +1603,18 @@ public static void MarkAnimation(string inputPath, string outputPath)
   contours over the same half of a pixel cover half of it, not all of it. A pixel that is not covered is left
   untouched, bit for bit.
 - **Curves.** Curves, ellipses, arcs, round joins and round caps are replaced by chords that stay within 1/16 of a pixel of
-  them. A part of a round join or cap whose box is outside the canvas may be replaced by a single chord: what is between
-  them is not seen. The vertices of the chords are not part of the contract.
+  them, or of the tolerance `canvas.Flattening(tolerance, callback)` sets for what the callback draws (from 1/1024 to
+  1/16): shapes drawn as different curves in a page and in its reference then differ less on their edges, at the cost
+  of about 1.4 times the chords each time the tolerance is halved. The queries of a path keep 1/16. A part of a round
+  join or cap whose box is outside the canvas may be replaced by a single chord: what is between them is not seen. The
+  vertices of the chords are not part of the contract.
+- **Strokes.** A segment is a rectangle; a chord next to a vertex of a curve is the area between the perpendiculars to
+  the curve at its ends (the bisector of the normals of the chords at a vertex, and at an end of the curve the normal
+  of the end chord turned away from the next one by half the angle between them), split into two triangles where they
+  cross within the pen, with the half of its rectangle on the outer side of the turns. Round joins fill the outer side
+  of the vertices of a curve. The pieces are filled as one shape: their overlaps are covered once. `Offset` and a
+  synthetic bold, which need what is within a distance of an outline rather than what a pen sweeps, keep a rectangle
+  for every chord and the directions of the chords.
 - **Colors.** Brush colors are sample values in the color space of the image: no color profile is applied, unless
   `PaintProfile` gives one. A color of a profile is its 16-bit red, green and blue values converted as
   `IccColorTransform` converts them, from the profile to the ICC profile of the image, or to its CICP color space (the
@@ -1604,11 +1646,13 @@ public static void MarkAnimation(string inputPath, string outputPath)
   and `sy` rows of the image (the lengths of the rows of the inverse of the transformation, at least 1, at most the
   size of the region) reads the pixels whose centers are less than `sx` and `sy` away from that position, with the
   weights `(1 - dx / sx) (1 - dy / sy)`; the weights of the pixels that are outside a transparent image count for the
-  alpha. The opacity of an image multiplies the coverage, as a clip does.
+  alpha. With box sampling, each pixel of the image has the weight of the length of its part inside `[u - sx / 2, u + sx / 2]`
+  times the one inside `[v - sy / 2, v + sy / 2]`, in the same order. The opacity of an image multiplies the coverage,
+  as a clip does.
 - **Layers.** A layer is an image with colors and alpha (`Rgba32` on an `Rgba32`, `Bgra32` or `Rgb24` canvas,
   `Rgba64` otherwise) on which the drawings follow the rules of any frame. When it ends, it is drawn as an image is on
   whole pixels: its pixels are converted to the pixel format of the canvas like brush colors, and its opacity
-  multiplies the coverage. A drawing of opaque colors on whole pixels is the same in a layer as on the canvas;
+  multiplies the coverage (of what the operator makes, not the alpha of the layer). A drawing of opaque colors on whole pixels is the same in a layer as on the canvas;
   elsewhere the alpha of the layer is rounded to its samples before it is drawn, which can change a sample by one.
 - **Shadows.** With the alpha of the pixels of the layer as fractions of one, extended beyond the layer by its pixels
   on the edges, the shadow of a pixel is the alpha blurred by the weights of a Gaussian blur (see `GaussianBlur`) at
@@ -1672,7 +1716,8 @@ public static void MarkAnimation(string inputPath, string outputPath)
   weights of `GaussianKernel` in double precision; from 2 pixels, it is three box blurs of `d = floor(3 sqrt(2 pi) s / 4 + 1/2)`
   pixels (centered when `d` is odd; otherwise ending on the pixel, starting on it, then of `d + 1` pixels centered on
   it), as SVG defines it; the rows then the columns, the pixels beyond the canvas (or the rectangle of a backdrop) given by the edge
-  mode and those beyond the layer being transparent. A color matrix is applied to the colors without alpha, clipped to
+  mode and those beyond the layer being transparent. The transparent edge mode reads the pixels the layer holds beyond
+  the canvas; the drop shadow too. A color matrix is applied to the colors without alpha, clipped to
   the range from 0 to 1. A drop shadow is the alpha at the position the offset moves each pixel from (the four pixels
   around it, interpolated), blurred with transparent edges, multiplied by the color of the shadow, under the pixels
   unless the shadow is alone. The result is rounded to the samples of the layer: the alpha as
@@ -1816,6 +1861,10 @@ public static void DrawWeights(string variableFontPath, string outputPath)
   as sample values, without color management.
   - The brush of the text is the color of the parts of a glyph the font leaves to the text ("foreground"); it can be a
     gradient. `TextStyle.ColorPaletteIndex` selects another palette of the font.
+  - The alpha of a solid brush and the opacity of any brush fade the whole glyph, as browsers draw an emoji in a
+    translucent color: the glyph is drawn with the color of the text opaque, then its alpha is multiplied. A gradient
+    gives its colors to the parts of the glyph that take the color of the text, alpha included, and fades nothing
+    else: a gradient of one translucent color draws what font renderers such as HarfBuzz draw with that text color.
   - A color glyph is drawn after the glyphs that are not, in the order of the text. `StrokeText` and
     `TextLayout.ToPath` use the outline the font gives to the glyph itself, which can be empty.
   - A glyph the font gives as an image (`sbix`, `CBDT`) is taken from the smallest strike that is at least as large
@@ -2031,7 +2080,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 | Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
 | Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
 | Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
-| Drawing | Composited on the encoded sample values unless linear light is asked for; sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image or a pattern gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
+| Drawing | Composited on the encoded sample values unless linear light is asked for; sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth or box sampling is asked for, whose filters are the one of the interpolation and the average of what a pixel covers, not mipmaps (`Resize` has sharper ones), and an image or a pattern gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
 | Fonts made before OpenType Layout | The marks of a font without positioning table are placed from the shapes of the glyphs; the letters of an Arabic font without substitution table take the presentation forms the font has as characters, with the ligatures of lam and alef; the marks of a Thai font without substitution table take the forms the font has in the private use area |
 
 The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of

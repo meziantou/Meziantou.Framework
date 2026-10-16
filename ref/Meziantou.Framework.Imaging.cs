@@ -1409,6 +1409,8 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void Filter<TState>(Meziantou.Framework.Imaging.ColorMatrix matrix, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void Filter<TState>(Meziantou.Framework.Imaging.Drawing.Filter filter, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void FilterBackdrop(Meziantou.Framework.Imaging.ColorMatrix matrix) { }
+        public void Flattening(double tolerance, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
+        public void Flattening<TState>(double tolerance, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void HighPrecision(Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void HighPrecision<TState>(TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void InnerShadow(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
@@ -1645,6 +1647,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         Nearest = 1,
         Smooth = 2,
         Bicubic = 3,
+        Box = 4,
     }
 
     public enum ImageWrapMode

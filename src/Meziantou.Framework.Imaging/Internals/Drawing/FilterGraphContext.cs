@@ -35,11 +35,19 @@ internal sealed class FilterGraphContext : IDisposable
         _processor = processor;
         _source = source;
         _primitives = primitives;
-        Region = region is { } rectangle ? Rectangle.Intersect(processor.ToPixels(rectangle), processor.Edges) : processor.Edges;
+        Region = region is { } rectangle ? Rectangle.Intersect(processor.ToPixels(rectangle), processor.Extent) : processor.Edges;
         RegionRectangle = region ?? GetDrawingBox(processor, processor.Edges);
         _results = new Entry[primitives.Count];
         _lastUses = new int[primitives.Count];
         _sourceGraphic = new Entry { Subregion = Region, Space = FilterColorSpace.Srgb, Kind = FilterInputKind.SourceGraphic };
+
+        // The drawing is what it is within the region: a layer can hold what is drawn beyond the canvas, which a
+        // region of the canvas does not read
+        if (Rectangle.Intersect(source.Bounds, Region) != source.Bounds)
+        {
+            ClearOutside(source, Region);
+        }
+
         _sourceAlpha = new Entry { Subregion = Region, Space = FilterColorSpace.Srgb, Kind = FilterInputKind.SourceAlpha };
 
         // The last primitive that reads each result: the result of the last primitive is the output of the graph
@@ -68,6 +76,9 @@ internal sealed class FilterGraphContext : IDisposable
     /// <summary>Gets the pixels of the filter region, which may go beyond the filtered surface.</summary>
     public Rectangle Region { get; }
 
+    /// <summary>Gets the subregion of the primitive being computed, which may go beyond the filtered surface.</summary>
+    public Rectangle Subregion { get; private set; }
+
     /// <summary>Computes every primitive, and writes the result of the last one to the filtered surface, in sRGB.</summary>
     public void Run()
     {
@@ -78,6 +89,7 @@ internal sealed class FilterGraphContext : IDisposable
             _current = primitive;
             _currentIndex = index;
             var subregion = GetSubregion(primitive, index);
+            Subregion = subregion;
             var space = primitive.IsColorSpaceNeutral
                 ? (primitive.InputCount > 0 ? GetEntry(primitive.GetInput(0), index).Space : FilterColorSpace.Srgb)
                 : primitive.ColorSpace;

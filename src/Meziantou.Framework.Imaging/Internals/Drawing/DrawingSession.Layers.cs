@@ -186,7 +186,6 @@ internal sealed partial class DrawingSession
     /// <exception cref="ArgumentException">A coordinate of the rectangle is not a finite number.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, the opacity is not between 0 and 1, or the operator or the blend mode is not defined.</exception>
     /// <exception cref="ImageResourceLimitException">The image of the layer exceeds the limits of the image that is drawn on.</exception>
-    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session and the image are owned by the level of the layer, released by PopLayer.")]
     public DrawingSession PushBoundedLayer(RectangleD bounds, double opacity, CompositeMode mode, BlendMode blend)
     {
         DrawingGuard.Rectangle(bounds, nameof(bounds));
@@ -213,6 +212,23 @@ internal sealed partial class DrawingSession
         var top = Math.Max(clipTop, (int)Math.Clamp(Math.Floor(box.Top), -1, Height + 1));
         var right = Math.Min(clipRight, (int)Math.Clamp(Math.Ceiling(box.Right), -1, Width + 1));
         var bottom = Math.Min(clipBottom, (int)Math.Clamp(Math.Ceiling(box.Bottom), -1, Height + 1));
+        var level = PushBoundedLevel(left, top, right, bottom);
+        level.Opacity = coverage;
+        level.Mode = mode;
+        level.Blend = blend;
+        level.Effect = LayerEffect.None;
+        return level.Bounded!.Session;
+    }
+
+    /// <summary>
+    /// Starts a layer that holds the pixels of a rectangle of the canvas, which may go beyond it: an image of the
+    /// rectangle, drawn on by a session of its own with the transformation of this one, moved to the image.
+    /// </summary>
+    /// <returns>The level of the layer; its session is <see cref="LayerLevel.Bounded"/>.</returns>
+    /// <exception cref="ImageResourceLimitException">The image of the layer exceeds the limits of the image that is drawn on.</exception>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The session and the image are owned by the level of the layer, released by PopLayer.")]
+    private LayerLevel PushBoundedLevel(int left, int top, int right, int bottom)
+    {
         var isEmpty = !(right > left && bottom > top);
         var width = isEmpty ? 1 : right - left;
         var height = isEmpty ? 1 : bottom - top;
@@ -233,6 +249,7 @@ internal sealed partial class DrawingSession
             session._originY = _originY + top;
             session._clipsGeometry = _clipsGeometry;
             session._isLayerFrame = true;
+            session._canvasBounds = new Rectangle(_canvasBounds.X - left, _canvasBounds.Y - top, _canvasBounds.Width, _canvasBounds.Height);
             var toImage = AffineTransform.CreateTranslation(-left, -top);
             session.PushTransform(_hasTransform ? _transform.Then(toImage) : toImage);
             if (_layerDepth == _layers.Count)
@@ -242,11 +259,8 @@ internal sealed partial class DrawingSession
 
             var level = _layers[_layerDepth];
             level.Bounded = new BoundedLayer(image, session, left, top, isEmpty);
-            level.Opacity = coverage;
-            level.Mode = mode;
-            level.Blend = blend;
             _layerDepth++;
-            return session;
+            return level;
         }
         catch
         {
@@ -309,6 +323,7 @@ internal sealed partial class DrawingSession
             session._originY = _originY + top;
             session._clipsGeometry = _clipsGeometry;
             session._isLayerFrame = true;
+            session._canvasBounds = new Rectangle(_canvasBounds.X - left, _canvasBounds.Y - top, _canvasBounds.Width, _canvasBounds.Height);
             var toImage = AffineTransform.CreateTranslation(-left, -top);
             if (_hasTransform3D)
             {
@@ -333,6 +348,7 @@ internal sealed partial class DrawingSession
             level.Opacity = CoverageRasterizer.FullCoverage;
             level.Mode = CompositeMode.Source;
             level.Blend = BlendMode.Normal;
+            level.Effect = LayerEffect.None;
             _layerDepth++;
             return session;
         }
@@ -405,6 +421,11 @@ internal sealed partial class DrawingSession
                 bounded.Session.Dispose();
                 if (draw && !bounded.IsEmpty && level.Opacity != 0)
                 {
+                    if (level.Effect == LayerEffect.Filter)
+                    {
+                        ApplyFilterLayer(bounded, level);
+                    }
+
                     DrawBoundedLayer(bounded, level);
                 }
             }

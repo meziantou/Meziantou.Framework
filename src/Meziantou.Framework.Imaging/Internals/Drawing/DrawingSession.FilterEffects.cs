@@ -7,9 +7,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <para>
 /// <b>Contract.</b> A filtered layer holds the pixels the clip can show and, around them, as far as the filter moves
-/// what it filters (<see cref="Filter.GetReach"/>). When it ends, those pixels are read into a surface
-/// (<see cref="FilterProcessor"/>), filtered with the edges of the canvas, written back to the layer, and the layer is
-/// drawn. Under a transformation that scales the axes, the lengths of the filter are multiplied by the scale of each
+/// what it filters (<see cref="Filter.GetReach"/>). When that margin goes beyond the canvas, the layer is an image of
+/// its own (<see cref="PushBoundedLevel"/>) of the bounds of the clip and the margin (at most the largest side of the
+/// canvas, four times the pixels of the bounds and 65,536, and the limits of the image: <see cref="TryGetFilterExtent"/>),
+/// whose session fills only the canvas when it fills the whole canvas: what is drawn beyond the canvas is filtered
+/// into it. When it ends, those pixels are read into a surface (<see cref="FilterProcessor"/>), filtered with the
+/// edges of the canvas (the transparent edge mode reads what the layer holds beyond them,
+/// <see cref="FilterProcessor.Extent"/>), written back to the layer, and the layer is drawn. Under a transformation that scales the axes, the lengths of the filter are multiplied by the scale of each
 /// axis; under one that turns, skews or is projective, the layer is drawn on an image of the plane of the drawing
 /// (<see cref="BeginProjectedScope"/>), where the filter applies.
 /// </para>
@@ -54,8 +58,20 @@ internal sealed partial class DrawingSession
 
         var scaleX = _hasTransform ? Math.Abs(_transform.M11) : 1;
         var scaleY = _hasTransform ? Math.Abs(_transform.M22) : 1;
-        var margin = Math.Ceiling(Math.Max(reachX * scaleX, reachY * scaleY)) + 1;
-        var level = PushLayerCore((int)Math.Min(margin, Math.Max(Width, Height)));
+        var reach = Math.Ceiling(Math.Max(reachX * scaleX, reachY * scaleY));
+        var margin = reach + 1;
+        LayerLevel level;
+        if (reach > 0 && TryGetFilterExtent(margin, out var extent))
+        {
+            // What is drawn beyond the canvas, within the reach of the filter, is moved or blurred into it: the layer
+            // is an image of its own, which holds those pixels too
+            level = PushBoundedLevel(extent.Left, extent.Top, extent.Right, extent.Bottom);
+        }
+        else
+        {
+            level = PushLayerCore((int)Math.Min(margin, Math.Max(Width, Height)));
+        }
+
         level.Opacity = CoverageRasterizer.FullCoverage;
         level.Mode = CompositeMode.SourceOver;
         level.Blend = BlendMode.Normal;
@@ -63,7 +79,43 @@ internal sealed partial class DrawingSession
         level.IsLuminanceMask = false;
         level.Filter = filter;
         level.FilterScale = (scaleX, scaleY);
-        return this;
+        return level.Bounded?.Session ?? this;
+    }
+
+    /// <summary>
+    /// Gets the pixels a filtered layer holds when they go beyond the canvas: the bounds of the clip with a margin
+    /// around them, of at most the largest side of the canvas, and as long as the layer has at most four times the
+    /// pixels of the bounds of the clip (and at least 65,536) and fits in the limits of the image.
+    /// </summary>
+    /// <returns><see langword="false"/> when the layer of the canvas holds them all: the margin stays on the canvas, or the clip shows nothing.</returns>
+    private bool TryGetFilterExtent(double margin, out Rectangle extent)
+    {
+        extent = default;
+        GetClipBounds(out var left, out var top, out var right, out var bottom, out _);
+        if (!(right > left && bottom > top))
+            return false;
+
+        // The largest margin e with (w + 2e) (h + 2e) <= the most pixels: 4e^2 + 2(w + h)e + wh - pixels <= 0
+        var limits = _image.Configuration.Limits;
+        long width = right - left;
+        long height = bottom - top;
+        var pixels = Math.Min(limits.MaxFramePixels, (4 * width * height) + 65536);
+        var extension = (long)Math.Min(Math.Min(margin, Math.Max(Width, Height)), Math.Min((limits.MaxWidth - width) / 2, (limits.MaxHeight - height) / 2));
+        if (extension > 0 && (width + (2 * extension)) * (height + (2 * extension)) > pixels)
+        {
+            double sum = width + height;
+            extension = (long)Math.Floor((Math.Sqrt((sum * sum) - (4 * ((width * (double)height) - pixels))) - sum) / 4);
+            while (extension > 0 && (width + (2 * extension)) * (height + (2 * extension)) > pixels)
+            {
+                extension--;
+            }
+        }
+
+        if (extension <= 0 || (left - extension >= 0 && top - extension >= 0 && right + extension <= Width && bottom + extension <= Height))
+            return false;
+
+        extent = Rectangle.FromLTRB(left - (int)extension, top - (int)extension, right + (int)extension, bottom + (int)extension);
+        return true;
     }
 
     /// <summary>Starts a layer that starts with the filtered backdrop of a rectangle, and is drawn as a layer when it ends.</summary>
@@ -149,7 +201,7 @@ internal sealed partial class DrawingSession
         var m11 = _hasTransform ? _transform.M11 : 1;
         var m22 = _hasTransform ? _transform.M22 : 1;
         var (offsetX, offsetY) = GetTranslation();
-        processor.Configure(new Rectangle(0, 0, Width, Height), edgeOverride: null, scaleX, scaleY, m11, 0, 0, m22, offsetX, offsetY, _cancellationToken);
+        processor.Configure(_canvasBounds, edgeOverride: null, scaleX, scaleY, m11, 0, 0, m22, offsetX, offsetY, _cancellationToken);
         using var surface = new FilterSurface(_image.Owner.Scope, bounds);
         FilterProcessor.Read(level.Frames![0], level.Storages![0], surface, unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span)));
         level.Filter!.Apply(processor, surface);
@@ -157,6 +209,29 @@ internal sealed partial class DrawingSession
 
         // A filter can give a color to pixels that were transparent (a flood, an image, an offset)
         level.MarkDirty(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom);
+    }
+
+    /// <summary>
+    /// Applies the filter of a layer that holds pixels beyond the canvas to its image: the edge modes apply at the edges
+    /// of the canvas, and what is drawn beyond them is read where a filter reads what is transparent there.
+    /// </summary>
+    private void ApplyFilterLayer(BoundedLayer bounded, LayerLevel level)
+    {
+        var frame = bounded.Image.Frames[0];
+        var storage = frame.GetStorage();
+        var area = new Rectangle(0, 0, bounded.Image.Width, bounded.Image.Height);
+        var processor = GetFilterProcessor(area.Width);
+        var (scaleX, scaleY) = level.FilterScale;
+        var m11 = _hasTransform ? _transform.M11 : 1;
+        var m22 = _hasTransform ? _transform.M22 : 1;
+        var (offsetX, offsetY) = GetTranslation();
+        var canvas = new Rectangle(_canvasBounds.X - bounded.Left, _canvasBounds.Y - bounded.Top, _canvasBounds.Width, _canvasBounds.Height);
+        processor.Configure(canvas, edgeOverride: null, scaleX, scaleY, m11, 0, 0, m22, offsetX - bounded.Left, offsetY - bounded.Top, _cancellationToken);
+        processor.Extent = area;
+        using var surface = new FilterSurface(_image.Owner.Scope, area);
+        FilterProcessor.Read(frame, storage, surface, unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span)));
+        level.Filter!.Apply(processor, surface);
+        FilterProcessor.Write(surface, storage, area);
     }
 
     /// <summary>Gets the processor of the filters and the row its pixels are read through.</summary>

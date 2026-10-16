@@ -116,6 +116,7 @@ internal sealed partial class DrawingSession
         session._paintPipeline = _paintPipeline;
         session.CanvasWidth = CanvasWidth;
         session.CanvasHeight = CanvasHeight;
+        session._curveTolerance = _curveTolerance;
         session.RestoreCompositingSpace(_compositingSpace);
         if (_isAliased)
         {

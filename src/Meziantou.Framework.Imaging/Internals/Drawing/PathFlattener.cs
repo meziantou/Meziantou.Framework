@@ -20,7 +20,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// A sink whose content is enlarged before it is drawn (<see cref="PathSink.Scale"/>: a transformation of the canvas)
 /// gets chords that much closer to the curve: every length that is compared with the tolerance is multiplied by that
-/// factor, which is 1, and changes nothing, without transformation.
+/// factor, which is 1, and changes nothing, without transformation. The tolerance is the one of the sink
+/// (<see cref="PathSink.Tolerance"/>): <see cref="Tolerance"/> unless the drawing asks for a finer one.
 /// </para>
 /// <para>
 /// Under a projective transformation (<see cref="PathSink.Projection"/>), the factor depends on the place in the plane,
@@ -34,7 +35,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal static class PathFlattener
 {
-    /// <summary>The largest distance between a curve and its chords, in pixels.</summary>
+    /// <summary>The largest distance between a curve and its chords, in pixels, unless a drawing asks for a finer one.</summary>
     public const double Tolerance = 1.0 / 16;
 
     /// <summary>The deepest bisection of an arc: far more than any radius the API accepts needs.</summary>
@@ -123,7 +124,7 @@ internal static class PathFlattener
             return;
         }
 
-        var count = GetSegmentCount(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2) * sink.Scale / (4 * Tolerance));
+        var count = GetSegmentCount(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2) * sink.Scale / (4 * sink.Tolerance));
         for (var i = 1; i < count; i++)
         {
             var t = i / (double)count;
@@ -148,7 +149,7 @@ internal static class PathFlattener
         }
 
         var deviation = Math.Max(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2), Length(x1 - (2 * x2) + x3, y1 - (2 * y2) + y3));
-        var count = GetSegmentCount(3 * deviation * sink.Scale / (4 * Tolerance));
+        var count = GetSegmentCount(3 * deviation * sink.Scale / (4 * sink.Tolerance));
         for (var i = 1; i < count; i++)
         {
             var t = i / (double)count;
@@ -172,7 +173,7 @@ internal static class PathFlattener
             return;
         }
 
-        var depth = GetArcDepth(Math.Max(radiusX, radiusY) * sink.Scale);
+        var depth = GetArcDepth(Math.Max(radiusX, radiusY) * sink.Scale * (Tolerance / sink.Tolerance));
         sink.MoveTo(centerX + radiusX, centerY);
         for (var quadrant = 0; quadrant < 4; quadrant++)
         {
@@ -199,7 +200,7 @@ internal static class PathFlattener
             return;
         }
 
-        var depth = GetArcDepth(GetLargestRadius(ux, uy, vx, vy) * sink.Scale);
+        var depth = GetArcDepth(GetLargestRadius(ux, uy, vx, vy) * sink.Scale * (Tolerance / sink.Tolerance));
         sink.MoveTo(centerX + ux, centerY + uy);
         for (var quadrant = 0; quadrant < 4; quadrant++)
         {
@@ -242,7 +243,7 @@ internal static class PathFlattener
     private static void ProjectedQuadratic(PathSink sink, double x0, double y0, double x1, double y1, double x2, double y2, int depth, ref bool started)
     {
         var scale = sink.GetScale(Math.Min(x0, Math.Min(x1, x2)), Math.Min(y0, Math.Min(y1, y2)), Math.Max(x0, Math.Max(x1, x2)), Math.Max(y0, Math.Max(y1, y2)));
-        var count = GetSegmentCount(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2) * scale / (4 * Tolerance));
+        var count = GetSegmentCount(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2) * scale / (4 * sink.Tolerance));
         if (count > ProjectedSegmentCount && depth < MaxArcDepth)
         {
             var ax = (x0 + x1) / 2;
@@ -273,7 +274,7 @@ internal static class PathFlattener
     {
         var deviation = Math.Max(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2), Length(x1 - (2 * x2) + x3, y1 - (2 * y2) + y3));
         var scale = sink.GetScale(Math.Min(Math.Min(x0, x1), Math.Min(x2, x3)), Math.Min(Math.Min(y0, y1), Math.Min(y2, y3)), Math.Max(Math.Max(x0, x1), Math.Max(x2, x3)), Math.Max(Math.Max(y0, y1), Math.Max(y2, y3)));
-        var count = GetSegmentCount(3 * deviation * scale / (4 * Tolerance));
+        var count = GetSegmentCount(3 * deviation * scale / (4 * sink.Tolerance));
         if (count > ProjectedSegmentCount && depth < MaxArcDepth)
         {
             var ax = (x0 + x1) / 2;
@@ -350,7 +351,7 @@ internal static class PathFlattener
         var tx = centerX + (((ux * mx) + (vx * my)) * toTangents);
         var ty = centerY + (((uy * mx) + (vy * my)) * toTangents);
         var scale = sink.GetScale(Math.Min(x0, Math.Min(x1, tx)), Math.Min(y0, Math.Min(y1, ty)), Math.Max(x0, Math.Max(x1, tx)), Math.Max(y0, Math.Max(y1, ty)));
-        if (!(GetLargestRadius(ux, uy, vx, vy) * scale * (1 - (length / 2)) > Tolerance))
+        if (!(GetLargestRadius(ux, uy, vx, vy) * scale * (1 - (length / 2)) > sink.Tolerance))
             return;
 
         mx /= length;
@@ -432,7 +433,7 @@ internal static class PathFlattener
         var mx = ax + bx;
         var my = ay + by;
         var length = Length(mx, my);
-        if (depth >= MaxArcDepth || !(radius * (1 - (length / 2)) > Tolerance))
+        if (depth >= MaxArcDepth || !(radius * (1 - (length / 2)) > sink.Tolerance))
             return;
 
         mx /= length;

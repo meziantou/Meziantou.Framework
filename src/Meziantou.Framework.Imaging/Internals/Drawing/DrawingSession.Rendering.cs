@@ -59,6 +59,33 @@ internal sealed partial class DrawingSession
     // are sample values of the image
     private IccPipeline? _paintPipeline;
 
+    // The largest distance between a curve and its chords on the canvas
+    private double _curveTolerance = PathFlattener.Tolerance;
+
+    /// <summary>The finest tolerance a drawing can ask for.</summary>
+    private const double MinCurveTolerance = 1.0 / 1024;
+
+    /// <summary>Sets the largest distance between a curve and its chords for the draw calls that follow.</summary>
+    /// <returns>The tolerance that was set.</returns>
+    /// <exception cref="ArgumentException">The tolerance is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The tolerance is less than 1/1024 or more than 1/16.</exception>
+    public double SetFlattening(double tolerance)
+    {
+        if (!double.IsFinite(tolerance))
+            throw new ArgumentException("The tolerance must be a finite number.", nameof(tolerance));
+
+        if (tolerance is < MinCurveTolerance or > PathFlattener.Tolerance)
+            throw new ArgumentOutOfRangeException(nameof(tolerance), tolerance, "The tolerance must be between 1/1024 and 1/16 of a pixel.");
+
+        _cancellationToken.ThrowIfCancellationRequested();
+        var previous = _curveTolerance;
+        _curveTolerance = tolerance;
+        return previous;
+    }
+
+    /// <summary>Sets the tolerance back to what <see cref="SetFlattening"/> returned: nothing is rented, and nothing fails.</summary>
+    public void RestoreFlattening(double tolerance) => _curveTolerance = tolerance;
+
     /// <summary>Turns antialiasing on or off for the draw calls that follow.</summary>
     /// <returns>Whether antialiasing was on.</returns>
     public bool SetAntialiasing(bool enabled)

@@ -35,4 +35,16 @@ public enum ImageSampling
     /// filter does not interpolate). An image that is reduced is read at the position, as with <see cref="Bilinear"/>.
     /// </remarks>
     Bicubic = 3,
+
+    /// <summary>
+    /// <see cref="Bilinear"/> for an image that is not reduced, bit for bit; for an image that is reduced, the average of
+    /// what a pixel of the canvas covers of the image: each pixel of the image weighs the length of its part inside the
+    /// columns and the rows the pixel of the canvas covers, as the box-filtered mipmaps of browsers approximate.
+    /// </summary>
+    /// <remarks>
+    /// Stripes of whole pixels that a reduction by a whole factor keeps aligned stay sharp: <see cref="Smooth"/>, whose
+    /// filter is twice as wide, blends them at their edges. The cost is that of <see cref="Smooth"/>, about half as many
+    /// pixels of the image for each pixel of the canvas.
+    /// </remarks>
+    Box = 4,
 }

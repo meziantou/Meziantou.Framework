@@ -26,6 +26,13 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// <see cref="DrawingCanvas.Height"/> are its size in pixels, not the size of the tile, and filling it fills the tile.
 /// </para>
 /// <para>
+/// A tile whose image would have more than four times the pixels the clip can show (and 65,536), or would exceed the
+/// limits of the image, is drawn where the canvas shows it: along each axis where the canvas shows less than a tile,
+/// the image holds that part of the pattern, at the same scale, and the callback runs once for each tile it shows (two
+/// at most, mirrored for a tile that <see cref="ImageWrapMode.Reflect"/> turns), clipped to its tile. Under a projective
+/// transformation, the image of the tile is drawn at the resolution those limits allow instead.
+/// </para>
+/// <para>
 /// <b>Callback.</b> The callback runs while a shape is drawn, before any pixel of that shape changes, and may run
 /// once for each shape: it must draw the same thing every time, must not be asynchronous and must not keep the canvas
 /// it receives. It can use any brush except, directly or not, the pattern itself. A brush that is kept and reused

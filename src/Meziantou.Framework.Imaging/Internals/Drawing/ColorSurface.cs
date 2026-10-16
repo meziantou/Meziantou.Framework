@@ -54,6 +54,9 @@ internal sealed class ColorSurface : IDisposable
     /// <summary>Gets or sets the gradient of the text when its brush is one: it gives the color of the text at each pixel.</summary>
     public GradientEvaluator? ForegroundGradient { get; set; }
 
+    /// <summary>Gets or sets what the alpha of the glyph is multiplied by when it is composited: the alpha of the text, as browsers fade the glyphs that have their own colors.</summary>
+    public double Opacity { get; set; } = 1;
+
     private Span<float> Layers => unsafe(MemoryMarshal.Cast<byte, float>(_layers!.Span));
 
     private Span<float> Clips => unsafe(MemoryMarshal.Cast<byte, float>(_clips!.Span));
@@ -264,7 +267,7 @@ internal sealed class ColorSurface : IDisposable
 
             // The color of the layer is multiplied by its opacity; the pipeline takes it as it is, with its opacity.
             alpha = Math.Min(alpha, 1);
-            var color = frame.ConvertDrawingColor(new Rgba64(ToSample(pixel[0] / alpha), ToSample(pixel[1] / alpha), ToSample(pixel[2] / alpha), ToSample(alpha)));
+            var color = frame.ConvertDrawingColor(new Rgba64(ToSample(pixel[0] / alpha), ToSample(pixel[1] / alpha), ToSample(pixel[2] / alpha), ToSample(alpha * Opacity)));
             var entry = rowColors.Slice(i * 4, 4);
             entry[0] = color.C0;
             entry[1] = color.C1;

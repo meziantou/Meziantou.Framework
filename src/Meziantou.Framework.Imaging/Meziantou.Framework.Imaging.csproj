@@ -38,6 +38,6 @@
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.WebP.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.FuzzTests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.InteropTests" />
-    <InternalsVisibleTo Include="ImagingBenchmarks" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Benchmarks" />
   </ItemGroup>
 </Project>

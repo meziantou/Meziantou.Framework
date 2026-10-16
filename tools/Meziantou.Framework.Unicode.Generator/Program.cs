@@ -47,6 +47,7 @@ var unicodeBlocksFilePath = outputPath / "UnicodeBlocks.g.cs";
 var unicodeScriptsFilePath = outputPath / "UnicodeScripts.g.cs";
 var unicodeDataPath = outputPath / "Resources" / "UnicodeData.bin";
 var csprojPath = root / "src" / "Meziantou.Framework.Unicode" / "Meziantou.Framework.Unicode.csproj";
+var frameworkCsprojPath = root / "src" / "Meziantou.Framework" / "Meziantou.Framework.csproj";
 
 var (confusableEntries, confusablesLastModified) = await LoadConfusablesEntries();
 await WriteConfusableCharactersFile(confusableEntries, confusablesLastModified);
@@ -60,6 +61,13 @@ if (await PropertyTablesWriter.WriteAsync(outputPath))
 if (await NormalizationWriter.WriteAsync(outputPath))
     outputUpdated = true;
 
+// RemoveDiacritics belongs to Meziantou.Framework: the table changes the version of that package only.
+var frameworkUpdated = await DiacriticsWriter.WriteAsync(root / "src" / "Meziantou.Framework" / "StringExtensions.g.cs");
+if (frameworkUpdated)
+{
+    await IncrementPatchVersion(frameworkCsprojPath);
+}
+
 // The conformance files only change the tests: they are reported as an update, but they do not change the version
 // of the package.
 var testFilesUpdated = await ConformanceFilesWriter.WriteAsync(root);
@@ -67,19 +75,11 @@ var testFilesUpdated = await ConformanceFilesWriter.WriteAsync(root);
 // Update project version
 if (outputUpdated)
 {
-    var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-    var doc = XDocument.Load(csprojPath, LoadOptions.PreserveWhitespace);
-    var versionNode = doc.Descendants().First(e => e.Name.LocalName == "Version");
-    var version = SemanticVersion.Parse(versionNode.Value);
-    versionNode.Value = version.NextPatchVersion().ToString();
+    await IncrementPatchVersion(csprojPath);
+}
 
-    var xws = new XmlWriterSettings { OmitXmlDeclaration = true, Indent = false, Encoding = encoding, Async = true, };
-    // Scoped so the writer is flushed and closed before the diff below reads the file back
-    await using (var writer = XmlWriter.Create(csprojPath, xws))
-    {
-        await doc.SaveAsync(writer, CancellationToken.None);
-    }
-
+if (outputUpdated || frameworkUpdated)
+{
     Console.WriteLine("The file has been updated");
 
     // Print git diff to show what changed
@@ -132,6 +132,20 @@ if (testFilesUpdated)
 }
 
 return 0;
+
+static async Task IncrementPatchVersion(FullPath csprojPath)
+{
+    var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+    var doc = XDocument.Load(csprojPath, LoadOptions.PreserveWhitespace);
+    var versionNode = doc.Descendants().First(e => e.Name.LocalName == "Version");
+    var version = SemanticVersion.Parse(versionNode.Value);
+    versionNode.Value = version.NextPatchVersion().ToString();
+
+    var xws = new XmlWriterSettings { OmitXmlDeclaration = true, Indent = false, Encoding = encoding, Async = true, };
+    // Disposed before returning so the file is complete when the git diff reads it back
+    await using var writer = XmlWriter.Create(csprojPath, xws);
+    await doc.SaveAsync(writer, CancellationToken.None);
+}
 
 static async Task<(List<Entry> entries, string lastModified)> LoadConfusablesEntries()
 {

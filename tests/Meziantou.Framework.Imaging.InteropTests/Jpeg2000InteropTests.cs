@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Security.Cryptography;
 using System.Text;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
@@ -51,7 +52,7 @@ public sealed class Jpeg2000InteropTests
         foreach (var (name, source) in EncoderSources.GetStills(fixture, pixelFormat))
         {
             using var image = EncoderSources.CreateImage(source, pixelFormat);
-            var path = directory / $"{id.Replace('/', '-')}-{name.Replace(' ', '-')}-{format}{(container == Jpeg2000Container.Jp2 ? ".jp2" : ".j2k")}";
+            var path = directory / (GetFileName($"{id.Replace('/', '-')}-{name.Replace(' ', '-')}-{format}") + (container == Jpeg2000Container.Jp2 ? ".jp2" : ".j2k"));
             await image.SaveAsync(path, new Jpeg2000Encoder { Container = container, MetadataHandling = MetadataHandling.Strip }, XunitCancellationToken);
             var context = $"{id} {name} as {format} ({container})";
 
@@ -576,5 +577,18 @@ public sealed class Jpeg2000InteropTests
         }
 
         return RawPixelBuffer.Create(width, height, layout, data);
+    }
+
+    /// <summary>
+    /// Gets the name of the file of a case. A long name is cut and completed with a digest: <c>opj_decompress</c> adds about
+    /// 15 characters to it for its outputs, and fails to write a path of more than 260 characters on Windows.
+    /// </summary>
+    private static string GetFileName(string name)
+    {
+        if (name.Length <= 48)
+            return name;
+
+        var digest = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(name)));
+        return name[..40] + "-" + digest[..8];
     }
 }

@@ -747,6 +747,19 @@ public sealed class DrawingFuzzTests
         }
 
         var pen = CreatePen(random, canvas, context, widest: random.Chance(10));
+
+        // A pen far wider than the canvas with dashes far shorter than its width cuts every curve near the canvas into
+        // slivers across the whole canvas, at as many angles: the exact area of their union costs the square of their
+        // number, legitimately. Its pattern is at least a thousandth of its width.
+        if (pen.Width > 100000 && total < pen.Width / 1000)
+        {
+            var factor = pen.Width / 1000 / Math.Max(total, 0.5);
+            for (var i = 0; i < pattern.Length; i++)
+            {
+                pattern[i] *= factor;
+            }
+        }
+
         return new Pen(pen.Brush, pen.Width)
         {
             LineJoin = pen.LineJoin,

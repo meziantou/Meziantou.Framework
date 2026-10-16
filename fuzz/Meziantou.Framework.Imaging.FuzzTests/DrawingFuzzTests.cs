@@ -285,8 +285,18 @@ public sealed class DrawingFuzzTests
 
                     break;
                 case 18:
-                    switch (random.Next(3))
+                    switch (random.Next(4))
                     {
+                        case 3:
+                            {
+                                // A rectangle of the sprite that is not made of whole pixels
+                                var left = NextDouble(random) * context.Sprite.Width;
+                                var top = NextDouble(random) * context.Sprite.Height;
+                                var region = new RectangleD(left, top, NextDouble(random) * (context.Sprite.Width - left), NextDouble(random) * (context.Sprite.Height - top));
+                                canvas.DrawImage(context.Sprite, region, CreateRectangle(random, canvas), (ImageSampling)random.Next(4), CreateOpacity(random));
+                                break;
+                            }
+
                         case 0:
                             canvas.DrawImage(context.Sprite, random.Chance(50) ? CreatePoint(random, canvas) : new PointD(random.Next(-4, canvas.Width + 2), random.Next(-4, canvas.Height + 2)), CreateOpacity(random));
                             break;

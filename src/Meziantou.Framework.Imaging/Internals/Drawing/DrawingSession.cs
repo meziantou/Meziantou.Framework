@@ -136,6 +136,49 @@ internal sealed partial class DrawingSession : IDisposable
         DrawImageCore(source, sourceRegion, destination, sampling, opacity);
     }
 
+    public void DrawImageRectangle(ImageFrame source, RectangleD sourceRegion, RectangleD destination, ImageSampling sampling, double opacity)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        DrawingGuard.Rectangle(sourceRegion, nameof(sourceRegion));
+        DrawingGuard.Rectangle(destination, nameof(destination));
+        ValidateSampling(sampling);
+        if (sourceRegion.Left < 0 || sourceRegion.Top < 0 || sourceRegion.Right > source.Width || sourceRegion.Bottom > source.Height)
+            throw new ArgumentOutOfRangeException(nameof(sourceRegion), sourceRegion, "The region is not inside the frame.");
+
+        var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
+        var sink = BeginFill();
+        AddRectangle(sink, destination);
+        sink.End();
+
+        // The rectangle of the image is stretched to the destination; the pixels it touches are read, and the positions
+        // are brought into it
+        var pixels = Rectangle.FromLTRB((int)Math.Floor(sourceRegion.Left), (int)Math.Floor(sourceRegion.Top), (int)Math.Ceiling(sourceRegion.Right), (int)Math.Ceiling(sourceRegion.Bottom));
+        var isEmpty = sourceRegion.IsEmpty || destination.IsEmpty;
+        var transform = default(AffineTransform);
+        if (!isEmpty)
+        {
+            var scaleX = destination.Width / sourceRegion.Width;
+            var scaleY = destination.Height / sourceRegion.Height;
+            transform = new AffineTransform(scaleX, 0, 0, scaleY, destination.X - (sourceRegion.X * scaleX), destination.Y - (sourceRegion.Y * scaleY));
+        }
+
+        var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
+        evaluator.Prepare(source, pixels, ToCanvasProjection(transform), ImageWrapMode.Pad, ImageWrapMode.Pad, sampling, _frames[0], Width, nameof(sourceRegion));
+        if (coverage == 0 || isEmpty || _edges!.Count == 0)
+            return;
+
+        evaluator.SetDomain(sourceRegion);
+        if (coverage != CoverageRasterizer.FullCoverage)
+        {
+            EnsureCoverageRow();
+        }
+
+        if (_rasterizer!.Begin(_edges, FillRule.NonZero, _isAliased, _cancellationToken))
+        {
+            Paint(default, evaluator, CompositeMode.SourceOver, BlendMode.Normal, coverage);
+        }
+    }
+
     public void DrawImage(ImageFrame source, AffineTransform transform, ImageSampling sampling, double opacity)
     {
         ArgumentNullException.ThrowIfNull(source);

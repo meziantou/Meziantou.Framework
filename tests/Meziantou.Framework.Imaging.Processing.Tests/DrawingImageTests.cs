@@ -481,6 +481,60 @@ public sealed class DrawingImageTests
     }
 
     [Fact]
+    public void ARectangleOfAnImageThatIsNotMadeOfWholePixelsKeepsItsSamplesInside()
+    {
+        // A rectangle of whole pixels: the positions brought to [left + 1/2, right - 1/2] read what the extended pixels of
+        // the edges give, so the pixels are those of the region of whole pixels
+        using var photo = new Image<Rgba32>(8, 8);
+        photo.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < 8; y++)
+            {
+                var row = pixels.GetRowSpan(y);
+                for (var x = 0; x < 8; x++)
+                {
+                    row[x] = new Rgba32((byte)(x * 31), (byte)(y * 29), (byte)((x * y) % 256), (byte)(128 + (x * 15)));
+                }
+            }
+        });
+        Assert.Equal(
+            Render(16, 16, canvas => canvas.DrawImage(photo.Frames[0], new Rectangle(2, 2, 4, 4), new RectangleD(0, 0, 16, 16), ImageSampling.Bilinear)),
+            Render(16, 16, canvas => canvas.DrawImage(photo.Frames[0], new RectangleD(2, 2, 4, 4), new RectangleD(0, 0, 16, 16), ImageSampling.Bilinear)));
+
+        // From the middle of black to the middle of white: one pixel wide, so every position is brought to its middle,
+        // half way between them (128). Narrower than a pixel: the middle of the rectangle, in black. With the nearest
+        // pixel, the positions stay in [0.5, 1.5): black, then white.
+        using var pair = new Image<Gray8>(2, 1);
+        pair.Frames[0][1, 0] = new Gray8(255);
+        Assert.Equal([128, 128, 128, 128], Draw(new RectangleD(0.5, 0, 1, 1), ImageSampling.Bilinear));
+        Assert.Equal([128, 128, 128, 128], Draw(new RectangleD(0.5, 0, 1, 1), ImageSampling.Bicubic));
+        Assert.Equal([0, 0, 0, 0], Draw(new RectangleD(0.25, 0, 0.5, 1), ImageSampling.Bilinear));
+        Assert.Equal([0, 0, 255, 255], Draw(new RectangleD(0.5, 0, 1, 1), ImageSampling.Nearest));
+
+        using var image = new Image<Gray8>(2, 2);
+        image.Draw(canvas =>
+        {
+            AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(pair.Frames[0], new RectangleD(1.5, 0, 1, 1), new RectangleD(0, 0, 1, 1), ImageSampling.Bilinear));
+            AssertThrows<ArgumentException>(canvas, canvas => canvas.DrawImage(pair.Frames[0], new RectangleD(double.NaN, 0, 1, 1), new RectangleD(0, 0, 1, 1), ImageSampling.Bilinear));
+            AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(pair.Frames[0], new RectangleD(0, 0, 1, 1), new RectangleD(0, 0, 1, 1), (ImageSampling)4));
+        }, Ct);
+
+        int[] Draw(RectangleD region, ImageSampling sampling)
+        {
+            using var canvas = new Image<Gray8>(4, 1);
+            canvas.Draw(c => c.DrawImage(pair.Frames[0], region, new RectangleD(0, 0, 4, 1), sampling), Ct);
+            return [.. Enumerable.Range(0, 4).Select(x => (int)canvas.Frames[0][x, 0].Value)];
+        }
+
+        static int[] Render(int width, int height, DrawingAction action)
+        {
+            using var canvas = new Image<Rgba64>(width, height);
+            canvas.Draw(action, Ct);
+            return DrawingTestSupport.ReadSamples(canvas.Frames[0]);
+        }
+    }
+
+    [Fact]
     public void BicubicSamplingWeighsSixteenPixelsWithTheFilterOfMitchellAndNetravali()
     {
         // At the center of a pixel, the weights of the columns around it are k(1) = 1/18, k(0) = 8/9 and k(1) = 1/18:

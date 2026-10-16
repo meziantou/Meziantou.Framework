@@ -94,6 +94,14 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private ImageWrapMode _wrapModeY;
     private bool _isNearest;
     private bool _isBicubic;
+
+    // The rectangle of the image the positions are brought into, when an image is drawn from a rectangle of its pixels
+    // that is not made of whole pixels
+    private bool _hasDomain;
+    private double _domainLeft;
+    private double _domainTop;
+    private double _domainRight;
+    private double _domainBottom;
     private bool _isReduced;
     private double _spanX;
     private double _spanY;
@@ -174,6 +182,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         _wrapModeY = wrapModeY;
         _isNearest = sampling == ImageSampling.Nearest;
         _isBicubic = sampling == ImageSampling.Bicubic;
+        _hasDomain = false;
         _isProjective = false;
         _isEmpty = area.IsEmpty || !new Affine2D(transform.M11, transform.M12, transform.M21, transform.M22, transform.OffsetX, transform.OffsetY).TryInvert(out _inverse);
 
@@ -251,6 +260,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         Prepare(source, region, AffineTransform.Identity, wrapModeX, wrapModeY, ImageSampling.Bilinear, destination, width, regionParameterName);
         _isNearest = sampling == ImageSampling.Nearest;
         _isBicubic = sampling == ImageSampling.Bicubic;
+        _hasDomain = false;
         _isSmooth = sampling == ImageSampling.Smooth;
         _isProjective = true;
         if (!transform.TryInvert(out var inverse))
@@ -284,6 +294,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         Prepare(source, region: null, AffineTransform.Identity, ImageWrapMode.Pad, ImageSampling.Bilinear, destination, width, nameof(source));
         _isNearest = sampling == ImageSampling.Nearest;
         _isBicubic = sampling == ImageSampling.Bicubic;
+        _hasDomain = false;
         _isSmooth = sampling == ImageSampling.Smooth;
         _isProjective = true;
         if (inverse.IsEmpty)
@@ -334,7 +345,11 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         }
 
         var samples = Samples[..count];
-        if (_isBicubic)
+        if (_hasDomain)
+        {
+            EvaluateInDomain(y, x, samples);
+        }
+        else if (_isBicubic)
         {
             EvaluateBicubic(y, x, samples);
         }
@@ -501,6 +516,41 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             }
 
             samples[i] = Interpolate(u, v);
+        }
+    }
+
+    /// <summary>
+    /// Brings the positions the pixels read into a rectangle of the image, as browsers draw a rectangle of an image that
+    /// is not made of whole pixels: to <c>[left + 1/2, right - 1/2]</c> (the middle of the rectangle when it is narrower
+    /// than a pixel) when the image is interpolated, filtered or reduced, so that what is around the rectangle weighs as
+    /// little as it can, and to <c>[left, right)</c> for the nearest pixel. Set after <see cref="Prepare(ImageFrame, Rectangle?, AffineTransform, ImageWrapMode, ImageWrapMode, ImageSampling, ImageFrame, int, string)"/>.
+    /// </summary>
+    public void SetDomain(RectangleD domain)
+    {
+        _hasDomain = true;
+        if (_isNearest)
+        {
+            _domainLeft = domain.Left;
+            _domainTop = domain.Top;
+            _domainRight = Math.BitDecrement(domain.Right);
+            _domainBottom = Math.BitDecrement(domain.Bottom);
+            return;
+        }
+
+        (_domainLeft, _domainRight) = domain.Width >= 1 ? (domain.Left + 0.5, domain.Right - 0.5) : ((domain.Left + domain.Right) / 2, (domain.Left + domain.Right) / 2);
+        (_domainTop, _domainBottom) = domain.Height >= 1 ? (domain.Top + 0.5, domain.Bottom - 0.5) : ((domain.Top + domain.Bottom) / 2, (domain.Top + domain.Bottom) / 2);
+    }
+
+    /// <summary>Evaluates a run whose positions are brought into the rectangle of <see cref="SetDomain"/>: each pixel on its own.</summary>
+    private void EvaluateInDomain(int y, int x, Span<Rgba64> samples)
+    {
+        var centerY = y + 0.5;
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var centerX = x + i + 0.5;
+            var u = Math.Clamp(_inverse.TransformX(centerX, centerY), _domainLeft, _domainRight);
+            var v = Math.Clamp(_inverse.TransformY(centerX, centerY), _domainTop, _domainBottom);
+            samples[i] = _isBicubic ? Bicubic(u, v) : _isReduced ? Reduce(u, v, _spanX, _spanY) : Interpolate(u, v);
         }
     }
 

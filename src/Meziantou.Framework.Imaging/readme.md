@@ -1165,7 +1165,10 @@ callback is also what replays a drawing: keep a `DrawingAction`, and call it ins
 drawing is needed, at any size.
 
 An `ImageSampling` is `Bilinear` (the default: the four pixels around a position, interpolated), `Nearest` (the pixel
-that contains the position: an enlarged image keeps its pixels as squares) or `Smooth`. With the first two, an image
+that contains the position: an enlarged image keeps its pixels as squares), `Bicubic` (the sixteen pixels around a
+position with the cubic filter of Mitchell and Netravali, `B = C = 1/3`, as browsers draw a scaled image with high
+quality: the alpha clamped to the range from 0 to 1 and each color, multiplied by the alpha, to the alpha) or `Smooth`.
+With the first three, an image
 that is drawn much smaller than it is skips pixels. `Smooth` reads every pixel of the image a pixel of the canvas
 covers, with the weights of the interpolation stretched over them, so that a photograph drawn as a thumbnail has no
 aliasing; an image that is not reduced is interpolated as with `Bilinear`, bit for bit. `DrawImage` takes the sampling

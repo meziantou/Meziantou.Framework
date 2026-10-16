@@ -93,6 +93,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private ImageWrapMode _wrapModeX;
     private ImageWrapMode _wrapModeY;
     private bool _isNearest;
+    private bool _isBicubic;
     private bool _isReduced;
     private double _spanX;
     private double _spanY;
@@ -172,6 +173,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         _wrapModeX = wrapModeX;
         _wrapModeY = wrapModeY;
         _isNearest = sampling == ImageSampling.Nearest;
+        _isBicubic = sampling == ImageSampling.Bicubic;
         _isProjective = false;
         _isEmpty = area.IsEmpty || !new Affine2D(transform.M11, transform.M12, transform.M21, transform.M22, transform.OffsetX, transform.OffsetY).TryInvert(out _inverse);
 
@@ -248,6 +250,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
 
         Prepare(source, region, AffineTransform.Identity, wrapModeX, wrapModeY, ImageSampling.Bilinear, destination, width, regionParameterName);
         _isNearest = sampling == ImageSampling.Nearest;
+        _isBicubic = sampling == ImageSampling.Bicubic;
         _isSmooth = sampling == ImageSampling.Smooth;
         _isProjective = true;
         if (!transform.TryInvert(out var inverse))
@@ -280,6 +283,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     {
         Prepare(source, region: null, AffineTransform.Identity, ImageWrapMode.Pad, ImageSampling.Bilinear, destination, width, nameof(source));
         _isNearest = sampling == ImageSampling.Nearest;
+        _isBicubic = sampling == ImageSampling.Bicubic;
         _isSmooth = sampling == ImageSampling.Smooth;
         _isProjective = true;
         if (inverse.IsEmpty)
@@ -330,7 +334,11 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         }
 
         var samples = Samples[..count];
-        if (_isProjective)
+        if (_isBicubic)
+        {
+            EvaluateBicubic(y, x, samples);
+        }
+        else if (_isProjective)
         {
             EvaluateProjected(y, x, samples);
         }
@@ -493,6 +501,94 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             }
 
             samples[i] = Interpolate(u, v);
+        }
+    }
+
+    /// <summary>Evaluates a run with the cubic filter: each pixel at its position, placed by the transformation, affine or projective.</summary>
+    private void EvaluateBicubic(int y, int x, Span<Rgba64> samples)
+    {
+        var centerY = y + 0.5;
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var centerX = x + i + 0.5;
+            double u, v;
+            if (_isProjective)
+            {
+                var w = ((_h6 * centerX) + (_h7 * centerY)) + _h8;
+
+                // Written so that a value that is not a number has no color
+                if (!(w > 0))
+                {
+                    samples[i] = default;
+                    continue;
+                }
+
+                u = (((_h0 * centerX) + (_h1 * centerY)) + _h2) / w;
+                v = (((_h3 * centerX) + (_h4 * centerY)) + _h5) / w;
+            }
+            else
+            {
+                u = _inverse.TransformX(centerX, centerY);
+                v = _inverse.TransformY(centerX, centerY);
+            }
+
+            samples[i] = Bicubic(u, v);
+        }
+    }
+
+    /// <summary>
+    /// Gets the color of the image at a position with the filter of Mitchell and Netravali (<c>B = C = 1/3</c>): with
+    /// <c>i = floor(u - 1/2)</c> and <c>fx = u - 1/2 - i</c>, the columns <c>i - 1</c> to <c>i + 2</c> have the weights
+    /// <c>k(1 + fx)</c>, <c>k(fx)</c>, <c>k(1 - fx)</c> and <c>k(2 - fx)</c>, and the rows the same. The alpha is the weighted
+    /// sum of the alphas, clamped to the range from 0 to 1, and each color the weighted sum of the colors multiplied by their
+    /// alpha, clamped to the range from 0 to that alpha, divided by it, rounded as the bilinear colors are.
+    /// </summary>
+    private Rgba64 Bicubic(double u, double v)
+    {
+        // Written so that a coordinate that is not a number is far away
+        u = Math.Abs(u) < MaxPosition ? u : (u < 0 ? -MaxPosition : MaxPosition);
+        v = Math.Abs(v) < MaxPosition ? v : (v < 0 ? -MaxPosition : MaxPosition);
+        var column = (int)Math.Floor(u - 0.5);
+        var row = (int)Math.Floor(v - 0.5);
+        var fx = u - 0.5 - column;
+        var fy = v - 0.5 - row;
+        Span<double> weightsX = [Kernel(1 + fx), Kernel(fx), Kernel(1 - fx), Kernel(2 - fx)];
+        Span<double> weightsY = [Kernel(1 + fy), Kernel(fy), Kernel(1 - fy), Kernel(2 - fy)];
+        double alpha = 0, red = 0, green = 0, blue = 0;
+        for (var j = 0; j < 4; j++)
+        {
+            for (var i = 0; i < 4; i++)
+            {
+                if (!TryRead(column - 1 + i, row - 1 + j, out var color))
+                    continue;
+
+                var weight = weightsX[i] * weightsY[j] * color.A;
+                alpha += weight;
+                red += weight * color.R;
+                green += weight * color.G;
+                blue += weight * color.B;
+            }
+        }
+
+        // The sums are of 16-bit values times 16-bit alphas: the alpha is up to 65535, each color up to 65535 times it
+        var a = Math.Clamp(alpha, 0, 65535);
+        var resultAlpha = Round(a);
+        if (resultAlpha == 0)
+            return default;
+
+        return new Rgba64(Round(Math.Clamp(red, 0, 65535 * a) / a), Round(Math.Clamp(green, 0, 65535 * a) / a), Round(Math.Clamp(blue, 0, 65535 * a) / a), resultAlpha);
+
+        // The cubic of Mitchell and Netravali for B = C = 1/3, of a distance
+        static double Kernel(double distance)
+        {
+            var t = Math.Abs(distance);
+            if (t < 1)
+                return ((((7 * t) - 12) * t * t) + (16.0 / 3)) / 6;
+
+            if (t < 2)
+                return (((((-7.0 / 3) * t) + 12) * t * t) - (20 * t) + (32.0 / 3)) / 6;
+
+            return 0;
         }
     }
 

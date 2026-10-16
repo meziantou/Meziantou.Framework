@@ -683,7 +683,7 @@ public sealed class DrawingFuzzTests
                 Transform = random.Chance(60) ? CreateTransform(random, canvas) : AffineTransform.Identity,
                 WrapModeX = (ImageWrapMode)random.Next(4),
                 WrapModeY = (ImageWrapMode)random.Next(4),
-                Sampling = (ImageSampling)random.Next(2),
+                Sampling = random.Chance(20) ? ImageSampling.Bicubic : (ImageSampling)random.Next(2),
                 Opacity = CreateOpacity(random),
             };
         }

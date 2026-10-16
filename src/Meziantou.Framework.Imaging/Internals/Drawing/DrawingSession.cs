@@ -353,7 +353,7 @@ internal sealed partial class DrawingSession : IDisposable
     private static void ValidateSampling(ImageSampling sampling)
     {
         // Not Enum.IsDefined: a draw call allocates nothing
-        if (sampling is not (ImageSampling.Bilinear or ImageSampling.Nearest or ImageSampling.Smooth))
+        if (sampling is not (ImageSampling.Bilinear or ImageSampling.Nearest or ImageSampling.Smooth or ImageSampling.Bicubic))
             throw new ArgumentOutOfRangeException(nameof(sampling), sampling, "The sampling is not valid.");
     }
 

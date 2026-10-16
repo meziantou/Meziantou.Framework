@@ -1642,6 +1642,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         Bilinear = 0,
         Nearest = 1,
         Smooth = 2,
+        Bicubic = 3,
     }
 
     public enum ImageWrapMode

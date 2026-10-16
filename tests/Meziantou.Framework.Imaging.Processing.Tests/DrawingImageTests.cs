@@ -481,6 +481,39 @@ public sealed class DrawingImageTests
     }
 
     [Fact]
+    public void BicubicSamplingWeighsSixteenPixelsWithTheFilterOfMitchellAndNetravali()
+    {
+        // At the center of a pixel, the weights of the columns around it are k(1) = 1/18, k(0) = 8/9 and k(1) = 1/18:
+        // a white pixel between black ones keeps 8/9 of its white (227), and gives 1/18 of it to each of them (14). The
+        // edges of the image are extended.
+        using var line = new Image<Gray8>(4, 1);
+        line.Frames[0][1, 0] = new Gray8(255);
+        using var canvas = new Image<Gray8>(4, 1);
+        canvas.Draw(c => c.DrawImage(line.Frames[0], new RectangleD(0, 0, 4, 1), ImageSampling.Bicubic), Ct);
+        Assert.Equal([14, 227, 14, 0], Enumerable.Range(0, 4).Select(x => (int)canvas.Frames[0][x, 0].Value));
+
+        // The weights add up to one: an image of one color keeps it, enlarged, turned, or in perspective
+        using var flat = new Image<Rgba32>(3, 3, new Rgba32(200, 100, 50));
+        using var target = new Image<Rgba32>(20, 20);
+        target.Draw(c => c.DrawImage(flat.Frames[0], AffineTransform.CreateScale(4, 4).Then(AffineTransform.CreateRotation(20, new PointD(6, 6))).Then(AffineTransform.CreateTranslation(4, 2)), ImageSampling.Bicubic), Ct);
+        Assert.Equal(new Rgba32(200, 100, 50), target.Frames[0][9, 8]);
+        target.Draw(c => c.Clear(Colors.Transparent), Ct);
+        target.Draw(c => c.DrawImage(flat.Frames[0], new PointD(2, 2), new PointD(18, 3), new PointD(16, 17), new PointD(3, 15), ImageSampling.Bicubic), Ct);
+        Assert.Equal(new Rgba32(200, 100, 50), target.Frames[0][10, 9]);
+
+        // A brush too, and the negative lobes of the filter never take a color beyond its range: white to black
+        // enlarged eight times stays between them, and is white and black far from the edge
+        using var steps = new Image<Gray8>(2, 1);
+        steps.Frames[0][0, 0] = new Gray8(255);
+        using var enlarged = new Image<Gray8>(16, 1);
+        enlarged.Draw(c => c.Fill(new ImageBrush(steps.Frames[0]) { Transform = AffineTransform.CreateScale(8, 1), Sampling = ImageSampling.Bicubic, WrapMode = ImageWrapMode.Pad }), Ct);
+        Assert.Equal(255, enlarged.Frames[0][0, 0].Value);
+        Assert.Equal(0, enlarged.Frames[0][15, 0].Value);
+        var samples = Enumerable.Range(0, 16).Select(x => (int)enlarged.Frames[0][x, 0].Value).ToArray();
+        Assert.Equal(samples.OrderByDescending(sample => sample), samples);
+    }
+
+    [Fact]
     public void TheSamplingAndTheTransformOfAnImageBrush()
     {
         using var source = new Image<Gray8>(2, 1);
@@ -720,9 +753,9 @@ public sealed class DrawingImageTests
                 AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.DrawImage(null!, new Rectangle(0, 0, 1, 1), ImageSampling.Smooth));
                 AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.DrawImage(null!, new Rectangle(0, 0, 1, 1), new Rectangle(0, 0, 1, 1), ImageSampling.Smooth));
                 AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.DrawImage(null!, AffineTransform.Identity, ImageSampling.Smooth));
-                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new Rectangle(0, 0, 1, 1), (ImageSampling)3));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new Rectangle(0, 0, 1, 1), (ImageSampling)4));
                 AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new Rectangle(0, 0, 1, 1), new Rectangle(0, 0, 1, 1), (ImageSampling)(-1)));
-                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, AffineTransform.Identity, (ImageSampling)3));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, AffineTransform.Identity, (ImageSampling)4));
                 AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new Rectangle(0, 0, 1, 1), ImageSampling.Smooth, 2));
                 AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new Rectangle(0, 0, 3, 3), new Rectangle(0, 0, 1, 1), ImageSampling.Smooth));
                 AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, AffineTransform.Identity, 1.5));
@@ -765,7 +798,7 @@ public sealed class DrawingImageTests
 
         Assert.Throws<ArgumentNullException>(() => new ImageBrush(null!));
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageBrush(image.Frames[0]) { WrapMode = (ImageWrapMode)4 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageBrush(image.Frames[0]) { Sampling = (ImageSampling)3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageBrush(image.Frames[0]) { Sampling = (ImageSampling)4 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageBrush(image.Frames[0]) { Opacity = 1.01 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageBrush(image.Frames[0]) { Opacity = double.NaN });
 
@@ -917,7 +950,7 @@ public sealed class DrawingImageTests
                 AssertThrows<ArgumentException>(canvas, canvas => canvas.DrawImage(frame, new PointD(2, 2), new PointD(7, 2), new PointD(12, 2), new PointD(7, 9)));
                 AssertThrows<ArgumentException>(canvas, canvas => canvas.DrawImage(frame, new PointD(double.NaN, 2), new PointD(12, 2), new PointD(12, 12), new PointD(2, 12)));
                 AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new PointD(2, 2), new PointD(12, 2), new PointD(16777217, 12), new PointD(2, 12)));
-                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new PointD(2, 2), new PointD(12, 2), new PointD(12, 12), new PointD(2, 12), (ImageSampling)3));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new PointD(2, 2), new PointD(12, 2), new PointD(12, 12), new PointD(2, 12), (ImageSampling)4));
                 AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new PointD(2, 2), new PointD(12, 3), new PointD(12, 12), new PointD(2, 12), ImageSampling.Smooth, 1.5));
                 AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.DrawImage(null!, new PointD(2, 2), new PointD(12, 3), new PointD(12, 12), new PointD(2, 12)));
                 AssertThrows<InvalidOperationException>(canvas, canvas => canvas.DrawImage(image.Frames[0], new PointD(2, 2), new PointD(12, 3), new PointD(12, 12), new PointD(2, 12)));

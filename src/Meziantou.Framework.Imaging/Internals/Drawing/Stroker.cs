@@ -636,7 +636,9 @@ internal sealed class Stroker : PathSink
             return;
 
         _edges.Add(_pieceX, _pieceY, x, y);
-        if (_testFrame)
+
+        // A side without length has no inner side: the closing side of a disk, whose last arc ends on its first point
+        if (_testFrame && (x != _pieceX || y != _pieceY))
         {
             // A point is strictly inside a convex piece when it is strictly on the inner side of every edge; with the
             // orientation of the pieces, that side is where the cross product is positive

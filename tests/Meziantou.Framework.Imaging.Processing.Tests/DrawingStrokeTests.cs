@@ -530,6 +530,18 @@ public sealed class DrawingStrokeTests
             AssertGray8(image, [[255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255]]);
         }
 
+        // Dots 4 million pixels wide, one every half pixel: the first one that covers the canvas ends the stroke. A disk ends on
+        // its first point, and that closing side without length must not keep it from covering the canvas: otherwise
+        // the millions of dots that reach the canvas exceed the allocation limit.
+        using (var image = NewBlack(4, 3))
+        {
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token);
+            budget.CancelAfter(TimeSpan.FromSeconds(60));
+            var pen = new Pen(White, 4000000) { DashPattern = [0, 0.5], LineCap = LineCap.Round };
+            image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(-4000000, 1.5), new PointD(2, 1.5)), budget.Token);
+            AssertGray8(image, [[255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255]]);
+        }
+
         // Far from the canvas across the line, nothing is cut at all
         using (var image = NewBlack(4, 3))
         {

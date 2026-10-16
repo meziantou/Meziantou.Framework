@@ -1298,6 +1298,21 @@ namespace Meziantou.Framework.Imaging.Drawing
         LinearSrgb = 1,
     }
 
+    public sealed class ConvolveMatrixPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public double Bias { get => throw null; init { } }
+        public double? Divisor { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.FilterEdgeMode EdgeMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<double> Kernel { get => throw null; }
+        public int OrderX { get => throw null; }
+        public int OrderY { get => throw null; }
+        public bool PreserveAlpha { get => throw null; init { } }
+        public int TargetX { get => throw null; init { } }
+        public int TargetY { get => throw null; init { } }
+        public ConvolveMatrixPrimitive(int orderX, int orderY, System.ReadOnlySpan<double> kernel) { }
+    }
+
     public readonly struct CornerRadii : System.IEquatable<Meziantou.Framework.Imaging.Drawing.CornerRadii>
     {
         public double BottomLeft { get => throw null; }
@@ -1313,6 +1328,16 @@ namespace Meziantou.Framework.Imaging.Drawing
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Drawing.CornerRadii left, Meziantou.Framework.Imaging.Drawing.CornerRadii right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Drawing.CornerRadii left, Meziantou.Framework.Imaging.Drawing.CornerRadii right) => throw null;
+    }
+
+    public sealed class DisplacementMapPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Map { get => throw null; }
+        public double Scale { get => throw null; }
+        public Meziantou.Framework.Imaging.Drawing.FilterChannel XChannel { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.FilterChannel YChannel { get => throw null; init { } }
+        public DisplacementMapPrimitive(double scale, Meziantou.Framework.Imaging.Drawing.FilterInput map) { }
     }
 
     public delegate void DrawingAction(Meziantou.Framework.Imaging.Drawing.DrawingCanvas canvas);
@@ -1433,6 +1458,14 @@ namespace Meziantou.Framework.Imaging.Drawing
         public FilterChain(params System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.Filter> filters) { }
     }
 
+    public enum FilterChannel
+    {
+        Red = 0,
+        Green = 1,
+        Blue = 2,
+        Alpha = 3,
+    }
+
     public enum FilterColorSpace
     {
         LinearRgb = 0,
@@ -1486,6 +1519,12 @@ namespace Meziantou.Framework.Imaging.Drawing
         SourceGraphic = 1,
         SourceAlpha = 2,
         Result = 3,
+    }
+
+    public enum FilterMorphologyOperator
+    {
+        Erode = 0,
+        Dilate = 1,
     }
 
     public abstract class FilterPrimitive
@@ -1616,6 +1655,15 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Drawing.FilterInput> Inputs { get => throw null; }
         public MergePrimitive(params System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.FilterInput> inputs) { }
+    }
+
+    public sealed class MorphologyPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive
+    {
+        public Meziantou.Framework.Imaging.Drawing.FilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.FilterMorphologyOperator Operator { get => throw null; }
+        public double RadiusX { get => throw null; }
+        public double RadiusY { get => throw null; }
+        public MorphologyPrimitive(Meziantou.Framework.Imaging.Drawing.FilterMorphologyOperator @operator, double radiusX, double radiusY) { }
     }
 
     public sealed class OffsetPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive

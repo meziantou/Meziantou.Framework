@@ -58,7 +58,7 @@ public abstract class FilterPrimitive
     /// <remarks>The result of such a primitive is in the colors of its first input (sRGB when it has none), which are not converted.</remarks>
     internal virtual bool IsColorSpaceNeutral => false;
 
-    /// <summary>Computes the result of the primitive in the part of its subregion on the surface (which is transparent when it is called), from its inputs (<see cref="FilterGraphContext.GetInput"/>).</summary>
+    /// <summary>Computes the result of the primitive in the part of its subregion on the surface (which is transparent when it is called), from its inputs (<see cref="FilterGraphContext.GetInput(int)"/>).</summary>
     internal abstract void Evaluate(FilterGraphContext context, FilterSurface result, Rectangle subregion);
 
     /// <summary>Gets how far, in the drawing, the primitive moves what it reads.</summary>

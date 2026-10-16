@@ -2062,6 +2062,7 @@ public sealed class DrawingSessionTests
         {
             Assert.InRange(right[i], left[i] - 2, left[i] + 2, message: $"sample {i}");
         }
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Masks
@@ -3532,6 +3533,68 @@ public sealed class DrawingSessionTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new GaussianBlurPrimitive(1) { EdgeMode = (FilterEdgeMode)4 });
         Assert.Throws<ArgumentException>(() => new DropShadowPrimitive(default, new PointD(double.NaN, 0), 1, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => new DropShadowPrimitive(default, default, 1, 10001));
+    }
+
+    [Fact]
+    public void AFilterGraphErodesDilatesConvolvesAndDisplaces()
+    {
+        var white = new Rgba32(255, 255, 255);
+
+        // Dilated by 1, the white pixel is a square of 3; eroded by 1, a white canvas loses its border, beyond which
+        // nothing is drawn; along x only, the rows stay as they are
+        var pixels = DrawFiltered(new FilterGraph(new MorphologyPrimitive(FilterMorphologyOperator.Dilate, 1, 1)));
+        Assert.Equal(white, pixels[0, 0]);
+        Assert.Equal(white, pixels[2, 2]);
+        Assert.Equal(default, pixels[3, 1]);
+        pixels = DrawFiltered(new FilterGraph(new MorphologyPrimitive(FilterMorphologyOperator.Erode, 1, 1)), white);
+        Assert.Equal(default, pixels[0, 3]);
+        Assert.Equal(default, pixels[5, 5]);
+        Assert.Equal(white, pixels[1, 1]);
+        Assert.Equal(white, pixels[4, 4]);
+        pixels = DrawFiltered(new FilterGraph(new MorphologyPrimitive(FilterMorphologyOperator.Dilate, 2, 0)));
+        Assert.Equal(white, pixels[3, 1]);
+        Assert.Equal(default, pixels[1, 2]);
+
+        // The matrix is turned by a half turn: a weight on the right of the target takes the pixel on the left
+        pixels = DrawFiltered(new FilterGraph(new ConvolveMatrixPrimitive(3, 3, [0, 0, 0, 0, 0, 1, 0, 0, 0])));
+        Assert.Equal(white, pixels[2, 1]);
+        Assert.Equal(default, pixels[1, 1]);
+
+        // A box of 9 on a white canvas: the edges duplicated by default, transparent beyond them 4 / 9 at a corner (113)
+        pixels = DrawFiltered(new FilterGraph(new ConvolveMatrixPrimitive(3, 3, [1, 1, 1, 1, 1, 1, 1, 1, 1])), white);
+        Assert.Equal(white, pixels[0, 0]);
+        pixels = DrawFiltered(new FilterGraph(new ConvolveMatrixPrimitive(3, 3, [1, 1, 1, 1, 1, 1, 1, 1, 1]) { EdgeMode = FilterEdgeMode.Transparent }), white);
+        Assert.Equal(new Rgba32(255, 255, 255, 113), pixels[0, 0]);
+        Assert.Equal(white, pixels[1, 1]);
+
+        // The bias is added to every component: 0.5 on a transparent pixel is white at half its alpha; with the alpha
+        // preserved, half of a gray of 128 is 64, opaque
+        pixels = DrawFiltered(new FilterGraph(new ConvolveMatrixPrimitive(1, 1, [1]) { Bias = 0.5 }));
+        Assert.Equal(new Rgba32(255, 255, 255, 128), pixels[0, 0]);
+        Assert.Equal(white, pixels[1, 1]);
+        pixels = DrawFiltered(new FilterGraph(new ConvolveMatrixPrimitive(1, 1, [0.5]) { Divisor = 1, PreserveAlpha = true, ColorSpace = FilterColorSpace.Srgb }), new Rgba32(128, 128, 128));
+        Assert.Equal(new Rgba32(64, 64, 64), pixels[3, 3]);
+
+        // A map of red 1 and green 128 / 255, scaled by 2: each pixel takes the one 2 (1 - 1/2) = 1 to its right, and
+        // 2 (0.502 - 1/2) = 0.008 below, the nearest being on its row. In linear light, the green is 0.2159, and the
+        // pixel taken is 0.568 above: the one on the row above.
+        var map = new FloodPrimitive(new Rgba32(255, 128, 0));
+        pixels = DrawFiltered(new FilterGraph(map, new DisplacementMapPrimitive(2, FilterInput.FromResult(0)) { Input = FilterInput.SourceGraphic, XChannel = FilterChannel.Red, YChannel = FilterChannel.Green, ColorSpace = FilterColorSpace.Srgb }));
+        Assert.Equal(white, pixels[0, 1]);
+        Assert.Equal(default, pixels[1, 1]);
+        pixels = DrawFiltered(new FilterGraph(map, new DisplacementMapPrimitive(2, FilterInput.FromResult(0)) { Input = FilterInput.SourceGraphic, XChannel = FilterChannel.Red, YChannel = FilterChannel.Green }));
+        Assert.Equal(white, pixels[0, 2]);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new MorphologyPrimitive((FilterMorphologyOperator)2, 1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new MorphologyPrimitive(FilterMorphologyOperator.Erode, -1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ConvolveMatrixPrimitive(0, 1, []));
+        Assert.Throws<ArgumentException>(() => new ConvolveMatrixPrimitive(2, 1, [1]));
+        Assert.Throws<ArgumentException>(() => new ConvolveMatrixPrimitive(1, 1, [double.NaN]));
+        Assert.Throws<ArgumentException>(() => new ConvolveMatrixPrimitive(1, 1, [1]) { Divisor = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ConvolveMatrixPrimitive(3, 3, new double[9]) { TargetX = 3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new DisplacementMapPrimitive(1, FilterInput.SourceGraphic) { XChannel = (FilterChannel)4 });
+        Assert.Throws<ArgumentException>(() => new DisplacementMapPrimitive(double.NaN, FilterInput.SourceGraphic));
+        Assert.Equal((1, 1, FilterEdgeMode.Duplicate), (new ConvolveMatrixPrimitive(3, 3, new double[9]).TargetX, new ConvolveMatrixPrimitive(3, 3, new double[9]).TargetY, new ConvolveMatrixPrimitive(3, 3, new double[9]).EdgeMode));
     }
 
     /// <summary>Filters a white pixel at (1, 1) of a canvas of 6 by 6 pixels, or the whole canvas painted with a color.</summary>

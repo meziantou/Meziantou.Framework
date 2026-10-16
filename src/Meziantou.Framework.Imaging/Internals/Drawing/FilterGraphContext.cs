@@ -120,6 +120,15 @@ internal sealed class FilterGraphContext : IDisposable
         return GetSurface(ref entry, primitive.IsColorSpaceNeutral ? entry.Space : primitive.ColorSpace);
     }
 
+    /// <summary>Gets an input of the primitive being computed in some colors, whatever the colors of the primitive.</summary>
+    /// <param name="index">The index of the input.</param>
+    /// <param name="space">The colors.</param>
+    public FilterSurface GetInput(int index, FilterColorSpace space)
+    {
+        ref var entry = ref GetEntry(_current!.GetInput(index), _currentIndex);
+        return GetSurface(ref entry, space);
+    }
+
     /// <summary>Gets the subregion of an input of the primitive being computed: the pixels where it may not be transparent, which may go beyond the surface.</summary>
     /// <param name="index">The index of the input.</param>
     public Rectangle GetInputSubregion(int index) => GetEntry(_current!.GetInput(index), _currentIndex).Subregion;

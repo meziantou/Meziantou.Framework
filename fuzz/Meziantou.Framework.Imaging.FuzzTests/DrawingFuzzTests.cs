@@ -532,8 +532,11 @@ public sealed class DrawingFuzzTests
             var input2 = CreateInput(index);
             RectangleD? subregion = random.Chance(3) ? null : new RectangleD((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, NextDouble(random) * 40, NextDouble(random) * 40);
             var space = (FilterColorSpace)random.Next(2);
-            primitives[index] = random.Next(10) switch
+            primitives[index] = random.Next(13) switch
             {
+                10 => new MorphologyPrimitive((FilterMorphologyOperator)random.Next(2), NextDouble(random) * 4, NextDouble(random) * 4) { Input = input, Subregion = subregion, ColorSpace = space },
+                11 => CreateConvolveMatrix(input, subregion, space),
+                12 => new DisplacementMapPrimitive((NextDouble(random) - 0.5) * 20, input2) { Input = input, Subregion = subregion, ColorSpace = space, XChannel = (FilterChannel)random.Next(4), YChannel = (FilterChannel)random.Next(4) },
                 8 => new GaussianBlurPrimitive(NextDouble(random) * 4, random.Chance(30) ? 0 : NextDouble(random) * 4) { Input = input, Subregion = subregion, ColorSpace = space, EdgeMode = (FilterEdgeMode)random.Next(4) },
                 9 => new DropShadowPrimitive(CreateColor(random), new PointD((NextDouble(random) - 0.5) * 8, (NextDouble(random) - 0.5) * 8), NextDouble(random) * 3, NextDouble(random) * 3) { Input = input, Subregion = subregion, ColorSpace = space },
                 0 => new FloodPrimitive(CreateColor(random)) { Subregion = subregion, ColorSpace = space },
@@ -566,6 +569,30 @@ public sealed class DrawingFuzzTests
         }
 
         return random.Chance(3) ? new FilterGraph(primitives) { Region = new RectangleD((NextDouble(random) - 0.2) * 40, (NextDouble(random) - 0.2) * 40, NextDouble(random) * 60, NextDouble(random) * 60) } : new FilterGraph(primitives);
+
+        ConvolveMatrixPrimitive CreateConvolveMatrix(FilterInput input, RectangleD? subregion, FilterColorSpace space)
+        {
+            var orderX = random.Next(1, 5);
+            var orderY = random.Next(1, 5);
+            var kernel = new double[orderX * orderY];
+            for (var i = 0; i < kernel.Length; i++)
+            {
+                kernel[i] = (NextDouble(random) - 0.3) * 4;
+            }
+
+            return new ConvolveMatrixPrimitive(orderX, orderY, kernel)
+            {
+                Input = input,
+                Subregion = subregion,
+                ColorSpace = space,
+                Bias = random.Chance(3) ? NextDouble(random) - 0.5 : 0,
+                Divisor = random.Chance(3) ? NextDouble(random) + 0.5 : null,
+                TargetX = random.Next(orderX),
+                TargetY = random.Next(orderY),
+                EdgeMode = (FilterEdgeMode)random.Next(4),
+                PreserveAlpha = random.Chance(2),
+            };
+        }
 
         FilterInput CreateInput(int index) => random.Next(4) switch
         {

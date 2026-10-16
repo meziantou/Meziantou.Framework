@@ -76,6 +76,9 @@ internal sealed class FilterProcessor : IDisposable
         set => _edges = value;
     }
 
+    /// <summary>Gets the edge mode of every filter, or <see langword="null"/> for the one of each filter: mirrored for a backdrop.</summary>
+    public FilterEdgeMode? EdgeOverride => _edgeOverride;
+
     /// <summary>Gets the scope the surfaces of the filters are rented from.</summary>
     public AllocationScope Scope => _scope;
 
@@ -549,9 +552,9 @@ internal sealed class FilterProcessor : IDisposable
         return surface.Values[(4 * (((y - bounds.Top) * bounds.Width) + (x - bounds.Left))) + 3];
     }
 
-    /// <summary>Brings a position into the rectangle of the edges by an edge mode.</summary>
+    /// <summary>Brings a position into the range of the edges by an edge mode.</summary>
     /// <returns><see langword="false"/> when the position is outside and the mode is transparent.</returns>
-    private static bool TryMap(ref int position, int start, int end, FilterEdgeMode mode)
+    public static bool TryMap(ref int position, int start, int end, FilterEdgeMode mode)
     {
         if (position >= start && position < end)
             return true;

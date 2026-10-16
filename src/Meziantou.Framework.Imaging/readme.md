@@ -1263,8 +1263,9 @@ sRGB with `ColorSpace`. The primitives are `FloodPrimitive`, `OffsetPrimitive` (
 matrices `ColorMatrix.CreateSaturation`, `ColorMatrix.CreateHueRotation` and `ColorMatrix.LuminanceToAlpha`),
 `ComponentTransferPrimitive` (with a `TransferFunction` per component: table, discrete, linear or gamma),
 `CompositePrimitive` (the operators of Porter and Duff, `Lighter` and `Arithmetic`), `BlendPrimitive`,
-`GaussianBlurPrimitive` (a deviation per axis, and an `EdgeMode` relative to the subregion of its input) and
-`DropShadowPrimitive`.
+`GaussianBlurPrimitive` (a deviation per axis, and an `EdgeMode` relative to the subregion of its input),
+`DropShadowPrimitive`, `MorphologyPrimitive` (erode or dilate), `ConvolveMatrixPrimitive` (a divisor, a bias added to
+every component, `PreserveAlpha`, and an edge mode) and `DisplacementMapPrimitive`.
 
 <!-- snippet: draw-filters -->
 ```csharp
@@ -1642,7 +1643,10 @@ public static void MarkAnimation(string inputPath, string outputPath)
   composite, a merge and a blend work on colors multiplied by their alpha (a blend with the straight colors of
   `BlendMode`); a color matrix and the transfer functions work on straight colors and are clamped to the range from 0
   to 1, and an arithmetic composite is clamped and each of its colors limited to its alpha. Sums are made in double
-  precision and kept in single precision; the result is rounded as the result of any filter.
+  precision and kept in single precision; the result is rounded as the result of any filter. A morphology works on
+  colors multiplied by their alpha, with radii rounded to whole pixels of the canvas; the weights of a convolution
+  matrix are one pixel of the canvas apart; a displacement map takes the nearest pixel, and reads its map without the
+  alpha of the colors, in the colors of the primitive, and its input in its own colors.
 - **Inner shadows.** The shadow is the one of **Shadows** computed from one minus the alpha of the layer; its color
   is combined with the pixels of the layer by `SourceAtop`, with the coverage of the shadow.
 - **Aligned strokes and markers.** A stroke on one side of its path is the stroke of a pen twice as wide under a clip

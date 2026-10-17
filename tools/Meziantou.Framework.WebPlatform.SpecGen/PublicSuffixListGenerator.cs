@@ -47,8 +47,10 @@ internal static class PublicSuffixListGenerator
         writer.Line("namespace Meziantou.Framework.WebPlatform.Urls;").Line();
         using (writer.Block("internal static partial class PublicSuffixList"))
         {
-            writer.Line("/// <summary>The rules of the list, separated by a space: <c>*.</c> starts a wildcard rule, <c>!</c> an exception rule.</summary>");
-            writer.Line("private const string RulesData =");
+            // A raw string literal: a concatenation of thousands of literals is a deeply nested expression, which overflows the
+            // stack of the analyzers that walk the operation trees recursively (InsufficientExecutionStackException on Windows)
+            writer.Line("/// <summary>The rules of the list, separated by a space or a line break: <c>*.</c> starts a wildcard rule, <c>!</c> an exception rule.</summary>");
+            writer.Line("private const string RulesData = \"\"\"");
             var line = new StringBuilder();
             var lines = new List<string>();
             foreach (var rule in rules)
@@ -63,10 +65,12 @@ internal static class PublicSuffixListGenerator
             }
 
             lines.Add(line.ToString().TrimEnd());
-            for (var i = 0; i < lines.Count; i++)
+            foreach (var rulesLine in lines)
             {
-                writer.Line("    " + CodeWriter.Literal(lines[i]) + (i == lines.Count - 1 ? ";" : " +"));
+                writer.Line("    " + rulesLine.TrimEnd());
             }
+
+            writer.Line("    \"\"\";");
         }
 
         context.WriteFile(context.Source("Urls", "PublicSuffixList.g.cs"), writer.ToString());

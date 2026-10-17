@@ -95,7 +95,7 @@ internal static partial class PublicSuffixList
             var normal = new List<string>();
             var wildcards = new List<string>();
             var exceptions = new List<string>();
-            foreach (var rule in data.Split(' '))
+            foreach (var rule in data.Split([' ', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
             {
                 if (rule.StartsWith('!', StringComparison.Ordinal))
                 {

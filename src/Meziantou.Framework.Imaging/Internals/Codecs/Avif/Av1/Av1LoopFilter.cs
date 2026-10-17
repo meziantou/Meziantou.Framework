@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -175,13 +174,9 @@ internal ref struct Av1LoopFilter
     /// </remarks>
     internal static void FilterLines(Span<ushort> samples, int position, int step, int lineStep, int plane, int filterSize, int bitDepth, int limit, int blimit, int thresh)
     {
-        if (AdvSimd.Arm64.IsSupported)
+        if (Vector128.IsHardwareAccelerated)
         {
-            FilterLinesVector<Av1AdvSimd>(samples, position, step, lineStep, plane, filterSize, bitDepth, limit, blimit, thresh);
-        }
-        else if (Vector128.IsHardwareAccelerated)
-        {
-            FilterLinesVector<Av1PortableSimd>(samples, position, step, lineStep, plane, filterSize, bitDepth, limit, blimit, thresh);
+            FilterLinesVector(samples, position, step, lineStep, plane, filterSize, bitDepth, limit, blimit, thresh);
         }
         else
         {
@@ -201,8 +196,7 @@ internal ref struct Av1LoopFilter
     // The entries of the vectors of the samples are written before they are read: the masks and the filters read the
     // offsets -reach to reach - 1, which are loaded, and the outputs are copied from them
     [SkipLocalsInit]
-    internal static void FilterLinesVector<TSimd>(Span<ushort> samples, int position, int step, int lineStep, int plane, int filterSize, int bitDepth, int limit, int blimit, int thresh)
-        where TSimd : struct, IAv1Simd
+    private static void FilterLinesVector(Span<ushort> samples, int position, int step, int lineStep, int plane, int filterSize, int bitDepth, int limit, int blimit, int thresh)
     {
         var shift = bitDepth - 8;
         int filterLen;
@@ -223,7 +217,7 @@ internal ref struct Av1LoopFilter
         // filter of the edge read
         var reach = filterSize >= 16 ? 7 : filterLen >= 8 ? 4 : filterLen >= 6 ? 3 : 2;
         Span<Vector128<int>> v = unsafe(stackalloc Vector128<int>[16]);
-        var transposed = step is 1;
+        var transposed = step is 1 && Av1Simd.IsSupported;
         if (transposed)
         {
             // A vertical edge: the samples of a line are consecutive samples of a row, 8 on each side of the edge for the
@@ -232,7 +226,7 @@ internal ref struct Av1LoopFilter
             for (var start = -half; start < half; start += 8)
             {
                 var first = position + start;
-                TSimd.LoadTransposed(samples, first, lineStep, v.Slice(8 + start, 8));
+                Av1Simd.LoadTransposed(samples, first, lineStep, v.Slice(8 + start, 8));
             }
         }
         else
@@ -304,7 +298,7 @@ internal ref struct Av1LoopFilter
             // The rows are written back whole: the samples that no filter changed are written with their value
             for (var start = -loaded; start < loaded; start += 8)
             {
-                TSimd.StoreTransposed(samples, position + start, lineStep, output.Slice(8 + start, 8));
+                Av1Simd.StoreTransposed(samples, position + start, lineStep, output.Slice(8 + start, 8));
             }
 
             return;

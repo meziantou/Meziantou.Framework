@@ -1050,10 +1050,9 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 - Remove unnecessary decodes, conversions and copies before micro-optimizing. Profile first and keep the evidence.
 - Scalar kernels are the numerical reference. A vectorized kernel keeps its scalar version (`...Scalar`) and needs a
   test proving identical results (`VectorizedKernelTests`). No fused multiply-add in the DCTs.
-- A kernel that only has an `AdvSimd` path runs its scalar reference on x64. The AV1 vector kernels are generic over
-  `IAv1Simd`: `Av1AdvSimd` on Arm64, `Av1PortableSimd` (SSE where x64 has the instruction, `Vector128` otherwise)
-  elsewhere. The tests call the `Av1PortableSimd` instantiation directly, so Arm64 checks its `Vector128` form and x64
-  its SSE form.
+- A kernel that only has an `AdvSimd` path runs its scalar reference on x64. The AV1 vector kernels use `Av1Simd` for
+  what `Vector128` does not express: each operation has an `AdvSimd` and an SSE branch, so the x64 branch only runs on
+  x64 (the Windows and Linux CI legs, or an x64 machine).
 - A function that encodes a value with `Math.Pow` and rounds it to an 8-bit sample is replaced by its thresholds
   (`QuantizationThresholds`, built lazily from the scalar function and compared with it around every threshold): the
   linear-light `Store` of `WorkingSamples` and the linear-light compositing of drawing use it. A function that is not

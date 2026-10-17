@@ -2517,15 +2517,12 @@ public sealed class VectorizedKernelTests
             }
 
             var actual = expected.ToArray();
-            var portable = expected.ToArray();
             var vertical = random.Next(2) == 0;
             var position = vertical ? (random.Next(8, 16) * Stride) + 12 : (12 * Stride) + random.Next(8, 16);
             var (step, lineStep) = vertical ? (1, Stride) : (Stride, 1);
             Av1LoopFilter.FilterLinesScalar(expected, position, step, lineStep, plane, filterSize, bitDepth, limit, blimit, thresh);
             Av1LoopFilter.FilterLines(actual, position, step, lineStep, plane, filterSize, bitDepth, limit, blimit, thresh);
-            Av1LoopFilter.FilterLinesVector<Av1PortableSimd>(portable, position, step, lineStep, plane, filterSize, bitDepth, limit, blimit, thresh);
             Assert.True(expected.AsSpan().SequenceEqual(actual), $"Round {round}: plane {plane}, filter size {filterSize}, level {level}, sharpness {sharpness}, vertical {vertical}.");
-            Assert.True(expected.AsSpan().SequenceEqual(portable), $"Portable, round {round}: plane {plane}, filter size {filterSize}, level {level}, sharpness {sharpness}, vertical {vertical}.");
         }
     }
 
@@ -2563,8 +2560,6 @@ public sealed class VectorizedKernelTests
             var x0 = random.Next(Stride - 8 + 1);
             Av1Cdef.FindDirectionScalar(source, Stride, x0, bitDepth, out var expectedDirection, out var expectedVariance);
             Av1Cdef.FindDirection(source, Stride, x0, bitDepth, out var actualDirection, out var actualVariance);
-            Assert.Equal((expectedDirection, expectedVariance), (actualDirection, actualVariance));
-            Av1Cdef.FindDirectionVector<Av1PortableSimd>(source, Stride, x0, bitDepth, out actualDirection, out actualVariance);
             Assert.Equal((expectedDirection, expectedVariance), (actualDirection, actualVariance));
         }
     }
@@ -2929,9 +2924,6 @@ public sealed class VectorizedKernelTests
                     actual.AsSpan().Fill(12345);
                     Av1InverseTransform.Transform(dequant, actual.AsSpan(0, length), txSz, txType, lossless: false, bitDepth);
                     Assert.True(expected.AsSpan(0, length).SequenceEqual(actual.AsSpan(0, length)), $"Transform size {txSz}, type {txType}, round {round}.");
-                    actual.AsSpan().Fill(12345);
-                    Av1InverseTransform.TransformVector<Av1PortableSimd>(dequant, actual.AsSpan(0, length), txSz, txType, bitDepth);
-                    Assert.True(expected.AsSpan(0, length).SequenceEqual(actual.AsSpan(0, length)), $"Portable, transform size {txSz}, type {txType}, round {round}.");
                 }
             }
         }
@@ -2980,9 +2972,6 @@ public sealed class VectorizedKernelTests
                     Av1ForwardTransform.ForwardScalar(residual, expected.AsSpan(0, count), txSz, txType);
                     Av1ForwardTransform.Forward(residual, actual.AsSpan(0, count), txSz, txType);
                     Assert.True(expected.AsSpan(0, count).SequenceEqual(actual.AsSpan(0, count)), $"Transform size {txSz}, type {txType}, round {round}.");
-                    actual.AsSpan().Clear();
-                    Av1ForwardTransform.ForwardVector<Av1PortableSimd>(residual, actual.AsSpan(0, count), txSz, txType);
-                    Assert.True(expected.AsSpan(0, count).SequenceEqual(actual.AsSpan(0, count)), $"Portable, transform size {txSz}, type {txType}, round {round}.");
                 }
             }
         }
@@ -3021,15 +3010,11 @@ public sealed class VectorizedKernelTests
 
                 var expected = new long[9];
                 var actual = new long[9];
-                var portable = new long[9];
                 expected.AsSpan().Fill(round);
                 actual.AsSpan().Fill(round);
-                portable.AsSpan().Fill(round);
                 Av1RestorationSearch.AccumulateHorizontalScalar(row, target, expected);
                 Av1RestorationSearch.AccumulateHorizontal(row, target, actual);
-                Av1RestorationSearch.AccumulateHorizontalVector<Av1PortableSimd>(row, target, portable);
                 Assert.Equal(expected, actual);
-                Assert.Equal(expected, portable);
 
                 var stride = length + random.Next(3);
                 var rows = new int[(7 * stride) + 1];
@@ -3040,9 +3025,7 @@ public sealed class VectorizedKernelTests
 
                 Av1RestorationSearch.AccumulateVerticalScalar(rows, stride, target, expected);
                 Av1RestorationSearch.AccumulateVertical(rows, stride, target, actual);
-                Av1RestorationSearch.AccumulateVerticalVector<Av1PortableSimd>(rows, stride, target, portable);
                 Assert.Equal(expected, actual);
-                Assert.Equal(expected, portable);
             }
         }
     }
@@ -3051,43 +3034,35 @@ public sealed class VectorizedKernelTests
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1SimdOperationsMatchTheirDefinitions()
     {
-        // The operations of both implementations on random and extreme lanes; the portable one runs its SSE instructions
-        // on x64 and its Vector128 form elsewhere
+        // The operations on random and extreme lanes: the AdvSimd instructions on Arm64, the SSE ones on x64
+        if (!Av1Simd.IsSupported)
+            return;
+
         var random = new Random(5);
         for (var round = 0; round < 2000; round++)
-        {
-            CheckOperations<Av1PortableSimd>(random, round);
-            if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported)
-            {
-                CheckOperations<Av1AdvSimd>(random, round);
-            }
-        }
-
-        static void CheckOperations<TSimd>(Random random, int round)
-            where TSimd : struct, IAv1Simd
         {
             var a = RandomInts(random, round);
             var b = RandomInts(random, round);
             var c = Vector128.Create(random.NextInt64(-(1L << 50), 1L << 50), random.NextInt64(-(1L << 50), 1L << 50));
             var va = Vector128.Create(a);
             var vb = Vector128.Create(b);
-            Assert.Equal(Vector128.Create((long)a[0] * b[0], (long)a[1] * b[1]), TSimd.MultiplyWideningLower(va, vb));
-            Assert.Equal(Vector128.Create((long)a[2] * b[2], (long)a[3] * b[3]), TSimd.MultiplyWideningUpper(va, vb));
-            Assert.Equal(c + TSimd.MultiplyWideningLower(va, vb), TSimd.MultiplyWideningLowerAndAdd(c, va, vb));
-            Assert.Equal(c + TSimd.MultiplyWideningUpper(va, vb), TSimd.MultiplyWideningUpperAndAdd(c, va, vb));
-            Assert.Equal(c - TSimd.MultiplyWideningLower(va, vb), TSimd.MultiplyWideningLowerAndSubtract(c, va, vb));
-            Assert.Equal(c - TSimd.MultiplyWideningUpper(va, vb), TSimd.MultiplyWideningUpperAndSubtract(c, va, vb));
+            Assert.Equal(Vector128.Create((long)a[0] * b[0], (long)a[1] * b[1]), Av1Simd.MultiplyWideningLower(va, vb));
+            Assert.Equal(Vector128.Create((long)a[2] * b[2], (long)a[3] * b[3]), Av1Simd.MultiplyWideningUpper(va, vb));
+            Assert.Equal(c + Av1Simd.MultiplyWideningLower(va, vb), Av1Simd.MultiplyWideningLowerAndAdd(c, va, vb));
+            Assert.Equal(c + Av1Simd.MultiplyWideningUpper(va, vb), Av1Simd.MultiplyWideningUpperAndAdd(c, va, vb));
+            Assert.Equal(c - Av1Simd.MultiplyWideningLower(va, vb), Av1Simd.MultiplyWideningLowerAndSubtract(c, va, vb));
+            Assert.Equal(c - Av1Simd.MultiplyWideningUpper(va, vb), Av1Simd.MultiplyWideningUpperAndSubtract(c, va, vb));
             var d = Vector128.Create(-c.GetElement(1), c.GetElement(0) >> 7);
-            Assert.Equal(Vector128.Create(Round(c.GetElement(0), 12), Round(c.GetElement(1), 12), Round(d.GetElement(0), 12), Round(d.GetElement(1), 12)), TSimd.RoundNarrow12(c, d));
+            Assert.Equal(Vector128.Create(Round(c.GetElement(0), 12), Round(c.GetElement(1), 12), Round(d.GetElement(0), 12), Round(d.GetElement(1), 12)), Av1Simd.RoundNarrow12(c, d));
             var shift = 1 + (round % 12);
-            Assert.Equal(Vector128.Create(Round(a[0], shift), Round(a[1], shift), Round(a[2], shift), Round(a[3], shift)), TSimd.ShiftRightArithmeticRounded(va, shift));
-            Assert.Equal(Vector128.Create(Saturate((long)a[0] + b[0]), Saturate((long)a[1] + b[1]), Saturate((long)a[2] + b[2]), Saturate((long)a[3] + b[3])), TSimd.AddSaturate(va, vb));
-            Assert.Equal(Vector128.Create(Saturate((long)a[0] - b[0]), Saturate((long)a[1] - b[1]), Saturate((long)a[2] - b[2]), Saturate((long)a[3] - b[3])), TSimd.SubtractSaturate(va, vb));
-            Assert.Equal(unchecked(a[0] + a[1] + a[2] + a[3]), TSimd.AddAcross(va));
+            Assert.Equal(Vector128.Create(Round(a[0], shift), Round(a[1], shift), Round(a[2], shift), Round(a[3], shift)), Av1Simd.ShiftRightArithmeticRounded(va, shift));
+            Assert.Equal(Vector128.Create(Saturate((long)a[0] + b[0]), Saturate((long)a[1] + b[1]), Saturate((long)a[2] + b[2]), Saturate((long)a[3] + b[3])), Av1Simd.AddSaturate(va, vb));
+            Assert.Equal(Vector128.Create(Saturate((long)a[0] - b[0]), Saturate((long)a[1] - b[1]), Saturate((long)a[2] - b[2]), Saturate((long)a[3] - b[3])), Av1Simd.SubtractSaturate(va, vb));
+            Assert.Equal(unchecked(a[0] + a[1] + a[2] + a[3]), Av1Simd.AddAcross(va));
 
             var e = RandomInts(random, round);
             var f = RandomInts(random, round);
-            TSimd.Transpose(va, vb, Vector128.Create(e), Vector128.Create(f), out var r0, out var r1, out var r2, out var r3);
+            Av1Simd.Transpose(va, vb, Vector128.Create(e), Vector128.Create(f), out var r0, out var r1, out var r2, out var r3);
             Vector128<int>[] transposed = [r0, r1, r2, r3];
             int[][] rows = [a, b, e, f];
             for (var i = 0; i < 4; i++)
@@ -3108,18 +3083,18 @@ public sealed class VectorizedKernelTests
 
             var vx = Vector128.Create(x);
             var vy = Vector128.Create(y);
-            Assert.Equal(Vector128.Create(x[0] * y[0], x[1] * y[1], x[2] * y[2], x[3] * y[3]), TSimd.MultiplyWideningLower(vx, vy));
-            Assert.Equal(Vector128.Create(x[4] * y[4], x[5] * y[5], x[6] * y[6], x[7] * y[7]), TSimd.MultiplyWideningUpper(vx, vy));
-            Assert.Equal(unchecked((short)(x[0] + x[1] + x[2] + x[3] + x[4] + x[5] + x[6] + x[7])), TSimd.AddAcross(vx));
-            Assert.Equal(Vector128.Create(unchecked((short)(x[0] + x[1])), (short)(x[2] + x[3]), (short)(x[4] + x[5]), (short)(x[6] + x[7]), 0, 0, 0, 0), TSimd.AddPairwise(vx));
-            CheckExtract(x, y, 0, TSimd.ExtractVector128(vx, vy, 0));
-            CheckExtract(x, y, 1, TSimd.ExtractVector128(vx, vy, 1));
-            CheckExtract(x, y, 2, TSimd.ExtractVector128(vx, vy, 2));
-            CheckExtract(x, y, 3, TSimd.ExtractVector128(vx, vy, 3));
-            CheckExtract(x, y, 4, TSimd.ExtractVector128(vx, vy, 4));
-            CheckExtract(x, y, 5, TSimd.ExtractVector128(vx, vy, 5));
-            CheckExtract(x, y, 6, TSimd.ExtractVector128(vx, vy, 6));
-            CheckExtract(x, y, 7, TSimd.ExtractVector128(vx, vy, 7));
+            Assert.Equal(Vector128.Create(x[0] * y[0], x[1] * y[1], x[2] * y[2], x[3] * y[3]), Av1Simd.MultiplyWideningLower(vx, vy));
+            Assert.Equal(Vector128.Create(x[4] * y[4], x[5] * y[5], x[6] * y[6], x[7] * y[7]), Av1Simd.MultiplyWideningUpper(vx, vy));
+            Assert.Equal(unchecked((short)(x[0] + x[1] + x[2] + x[3] + x[4] + x[5] + x[6] + x[7])), Av1Simd.AddAcross(vx));
+            Assert.Equal(Vector128.Create(unchecked((short)(x[0] + x[1])), (short)(x[2] + x[3]), (short)(x[4] + x[5]), (short)(x[6] + x[7]), 0, 0, 0, 0), Av1Simd.AddPairwise(vx));
+            CheckExtract(x, y, 0, Av1Simd.ExtractVector128(vx, vy, 0));
+            CheckExtract(x, y, 1, Av1Simd.ExtractVector128(vx, vy, 1));
+            CheckExtract(x, y, 2, Av1Simd.ExtractVector128(vx, vy, 2));
+            CheckExtract(x, y, 3, Av1Simd.ExtractVector128(vx, vy, 3));
+            CheckExtract(x, y, 4, Av1Simd.ExtractVector128(vx, vy, 4));
+            CheckExtract(x, y, 5, Av1Simd.ExtractVector128(vx, vy, 5));
+            CheckExtract(x, y, 6, Av1Simd.ExtractVector128(vx, vy, 6));
+            CheckExtract(x, y, 7, Av1Simd.ExtractVector128(vx, vy, 7));
 
             const int LineStep = 11;
             var samples = new ushort[(3 * LineStep) + 8 + 3];
@@ -3129,7 +3104,7 @@ public sealed class VectorizedKernelTests
             }
 
             var columns = new Vector128<int>[8];
-            TSimd.LoadTransposed(samples, 3, LineStep, columns);
+            Av1Simd.LoadTransposed(samples, 3, LineStep, columns);
             for (var i = 0; i < 4; i++)
             {
                 for (var j = 0; j < 8; j++)
@@ -3139,7 +3114,7 @@ public sealed class VectorizedKernelTests
             }
 
             var stored = new ushort[samples.Length];
-            TSimd.StoreTransposed(stored, 3, LineStep, columns);
+            Av1Simd.StoreTransposed(stored, 3, LineStep, columns);
             for (var i = 0; i < 4; i++)
             {
                 Assert.True(samples.AsSpan(3 + (i * LineStep), 8).SequenceEqual(stored.AsSpan(3 + (i * LineStep), 8)), $"Row {i}.");

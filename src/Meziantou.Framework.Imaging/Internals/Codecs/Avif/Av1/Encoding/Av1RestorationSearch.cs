@@ -1,7 +1,5 @@
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -180,28 +178,10 @@ internal static class Av1RestorationSearch
     /// </remarks>
     internal static void AccumulateHorizontal(ReadOnlySpan<ushort> row, ReadOnlySpan<ushort> target, Span<long> unit)
     {
-        if (AdvSimd.IsSupported)
-        {
-            AccumulateHorizontalVector<Av1AdvSimd>(row, target, unit);
-        }
-        else if (Av1PortableSimd.IsAccelerated)
-        {
-            AccumulateHorizontalVector<Av1PortableSimd>(row, target, unit);
-        }
-        else
-        {
-            AccumulateHorizontalScalar(row, target, unit);
-        }
-    }
-
-    /// <summary><see cref="AccumulateHorizontal"/> with the vector operations of <typeparamref name="TSimd"/>.</summary>
-    internal static void AccumulateHorizontalVector<TSimd>(ReadOnlySpan<ushort> row, ReadOnlySpan<ushort> target, Span<long> unit)
-        where TSimd : struct, IAv1Simd
-    {
         var width = target.Length;
         row = row[..(width + 6)];
         var x = 0;
-        if (width >= 4)
+        if (Av1Simd.IsSupported && width >= 4)
         {
             var sums = new ProductSums();
             for (; x <= width - 4; x += 4)
@@ -211,7 +191,7 @@ internal static class Av1RestorationSearch
                 var d0 = Load(row, x) + Load(row, x + 6) - twice;
                 var d1 = Load(row, x + 1) + Load(row, x + 5) - twice;
                 var d2 = Load(row, x + 2) + Load(row, x + 4) - twice;
-                sums.Add<TSimd>(d0, d1, d2, Load(target, x) - center);
+                sums.Add(d0, d1, d2, Load(target, x) - center);
             }
 
             sums.AddTo(unit);
@@ -255,27 +235,9 @@ internal static class Av1RestorationSearch
     /// </remarks>
     internal static void AccumulateVertical(ReadOnlySpan<int> rows, int stride, ReadOnlySpan<ushort> target, Span<long> unit)
     {
-        if (AdvSimd.IsSupported)
-        {
-            AccumulateVerticalVector<Av1AdvSimd>(rows, stride, target, unit);
-        }
-        else if (Av1PortableSimd.IsAccelerated)
-        {
-            AccumulateVerticalVector<Av1PortableSimd>(rows, stride, target, unit);
-        }
-        else
-        {
-            AccumulateVerticalScalar(rows, stride, target, unit);
-        }
-    }
-
-    /// <summary><see cref="AccumulateVertical"/> with the vector operations of <typeparamref name="TSimd"/>.</summary>
-    internal static void AccumulateVerticalVector<TSimd>(ReadOnlySpan<int> rows, int stride, ReadOnlySpan<ushort> target, Span<long> unit)
-        where TSimd : struct, IAv1Simd
-    {
         var width = target.Length;
         var x = 0;
-        if (width >= 4)
+        if (Av1Simd.IsSupported && width >= 4)
         {
             var sums = new ProductSums();
             for (; x <= width - 4; x += 4)
@@ -286,7 +248,7 @@ internal static class Av1RestorationSearch
                 var d1 = Vector128.Create(rows.Slice(stride + x, 4)) + Vector128.Create(rows.Slice((5 * stride) + x, 4)) - twice;
                 var d2 = Vector128.Create(rows.Slice((2 * stride) + x, 4)) + Vector128.Create(rows.Slice((4 * stride) + x, 4)) - twice;
                 var targets = Vector128.WidenLower(Vector64.Create(target.Slice(x, 4)).ToVector128()).AsInt32();
-                sums.Add<TSimd>(d0, d1, d2, (targets * 128) - value);
+                sums.Add(d0, d1, d2, (targets * 128) - value);
             }
 
             sums.AddTo(unit);
@@ -345,28 +307,26 @@ internal static class Av1RestorationSearch
         private Vector128<long> _s2eLow;
         private Vector128<long> _s2eHigh;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add<TSimd>(Vector128<int> d0, Vector128<int> d1, Vector128<int> d2, Vector128<int> error)
-            where TSimd : struct, IAv1Simd
+        public void Add(Vector128<int> d0, Vector128<int> d1, Vector128<int> d2, Vector128<int> error)
         {
-            _s00Low = TSimd.MultiplyWideningLowerAndAdd(_s00Low, d0, d0);
-            _s00High = TSimd.MultiplyWideningUpperAndAdd(_s00High, d0, d0);
-            _s01Low = TSimd.MultiplyWideningLowerAndAdd(_s01Low, d0, d1);
-            _s01High = TSimd.MultiplyWideningUpperAndAdd(_s01High, d0, d1);
-            _s02Low = TSimd.MultiplyWideningLowerAndAdd(_s02Low, d0, d2);
-            _s02High = TSimd.MultiplyWideningUpperAndAdd(_s02High, d0, d2);
-            _s11Low = TSimd.MultiplyWideningLowerAndAdd(_s11Low, d1, d1);
-            _s11High = TSimd.MultiplyWideningUpperAndAdd(_s11High, d1, d1);
-            _s12Low = TSimd.MultiplyWideningLowerAndAdd(_s12Low, d1, d2);
-            _s12High = TSimd.MultiplyWideningUpperAndAdd(_s12High, d1, d2);
-            _s22Low = TSimd.MultiplyWideningLowerAndAdd(_s22Low, d2, d2);
-            _s22High = TSimd.MultiplyWideningUpperAndAdd(_s22High, d2, d2);
-            _s0eLow = TSimd.MultiplyWideningLowerAndAdd(_s0eLow, d0, error);
-            _s0eHigh = TSimd.MultiplyWideningUpperAndAdd(_s0eHigh, d0, error);
-            _s1eLow = TSimd.MultiplyWideningLowerAndAdd(_s1eLow, d1, error);
-            _s1eHigh = TSimd.MultiplyWideningUpperAndAdd(_s1eHigh, d1, error);
-            _s2eLow = TSimd.MultiplyWideningLowerAndAdd(_s2eLow, d2, error);
-            _s2eHigh = TSimd.MultiplyWideningUpperAndAdd(_s2eHigh, d2, error);
+            _s00Low = Av1Simd.MultiplyWideningLowerAndAdd(_s00Low, d0, d0);
+            _s00High = Av1Simd.MultiplyWideningUpperAndAdd(_s00High, d0, d0);
+            _s01Low = Av1Simd.MultiplyWideningLowerAndAdd(_s01Low, d0, d1);
+            _s01High = Av1Simd.MultiplyWideningUpperAndAdd(_s01High, d0, d1);
+            _s02Low = Av1Simd.MultiplyWideningLowerAndAdd(_s02Low, d0, d2);
+            _s02High = Av1Simd.MultiplyWideningUpperAndAdd(_s02High, d0, d2);
+            _s11Low = Av1Simd.MultiplyWideningLowerAndAdd(_s11Low, d1, d1);
+            _s11High = Av1Simd.MultiplyWideningUpperAndAdd(_s11High, d1, d1);
+            _s12Low = Av1Simd.MultiplyWideningLowerAndAdd(_s12Low, d1, d2);
+            _s12High = Av1Simd.MultiplyWideningUpperAndAdd(_s12High, d1, d2);
+            _s22Low = Av1Simd.MultiplyWideningLowerAndAdd(_s22Low, d2, d2);
+            _s22High = Av1Simd.MultiplyWideningUpperAndAdd(_s22High, d2, d2);
+            _s0eLow = Av1Simd.MultiplyWideningLowerAndAdd(_s0eLow, d0, error);
+            _s0eHigh = Av1Simd.MultiplyWideningUpperAndAdd(_s0eHigh, d0, error);
+            _s1eLow = Av1Simd.MultiplyWideningLowerAndAdd(_s1eLow, d1, error);
+            _s1eHigh = Av1Simd.MultiplyWideningUpperAndAdd(_s1eHigh, d1, error);
+            _s2eLow = Av1Simd.MultiplyWideningLowerAndAdd(_s2eLow, d2, error);
+            _s2eHigh = Av1Simd.MultiplyWideningUpperAndAdd(_s2eHigh, d2, error);
         }
 
         public readonly void AddTo(Span<long> unit)

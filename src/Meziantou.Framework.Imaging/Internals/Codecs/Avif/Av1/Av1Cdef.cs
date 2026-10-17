@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -139,13 +138,9 @@ internal static class Av1Cdef
     /// </summary>
     internal static void FindDirection(ReadOnlySpan<ushort> source, int stride, int x0, int bitDepth, out int yDir, out int variance)
     {
-        if (AdvSimd.Arm64.IsSupported)
+        if (Av1Simd.IsSupported)
         {
-            FindDirectionVector<Av1AdvSimd>(source, stride, x0, bitDepth, out yDir, out variance);
-        }
-        else if (Vector128.IsHardwareAccelerated)
-        {
-            FindDirectionVector<Av1PortableSimd>(source, stride, x0, bitDepth, out yDir, out variance);
+            FindDirectionVector(source, stride, x0, bitDepth, out yDir, out variance);
         }
         else
         {
@@ -157,32 +152,31 @@ internal static class Av1Cdef
     // samples whose index (a linear function of the row and of the column) is the same, so the samples of a row, shifted
     // by the part of the index that depends on the row, are added to 15 (or 11) lanes held by 2 vectors. The costs are the
     // same sums of products of the scalar code, in 32-bit lanes
-    internal static void FindDirectionVector<TSimd>(ReadOnlySpan<ushort> source, int stride, int x0, int bitDepth, out int yDir, out int variance)
-        where TSimd : struct, IAv1Simd
+    private static void FindDirectionVector(ReadOnlySpan<ushort> source, int stride, int x0, int bitDepth, out int yDir, out int variance)
     {
         var shift = bitDepth - 8;
         // The shifts are constants, with 8 minus them for the lane extractions (0 when the shift is 0)
         var state = default(DirectionSums);
         var row0 = Load(source, stride, x0, 0, shift);
         var row1 = Load(source, stride, x0, 1, shift);
-        AddDirectionRow<TSimd>(ref state, row0, 0, 0);
-        AddDirectionRow<TSimd>(ref state, row1, 1, 7);
-        AddDirectionRowPair<TSimd>(ref state, row0 + row1, 3, 5, 0, 0);
+        AddDirectionRow(ref state, row0, 0, 0);
+        AddDirectionRow(ref state, row1, 1, 7);
+        AddDirectionRowPair(ref state, row0 + row1, 3, 5, 0, 0);
         var row2 = Load(source, stride, x0, 2, shift);
         var row3 = Load(source, stride, x0, 3, shift);
-        AddDirectionRow<TSimd>(ref state, row2, 2, 6);
-        AddDirectionRow<TSimd>(ref state, row3, 3, 5);
-        AddDirectionRowPair<TSimd>(ref state, row2 + row3, 2, 6, 1, 7);
+        AddDirectionRow(ref state, row2, 2, 6);
+        AddDirectionRow(ref state, row3, 3, 5);
+        AddDirectionRowPair(ref state, row2 + row3, 2, 6, 1, 7);
         var row4 = Load(source, stride, x0, 4, shift);
         var row5 = Load(source, stride, x0, 5, shift);
-        AddDirectionRow<TSimd>(ref state, row4, 4, 4);
-        AddDirectionRow<TSimd>(ref state, row5, 5, 3);
-        AddDirectionRowPair<TSimd>(ref state, row4 + row5, 1, 7, 2, 6);
+        AddDirectionRow(ref state, row4, 4, 4);
+        AddDirectionRow(ref state, row5, 5, 3);
+        AddDirectionRowPair(ref state, row4 + row5, 1, 7, 2, 6);
         var row6 = Load(source, stride, x0, 6, shift);
         var row7 = Load(source, stride, x0, 7, shift);
-        AddDirectionRow<TSimd>(ref state, row6, 6, 2);
-        AddDirectionRow<TSimd>(ref state, row7, 7, 1);
-        AddDirectionRowPair<TSimd>(ref state, row6 + row7, 0, 0, 3, 5);
+        AddDirectionRow(ref state, row6, 6, 2);
+        AddDirectionRow(ref state, row7, 7, 1);
+        AddDirectionRowPair(ref state, row6 + row7, 0, 0, 3, 5);
 
         // The weights of the squares of the partial sums: Div_Table[ count ] for the sums of count samples
         var weights15Low = Vector128.Create((short)840, 420, 280, 210, 168, 140, 120, 105);
@@ -191,14 +185,14 @@ internal static class Av1Cdef
         var weights11High = Vector128.Create((short)140, 210, 420, 0, 0, 0, 0, 0);
         var weights8 = Vector128.Create((short)105);
         Span<int> cost = stackalloc int[8];
-        cost[0] = WeightedSquares<TSimd>(state.Diagonal0Low, weights15Low) + WeightedSquares<TSimd>(state.Diagonal0High, weights15High);
-        cost[1] = WeightedSquares<TSimd>(state.Partial1Low, weights11Low) + WeightedSquares<TSimd>(state.Partial1High, weights11High);
-        cost[2] = WeightedSquares<TSimd>(state.Rows, weights8);
-        cost[3] = WeightedSquares<TSimd>(state.Partial3Low, weights11Low) + WeightedSquares<TSimd>(state.Partial3High, weights11High);
-        cost[4] = WeightedSquares<TSimd>(state.Diagonal4Low, weights15Low) + WeightedSquares<TSimd>(state.Diagonal4High, weights15High);
-        cost[5] = WeightedSquares<TSimd>(state.Partial5Low, weights11Low) + WeightedSquares<TSimd>(state.Partial5High, weights11High);
-        cost[6] = WeightedSquares<TSimd>(state.Columns, weights8);
-        cost[7] = WeightedSquares<TSimd>(state.Partial7Low, weights11Low) + WeightedSquares<TSimd>(state.Partial7High, weights11High);
+        cost[0] = WeightedSquares(state.Diagonal0Low, weights15Low) + WeightedSquares(state.Diagonal0High, weights15High);
+        cost[1] = WeightedSquares(state.Partial1Low, weights11Low) + WeightedSquares(state.Partial1High, weights11High);
+        cost[2] = WeightedSquares(state.Rows, weights8);
+        cost[3] = WeightedSquares(state.Partial3Low, weights11Low) + WeightedSquares(state.Partial3High, weights11High);
+        cost[4] = WeightedSquares(state.Diagonal4Low, weights15Low) + WeightedSquares(state.Diagonal4High, weights15High);
+        cost[5] = WeightedSquares(state.Partial5Low, weights11Low) + WeightedSquares(state.Partial5High, weights11High);
+        cost[6] = WeightedSquares(state.Columns, weights8);
+        cost[7] = WeightedSquares(state.Partial7Low, weights11Low) + WeightedSquares(state.Partial7High, weights11High);
         var bestCost = 0;
         yDir = 0;
         for (var i = 0; i < 8; i++)
@@ -217,46 +211,43 @@ internal static class Av1Cdef
     }
 
     // The sum of the squares of the partial sums times their weights, in 32 bits like the scalar costs
-    private static int WeightedSquares<TSimd>(Vector128<short> sums, Vector128<short> weights)
-        where TSimd : struct, IAv1Simd
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int WeightedSquares(Vector128<short> sums, Vector128<short> weights)
     {
-        var squaresLow = TSimd.MultiplyWideningLower(sums, sums);
-        var squaresHigh = TSimd.MultiplyWideningUpper(sums, sums);
+        var squaresLow = Av1Simd.MultiplyWideningLower(sums, sums);
+        var squaresHigh = Av1Simd.MultiplyWideningUpper(sums, sums);
         var weighted = (squaresLow * Vector128.WidenLower(weights).AsInt32()) + (squaresHigh * Vector128.WidenUpper(weights).AsInt32());
-        return TSimd.AddAcross(weighted);
+        return Av1Simd.AddAcross(weighted);
     }
 
     // Adds the row i of the block to the partial sums of the directions 0 to 4 and 6 (complement is 8 - i, or 0)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void AddDirectionRow<TSimd>(ref DirectionSums state, Vector128<short> x, [ConstantExpected(Min = 0, Max = 7)] byte i, [ConstantExpected(Min = 0, Max = 7)] byte complement)
-        where TSimd : struct, IAv1Simd
+    private static void AddDirectionRow(ref DirectionSums state, Vector128<short> x, [ConstantExpected(Min = 0, Max = 7)] byte i, [ConstantExpected(Min = 0, Max = 7)] byte complement)
     {
         // Direction 0: i + j; direction 4: 7 + i - j, i + j of the reversed row; direction 2: the sum of the row; direction 6: j
-        AddShifted<TSimd>(ref state.Diagonal0Low, ref state.Diagonal0High, x, i, complement);
+        AddShifted(ref state.Diagonal0Low, ref state.Diagonal0High, x, i, complement);
         var reversed = Vector128.Shuffle(x, Vector128.Create((short)7, 6, 5, 4, 3, 2, 1, 0));
-        AddShifted<TSimd>(ref state.Diagonal4Low, ref state.Diagonal4High, reversed, i, complement);
-        state.Rows = state.Rows.WithElement(i, TSimd.AddAcross(x));
+        AddShifted(ref state.Diagonal4Low, ref state.Diagonal4High, reversed, i, complement);
+        state.Rows = state.Rows.WithElement(i, Av1Simd.AddAcross(x));
         state.Columns += x;
 
         // Directions 1 and 3: i + j / 2 and 3 + i - j / 2, from the sums of the pairs of samples of the row
-        var pairs = TSimd.AddPairwise(x);
-        AddShifted<TSimd>(ref state.Partial1Low, ref state.Partial1High, pairs, i, complement);
-        AddShifted<TSimd>(ref state.Partial3Low, ref state.Partial3High, Vector128.Shuffle(pairs, Vector128.Create((short)3, 2, 1, 0, -1, -1, -1, -1)), i, complement);
+        var pairs = Av1Simd.AddPairwise(x);
+        AddShifted(ref state.Partial1Low, ref state.Partial1High, pairs, i, complement);
+        AddShifted(ref state.Partial3Low, ref state.Partial3High, Vector128.Shuffle(pairs, Vector128.Create((short)3, 2, 1, 0, -1, -1, -1, -1)), i, complement);
     }
 
     // Adds the sum of the rows 2k and 2k + 1 to the partial sums of the directions 5 (3 - k + j) and 7 (k + j)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void AddDirectionRowPair<TSimd>(ref DirectionSums state, Vector128<short> rows, [ConstantExpected(Min = 0, Max = 3)] byte shift5, [ConstantExpected(Min = 0, Max = 7)] byte complement5, [ConstantExpected(Min = 0, Max = 3)] byte shift7, [ConstantExpected(Min = 0, Max = 7)] byte complement7)
-        where TSimd : struct, IAv1Simd
+    private static void AddDirectionRowPair(ref DirectionSums state, Vector128<short> rows, [ConstantExpected(Min = 0, Max = 3)] byte shift5, [ConstantExpected(Min = 0, Max = 7)] byte complement5, [ConstantExpected(Min = 0, Max = 3)] byte shift7, [ConstantExpected(Min = 0, Max = 7)] byte complement7)
     {
-        AddShifted<TSimd>(ref state.Partial5Low, ref state.Partial5High, rows, shift5, complement5);
-        AddShifted<TSimd>(ref state.Partial7Low, ref state.Partial7High, rows, shift7, complement7);
+        AddShifted(ref state.Partial5Low, ref state.Partial5High, rows, shift5, complement5);
+        AddShifted(ref state.Partial7Low, ref state.Partial7High, rows, shift7, complement7);
     }
 
     // Adds the lanes of x to the lanes n to n + 7 of the 16 lanes of low and high (complement is 8 - n, or 0)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void AddShifted<TSimd>(ref Vector128<short> low, ref Vector128<short> high, Vector128<short> x, [ConstantExpected(Min = 0, Max = 7)] byte n, [ConstantExpected(Min = 0, Max = 7)] byte complement)
-        where TSimd : struct, IAv1Simd
+    private static void AddShifted(ref Vector128<short> low, ref Vector128<short> high, Vector128<short> x, [ConstantExpected(Min = 0, Max = 7)] byte n, [ConstantExpected(Min = 0, Max = 7)] byte complement)
     {
         if (n is 0)
         {
@@ -264,8 +255,8 @@ internal static class Av1Cdef
             return;
         }
 
-        low += TSimd.ExtractVector128(Vector128<short>.Zero, x, complement);
-        high += TSimd.ExtractVector128(x, Vector128<short>.Zero, complement);
+        low += Av1Simd.ExtractVector128(Vector128<short>.Zero, x, complement);
+        high += Av1Simd.ExtractVector128(x, Vector128<short>.Zero, complement);
     }
 
     // The partial sums of the direction process: the sums of index 0 to 7 in the Low vector and 8 to 14 in the High one

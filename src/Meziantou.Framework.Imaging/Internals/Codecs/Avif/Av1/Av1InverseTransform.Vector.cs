@@ -4,20 +4,19 @@ using System.Runtime.Intrinsics;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <content>
-/// The inverse transform of 4 rows or 4 columns at once, in the 32-bit lanes of vectors, with the operations of an
-/// <see cref="IAv1Simd"/> implementation. Each step is the step of the scalar kernels, with the same 64-bit arithmetic: the
-/// products of the rotations are widening multiplications, their sums are 64-bit, Round2 is a rounding of the 64-bit value
-/// (which cannot overflow) and the cast to 32 bits is a truncating narrowing; the sums of the Hadamard rotations, which the
-/// scalar code computes in 64 bits before clamping them, are saturating additions, whose clamped result is the same. The
-/// results are the scalar ones for every input.
+/// The inverse transform of 4 rows or 4 columns at once, in the 32-bit lanes of vectors (the operations of
+/// <see cref="Av1Simd"/>). Each step is the step of the scalar kernels, with the same 64-bit arithmetic: the products of the
+/// rotations are widening multiplications, their sums are 64-bit, Round2 is a rounding of the 64-bit value (which cannot
+/// overflow) and the cast to 32 bits is a truncating narrowing; the sums of the Hadamard rotations, which the scalar code
+/// computes in 64 bits before clamping them, are saturating additions, whose clamped result is the same. The results are
+/// the scalar ones for every input.
 /// </content>
 internal static partial class Av1InverseTransform
 {
     // The 2D transform of TransformScalar: the rows by groups of 4 (transposed into the lanes of the vectors), then the
     // columns by groups of 4 (whose samples are the lanes of consecutive rows)
     [SkipLocalsInit]
-    internal static void TransformVector<TSimd>(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth)
-        where TSimd : struct, IAv1Simd
+    private static void TransformVector(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth)
     {
         var log2W = Av1Tables.TxWidthLog2[txSz];
         var log2H = Av1Tables.TxHeightLog2[txSz];
@@ -62,7 +61,7 @@ internal static partial class Av1InverseTransform
 
             for (var k = 0; k < tw; k += 4)
             {
-                TSimd.Transpose(
+                Av1Simd.Transpose(
                     Vector128.Create(dequant.Slice((i * tw) + k, 4)),
                     Vector128.Create(dequant.Slice(((i + 1) * tw) + k, 4)),
                     Vector128.Create(dequant.Slice(((i + 2) * tw) + k, 4)),
@@ -78,14 +77,14 @@ internal static partial class Av1InverseTransform
             {
                 for (var k = 0; k < w; k++)
                 {
-                    t[k] = MultiplyRound12<TSimd>(t[k], 2896);
+                    t[k] = MultiplyRound12(t[k], 2896);
                 }
             }
 
-            Apply<TSimd>(rowKind, t[..w], log2W, rowClampRange);
+            Apply(rowKind, t[..w], log2W, rowClampRange);
             for (var k = 0; k < w; k += 4)
             {
-                TSimd.Transpose(
+                Av1Simd.Transpose(
                     RowOutput(t[k], rowShift, colMin, colMax),
                     RowOutput(t[k + 1], rowShift, colMin, colMax),
                     RowOutput(t[k + 2], rowShift, colMin, colMax),
@@ -118,54 +117,52 @@ internal static partial class Av1InverseTransform
                 column[i] = Vector128.Create(residual.Slice((i * w) + j, 4));
             }
 
-            Apply<TSimd>(colKind, column, log2H, colClampRange);
+            Apply(colKind, column, log2H, colClampRange);
             for (var i = 0; i < h; i++)
             {
-                TSimd.ShiftRightArithmeticRounded(column[i], ColShift).CopyTo(residual.Slice((i * w) + j, 4));
+                Av1Simd.ShiftRightArithmeticRounded(column[i], ColShift).CopyTo(residual.Slice((i * w) + j, 4));
             }
         }
 
         static Vector128<int> RowOutput(Vector128<int> value, int shift, Vector128<int> min, Vector128<int> max)
         {
             if (shift is not 0)
-                value = TSimd.ShiftRightArithmeticRounded(value, shift);
+                value = Av1Simd.ShiftRightArithmeticRounded(value, shift);
 
             return Vector128.Min(Vector128.Max(value, min), max);
         }
     }
 
-    private static void Apply<TSimd>(Kind kind, Span<Vector128<int>> t, int n, int r)
-        where TSimd : struct, IAv1Simd
+    private static void Apply(Kind kind, Span<Vector128<int>> t, int n, int r)
     {
         switch (kind)
         {
             case Kind.Dct:
-                InverseDct<TSimd>(t, n, r);
+                InverseDct(t, n, r);
                 break;
             case Kind.Adst:
                 switch (n)
                 {
                     case 2:
-                        InverseAdst4<TSimd>(t);
+                        InverseAdst4(t);
                         break;
                     case 3:
-                        InverseAdst8<TSimd>(t, r);
+                        InverseAdst8(t, r);
                         break;
                     default:
-                        InverseAdst16<TSimd>(t, r);
+                        InverseAdst16(t, r);
                         break;
                 }
 
                 break;
             default:
-                InverseIdentity<TSimd>(t, n);
+                InverseIdentity(t, n);
                 break;
         }
     }
 
     // InverseDct on vectors: the same steps
-    private static void InverseDct<TSimd>(Span<Vector128<int>> t, int n, int r)
-        where TSimd : struct, IAv1Simd
+    private static void InverseDct(Span<Vector128<int>> t, int n, int r)
     {
         var length = 1 << n;
         for (var i = 0; i < length; i++)
@@ -181,7 +178,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 16; i++)
             {
-                B<TSimd>(t, 32 + i, 63 - i, 63 - (4 * BitReverse(4, i)), flip: false);
+                B(t, 32 + i, 63 - i, 63 - (4 * BitReverse(4, i)), flip: false);
             }
         }
 
@@ -189,7 +186,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 8; i++)
             {
-                B<TSimd>(t, 16 + i, 31 - i, 6 + (BitReverse(3, 7 - i) << 3), flip: false);
+                B(t, 16 + i, 31 - i, 6 + (BitReverse(3, 7 - i) << 3), flip: false);
             }
         }
 
@@ -197,7 +194,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 16; i++)
             {
-                H<TSimd>(t, 32 + (i * 2), 33 + (i * 2), (i & 1) is not 0, min, max);
+                H(t, 32 + (i * 2), 33 + (i * 2), (i & 1) is not 0, min, max);
             }
         }
 
@@ -205,7 +202,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 4; i++)
             {
-                B<TSimd>(t, 8 + i, 15 - i, 12 + (BitReverse(2, 3 - i) << 4), flip: false);
+                B(t, 8 + i, 15 - i, 12 + (BitReverse(2, 3 - i) << 4), flip: false);
             }
         }
 
@@ -213,7 +210,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 8; i++)
             {
-                H<TSimd>(t, 16 + (2 * i), 17 + (2 * i), (i & 1) is not 0, min, max);
+                H(t, 16 + (2 * i), 17 + (2 * i), (i & 1) is not 0, min, max);
             }
         }
 
@@ -223,7 +220,7 @@ internal static partial class Av1InverseTransform
             {
                 for (var j = 0; j < 2; j++)
                 {
-                    B<TSimd>(t, 62 - (i * 4) - j, 33 + (i * 4) + j, 60 - (16 * BitReverse(2, i)) + (64 * j), flip: true);
+                    B(t, 62 - (i * 4) - j, 33 + (i * 4) + j, 60 - (16 * BitReverse(2, i)) + (64 * j), flip: true);
                 }
             }
         }
@@ -232,7 +229,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 2; i++)
             {
-                B<TSimd>(t, 4 + i, 7 - i, 56 - (32 * i), flip: false);
+                B(t, 4 + i, 7 - i, 56 - (32 * i), flip: false);
             }
         }
 
@@ -240,7 +237,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 4; i++)
             {
-                H<TSimd>(t, 8 + (2 * i), 9 + (2 * i), (i & 1) is not 0, min, max);
+                H(t, 8 + (2 * i), 9 + (2 * i), (i & 1) is not 0, min, max);
             }
         }
 
@@ -250,7 +247,7 @@ internal static partial class Av1InverseTransform
             {
                 for (var j = 0; j < 2; j++)
                 {
-                    B<TSimd>(t, 30 - (4 * i) - j, 17 + (4 * i) + j, 24 + (j << 6) + ((1 - i) << 5), flip: true);
+                    B(t, 30 - (4 * i) - j, 17 + (4 * i) + j, 24 + (j << 6) + ((1 - i) << 5), flip: true);
                 }
             }
         }
@@ -261,21 +258,21 @@ internal static partial class Av1InverseTransform
             {
                 for (var j = 0; j < 2; j++)
                 {
-                    H<TSimd>(t, 32 + (i * 4) + j, 35 + (i * 4) - j, (i & 1) is not 0, min, max);
+                    H(t, 32 + (i * 4) + j, 35 + (i * 4) - j, (i & 1) is not 0, min, max);
                 }
             }
         }
 
         for (var i = 0; i < 2; i++)
         {
-            B<TSimd>(t, 2 * i, (2 * i) + 1, 32 + (16 * i), flip: i is 0);
+            B(t, 2 * i, (2 * i) + 1, 32 + (16 * i), flip: i is 0);
         }
 
         if (n >= 3)
         {
             for (var i = 0; i < 2; i++)
             {
-                H<TSimd>(t, 4 + (2 * i), 5 + (2 * i), i is not 0, min, max);
+                H(t, 4 + (2 * i), 5 + (2 * i), i is not 0, min, max);
             }
         }
 
@@ -283,7 +280,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 2; i++)
             {
-                B<TSimd>(t, 14 - i, 9 + i, 48 + (64 * i), flip: true);
+                B(t, 14 - i, 9 + i, 48 + (64 * i), flip: true);
             }
         }
 
@@ -293,7 +290,7 @@ internal static partial class Av1InverseTransform
             {
                 for (var j = 0; j < 2; j++)
                 {
-                    H<TSimd>(t, 16 + (4 * i) + j, 19 + (4 * i) - j, (i & 1) is not 0, min, max);
+                    H(t, 16 + (4 * i) + j, 19 + (4 * i) - j, (i & 1) is not 0, min, max);
                 }
             }
         }
@@ -304,18 +301,18 @@ internal static partial class Av1InverseTransform
             {
                 for (var j = 0; j < 4; j++)
                 {
-                    B<TSimd>(t, 61 - (i * 8) - j, 34 + (i * 8) + j, 56 - (i * 32) + ((j >> 1) * 64), flip: true);
+                    B(t, 61 - (i * 8) - j, 34 + (i * 8) + j, 56 - (i * 32) + ((j >> 1) * 64), flip: true);
                 }
             }
         }
 
         for (var i = 0; i < 2; i++)
         {
-            H<TSimd>(t, i, 3 - i, flip: false, min, max);
+            H(t, i, 3 - i, flip: false, min, max);
         }
 
         if (n >= 3)
-            B<TSimd>(t, 6, 5, 32, flip: true);
+            B(t, 6, 5, 32, flip: true);
 
         if (n >= 4)
         {
@@ -323,7 +320,7 @@ internal static partial class Av1InverseTransform
             {
                 for (var j = 0; j < 2; j++)
                 {
-                    H<TSimd>(t, 8 + (4 * i) + j, 11 + (4 * i) - j, i is not 0, min, max);
+                    H(t, 8 + (4 * i) + j, 11 + (4 * i) - j, i is not 0, min, max);
                 }
             }
         }
@@ -332,7 +329,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 4; i++)
             {
-                B<TSimd>(t, 29 - i, 18 + i, 48 + ((i >> 1) * 64), flip: true);
+                B(t, 29 - i, 18 + i, 48 + ((i >> 1) * 64), flip: true);
             }
         }
 
@@ -342,7 +339,7 @@ internal static partial class Av1InverseTransform
             {
                 for (var j = 0; j < 4; j++)
                 {
-                    H<TSimd>(t, 32 + (8 * i) + j, 39 + (8 * i) - j, (i & 1) is not 0, min, max);
+                    H(t, 32 + (8 * i) + j, 39 + (8 * i) - j, (i & 1) is not 0, min, max);
                 }
             }
         }
@@ -351,7 +348,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 4; i++)
             {
-                H<TSimd>(t, i, 7 - i, flip: false, min, max);
+                H(t, i, 7 - i, flip: false, min, max);
             }
         }
 
@@ -359,7 +356,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 2; i++)
             {
-                B<TSimd>(t, 13 - i, 10 + i, 32, flip: true);
+                B(t, 13 - i, 10 + i, 32, flip: true);
             }
         }
 
@@ -369,7 +366,7 @@ internal static partial class Av1InverseTransform
             {
                 for (var j = 0; j < 4; j++)
                 {
-                    H<TSimd>(t, 16 + (i * 8) + j, 23 + (i * 8) - j, i is not 0, min, max);
+                    H(t, 16 + (i * 8) + j, 23 + (i * 8) - j, i is not 0, min, max);
                 }
             }
         }
@@ -378,7 +375,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 8; i++)
             {
-                B<TSimd>(t, 59 - i, 36 + i, i < 4 ? 48 : 112, flip: true);
+                B(t, 59 - i, 36 + i, i < 4 ? 48 : 112, flip: true);
             }
         }
 
@@ -386,7 +383,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 8; i++)
             {
-                H<TSimd>(t, i, 15 - i, flip: false, min, max);
+                H(t, i, 15 - i, flip: false, min, max);
             }
         }
 
@@ -394,7 +391,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 4; i++)
             {
-                B<TSimd>(t, 27 - i, 20 + i, 32, flip: true);
+                B(t, 27 - i, 20 + i, 32, flip: true);
             }
         }
 
@@ -402,8 +399,8 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 8; i++)
             {
-                H<TSimd>(t, 32 + i, 47 - i, flip: false, min, max);
-                H<TSimd>(t, 48 + i, 63 - i, flip: true, min, max);
+                H(t, 32 + i, 47 - i, flip: false, min, max);
+                H(t, 48 + i, 63 - i, flip: true, min, max);
             }
         }
 
@@ -411,7 +408,7 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 16; i++)
             {
-                H<TSimd>(t, i, 31 - i, flip: false, min, max);
+                H(t, i, 31 - i, flip: false, min, max);
             }
         }
 
@@ -419,20 +416,19 @@ internal static partial class Av1InverseTransform
         {
             for (var i = 0; i < 8; i++)
             {
-                B<TSimd>(t, 55 - i, 40 + i, 32, flip: true);
+                B(t, 55 - i, 40 + i, 32, flip: true);
             }
 
             for (var i = 0; i < 32; i++)
             {
-                H<TSimd>(t, i, 63 - i, flip: false, min, max);
+                H(t, i, 63 - i, flip: false, min, max);
             }
         }
     }
 
     // InverseAdst4 on vectors: the 64-bit products and sums of the scalar kernel, for the 2 lower then the 2 upper lanes.
     // Sinpi39 * (t0 - t2 + t3) is computed as the sum of the 3 products, the same 64-bit value
-    private static void InverseAdst4<TSimd>(Span<Vector128<int>> t)
-        where TSimd : struct, IAv1Simd
+    private static void InverseAdst4(Span<Vector128<int>> t)
     {
         var t0 = t[0];
         var t1 = t[1];
@@ -440,10 +436,10 @@ internal static partial class Av1InverseTransform
         var t3 = t[3];
         var x0 = Adst4Outputs(t0, t1, t2, t3, upper: false, out var x1, out var x2, out var x3);
         var y0 = Adst4Outputs(t0, t1, t2, t3, upper: true, out var y1, out var y2, out var y3);
-        t[0] = TSimd.RoundNarrow12(x0, y0);
-        t[1] = TSimd.RoundNarrow12(x1, y1);
-        t[2] = TSimd.RoundNarrow12(x2, y2);
-        t[3] = TSimd.RoundNarrow12(x3, y3);
+        t[0] = Av1Simd.RoundNarrow12(x0, y0);
+        t[1] = Av1Simd.RoundNarrow12(x1, y1);
+        t[2] = Av1Simd.RoundNarrow12(x2, y2);
+        t[3] = Av1Simd.RoundNarrow12(x3, y3);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Vector128<long> Adst4Outputs(Vector128<int> t0, Vector128<int> t1, Vector128<int> t2, Vector128<int> t3, bool upper, out Vector128<long> x1, out Vector128<long> x2, out Vector128<long> x3)
@@ -457,8 +453,8 @@ internal static partial class Av1InverseTransform
             var s6 = Multiply(t3, Av1Constants.Sinpi49, upper);
             var sinpi39 = Vector128.Create(Av1Constants.Sinpi39);
             var b7 = upper
-                ? TSimd.MultiplyWideningUpperAndAdd(TSimd.MultiplyWideningUpperAndSubtract(TSimd.MultiplyWideningUpper(t0, sinpi39), t2, sinpi39), t3, sinpi39)
-                : TSimd.MultiplyWideningLowerAndAdd(TSimd.MultiplyWideningLowerAndSubtract(TSimd.MultiplyWideningLower(t0, sinpi39), t2, sinpi39), t3, sinpi39);
+                ? Av1Simd.MultiplyWideningUpperAndAdd(Av1Simd.MultiplyWideningUpperAndSubtract(Av1Simd.MultiplyWideningUpper(t0, sinpi39), t2, sinpi39), t3, sinpi39)
+                : Av1Simd.MultiplyWideningLowerAndAdd(Av1Simd.MultiplyWideningLowerAndSubtract(Av1Simd.MultiplyWideningLower(t0, sinpi39), t2, sinpi39), t3, sinpi39);
             s0 += s3;
             s1 -= s4;
             s3 = s2;
@@ -474,75 +470,73 @@ internal static partial class Av1InverseTransform
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Vector128<long> Multiply(Vector128<int> value, int factor, bool upper)
-            => upper ? TSimd.MultiplyWideningUpper(value, Vector128.Create(factor)) : TSimd.MultiplyWideningLower(value, Vector128.Create(factor));
+            => upper ? Av1Simd.MultiplyWideningUpper(value, Vector128.Create(factor)) : Av1Simd.MultiplyWideningLower(value, Vector128.Create(factor));
     }
 
     // InverseAdst8 on vectors: the same steps
-    private static void InverseAdst8<TSimd>(Span<Vector128<int>> t, int r)
-        where TSimd : struct, IAv1Simd
+    private static void InverseAdst8(Span<Vector128<int>> t, int r)
     {
         var min = Vector128.Create(-(1 << (r - 1)));
         var max = Vector128.Create((1 << (r - 1)) - 1);
         PermuteAdstInput(t, 3);
         for (var i = 0; i < 4; i++)
         {
-            B<TSimd>(t, 2 * i, (2 * i) + 1, 60 - (16 * i), flip: true);
+            B(t, 2 * i, (2 * i) + 1, 60 - (16 * i), flip: true);
         }
 
         for (var i = 0; i < 4; i++)
         {
-            H<TSimd>(t, i, 4 + i, flip: false, min, max);
+            H(t, i, 4 + i, flip: false, min, max);
         }
 
         for (var i = 0; i < 2; i++)
         {
-            B<TSimd>(t, 4 + (3 * i), 5 + i, 48 - (32 * i), flip: true);
+            B(t, 4 + (3 * i), 5 + i, 48 - (32 * i), flip: true);
         }
 
         for (var i = 0; i < 2; i++)
         {
             for (var j = 0; j < 2; j++)
             {
-                H<TSimd>(t, (4 * j) + i, 2 + (4 * j) + i, flip: false, min, max);
+                H(t, (4 * j) + i, 2 + (4 * j) + i, flip: false, min, max);
             }
         }
 
         for (var i = 0; i < 2; i++)
         {
-            B<TSimd>(t, 2 + (4 * i), 3 + (4 * i), 32, flip: true);
+            B(t, 2 + (4 * i), 3 + (4 * i), 32, flip: true);
         }
 
         PermuteAdstOutput(t, 3);
     }
 
     // InverseAdst16 on vectors: the same steps
-    private static void InverseAdst16<TSimd>(Span<Vector128<int>> t, int r)
-        where TSimd : struct, IAv1Simd
+    private static void InverseAdst16(Span<Vector128<int>> t, int r)
     {
         var min = Vector128.Create(-(1 << (r - 1)));
         var max = Vector128.Create((1 << (r - 1)) - 1);
         PermuteAdstInput(t, 4);
         for (var i = 0; i < 8; i++)
         {
-            B<TSimd>(t, 2 * i, (2 * i) + 1, 62 - (8 * i), flip: true);
+            B(t, 2 * i, (2 * i) + 1, 62 - (8 * i), flip: true);
         }
 
         for (var i = 0; i < 8; i++)
         {
-            H<TSimd>(t, i, 8 + i, flip: false, min, max);
+            H(t, i, 8 + i, flip: false, min, max);
         }
 
         for (var i = 0; i < 2; i++)
         {
-            B<TSimd>(t, 8 + (2 * i), 9 + (2 * i), 56 - (32 * i), flip: true);
-            B<TSimd>(t, 13 + (2 * i), 12 + (2 * i), 8 + (32 * i), flip: true);
+            B(t, 8 + (2 * i), 9 + (2 * i), 56 - (32 * i), flip: true);
+            B(t, 13 + (2 * i), 12 + (2 * i), 8 + (32 * i), flip: true);
         }
 
         for (var i = 0; i < 4; i++)
         {
             for (var j = 0; j < 2; j++)
             {
-                H<TSimd>(t, (8 * j) + i, 4 + (8 * j) + i, flip: false, min, max);
+                H(t, (8 * j) + i, 4 + (8 * j) + i, flip: false, min, max);
             }
         }
 
@@ -550,7 +544,7 @@ internal static partial class Av1InverseTransform
         {
             for (var j = 0; j < 2; j++)
             {
-                B<TSimd>(t, 4 + (8 * j) + (3 * i), 5 + (8 * j) + i, 48 - (32 * i), flip: true);
+                B(t, 4 + (8 * j) + (3 * i), 5 + (8 * j) + i, 48 - (32 * i), flip: true);
             }
         }
 
@@ -558,13 +552,13 @@ internal static partial class Av1InverseTransform
         {
             for (var j = 0; j < 4; j++)
             {
-                H<TSimd>(t, (4 * j) + i, 2 + (4 * j) + i, flip: false, min, max);
+                H(t, (4 * j) + i, 2 + (4 * j) + i, flip: false, min, max);
             }
         }
 
         for (var i = 0; i < 4; i++)
         {
-            B<TSimd>(t, 2 + (4 * i), 3 + (4 * i), 32, flip: true);
+            B(t, 2 + (4 * i), 3 + (4 * i), 32, flip: true);
         }
 
         PermuteAdstOutput(t, 4);
@@ -598,17 +592,16 @@ internal static partial class Av1InverseTransform
         }
     }
 
-    private static void InverseIdentity<TSimd>(Span<Vector128<int>> t, int n)
-        where TSimd : struct, IAv1Simd
+    private static void InverseIdentity(Span<Vector128<int>> t, int n)
     {
         var length = 1 << n;
         for (var i = 0; i < length; i++)
         {
             t[i] = n switch
             {
-                2 => MultiplyRound12<TSimd>(t[i], 5793),
+                2 => MultiplyRound12(t[i], 5793),
                 3 => t[i] << 1,
-                4 => MultiplyRound12<TSimd>(t[i], 11586),
+                4 => MultiplyRound12(t[i], 11586),
                 _ => t[i] << 2,
             };
         }
@@ -616,28 +609,26 @@ internal static partial class Av1InverseTransform
 
     // Round2( value * factor, 12 ) with a 64-bit product
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Vector128<int> MultiplyRound12<TSimd>(Vector128<int> value, int factor)
-        where TSimd : struct, IAv1Simd
+    private static Vector128<int> MultiplyRound12(Vector128<int> value, int factor)
     {
         var factors = Vector128.Create(factor);
-        return TSimd.RoundNarrow12(TSimd.MultiplyWideningLower(value, factors), TSimd.MultiplyWideningUpper(value, factors));
+        return Av1Simd.RoundNarrow12(Av1Simd.MultiplyWideningLower(value, factors), Av1Simd.MultiplyWideningUpper(value, factors));
     }
 
     // The butterfly rotation B( a, b, angle, flip ) on vectors
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void B<TSimd>(Span<Vector128<int>> t, int a, int b, int angle, bool flip)
-        where TSimd : struct, IAv1Simd
+    private static void B(Span<Vector128<int>> t, int a, int b, int angle, bool flip)
     {
         var cos = Vector128.Create(Cos128(angle));
         var sin = Vector128.Create(Cos128(angle - 64));
         var va = t[a];
         var vb = t[b];
-        var x = TSimd.RoundNarrow12(
-            TSimd.MultiplyWideningLowerAndSubtract(TSimd.MultiplyWideningLower(va, cos), vb, sin),
-            TSimd.MultiplyWideningUpperAndSubtract(TSimd.MultiplyWideningUpper(va, cos), vb, sin));
-        var y = TSimd.RoundNarrow12(
-            TSimd.MultiplyWideningLowerAndAdd(TSimd.MultiplyWideningLower(va, sin), vb, cos),
-            TSimd.MultiplyWideningUpperAndAdd(TSimd.MultiplyWideningUpper(va, sin), vb, cos));
+        var x = Av1Simd.RoundNarrow12(
+            Av1Simd.MultiplyWideningLowerAndSubtract(Av1Simd.MultiplyWideningLower(va, cos), vb, sin),
+            Av1Simd.MultiplyWideningUpperAndSubtract(Av1Simd.MultiplyWideningUpper(va, cos), vb, sin));
+        var y = Av1Simd.RoundNarrow12(
+            Av1Simd.MultiplyWideningLowerAndAdd(Av1Simd.MultiplyWideningLower(va, sin), vb, cos),
+            Av1Simd.MultiplyWideningUpperAndAdd(Av1Simd.MultiplyWideningUpper(va, sin), vb, cos));
         if (flip)
         {
             t[b] = x;
@@ -652,15 +643,14 @@ internal static partial class Av1InverseTransform
 
     // The Hadamard rotation H( a, b, flip, r ) on vectors: Clamp of the 64-bit sum is Clamp of the saturated sum
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void H<TSimd>(Span<Vector128<int>> t, int a, int b, bool flip, Vector128<int> min, Vector128<int> max)
-        where TSimd : struct, IAv1Simd
+    private static void H(Span<Vector128<int>> t, int a, int b, bool flip, Vector128<int> min, Vector128<int> max)
     {
         if (flip)
             (a, b) = (b, a);
 
         var x = t[a];
         var y = t[b];
-        t[a] = Vector128.Min(Vector128.Max(TSimd.AddSaturate(x, y), min), max);
-        t[b] = Vector128.Min(Vector128.Max(TSimd.SubtractSaturate(x, y), min), max);
+        t[a] = Vector128.Min(Vector128.Max(Av1Simd.AddSaturate(x, y), min), max);
+        t[b] = Vector128.Min(Vector128.Max(Av1Simd.SubtractSaturate(x, y), min), max);
     }
 }

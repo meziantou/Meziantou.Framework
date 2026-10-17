@@ -154,7 +154,12 @@ public sealed class RegexSyntaxTree : SyntaxTree
         var parser = CreateParser(source, options, literal);
         var root = parser.ParsePattern(captureTable);
 
-        return new RegexSyntaxTree(source, options, root, [.. parser.Diagnostics], parser.Captures, options.PatternOptions);
+        // The parser reports a construct's problems as it finishes reading it, so a diagnostic about the whole of an
+        // unterminated group comes after those about its contents. The sort is stable, which keeps the order of the
+        // diagnostics that start at the same position.
+        var diagnostics = parser.Diagnostics.OrderBy(diagnostic => diagnostic.Location.SourceSpan.Start).ToArray();
+
+        return new RegexSyntaxTree(source, options, root, diagnostics, parser.Captures, options.PatternOptions);
     }
 
     /// <summary>The dialect family selects the parser; dialect features handle the differences within a family.</summary>

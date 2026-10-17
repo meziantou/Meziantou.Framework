@@ -763,10 +763,16 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             // ordinary group parser read it, with the capture suppressed.
             Scanner.Position = conditionStart;
             ReportIllegalConditionHeader(conditionStart);
-            _ignoreNextParen = true;
-            _inConditionalTest = true;
-            condition = ParseAtom(ConditionMayStartWithComment ? TakeTrivia() : null);
-            _inConditionalTest = false;
+
+            // A comment in front of the condition may run to the end of the pattern, leaving no condition to read. The
+            // comment then stays where it is, for the token that ends the pattern to claim.
+            if (!IsAtBodyEnd(ConditionMayStartWithComment ? PeekTriviaEnd() : conditionStart))
+            {
+                _ignoreNextParen = true;
+                _inConditionalTest = true;
+                condition = ParseAtom(ConditionMayStartWithComment ? TakeTrivia() : null);
+                _inConditionalTest = false;
+            }
         }
 
         var alternation = ParseAlternation(insideGroup: true);

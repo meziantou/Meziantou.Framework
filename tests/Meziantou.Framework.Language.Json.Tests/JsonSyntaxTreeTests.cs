@@ -1233,4 +1233,14 @@ public sealed class JsonSyntaxTreeTests
             return trivia.IsKind(SyntaxKind.MultiLineCommentTrivia) ? default : trivia;
         }
     }
+
+    [Fact]
+    public void MemberWithAMissingValue_SpanEndsAtTheColon()
+    {
+        var tree = JsonSyntaxTree.ParseText("""{"a": }""");
+        var member = tree.GetRoot().DescendantNodes().OfType<JsonMemberSyntax>().Single();
+
+        Assert.Equal(TextSpan.FromBounds(1, 5), member.Span);
+        Assert.Equal(":", member.GetLastToken().Text);
+    }
 }

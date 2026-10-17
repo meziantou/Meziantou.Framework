@@ -1,0 +1,1 @@
+SELECT Id FROM customers WHERE ROUND(1.26, 18) > 2 AND Id = 1

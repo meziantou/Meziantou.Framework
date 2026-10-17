@@ -3716,6 +3716,86 @@ public sealed class TdsQueryEngineTests
             expectedMessageContains: "Duplicate common table expression name 'c'");
     }
 
+    // Invalid queries the parser accepts, and errors raised while the query runs, must be reported as query errors
+    // rather than escape the engine as generic handler failures
+    [Theory]
+    [InlineData("SELECT Id FROM customers WHERE Id = $", 50004, "Invalid numeric literal '$'")]
+    [InlineData("SELECT Id + 1e AS X FROM customers", 50004, "Invalid numeric literal '1e'")]
+    [InlineData("SELECT Id FROM customers WHERE Id = 99999999999999999999", 50004, "Conversion failed when converting the value '99999999999999999999' to data type 'Int32'")]
+    [InlineData("SELECT Id FROM customers WHERE CAST('x' AS datetime) = Id", 50004, "Cannot implicitly convert a value of type 'Int32' to 'DateTime'")]
+    [InlineData("SELECT Id FROM customers WHERE CAST(-'1' AS datetime) = Id", 50004, "The unary minus operator requires a numeric operand")]
+    [InlineData("SELECT Id FROM customers WHERE Name < 'x'", 50004, "Comparison operator 'LessThan' is not supported between values of type 'String' and 'String'")]
+    [InlineData("SELECT c1.Id FROM customers c1 INNER JOIN customers c1 ON c1.Id = c2.Id", 50004, "Duplicate alias 'c1'")]
+    [InlineData("SELECT c.Id FROM customers c INNER JOIN orders c ON c.Id = c.Id", 50004, "Duplicate alias 'c'")]
+    [InlineData("SELECT Id FROM customers c1 INNER JOIN customers c2 ON c1.Id = c2.Id", 50004, "Ambiguous or unknown column 'Id'")]
+    [InlineData("SELECT Id '' FROM customers", 50004, "An object or column name is missing or empty")]
+    [InlineData("SELECT Id.value() AS Value FROM customers", 50004, "xml.value requires an XQuery argument and a SQL type argument")]
+    [InlineData("SELECT Region, Amount, COUNT(*) AS Count FROM orders GROUP BY Region, Amount, Amount", 50004, "Duplicate GROUP BY column 'Amount'")]
+    [InlineData("SELECT ISJSON( FETCH NEXT x FROM json_docs", 50004, "Invalid SQL query")]
+    [InlineData("SELECT CAST('abc' AS int) AS X FROM customers", 50004, "Conversion failed when converting the value 'abc' to data type 'Int32'")]
+    [InlineData("SELECT Id FROM customers WHERE CAST('<garbage>' AS datetime) > CAST('2020-01-01' AS datetime)", 50004, "Conversion failed when converting the value '<garbage>' to data type 'DateTime'")]
+    [InlineData("SELECT Id FROM customers WHERE TAN(Name) = 0", 50004, "Conversion failed")]
+    [InlineData("SELECT Id FROM xml_docs WHERE Payload.exist('1/root/item[@ido.=2]') = 1", 50004, "The XQuery expression cannot be evaluated")]
+    [InlineData("SELECT Id.exist(Score) AS X FROM nullable_customers", 50004, "xml.exist requires a string XQuery argument")]
+    [InlineData("SELECT Id FROM customers WHERE DATEADD(day, -2147483647, CAST('2024-01-01' AS datetime)) > CAST('2024-01-01' AS datetime)", 517, "Adding a value to a 'datetime' column caused an overflow.")]
+    [InlineData("SELECT Id / 0 AS X FROM customers", 8134, "Divide by zero error encountered.")]
+    [InlineData("SELECT Id FROM customers WHERE Id > -21474836482", 8115, "Arithmetic overflow error.")]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The SQL query comes from the test data and is not user-controlled.")]
+    public async Task SqlClient_QueryEngine_InvalidQuery_ReturnsAQueryError(string commandText, int expectedErrorNumber, string expectedMessage)
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command => command.CommandText = commandText,
+            expectedErrorNumber,
+            expectedMessage);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ReplaceFunction_WithAnEmptyPattern_ReturnsTheValue()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT REPLACE(Name, '', 'x') AS Value
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            Value
+            Alice
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RoundFunction_AcceptsAnyLength()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT ROUND(748.58, -2) AS Hundreds, ROUND(748.58, -4) AS TenThousands, ROUND(1.26, 18) AS ManyDigits, ROUND(1.26, -400) AS Tiny
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            Hundreds TenThousands ManyDigits Tiny
+            700 0 1.26 0
+            """,
+            expectedMaterializedQueries: null);
+    }
+
     [Fact]
     public async Task SqlClient_QueryEngine_XmlMethod_WithAnXQueryOnlyExpression_ReturnsAQueryEngineError()
     {

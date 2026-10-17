@@ -1,0 +1,1 @@
+SELECT Id / 0 AS X FROM customers

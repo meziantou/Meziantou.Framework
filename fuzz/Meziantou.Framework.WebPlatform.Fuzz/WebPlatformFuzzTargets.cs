@@ -70,7 +70,8 @@ public static class WebPlatformFuzzTargets
     {
         var assembly = typeof(WebPlatformFuzzTargets).Assembly;
         var prefix = "Seeds/" + directory + "/";
-        foreach (var name in assembly.GetManifestResourceNames().Where(name => name.StartsWith(prefix, StringComparison.Ordinal)).Order(StringComparer.Ordinal))
+        // The names of the resources use the directory separator of the OS that built the project (%(RecursiveDir))
+        foreach (var name in assembly.GetManifestResourceNames().Where(name => name.Replace('\\', '/').StartsWith(prefix, StringComparison.Ordinal)).Order(StringComparer.Ordinal))
         {
             using var stream = FuzzResources.Open(assembly, name);
             using var memory = new MemoryStream();

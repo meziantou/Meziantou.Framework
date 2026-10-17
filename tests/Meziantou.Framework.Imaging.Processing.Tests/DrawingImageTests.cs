@@ -306,6 +306,33 @@ public sealed class DrawingImageTests
     }
 
     [Fact]
+    public void AReducedImageGivesAPixelTheSameColorWhateverTheRunItIsPartOf()
+    {
+        // A wide image reduced 143 times: the pixels of a whole row of the canvas read more columns of the image than
+        // the evaluator keeps at once, so the row is evaluated in parts. Each pixel drawn on its own gets the same bits
+        var random = new Random(4242);
+        using var source = DrawingTestSupport.CreateRandom(PixelFormat.Rgba64, 20000, 3, random.Next);
+        foreach (var sampling in new[] { ImageSampling.Smooth, ImageSampling.Box })
+        {
+            foreach (var wrapMode in new[] { ImageWrapMode.Transparent, ImageWrapMode.Pad, ImageWrapMode.Repeat, ImageWrapMode.Reflect })
+            {
+                var brush = new ImageBrush(source.Frames[0]) { Transform = AffineTransform.CreateScale(0.007, 0.9).Then(AffineTransform.CreateTranslation(13.25, 0.5)), WrapMode = wrapMode, Sampling = sampling, CompositeMode = CompositeMode.Source };
+                using var whole = new Image<Rgba64>(300, 2);
+                using var alone = new Image<Rgba64>(300, 2);
+                whole.Draw(canvas => canvas.Fill(brush), Ct);
+                alone.Draw(canvas =>
+                {
+                    for (var x = 0; x < whole.Width; x++)
+                    {
+                        canvas.FillRectangle(brush, new RectangleD(x, 0, 1, 2));
+                    }
+                }, Ct);
+                Assert.Equal(DrawingTestSupport.ReadSamples(whole.Frames[0]), DrawingTestSupport.ReadSamples(alone.Frames[0]));
+            }
+        }
+    }
+
+    [Fact]
     public void ABoxAveragesWhatAPixelOfTheCanvasCoversOfTheImage()
     {
         // Four pixels reduced to two: each pixel of the canvas is the average of the two it covers. Six reduced to four:

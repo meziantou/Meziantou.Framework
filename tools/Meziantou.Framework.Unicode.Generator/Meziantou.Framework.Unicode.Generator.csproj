@@ -3,10 +3,10 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <ValidateProjectTargets>false</ValidateProjectTargets>
+    <IncludeSharedHttpClient>true</IncludeSharedHttpClient>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../../common/SharedHttpClient.cs" Link="SharedHttpClient.cs" />
     <Compile Include="../../src/Meziantou.Framework.Unicode/UnicodeBlock.cs" Link="UnicodeBlock.cs" />
     <Compile Include="../../src/Meziantou.Framework.Unicode/UnicodeRange.cs" Link="UnicodeRange.cs" />
     <Compile Include="../../src/Meziantou.Framework.Unicode/UnicodeBidirectionalCategory.cs" Link="UnicodeBidirectionalCategory.cs" />

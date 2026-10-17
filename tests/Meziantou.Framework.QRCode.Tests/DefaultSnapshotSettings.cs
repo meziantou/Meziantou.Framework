@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.SnapshotTesting;
+using Meziantou.Framework.SnapshotTesting.Imaging;
 
 namespace Meziantou.Framework.Tests;
 

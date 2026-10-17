@@ -41,6 +41,7 @@ internal static class TdsProjectionTypeFactory
     public static Type GetProjectionType(IReadOnlyList<TdsProjectionMember> members)
     {
         ArgumentNullException.ThrowIfNull(members);
+        ValidateMemberNames(members);
 
         return GetOrCreateType(CreateKey("Projection", members), "TdsProjection", members);
     }
@@ -48,8 +49,22 @@ internal static class TdsProjectionTypeFactory
     public static Type GetCarrierType(IReadOnlyList<TdsProjectionMember> members)
     {
         ArgumentNullException.ThrowIfNull(members);
+        ValidateMemberNames(members);
 
         return GetOrCreateType(CreateKey("Carrier", members), "TdsCarrier", members);
+    }
+
+    private static void ValidateMemberNames(IReadOnlyList<TdsProjectionMember> members)
+    {
+        // The names are column and table aliases from client SQL, such as SELECT Id '' or SELECT Id AS [], and
+        // TypeBuilder.DefineProperty rejects an empty name or one that starts with a null character
+        foreach (var member in members)
+        {
+            if (member.Name is "" || member.Name[0] is '\0')
+            {
+                throw new TdsQueryEngineException("An object or column name is missing or empty.");
+            }
+        }
     }
 
     private static Type GetOrCreateType(string key, string prefix, IReadOnlyList<TdsProjectionMember> members)

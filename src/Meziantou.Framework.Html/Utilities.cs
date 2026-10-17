@@ -103,6 +103,7 @@ internal static class Utilities
         return new StreamWriter(stream, encoding, 0x400, leaveOpen: false);
     }
 
+    [SuppressMessage("Globalization", "MFGS0001", Justification = "The attribute names of a header are ASCII, and ICU only changes how ignorable and non-ASCII characters match.")]
     public static string? GetAttributeFromHeader(string? header, string name)
     {
         ArgumentNullException.ThrowIfNull(name);

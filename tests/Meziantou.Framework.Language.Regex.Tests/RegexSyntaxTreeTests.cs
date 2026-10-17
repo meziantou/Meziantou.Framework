@@ -170,4 +170,91 @@ public sealed class RegexSyntaxTreeTests
         // Named groups take the first free numbers after every numbered one, so "x" is group 3 rather than group 2.
         Assert.Equal(["1", "2", "x"], tree.Captures.Select(capture => capture.Name));
     }
+
+    [Theory]
+    [InlineData("|")]
+    [InlineData("||")]
+    [InlineData("a|")]
+    [InlineData("|a")]
+    [InlineData("(|)")]
+    [InlineData("(?:|)|")]
+    public void TokenNavigation_StepsOverEmptyBranches(string pattern)
+    {
+        var root = RegexSyntaxTree.ParseText(pattern, RegexDialect.Net).GetRoot();
+        var tokens = root.DescendantTokens().ToArray();
+
+        Assert.Equal(tokens[0], root.GetFirstToken());
+        Assert.Equal(tokens[^1], root.GetLastToken());
+
+        var forward = new List<SyntaxToken>();
+        for (var token = root.GetFirstToken(); token != default; token = token.GetNextToken())
+        {
+            forward.Add(token);
+        }
+
+        var backward = new List<SyntaxToken>();
+        for (var token = root.GetLastToken(); token != default; token = token.GetPreviousToken())
+        {
+            backward.Add(token);
+        }
+
+        Assert.Equal(tokens, forward);
+        Assert.Equal(tokens.Reverse(), backward);
+
+        foreach (var node in root.DescendantNodesAndSelf())
+        {
+            var first = node.GetFirstToken();
+            var last = node.GetLastToken();
+            Assert.Equal(first == default ? node.FullSpan : TextSpan.FromBounds(first.Span.Start, last.Span.End), node.Span);
+        }
+    }
+
+    [Fact]
+    public void GetFirstToken_OfAnAlternationWithEmptyBranches_IsTheBar()
+    {
+        var root = RegexSyntaxTree.ParseText("|", RegexDialect.Net).GetRoot();
+
+        Assert.Equal("|", root.GetFirstToken().Text);
+    }
+
+    [Theory]
+    [InlineData("(?(?#")]
+    [InlineData("(?(?")]
+    [InlineData("(?(")]
+    [InlineData("(?(?#c)")]
+    public void AnUnterminatedConditionAtTheEndOfThePattern_IsReportedRatherThanThrown(string pattern)
+    {
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PcrePerl);
+
+        Assert.NotEmpty(tree.GetDiagnostics());
+    }
+
+    [Theory]
+    [InlineData("/[[[]]]/v", 7)]
+    [InlineData("/[[[]]/v]]", 6)]
+    [InlineData("/[[a]b-/v]", 7)]
+    [InlineData("/[[\\q{]/v}]", 7)]
+    [InlineData("/[[\\p{]/v}]", 7)]
+    [InlineData("/[\\p{]/u}", 6)]
+    public void AClassLeftOpenByTheLiteral_EndsAtTheClosingSlash(string literal, int closeSlashPosition)
+    {
+        var tree = RegexSyntaxTree.ParseJavaScriptLiteral(literal);
+
+        RegexSyntaxAssert.TextIsFaithful(literal, tree);
+        Assert.Equal(new TextSpan(closeSlashPosition, 1), tree.GetRoot().CloseSlashToken.Span);
+    }
+
+    [Theory]
+    [InlineData("(?<")]
+    [InlineData("(?<a")]
+    [InlineData("(?P<")]
+    public void GetDiagnostics_IsInSourceOrder(string pattern)
+    {
+        foreach (var dialect in new[] { RegexDialect.Net, RegexDialect.PcrePerl, RegexDialect.JavaScript })
+        {
+            var starts = RegexSyntaxTree.ParseText(pattern, dialect).GetDiagnostics().Select(diagnostic => diagnostic.Location.SourceSpan.Start).ToArray();
+
+            Assert.Equal(starts.Order(), starts);
+        }
+    }
 }

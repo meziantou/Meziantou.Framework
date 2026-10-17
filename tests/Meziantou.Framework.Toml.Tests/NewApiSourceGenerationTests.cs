@@ -5152,16 +5152,23 @@ public class NewApiSourceGenerationTests
 
         // The first calls resolve and cache the metadata, which other tests may have done already: both methods are measured
         // warm, so they only differ by the diagnostics Deserialize records
-        _ = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, typeInfo));
-        Assert.False(TomlSerializer.TryDeserialize(toml, typeInfo, out _));
-
-        var before = GC.GetAllocatedBytesForCurrentThread();
         var exception = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, typeInfo));
-        var deserializeAllocated = GC.GetAllocatedBytesForCurrentThread() - before;
-
-        before = GC.GetAllocatedBytesForCurrentThread();
         Assert.False(TomlSerializer.TryDeserialize(toml, typeInfo, out _));
-        var tryDeserializeAllocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        // When the machine is short on memory, a gen2 GC trims the shared ArrayPool, and the next call rents new buffers that
+        // outweigh the diagnostics: the smallest of a few measurements is the allocation of the call itself
+        var deserializeAllocated = long.MaxValue;
+        var tryDeserializeAllocated = long.MaxValue;
+        for (var attempt = 0; attempt < 5 && tryDeserializeAllocated >= deserializeAllocated - 1_000_000; attempt++)
+        {
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            _ = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, typeInfo));
+            deserializeAllocated = Math.Min(deserializeAllocated, GC.GetAllocatedBytesForCurrentThread() - before);
+
+            before = GC.GetAllocatedBytesForCurrentThread();
+            Assert.False(TomlSerializer.TryDeserialize(toml, typeInfo, out _));
+            tryDeserializeAllocated = Math.Min(tryDeserializeAllocated, GC.GetAllocatedBytesForCurrentThread() - before);
+        }
 
         // Each of the 1,000 diagnostics Deserialize records costs more than 1 KB, which TryDeserialize does not spend
         Assert.Equal(Meziantou.Framework.Toml.Serialization.Internal.TomlSerializationOperationState.MaxRecordedDiagnostics + 1, exception.Diagnostics.Count);

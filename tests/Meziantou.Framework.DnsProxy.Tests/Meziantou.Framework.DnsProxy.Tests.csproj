@@ -1,6 +1,10 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
+    <!-- Tests Meziantou.DnsProxy, which uses Meziantou.Framework.DnsClient and Meziantou.Framework.DnsFilter, which depend on ICU -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
+    <!-- The project under test does not follow the naming convention -->
+    <GlobalizationSensitiveTestedAssemblies>Meziantou.DnsProxy</GlobalizationSensitiveTestedAssemblies>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 
@@ -12,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0-rc.1.26425.128" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0-rc.2.26504.105" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">

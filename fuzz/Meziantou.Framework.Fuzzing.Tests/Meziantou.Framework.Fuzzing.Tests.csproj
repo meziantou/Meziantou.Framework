@@ -1,0 +1,24 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!--
+    Replays the seeds and the committed regressions (fuzz/*.Fuzz/Regressions/<target>) of every SharpFuzz target, so
+    that every CI build checks them; the coverage-guided campaigns run weekly (.github/workflows/fuzz.yml).
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.DependencyScanning.Fuzz\Meziantou.Framework.DependencyScanning.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Globbing.Fuzz\Meziantou.Framework.Globbing.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.HtmlSanitizer.Fuzz\Meziantou.Framework.HtmlSanitizer.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.JsonPath.Fuzz\Meziantou.Framework.JsonPath.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Language.Fuzz\Meziantou.Framework.Language.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.SyntaxHighlighting.Fuzz\Meziantou.Framework.SyntaxHighlighting.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.TdsServer.Fuzz\Meziantou.Framework.TdsServer.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Toml.Fuzz\Meziantou.Framework.Toml.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Unicode.Fuzz\Meziantou.Framework.Unicode.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Yaml.Fuzz\Meziantou.Framework.Yaml.Fuzz.csproj" />
+  </ItemGroup>
+</Project>

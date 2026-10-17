@@ -1,0 +1,63 @@
+namespace Meziantou.Framework.Imaging.TestHarness.Fixtures;
+
+/// <summary>Raw timing, loop and metadata fields read from an encoded input by <see cref="EncodedFieldInspector"/>.</summary>
+public sealed class EncodedFields
+{
+    /// <summary>Gets the raw loop field: APNG <c>acTL num_plays</c>, GIF NETSCAPE2.0 loop count or WebP <c>ANIM</c> loop count; <see langword="null"/> when absent.</summary>
+    public int? LoopValue { get; internal set; }
+
+    /// <summary>Gets the raw delay field of each displayed frame (APNG <c>fcTL</c> order, GIF image order, WebP <c>ANMF</c> order); <see langword="null"/> entries have no delay field.</summary>
+    public IList<EncodedDelayExpectation?> FrameDelays { get; } = [];
+
+    /// <summary>Gets the encoded physical resolution, or <see langword="null"/> when absent or aspect-ratio only.</summary>
+    public EncodedResolution? Resolution { get; internal set; }
+
+    /// <summary>Gets the uncompressed ICC profile, or <see langword="null"/>.</summary>
+    public ReadOnlyMemory<byte>? Icc { get; internal set; }
+
+    /// <summary>Gets the EXIF data from the TIFF header, or <see langword="null"/>.</summary>
+    public ReadOnlyMemory<byte>? Exif { get; internal set; }
+
+    /// <summary>Gets the XMP packet, or <see langword="null"/>.</summary>
+    public ReadOnlyMemory<byte>? Xmp { get; internal set; }
+
+    /// <summary>Gets the transfer function declared by the header (QOI colorspace: <c>srgb</c> for 0, <c>linear</c> for 1), or <see langword="null"/> when the format has no such field.</summary>
+    public string? TransferFunction { get; internal set; }
+
+    /// <summary>Gets the text entries in file order.</summary>
+    public IList<TextEntryExpectation> Text { get; } = [];
+
+    /// <summary>
+    /// Gets the edit list of the track of the color images of an AVIF image sequence with the duration of its track header,
+    /// or <see langword="null"/> when the track has none (and for every other format).
+    /// </summary>
+    public EditListExpectation? EditList { get; internal set; }
+
+    /// <summary>
+    /// Gets the <c>colr</c> box of type <c>nclx</c> of the primary item or of the track of an AVIF input, or
+    /// <see langword="null"/>. The color description of the AV1 bitstream, which applies without such a box, is not read:
+    /// the inspector never parses coded data.
+    /// </summary>
+    public CicpExpectation? ContainerCicp { get; internal set; }
+
+    /// <summary>Gets the <c>clli</c> box of the primary item or of the track of an AVIF input, or <see langword="null"/>.</summary>
+    public ContentLightLevelExpectation? ContentLightLevel { get; internal set; }
+
+    /// <summary>Gets the <c>mdcv</c> box of the primary item or of the track of an AVIF input, or <see langword="null"/>.</summary>
+    public MasteringDisplayExpectation? MasteringDisplay { get; internal set; }
+
+    /// <summary>Gets the <c>pasp</c> box of the primary item or of the track of an AVIF input, or <see langword="null"/>.</summary>
+    public PixelAspectRatioExpectation? PixelAspectRatio { get; internal set; }
+
+    /// <summary>
+    /// Gets the EXIF orientation that is equivalent to the <c>irot</c> and <c>imir</c> properties of the primary item of an
+    /// AVIF input, or <see langword="null"/> for every other format.
+    /// </summary>
+    public int? TransformOrientation { get; internal set; }
+
+    /// <summary>
+    /// Gets a value indicating whether the input has an ICC profile that the inspector does not read: the one of a JPEG XL
+    /// codestream, which is entropy coded. <see cref="Icc"/> is then <see langword="null"/>.
+    /// </summary>
+    public bool HasUnreadIccProfile { get; internal set; }
+}

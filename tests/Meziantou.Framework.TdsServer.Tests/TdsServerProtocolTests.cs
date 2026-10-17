@@ -96,6 +96,60 @@ public sealed class TdsServerProtocolTests
         Assert.Null(parameter.AsJson());
     }
 
+    [Theory]
+    [InlineData(1e300)]
+    [InlineData(-1e300)]
+    [InlineData(79228162514264337593543950336d)] // decimal.MaxValue rounds up to this double
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public void TdsQueryParameter_AsDecimal_DoubleOutsideTheDecimalRange_ReturnsNull(double value)
+    {
+        var parameter = new TdsQueryParameter
+        {
+            Name = "@p",
+            Value = value,
+            Type = TdsColumnType.Double,
+        };
+
+        Assert.Null(parameter.AsDecimal());
+    }
+
+    [Theory]
+    [InlineData(float.MaxValue)]
+    [InlineData(float.MinValue)]
+    [InlineData(float.NaN)]
+    [InlineData(float.PositiveInfinity)]
+    public void TdsQueryParameter_AsDecimal_SingleOutsideTheDecimalRange_ReturnsNull(float value)
+    {
+        var parameter = new TdsQueryParameter
+        {
+            Name = "@p",
+            Value = value,
+            Type = TdsColumnType.Real,
+        };
+
+        Assert.Null(parameter.AsDecimal());
+    }
+
+    [Fact]
+    public void TdsQueryParameter_AsDecimal_DoubleInsideTheDecimalRange_ReturnsTheValue()
+    {
+        Assert.Equal(1.5m, CreateParameter(1.5).AsDecimal());
+        Assert.Equal(-1.5m, CreateParameter(-1.5).AsDecimal());
+
+        // The largest doubles below decimal.MaxValue, rounded up to a double, still convert
+        Assert.NotNull(CreateParameter(Math.BitDecrement(79228162514264337593543950336d)).AsDecimal());
+        Assert.NotNull(CreateParameter(Math.BitIncrement(-79228162514264337593543950336d)).AsDecimal());
+
+        static TdsQueryParameter CreateParameter(double value) => new()
+        {
+            Name = "@p",
+            Value = value,
+            Type = TdsColumnType.Double,
+        };
+    }
+
     [Fact]
     public async Task SqlClient_AuthenticationCallback_ReceivesCredentials()
     {
@@ -1792,6 +1846,20 @@ public sealed class TdsServerProtocolTests
         var options = new TdsServerOptions();
 
         Assert.Equal(TdsServerOptions.DefaultMaxMessageSize, options.MaxMessageSize);
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x01 })] // the value is the ENCRYPTION token itself
+    [InlineData(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x01, 0xFF, 0x02 })]
+    [InlineData(new byte[] { 0x01, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00, 0x0B, 0x00, 0x00, 0xFF, 0x02 })] // the value is in the VERSION entry
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x0B, 0x00, 0x01, 0xFF, 0x02 })] // VERSION overlaps the table
+    public async Task TdsServer_PreLogin_WithOptionDataInsideTheOptionTable_IsRejected(byte[] preLoginPayload)
+    {
+        // Answering would write the encryption mode into the option table, and send a malformed PRELOGIN response
+        var (packetType, payload) = await RawTdsClient.SendPreLoginAsync(preLoginPayload);
+
+        Assert.Equal(0x04, packetType); // tabular result
+        Assert.True(payload.AsSpan().IndexOf(Encoding.Unicode.GetBytes("Invalid pre-login packet")) >= 0, "The response should be the pre-login error");
     }
 
     [Fact]

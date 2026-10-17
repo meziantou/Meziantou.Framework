@@ -9,6 +9,11 @@
     <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 
+  <!-- The trimming validation (eng/Trimmable) does not report the AOT-specific warnings (IL3xxx), so a trimmable project also runs the AOT analyzers unless it opts out -->
+  <PropertyGroup Condition="'$(IsTrimmable)' == 'true' AND '$(IsAotCompatible)' == ''">
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
     <Compile Include="$(MSBuildThisFileDirectory)/common/AssemblyInfo.cs"
              Link="Properties/AssemblyInfo.common.cs"
@@ -50,6 +55,31 @@
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all"
                       SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
+  <!-- CI only runs the tests of a project in invariant globalization mode when it sets GlobalizationSensitive. The analyzer
+       reports the ICU-dependent code of the projects that do not, and the test projects whose tested library depends on a
+       library that does, which the marker below identifies. The tested library is found from the test project name, or from
+       GlobalizationSensitiveTestedAssemblies when the names do not match; the references a test project adds itself do not
+       count. Packages the analyzer cannot see into need the property set by hand. -->
+  <PropertyGroup>
+    <_RepositoryRelativeProjectPath>$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '$(MSBuildProjectFullPath)').Replace('\', '/'))</_RepositoryRelativeProjectPath>
+    <EnableGlobalizationSensitivityAnalyzer Condition="'$(EnableGlobalizationSensitivityAnalyzer)' == '' AND '$(MSBuildProjectExtension)' == '.csproj' AND '$(MSBuildProjectName)' != 'Meziantou.Framework.GlobalizationSensitivity.Analyzer' AND ($(_RepositoryRelativeProjectPath.StartsWith('src/')) OR $(_RepositoryRelativeProjectPath.StartsWith('tests/')) OR $(_RepositoryRelativeProjectPath.StartsWith('fuzz/')))">true</EnableGlobalizationSensitivityAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(EnableGlobalizationSensitivityAnalyzer)' == 'true' and '@(ProjectReference->WithMetadataValue(`Filename`, `Meziantou.Framework.GlobalizationSensitivity.Analyzer`))' == ''">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)tools/Meziantou.Framework.GlobalizationSensitivity.Analyzer/Meziantou.Framework.GlobalizationSensitivity.Analyzer.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
+    <CompilerVisibleProperty Include="GlobalizationSensitive" />
+    <CompilerVisibleProperty Include="IsTestProject" />
+    <CompilerVisibleProperty Include="GlobalizationSensitiveTestedAssemblies" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(GlobalizationSensitive)' == 'true' AND '$(IsTestProject)' != 'true'">
+    <AssemblyMetadata Include="Meziantou.Framework.GlobalizationSensitive" Value="true" />
   </ItemGroup>
 
   <!-- Compile the Meziantou.Framework.Roslyn sources and configure the ROSLYN_* constants -->

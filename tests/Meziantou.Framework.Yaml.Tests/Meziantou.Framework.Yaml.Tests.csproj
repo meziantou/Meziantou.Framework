@@ -1,6 +1,15 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
   <PropertyGroup>
+    <!-- Converts values with named cultures -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <!-- The C# compiler of the .NET 11 RC2 SDK overflows its stack under the updated memory safety rules when a union
+       lists itself as a nullable case (YamlCSharpUnionTests.RecursiveUnion): https://github.com/dotnet/roslyn/issues/85762
+       Unions are only compiled for net11.0, so the other target frameworks keep the rules. -->
+  <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <MeziantouUpdatedMemorySafetyRules>false</MeziantouUpdatedMemorySafetyRules>
   </PropertyGroup>
 
   <ItemGroup>

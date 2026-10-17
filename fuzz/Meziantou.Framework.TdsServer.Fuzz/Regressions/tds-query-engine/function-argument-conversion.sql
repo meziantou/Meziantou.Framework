@@ -1,0 +1,1 @@
+SELECT Id FROM customers WHERE TAN(Name) = 0 AND Id = 1

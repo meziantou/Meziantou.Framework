@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
       - run: |
           # Built first and run with --no-build: `dotnet run` exits 1 for a build or restore failure, which is
           # also how the generator reports "files updated", so a broken build would otherwise be committed as

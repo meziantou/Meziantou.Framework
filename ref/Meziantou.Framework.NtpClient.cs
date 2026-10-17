@@ -8,15 +8,15 @@ namespace Meziantou.Framework.Ntp
     {
         public NtpClient(string server) { }
         public NtpClient(string server, Meziantou.Framework.Ntp.NtpClientOptions? options) { }
-        public System.Threading.Tasks.Task<Meziantou.Framework.Ntp.NtpResponse> QueryAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.Ntp.NtpResponse> QueryAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class NtpClientOptions
     {
         public int Port { get => throw null; set { } }
-        public Meziantou.Framework.Ntp.NtpVersion Version { get => throw null; set { } }
         public System.TimeSpan Timeout { get => throw null; set { } }
         public bool ValidateResponse { get => throw null; set { } }
+        public Meziantou.Framework.Ntp.NtpVersion Version { get => throw null; set { } }
     }
 
     public enum NtpLeapIndicator
@@ -29,24 +29,24 @@ namespace Meziantou.Framework.Ntp
 
     public sealed class NtpResponse
     {
-        public Meziantou.Framework.Ntp.NtpLeapIndicator LeapIndicator { get => throw null; }
-        public Meziantou.Framework.Ntp.NtpVersion Version { get => throw null; }
-        public byte Stratum { get => throw null; }
-        public sbyte PollInterval { get => throw null; }
-        public sbyte Precision { get => throw null; }
-        public System.TimeSpan RootDelay { get => throw null; }
-        public System.TimeSpan RootDispersion { get => throw null; }
-        public uint ReferenceIdentifier { get => throw null; }
-        public string? ReferenceIdentifierText { get => throw null; }
+        public System.TimeSpan ClockOffset { get => throw null; }
+        public System.DateTimeOffset DestinationTimestamp { get => throw null; }
         public bool IsKissOfDeath { get => throw null; }
         public string? KissCode { get => throw null; }
-        public System.DateTimeOffset? ReferenceTimestamp { get => throw null; }
+        public Meziantou.Framework.Ntp.NtpLeapIndicator LeapIndicator { get => throw null; }
         public System.DateTimeOffset OriginateTimestamp { get => throw null; }
+        public sbyte PollInterval { get => throw null; }
+        public sbyte Precision { get => throw null; }
         public System.DateTimeOffset ReceiveTimestamp { get => throw null; }
-        public System.DateTimeOffset TransmitTimestamp { get => throw null; }
-        public System.DateTimeOffset DestinationTimestamp { get => throw null; }
-        public System.TimeSpan ClockOffset { get => throw null; }
+        public uint ReferenceIdentifier { get => throw null; }
+        public string? ReferenceIdentifierText { get => throw null; }
+        public System.DateTimeOffset? ReferenceTimestamp { get => throw null; }
+        public System.TimeSpan RootDelay { get => throw null; }
+        public System.TimeSpan RootDispersion { get => throw null; }
         public System.TimeSpan RoundTripDelay { get => throw null; }
+        public byte Stratum { get => throw null; }
+        public System.DateTimeOffset TransmitTimestamp { get => throw null; }
+        public Meziantou.Framework.Ntp.NtpVersion Version { get => throw null; }
     }
 
     public enum NtpVersion

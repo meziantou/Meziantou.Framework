@@ -46,6 +46,29 @@ internal static class RawTdsClient
         return await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationTokenSource.Token);
     }
 
+    /// <summary>Sends a PRELOGIN payload as-is and returns the type and payload of the packet the server answers with.</summary>
+    public static async Task<(byte PacketType, byte[] Payload)> SendPreLoginAsync(byte[] preLoginPayload)
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var client = new TcpClient();
+        await client.ConnectAsync(IPAddress.Loopback, port, cancellationTokenSource.Token);
+        using var stream = client.GetStream();
+
+        await stream.WriteAsync(CreateTdsMessage(0x12, preLoginPayload), cancellationTokenSource.Token);
+        return await ReadTdsMessageAsync(stream, cancellationTokenSource.Token);
+    }
+
     private static byte[] CreateTdsMessage(byte packetType, ReadOnlySpan<byte> payload)
     {
         var message = new byte[8 + payload.Length];
@@ -57,11 +80,13 @@ internal static class RawTdsClient
         return message;
     }
 
-    private static async Task ReadTdsMessageAsync(NetworkStream stream, CancellationToken cancellationToken)
+    private static async Task<(byte PacketType, byte[] Payload)> ReadTdsMessageAsync(NetworkStream stream, CancellationToken cancellationToken)
     {
         var header = new byte[8];
         await stream.ReadExactlyAsync(header, cancellationToken);
         var length = BinaryPrimitives.ReadUInt16BigEndian(header.AsSpan(2, 2));
-        await stream.ReadExactlyAsync(new byte[length - 8], cancellationToken);
+        var payload = new byte[length - 8];
+        await stream.ReadExactlyAsync(payload, cancellationToken);
+        return (header[0], payload);
     }
 }

@@ -1,6 +1,8 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
+    <!-- Tests Meziantou.Framework.DependencyScanning.Tool, which uses Meziantou.Framework.Yaml, which depends on ICU -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 

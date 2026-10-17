@@ -45,6 +45,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Recording\Meziantou.Framework.Http.Recording.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.ServerSideRequestForgery\Meziantou.Framework.Http.ServerSideRequestForgery.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.HttpArchive\Meziantou.Framework.HttpArchive.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.LLMContext\Meziantou.Framework.LLMContext.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Language\Meziantou.Framework.Language.csproj" />
@@ -63,6 +64,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.PooledMemoryStream\Meziantou.Framework.PooledMemoryStream.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ProcessWrapper\Meziantou.Framework.ProcessWrapper.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.QRCode\Meziantou.Framework.QRCode.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.QRCode.Imaging\Meziantou.Framework.QRCode.Imaging.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.RelativeDate\Meziantou.Framework.RelativeDate.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.RobotsTxt\Meziantou.Framework.RobotsTxt.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Scheduling\Meziantou.Framework.Scheduling.csproj" />
@@ -118,6 +120,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.Recording" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.ServerSideRequestForgery" />
     <TrimmerRootAssembly Include="Meziantou.Framework.HttpArchive" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Imaging" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JsonPath" />
     <TrimmerRootAssembly Include="Meziantou.Framework.LLMContext" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Language" />
@@ -136,6 +139,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.PooledMemoryStream" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ProcessWrapper" />
     <TrimmerRootAssembly Include="Meziantou.Framework.QRCode" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.QRCode.Imaging" />
     <TrimmerRootAssembly Include="Meziantou.Framework.RelativeDate" />
     <TrimmerRootAssembly Include="Meziantou.Framework.RobotsTxt" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Scheduling" />

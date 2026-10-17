@@ -152,8 +152,16 @@ internal static class SqlFunctions
         var value = EnsureString(arguments[0]);
         var oldValue = EnsureString(arguments[1]);
         var newValue = EnsureString(arguments[2]);
+        Expression replace = Expression.Call(value, typeof(string).GetMethod(nameof(string.Replace), [typeof(string), typeof(string)])!, oldValue, newValue);
+        if (oldValue is not ConstantExpression { Value: string { Length: > 0 } })
+        {
+            // An empty pattern matches nothing in T-SQL, while string.Replace throws. The tree keeps string.Replace,
+            // which a query provider such as EF Core can translate.
+            replace = Expression.Condition(Expression.Equal(oldValue, Expression.Constant(string.Empty)), value, replace);
+        }
+
         return PropagateNull(
-            Expression.Call(value, typeof(string).GetMethod(nameof(string.Replace), [typeof(string), typeof(string)])!, oldValue, newValue),
+            replace,
             value,
             oldValue,
             newValue);
@@ -306,12 +314,48 @@ internal static class SqlFunctions
     {
         ValidateArgCount(arguments, expectedCount: 2, "ROUND");
 
+        var value = EnsureDouble(arguments[0]);
+        var length = EnsureInt(arguments[1]);
+
         // T-SQL rounds midpoint values away from zero whereas Math.Round(double, int) defaults to ties-to-even.
+        // Math.Round only takes 0 to 15 digits, so it stays in the tree, which a query provider such as EF Core
+        // can translate, for the lengths it accepts.
+        if (length is ConstantExpression { Value: int and >= 0 and <= 15 })
+        {
+            return Expression.Call(
+                typeof(Math).GetMethod(nameof(Math.Round), [typeof(double), typeof(int), typeof(MidpointRounding)])!,
+                value,
+                length,
+                Expression.Constant(MidpointRounding.AwayFromZero));
+        }
+
         return Expression.Call(
-            typeof(Math).GetMethod(nameof(Math.Round), [typeof(double), typeof(int), typeof(MidpointRounding)])!,
-            EnsureDouble(arguments[0]),
-            EnsureInt(arguments[1]),
-            Expression.Constant(MidpointRounding.AwayFromZero));
+            typeof(SqlFunctions).GetMethod(nameof(RoundCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            value,
+            length);
+    }
+
+    private static double RoundCore(double value, int length)
+    {
+        if (length is >= 0 and <= 15)
+        {
+            return Math.Round(value, length, MidpointRounding.AwayFromZero);
+        }
+
+        // T-SQL accepts any length, and a negative one rounds the integer part: ROUND(748.58, -2) is 700
+        if (value == 0 || !double.IsFinite(value))
+        {
+            return value;
+        }
+
+        var scale = Math.Pow(10, length);
+        if (scale == 0)
+        {
+            return 0;
+        }
+
+        var scaled = value * scale;
+        return double.IsFinite(scaled) ? Math.Round(scaled, MidpointRounding.AwayFromZero) / scale : value;
     }
 
     private static Expression BuildCeilingFunction(IReadOnlyList<Expression> arguments)

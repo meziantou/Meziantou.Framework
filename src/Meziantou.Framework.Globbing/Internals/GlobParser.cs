@@ -619,6 +619,7 @@ internal static class GlobParser
 
         var ranges = new List<CharacterRange>();
         List<NamedCharacterClass>? classes = null;
+        List<int>? ordinaryBrackets = null;
 
         var i = start + 1;
         var inverse = i < pattern.Length && (pattern[i] == '!' || (pattern[i] == '^' && settings.SupportsCaretNegation));
@@ -680,6 +681,12 @@ internal static class GlobParser
                         i += 5;
                         continue;
                     }
+
+                    // Whether '[=' opens a class can depend on the text that follows the bracket expression: "[[=]"
+                    // is the set of '[' and '=', but "[[=]=]" holds the equivalence class of ']'. The '[' is escaped
+                    // when the expression is written back, so that it keeps its meaning whatever follows it.
+                    ordinaryBrackets ??= [];
+                    ordinaryBrackets.Add(i);
                 }
             }
 
@@ -728,9 +735,28 @@ internal static class GlobParser
         }
 
         segment = CreateRangeSubsegment(ranges, classes, inverse, settings.IgnoreCase);
-        segment.BracketExpressionText = pattern[start..i].ToString();
+        segment.BracketExpressionText = GetBracketExpressionText(pattern[start..i], start, ordinaryBrackets);
         end = i;
         return BracketExpressionParseResult.Parsed;
+    }
+
+    /// <param name="ordinaryBrackets">The indices, in the pattern, of the '[' to escape.</param>
+    private static string GetBracketExpressionText(ReadOnlySpan<char> text, int start, List<int>? ordinaryBrackets)
+    {
+        if (ordinaryBrackets is null)
+            return text.ToString();
+
+        var sb = new ValueStringBuilder(stackalloc char[64]);
+        var previous = 0;
+        foreach (var index in ordinaryBrackets)
+        {
+            sb.Append(text[previous..(index - start)]);
+            sb.Append('\\');
+            previous = index - start;
+        }
+
+        sb.Append(text[previous..]);
+        return sb.ToString();
     }
 
     /// <summary>Reads a character of a bracket expression that can be a range bound: an ordinary character, an escaped character or a collating symbol.</summary>

@@ -1,0 +1,118 @@
+using System.IO.Compression;
+
+namespace Meziantou.Framework.Imaging.Formats;
+
+/// <summary>Immutable settings for lossless PNG and APNG encoding.</summary>
+/// <remarks>
+/// <para>
+/// By default the PNG color type and bit depth follow the pixel format: grayscale for <see cref="Gray8"/>/<see cref="Gray16"/>,
+/// RGB for <see cref="Rgb24"/>, RGBA for <see cref="Rgba32"/>/<see cref="Bgra32"/>, and 16-bit samples for
+/// <see cref="Rgba64"/> and <see cref="Gray16"/>. <see cref="PngPixelLayout.Indexed"/> writes a palette instead, for the
+/// images whose colors it can hold exactly. <see cref="PngOptimization.MinimumSize"/> chooses the layout, the filters and
+/// the animation frame rectangles that give the smallest file instead. Encoding never reduces precision, never reduces
+/// colors and never drops alpha.
+/// </para>
+/// <para>
+/// Animated output is written with freshly computed control data: full-canvas frames by default, or the rectangles that
+/// changed with <see cref="PngOptimization.MinimumSize"/>; delta information from a decoded source is never reused. PNG
+/// and APNG writers require <see cref="ImageWriterOptions.ExpectedFrameCount"/>.
+/// </para>
+/// </remarks>
+public sealed class PngEncoder : ImageEncoder
+{
+    /// <inheritdoc />
+    public override ImageFormat Format => ImageFormat.Png;
+
+    /// <summary>Gets the animation mode. Defaults to <see cref="PngAnimationMode.Auto"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="PngAnimationMode"/>.</exception>
+    public PngAnimationMode AnimationMode
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The animation mode is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>Gets the pixel layout. Defaults to <see cref="PngPixelLayout.Auto"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="PngPixelLayout"/>.</exception>
+    public PngPixelLayout PixelLayout
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The pixel layout is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>Gets the optimization mode. Defaults to <see cref="PngOptimization.None"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="PngOptimization"/>.</exception>
+    public PngOptimization Optimization
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The optimization mode is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the zlib compression level. Defaults to <see cref="System.IO.Compression.CompressionLevel.Optimal"/>. Ignored by
+    /// <see cref="PngOptimization.MinimumSize"/>, which tries several levels and keeps the smallest data.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="System.IO.Compression.CompressionLevel"/>.</exception>
+    public CompressionLevel CompressionLevel
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The compression level is not valid.");
+
+            field = value;
+        }
+    } = CompressionLevel.Optimal;
+
+    /// <summary>Gets the row filter strategy. Defaults to <see cref="PngFilter.Adaptive"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="PngFilter"/>.</exception>
+    public PngFilter Filter
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The filter is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>Gets a value indicating whether Adam7 interlacing is used. Defaults to <see langword="false"/>.</summary>
+    public bool Interlaced { get; init; }
+
+    /// <summary>
+    /// Gets how frame durations are converted to APNG <c>delay_num / delay_den</c> (16-bit unsigned values). Defaults to
+    /// <see cref="FrameDurationRounding.RequireExact"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="FrameDurationRounding"/>.</exception>
+    public FrameDurationRounding DurationRounding
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The duration rounding is not valid.");
+
+            field = value;
+        }
+    }
+}

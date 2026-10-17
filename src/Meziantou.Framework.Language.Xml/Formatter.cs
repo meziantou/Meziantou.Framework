@@ -55,8 +55,10 @@ public static class Formatter
             xmlWriter.Flush();
             return XmlSyntaxTree.ParseText(writer.ToString()).GetRoot();
         }
-        catch (XmlException)
+        catch (Exception exception) when (exception is XmlException or ArgumentException)
         {
+            // XmlWriter refuses some documents XDocument reads, such as an element whose prefix is the reserved
+            // "xmlns", and reports them with an ArgumentException.
             return document;
         }
     }

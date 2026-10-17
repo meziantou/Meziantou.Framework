@@ -1011,4 +1011,29 @@ public sealed class CssSyntaxTreeTests
             return exclusiveMax <= 0 ? 0 : (int)(_state % (uint)exclusiveMax);
         }
     }
+
+    [Theory]
+    [InlineData("@media,")]
+    [InlineData("@media;")]
+    [InlineData("color: red; @media,")]
+    public void DeclarationList_TokenNavigation_VisitsEveryToken(string text)
+    {
+        var root = CssSyntaxTree.ParseText(text, new CssParseOptions { SourceKind = CssSourceKind.DeclarationList }).GetRoot();
+        var tokens = root.DescendantTokens().ToArray();
+
+        var forward = new List<SyntaxToken>();
+        for (var token = root.GetFirstToken(); token != default; token = token.GetNextToken())
+        {
+            forward.Add(token);
+        }
+
+        var backward = new List<SyntaxToken>();
+        for (var token = root.GetLastToken(); token != default; token = token.GetPreviousToken())
+        {
+            backward.Add(token);
+        }
+
+        Assert.Equal(tokens, forward);
+        Assert.Equal(tokens.Reverse(), backward);
+    }
 }

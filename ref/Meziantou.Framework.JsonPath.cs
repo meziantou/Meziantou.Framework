@@ -6,27 +6,27 @@ namespace Meziantou.Framework.Json
 {
     public sealed class JsonPath : System.IParsable<Meziantou.Framework.Json.JsonPath>, System.ISpanParsable<Meziantou.Framework.Json.JsonPath>
     {
-        public static Meziantou.Framework.Json.JsonPath Parse(string expression) => throw null;
-        public static Meziantou.Framework.Json.JsonPath Parse(System.ReadOnlySpan<char> expression) => throw null;
-        public static bool TryParse(string? expression, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Json.JsonPath? result) => throw null;
-        public static bool TryParse(System.ReadOnlySpan<char> expression, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Json.JsonPath? result) => throw null;
-        public Meziantou.Framework.Json.JsonPathResult<TValue> Evaluate<TValue>(TValue root, Meziantou.Framework.Json.JsonPathNavigator<TValue> navigator) => throw null;
-        public Meziantou.Framework.Json.JsonPathResult<TValue> Evaluate<TValue>(TValue root, Meziantou.Framework.Json.JsonPathNavigator<TValue> navigator, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
-        public Meziantou.Framework.Json.JsonPathResult Evaluate(System.Text.Json.Nodes.JsonNode? root) => throw null;
-        public Meziantou.Framework.Json.JsonPathResult Evaluate(System.Text.Json.Nodes.JsonNode? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public Meziantou.Framework.Json.JsonPathResult<System.Text.Json.JsonElement> Evaluate(System.Text.Json.JsonDocument? root) => throw null;
-        public Meziantou.Framework.Json.JsonPathResult<System.Text.Json.JsonElement> Evaluate(System.Text.Json.JsonDocument? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public Meziantou.Framework.Json.JsonPathResult<System.Text.Json.JsonElement> Evaluate(System.Text.Json.JsonElement root) => throw null;
+        public Meziantou.Framework.Json.JsonPathResult Evaluate(System.Text.Json.Nodes.JsonNode? root) => throw null;
+        public Meziantou.Framework.Json.JsonPathResult<System.Text.Json.JsonElement> Evaluate(System.Text.Json.JsonDocument? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public Meziantou.Framework.Json.JsonPathResult<System.Text.Json.JsonElement> Evaluate(System.Text.Json.JsonElement root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
-        public TValue EvaluateValue<TValue>(TValue root, Meziantou.Framework.Json.JsonPathNavigator<TValue> navigator) => throw null;
-        public TValue EvaluateValue<TValue>(TValue root, Meziantou.Framework.Json.JsonPathNavigator<TValue> navigator, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
-        public System.Text.Json.Nodes.JsonNode? EvaluateValue(System.Text.Json.Nodes.JsonNode? root) => throw null;
-        public System.Text.Json.Nodes.JsonNode? EvaluateValue(System.Text.Json.Nodes.JsonNode? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public Meziantou.Framework.Json.JsonPathResult Evaluate(System.Text.Json.Nodes.JsonNode? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public Meziantou.Framework.Json.JsonPathResult<TValue> Evaluate<TValue>(TValue? root, Meziantou.Framework.Json.JsonPathNavigator<TValue> navigator) => throw null;
+        public Meziantou.Framework.Json.JsonPathResult<TValue> Evaluate<TValue>(TValue? root, Meziantou.Framework.Json.JsonPathNavigator<TValue> navigator, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public System.Text.Json.JsonElement? EvaluateValue(System.Text.Json.JsonDocument? root) => throw null;
-        public System.Text.Json.JsonElement? EvaluateValue(System.Text.Json.JsonDocument? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public System.Text.Json.JsonElement? EvaluateValue(System.Text.Json.JsonElement root) => throw null;
+        public System.Text.Json.Nodes.JsonNode? EvaluateValue(System.Text.Json.Nodes.JsonNode? root) => throw null;
+        public System.Text.Json.JsonElement? EvaluateValue(System.Text.Json.JsonDocument? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public System.Text.Json.JsonElement? EvaluateValue(System.Text.Json.JsonElement root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public System.Text.Json.Nodes.JsonNode? EvaluateValue(System.Text.Json.Nodes.JsonNode? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public TValue? EvaluateValue<TValue>(TValue? root, Meziantou.Framework.Json.JsonPathNavigator<TValue> navigator) => throw null;
+        public TValue? EvaluateValue<TValue>(TValue? root, Meziantou.Framework.Json.JsonPathNavigator<TValue> navigator, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Json.JsonPath Parse(System.ReadOnlySpan<char> expression) => throw null;
+        public static Meziantou.Framework.Json.JsonPath Parse(string expression) => throw null;
         public override string ToString() => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> expression, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Json.JsonPath? result) => throw null;
+        public static bool TryParse(string? expression, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Json.JsonPath? result) => throw null;
     }
 
     public sealed class JsonPathEvaluationException : System.InvalidOperationException
@@ -43,42 +43,42 @@ namespace Meziantou.Framework.Json
 
     public static class JsonPathExtensions
     {
-        public static Meziantou.Framework.Json.JsonPathResult Evaluate(this System.Text.Json.Nodes.JsonNode? root, Meziantou.Framework.Json.JsonPath path) => throw null;
-        public static Meziantou.Framework.Json.JsonPathResult Evaluate(this System.Text.Json.Nodes.JsonNode? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public static Meziantou.Framework.Json.JsonPathResult<System.Text.Json.JsonElement> Evaluate(this System.Text.Json.JsonDocument? root, Meziantou.Framework.Json.JsonPath path) => throw null;
-        public static Meziantou.Framework.Json.JsonPathResult<System.Text.Json.JsonElement> Evaluate(this System.Text.Json.JsonDocument? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public static Meziantou.Framework.Json.JsonPathResult<System.Text.Json.JsonElement> Evaluate(this System.Text.Json.JsonElement root, Meziantou.Framework.Json.JsonPath path) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult Evaluate(this System.Text.Json.Nodes.JsonNode? root, Meziantou.Framework.Json.JsonPath path) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult<System.Text.Json.JsonElement> Evaluate(this System.Text.Json.JsonDocument? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public static Meziantou.Framework.Json.JsonPathResult<System.Text.Json.JsonElement> Evaluate(this System.Text.Json.JsonElement root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
-        public static System.Text.Json.Nodes.JsonNode? EvaluateValue(this System.Text.Json.Nodes.JsonNode? root, Meziantou.Framework.Json.JsonPath path) => throw null;
-        public static System.Text.Json.Nodes.JsonNode? EvaluateValue(this System.Text.Json.Nodes.JsonNode? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult Evaluate(this System.Text.Json.Nodes.JsonNode? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public static System.Text.Json.JsonElement? EvaluateValue(this System.Text.Json.JsonDocument? root, Meziantou.Framework.Json.JsonPath path) => throw null;
-        public static System.Text.Json.JsonElement? EvaluateValue(this System.Text.Json.JsonDocument? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public static System.Text.Json.JsonElement? EvaluateValue(this System.Text.Json.JsonElement root, Meziantou.Framework.Json.JsonPath path) => throw null;
+        public static System.Text.Json.Nodes.JsonNode? EvaluateValue(this System.Text.Json.Nodes.JsonNode? root, Meziantou.Framework.Json.JsonPath path) => throw null;
+        public static System.Text.Json.JsonElement? EvaluateValue(this System.Text.Json.JsonDocument? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public static System.Text.Json.JsonElement? EvaluateValue(this System.Text.Json.JsonElement root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static System.Text.Json.Nodes.JsonNode? EvaluateValue(this System.Text.Json.Nodes.JsonNode? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
     }
 
     public readonly struct JsonPathMatch
     {
-        public System.Text.Json.Nodes.JsonNode? Value { get => throw null; }
         public string Path { get => throw null; }
+        public System.Text.Json.Nodes.JsonNode? Value { get => throw null; }
     }
 
     public readonly struct JsonPathMatch<TValue>
     {
-        public TValue Value { get => throw null; }
         public string Path { get => throw null; }
+        public TValue? Value { get => throw null; }
     }
 
     public abstract class JsonPathNavigator<TValue>
     {
-        public abstract Meziantou.Framework.Json.JsonPathNodeKind GetKind(TValue value);
-        public abstract bool TryGetPropertyValue(TValue value, string name, out TValue result);
-        public abstract System.Collections.Generic.IEnumerable<Meziantou.Framework.Json.JsonPathProperty<TValue>> GetProperties(TValue value);
-        public abstract int GetArrayLength(TValue value);
-        public abstract bool TryGetElement(TValue value, int index, out TValue result);
-        public abstract bool TryGetString(TValue value, out string? result);
-        public abstract bool TryGetNumber(TValue value, out double result);
-        public abstract bool TryGetBoolean(TValue value, out bool result);
+        public abstract int GetArrayLength(TValue? value);
+        public abstract Meziantou.Framework.Json.JsonPathNodeKind GetKind(TValue? value);
+        public abstract System.Collections.Generic.IEnumerable<Meziantou.Framework.Json.JsonPathProperty<TValue>> GetProperties(TValue? value);
+        public abstract bool TryGetBoolean(TValue? value, out bool result);
+        public abstract bool TryGetElement(TValue? value, int index, out TValue? result);
+        public abstract bool TryGetNumber(TValue? value, out double result);
+        public abstract bool TryGetPropertyValue(TValue? value, string name, out TValue? result);
+        public abstract bool TryGetString(TValue? value, out string? result);
     }
 
     public enum JsonPathNodeKind
@@ -94,8 +94,8 @@ namespace Meziantou.Framework.Json
     public readonly struct JsonPathProperty<TValue>
     {
         public string Name { get => throw null; }
-        public TValue Value { get => throw null; }
-        public JsonPathProperty(string name, TValue value) { }
+        public TValue? Value { get => throw null; }
+        public JsonPathProperty(string name, TValue? value) { }
     }
 
     public sealed class JsonPathResult : System.Collections.Generic.IEnumerable<Meziantou.Framework.Json.JsonPathMatch>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Json.JsonPathMatch>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Json.JsonPathMatch>, System.Collections.IEnumerable

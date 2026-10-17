@@ -68,6 +68,17 @@ public sealed class TdsVarCharCollationTests
         Assert.Empty(context.Parameters);
     }
 
+    [Fact]
+    public async Task RpcParameter_VarChar_WithLcidZero_ReportsIncompleteParameters()
+    {
+        // CultureInfo.GetCultureInfo rejects LCID 0 with ArgumentOutOfRangeException, not CultureNotFoundException,
+        // and the RPC parser must report the parameter as undecodable rather than fail the request.
+        var context = await RawTdsClient.SendRpcRequestAsync(CreateVarCharRpcPayload([0x00, 0x00, 0x00, 0x00, 0x00], [0x41]));
+
+        Assert.False(context.HasCompleteParameters);
+        Assert.Empty(context.Parameters);
+    }
+
     private static byte[] CreateVarCharRpcPayload(byte[] collation, byte[] value)
     {
         var payload = new List<byte> { 0x01, 0x00 };

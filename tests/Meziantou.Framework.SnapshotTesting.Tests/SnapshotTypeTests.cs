@@ -20,6 +20,11 @@ public sealed class SnapshotTypeTests
         Assert.Equal(SnapshotType.Tiff, SnapshotType.Create("tif"));
         Assert.Equal(SnapshotType.Gif, SnapshotType.Create("gif"));
         Assert.Equal(SnapshotType.Ico, SnapshotType.Create("ico"));
+        Assert.Equal(SnapshotType.Avif, SnapshotType.Create("avif"));
+        Assert.Equal(SnapshotType.Heic, SnapshotType.Create("heic"));
+        Assert.Equal(SnapshotType.JpegXl, SnapshotType.Create("jxl"));
+        Assert.Equal(SnapshotType.Jpeg2000, SnapshotType.Create("jp2"));
+        Assert.Equal("image/jxl", SnapshotType.Create("JXL").MimeType);
     }
 
     [Fact]

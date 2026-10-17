@@ -6,6 +6,7 @@ namespace Meziantou.Framework;
 
 public sealed class ReflectionDynamicObject : DynamicObject
 {
+    private const string DynamicCodeMessage = "Dynamic objects are bound at runtime, which may require generating code";
     private const BindingFlags InstanceDefaultBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     private const BindingFlags StaticDefaultBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -15,6 +16,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
     private readonly TypeCache _typeCache;
 
     [RequiresUnreferencedCode("Use reflection")]
+    [RequiresDynamicCode(DynamicCodeMessage)]
     public ReflectionDynamicObject(object obj)
     {
         ArgumentNullException.ThrowIfNull(obj);
@@ -26,6 +28,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
     }
 
     [RequiresUnreferencedCode("Use reflection")]
+    [RequiresDynamicCode(DynamicCodeMessage)]
     public ReflectionDynamicObject(Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
@@ -34,6 +37,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
     }
 
     [RequiresUnreferencedCode("Use reflection")]
+    [RequiresDynamicCode(DynamicCodeMessage)]
     public ReflectionDynamicObject CreateInstance(params object[] parameters)
     {
         var exceptions = new List<Exception>();

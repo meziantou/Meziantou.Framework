@@ -1,0 +1,214 @@
+using System.Buffers.Binary;
+using System.Runtime.InteropServices;
+
+namespace Meziantou.Framework.Imaging.Internals;
+
+/// <summary>
+/// The decoded layout of one DIB: the resolved channel masks or palette, the row length, and the lossless working
+/// representation the rows are expanded to (<see cref="PixelFormat.Rgb24"/>, or <see cref="PixelFormat.Rgba32"/> when the
+/// layout defines a real alpha channel).
+/// </summary>
+/// <remarks>
+/// <para>
+/// A 32-bit <c>BI_RGB</c> layout has no alpha mask: its fourth byte is unspecified padding (<c>BGRX</c>), not transparency,
+/// and is discarded. Alpha is only decoded when an explicit non-zero alpha mask is present (<c>BI_ALPHABITFIELDS</c>, or a
+/// <c>BITMAPV3INFOHEADER</c>/<c>BITMAPV4HEADER</c>/<c>BITMAPV5HEADER</c> alpha mask with <c>BI_BITFIELDS</c>).
+/// </para>
+/// <para>This type never looks at the standalone-file header, so the ICO/CUR payload parser can reuse it as is.</para>
+/// </remarks>
+internal sealed class BmpDibLayout
+{
+    private readonly BmpChannelMask _red;
+    private readonly BmpChannelMask _green;
+    private readonly BmpChannelMask _blue;
+    private readonly BmpChannelMask _alpha;
+    private byte[]? _palette;
+    private uint[]? _paletteColors;
+
+    private BmpDibLayout(BmpInfoHeader header, BmpChannelMask red, BmpChannelMask green, BmpChannelMask blue, BmpChannelMask alpha)
+    {
+        Header = header;
+        _red = red;
+        _green = green;
+        _blue = blue;
+        _alpha = alpha;
+    }
+
+    /// <summary>Gets the parsed DIB header.</summary>
+    public BmpInfoHeader Header { get; }
+
+    /// <summary>Gets a value indicating whether the layout defines a real (non-padding) alpha channel.</summary>
+    public bool HasAlpha => _alpha.IsPresent;
+
+    /// <summary>Gets the layout of the rows produced by <see cref="ExpandRow"/>.</summary>
+    public PixelFormat SourcePixelFormat => DefaultPixelFormats.ForBmp(HasAlpha);
+
+    /// <summary>Gets the color model of the encoded samples.</summary>
+    public ImageColorModel ColorModel => Header.IsIndexed ? ImageColorModel.Indexed : (HasAlpha ? ImageColorModel.Rgba : ImageColorModel.Rgb);
+
+    /// <summary>
+    /// Gets the reported precision of the encoded samples: the index width for indexed layouts, otherwise 8 (the channels of
+    /// a 16-bit layout are 5 or 6 bits wide and are expanded to 8).
+    /// </summary>
+    public int BitsPerComponent => Header.IsIndexed ? Header.BitsPerPixel : 8;
+
+    /// <summary>Resolves and validates the channel masks of a DIB header.</summary>
+    /// <param name="header">The parsed header, including any mask bytes that followed it.</param>
+    /// <returns>The layout; <see cref="SetPalette"/> must be called for indexed layouts.</returns>
+    /// <exception cref="InvalidImageContentException">A mask is not contiguous, overlaps another, or a required mask is missing.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A channel is wider than 8 bits.</exception>
+    public static BmpDibLayout Create(BmpInfoHeader header)
+    {
+        if (header.IsIndexed)
+            return new BmpDibLayout(header, default, default, default, default);
+
+        uint redMask = header.RedMask, greenMask = header.GreenMask, blueMask = header.BlueMask, alphaMask = header.AlphaMask;
+        if (header.Compression is BmpDibCompression.BitFields or BmpDibCompression.AlphaBitFields)
+        {
+            if (redMask == 0 || greenMask == 0 || blueMask == 0)
+                throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP declares explicit color masks but the red, green or blue mask is zero (0x{redMask:X8}, 0x{greenMask:X8}, 0x{blueMask:X8})."));
+        }
+        else
+        {
+            // BI_RGB defaults: 5-5-5 for 16 bits, BGRX for 32 bits (the fourth byte is padding), BGR bytes for 24 bits
+            (redMask, greenMask, blueMask) = header.BitsPerPixel switch
+            {
+                16 => (0x7C00u, 0x03E0u, 0x001Fu),
+                32 => (0x00FF_0000u, 0x0000_FF00u, 0x0000_00FFu),
+                _ => (0u, 0u, 0u),
+            };
+
+            alphaMask = 0;
+        }
+
+        if (header.BitsPerPixel == 24)
+            return new BmpDibLayout(header, default, default, default, default);
+
+        var red = BmpChannelMask.Create(redMask, "red", header.BitsPerPixel);
+        var green = BmpChannelMask.Create(greenMask, "green", header.BitsPerPixel);
+        var blue = BmpChannelMask.Create(blueMask, "blue", header.BitsPerPixel);
+        var alpha = BmpChannelMask.Create(alphaMask, "alpha", header.BitsPerPixel);
+        var overlap = (red.Mask & green.Mask) | (red.Mask & blue.Mask) | (green.Mask & blue.Mask) | (alpha.Mask & (red.Mask | green.Mask | blue.Mask));
+        if (overlap != 0)
+            throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP color masks overlap (0x{red.Mask:X8}, 0x{green.Mask:X8}, 0x{blue.Mask:X8}, 0x{alpha.Mask:X8})."));
+
+        return new BmpDibLayout(header, red, green, blue, alpha);
+    }
+
+    /// <summary>Adopts the palette stored before the pixel data.</summary>
+    /// <param name="palette">
+    /// Exactly <see cref="BmpInfoHeader.PaletteLength"/> bytes of <c>RGBQUAD</c> entries (blue, green, red, reserved), or of
+    /// <c>RGBTRIPLE</c> entries (blue, green, red) after a <c>BITMAPCOREHEADER</c>.
+    /// </param>
+    public void SetPalette(ReadOnlySpan<byte> palette)
+    {
+        var entries = Header.PaletteEntries;
+        var entryLength = Header.PaletteEntryLength;
+        var table = new byte[entries * 3];
+        var colors = new uint[256];
+        Span<byte> color = stackalloc byte[sizeof(uint)];
+        for (var i = 0; i < entries; i++)
+        {
+            var source = palette.Slice(i * entryLength, entryLength);
+            table[(i * 3) + 0] = source[2];
+            table[(i * 3) + 1] = source[1];
+            table[(i * 3) + 2] = source[0];
+            if (i < colors.Length)
+            {
+                // The colors as packed native-endian Rgba32 pixels for IndexedPixels (the fourth byte is not written to Rgb24 rows)
+                table.AsSpan(i * 3, 3).CopyTo(color);
+                colors[i] = unsafe(MemoryMarshal.Read<uint>(color));
+            }
+        }
+
+        _palette = table;
+        _paletteColors = colors;
+    }
+
+    /// <summary>Expands one stored row to <see cref="SourcePixelFormat"/>.</summary>
+    /// <param name="source">Exactly <see cref="BmpInfoHeader.RowLength"/> bytes (padding included).</param>
+    /// <param name="destination">Exactly <c>Width</c> pixels of <see cref="SourcePixelFormat"/>.</param>
+    /// <exception cref="InvalidImageContentException">A palette index is outside the palette.</exception>
+    public void ExpandRow(ReadOnlySpan<byte> source, Span<byte> destination)
+    {
+        var width = Header.Width;
+        switch (Header.BitsPerPixel)
+        {
+            case 1:
+            case 4:
+            case 8:
+                ExpandIndexedRow(source, destination, width, Header.BitsPerPixel);
+                break;
+
+            case 16:
+            {
+                var hasAlpha = HasAlpha;
+                var step = hasAlpha ? 4 : 3;
+                for (var x = 0; x < width; x++)
+                {
+                    uint pixel = BinaryPrimitives.ReadUInt16LittleEndian(source[(x * 2)..]);
+                    var offset = x * step;
+                    destination[offset] = _red.Read(pixel);
+                    destination[offset + 1] = _green.Read(pixel);
+                    destination[offset + 2] = _blue.Read(pixel);
+                    if (hasAlpha)
+                    {
+                        destination[offset + 3] = _alpha.Read(pixel);
+                    }
+                }
+
+                break;
+            }
+
+            case 24:
+                PixelConverter.SwapRedAndBlue24(source[..(width * 3)], destination);
+                break;
+
+            default:
+            {
+                var hasAlpha = HasAlpha;
+                if (_red.Mask == 0x00FF_0000 && _green.Mask == 0x0000_FF00 && _blue.Mask == 0x0000_00FF && (!hasAlpha || _alpha.Mask == 0xFF00_0000))
+                {
+                    // Byte-aligned 8-bit channels (BGRA or BGRX bytes): their expansion to 8 bits is the identity
+                    if (hasAlpha)
+                    {
+                        PixelConverter.ConvertRow(PixelFormat.Bgra32, source[..(width * 4)], PixelFormat.Rgba32, destination[..(width * 4)]);
+                    }
+                    else
+                    {
+                        PackedPixels.Bgrx32ToRgb24(source[..(width * 4)], destination);
+                    }
+
+                    break;
+                }
+
+                var step = hasAlpha ? 4 : 3;
+                for (var x = 0; x < width; x++)
+                {
+                    var pixel = BinaryPrimitives.ReadUInt32LittleEndian(source[(x * 4)..]);
+                    var offset = x * step;
+                    destination[offset] = _red.Read(pixel);
+                    destination[offset + 1] = _green.Read(pixel);
+                    destination[offset + 2] = _blue.Read(pixel);
+                    if (hasAlpha)
+                    {
+                        destination[offset + 3] = _alpha.Read(pixel);
+                    }
+                }
+
+                break;
+            }
+        }
+    }
+
+    private void ExpandIndexedRow(ReadOnlySpan<byte> source, Span<byte> destination, int width, int bitsPerPixel)
+    {
+        var palette = _palette ?? throw new InvalidOperationException("The BMP palette was not read.");
+        var entries = palette.Length / 3;
+        var invalid = IndexedPixels.FindIndexOutside(source, bitsPerPixel, width, entries);
+        if (invalid >= 0)
+            throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP palette index {IndexedPixels.ReadIndex(source, invalid, bitsPerPixel)} at column {invalid} is outside the {entries}-entry palette."));
+
+        IndexedPixels.Expand(source, bitsPerPixel, width, _paletteColors, destination, rgba: false);
+    }
+}

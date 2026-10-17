@@ -13,13 +13,13 @@ namespace Meziantou.Framework.Yaml
 
     public class EventReader
     {
-        public Meziantou.Framework.Yaml.IParser Parser { get => throw null; }
         public int CurrentDepth { get => throw null; }
+        public Meziantou.Framework.Yaml.IParser Parser { get => throw null; }
         public EventReader(Meziantou.Framework.Yaml.IParser parser) { }
-        public T Expect<T>() where T : Meziantou.Framework.Yaml.Events.ParsingEvent => throw null;
         public bool Accept<T>() where T : Meziantou.Framework.Yaml.Events.ParsingEvent => throw null;
-        public T Allow<T>() where T : Meziantou.Framework.Yaml.Events.ParsingEvent => throw null;
-        public T Peek<T>() where T : Meziantou.Framework.Yaml.Events.ParsingEvent => throw null;
+        public T? Allow<T>() where T : Meziantou.Framework.Yaml.Events.ParsingEvent => throw null;
+        public T Expect<T>() where T : Meziantou.Framework.Yaml.Events.ParsingEvent => throw null;
+        public T? Peek<T>() where T : Meziantou.Framework.Yaml.Events.ParsingEvent => throw null;
         public void Skip() { }
         public void Skip(int untilDepth) { }
     }
@@ -27,8 +27,8 @@ namespace Meziantou.Framework.Yaml
     public class FakeList<T>
     {
         public T this[int index] { get => throw null; }
-        public FakeList(System.Collections.Generic.IEnumerator<T> collection) { }
         public FakeList(System.Collections.Generic.IEnumerable<T> collection) { }
+        public FakeList(System.Collections.Generic.IEnumerator<T> collection) { }
     }
 
     public interface IEmitter
@@ -39,9 +39,9 @@ namespace Meziantou.Framework.Yaml
     public interface ILookAheadBuffer
     {
         bool EndOfInput { get; }
+        void Cache(int length);
         char Peek(int offset);
         void Skip(int length);
-        void Cache(int length);
     }
 
     public interface IParser
@@ -59,17 +59,17 @@ namespace Meziantou.Framework.Yaml
     {
         public bool EndOfInput { get => throw null; }
         public LookAheadBuffer(System.IO.TextReader input, int capacity) { }
-        public char Peek(int offset) => throw null;
         public void Cache(int length) { }
+        public char Peek(int offset) => throw null;
         public void Skip(int length) { }
     }
 
     public readonly struct Mark
     {
         public static readonly Meziantou.Framework.Yaml.Mark Empty;
+        public int Column { get => throw null; }
         public int Index { get => throw null; }
         public int Line { get => throw null; }
-        public int Column { get => throw null; }
         public Mark(int index, int line, int column) { }
         public override string ToString() => throw null;
     }
@@ -107,8 +107,8 @@ namespace Meziantou.Framework.Yaml
     public class Scanner<TBuffer> where TBuffer : Meziantou.Framework.Yaml.ILookAheadBuffer
     {
         public const int MaxBufferLength = 12;
-        public Meziantou.Framework.Yaml.Mark CurrentPosition { get => throw null; }
         public Meziantou.Framework.Yaml.Tokens.Token Current { get => throw null; }
+        public Meziantou.Framework.Yaml.Mark CurrentPosition { get => throw null; }
         public Scanner(TBuffer buffer) { }
         public bool MoveNext() => throw null;
     }
@@ -116,22 +116,22 @@ namespace Meziantou.Framework.Yaml
     public class SemanticErrorException : Meziantou.Framework.Yaml.YamlException
     {
         public SemanticErrorException(string message) { }
-        public SemanticErrorException(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end, string message) { }
         public SemanticErrorException(string message, System.Exception inner) { }
+        public SemanticErrorException(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end, string message) { }
     }
 
     public class SyntaxErrorException : Meziantou.Framework.Yaml.YamlException
     {
         public SyntaxErrorException(string message) { }
-        public SyntaxErrorException(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end, string message) { }
         public SyntaxErrorException(string message, System.Exception inner) { }
+        public SyntaxErrorException(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end, string message) { }
     }
 
     public class TagDirectiveCollection : System.Collections.ObjectModel.KeyedCollection<string, Meziantou.Framework.Yaml.Tokens.TagDirective>
     {
         public TagDirectiveCollection(System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Tokens.TagDirective> tagDirectives) { }
+        public new bool Contains(Meziantou.Framework.Yaml.Tokens.TagDirective directive) => throw null;
         protected override string GetKeyForItem(Meziantou.Framework.Yaml.Tokens.TagDirective item) => throw null;
-        public bool Contains(Meziantou.Framework.Yaml.Tokens.TagDirective directive) => throw null;
     }
 
     public class Version
@@ -149,8 +149,8 @@ namespace Meziantou.Framework.Yaml
         public string? Discriminator { get => throw null; }
         public string? Tag { get => throw null; init { } }
         public YamlDerivedType(System.Type derivedType) { }
-        public YamlDerivedType(System.Type derivedType, string discriminator) { }
         public YamlDerivedType(System.Type derivedType, int discriminator) { }
+        public YamlDerivedType(System.Type derivedType, string discriminator) { }
     }
 
     public enum YamlDuplicateKeyHandling
@@ -162,15 +162,15 @@ namespace Meziantou.Framework.Yaml
 
     public class YamlException : System.Exception
     {
+        public Meziantou.Framework.Yaml.Mark End { get => throw null; }
         public string? SourceName { get => throw null; }
         public Meziantou.Framework.Yaml.Mark Start { get => throw null; }
-        public Meziantou.Framework.Yaml.Mark End { get => throw null; }
         public YamlException(string message) { }
+        public YamlException(string message, System.Exception inner) { }
         public YamlException(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end, string message) { }
         public YamlException(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end, string message, System.Exception? innerException) { }
         public YamlException(string? sourceName, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end, string message) { }
         public YamlException(string? sourceName, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end, string message, System.Exception? innerException) { }
-        public YamlException(string message, System.Exception inner) { }
     }
 
     public enum YamlIgnoreCondition
@@ -203,11 +203,11 @@ namespace Meziantou.Framework.Yaml
     public abstract class YamlNamingPolicy
     {
         public static Meziantou.Framework.Yaml.YamlNamingPolicy CamelCase { get => throw null; }
-        public static Meziantou.Framework.Yaml.YamlNamingPolicy SnakeCaseLower { get => throw null; }
-        public static Meziantou.Framework.Yaml.YamlNamingPolicy SnakeCaseUpper { get => throw null; }
         public static Meziantou.Framework.Yaml.YamlNamingPolicy KebabCaseLower { get => throw null; }
         public static Meziantou.Framework.Yaml.YamlNamingPolicy KebabCaseUpper { get => throw null; }
         public static Meziantou.Framework.Yaml.YamlNamingPolicy PascalCase { get => throw null; }
+        public static Meziantou.Framework.Yaml.YamlNamingPolicy SnakeCaseLower { get => throw null; }
+        public static Meziantou.Framework.Yaml.YamlNamingPolicy SnakeCaseUpper { get => throw null; }
         public abstract string ConvertName(string name);
     }
 
@@ -228,11 +228,11 @@ namespace Meziantou.Framework.Yaml
 
     public sealed class YamlPolymorphismOptions
     {
+        public System.Collections.Generic.IDictionary<System.Type, System.Collections.Generic.IList<Meziantou.Framework.Yaml.YamlDerivedType>> DerivedTypeMappings { get => throw null; }
         public Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle DiscriminatorStyle { get => throw null; init { } }
+        public bool InferClosedTypePolymorphism { get => throw null; init { } }
         public string TypeDiscriminatorPropertyName { get => throw null; init { } }
         public Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get => throw null; init { } }
-        public bool InferClosedTypePolymorphism { get => throw null; init { } }
-        public System.Collections.Generic.IDictionary<System.Type, System.Collections.Generic.IList<Meziantou.Framework.Yaml.YamlDerivedType>> DerivedTypeMappings { get => throw null; }
     }
 
     public enum YamlReferenceHandling
@@ -267,103 +267,103 @@ namespace Meziantou.Framework.Yaml
     public static class YamlSerializer
     {
         public static bool IsReflectionEnabledByDefault { get => throw null; }
-        public static string Serialize<T>(T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static string Serialize<T>(T value, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
-        public static string Serialize(object? value, System.Type inputType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static string Serialize(object? value, System.Type inputType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
-        public static void Serialize<T>(System.IO.TextWriter writer, T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
-        public static void Serialize<T>(System.IO.TextWriter writer, T value, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
-        public static void Serialize<T>(System.IO.Stream utf8Stream, T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
-        public static void Serialize<T>(System.IO.Stream utf8Stream, T value, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
-        public static void Serialize(System.IO.TextWriter writer, object? value, System.Type inputType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
-        public static void Serialize(System.IO.TextWriter writer, object? value, System.Type inputType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
-        public static void Serialize(System.IO.Stream utf8Stream, object? value, System.Type inputType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
-        public static void Serialize(System.IO.Stream utf8Stream, object? value, System.Type inputType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
-        public static T Deserialize<T>(string yaml, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static T Deserialize<T>(string yaml, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
-        public static object? Deserialize(string yaml, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static object? Deserialize(string yaml, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
-        public static bool TryDeserialize<T>(string yaml, out T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static bool TryDeserialize<T>(string yaml, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T value) => throw null;
-        public static bool TryDeserialize(string yaml, System.Type returnType, out object? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static bool TryDeserialize(string yaml, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
-        public static T Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static bool TryDeserialize<T>(System.IO.TextReader reader, out T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static T Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static bool TryDeserialize<T>(System.IO.Stream utf8Stream, out T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static T Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
-        public static bool TryDeserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T value) => throw null;
-        public static T Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
-        public static bool TryDeserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T value) => throw null;
-        public static object? Deserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static bool TryDeserialize(System.IO.TextReader reader, System.Type returnType, out object? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static object? Deserialize(System.IO.Stream utf8Stream, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static bool TryDeserialize(System.IO.Stream utf8Stream, System.Type returnType, out object? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static object? Deserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
-        public static bool TryDeserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
-        public static object? Deserialize(System.IO.Stream utf8Stream, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
-        public static bool TryDeserialize(System.IO.Stream utf8Stream, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
-        public static string Serialize<T>(T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
-        public static string Serialize(object? value, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
-        public static void Serialize<T>(System.IO.TextWriter writer, T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) { }
-        public static void Serialize(System.IO.TextWriter writer, object? value, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) { }
-        public static void Serialize<T>(System.IO.Stream utf8Stream, T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) { }
-        public static void Serialize(System.IO.Stream utf8Stream, object? value, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) { }
-        public static object? Deserialize(string yaml, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
-        public static T Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
-        public static object? Deserialize(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
-        public static T Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
         public static object? Deserialize(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
-        public static T Deserialize<T>(string yaml, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
-        public static void Serialize<T>(System.Buffers.IBufferWriter<char> destination, T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
-        public static void Serialize<T>(System.Buffers.IBufferWriter<char> destination, T value, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
-        public static void Serialize(System.Buffers.IBufferWriter<char> destination, object? value, System.Type inputType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
+        public static object? Deserialize(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
+        public static object? Deserialize(string yaml, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
+        public static object? Deserialize(System.IO.Stream utf8Stream, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static object? Deserialize(System.IO.Stream utf8Stream, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static object? Deserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static object? Deserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static object? Deserialize(string yaml, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static object? Deserialize(string yaml, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static T? Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static T? Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static T? Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        public static T? Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static T? Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static T? Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        public static T? Deserialize<T>(string yaml, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static T? Deserialize<T>(string yaml, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static T? Deserialize<T>(string yaml, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        public static string Serialize(object? value, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
+        public static void Serialize(System.IO.Stream utf8Stream, object? value, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) { }
+        public static void Serialize(System.IO.TextWriter writer, object? value, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) { }
+        public static string Serialize(object? value, System.Type inputType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static string Serialize(object? value, System.Type inputType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static void Serialize(System.Buffers.IBufferWriter<char> destination, object? value, System.Type inputType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
+        public static void Serialize(System.Buffers.IBufferWriter<char> destination, object? value, System.Type inputType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
+        public static void Serialize(System.IO.Stream utf8Stream, object? value, System.Type inputType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
+        public static void Serialize(System.IO.Stream utf8Stream, object? value, System.Type inputType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
+        public static void Serialize(System.IO.TextWriter writer, object? value, System.Type inputType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
+        public static void Serialize(System.IO.TextWriter writer, object? value, System.Type inputType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
+        public static string Serialize<T>(T value, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static string Serialize<T>(T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static string Serialize<T>(T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        public static void Serialize<T>(System.Buffers.IBufferWriter<char> destination, T value, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
+        public static void Serialize<T>(System.Buffers.IBufferWriter<char> destination, T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
+        public static void Serialize<T>(System.IO.Stream utf8Stream, T value, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
+        public static void Serialize<T>(System.IO.Stream utf8Stream, T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
+        public static void Serialize<T>(System.IO.Stream utf8Stream, T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) { }
+        public static void Serialize<T>(System.IO.TextWriter writer, T value, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
+        public static void Serialize<T>(System.IO.TextWriter writer, T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
+        public static void Serialize<T>(System.IO.TextWriter writer, T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) { }
+        public static bool TryDeserialize(System.IO.Stream utf8Stream, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
+        public static bool TryDeserialize(System.IO.Stream utf8Stream, System.Type returnType, out object? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static bool TryDeserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
+        public static bool TryDeserialize(System.IO.TextReader reader, System.Type returnType, out object? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static bool TryDeserialize(string yaml, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
+        public static bool TryDeserialize(string yaml, System.Type returnType, out object? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static bool TryDeserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T? value) => throw null;
+        public static bool TryDeserialize<T>(System.IO.Stream utf8Stream, out T? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static bool TryDeserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T? value) => throw null;
+        public static bool TryDeserialize<T>(System.IO.TextReader reader, out T? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static bool TryDeserialize<T>(string yaml, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T? value) => throw null;
+        public static bool TryDeserialize<T>(string yaml, out T? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
     }
 
     public sealed class YamlSerializerOptions : System.IEquatable<Meziantou.Framework.Yaml.YamlSerializerOptions>
     {
-        public static Meziantou.Framework.Yaml.YamlSerializerOptions Default { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlConverter> Converters { get => throw null; init { } }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierFactory> TypeClassifiers { get => throw null; init { } }
-        public Meziantou.Framework.Yaml.YamlNamingPolicy? PropertyNamingPolicy { get => throw null; init { } }
-        public string? SourceName { get => throw null; init { } }
-        public Meziantou.Framework.Yaml.YamlNamingPolicy? DictionaryKeyPolicy { get => throw null; init { } }
-        public bool PropertyNameCaseInsensitive { get => throw null; init { } }
-        public bool IncludeFields { get => throw null; init { } }
-        public bool IgnoreReadOnlyFields { get => throw null; init { } }
-        public bool IgnoreReadOnlyProperties { get => throw null; init { } }
-        public bool RespectRequiredConstructorParameters { get => throw null; init { } }
-        public bool RespectNullableAnnotations { get => throw null; init { } }
-        public Meziantou.Framework.Yaml.YamlUnmappedMemberHandling UnmappedMemberHandling { get => throw null; init { } }
-        public Meziantou.Framework.Yaml.YamlObjectCreationHandling PreferredObjectCreationHandling { get => throw null; init { } }
-        public Meziantou.Framework.Yaml.YamlIgnoreCondition DefaultIgnoreCondition { get => throw null; init { } }
-        public bool WriteIndented { get => throw null; init { } }
-        public int IndentSize { get => throw null; init { } }
-        public bool IndentBlockSequences { get => throw null; init { } }
-        public Meziantou.Framework.Yaml.YamlMappingOrderPolicy MappingOrder { get => throw null; init { } }
+        public bool AllowAliases { get => throw null; init { } }
+        public bool AllowAnchors { get => throw null; init { } }
         public Meziantou.Framework.Yaml.YamlSequenceItemStyle BlockSequenceMappingStyle { get => throw null; init { } }
         public Meziantou.Framework.Yaml.YamlSequenceItemStyle BlockSequenceSequenceStyle { get => throw null; init { } }
-        public Meziantou.Framework.Yaml.YamlSchemaKind Schema { get => throw null; init { } }
-        public bool UseSchema { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlConverter> Converters { get => throw null; init { } }
+        public static Meziantou.Framework.Yaml.YamlSerializerOptions Default { get => throw null; }
+        public Meziantou.Framework.Yaml.YamlIgnoreCondition DefaultIgnoreCondition { get => throw null; init { } }
+        public Meziantou.Framework.Yaml.YamlNamingPolicy? DictionaryKeyPolicy { get => throw null; init { } }
         public Meziantou.Framework.Yaml.YamlDuplicateKeyHandling DuplicateKeyHandling { get => throw null; init { } }
-        public bool UnsafeAllowDeserializeFromTagTypeName { get => throw null; init { } }
-        public Meziantou.Framework.Yaml.YamlScalarStylePreferences ScalarStylePreferences { get => throw null; init { } }
-        public Meziantou.Framework.Yaml.YamlPolymorphismOptions PolymorphismOptions { get => throw null; init { } }
-        public Meziantou.Framework.Yaml.YamlReferenceHandling ReferenceHandling { get => throw null; init { } }
-        public int MaxDepth { get => throw null; init { } }
-        public bool AllowAnchors { get => throw null; init { } }
-        public bool AllowAliases { get => throw null; init { } }
+        public bool IgnoreReadOnlyFields { get => throw null; init { } }
+        public bool IgnoreReadOnlyProperties { get => throw null; init { } }
+        public bool IncludeFields { get => throw null; init { } }
+        public bool IndentBlockSequences { get => throw null; init { } }
+        public int IndentSize { get => throw null; init { } }
+        public Meziantou.Framework.Yaml.YamlMappingOrderPolicy MappingOrder { get => throw null; init { } }
         public int MaxAliasExpansionNodeCount { get => throw null; init { } }
+        public int MaxDepth { get => throw null; init { } }
+        public Meziantou.Framework.Yaml.YamlPolymorphismOptions PolymorphismOptions { get => throw null; init { } }
+        public Meziantou.Framework.Yaml.YamlObjectCreationHandling PreferredObjectCreationHandling { get => throw null; init { } }
+        public bool PropertyNameCaseInsensitive { get => throw null; init { } }
+        public Meziantou.Framework.Yaml.YamlNamingPolicy? PropertyNamingPolicy { get => throw null; init { } }
+        public Meziantou.Framework.Yaml.YamlReferenceHandling ReferenceHandling { get => throw null; init { } }
+        public bool RespectNullableAnnotations { get => throw null; init { } }
+        public bool RespectRequiredConstructorParameters { get => throw null; init { } }
+        public Meziantou.Framework.Yaml.YamlScalarStylePreferences ScalarStylePreferences { get => throw null; init { } }
+        public Meziantou.Framework.Yaml.YamlSchemaKind Schema { get => throw null; init { } }
+        public string? SourceName { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierFactory> TypeClassifiers { get => throw null; init { } }
         public Meziantou.Framework.Yaml.IYamlTypeInfoResolver? TypeInfoResolver { get => throw null; init { } }
-        public Meziantou.Framework.Yaml.YamlTypeInfo<T> GetTypeInfo<T>() => throw null;
-        public bool TryGetTypeInfo<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Yaml.YamlTypeInfo<T>? typeInfo) => throw null;
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.Yaml.YamlSerializerOptions? left, Meziantou.Framework.Yaml.YamlSerializerOptions? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.Yaml.YamlSerializerOptions? left, Meziantou.Framework.Yaml.YamlSerializerOptions? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public Meziantou.Framework.Yaml.YamlUnmappedMemberHandling UnmappedMemberHandling { get => throw null; init { } }
+        public bool UnsafeAllowDeserializeFromTagTypeName { get => throw null; init { } }
+        public bool UseSchema { get => throw null; init { } }
+        public bool WriteIndented { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.Yaml.YamlSerializerOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public Meziantou.Framework.Yaml.YamlTypeInfo<T> GetTypeInfo<T>() => throw null;
+        public override string ToString() => throw null;
+        public bool TryGetTypeInfo<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Yaml.YamlTypeInfo<T>? typeInfo) => throw null;
+        public static bool operator ==(Meziantou.Framework.Yaml.YamlSerializerOptions? left, Meziantou.Framework.Yaml.YamlSerializerOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Yaml.YamlSerializerOptions? left, Meziantou.Framework.Yaml.YamlSerializerOptions? right) => throw null;
     }
 
     public enum YamlStyle
@@ -383,20 +383,20 @@ namespace Meziantou.Framework.Yaml
 
     public abstract class YamlTypeInfo
     {
-        public System.Type Type { get => throw null; }
         public Meziantou.Framework.Yaml.YamlSerializerOptions Options { get => throw null; }
+        public System.Type Type { get => throw null; }
         protected YamlTypeInfo(System.Type type, Meziantou.Framework.Yaml.YamlSerializerOptions options) { }
-        public abstract void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, object? value);
         public abstract object? ReadAsObject(Meziantou.Framework.Yaml.Serialization.YamlReader reader);
+        public abstract void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, object? value);
     }
 
     public abstract class YamlTypeInfo<T> : Meziantou.Framework.Yaml.YamlTypeInfo
     {
         protected YamlTypeInfo(Meziantou.Framework.Yaml.YamlSerializerOptions options) : base(default(System.Type), default(Meziantou.Framework.Yaml.YamlSerializerOptions)) { }
-        public abstract void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, T value);
-        public abstract T Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader);
-        public override void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, object? value) { }
+        public abstract T? Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader);
         public override object? ReadAsObject(Meziantou.Framework.Yaml.Serialization.YamlReader reader) => throw null;
+        public abstract void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, T value);
+        public override void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, object? value) { }
     }
 
     public enum YamlUnknownDerivedTypeHandling
@@ -418,112 +418,112 @@ namespace Meziantou.Framework.Yaml.Events
     {
         public override int NestingIncrease { get => throw null; }
         public string Value { get => throw null; }
-        public AnchorAlias(string value, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public AnchorAlias(string value) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
+        public AnchorAlias(string value, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public override string ToString() => throw null;
     }
 
     public class DocumentEnd : Meziantou.Framework.Yaml.Events.ParsingEvent
     {
-        public override int NestingIncrease { get => throw null; }
         public bool IsImplicit { get => throw null; }
-        public DocumentEnd(bool isImplicit, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
+        public override int NestingIncrease { get => throw null; }
         public DocumentEnd(bool isImplicit) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
+        public DocumentEnd(bool isImplicit, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public override string ToString() => throw null;
     }
 
     public sealed class DocumentStart : Meziantou.Framework.Yaml.Events.ParsingEvent
     {
+        public bool IsImplicit { get => throw null; }
         public override int NestingIncrease { get => throw null; }
         public Meziantou.Framework.Yaml.TagDirectiveCollection? Tags { get => throw null; }
         public Meziantou.Framework.Yaml.Tokens.VersionDirective? Version { get => throw null; }
-        public bool IsImplicit { get => throw null; }
-        public DocumentStart(Meziantou.Framework.Yaml.Tokens.VersionDirective? version, Meziantou.Framework.Yaml.TagDirectiveCollection? tags, bool isImplicit, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
-        public DocumentStart(Meziantou.Framework.Yaml.Tokens.VersionDirective? version, Meziantou.Framework.Yaml.TagDirectiveCollection? tags, bool isImplicit) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
-        public DocumentStart(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public DocumentStart() : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
+        public DocumentStart(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
+        public DocumentStart(Meziantou.Framework.Yaml.Tokens.VersionDirective? version, Meziantou.Framework.Yaml.TagDirectiveCollection? tags, bool isImplicit) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
+        public DocumentStart(Meziantou.Framework.Yaml.Tokens.VersionDirective? version, Meziantou.Framework.Yaml.TagDirectiveCollection? tags, bool isImplicit, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public override string ToString() => throw null;
     }
 
     public class MappingEnd : Meziantou.Framework.Yaml.Events.ParsingEvent
     {
         public override int NestingIncrease { get => throw null; }
-        public MappingEnd(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public MappingEnd() : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
+        public MappingEnd(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public override string ToString() => throw null;
     }
 
     public sealed class MappingStart : Meziantou.Framework.Yaml.Events.NodeEvent
     {
-        public override int NestingIncrease { get => throw null; }
-        public bool IsImplicit { get => throw null; }
         public override bool IsCanonical { get => throw null; }
+        public bool IsImplicit { get => throw null; }
+        public override int NestingIncrease { get => throw null; }
         public Meziantou.Framework.Yaml.YamlStyle Style { get => throw null; }
-        public MappingStart(string? anchor, string? tag, bool isImplicit, Meziantou.Framework.Yaml.YamlStyle style, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
-        public MappingStart(string? anchor, string? tag, bool isImplicit, Meziantou.Framework.Yaml.YamlStyle style) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
-        public MappingStart() : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
+        public MappingStart() : base(default(string), default(string)) { }
+        public MappingStart(string? anchor, string? tag, bool isImplicit, Meziantou.Framework.Yaml.YamlStyle style) : base(default(string), default(string)) { }
+        public MappingStart(string? anchor, string? tag, bool isImplicit, Meziantou.Framework.Yaml.YamlStyle style, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(string), default(string)) { }
         public override string ToString() => throw null;
     }
 
     public abstract class NodeEvent : Meziantou.Framework.Yaml.Events.ParsingEvent
     {
         public string? Anchor { get => throw null; }
-        public string? Tag { get => throw null; }
         public abstract bool IsCanonical { get; }
-        protected NodeEvent(string? anchor, string? tag, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
+        public string? Tag { get => throw null; }
         protected NodeEvent(string? anchor, string? tag) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
+        protected NodeEvent(string? anchor, string? tag, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
     }
 
     public abstract class ParsingEvent
     {
+        public Meziantou.Framework.Yaml.Mark End { get => throw null; }
         public abstract int NestingIncrease { get; }
         public Meziantou.Framework.Yaml.Mark Start { get => throw null; }
-        public Meziantou.Framework.Yaml.Mark End { get => throw null; }
         protected ParsingEvent(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) { }
     }
 
     public sealed class Scalar : Meziantou.Framework.Yaml.Events.NodeEvent
     {
-        public override int NestingIncrease { get => throw null; }
-        public string Value { get => throw null; }
-        public Meziantou.Framework.Yaml.ScalarStyle Style { get => throw null; }
+        public override bool IsCanonical { get => throw null; }
         public bool IsPlainImplicit { get => throw null; }
         public bool IsQuotedImplicit { get => throw null; }
-        public override bool IsCanonical { get => throw null; }
-        public Scalar(string? anchor, string? tag, string value, Meziantou.Framework.Yaml.ScalarStyle style, bool isPlainImplicit, bool isQuotedImplicit, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
-        public Scalar(string? anchor, string? tag, string value, Meziantou.Framework.Yaml.ScalarStyle style, bool isPlainImplicit, bool isQuotedImplicit) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
-        public Scalar(string value) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
-        public Scalar(string value, Meziantou.Framework.Yaml.ScalarStyle style) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
-        public Scalar(string? tag, string value) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
-        public Scalar(string anchor, string tag, string value) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
+        public override int NestingIncrease { get => throw null; }
+        public Meziantou.Framework.Yaml.ScalarStyle Style { get => throw null; }
+        public string Value { get => throw null; }
+        public Scalar(string value) : base(default(string), default(string)) { }
+        public Scalar(string value, Meziantou.Framework.Yaml.ScalarStyle style) : base(default(string), default(string)) { }
+        public Scalar(string? tag, string value) : base(default(string), default(string)) { }
+        public Scalar(string anchor, string tag, string value) : base(default(string), default(string)) { }
+        public Scalar(string? anchor, string? tag, string value, Meziantou.Framework.Yaml.ScalarStyle style, bool isPlainImplicit, bool isQuotedImplicit) : base(default(string), default(string)) { }
+        public Scalar(string? anchor, string? tag, string value, Meziantou.Framework.Yaml.ScalarStyle style, bool isPlainImplicit, bool isQuotedImplicit, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(string), default(string)) { }
         public override string ToString() => throw null;
     }
 
     public class SequenceEnd : Meziantou.Framework.Yaml.Events.ParsingEvent
     {
         public override int NestingIncrease { get => throw null; }
-        public SequenceEnd(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public SequenceEnd() : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
+        public SequenceEnd(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public override string ToString() => throw null;
     }
 
     public sealed class SequenceStart : Meziantou.Framework.Yaml.Events.NodeEvent
     {
-        public override int NestingIncrease { get => throw null; }
-        public bool IsImplicit { get => throw null; }
         public override bool IsCanonical { get => throw null; }
+        public bool IsImplicit { get => throw null; }
+        public override int NestingIncrease { get => throw null; }
         public Meziantou.Framework.Yaml.YamlStyle Style { get => throw null; }
-        public SequenceStart() : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
-        public SequenceStart(string? anchor, string? tag, bool isImplicit, Meziantou.Framework.Yaml.YamlStyle style, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
-        public SequenceStart(string? anchor, string? tag, bool isImplicit, Meziantou.Framework.Yaml.YamlStyle style) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
+        public SequenceStart() : base(default(string), default(string)) { }
+        public SequenceStart(string? anchor, string? tag, bool isImplicit, Meziantou.Framework.Yaml.YamlStyle style) : base(default(string), default(string)) { }
+        public SequenceStart(string? anchor, string? tag, bool isImplicit, Meziantou.Framework.Yaml.YamlStyle style, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(string), default(string)) { }
         public override string ToString() => throw null;
     }
 
     public class StreamEnd : Meziantou.Framework.Yaml.Events.ParsingEvent
     {
         public override int NestingIncrease { get => throw null; }
-        public StreamEnd(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public StreamEnd() : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
+        public StreamEnd(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public override string ToString() => throw null;
     }
 
@@ -539,106 +539,111 @@ namespace Meziantou.Framework.Yaml.Model
 {
     public abstract class YamlContainer : Meziantou.Framework.Yaml.Model.YamlElement
     {
-        public abstract Meziantou.Framework.Yaml.YamlStyle Style { get; set; }
         public abstract bool IsImplicit { get; set; }
+        public abstract Meziantou.Framework.Yaml.YamlStyle Style { get; set; }
     }
 
     public class YamlDocument : Meziantou.Framework.Yaml.Model.YamlNode
     {
-        public Meziantou.Framework.Yaml.Events.DocumentStart DocumentStart { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.Events.DocumentEnd DocumentEnd { get => throw null; set { } }
         public Meziantou.Framework.Yaml.Model.YamlElement? Contents { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.Events.DocumentEnd DocumentEnd { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.Events.DocumentStart DocumentStart { get => throw null; set { } }
+        public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
         public static Meziantou.Framework.Yaml.Model.YamlDocument Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
         public static Meziantou.Framework.Yaml.Model.YamlDocument Load(Meziantou.Framework.Yaml.EventReader eventReader, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
-        public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
     }
 
     public abstract class YamlElement : Meziantou.Framework.Yaml.Model.YamlNode
     {
         public abstract string? Anchor { get; set; }
-        public abstract string? Tag { get; set; }
         public abstract bool IsCanonical { get; }
+        public abstract string? Tag { get; set; }
     }
 
-    public class YamlMapping : Meziantou.Framework.Yaml.Model.YamlContainer, System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement>>, System.Collections.Generic.IDictionary<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement>>, System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement>>, System.Collections.IEnumerable
+    public class YamlMapping : Meziantou.Framework.Yaml.Model.YamlContainer, System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>>, System.Collections.Generic.IDictionary<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>>, System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>>, System.Collections.IEnumerable
     {
-        public Meziantou.Framework.Yaml.Events.MappingStart MappingStart { get => throw null; set { } }
         public override string? Anchor { get => throw null; set { } }
-        public override string? Tag { get => throw null; set { } }
-        public override Meziantou.Framework.Yaml.YamlStyle Style { get => throw null; set { } }
+        public int Count { get => throw null; }
         public override bool IsCanonical { get => throw null; }
         public override bool IsImplicit { get => throw null; set { } }
-        public int Count { get => throw null; }
         public bool IsReadOnly { get => throw null; }
         public Meziantou.Framework.Yaml.Model.YamlElement? this[Meziantou.Framework.Yaml.Model.YamlElement key] { get => throw null; set { } }
+        public System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> this[int index] { get => throw null; set { } }
         public Meziantou.Framework.Yaml.Model.YamlElement? this[string key] { get => throw null; set { } }
         public System.Collections.Generic.ICollection<Meziantou.Framework.Yaml.Model.YamlElement> Keys { get => throw null; }
+        public Meziantou.Framework.Yaml.Events.MappingStart MappingStart { get => throw null; set { } }
+        public override Meziantou.Framework.Yaml.YamlStyle Style { get => throw null; set { } }
+        public override string? Tag { get => throw null; set { } }
         public System.Collections.Generic.ICollection<Meziantou.Framework.Yaml.Model.YamlElement?> Values { get => throw null; }
-        public System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> this[int index] { get => throw null; set { } }
-        public static Meziantou.Framework.Yaml.Model.YamlMapping Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>> GetEnumerator() => throw null;
-        public void Clear() { }
         public void Add(Meziantou.Framework.Yaml.Model.YamlElement key, Meziantou.Framework.Yaml.Model.YamlElement? value) { }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement,Meziantou.Framework.Yaml.Model.YamlElement>>.Add(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> item) { }
+        public void Clear() { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement,Meziantou.Framework.Yaml.Model.YamlElement>>.Contains(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> item) => throw null;
         public bool ContainsKey(Meziantou.Framework.Yaml.Model.YamlElement key) => throw null;
         public bool ContainsKey(string key) => throw null;
-        public bool Remove(Meziantou.Framework.Yaml.Model.YamlElement key) => throw null;
-        public bool Remove(string key) => throw null;
-        public bool TryGetValue(Meziantou.Framework.Yaml.Model.YamlElement key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Meziantou.Framework.Yaml.Model.YamlElement value) => throw null;
-        public bool TryGetValue(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Meziantou.Framework.Yaml.Model.YamlElement value) => throw null;
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement,Meziantou.Framework.Yaml.Model.YamlElement>>.CopyTo(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>[] array, int arrayIndex) { }
+        public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public int IndexOf(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> item) => throw null;
         public void Insert(int index, System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> item) { }
+        public static Meziantou.Framework.Yaml.Model.YamlMapping Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
+        public bool Remove(Meziantou.Framework.Yaml.Model.YamlElement key) => throw null;
+        public bool Remove(string key) => throw null;
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement,Meziantou.Framework.Yaml.Model.YamlElement>>.Remove(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> item) => throw null;
         public void RemoveAt(int index) { }
-        public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
+        public bool TryGetValue(Meziantou.Framework.Yaml.Model.YamlElement key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Meziantou.Framework.Yaml.Model.YamlElement value) => throw null;
+        public bool TryGetValue(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Meziantou.Framework.Yaml.Model.YamlElement value) => throw null;
     }
 
     public abstract class YamlNode
     {
-        protected static Meziantou.Framework.Yaml.Model.YamlElement? ReadElement(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Events.ParsingEvent> EnumerateEvents() => throw null;
-        public void WriteTo(System.IO.TextWriter writer, bool suppressDocumentTags = false) { }
-        public void WriteTo(Meziantou.Framework.Yaml.IEmitter emitter, bool suppressDocumentTags = false) { }
-        public override string ToString() => throw null;
-        public T ToObject<T>(Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public object? ToObject(System.Type type, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static Meziantou.Framework.Yaml.Model.YamlElement FromObject(object value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null, System.Type? expectedType = null) => throw null;
         public abstract Meziantou.Framework.Yaml.Model.YamlNode DeepClone();
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Events.ParsingEvent> EnumerateEvents() => throw null;
+        public static Meziantou.Framework.Yaml.Model.YamlElement FromObject(object value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null, System.Type? expectedType = null) => throw null;
+        protected static Meziantou.Framework.Yaml.Model.YamlElement? ReadElement(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
+        public object? ToObject(System.Type type, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public T? ToObject<T>(Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public override string ToString() => throw null;
+        public void WriteTo(Meziantou.Framework.Yaml.IEmitter emitter, bool suppressDocumentTags = false) { }
+        public void WriteTo(System.IO.TextWriter writer, bool suppressDocumentTags = false) { }
     }
 
     public sealed class YamlNodeEventEnumerator : System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Events.ParsingEvent>, System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.Events.ParsingEvent>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
     {
         public Meziantou.Framework.Yaml.Events.ParsingEvent Current { get => throw null; }
+        object System.Collections.IEnumerator.Current { get => throw null; }
         public YamlNodeEventEnumerator(Meziantou.Framework.Yaml.Model.YamlNode root) { }
+        public void Dispose() { }
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.Events.ParsingEvent> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public void Dispose() { }
         public bool MoveNext() => throw null;
         public void Reset() { }
     }
 
     public class YamlSequence : Meziantou.Framework.Yaml.Model.YamlContainer, System.Collections.Generic.ICollection<Meziantou.Framework.Yaml.Model.YamlElement>, System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Model.YamlElement>, System.Collections.Generic.IList<Meziantou.Framework.Yaml.Model.YamlElement>, System.Collections.IEnumerable
     {
-        public Meziantou.Framework.Yaml.Events.SequenceStart SequenceStart { get => throw null; set { } }
         public override string? Anchor { get => throw null; set { } }
-        public override string? Tag { get => throw null; set { } }
-        public override Meziantou.Framework.Yaml.YamlStyle Style { get => throw null; set { } }
+        public int Count { get => throw null; }
         public override bool IsCanonical { get => throw null; }
         public override bool IsImplicit { get => throw null; set { } }
-        public int Count { get => throw null; }
         public bool IsReadOnly { get => throw null; }
         public Meziantou.Framework.Yaml.Model.YamlElement this[int index] { get => throw null; set { } }
-        public static Meziantou.Framework.Yaml.Model.YamlSequence Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.Model.YamlElement> GetEnumerator() => throw null;
+        public Meziantou.Framework.Yaml.Events.SequenceStart SequenceStart { get => throw null; set { } }
+        public override Meziantou.Framework.Yaml.YamlStyle Style { get => throw null; set { } }
+        public override string? Tag { get => throw null; set { } }
         public void Add(Meziantou.Framework.Yaml.Model.YamlElement item) { }
         public void Clear() { }
         public bool Contains(Meziantou.Framework.Yaml.Model.YamlElement item) => throw null;
         public void CopyTo(Meziantou.Framework.Yaml.Model.YamlElement[] array, int arrayIndex) { }
-        public bool Remove(Meziantou.Framework.Yaml.Model.YamlElement item) => throw null;
+        public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.Model.YamlElement> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public int IndexOf(Meziantou.Framework.Yaml.Model.YamlElement item) => throw null;
         public void Insert(int index, Meziantou.Framework.Yaml.Model.YamlElement item) { }
+        public static Meziantou.Framework.Yaml.Model.YamlSequence Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
+        public bool Remove(Meziantou.Framework.Yaml.Model.YamlElement item) => throw null;
         public void RemoveAt(int index) { }
-        public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
     }
 
     public class YamlStream : Meziantou.Framework.Yaml.Model.YamlNode, System.Collections.Generic.ICollection<Meziantou.Framework.Yaml.Model.YamlDocument>, System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Model.YamlDocument>, System.Collections.Generic.IList<Meziantou.Framework.Yaml.Model.YamlDocument>, System.Collections.IEnumerable
@@ -646,36 +651,36 @@ namespace Meziantou.Framework.Yaml.Model
         public int Count { get => throw null; }
         public bool IsReadOnly { get => throw null; }
         public Meziantou.Framework.Yaml.Model.YamlDocument this[int index] { get => throw null; set { } }
-        public static Meziantou.Framework.Yaml.Model.YamlStream Load(System.IO.TextReader stream) => throw null;
-        public static Meziantou.Framework.Yaml.Model.YamlStream Load(System.IO.TextReader stream, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
-        public static Meziantou.Framework.Yaml.Model.YamlStream Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
-        public static Meziantou.Framework.Yaml.Model.YamlStream Load(Meziantou.Framework.Yaml.EventReader eventReader, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.Model.YamlDocument> GetEnumerator() => throw null;
         public void Add(Meziantou.Framework.Yaml.Model.YamlDocument item) { }
         public void Clear() { }
         public bool Contains(Meziantou.Framework.Yaml.Model.YamlDocument item) => throw null;
         public void CopyTo(Meziantou.Framework.Yaml.Model.YamlDocument[] array, int arrayIndex) { }
-        public bool Remove(Meziantou.Framework.Yaml.Model.YamlDocument item) => throw null;
+        public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.Model.YamlDocument> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public int IndexOf(Meziantou.Framework.Yaml.Model.YamlDocument item) => throw null;
         public void Insert(int index, Meziantou.Framework.Yaml.Model.YamlDocument item) { }
+        public static Meziantou.Framework.Yaml.Model.YamlStream Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
+        public static Meziantou.Framework.Yaml.Model.YamlStream Load(System.IO.TextReader stream) => throw null;
+        public static Meziantou.Framework.Yaml.Model.YamlStream Load(Meziantou.Framework.Yaml.EventReader eventReader, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
+        public static Meziantou.Framework.Yaml.Model.YamlStream Load(System.IO.TextReader stream, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
+        public bool Remove(Meziantou.Framework.Yaml.Model.YamlDocument item) => throw null;
         public void RemoveAt(int index) { }
-        public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
     }
 
     public class YamlValue : Meziantou.Framework.Yaml.Model.YamlElement
     {
-        public Meziantou.Framework.Yaml.Events.Scalar Scalar { get => throw null; set { } }
         public override string? Anchor { get => throw null; set { } }
-        public override string? Tag { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.ScalarStyle Style { get => throw null; set { } }
         public override bool IsCanonical { get => throw null; }
         public bool IsPlainImplicit { get => throw null; set { } }
         public bool IsQuotedImplicit { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.Events.Scalar Scalar { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.ScalarStyle Style { get => throw null; set { } }
+        public override string? Tag { get => throw null; set { } }
         public string Value { get => throw null; set { } }
         public YamlValue(object value, Meziantou.Framework.Yaml.Schemas.IYamlSchema? schema = null) { }
-        public static Meziantou.Framework.Yaml.Model.YamlValue Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
         public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
+        public static Meziantou.Framework.Yaml.Model.YamlValue Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
     }
 }
 namespace Meziantou.Framework.Yaml.Schemas
@@ -688,19 +693,19 @@ namespace Meziantou.Framework.Yaml.Schemas
 
     public class ExtendedSchema : Meziantou.Framework.Yaml.Schemas.CoreSchema
     {
-        public const string TimestampShortTag = "!!timestamp";
-        public const string TimestampLongTag = "tag:yaml.org,2002:timestamp";
-        public const string MergeShortTag = "!!merge";
         public const string MergeLongTag = "tag:yaml.org,2002:merge";
+        public const string MergeShortTag = "!!merge";
+        public const string TimestampLongTag = "tag:yaml.org,2002:timestamp";
+        public const string TimestampShortTag = "!!timestamp";
         protected override void PrepareScalarRules() { }
     }
 
     public class FailsafeSchema : Meziantou.Framework.Yaml.Schemas.SchemaBase
     {
-        public const string MapShortTag = "!!map";
         public const string MapLongTag = "tag:yaml.org,2002:map";
-        public const string SeqShortTag = "!!seq";
+        public const string MapShortTag = "!!map";
         public const string SeqLongTag = "tag:yaml.org,2002:seq";
+        public const string SeqShortTag = "!!seq";
         protected bool AllowFailsafeString { get => throw null; set { } }
         protected override string GetDefaultTag(Meziantou.Framework.Yaml.Events.MappingStart nodeEvent) => throw null;
         protected override string GetDefaultTag(Meziantou.Framework.Yaml.Events.SequenceStart nodeEvent) => throw null;
@@ -709,51 +714,55 @@ namespace Meziantou.Framework.Yaml.Schemas
 
     public interface IYamlSchema
     {
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("shortTag")]
         string? ExpandTag(string shortTag);
-        string? ShortenTag(string tag);
         string? GetDefaultTag(Meziantou.Framework.Yaml.Events.NodeEvent nodeEvent);
         string? GetDefaultTag(System.Type type);
-        bool IsTagImplicit(string? tag);
-        bool TryParse(Meziantou.Framework.Yaml.Events.Scalar scalar, bool decodeValue, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? defaultTag, out object? value);
-        bool TryParse(Meziantou.Framework.Yaml.Events.Scalar scalar, System.Type type, out object? value);
         System.Type? GetTypeForDefaultTag(string? tag);
+        bool IsTagImplicit(string? tag);
         void RegisterTag(string shortTag, string longTag);
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("tag")]
+        string? ShortenTag(string tag);
+        bool TryParse(Meziantou.Framework.Yaml.Events.Scalar scalar, System.Type type, out object? value);
+        bool TryParse(Meziantou.Framework.Yaml.Events.Scalar scalar, bool decodeValue, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? defaultTag, out object? value);
     }
 
     public class JsonSchema : Meziantou.Framework.Yaml.Schemas.FailsafeSchema
     {
-        public const string NullShortTag = "!!null";
-        public const string NullLongTag = "tag:yaml.org,2002:null";
-        public const string BoolShortTag = "!!bool";
         public const string BoolLongTag = "tag:yaml.org,2002:bool";
-        public const string IntShortTag = "!!int";
-        public const string IntLongTag = "tag:yaml.org,2002:int";
-        public const string FloatShortTag = "!!float";
+        public const string BoolShortTag = "!!bool";
         public const string FloatLongTag = "tag:yaml.org,2002:float";
-        protected override void PrepareScalarRules() { }
+        public const string FloatShortTag = "!!float";
+        public const string IntLongTag = "tag:yaml.org,2002:int";
+        public const string IntShortTag = "!!int";
+        public const string NullLongTag = "tag:yaml.org,2002:null";
+        public const string NullShortTag = "!!null";
         protected static object DecodeInteger(System.Text.RegularExpressions.Match m) => throw null;
+        protected override void PrepareScalarRules() { }
     }
 
     public abstract class SchemaBase : Meziantou.Framework.Yaml.Schemas.IYamlSchema
     {
-        public const string StrShortTag = "!!str";
         public const string StrLongTag = "tag:yaml.org,2002:str";
-        public string? ExpandTag(string? shortTag) => throw null;
-        public string? ShortenTag(string? tag) => throw null;
-        public string? GetDefaultTag(Meziantou.Framework.Yaml.Events.NodeEvent nodeEvent) => throw null;
-        public string? GetDefaultTag(System.Type type) => throw null;
-        public bool IsTagImplicit(string? tag) => throw null;
-        public void RegisterTag(string shortTag, string longTag) { }
-        protected abstract string GetDefaultTag(Meziantou.Framework.Yaml.Events.MappingStart nodeEvent);
-        protected abstract string GetDefaultTag(Meziantou.Framework.Yaml.Events.SequenceStart nodeEvent);
-        public virtual bool TryParse(Meziantou.Framework.Yaml.Events.Scalar scalar, bool decodeValue, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? defaultTag, out object? value) => throw null;
-        public bool TryParse(Meziantou.Framework.Yaml.Events.Scalar scalar, System.Type type, out object? value) => throw null;
-        public System.Type? GetTypeForDefaultTag(string? tag) => throw null;
-        protected virtual void PrepareScalarRules() { }
-        protected void AddScalarRule<T>(string tag, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string regex, System.Func<System.Text.RegularExpressions.Match, T> decode, System.Func<T, string>? encode) { }
+        public const string StrShortTag = "!!str";
         protected void AddScalarRule(System.Type[] types, string tag, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string regex, System.Func<System.Text.RegularExpressions.Match, object?> decode, System.Func<object, string>? encode) { }
-        protected void RegisterDefaultTagMapping<T>(string tag, bool isDefault = false) { }
+        protected void AddScalarRule<T>(string tag, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string regex, System.Func<System.Text.RegularExpressions.Match, T?> decode, System.Func<T, string>? encode) { }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("shortTag")]
+        public string? ExpandTag(string? shortTag) => throw null;
+        protected abstract string GetDefaultTag(Meziantou.Framework.Yaml.Events.MappingStart nodeEvent);
+        public string? GetDefaultTag(Meziantou.Framework.Yaml.Events.NodeEvent nodeEvent) => throw null;
+        protected abstract string GetDefaultTag(Meziantou.Framework.Yaml.Events.SequenceStart nodeEvent);
+        public string? GetDefaultTag(System.Type type) => throw null;
+        public System.Type? GetTypeForDefaultTag(string? tag) => throw null;
+        public bool IsTagImplicit(string? tag) => throw null;
+        protected virtual void PrepareScalarRules() { }
         protected void RegisterDefaultTagMapping(string tag, System.Type type, bool isDefault) { }
+        protected void RegisterDefaultTagMapping<T>(string tag, bool isDefault = false) { }
+        public void RegisterTag(string shortTag, string longTag) { }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("tag")]
+        public string? ShortenTag(string? tag) => throw null;
+        public bool TryParse(Meziantou.Framework.Yaml.Events.Scalar scalar, System.Type type, out object? value) => throw null;
+        public virtual bool TryParse(Meziantou.Framework.Yaml.Events.Scalar scalar, bool decodeValue, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? defaultTag, out object? value) => throw null;
     }
 }
 namespace Meziantou.Framework.Yaml.Serialization
@@ -798,9 +807,9 @@ namespace Meziantou.Framework.Yaml.Serialization
     public abstract class YamlConverter
     {
         public abstract bool CanConvert(System.Type typeToConvert);
-        public abstract object? Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader, System.Type typeToConvert);
         public virtual bool CanPopulate(System.Type typeToConvert) => throw null;
         public virtual object? Populate(Meziantou.Framework.Yaml.Serialization.YamlReader reader, System.Type typeToConvert, object existingValue) => throw null;
+        public abstract object? Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader, System.Type typeToConvert);
         public abstract void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, object? value);
     }
 
@@ -822,10 +831,10 @@ namespace Meziantou.Framework.Yaml.Serialization
     public abstract class YamlConverter<T> : Meziantou.Framework.Yaml.Serialization.YamlConverter
     {
         public sealed override bool CanConvert(System.Type typeToConvert) => throw null;
+        public abstract T? Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader);
         public sealed override object? Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader, System.Type typeToConvert) => throw null;
-        public sealed override void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, object? value) { }
-        public abstract T Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader);
         public abstract void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, T value);
+        public sealed override void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, object? value) { }
     }
 
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple = true)]
@@ -835,8 +844,8 @@ namespace Meziantou.Framework.Yaml.Serialization
         public string? Discriminator { get => throw null; }
         public string? Tag { get => throw null; set { } }
         public YamlDerivedTypeAttribute(System.Type derivedType) { }
-        public YamlDerivedTypeAttribute(System.Type derivedType, string discriminator) { }
         public YamlDerivedTypeAttribute(System.Type derivedType, int discriminator) { }
+        public YamlDerivedTypeAttribute(System.Type derivedType, string discriminator) { }
     }
 
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
@@ -847,8 +856,8 @@ namespace Meziantou.Framework.Yaml.Serialization
         public string? Discriminator { get => throw null; }
         public string? Tag { get => throw null; set { } }
         public YamlDerivedTypeMappingAttribute(System.Type baseType, System.Type derivedType) { }
-        public YamlDerivedTypeMappingAttribute(System.Type baseType, System.Type derivedType, string discriminator) { }
         public YamlDerivedTypeMappingAttribute(System.Type baseType, System.Type derivedType, int discriminator) { }
+        public YamlDerivedTypeMappingAttribute(System.Type baseType, System.Type derivedType, string discriminator) { }
     }
 
     [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
@@ -898,10 +907,10 @@ namespace Meziantou.Framework.Yaml.Serialization
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Interface)]
     public sealed class YamlPolymorphicAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
-        public string? TypeDiscriminatorPropertyName { get => throw null; set { } }
         public Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle DiscriminatorStyle { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get => throw null; set { } }
         public bool InferClosedTypePolymorphism { get => throw null; set { } }
+        public string? TypeDiscriminatorPropertyName { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get => throw null; set { } }
     }
 
     [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
@@ -920,37 +929,37 @@ namespace Meziantou.Framework.Yaml.Serialization
 
     public sealed class YamlReader : Meziantou.Framework.Yaml.Serialization.YamlReaderWriterBase
     {
-        public Meziantou.Framework.Yaml.Serialization.YamlTokenType TokenType { get => throw null; }
-        public string? ScalarValue { get => throw null; }
-        public Meziantou.Framework.Yaml.ScalarStyle ScalarStyle { get => throw null; }
-        public string? Tag { get => throw null; }
-        public string? Anchor { get => throw null; }
         public string? Alias { get => throw null; }
-        public string? SourceName { get => throw null; }
-        public Meziantou.Framework.Yaml.Mark Start { get => throw null; }
+        public string? Anchor { get => throw null; }
         public Meziantou.Framework.Yaml.Mark End { get => throw null; }
         public bool IsCurrentNodeDerivedTypeResolved { get => throw null; }
-        public static Meziantou.Framework.Yaml.Serialization.YamlReader Create(string yaml, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static Meziantou.Framework.Yaml.Serialization.YamlReader Create(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public Meziantou.Framework.Yaml.Serialization.YamlReader CreateReader(string yaml) => throw null;
-        public void MarkCurrentNodeDerivedTypeResolved() { }
-        public bool TryReadAlias(out object? value) => throw null;
-        public bool TryReplayMappingAlias() => throw null;
-        public void RegisterAnchor(string anchor, object value) { }
+        public Meziantou.Framework.Yaml.ScalarStyle ScalarStyle { get => throw null; }
+        public string? ScalarValue { get => throw null; }
+        public string? SourceName { get => throw null; }
+        public Meziantou.Framework.Yaml.Mark Start { get => throw null; }
+        public string? Tag { get => throw null; }
+        public Meziantou.Framework.Yaml.Serialization.YamlTokenType TokenType { get => throw null; }
+        public static string BufferCurrentNodeToString(Meziantou.Framework.Yaml.Serialization.YamlReader reader) => throw null;
         public static string BufferCurrentNodeToStringAndFindDiscriminator(Meziantou.Framework.Yaml.Serialization.YamlReader reader, string discriminatorPropertyName, out string? discriminatorValue) => throw null;
         public static string BufferCurrentNodeToStringAndRemoveDiscriminator(Meziantou.Framework.Yaml.Serialization.YamlReader reader, string? discriminatorPropertyName, bool removeTag, out string? discriminatorValue) => throw null;
-        public static string BufferCurrentNodeToString(Meziantou.Framework.Yaml.Serialization.YamlReader reader) => throw null;
-        public bool Read() => throw null;
-        public void Skip() { }
+        public static Meziantou.Framework.Yaml.Serialization.YamlReader Create(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static Meziantou.Framework.Yaml.Serialization.YamlReader Create(string yaml, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public Meziantou.Framework.Yaml.Serialization.YamlReader CreateReader(string yaml) => throw null;
         public string GetScalarValue() => throw null;
+        public void MarkCurrentNodeDerivedTypeResolved() { }
+        public bool Read() => throw null;
+        public void RegisterAnchor(string anchor, object value) { }
+        public void Skip() { }
+        public bool TryReadAlias(out object? value) => throw null;
+        public bool TryReplayMappingAlias() => throw null;
     }
 
     public abstract class YamlReaderWriterBase
     {
         public Meziantou.Framework.Yaml.YamlSerializerOptions Options { get => throw null; }
         protected YamlReaderWriterBase(Meziantou.Framework.Yaml.YamlSerializerOptions options) { }
-        public string ConvertName(string name) => throw null;
         public string ConvertDictionaryKey(string key) => throw null;
+        public string ConvertName(string name) => throw null;
         public Meziantou.Framework.Yaml.Serialization.YamlConverter GetConverter(System.Type typeToConvert) => throw null;
         public bool TryGetCustomConverter(System.Type typeToConvert, out Meziantou.Framework.Yaml.Serialization.YamlConverter? converter) => throw null;
     }
@@ -962,30 +971,28 @@ namespace Meziantou.Framework.Yaml.Serialization
 
     public static class YamlScalar
     {
-        public static bool IsNull(System.ReadOnlySpan<char> value) => throw null;
-        public static bool TryParseBool(System.ReadOnlySpan<char> value, out bool result) => throw null;
-        public static bool TryParseInt32(System.ReadOnlySpan<char> value, out int result) => throw null;
-        public static bool TryParseUInt32(System.ReadOnlySpan<char> value, out uint result) => throw null;
-        public static bool TryParseUInt64(System.ReadOnlySpan<char> value, out ulong result) => throw null;
-        public static bool TryParseDecimal(System.ReadOnlySpan<char> value, out decimal result) => throw null;
-        public static bool TryParseInt64(System.ReadOnlySpan<char> value, out long result) => throw null;
-        public static bool TryParseDouble(System.ReadOnlySpan<char> value, out double result) => throw null;
-        public static bool TryParseCultureInfo(string? value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Globalization.CultureInfo? result) => throw null;
-        #if NET11_0
-        public static bool TryParseIeee754<T>(System.ReadOnlySpan<char> value, out T result) where T : struct, System.Numerics.IFloatingPointIeee754<T> => throw null;
-        #endif
         public static bool IsNull(Meziantou.Framework.Yaml.Serialization.YamlReader reader) => throw null;
+        public static bool IsNull(System.ReadOnlySpan<char> value) => throw null;
+        public static object? ResolveObject(Meziantou.Framework.Yaml.Serialization.YamlReader reader) => throw null;
         public static bool TryParseBool(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out bool result) => throw null;
-        public static bool TryParseInt32(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out int result) => throw null;
-        public static bool TryParseUInt32(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out uint result) => throw null;
-        public static bool TryParseUInt64(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out ulong result) => throw null;
-        public static bool TryParseInt64(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out long result) => throw null;
-        public static bool TryParseDouble(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out double result) => throw null;
+        public static bool TryParseBool(System.ReadOnlySpan<char> value, out bool result) => throw null;
+        public static bool TryParseCultureInfo(string? value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Globalization.CultureInfo? result) => throw null;
         public static bool TryParseDecimal(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out decimal result) => throw null;
+        public static bool TryParseDecimal(System.ReadOnlySpan<char> value, out decimal result) => throw null;
+        public static bool TryParseDouble(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out double result) => throw null;
+        public static bool TryParseDouble(System.ReadOnlySpan<char> value, out double result) => throw null;
         #if NET11_0
         public static bool TryParseIeee754<T>(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out T result) where T : struct, System.Numerics.IFloatingPointIeee754<T> => throw null;
+        public static bool TryParseIeee754<T>(System.ReadOnlySpan<char> value, out T result) where T : struct, System.Numerics.IFloatingPointIeee754<T> => throw null;
         #endif
-        public static object? ResolveObject(Meziantou.Framework.Yaml.Serialization.YamlReader reader) => throw null;
+        public static bool TryParseInt32(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out int result) => throw null;
+        public static bool TryParseInt32(System.ReadOnlySpan<char> value, out int result) => throw null;
+        public static bool TryParseInt64(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out long result) => throw null;
+        public static bool TryParseInt64(System.ReadOnlySpan<char> value, out long result) => throw null;
+        public static bool TryParseUInt32(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out uint result) => throw null;
+        public static bool TryParseUInt32(System.ReadOnlySpan<char> value, out uint result) => throw null;
+        public static bool TryParseUInt64(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out ulong result) => throw null;
+        public static bool TryParseUInt64(System.ReadOnlySpan<char> value, out ulong result) => throw null;
     }
 
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
@@ -1007,37 +1014,37 @@ namespace Meziantou.Framework.Yaml.Serialization
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public sealed class YamlSourceGenerationOptionsAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
-        public bool WriteIndented { get => throw null; set { } }
-        public int IndentSize { get => throw null; set { } }
-        public bool IndentBlockSequences { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.YamlKnownNamingPolicy PropertyNamingPolicy { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.YamlKnownNamingPolicy DictionaryKeyPolicy { get => throw null; set { } }
-        public bool PropertyNameCaseInsensitive { get => throw null; set { } }
-        public bool IncludeFields { get => throw null; set { } }
-        public bool IgnoreReadOnlyFields { get => throw null; set { } }
-        public bool IgnoreReadOnlyProperties { get => throw null; set { } }
-        public bool RespectRequiredConstructorParameters { get => throw null; set { } }
-        public bool RespectNullableAnnotations { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.YamlUnmappedMemberHandling UnmappedMemberHandling { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.YamlObjectCreationHandling PreferredObjectCreationHandling { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.YamlIgnoreCondition DefaultIgnoreCondition { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.YamlMappingOrderPolicy MappingOrder { get => throw null; set { } }
         public Meziantou.Framework.Yaml.YamlSequenceItemStyle BlockSequenceMappingStyle { get => throw null; set { } }
         public Meziantou.Framework.Yaml.YamlSequenceItemStyle BlockSequenceSequenceStyle { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.YamlSchemaKind Schema { get => throw null; set { } }
-        public bool UseSchema { get => throw null; set { } }
+        public System.Type[]? Converters { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.YamlIgnoreCondition DefaultIgnoreCondition { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.YamlKnownNamingPolicy DictionaryKeyPolicy { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle DiscriminatorStyle { get => throw null; set { } }
         public Meziantou.Framework.Yaml.YamlDuplicateKeyHandling DuplicateKeyHandling { get => throw null; set { } }
-        public bool UnsafeAllowDeserializeFromTagTypeName { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.YamlReferenceHandling ReferenceHandling { get => throw null; set { } }
-        public string? SourceName { get => throw null; set { } }
+        public bool IgnoreReadOnlyFields { get => throw null; set { } }
+        public bool IgnoreReadOnlyProperties { get => throw null; set { } }
+        public bool IncludeFields { get => throw null; set { } }
+        public bool IndentBlockSequences { get => throw null; set { } }
+        public int IndentSize { get => throw null; set { } }
+        public bool InferClosedTypePolymorphism { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.YamlMappingOrderPolicy MappingOrder { get => throw null; set { } }
         public bool PreferPlainStyle { get => throw null; set { } }
         public bool PreferQuotedForAmbiguousScalars { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.YamlObjectCreationHandling PreferredObjectCreationHandling { get => throw null; set { } }
+        public bool PropertyNameCaseInsensitive { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.YamlKnownNamingPolicy PropertyNamingPolicy { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.YamlReferenceHandling ReferenceHandling { get => throw null; set { } }
+        public bool RespectNullableAnnotations { get => throw null; set { } }
+        public bool RespectRequiredConstructorParameters { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.YamlSchemaKind Schema { get => throw null; set { } }
+        public string? SourceName { get => throw null; set { } }
         public Meziantou.Framework.Yaml.ScalarStyle StringStyle { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle DiscriminatorStyle { get => throw null; set { } }
         public string? TypeDiscriminatorPropertyName { get => throw null; set { } }
         public Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get => throw null; set { } }
-        public bool InferClosedTypePolymorphism { get => throw null; set { } }
-        public System.Type[]? Converters { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.YamlUnmappedMemberHandling UnmappedMemberHandling { get => throw null; set { } }
+        public bool UnsafeAllowDeserializeFromTagTypeName { get => throw null; set { } }
+        public bool UseSchema { get => throw null; set { } }
+        public bool WriteIndented { get => throw null; set { } }
     }
 
     [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
@@ -1073,12 +1080,12 @@ namespace Meziantou.Framework.Yaml.Serialization
     public sealed class YamlTypeClassifierContext
     {
         public System.Type DeclaringType { get => throw null; }
-        public Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierKind Kind { get => throw null; }
-        public System.Collections.ObjectModel.ReadOnlyCollection<Meziantou.Framework.Yaml.Serialization.YamlUnionCaseInfo> UnionCases { get => throw null; }
         public System.Collections.ObjectModel.ReadOnlyCollection<Meziantou.Framework.Yaml.YamlDerivedType> DerivedTypes { get => throw null; }
+        public Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierKind Kind { get => throw null; }
         public string? TypeDiscriminatorPropertyName { get => throw null; }
-        public static Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext CreateForUnion(System.Type declaringType, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlUnionCaseInfo> unionCases) => throw null;
+        public System.Collections.ObjectModel.ReadOnlyCollection<Meziantou.Framework.Yaml.Serialization.YamlUnionCaseInfo> UnionCases { get => throw null; }
         public static Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext CreateForPolymorphicType(System.Type declaringType, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.YamlDerivedType> derivedTypes, string? typeDiscriminatorPropertyName) => throw null;
+        public static Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext CreateForUnion(System.Type declaringType, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlUnionCaseInfo> unionCases) => throw null;
     }
 
     public abstract class YamlTypeClassifierFactory
@@ -1097,17 +1104,17 @@ namespace Meziantou.Framework.Yaml.Serialization
     public sealed class YamlUnionCaseInfo
     {
         public System.Type CaseType { get => throw null; }
-        public Meziantou.Framework.Yaml.Serialization.YamlUnionCaseShape Shape { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlUnionCaseProperty> Properties { get => throw null; }
-        public bool HasObjectProperties { get => throw null; }
         public bool DisallowUnmappedProperties { get => throw null; }
+        public bool HasObjectProperties { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlUnionCaseProperty> Properties { get => throw null; }
+        public Meziantou.Framework.Yaml.Serialization.YamlUnionCaseShape Shape { get => throw null; }
         public YamlUnionCaseInfo(System.Type caseType, Meziantou.Framework.Yaml.Serialization.YamlUnionCaseShape shape, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlUnionCaseProperty>? properties = null, bool disallowUnmappedProperties = false) { }
     }
 
     public sealed class YamlUnionCaseProperty
     {
-        public string Name { get => throw null; }
         public bool IsRequired { get => throw null; }
+        public string Name { get => throw null; }
         public YamlUnionCaseProperty(string name, bool isRequired) { }
     }
 
@@ -1139,54 +1146,54 @@ namespace Meziantou.Framework.Yaml.Serialization
         public bool IsCollectingReferences { get => throw null; }
         public YamlWriter(System.IO.TextWriter writer, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) : base(default(Meziantou.Framework.Yaml.YamlSerializerOptions)) { }
         public YamlWriter(System.Text.StringBuilder stringBuilder, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) : base(default(Meziantou.Framework.Yaml.YamlSerializerOptions)) { }
+        public Meziantou.Framework.Yaml.Serialization.YamlWriter.BlockSequenceItemStyleScope PushBlockSequenceItemStyle(Meziantou.Framework.Yaml.YamlSequenceItemStyle mappingStyle, Meziantou.Framework.Yaml.YamlSequenceItemStyle sequenceStyle) => throw null;
+        public Meziantou.Framework.Yaml.Serialization.YamlWriter.StringStyleScope PushStringStyle(Meziantou.Framework.Yaml.ScalarStyle style) => throw null;
         public bool ShouldInvokeOnSerializing(object value) => throw null;
-        public BlockSequenceItemStyleScope PushBlockSequenceItemStyle(Meziantou.Framework.Yaml.YamlSequenceItemStyle mappingStyle, Meziantou.Framework.Yaml.YamlSequenceItemStyle sequenceStyle) => throw null;
-        public StringStyleScope PushStringStyle(Meziantou.Framework.Yaml.ScalarStyle style) => throw null;
         public bool TryWriteReference(object? value) => throw null;
-        public void WriteTag(string tag) { }
-        public void WriteAnchor(string anchor) { }
         public void WriteAlias(string alias) { }
-        public void WriteStartMapping() { }
-        public void WriteEndMapping() { }
-        public void WriteStartSequence() { }
-        public void WriteEndSequence() { }
-        public void WritePropertyName(string name) { }
+        public void WriteAnchor(string anchor) { }
         public void WriteDictionaryKey(object key) { }
-        public void WriteScalar(string? value) { }
-        public void WriteString(string? value) { }
-        public void WriteScalar(System.ReadOnlySpan<char> value) { }
-        public void WriteScalar(bool value) { }
-        public void WriteScalar(byte value) { }
-        public void WriteScalar(sbyte value) { }
-        public void WriteScalar(short value) { }
-        public void WriteScalar(ushort value) { }
-        public void WriteScalar(int value) { }
-        public void WriteScalar(uint value) { }
-        public void WriteScalar(long value) { }
-        public void WriteScalar(ulong value) { }
-        public void WriteScalar(decimal value) { }
-        public void WriteScalar(nint value) { }
-        public void WriteScalar(nuint value) { }
-        public void WriteScalar(char value) { }
-        public void WriteScalar(double value) { }
-        public void WriteScalar(float value) { }
+        public void WriteEndMapping() { }
+        public void WriteEndSequence() { }
+        public void WriteNullValue() { }
+        public void WritePropertyName(string name) { }
+        public void WriteScalar(System.DateOnly value) { }
         public void WriteScalar(System.DateTime value) { }
         public void WriteScalar(System.DateTimeOffset value) { }
         public void WriteScalar(System.Guid value) { }
-        public void WriteScalar(System.TimeSpan value) { }
-        public void WriteScalar(System.DateOnly value) { }
-        public void WriteScalar(System.TimeOnly value) { }
         public void WriteScalar(System.Half value) { }
         public void WriteScalar(System.Int128 value) { }
-        public void WriteScalar(System.UInt128 value) { }
         #if NET11_0
         public void WriteScalar(System.Numerics.BFloat16 value) { }
+        public void WriteScalar(System.Numerics.Decimal128 value) { }
         public void WriteScalar(System.Numerics.Decimal32 value) { }
         public void WriteScalar(System.Numerics.Decimal64 value) { }
-        public void WriteScalar(System.Numerics.Decimal128 value) { }
         #endif
+        public void WriteScalar(System.ReadOnlySpan<char> value) { }
+        public void WriteScalar(System.TimeOnly value) { }
+        public void WriteScalar(System.TimeSpan value) { }
+        public void WriteScalar(System.UInt128 value) { }
+        public void WriteScalar(bool value) { }
+        public void WriteScalar(byte value) { }
+        public void WriteScalar(char value) { }
+        public void WriteScalar(decimal value) { }
+        public void WriteScalar(double value) { }
+        public void WriteScalar(float value) { }
+        public void WriteScalar(int value) { }
+        public void WriteScalar(long value) { }
+        public void WriteScalar(nint value) { }
+        public void WriteScalar(nuint value) { }
+        public void WriteScalar(sbyte value) { }
+        public void WriteScalar(short value) { }
+        public void WriteScalar(string? value) { }
+        public void WriteScalar(uint value) { }
+        public void WriteScalar(ulong value) { }
+        public void WriteScalar(ushort value) { }
         public void WriteScalar<T>(T value) where T : System.IFormattable { }
-        public void WriteNullValue() { }
+        public void WriteStartMapping() { }
+        public void WriteStartSequence() { }
+        public void WriteString(string? value) { }
+        public void WriteTag(string tag) { }
         public readonly struct BlockSequenceItemStyleScope : System.IDisposable
         {
             public void Dispose() { }
@@ -1211,8 +1218,8 @@ namespace Meziantou.Framework.Yaml.Syntax
 {
     public readonly struct YamlSourceSpan
     {
-        public Meziantou.Framework.Yaml.Mark Start { get => throw null; }
         public Meziantou.Framework.Yaml.Mark End { get => throw null; }
+        public Meziantou.Framework.Yaml.Mark Start { get => throw null; }
         public YamlSourceSpan(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) { }
         public override string ToString() => throw null;
     }
@@ -1248,8 +1255,8 @@ namespace Meziantou.Framework.Yaml.Syntax
 
     public abstract class YamlSyntaxNode
     {
-        public Meziantou.Framework.Yaml.Syntax.YamlSourceSpan Span { get => throw null; }
         public Meziantou.Framework.Yaml.Syntax.YamlSourceSpan FullSpan { get => throw null; }
+        public Meziantou.Framework.Yaml.Syntax.YamlSourceSpan Span { get => throw null; }
         protected YamlSyntaxNode(Meziantou.Framework.Yaml.Syntax.YamlSourceSpan span, Meziantou.Framework.Yaml.Syntax.YamlSourceSpan fullSpan) { }
     }
 
@@ -1269,8 +1276,8 @@ namespace Meziantou.Framework.Yaml.Syntax
 
     public sealed class YamlSyntaxTree
     {
-        public string Text { get => throw null; }
         public Meziantou.Framework.Yaml.Syntax.YamlSyntaxNode Root { get => throw null; }
+        public string Text { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Syntax.YamlSyntaxToken> Tokens { get => throw null; }
         public static Meziantou.Framework.Yaml.Syntax.YamlSyntaxTree Parse(string yaml, Meziantou.Framework.Yaml.Syntax.YamlSyntaxOptions? options = null) => throw null;
         public string ToFullString() => throw null;
@@ -1367,8 +1374,8 @@ namespace Meziantou.Framework.Yaml.Tokens
 
     public class Scalar : Meziantou.Framework.Yaml.Tokens.Token
     {
-        public string Value { get => throw null; }
         public Meziantou.Framework.Yaml.ScalarStyle Style { get => throw null; }
+        public string Value { get => throw null; }
         public Scalar(string value) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public Scalar(string value, Meziantou.Framework.Yaml.ScalarStyle style) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public Scalar(string value, Meziantou.Framework.Yaml.ScalarStyle style, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
@@ -1407,8 +1414,8 @@ namespace Meziantou.Framework.Yaml.Tokens
 
     public abstract class Token
     {
-        public Meziantou.Framework.Yaml.Mark Start { get => throw null; }
         public Meziantou.Framework.Yaml.Mark End { get => throw null; }
+        public Meziantou.Framework.Yaml.Mark Start { get => throw null; }
         protected Token(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) { }
     }
 

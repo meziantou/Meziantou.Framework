@@ -1,0 +1,50 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Imaging.TestHarness\Meziantou.Framework.Imaging.TestHarness.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Published documentation (Documentation/DocumentationSnippetTests, DocumentationExampleTests): the usage examples are
+      compiled and run here (the README snippets, which use relative paths, are only compiled by the samples project), and
+      the sample sources are copied with the published Markdown files so that every C# block is compared with its snippet.
+    -->
+    <Compile Include="..\..\samples\Meziantou.Framework.Imaging.Samples\Examples.cs" Link="Documentation\Samples\Examples.cs" />
+    <None Include="..\..\samples\Meziantou.Framework.Imaging.Samples\*.cs" LinkBase="Documentation\samples\Meziantou.Framework.Imaging.Samples" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\Meziantou.Framework.Imaging\readme.md" Link="Documentation\src\Meziantou.Framework.Imaging\readme.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Benchmark workload validation (Conformance/Benchmarks/BenchmarkWorkloadTests): the benchmarked operations and input
+      generators are compiled here (they have no BenchmarkDotNet dependency).
+    -->
+    <Compile Include="..\..\benchmarks\Meziantou.Framework.Imaging.Benchmarks\Workloads\*.cs" LinkBase="Conformance\Benchmarks\Workloads" />
+    <!-- The font builder and the synthetic fonts are shared with the corpus generator, which writes these fonts to the corpus -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\Font*.cs" LinkBase="Shared" />
+    <!--
+      The lists of the files each section of the manifest references, as the corpus generator computes them to keep the
+      sections a generator does not own (Conformance/CorpusManifestTests), with its manifest object type
+    -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Infrastructure\CorpusDriver.Files.cs" LinkBase="Shared\CorpusGenerator" />
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\GlobalUsings.cs" LinkBase="Shared\CorpusGenerator" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The project files of the Imaging test projects, for the scope each one declares (Conformance/CorpusScopeTests). They
+      are copied with another extension: the build traversals of the repository take every project file they find.
+    -->
+    <None Include="..\Meziantou.Framework.Imaging.*Tests\*.csproj" Link="TestProjects\%(Filename).xml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Shared helpers and the copy of the corpus; the README.md of the corpus holds the fixture-to-feature coverage matrix
+       verified against the manifest (FixtureCoverageMatrixTests) -->
+  <Import Project="..\Meziantou.Framework.Imaging.Tests.Shared\Imaging.Tests.Shared.props" />
+</Project>

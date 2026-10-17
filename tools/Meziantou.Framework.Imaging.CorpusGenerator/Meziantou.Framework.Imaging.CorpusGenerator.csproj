@@ -1,0 +1,60 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!--
+    Reviewed, reproducible recipe of every committed fixture of tests/Meziantou.Framework.Imaging.Fixtures (see tests/Meziantou.Framework.Imaging.Fixtures/README.md,
+    "Regenerating the corpus"). It is NEVER run by the tests and does not reference the library under test.
+    Usage: see Program.cs and tests/Meziantou.Framework.Imaging.Fixtures/README.md. Single target framework so that `dotnet run` needs no
+    framework argument.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(MinimumTargetFramework)</TargetFramework>
+    <ValidateProjectTargets>false</ValidateProjectTargets>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Every number and text of the manifest is culture-independent -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!--
+      A transcription of reviewed fixture recipes rather than a product:
+      MA0048 (one type per file): small records live next to the code that uses them;
+      MA0051 (method length): one builder method per fixture family, kept in the reviewed order;
+      CA1032, MA0008, MA0009 (exception constructors, struct layout, regex timeouts): internal types, trusted inputs.
+    -->
+    <NoWarn>$(NoWarn);MA0048;MA0051;CA1032;MA0008;MA0009</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- `verify` re-decodes the corpus with the tools of the interop tests: keep the same version as the TestHarness project -->
+    <PackageReference Include="Meziantou.Prebuilt" Version="3.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\Meziantou.Framework\ExecutableFinder.cs" Link="Infrastructure\ExecutableFinder.cs" />
+    <!--
+      The independent AVIF reader, the exact color converter and the file builder of the test harness: the generator
+      derives the AVIF references with them (they have no dependency on the library under test)
+    -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Avif\*.cs" LinkBase="TestHarness\Avif" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Heif\*.cs" LinkBase="TestHarness\Heif" />
+    <!--
+      The decimal reference of ICC color conversion of the test harness (its own profile reader, no dependency on the
+      library under test): the generator converts the inks of the CMYK JPEG fixtures with it
+    -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Color\*.cs" LinkBase="TestHarness\Color" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Resampling\DecimalMath.cs" LinkBase="TestHarness\Resampling" />
+    <!-- The independent reader of the structure of JPEG XL files: the generator reads the fields of its fixtures with it -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\JpegXl\*.cs" LinkBase="TestHarness\JpegXl" />
+    <!--
+      The independent reader of the structure of JPEG 2000 codestreams and files, the builder of the boxes of a JP2 file
+      and the reader of the PGX files opj_decompress writes
+    -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Jpeg2000\*.cs" LinkBase="TestHarness\Jpeg2000" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\ExternalTools\PgxImage.cs" LinkBase="TestHarness\ExternalTools" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="imageio_frames.swift" />
+  </ItemGroup>
+</Project>

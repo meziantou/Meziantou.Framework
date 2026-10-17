@@ -13,7 +13,9 @@ namespace Meziantou.Framework
 
     public static class Slug
     {
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("text")]
         public static string? Create(string? text) => throw null;
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("text")]
         public static string? Create(string? text, Meziantou.Framework.SlugOptions? options) => throw null;
     }
 
@@ -22,11 +24,11 @@ namespace Meziantou.Framework
         public const int DefaultMaximumLength = 80;
         public const string DefaultSeparator = "-";
         public System.Collections.Generic.IList<System.Text.Unicode.UnicodeRange> AllowedRanges { get => throw null; }
-        public int MaximumLength { get => throw null; set { } }
-        public string Separator { get => throw null; set { } }
-        public System.Globalization.CultureInfo? Culture { get => throw null; set { } }
         public bool CanEndWithSeparator { get => throw null; set { } }
         public Meziantou.Framework.CasingTransformation CasingTransformation { get => throw null; set { } }
+        public System.Globalization.CultureInfo? Culture { get => throw null; set { } }
+        public int MaximumLength { get => throw null; set { } }
+        public string Separator { get => throw null; set { } }
         public virtual bool IsAllowed(System.Text.Rune character) => throw null;
         public virtual string Replace(System.Text.Rune rune) => throw null;
     }

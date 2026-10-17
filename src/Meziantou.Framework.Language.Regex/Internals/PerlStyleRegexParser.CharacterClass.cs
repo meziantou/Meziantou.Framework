@@ -477,7 +477,13 @@ internal abstract partial class PerlStyleRegexParser
         return new RegexCharacterClassSyntax(openBracketToken, caretToken, SyntaxFactory.ListNode([.. members]), closeBracketToken, Options);
     }
 
-    private bool IsAtClassSetEnd() => Scanner.IsAtEnd || Scanner.Current == ']';
+    /// <summary>Whether the class set being read ends here, at its <c>]</c> or at the end of the pattern.</summary>
+    /// <remarks>
+    /// The end of the pattern is not always the end of the text. A JavaScript literal ends at the first <c>/</c>
+    /// outside a class, found by a tokenizer that does not know classes nest, so the text that follows may be the
+    /// flags even though a nested class is still open.
+    /// </remarks>
+    private bool IsAtClassSetEnd() => IsAtBodyEnd(Scanner.Position) || Scanner.Current == ']';
 
     /// <summary>The length of a class set operator at <paramref name="position"/>, or 0.</summary>
     /// <remarks>
@@ -522,7 +528,7 @@ internal abstract partial class PerlStyleRegexParser
         }
 
         // "[a-]" is not a range: the dash has nothing after it, and on its own it is a syntax character.
-        if (Scanner.Current != '-' || Scanner.Peek() is '-' or ']' || Scanner.Position + 1 >= Text.Length)
+        if (Scanner.Current != '-' || Scanner.Peek() is '-' or ']' || IsAtBodyEnd(Scanner.Position + 1))
             return new ClassSetMember(element.Node, MayContainStrings: false, IsRange: false);
 
         var hyphenStart = Scanner.Position;
@@ -604,16 +610,16 @@ internal abstract partial class PerlStyleRegexParser
         // A backslash escapes the character after it, the closing brace included, so the scan cannot simply stop at
         // the first "}".
         var textStart = Scanner.Position;
-        while (!Scanner.IsAtEnd && Scanner.Current != '}')
+        while (!IsAtBodyEnd(Scanner.Position) && Scanner.Current != '}')
         {
-            if (Scanner.Current == '\\' && Scanner.Peek() == 'u' && Scanner.Peek(2) == '{' && Text.IndexOf('}', Scanner.Position, StringComparison.Ordinal) is var codePointEnd && codePointEnd >= 0)
+            if (Scanner.Current == '\\' && Scanner.Peek() == 'u' && Scanner.Peek(2) == '{' && Text.IndexOf('}', Scanner.Position, StringComparison.Ordinal) is var codePointEnd && codePointEnd >= 0 && !IsAtBodyEnd(codePointEnd))
             {
                 // "\u{…}" has a closing brace of its own, which does not close the disjunction.
                 Scanner.Position = codePointEnd + 1;
                 continue;
             }
 
-            Scanner.Position += Scanner.Current == '\\' && Scanner.Position + 1 < Text.Length ? 2 : 1;
+            Scanner.Position += Scanner.Current == '\\' && !IsAtBodyEnd(Scanner.Position + 1) ? 2 : 1;
         }
 
         var textEnd = Scanner.Position;

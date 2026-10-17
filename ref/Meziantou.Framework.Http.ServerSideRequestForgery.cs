@@ -29,12 +29,12 @@ namespace Meziantou.Framework.Http.ServerSideRequestForgery
 
     public sealed class ServerSideRequestForgeryOptions
     {
-        public System.Collections.Generic.ICollection<string> SafeSchemes { get => throw null; }
-        public System.Collections.Generic.ICollection<System.Net.IPNetwork> UnsafeIpNetworks { get => throw null; }
-        public System.Collections.Generic.ICollection<System.Net.IPNetwork> SafeIpNetworks { get => throw null; }
-        public Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy ResolutionStrategy { get => throw null; set { } }
         public bool DisallowMixedSafeAndUnsafeIpAddresses { get => throw null; set { } }
         public Microsoft.Extensions.Logging.ILogger Logger { get => throw null; set { } }
+        public Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy ResolutionStrategy { get => throw null; set { } }
+        public System.Collections.Generic.ICollection<System.Net.IPNetwork> SafeIpNetworks { get => throw null; }
+        public System.Collections.Generic.ICollection<string> SafeSchemes { get => throw null; }
+        public System.Collections.Generic.ICollection<System.Net.IPNetwork> UnsafeIpNetworks { get => throw null; }
     }
 
     public static class SocketHttpHandlerServerSideRequestForgeryExtensions

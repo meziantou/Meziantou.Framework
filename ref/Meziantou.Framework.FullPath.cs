@@ -8,83 +8,83 @@ namespace Meziantou.Framework
     public readonly struct FullPath : System.IComparable, System.IComparable<Meziantou.Framework.FullPath>, System.IEquatable<Meziantou.Framework.FullPath>
     {
         public static Meziantou.Framework.FullPath Empty { get => throw null; }
+        public string Extension { get => throw null; }
         [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(false, "_value")]
         public bool IsEmpty { get => throw null; }
-        public string Value { get => throw null; }
-        public string RawValue { get => throw null; }
-        public Meziantou.Framework.FullPath Parent { get => throw null; }
         public string Name { get => throw null; }
         public string NameWithoutExtension { get => throw null; }
-        public string Extension { get => throw null; }
-        public static implicit operator string(Meziantou.Framework.FullPath fullPath) => throw null;
-        public static bool operator ==(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
-        public static bool operator !=(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
-        public static bool operator <(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
-        public static bool operator >(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
-        public static bool operator <=(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
-        public static bool operator >=(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
-        public static Meziantou.Framework.FullPath operator /(Meziantou.Framework.FullPath rootPath, string relativePath) => throw null;
-        public static Meziantou.Framework.FullPath operator +(Meziantou.Framework.FullPath rootPath, string suffix) => throw null;
+        public Meziantou.Framework.FullPath Parent { get => throw null; }
+        public string RawValue { get => throw null; }
+        public string Value { get => throw null; }
+        public Meziantou.Framework.FullPath ChangeExtension(string? extension) => throw null;
+        public static Meziantou.Framework.FullPath Combine(params System.ReadOnlySpan<string> paths) => throw null;
+        public static Meziantou.Framework.FullPath Combine(params string[] paths) => throw null;
+        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, params System.ReadOnlySpan<string> paths) => throw null;
+        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, string relativePath) => throw null;
+        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, params string[] paths) => throw null;
+        public static Meziantou.Framework.FullPath Combine(string rootPath, string relativePath) => throw null;
+        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, string path1, string path2) => throw null;
+        public static Meziantou.Framework.FullPath Combine(string rootPath, string path1, string path2) => throw null;
+        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, string path1, string path2, string path3) => throw null;
+        public static Meziantou.Framework.FullPath Combine(string rootPath, string path1, string path2, string path3) => throw null;
         public int CompareTo(Meziantou.Framework.FullPath other) => throw null;
         public int CompareTo(Meziantou.Framework.FullPath other, bool ignoreCase) => throw null;
         int System.IComparable.CompareTo(object? obj) => throw null;
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public void CreateParentDirectory() { }
+        public static Meziantou.Framework.FullPath CreateTempFile() => throw null;
+        public static Meziantou.Framework.FullPath CreateTempFile(string? prefix, string? suffix = ".tmp") => throw null;
+        public static Meziantou.Framework.FullPath CreateTempFile(Meziantou.Framework.FullPath? folder, string? prefix, string? suffix = ".tmp") => throw null;
+        public static Meziantou.Framework.FullPath CurrentDirectory() => throw null;
         public bool Equals(Meziantou.Framework.FullPath other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public bool Equals(Meziantou.Framework.FullPath other, bool ignoreCase) => throw null;
+        public Meziantou.Framework.FullPath FindRequiredGitRepositoryRoot() => throw null;
+        public static Meziantou.Framework.FullPath FromFileSystemInfo(System.IO.FileSystemInfo? fsi) => throw null;
+        public static Meziantou.Framework.FullPath FromPath(string path) => throw null;
+        public static Meziantou.Framework.FullPath GetFolderPath(System.Environment.SpecialFolder folder) => throw null;
+        public static Meziantou.Framework.FullPath GetFolderPath(System.Environment.SpecialFolder folder, System.Environment.SpecialFolderOption option) => throw null;
         public override int GetHashCode() => throw null;
         public int GetHashCode(bool ignoreCase) => throw null;
-        public override string ToString() => throw null;
-        public string MakePathRelativeTo(Meziantou.Framework.FullPath rootPath) => throw null;
+        [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
+        public static Meziantou.Framework.FullPath GetKnownFolderPath(Meziantou.Framework.KnownFolder knownFolder) => throw null;
+        public static Meziantou.Framework.FullPath GetTempFileName() => throw null;
+        public static Meziantou.Framework.FullPath GetTempPath() => throw null;
         public bool IsChildOf(Meziantou.Framework.FullPath rootPath) => throw null;
-        public void CreateParentDirectory() { }
-        public Meziantou.Framework.FullPath ChangeExtension(string? extension) => throw null;
+        public bool IsSymbolicLink() => throw null;
+        public string MakePathRelativeTo(Meziantou.Framework.FullPath rootPath) => throw null;
+        [System.Runtime.Versioning.SupportedOSPlatform("macos")]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
+        public void OpenInExplorer() { }
+        public override string ToString() => throw null;
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public string ToWindowsExtendedPath() => throw null;
+        public bool TryFindFirstAncestor(System.Func<Meziantou.Framework.FullPath, bool> predicate, out Meziantou.Framework.FullPath result) => throw null;
+        public bool TryFindFirstAncestorOrSelf(System.Func<Meziantou.Framework.FullPath, bool> predicate, out Meziantou.Framework.FullPath result) => throw null;
+        public bool TryFindGitRepositoryRoot(out Meziantou.Framework.FullPath result) => throw null;
+        public bool TryGetCanonicalPath([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
+        public bool TryGetSymbolicLinkTarget([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
+        public bool TryGetSymbolicLinkTarget(Meziantou.Framework.SymbolicLinkResolutionMode resolutionMode, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
         public Meziantou.Framework.FullPath WithExtension(string? extension) => throw null;
         public Meziantou.Framework.FullPath WithExtension(string? extension, bool replaceAllTrailingExtensions) => throw null;
         public Meziantou.Framework.FullPath WithExtension(string? extension, int extensionCount) => throw null;
         public Meziantou.Framework.FullPath WithName(string name) => throw null;
         public Meziantou.Framework.FullPath WithNameWithoutExtension(string nameWithoutExtension) => throw null;
-        public static Meziantou.Framework.FullPath GetTempPath() => throw null;
-        public static Meziantou.Framework.FullPath GetTempFileName() => throw null;
-        public static Meziantou.Framework.FullPath CreateTempFile() => throw null;
-        public static Meziantou.Framework.FullPath CreateTempFile(string? prefix, string? suffix = ".tmp") => throw null;
-        public static Meziantou.Framework.FullPath CreateTempFile(Meziantou.Framework.FullPath? folder, string? prefix, string? suffix = ".tmp") => throw null;
-        public static Meziantou.Framework.FullPath GetFolderPath(SpecialFolder folder) => throw null;
-        public static Meziantou.Framework.FullPath GetFolderPath(SpecialFolder folder, SpecialFolderOption option) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
-        public static Meziantou.Framework.FullPath GetKnownFolderPath(Meziantou.Framework.KnownFolder knownFolder) => throw null;
-        public static Meziantou.Framework.FullPath CurrentDirectory() => throw null;
-        public static Meziantou.Framework.FullPath FromPath(string path) => throw null;
-        public static Meziantou.Framework.FullPath Combine(string rootPath, string relativePath) => throw null;
-        public static Meziantou.Framework.FullPath Combine(string rootPath, string path1, string path2) => throw null;
-        public static Meziantou.Framework.FullPath Combine(string rootPath, string path1, string path2, string path3) => throw null;
-        public static Meziantou.Framework.FullPath Combine(params string[] paths) => throw null;
-        public static Meziantou.Framework.FullPath Combine(params System.ReadOnlySpan<string> paths) => throw null;
-        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, string relativePath) => throw null;
-        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, string path1, string path2) => throw null;
-        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, params string[] paths) => throw null;
-        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, params System.ReadOnlySpan<string> paths) => throw null;
-        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, string path1, string path2, string path3) => throw null;
-        public static Meziantou.Framework.FullPath FromFileSystemInfo(System.IO.FileSystemInfo? fsi) => throw null;
-        public bool IsSymbolicLink() => throw null;
-        public bool TryGetCanonicalPath([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
-        public bool TryFindFirstAncestorOrSelf(System.Func<Meziantou.Framework.FullPath, bool> predicate, out Meziantou.Framework.FullPath result) => throw null;
-        public bool TryFindGitRepositoryRoot(out Meziantou.Framework.FullPath result) => throw null;
-        public Meziantou.Framework.FullPath FindRequiredGitRepositoryRoot() => throw null;
-        public bool TryFindFirstAncestor(System.Func<Meziantou.Framework.FullPath, bool> predicate, out Meziantou.Framework.FullPath result) => throw null;
-        public bool TryGetSymbolicLinkTarget([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
-        public bool TryGetSymbolicLinkTarget(Meziantou.Framework.SymbolicLinkResolutionMode resolutionMode, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
-        [System.Runtime.Versioning.SupportedOSPlatform("macos")]
-        public void OpenInExplorer() { }
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-        public string ToWindowsExtendedPath() => throw null;
+        public static Meziantou.Framework.FullPath operator +(Meziantou.Framework.FullPath rootPath, string suffix) => throw null;
+        public static Meziantou.Framework.FullPath operator /(Meziantou.Framework.FullPath rootPath, string relativePath) => throw null;
+        public static bool operator ==(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
+        public static bool operator >(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
+        public static bool operator >=(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
+        public static bool operator !=(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
+        public static bool operator <(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
+        public static bool operator <=(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
+        public static implicit operator string(Meziantou.Framework.FullPath fullPath) => throw null;
     }
 
     public sealed class FullPathComparer : System.Collections.Generic.IComparer<Meziantou.Framework.FullPath>, System.Collections.Generic.IEqualityComparer<Meziantou.Framework.FullPath>
     {
-        public static Meziantou.Framework.FullPathComparer Default { get => throw null; }
-        public static Meziantou.Framework.FullPathComparer CaseSensitive { get => throw null; }
         public static Meziantou.Framework.FullPathComparer CaseInsensitive { get => throw null; }
+        public static Meziantou.Framework.FullPathComparer CaseSensitive { get => throw null; }
+        public static Meziantou.Framework.FullPathComparer Default { get => throw null; }
         public bool IsCaseSensitive { get => throw null; }
         public int Compare(Meziantou.Framework.FullPath x, Meziantou.Framework.FullPath y) => throw null;
         public bool Equals(Meziantou.Framework.FullPath x, Meziantou.Framework.FullPath y) => throw null;
@@ -99,10 +99,6 @@ namespace Meziantou.Framework
 
     public sealed class KnownFolder
     {
-        public string Name { get => throw null; }
-        public string FolderType { get => throw null; }
-        public System.Guid FolderId { get => throw null; }
-        public string DefaultPath { get => throw null; }
         public static Meziantou.Framework.KnownFolder AccountPictures { get => throw null; }
         public static Meziantou.Framework.KnownFolder AddNewPrograms { get => throw null; }
         public static Meziantou.Framework.KnownFolder AdminTools { get => throw null; }
@@ -110,11 +106,11 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.KnownFolder AppDataDocuments { get => throw null; }
         public static Meziantou.Framework.KnownFolder AppDataFavorites { get => throw null; }
         public static Meziantou.Framework.KnownFolder AppDataProgramData { get => throw null; }
+        public static Meziantou.Framework.KnownFolder AppUpdates { get => throw null; }
         public static Meziantou.Framework.KnownFolder ApplicationShortcuts { get => throw null; }
         public static Meziantou.Framework.KnownFolder AppsFolder { get => throw null; }
-        public static Meziantou.Framework.KnownFolder AppUpdates { get => throw null; }
-        public static Meziantou.Framework.KnownFolder CameraRoll { get => throw null; }
         public static Meziantou.Framework.KnownFolder CDBurning { get => throw null; }
+        public static Meziantou.Framework.KnownFolder CameraRoll { get => throw null; }
         public static Meziantou.Framework.KnownFolder ChangeRemovePrograms { get => throw null; }
         public static Meziantou.Framework.KnownFolder CommonAdminTools { get => throw null; }
         public static Meziantou.Framework.KnownFolder CommonOEMLinks { get => throw null; }
@@ -128,15 +124,18 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.KnownFolder Contacts { get => throw null; }
         public static Meziantou.Framework.KnownFolder ControlPanelFolder { get => throw null; }
         public static Meziantou.Framework.KnownFolder Cookies { get => throw null; }
+        public string DefaultPath { get => throw null; }
         public static Meziantou.Framework.KnownFolder Desktop { get => throw null; }
         public static Meziantou.Framework.KnownFolder DeviceMetadataStore { get => throw null; }
         public static Meziantou.Framework.KnownFolder Documents { get => throw null; }
         public static Meziantou.Framework.KnownFolder DocumentsLibrary { get => throw null; }
         public static Meziantou.Framework.KnownFolder Downloads { get => throw null; }
         public static Meziantou.Framework.KnownFolder Favorites { get => throw null; }
+        public System.Guid FolderId { get => throw null; }
+        public string FolderType { get => throw null; }
         public static Meziantou.Framework.KnownFolder Fonts { get => throw null; }
-        public static Meziantou.Framework.KnownFolder Games { get => throw null; }
         public static Meziantou.Framework.KnownFolder GameTasks { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Games { get => throw null; }
         public static Meziantou.Framework.KnownFolder History { get => throw null; }
         public static Meziantou.Framework.KnownFolder HomeGroup { get => throw null; }
         public static Meziantou.Framework.KnownFolder HomeGroupCurrentUser { get => throw null; }
@@ -150,24 +149,25 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.KnownFolder LocalizedResourcesDir { get => throw null; }
         public static Meziantou.Framework.KnownFolder Music { get => throw null; }
         public static Meziantou.Framework.KnownFolder MusicLibrary { get => throw null; }
+        public string Name { get => throw null; }
         public static Meziantou.Framework.KnownFolder NetHood { get => throw null; }
         public static Meziantou.Framework.KnownFolder NetworkFolder { get => throw null; }
         public static Meziantou.Framework.KnownFolder Objects3D { get => throw null; }
         public static Meziantou.Framework.KnownFolder OriginalImages { get => throw null; }
         public static Meziantou.Framework.KnownFolder PhotoAlbums { get => throw null; }
-        public static Meziantou.Framework.KnownFolder PicturesLibrary { get => throw null; }
         public static Meziantou.Framework.KnownFolder Pictures { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PicturesLibrary { get => throw null; }
         public static Meziantou.Framework.KnownFolder Playlists { get => throw null; }
-        public static Meziantou.Framework.KnownFolder PrintersFolder { get => throw null; }
         public static Meziantou.Framework.KnownFolder PrintHood { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PrintersFolder { get => throw null; }
         public static Meziantou.Framework.KnownFolder Profile { get => throw null; }
         public static Meziantou.Framework.KnownFolder ProgramData { get => throw null; }
         public static Meziantou.Framework.KnownFolder ProgramFiles { get => throw null; }
-        public static Meziantou.Framework.KnownFolder ProgramFilesX64 { get => throw null; }
-        public static Meziantou.Framework.KnownFolder ProgramFilesX86 { get => throw null; }
         public static Meziantou.Framework.KnownFolder ProgramFilesCommon { get => throw null; }
         public static Meziantou.Framework.KnownFolder ProgramFilesCommonX64 { get => throw null; }
         public static Meziantou.Framework.KnownFolder ProgramFilesCommonX86 { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ProgramFilesX64 { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ProgramFilesX86 { get => throw null; }
         public static Meziantou.Framework.KnownFolder Programs { get => throw null; }
         public static Meziantou.Framework.KnownFolder Public { get => throw null; }
         public static Meziantou.Framework.KnownFolder PublicDesktop { get => throw null; }
@@ -186,9 +186,11 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.KnownFolder RecycleBinFolder { get => throw null; }
         public static Meziantou.Framework.KnownFolder ResourceDir { get => throw null; }
         public static Meziantou.Framework.KnownFolder Ringtones { get => throw null; }
-        public static Meziantou.Framework.KnownFolder RoamingAppData { get => throw null; }
         public static Meziantou.Framework.KnownFolder RoamedTileImages { get => throw null; }
+        public static Meziantou.Framework.KnownFolder RoamingAppData { get => throw null; }
         public static Meziantou.Framework.KnownFolder RoamingTiles { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SEARCH_CSC { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SEARCH_MAPI { get => throw null; }
         public static Meziantou.Framework.KnownFolder SampleMusic { get => throw null; }
         public static Meziantou.Framework.KnownFolder SamplePictures { get => throw null; }
         public static Meziantou.Framework.KnownFolder SamplePlaylists { get => throw null; }
@@ -198,10 +200,8 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.KnownFolder SavedPicturesLibrary { get => throw null; }
         public static Meziantou.Framework.KnownFolder SavedSearches { get => throw null; }
         public static Meziantou.Framework.KnownFolder Screenshots { get => throw null; }
-        public static Meziantou.Framework.KnownFolder SEARCH_CSC { get => throw null; }
         public static Meziantou.Framework.KnownFolder SearchHistory { get => throw null; }
         public static Meziantou.Framework.KnownFolder SearchHome { get => throw null; }
-        public static Meziantou.Framework.KnownFolder SEARCH_MAPI { get => throw null; }
         public static Meziantou.Framework.KnownFolder SearchTemplates { get => throw null; }
         public static Meziantou.Framework.KnownFolder SendTo { get => throw null; }
         public static Meziantou.Framework.KnownFolder SidebarDefaultParts { get => throw null; }

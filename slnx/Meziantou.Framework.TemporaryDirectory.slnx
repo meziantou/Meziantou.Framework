@@ -24,6 +24,7 @@
     <Project Path="../src/Meziantou.Framework.Http.Recording/Meziantou.Framework.Http.Recording.csproj" />
     <Project Path="../src/Meziantou.Framework.HttpArchive/Meziantou.Framework.HttpArchive.csproj" />
     <Project Path="../src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
+    <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
     <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="../src/Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj" />
@@ -41,9 +42,8 @@
     <Project Path="../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
     <Project Path="../src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.PublicApiGenerator/Meziantou.Framework.PublicApiGenerator.csproj" />
-    <Project Path="../src/Meziantou.Framework.SnapshotTesting.ImageSharp/Meziantou.Framework.SnapshotTesting.ImageSharp.csproj" />
+    <Project Path="../src/Meziantou.Framework.SnapshotTesting.Imaging/Meziantou.Framework.SnapshotTesting.Imaging.csproj" />
     <Project Path="../src/Meziantou.Framework.SnapshotTesting.Roslyn/Meziantou.Framework.SnapshotTesting.Roslyn.csproj" />
-    <Project Path="../src/Meziantou.Framework.SnapshotTesting.SkiaSharp/Meziantou.Framework.SnapshotTesting.SkiaSharp.csproj" />
     <Project Path="../src/Meziantou.Framework.SnapshotTesting.Tool/Meziantou.Framework.SnapshotTesting.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
     <Project Path="../src/Meziantou.Framework.Templating.Tool/Meziantou.Framework.Templating.Tool.csproj" />
@@ -51,6 +51,7 @@
     <Project Path="../src/Meziantou.Framework.TemporaryContainers/Meziantou.Framework.TemporaryContainers.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <Project Path="../src/Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
     <Project Path="../src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" />
     <Project Path="../src/Meziantou.Framework.ValueStopwatch/Meziantou.Framework.ValueStopwatch.csproj" />
     <Project Path="../src/Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
@@ -82,6 +83,7 @@
     <Project Path="../tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Roslyn.PackageTests/Meziantou.Framework.Roslyn.PackageTests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.PackageTests/Meziantou.Framework.SnapshotTesting.PackageTests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj" />

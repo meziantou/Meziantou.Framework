@@ -1,0 +1,1 @@
+SELECT c.Id FROM customers c INNER JOIN orders c ON c.Id = c.CustomerId

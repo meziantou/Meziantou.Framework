@@ -1,0 +1,1 @@
+SELECT Id.exist(Score) AS ScoreLength FROM nullable_customers

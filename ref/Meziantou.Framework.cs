@@ -7,6 +7,7 @@ namespace Meziantou.Framework
     public static class AssemblyUtilities
     {
         public static string? GetInformationalVersion(this System.Reflection.Assembly assembly) => throw null;
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file", Justification = "An empty location, as returned for an assembly embedded in a single-file or NativeAOT application, is handled by returning null")]
         public static System.DateTime? GetLinkerTimestampUtc(this System.Reflection.Assembly assembly) => throw null;
         public static System.DateTime? GetLinkerTimestampUtc(string filePath) => throw null;
         public static System.IO.Stream GetRequiredManifestResourceStream(this System.Reflection.Assembly assembly, string name) => throw null;
@@ -15,22 +16,22 @@ namespace Meziantou.Framework
 
     public static class AsyncEnumerableExtensions
     {
-        public static System.Collections.Generic.IAsyncEnumerable<T> WhereNotNull<T>(this System.Collections.Generic.IAsyncEnumerable<T> enumerable) where T : class => throw null;
+        public static System.Collections.Generic.IAsyncEnumerable<T> WhereNotNull<T>(this System.Collections.Generic.IAsyncEnumerable<T?> enumerable) where T : class => throw null;
         public static System.Collections.Generic.IAsyncEnumerable<string> WhereNotNullOrEmpty(this System.Collections.Generic.IAsyncEnumerable<string?> source) => throw null;
         public static System.Collections.Generic.IAsyncEnumerable<string> WhereNotNullOrWhiteSpace(this System.Collections.Generic.IAsyncEnumerable<string?> source) => throw null;
     }
 
     public static class CachedEnumerable
     {
-        public static Meziantou.Framework.ICachedEnumerable<T> Create<T>(System.Collections.Generic.IEnumerable<T> enumerable, bool threadSafe = true) => throw null;
         public static Meziantou.Framework.ICachedAsyncEnumerable<T> Create<T>(System.Collections.Generic.IAsyncEnumerable<T> enumerable, bool threadSafe = true) => throw null;
+        public static Meziantou.Framework.ICachedEnumerable<T> Create<T>(System.Collections.Generic.IEnumerable<T> enumerable, bool threadSafe = true) => throw null;
     }
 
     public static class ConcurrentQueueExtensions
     {
-        public static void EnqueueRange<T>(this System.Collections.Concurrent.ConcurrentQueue<T> queue, params T[] items) { }
         public static void EnqueueRange<T>(this System.Collections.Concurrent.ConcurrentQueue<T> queue, System.Collections.Generic.IEnumerable<T> items) { }
         public static void EnqueueRange<T>(this System.Collections.Concurrent.ConcurrentQueue<T> queue, System.ReadOnlySpan<T> items) { }
+        public static void EnqueueRange<T>(this System.Collections.Concurrent.ConcurrentQueue<T> queue, params T[] items) { }
     }
 
     public static class Country
@@ -41,38 +42,38 @@ namespace Meziantou.Framework
 
     public static class CultureInfoUtilities
     {
+        public static System.Globalization.CultureInfo? GetCulture(string? name) => throw null;
+        public static System.Globalization.CultureInfo GetNeutralCulture(this System.Globalization.CultureInfo cultureInfo) => throw null;
+        public static bool NeutralEquals(this System.Globalization.CultureInfo a, System.Globalization.CultureInfo b) => throw null;
         public static void SetCurrentThreadCulture(System.Globalization.CultureInfo cultureInfo) { }
         public static void UseCulture(System.Globalization.CultureInfo cultureInfo, System.Action action) { }
         public static void UseCulture(string cultureName, System.Action action) { }
         public static T UseCulture<T>(System.Globalization.CultureInfo cultureInfo, System.Func<T> action) => throw null;
         public static T UseCulture<T>(string cultureName, System.Func<T> action) => throw null;
-        public static System.Globalization.CultureInfo? GetCulture(string? name) => throw null;
-        public static System.Globalization.CultureInfo GetNeutralCulture(this System.Globalization.CultureInfo cultureInfo) => throw null;
-        public static bool NeutralEquals(this System.Globalization.CultureInfo a, System.Globalization.CultureInfo b) => throw null;
     }
 
     public static class CustomAttributeExtensions
     {
-        public static bool HasCustomAttribute<T>(this System.Type type) where T : System.Attribute => throw null;
-        public static bool HasCustomAttribute<T>(this System.Type type, bool inherit) where T : System.Attribute => throw null;
+        public static bool HasCustomAttribute(this System.Reflection.Assembly assembly, System.Type attributeType) => throw null;
+        public static bool HasCustomAttribute(this System.Reflection.MemberInfo member, System.Type attributeType) => throw null;
+        public static bool HasCustomAttribute(this System.Reflection.Module module, System.Type attributeType) => throw null;
+        public static bool HasCustomAttribute(this System.Reflection.ParameterInfo parameter, System.Type attributeType) => throw null;
         public static bool HasCustomAttribute(this System.Type type, System.Type attributeType) => throw null;
+        public static bool HasCustomAttribute(this System.Reflection.Assembly assembly, System.Type attributeType, bool inherit) => throw null;
+        public static bool HasCustomAttribute(this System.Reflection.MemberInfo member, System.Type attributeType, bool inherit) => throw null;
+        public static bool HasCustomAttribute(this System.Reflection.Module module, System.Type attributeType, bool inherit) => throw null;
+        public static bool HasCustomAttribute(this System.Reflection.ParameterInfo parameter, System.Type attributeType, bool inherit) => throw null;
         public static bool HasCustomAttribute(this System.Type type, System.Type attributeType, bool inherit) => throw null;
         public static bool HasCustomAttribute<T>(this System.Reflection.Assembly assembly) where T : System.Attribute => throw null;
-        public static bool HasCustomAttribute<T>(this System.Reflection.Assembly assembly, bool inherit) where T : System.Attribute => throw null;
-        public static bool HasCustomAttribute(this System.Reflection.Assembly assembly, System.Type attributeType) => throw null;
-        public static bool HasCustomAttribute(this System.Reflection.Assembly assembly, System.Type attributeType, bool inherit) => throw null;
-        public static bool HasCustomAttribute<T>(this System.Reflection.Module module) where T : System.Attribute => throw null;
-        public static bool HasCustomAttribute<T>(this System.Reflection.Module module, bool inherit) where T : System.Attribute => throw null;
-        public static bool HasCustomAttribute(this System.Reflection.Module module, System.Type attributeType) => throw null;
-        public static bool HasCustomAttribute(this System.Reflection.Module module, System.Type attributeType, bool inherit) => throw null;
         public static bool HasCustomAttribute<T>(this System.Reflection.MemberInfo member) where T : System.Attribute => throw null;
-        public static bool HasCustomAttribute<T>(this System.Reflection.MemberInfo member, bool inherit) where T : System.Attribute => throw null;
-        public static bool HasCustomAttribute(this System.Reflection.MemberInfo member, System.Type attributeType) => throw null;
-        public static bool HasCustomAttribute(this System.Reflection.MemberInfo member, System.Type attributeType, bool inherit) => throw null;
+        public static bool HasCustomAttribute<T>(this System.Reflection.Module module) where T : System.Attribute => throw null;
         public static bool HasCustomAttribute<T>(this System.Reflection.ParameterInfo parameter) where T : System.Attribute => throw null;
+        public static bool HasCustomAttribute<T>(this System.Type type) where T : System.Attribute => throw null;
+        public static bool HasCustomAttribute<T>(this System.Reflection.Assembly assembly, bool inherit) where T : System.Attribute => throw null;
+        public static bool HasCustomAttribute<T>(this System.Reflection.MemberInfo member, bool inherit) where T : System.Attribute => throw null;
+        public static bool HasCustomAttribute<T>(this System.Reflection.Module module, bool inherit) where T : System.Attribute => throw null;
         public static bool HasCustomAttribute<T>(this System.Reflection.ParameterInfo parameter, bool inherit) where T : System.Attribute => throw null;
-        public static bool HasCustomAttribute(this System.Reflection.ParameterInfo parameter, System.Type attributeType) => throw null;
-        public static bool HasCustomAttribute(this System.Reflection.ParameterInfo parameter, System.Type attributeType, bool inherit) => throw null;
+        public static bool HasCustomAttribute<T>(this System.Type type, bool inherit) where T : System.Attribute => throw null;
     }
 
     public static class DataBinder
@@ -82,31 +83,31 @@ namespace Meziantou.Framework
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("TypeDescriptor use reflection")]
         public static string Eval(object container, string expression, string format) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("TypeDescriptor use reflection")]
-        public static object? GetPropertyValue(object container, string propertyName) => throw null;
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("TypeDescriptor use reflection")]
-        public static string GetPropertyValue(object container, string propertyName, string format) => throw null;
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("TypeDescriptor use reflection")]
         public static object? GetIndexedPropertyValue(object container, string expression) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("TypeDescriptor use reflection")]
         public static string? GetIndexedPropertyValue(object container, string propertyName, string format) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("TypeDescriptor use reflection")]
+        public static object? GetPropertyValue(object container, string propertyName) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("TypeDescriptor use reflection")]
+        public static string GetPropertyValue(object container, string propertyName, string format) => throw null;
     }
 
     public static class DateTimeExtensions
     {
-        public static System.DateTime StartOfWeek(this System.DateTime dt) => throw null;
-        public static System.DateTime StartOfWeek(this System.DateTime dt, System.DayOfWeek startOfWeek) => throw null;
+        public static System.DateTime EndOfMonth(this System.DateTime dt) => throw null;
         public static System.DateTime StartOfMonth(this System.DateTime dt) => throw null;
         public static System.DateTime StartOfMonth(this System.DateTime dt, bool keepTime) => throw null;
-        public static System.DateTime EndOfMonth(this System.DateTime dt) => throw null;
+        public static System.DateTime StartOfWeek(this System.DateTime dt) => throw null;
+        public static System.DateTime StartOfWeek(this System.DateTime dt, System.DayOfWeek startOfWeek) => throw null;
         public static System.DateTime StartOfYear(this System.DateTime dt) => throw null;
         public static System.DateTime StartOfYear(this System.DateTime dt, bool keepTime) => throw null;
-        public static System.DateTime TruncateMilliseconds(this System.DateTime dt) => throw null;
-        public static string ToStringInvariant(this System.DateTime dt) => throw null;
-        public static string ToStringInvariant(this System.DateTime dt, string format) => throw null;
         public static string ToStringInvariant(this System.DateOnly date) => throw null;
-        public static string ToStringInvariant(this System.DateOnly date, string format) => throw null;
+        public static string ToStringInvariant(this System.DateTime dt) => throw null;
         public static string ToStringInvariant(this System.TimeOnly time) => throw null;
+        public static string ToStringInvariant(this System.DateOnly date, string format) => throw null;
+        public static string ToStringInvariant(this System.DateTime dt, string format) => throw null;
         public static string ToStringInvariant(this System.TimeOnly time, string format) => throw null;
+        public static System.DateTime TruncateMilliseconds(this System.DateTime dt) => throw null;
     }
 
     public static class DebounceExtensions
@@ -136,11 +137,11 @@ namespace Meziantou.Framework
     public static class DeterministicGuid
     {
         public static System.Guid DnsNamespace { get => throw null; }
-        public static System.Guid UrlNamespace { get => throw null; }
         public static System.Guid OidNamespace { get => throw null; }
+        public static System.Guid UrlNamespace { get => throw null; }
         public static System.Guid X500Namespace { get => throw null; }
-        public static System.Guid Create(System.Guid @namespace, string name, Meziantou.Framework.DeterministicGuidVersion version) => throw null;
         public static System.Guid Create(System.Guid @namespace, System.ReadOnlySpan<byte> name, Meziantou.Framework.DeterministicGuidVersion version) => throw null;
+        public static System.Guid Create(System.Guid @namespace, string name, Meziantou.Framework.DeterministicGuidVersion version) => throw null;
     }
 
     public enum DeterministicGuidVersion
@@ -151,10 +152,10 @@ namespace Meziantou.Framework
 
     public static class DictionaryExtensions
     {
-        public static TValue GetOrAdd<TKey, TValue>(this System.Collections.Generic.Dictionary<TKey, TValue> dict, TKey key, TValue value) => throw null;
-        public static TValue GetOrAdd<TKey, TValue>(this System.Collections.Generic.Dictionary<TKey, TValue> dict, TKey key, System.Func<TKey, TValue> valueFactory) => throw null;
-        public static bool TryUpdate<TKey, TValue>(this System.Collections.Generic.Dictionary<TKey, TValue> dict, TKey key, TValue value) => throw null;
-        public static bool TryUpdate<TKey, TValue>(this System.Collections.Generic.Dictionary<TKey, TValue> dict, TKey key, System.Func<TKey, TValue, TValue> valueFactory) => throw null;
+        public static TValue GetOrAdd<TKey, TValue>(this System.Collections.Generic.Dictionary<TKey, TValue> dict, TKey key, System.Func<TKey, TValue> valueFactory) where TKey : notnull => throw null;
+        public static TValue GetOrAdd<TKey, TValue>(this System.Collections.Generic.Dictionary<TKey, TValue> dict, TKey key, TValue value) where TKey : notnull => throw null;
+        public static bool TryUpdate<TKey, TValue>(this System.Collections.Generic.Dictionary<TKey, TValue> dict, TKey key, System.Func<TKey, TValue, TValue> valueFactory) where TKey : notnull => throw null;
+        public static bool TryUpdate<TKey, TValue>(this System.Collections.Generic.Dictionary<TKey, TValue> dict, TKey key, TValue value) where TKey : notnull => throw null;
     }
 
     public static class EncodingExtensions
@@ -164,68 +165,68 @@ namespace Meziantou.Framework
 
     public static class EnumExtensions
     {
-        public static TEnum Parse<TEnum>(string value, bool ignoreCase) where TEnum : struct, System.Enum => throw null;
         public static TEnum Parse<TEnum>(System.ReadOnlySpan<char> value, bool ignoreCase) where TEnum : struct, System.Enum => throw null;
-        public static bool TryParse<TEnum>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? value, bool ignoreCase, out TEnum result) where TEnum : struct, System.Enum => throw null;
+        public static TEnum Parse<TEnum>(string value, bool ignoreCase) where TEnum : struct, System.Enum => throw null;
         public static bool TryParse<TEnum>(System.ReadOnlySpan<char> value, bool ignoreCase, out TEnum result) where TEnum : struct, System.Enum => throw null;
+        public static bool TryParse<TEnum>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? value, bool ignoreCase, out TEnum result) where TEnum : struct, System.Enum => throw null;
     }
 
     public static class EnumerableExtensions
     {
-        public static System.Collections.Generic.IEnumerator<T> GetEnumerator<T>(this System.Collections.Generic.IEnumerator<T> enumerator) => throw null;
-        public static System.Collections.Generic.IAsyncEnumerator<T> GetAsyncEnumerator<T>(this System.Collections.Generic.IAsyncEnumerator<T> enumerator) => throw null;
-        public static void AddRange<T>(this System.Collections.Generic.ICollection<T> collection, params T[] items) { }
+        public static void AddOrReplace<T>(this System.Collections.Generic.IList<T> list, T? oldItem, T newItem) { }
         public static void AddRange<T>(this System.Collections.Generic.ICollection<T> collection, System.Collections.Generic.IEnumerable<T>? items) { }
-        public static void RemoveAll<T>(this System.Collections.Generic.ICollection<T> collection, System.Predicate<T> match) { }
-        public static void Replace<T>(this System.Collections.Generic.IList<T> list, T oldItem, T newItem) { }
-        public static void AddOrReplace<T>(this System.Collections.Generic.IList<T> list, T oldItem, T newItem) { }
-        public static System.Collections.Generic.IEnumerable<T> WhereNotNull<T>(this System.Collections.Generic.IEnumerable<T?> items) where T : struct => throw null;
-        public static System.Collections.Generic.IEnumerable<T> WhereNotNull<T>(this System.Collections.Generic.IEnumerable<T> source) where T : class => throw null;
-        public static System.Collections.Generic.IEnumerable<string> WhereNotNullOrEmpty(this System.Collections.Generic.IEnumerable<string?> source) => throw null;
-        public static System.Collections.Generic.IEnumerable<string> WhereNotNullOrWhiteSpace(this System.Collections.Generic.IEnumerable<string?> source) => throw null;
-        public static bool IsDistinctBy<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector) => throw null;
-        public static bool IsDistinctBy<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Collections.Generic.IEqualityComparer<TKey>? comparer) => throw null;
-        public static bool IsDistinct<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) => throw null;
-        public static bool IsDistinct<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Collections.Generic.IEqualityComparer<TSource>? comparer) => throw null;
+        public static void AddRange<T>(this System.Collections.Generic.ICollection<T> collection, params T[] items) { }
+        public static System.Collections.Generic.IEnumerable<T> AsEnumerableOnce<T>(this System.Collections.Generic.IEnumerable<T> enumerable) => throw null;
+        public static System.TimeSpan Average(this System.Collections.Generic.IEnumerable<System.TimeSpan> enumerable) => throw null;
+        public static bool ContainsIgnoreCase(this System.Collections.Generic.IEnumerable<string> str, string value) => throw null;
+        public static System.Collections.Generic.IEnumerable<T> EmptyIfNull<T>(this System.Collections.Generic.IEnumerable<T>? items) => throw null;
+        public static void EnumerateAll<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) { }
+        public static void ForEach<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Action<TSource, int> action) { }
+        public static void ForEach<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Action<TSource> action) { }
+        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, System.Threading.CancellationToken, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, int, System.Threading.CancellationToken, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, int, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Collections.Generic.IAsyncEnumerator<T> GetAsyncEnumerator<T>(this System.Collections.Generic.IAsyncEnumerator<T> enumerator) => throw null;
+        public static System.Collections.Generic.IEnumerator<T> GetEnumerator<T>(this System.Collections.Generic.IEnumerator<T> enumerator) => throw null;
         public static int IndexOf<T>(this System.Collections.Generic.IEnumerable<T> list, T value) => throw null;
         public static int IndexOf<T>(this System.Collections.Generic.IEnumerable<T> list, T value, System.Collections.Generic.IEqualityComparer<T>? comparer) => throw null;
+        public static bool IsDistinct<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) => throw null;
+        public static bool IsDistinct<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Collections.Generic.IEqualityComparer<TSource>? comparer) => throw null;
+        public static bool IsDistinctBy<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector) => throw null;
+        public static bool IsDistinctBy<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Collections.Generic.IEqualityComparer<TKey>? comparer) => throw null;
         public static long LongIndexOf<T>(this System.Collections.Generic.IEnumerable<T> list, T value) where T : System.IEquatable<T> => throw null;
         public static long LongIndexOf<T>(this System.Collections.Generic.IEnumerable<T> list, T value, System.Collections.Generic.IEqualityComparer<T>? comparer) => throw null;
-        public static bool ContainsIgnoreCase(this System.Collections.Generic.IEnumerable<string> str, string value) => throw null;
-        public static void EnumerateAll<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) { }
-        public static System.Collections.Generic.IEnumerable<T> EmptyIfNull<T>(this System.Collections.Generic.IEnumerable<T>? items) => throw null;
-        public static void ForEach<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Action<TSource> action) { }
-        public static void ForEach<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Action<TSource, int> action) { }
-        public static System.TimeSpan Sum(this System.Collections.Generic.IEnumerable<System.TimeSpan> enumerable) => throw null;
-        public static System.TimeSpan Average(this System.Collections.Generic.IEnumerable<System.TimeSpan> enumerable) => throw null;
-        public static System.Collections.Generic.IEnumerable<T> AsEnumerableOnce<T>(this System.Collections.Generic.IEnumerable<T> enumerable) => throw null;
-        public static System.Collections.Generic.IEnumerable<T> ToOnlyEnumerable<T>(this System.Collections.Generic.IEnumerable<T> enumerable) => throw null;
-        public static System.Collections.ObjectModel.ReadOnlyCollection<T> ToReadOnlyCollection<T>(this System.Collections.Generic.IEnumerable<T> source) => throw null;
-        public static System.Collections.Generic.ICollection<T> ToCollection<T>(this System.Collections.Generic.IEnumerable<T> sequence) => throw null;
-        public static System.Threading.Tasks.Task<System.Collections.Generic.List<T>> ToListAsync<T>(this System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> task) => throw null;
-        public static System.Threading.Tasks.Task<T[]> ToArrayAsync<T>(this System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> task) => throw null;
-        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, System.Threading.CancellationToken, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, int, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, int, System.Threading.CancellationToken, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public static System.Threading.Tasks.Task ParallelForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, System.Threading.Tasks.Task> action) => throw null;
         public static System.Threading.Tasks.Task ParallelForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken) => throw null;
         public static System.Threading.Tasks.Task ParallelForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, int degreeOfParallelism, System.Func<TSource, System.Threading.Tasks.Task> action) => throw null;
         public static System.Threading.Tasks.Task ParallelForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, int degreeOfParallelism, System.Func<TSource, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken) => throw null;
+        public static void RemoveAll<T>(this System.Collections.Generic.ICollection<T> collection, System.Predicate<T> match) { }
+        public static void Replace<T>(this System.Collections.Generic.IList<T> list, T oldItem, T newItem) { }
+        public static System.TimeSpan Sum(this System.Collections.Generic.IEnumerable<System.TimeSpan> enumerable) => throw null;
+        public static System.Threading.Tasks.Task<T[]> ToArrayAsync<T>(this System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> task) => throw null;
         public static System.Collections.Generic.IAsyncEnumerable<T> ToAsyncEnumerable<T>(this System.Collections.Generic.IEnumerable<T> source) => throw null;
         public static System.Collections.Generic.IAsyncEnumerator<T> ToAsyncEnumerator<T>(this System.Collections.Generic.IEnumerator<T> source) => throw null;
+        public static System.Collections.Generic.ICollection<T> ToCollection<T>(this System.Collections.Generic.IEnumerable<T> sequence) => throw null;
+        public static System.Threading.Tasks.Task<System.Collections.Generic.List<T>> ToListAsync<T>(this System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> task) => throw null;
+        public static System.Collections.Generic.IEnumerable<T> ToOnlyEnumerable<T>(this System.Collections.Generic.IEnumerable<T> enumerable) => throw null;
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> ToReadOnlyCollection<T>(this System.Collections.Generic.IEnumerable<T> source) => throw null;
+        public static System.Collections.Generic.IEnumerable<T> WhereNotNull<T>(this System.Collections.Generic.IEnumerable<T?> items) where T : struct => throw null;
+        public static System.Collections.Generic.IEnumerable<T> WhereNotNull<T>(this System.Collections.Generic.IEnumerable<T?> source) where T : class => throw null;
+        public static System.Collections.Generic.IEnumerable<string> WhereNotNullOrEmpty(this System.Collections.Generic.IEnumerable<string?> source) => throw null;
+        public static System.Collections.Generic.IEnumerable<string> WhereNotNullOrWhiteSpace(this System.Collections.Generic.IEnumerable<string?> source) => throw null;
     }
 
     public static class EnumeratorExtensions
     {
-        public static System.Collections.Generic.List<T> ToList<T>(this System.Collections.Generic.IEnumerator<T> enumerator) => throw null;
         public static System.Collections.Generic.IEnumerable<T> AsEnumerable<T>(this System.Collections.Generic.IEnumerator<T> enumerator) => throw null;
+        public static System.Collections.Generic.List<T> ToList<T>(this System.Collections.Generic.IEnumerator<T> enumerator) => throw null;
     }
 
     public static class EnvironmentExtensions
     {
-        public static string GetRequiredEnvironmentVariable(string variableName) => throw null;
         public static string GetEnvironmentVariableOrDefault(string variableName, string defaultValue) => throw null;
+        public static string GetRequiredEnvironmentVariable(string variableName) => throw null;
     }
 
     public static class ExceptionExtensions
@@ -241,8 +242,8 @@ namespace Meziantou.Framework
     public static class ExpressionExtensions
     {
         public static System.Linq.Expressions.Expression<System.Func<T, bool>> AndAlso<T>(this System.Linq.Expressions.Expression<System.Func<T, bool>> expr1, System.Linq.Expressions.Expression<System.Func<T, bool>> expr2) => throw null;
-        public static System.Linq.Expressions.Expression<System.Func<T, bool>> OrElse<T>(this System.Linq.Expressions.Expression<System.Func<T, bool>> expr1, System.Linq.Expressions.Expression<System.Func<T, bool>> expr2) => throw null;
         public static System.Linq.Expressions.Expression<System.Func<T, bool>> Negate<T>(this System.Linq.Expressions.Expression<System.Func<T, bool>> expression) => throw null;
+        public static System.Linq.Expressions.Expression<System.Func<T, bool>> OrElse<T>(this System.Linq.Expressions.Expression<System.Func<T, bool>> expr1, System.Linq.Expressions.Expression<System.Func<T, bool>> expr2) => throw null;
     }
 
     public static class FormattableExtensions
@@ -253,9 +254,9 @@ namespace Meziantou.Framework
 
     public static class HashCodeExtensions
     {
-        public static void AddValues<T>(this ref System.HashCode hashCode, T[] values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
-        public static void AddValues<T>(this ref System.HashCode hashCode, System.ReadOnlySpan<T> values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
         public static void AddValues<T>(this ref System.HashCode hashCode, System.Collections.Generic.IEnumerable<T> values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
+        public static void AddValues<T>(this ref System.HashCode hashCode, System.ReadOnlySpan<T> values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
+        public static void AddValues<T>(this ref System.HashCode hashCode, T[] values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
     }
 
     public interface ICachedAsyncEnumerable<T> : System.Collections.Generic.IAsyncEnumerable<T>, System.IAsyncDisposable
@@ -268,16 +269,16 @@ namespace Meziantou.Framework
 
     public static class IOUtilities
     {
+        public static void CopyDirectory(System.IO.DirectoryInfo source, System.IO.DirectoryInfo destination) { }
+        public static void CopyDirectory(string sourcePath, string destinationPath) { }
+        public static void Delete(System.IO.FileSystemInfo fileSystemInfo) { }
+        public static void Delete(string path) { }
+        public static System.Threading.Tasks.ValueTask DeleteAsync(System.IO.FileSystemInfo fileSystemInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.ValueTask DeleteAsync(string path, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static bool IsSharingViolation(System.IO.IOException exception) => throw null;
         public static void PathCreateDirectory(string filePath) { }
         public static void PathUnprotect(string path) { }
         public static string ToValidFileName(string fileName, string reservedNameFormat = "_{0}_", string reservedCharFormat = "_x{0}_") => throw null;
-        public static void CopyDirectory(string sourcePath, string destinationPath) { }
-        public static void CopyDirectory(System.IO.DirectoryInfo source, System.IO.DirectoryInfo destination) { }
-        public static bool IsSharingViolation(System.IO.IOException exception) => throw null;
-        public static void Delete(string path) { }
-        public static void Delete(System.IO.FileSystemInfo fileSystemInfo) { }
-        public static System.Threading.Tasks.ValueTask DeleteAsync(string path, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.ValueTask DeleteAsync(System.IO.FileSystemInfo fileSystemInfo, System.Threading.CancellationToken cancellationToken = null) => throw null;
     }
 
     public enum LineBreakMode
@@ -289,52 +290,52 @@ namespace Meziantou.Framework
 
     public static class LoremIpsumGenerator
     {
-        public static System.Collections.Generic.IEnumerable<string> Paragraphs(int wordsPerSentence, int sentencesPerParagraph, int paragraphCount) => throw null;
         public static string Paragraph(int wordCount, int sentenceCount) => throw null;
+        public static System.Collections.Generic.IEnumerable<string> Paragraphs(int wordsPerSentence, int sentencesPerParagraph, int paragraphCount) => throw null;
         public static string Sentence(int wordCount) => throw null;
     }
 
     public static class MarkdownBuilder
     {
-        public static string Escape(string value) => throw null;
         public static string CreateCodeSpan(string content) => throw null;
+        public static string Escape(string value) => throw null;
     }
 
     public static class NumberExtensions
     {
         public static decimal MakeSameSignAs(this decimal number, decimal sign) => throw null;
+        public static double MakeSameSignAs(this double number, double sign) => throw null;
+        public static float MakeSameSignAs(this float number, float sign) => throw null;
         public static int MakeSameSignAs(this int number, int sign) => throw null;
         public static long MakeSameSignAs(this long number, long sign) => throw null;
-        public static float MakeSameSignAs(this float number, float sign) => throw null;
-        public static double MakeSameSignAs(this double number, double sign) => throw null;
         public static string ToEnglishOrdinal(int num) => throw null;
         public static string ToEnglishOrdinal(int num, System.IFormatProvider formatProvider) => throw null;
         public static string ToFrenchOrdinal(int num) => throw null;
         public static string ToFrenchOrdinal(int num, System.IFormatProvider formatProvider) => throw null;
-        public static string ToStringInvariant(this byte number) => throw null;
-        public static string ToStringInvariant(this byte number, string? format) => throw null;
-        public static string ToStringInvariant(this sbyte number) => throw null;
-        public static string ToStringInvariant(this sbyte number, string? format) => throw null;
-        public static string ToStringInvariant(this short number) => throw null;
-        public static string ToStringInvariant(this short number, string? format) => throw null;
-        public static string ToStringInvariant(this ushort number) => throw null;
-        public static string ToStringInvariant(this ushort number, string? format) => throw null;
-        public static string ToStringInvariant(this int number) => throw null;
-        public static string ToStringInvariant(this int number, string? format) => throw null;
-        public static string ToStringInvariant(this uint number) => throw null;
-        public static string ToStringInvariant(this uint number, string? format) => throw null;
-        public static string ToStringInvariant(this long number) => throw null;
-        public static string ToStringInvariant(this long number, string? format) => throw null;
-        public static string ToStringInvariant(this ulong number) => throw null;
-        public static string ToStringInvariant(this ulong number, string? format) => throw null;
         public static string ToStringInvariant(this System.Half number) => throw null;
-        public static string ToStringInvariant(this System.Half number, string? format) => throw null;
-        public static string ToStringInvariant(this float number) => throw null;
-        public static string ToStringInvariant(this float number, string? format) => throw null;
-        public static string ToStringInvariant(this double number) => throw null;
-        public static string ToStringInvariant(this double number, string? format) => throw null;
+        public static string ToStringInvariant(this byte number) => throw null;
         public static string ToStringInvariant(this decimal number) => throw null;
+        public static string ToStringInvariant(this double number) => throw null;
+        public static string ToStringInvariant(this float number) => throw null;
+        public static string ToStringInvariant(this int number) => throw null;
+        public static string ToStringInvariant(this long number) => throw null;
+        public static string ToStringInvariant(this sbyte number) => throw null;
+        public static string ToStringInvariant(this short number) => throw null;
+        public static string ToStringInvariant(this uint number) => throw null;
+        public static string ToStringInvariant(this ulong number) => throw null;
+        public static string ToStringInvariant(this ushort number) => throw null;
+        public static string ToStringInvariant(this System.Half number, string? format) => throw null;
+        public static string ToStringInvariant(this byte number, string? format) => throw null;
         public static string ToStringInvariant(this decimal number, string? format) => throw null;
+        public static string ToStringInvariant(this double number, string? format) => throw null;
+        public static string ToStringInvariant(this float number, string? format) => throw null;
+        public static string ToStringInvariant(this int number, string? format) => throw null;
+        public static string ToStringInvariant(this long number, string? format) => throw null;
+        public static string ToStringInvariant(this sbyte number, string? format) => throw null;
+        public static string ToStringInvariant(this short number, string? format) => throw null;
+        public static string ToStringInvariant(this uint number, string? format) => throw null;
+        public static string ToStringInvariant(this ulong number, string? format) => throw null;
+        public static string ToStringInvariant(this ushort number, string? format) => throw null;
     }
 
     public abstract class ObjectGraphVisitor
@@ -351,24 +352,24 @@ namespace Meziantou.Framework
         public bool HasValue { get => throw null; }
         public T Value { get => throw null; }
         public Optional(T value) { }
-        public override string? ToString() => throw null;
         public void Deconstruct(out bool hasValue, out T value) => throw null;
         public bool Equals(Meziantou.Framework.Optional<T> other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
+        public override string? ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Optional<T> left, Meziantou.Framework.Optional<T> right) => throw null;
         public static bool operator !=(Meziantou.Framework.Optional<T> left, Meziantou.Framework.Optional<T> right) => throw null;
     }
 
     public readonly struct ProcessEntry : System.IEquatable<Meziantou.Framework.ProcessEntry>
     {
-        public int ProcessId { get => throw null; }
         public int ParentProcessId { get => throw null; }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public int ProcessId { get => throw null; }
         public bool Equals(Meziantou.Framework.ProcessEntry other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
-        public override string ToString() => throw null;
         public System.Diagnostics.Process ToProcess() => throw null;
+        public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.ProcessEntry left, Meziantou.Framework.ProcessEntry right) => throw null;
         public static bool operator !=(Meziantou.Framework.ProcessEntry left, Meziantou.Framework.ProcessEntry right) => throw null;
     }
@@ -376,54 +377,54 @@ namespace Meziantou.Framework
     public static class ProcessExtensions
     {
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-        public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetDescendantProcesses(this System.Diagnostics.Process process) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-        public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetChildProcesses(this System.Diagnostics.Process process) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public static System.Collections.Generic.IEnumerable<int> GetAncestorProcessIds(this System.Diagnostics.Process process) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public static System.Collections.Generic.IEnumerable<System.Diagnostics.Process> GetAncestorProcesses(this System.Diagnostics.Process process) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-        [System.Runtime.Versioning.SupportedOSPlatform("linux")]
-        public static int? GetParentProcessId(this System.Diagnostics.Process process) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetChildProcesses(this System.Diagnostics.Process process) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetDescendantProcesses(this System.Diagnostics.Process process) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("linux")]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public static System.Diagnostics.Process? GetParentProcess(this System.Diagnostics.Process process) => throw null;
+        [System.Runtime.Versioning.SupportedOSPlatform("linux")]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public static int? GetParentProcessId(this System.Diagnostics.Process process) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public static System.Collections.Generic.IEnumerable<Meziantou.Framework.ProcessEntry> GetProcesses() => throw null;
     }
 
     public static class QueueExtensions
     {
-        public static void EnqueueRange<T>(this System.Collections.Generic.Queue<T> queue, params T[] items) { }
         public static void EnqueueRange<T>(this System.Collections.Generic.Queue<T> queue, System.Collections.Generic.IEnumerable<T> items) { }
         public static void EnqueueRange<T>(this System.Collections.Generic.Queue<T> queue, System.ReadOnlySpan<T> items) { }
+        public static void EnqueueRange<T>(this System.Collections.Generic.Queue<T> queue, params T[] items) { }
     }
 
     public static class RandomExtensions
     {
-        public static T NextFromList<T>(this System.Random random, T[] array) => throw null;
-        public static T NextFromList<T>(this System.Random random, System.Collections.Generic.IList<T> list) => throw null;
-        public static T NextFromList<T>(this System.Random random, System.Collections.Generic.ICollection<T> list) => throw null;
-        public static T NextFromList<T>(this System.Random random, System.ReadOnlySpan<T> list) => throw null;
-        public static T NextFromList<T>(this System.Random random, System.ReadOnlyMemory<T> list) => throw null;
-        public static T NextFromList<T>(this System.Random random, System.Collections.Generic.IReadOnlyList<T> list) => throw null;
-        public static T NextFromList<T>(this System.Random random, System.Collections.Generic.IReadOnlyCollection<T> list) => throw null;
         public static bool NextBoolean(this System.Random random) => throw null;
         public static byte NextByte(this System.Random random, byte min = 0, byte max = 255) => throw null;
-        public static sbyte NextSByte(this System.Random random, sbyte min = 0, sbyte max = 127) => throw null;
         public static System.DateTime NextDateTime(this System.Random random, System.DateTime min, System.DateTime max) => throw null;
+        public static decimal NextDecimal(this System.Random random, decimal min = -79228162514264337593543950335m, decimal max = 79228162514264337593543950335m) => throw null;
         public static double NextDouble(this System.Random random, double min = 0d, double max = 1d) => throw null;
+        public static T NextFromList<T>(this System.Random random, System.Collections.Generic.ICollection<T> list) => throw null;
+        public static T NextFromList<T>(this System.Random random, System.Collections.Generic.IList<T> list) => throw null;
+        public static T NextFromList<T>(this System.Random random, System.Collections.Generic.IReadOnlyCollection<T> list) => throw null;
+        public static T NextFromList<T>(this System.Random random, System.Collections.Generic.IReadOnlyList<T> list) => throw null;
+        public static T NextFromList<T>(this System.Random random, System.ReadOnlyMemory<T> list) => throw null;
+        public static T NextFromList<T>(this System.Random random, System.ReadOnlySpan<T> list) => throw null;
+        public static T NextFromList<T>(this System.Random random, T[] array) => throw null;
         public static short NextInt16(this System.Random random, short min = 0, short max = 32767) => throw null;
         public static int NextInt32(this System.Random random, int min = 0, int max = 2147483647) => throw null;
         public static long NextInt64(this System.Random random, long min = 0L, long max = 9223372036854775807L) => throw null;
+        public static sbyte NextSByte(this System.Random random, sbyte min = 0, sbyte max = 127) => throw null;
         public static float NextSingle(this System.Random random, float min = 0f, float max = 1f) => throw null;
+        public static string NextString(this System.Random random, int length, string chars) => throw null;
+        public static string NextString(this System.Random random, int minLength, int maxLength, string chars) => throw null;
         public static ushort NextUInt16(this System.Random random, ushort min = 0, ushort max = 65535) => throw null;
         public static uint NextUInt32(this System.Random random, uint min = 0U, uint max = 4294967295U) => throw null;
         public static ulong NextUInt64(this System.Random random, ulong min = 0UL, ulong max = 18446744073709551615UL) => throw null;
-        public static decimal NextDecimal(this System.Random random, [System.Runtime.CompilerServices.DecimalConstant(0, 128, 4294967295U, 4294967295U, 4294967295U)] decimal min, [System.Runtime.CompilerServices.DecimalConstant(0, 0, 4294967295U, 4294967295U, 4294967295U)] decimal max) => throw null;
-        public static string NextString(this System.Random random, int length, string chars) => throw null;
-        public static string NextString(this System.Random random, int minLength, int maxLength, string chars) => throw null;
     }
 
     public static class Range
@@ -436,17 +437,17 @@ namespace Meziantou.Framework
         public T From { get => throw null; }
         public T To { get => throw null; }
         public Range(T from, T to) { }
-        public bool IsInRangeInclusive(T value) => throw null;
-        public bool IsInRangeExclusive(T value) => throw null;
-        public bool IsInRangeLowerInclusive(T value) => throw null;
-        public bool IsInRangeUpperInclusive(T value) => throw null;
-        public bool IsInRangeInclusive(Meziantou.Framework.Range<T> range) => throw null;
-        public bool IsInRangeExclusive(Meziantou.Framework.Range<T> range) => throw null;
-        public bool IsInRangeLowerInclusive(Meziantou.Framework.Range<T> range) => throw null;
-        public bool IsInRangeUpperInclusive(Meziantou.Framework.Range<T> range) => throw null;
         public bool Equals(Meziantou.Framework.Range<T> other) => throw null;
-        public override int GetHashCode() => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public bool IsInRangeExclusive(Meziantou.Framework.Range<T> range) => throw null;
+        public bool IsInRangeExclusive(T value) => throw null;
+        public bool IsInRangeInclusive(Meziantou.Framework.Range<T> range) => throw null;
+        public bool IsInRangeInclusive(T value) => throw null;
+        public bool IsInRangeLowerInclusive(Meziantou.Framework.Range<T> range) => throw null;
+        public bool IsInRangeLowerInclusive(T value) => throw null;
+        public bool IsInRangeUpperInclusive(Meziantou.Framework.Range<T> range) => throw null;
+        public bool IsInRangeUpperInclusive(T value) => throw null;
         public override string? ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Range<T> left, Meziantou.Framework.Range<T> right) => throw null;
         public static bool operator !=(Meziantou.Framework.Range<T> left, Meziantou.Framework.Range<T> right) => throw null;
@@ -454,31 +455,36 @@ namespace Meziantou.Framework
 
     public sealed class ReflectionDynamicObject : System.Dynamic.DynamicObject
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Use reflection")]
-        public ReflectionDynamicObject(object obj) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Dynamic objects are bound at runtime, which may require generating code")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Use reflection")]
         public ReflectionDynamicObject(System.Type type) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Dynamic objects are bound at runtime, which may require generating code")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Use reflection")]
+        public ReflectionDynamicObject(object obj) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Dynamic objects are bound at runtime, which may require generating code")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Use reflection")]
         public Meziantou.Framework.ReflectionDynamicObject CreateInstance(params object[] parameters) => throw null;
-        public override bool TryGetMember(System.Dynamic.GetMemberBinder binder, out object? result) => throw null;
-        public override bool TrySetMember(System.Dynamic.SetMemberBinder binder, object? value) => throw null;
-        public override bool TryGetIndex(System.Dynamic.GetIndexBinder binder, object[] indexes, out object? result) => throw null;
-        public override bool TrySetIndex(System.Dynamic.SetIndexBinder binder, object[] indexes, object? value) => throw null;
-        public override bool TryInvokeMember(System.Dynamic.InvokeMemberBinder binder, object?[]? args, out object? result) => throw null;
         public override System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() => throw null;
-        public override bool TryConvert(System.Dynamic.ConvertBinder binder, out object? result) => throw null;
         public override string? ToString() => throw null;
+        public override bool TryConvert(System.Dynamic.ConvertBinder binder, out object? result) => throw null;
+        public override bool TryGetIndex(System.Dynamic.GetIndexBinder binder, object[] indexes, out object? result) => throw null;
+        public override bool TryGetMember(System.Dynamic.GetMemberBinder binder, out object? result) => throw null;
+        public override bool TryInvokeMember(System.Dynamic.InvokeMemberBinder binder, object?[]? args, out object? result) => throw null;
+        public override bool TrySetIndex(System.Dynamic.SetIndexBinder binder, object[] indexes, object? value) => throw null;
+        public override bool TrySetMember(System.Dynamic.SetMemberBinder binder, object? value) => throw null;
     }
 
     public static class ReflectionUtilities
     {
-        public static bool IsNullableOfT(this System.Type type) => throw null;
-        public static bool IsFlagsEnum<T>() => throw null;
-        public static bool IsFlagsEnum(this System.Type type) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Use reflection to find static methods")]
         public static System.Reflection.MethodInfo? GetImplicitConversion(object? value, System.Type targetType) => throw null;
-        public static System.ValueTuple? GetMethodLocation(this System.Reflection.MethodInfo methodInfo) => throw null;
-        public static System.Threading.Tasks.Task<System.ValueTuple?> GetMethodLocationAsync(this System.Reflection.MethodInfo methodInfo) => throw null;
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file", Justification = "An empty location, as returned for an assembly embedded in a single-file or NativeAOT application, is handled by returning null")]
+        public static (string FilePath, System.Reflection.Metadata.SequencePoint SequencePoint)? GetMethodLocation(this System.Reflection.MethodInfo methodInfo) => throw null;
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file", Justification = "An empty location, as returned for an assembly embedded in a single-file or NativeAOT application, is handled by returning null")]
+        public static System.Threading.Tasks.Task<(string FilePath, System.Reflection.Metadata.SequencePoint SequencePoint)?> GetMethodLocationAsync(this System.Reflection.MethodInfo methodInfo) => throw null;
+        public static bool IsFlagsEnum(this System.Type type) => throw null;
+        public static bool IsFlagsEnum<T>() => throw null;
+        public static bool IsNullableOfT(this System.Type type) => throw null;
     }
 
     public static class RegexExtensions
@@ -494,11 +500,6 @@ namespace Meziantou.Framework
         public override long Length { get => throw null; }
         public override long Position { get => throw null; set { } }
         public RestrictedStream(System.IO.Stream stream, Meziantou.Framework.RestrictedStreamOptions options) { }
-        public override void Flush() { }
-        public override int Read(byte[] buffer, int offset, int count) => throw null;
-        public override long Seek(long offset, System.IO.SeekOrigin origin) => throw null;
-        public override void SetLength(long value) { }
-        public override void Write(byte[] buffer, int offset, int count) { }
         public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) => throw null;
         public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) => throw null;
         public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
@@ -507,31 +508,36 @@ namespace Meziantou.Framework
         public override System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
         public override int EndRead(System.IAsyncResult asyncResult) => throw null;
         public override void EndWrite(System.IAsyncResult asyncResult) { }
+        public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) => throw null;
         public override int Read(System.Span<byte> buffer) => throw null;
+        public override int Read(byte[] buffer, int offset, int count) => throw null;
+        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) => throw null;
-        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public override int ReadByte() => throw null;
+        public override long Seek(long offset, System.IO.SeekOrigin origin) => throw null;
+        public override void SetLength(long value) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
+        public override void Write(byte[] buffer, int offset, int count) { }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) => throw null;
-        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public override void WriteByte(byte value) { }
     }
 
     public sealed class RestrictedStreamOptions : System.IEquatable<Meziantou.Framework.RestrictedStreamOptions>
     {
-        public bool AllowSynchronousCalls { get => throw null; set { } }
         public bool AllowAsynchronousCalls { get => throw null; set { } }
         public bool AllowReading { get => throw null; set { } }
-        public bool AllowWriting { get => throw null; set { } }
         public bool AllowSeeking { get => throw null; set { } }
+        public bool AllowSynchronousCalls { get => throw null; set { } }
+        public bool AllowWriting { get => throw null; set { } }
         public int MaxReadLength { get => throw null; set { } }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.RestrictedStreamOptions? left, Meziantou.Framework.RestrictedStreamOptions? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.RestrictedStreamOptions? left, Meziantou.Framework.RestrictedStreamOptions? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
         public bool Equals(Meziantou.Framework.RestrictedStreamOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.RestrictedStreamOptions? left, Meziantou.Framework.RestrictedStreamOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.RestrictedStreamOptions? left, Meziantou.Framework.RestrictedStreamOptions? right) => throw null;
     }
 
     public static class SafeHandleExtensions
@@ -551,134 +557,135 @@ namespace Meziantou.Framework
 
     public static class ShortName
     {
-        public static string? Create(System.Collections.Generic.ISet<string> shortNames, int maxLength, string name) => throw null;
-        public static string? Create(System.Collections.Generic.IEnumerable<string> shortNames, int maxLength, string name) => throw null;
         public static System.Collections.Generic.IDictionary<string, string> Create(System.Collections.Generic.IReadOnlyCollection<string> names, int maxLength) => throw null;
+        public static string? Create(System.Collections.Generic.IEnumerable<string> shortNames, int maxLength, string name) => throw null;
         public static System.Collections.Generic.IDictionary<string, string> Create(System.Collections.Generic.IReadOnlyCollection<string> names, int maxLength, System.Collections.Generic.IEqualityComparer<string>? comparer) => throw null;
+        public static string? Create(System.Collections.Generic.ISet<string> shortNames, int maxLength, string name) => throw null;
     }
 
     public static class SpanExtensions
     {
-        public static void ParallelSort<T>(this System.Span<T> span) { }
-        public static void ParallelSort<T>(this System.Span<T> span, System.Collections.Generic.IComparer<T>? comparer) { }
-        public static void ParallelSort<T>(this System.Span<T> span, int degreeOfParallelism) { }
-        public static void ParallelSort<T>(this System.Span<T> span, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
-        public static void ParallelStableSort<T>(this System.Span<T> span) { }
-        public static void ParallelStableSort<T>(this System.Span<T> span, System.Collections.Generic.IComparer<T>? comparer) { }
-        public static void ParallelStableSort<T>(this System.Span<T> span, int degreeOfParallelism) { }
-        public static void ParallelStableSort<T>(this System.Span<T> span, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
-        public static void ParallelSort<T>(this T[] array) { }
-        public static void ParallelSort<T>(this T[] array, System.Collections.Generic.IComparer<T>? comparer) { }
-        public static void ParallelSort<T>(this T[] array, int degreeOfParallelism) { }
-        public static void ParallelSort<T>(this T[] array, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
-        public static void ParallelStableSort<T>(this T[] array) { }
-        public static void ParallelStableSort<T>(this T[] array, System.Collections.Generic.IComparer<T>? comparer) { }
-        public static void ParallelStableSort<T>(this T[] array, int degreeOfParallelism) { }
-        public static void ParallelStableSort<T>(this T[] array, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
         public static void ParallelSort<T>(this System.Collections.Generic.List<T> list) { }
+        public static void ParallelSort<T>(this System.Span<T> span) { }
+        public static void ParallelSort<T>(this T[] array) { }
         public static void ParallelSort<T>(this System.Collections.Generic.List<T> list, System.Collections.Generic.IComparer<T>? comparer) { }
         public static void ParallelSort<T>(this System.Collections.Generic.List<T> list, int degreeOfParallelism) { }
+        public static void ParallelSort<T>(this System.Span<T> span, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelSort<T>(this System.Span<T> span, int degreeOfParallelism) { }
+        public static void ParallelSort<T>(this T[] array, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelSort<T>(this T[] array, int degreeOfParallelism) { }
         public static void ParallelSort<T>(this System.Collections.Generic.List<T> list, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelSort<T>(this System.Span<T> span, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelSort<T>(this T[] array, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
         public static void ParallelStableSort<T>(this System.Collections.Generic.List<T> list) { }
+        public static void ParallelStableSort<T>(this System.Span<T> span) { }
+        public static void ParallelStableSort<T>(this T[] array) { }
         public static void ParallelStableSort<T>(this System.Collections.Generic.List<T> list, System.Collections.Generic.IComparer<T>? comparer) { }
         public static void ParallelStableSort<T>(this System.Collections.Generic.List<T> list, int degreeOfParallelism) { }
+        public static void ParallelStableSort<T>(this System.Span<T> span, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelStableSort<T>(this System.Span<T> span, int degreeOfParallelism) { }
+        public static void ParallelStableSort<T>(this T[] array, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelStableSort<T>(this T[] array, int degreeOfParallelism) { }
         public static void ParallelStableSort<T>(this System.Collections.Generic.List<T> list, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelStableSort<T>(this System.Span<T> span, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelStableSort<T>(this T[] array, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
     }
 
     public static class StreamExtensions
     {
-        public static int TryReadAll(this System.IO.Stream stream, byte[] buffer, int offset, int count) => throw null;
-        public static int TryReadAll(this System.IO.Stream stream, System.Span<byte> buffer) => throw null;
-        public static System.Threading.Tasks.Task<int> TryReadAllAsync(this System.IO.Stream stream, byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<int> TryReadAllAsync(this System.IO.Stream stream, System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public static byte[] ReadToEnd(this System.IO.Stream stream) => throw null;
-        public static System.Threading.Tasks.Task<byte[]> ReadToEndAsync(this System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<System.IO.MemoryStream> ToMemoryStreamAsync(this System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task<byte[]> ReadToEndAsync(this System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<System.IO.MemoryStream> ToMemoryStreamAsync(this System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static int TryReadAll(this System.IO.Stream stream, System.Span<byte> buffer) => throw null;
+        public static int TryReadAll(this System.IO.Stream stream, byte[] buffer, int offset, int count) => throw null;
+        public static System.Threading.Tasks.Task<int> TryReadAllAsync(this System.IO.Stream stream, System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<int> TryReadAllAsync(this System.IO.Stream stream, byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public static class StringBuilderExtensions
     {
+        public static System.Text.StringBuilder AppendFormatInvariant(this System.Text.StringBuilder sb, string format, object? args0) => throw null;
+        public static System.Text.StringBuilder AppendFormatInvariant(this System.Text.StringBuilder sb, string format, params object?[] args) => throw null;
+        public static System.Text.StringBuilder AppendFormatInvariant(this System.Text.StringBuilder sb, string format, object? args0, object? args1) => throw null;
+        public static System.Text.StringBuilder AppendFormatInvariant(this System.Text.StringBuilder sb, string format, object? args0, object? args1, object? args2) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, System.FormattableString? value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, System.Half value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, System.Half? value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, byte value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, byte? value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, decimal value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, decimal? value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, double value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, double? value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, float value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, float? value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, int value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, int? value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, long value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, long? value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, object? value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, sbyte value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, sbyte? value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, short value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, short? value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, ushort value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, ushort? value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, int value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, int? value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, uint value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, uint? value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, long value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, long? value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, ulong value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, ulong? value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, System.Half value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, System.Half? value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, float value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, float? value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, double value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, double? value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, decimal value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, decimal? value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, System.FormattableString? value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant<T>(this System.Text.StringBuilder sb, T value) where T : System.IFormattable => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, object? value) => throw null;
-        public static System.Text.StringBuilder AppendFormatInvariant(this System.Text.StringBuilder sb, string format, object? args0) => throw null;
-        public static System.Text.StringBuilder AppendFormatInvariant(this System.Text.StringBuilder sb, string format, object? args0, object? args1) => throw null;
-        public static System.Text.StringBuilder AppendFormatInvariant(this System.Text.StringBuilder sb, string format, object? args0, object? args1, object? args2) => throw null;
-        public static System.Text.StringBuilder AppendFormatInvariant(this System.Text.StringBuilder sb, string format, params object?[] args) => throw null;
-        public static bool StartsWith(this System.Text.StringBuilder stringBuilder, char prefix) => throw null;
-        public static bool StartsWith(this System.Text.StringBuilder stringBuilder, string prefix) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, ushort value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, ushort? value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant<T>(this System.Text.StringBuilder sb, T? value) where T : System.IFormattable => throw null;
         public static bool EndsWith(this System.Text.StringBuilder stringBuilder, char suffix) => throw null;
         public static bool EndsWith(this System.Text.StringBuilder stringBuilder, string suffix) => throw null;
-        public static void TrimStart(this System.Text.StringBuilder stringBuilder, char trimChar) { }
-        public static void TrimEnd(this System.Text.StringBuilder stringBuilder, char trimChar) { }
+        public static bool StartsWith(this System.Text.StringBuilder stringBuilder, char prefix) => throw null;
+        public static bool StartsWith(this System.Text.StringBuilder stringBuilder, string prefix) => throw null;
         public static void Trim(this System.Text.StringBuilder stringBuilder, char trimChar) { }
+        public static void TrimEnd(this System.Text.StringBuilder stringBuilder, char trimChar) { }
+        public static void TrimStart(this System.Text.StringBuilder stringBuilder, char trimChar) { }
     }
 
     public static class StringExtensions
     {
-        public static string? Nullify(this string? str, bool trim) => throw null;
-        public static bool EqualsOrdinal(this string? str1, string? str2) => throw null;
-        public static bool EqualsIgnoreCase(this string? str1, string? str2) => throw null;
         public static bool ContainsIgnoreCase(this string str, string value) => throw null;
-        public static string ReplaceAny(this string text, System.Buffers.SearchValues<char> values, char newValue) => throw null;
+        public static bool EqualsIgnoreCase(this string? str1, string? str2) => throw null;
+        public static bool EqualsOrdinal(this string? str1, string? str2) => throw null;
+        public static string? Nullify(this string? str, bool trim) => throw null;
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("str")]
         public static string? RemoveDiacritics(this string? str) => throw null;
-        public static string RemoveSuffix(this string str, string suffix) => throw null;
-        public static string RemoveSuffix(this string str, string suffix, System.StringComparison stringComparison) => throw null;
         public static string RemovePrefix(this string str, string prefix) => throw null;
         public static string RemovePrefix(this string str, string prefix, System.StringComparison stringComparison) => throw null;
-        public static LineSplitEnumerator SplitLines(this string str) => throw null;
-        public static LineSplitEnumerator SplitLines(this string str, Meziantou.Framework.LineBreakMode lineBreakMode) => throw null;
-        public static LineSplitEnumerator SplitLines(this System.ReadOnlySpan<char> str) => throw null;
-        public static LineSplitEnumerator SplitLines(this System.ReadOnlySpan<char> str, Meziantou.Framework.LineBreakMode lineBreakMode) => throw null;
+        public static string RemoveSuffix(this string str, string suffix) => throw null;
+        public static string RemoveSuffix(this string str, string suffix, System.StringComparison stringComparison) => throw null;
+        public static string ReplaceAny(this string text, System.Buffers.SearchValues<char> values, char newValue) => throw null;
+        public static Meziantou.Framework.StringExtensions.LineSplitEnumerator SplitLines(this System.ReadOnlySpan<char> str) => throw null;
+        public static Meziantou.Framework.StringExtensions.LineSplitEnumerator SplitLines(this string str) => throw null;
+        public static Meziantou.Framework.StringExtensions.LineSplitEnumerator SplitLines(this System.ReadOnlySpan<char> str, Meziantou.Framework.LineBreakMode lineBreakMode) => throw null;
+        public static Meziantou.Framework.StringExtensions.LineSplitEnumerator SplitLines(this string str, Meziantou.Framework.LineBreakMode lineBreakMode) => throw null;
         public ref struct LineSplitEntry
         {
             public System.ReadOnlySpan<char> Line { get => throw null; }
             public System.ReadOnlySpan<char> Separator { get => throw null; }
             public LineSplitEntry(System.ReadOnlySpan<char> line, System.ReadOnlySpan<char> separator) { }
             public void Deconstruct(out System.ReadOnlySpan<char> line, out System.ReadOnlySpan<char> separator) => throw null;
-            public static implicit operator System.ReadOnlySpan<char>(LineSplitEntry entry) => throw null;
+            public static implicit operator System.ReadOnlySpan<char>(Meziantou.Framework.StringExtensions.LineSplitEntry entry) => throw null;
         }
         public ref struct LineSplitEnumerator
         {
-            public readonly LineSplitEntry Current { get => throw null; }
+            public readonly Meziantou.Framework.StringExtensions.LineSplitEntry Current { get => throw null; }
             public LineSplitEnumerator(System.ReadOnlySpan<char> str) { }
             public LineSplitEnumerator(System.ReadOnlySpan<char> str, Meziantou.Framework.LineBreakMode lineBreakMode) { }
-            public readonly LineSplitEnumerator GetEnumerator() => throw null;
+            public readonly Meziantou.Framework.StringExtensions.LineSplitEnumerator GetEnumerator() => throw null;
             public bool MoveNext() => throw null;
         }
     }
 
     public static class StringSearchUtilities
     {
-        public static uint Hamming(uint word1, uint word2) => throw null;
         public static int Hamming(string word1, string word2) => throw null;
-        public static int Hamming<T>(System.Collections.Generic.IEnumerable<T> word1, System.Collections.Generic.IEnumerable<T> word2) => throw null;
-        public static int Levenshtein(string word1, string word2) => throw null;
+        public static uint Hamming(uint word1, uint word2) => throw null;
+        public static int Hamming<T>(System.Collections.Generic.IEnumerable<T> word1, System.Collections.Generic.IEnumerable<T> word2) where T : notnull => throw null;
         public static int Levenshtein(System.ReadOnlySpan<char> word1, System.ReadOnlySpan<char> word2) => throw null;
+        public static int Levenshtein(string word1, string word2) => throw null;
         public static int Levenshtein(System.ReadOnlySpan<char> word1, System.ReadOnlySpan<char> word2, int maxDistance) => throw null;
         public static int[] LevenshteinBatch(string word, System.Collections.Generic.IReadOnlyList<string> candidates, int maxDegreeOfParallelism = -1) => throw null;
         public static string Metaphone(string s) => throw null;
@@ -716,7 +723,7 @@ namespace Meziantou.Framework
 
     public static class TupleExtensions
     {
-        public static object?[] ToArray<T>(this T tuple) where T : System.Runtime.CompilerServices.ITuple => throw null;
+        public static object?[] ToArray<T>(this T tuple) where T : notnull, System.Runtime.CompilerServices.ITuple => throw null;
     }
 
     public static class UriExtensions
@@ -742,19 +749,26 @@ namespace Meziantou.Framework.Collections
     public sealed class AppendOnlyCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
+        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get => throw null; }
         public T this[int index] { get => throw null; }
         public AppendOnlyCollection(int capacity) { }
         public void Add(T item) { }
-        public Enumerator<T> GetEnumerator() => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        void System.Collections.Generic.ICollection<T>.Clear() { }
         public bool Contains(System.Func<T, bool> predicate) => throw null;
-        public T Find(System.Func<T, bool> predicate) => throw null;
+        bool System.Collections.Generic.ICollection<T>.Contains(T item) => throw null;
+        void System.Collections.Generic.ICollection<T>.CopyTo(T[] array, int arrayIndex) { }
+        public T? Find(System.Func<T, bool> predicate) => throw null;
+        public Meziantou.Framework.Collections.AppendOnlyCollection<T>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        bool System.Collections.Generic.ICollection<T>.Remove(T item) => throw null;
         public bool TryFind(System.Func<T, bool> predicate, out T result) => throw null;
-        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        public struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly T Current { get => throw null; }
-            public bool MoveNext() => throw null;
+            readonly object? System.Collections.IEnumerator.Current { get => throw null; }
             public readonly void Dispose() { }
+            public bool MoveNext() => throw null;
             public readonly void Reset() { }
         }
     }
@@ -765,11 +779,13 @@ namespace Meziantou.Framework.Collections
         public BTree(System.Collections.Generic.IComparer<T>? comparer = null) { }
         public bool Add(T item) => throw null;
         public bool Contains(T item) => throw null;
-        public Enumerator<T> GetEnumerator() => throw null;
+        public Meziantou.Framework.Collections.BTree<T>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        public struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly T Current { get => throw null; }
+            readonly object? System.Collections.IEnumerator.Current { get => throw null; }
             public readonly void Dispose() { }
             public bool MoveNext() => throw null;
             void System.Collections.IEnumerator.Reset() { }
@@ -778,24 +794,29 @@ namespace Meziantou.Framework.Collections
 
     public sealed class CircularBuffer<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
     {
+        public bool AllowOverwrite { get => throw null; set { } }
         public int Capacity { get => throw null; set { } }
         public int Count { get => throw null; }
-        public bool AllowOverwrite { get => throw null; set { } }
+        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get => throw null; }
         public T this[int index] { get => throw null; }
         public CircularBuffer(int capacity) { }
+        void System.Collections.Generic.ICollection<T>.Add(T item) { }
         public void AddFirst(T value) { }
         public void AddLast(T value) { }
-        public T RemoveFirst() => throw null;
-        public T RemoveLast() => throw null;
         public void Clear() { }
         public bool Contains(T item) => throw null;
         public void CopyTo(T[] array, int arrayIndex) { }
-        public int IndexOf(T item) => throw null;
-        public Enumerator<T> GetEnumerator() => throw null;
+        public Meziantou.Framework.Collections.CircularBuffer<T>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        public int IndexOf(T item) => throw null;
+        bool System.Collections.Generic.ICollection<T>.Remove(T item) => throw null;
+        public T RemoveFirst() => throw null;
+        public T RemoveLast() => throw null;
+        public struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly T Current { get => throw null; }
+            readonly object? System.Collections.IEnumerator.Current { get => throw null; }
             public readonly void Dispose() { }
             public bool MoveNext() => throw null;
             void System.Collections.IEnumerator.Reset() { }
@@ -805,21 +826,26 @@ namespace Meziantou.Framework.Collections
     public sealed class DoubleEndedQueue<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
+        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get => throw null; }
         public T this[int index] { get => throw null; }
         public DoubleEndedQueue(int capacity) { }
+        void System.Collections.Generic.ICollection<T>.Add(T item) { }
         public void AddFirst(T value) { }
         public void AddLast(T value) { }
-        public T RemoveFirst() => throw null;
-        public T RemoveLast() => throw null;
         public void Clear() { }
         public bool Contains(T item) => throw null;
-        public int IndexOf(T item) => throw null;
         public void CopyTo(T[] array, int arrayIndex) { }
-        public Enumerator<T> GetEnumerator() => throw null;
+        public Meziantou.Framework.Collections.DoubleEndedQueue<T>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        public int IndexOf(T item) => throw null;
+        bool System.Collections.Generic.ICollection<T>.Remove(T item) => throw null;
+        public T RemoveFirst() => throw null;
+        public T RemoveLast() => throw null;
+        public struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly T Current { get => throw null; }
+            readonly object? System.Collections.IEnumerator.Current { get => throw null; }
             public readonly void Dispose() { }
             public bool MoveNext() => throw null;
             void System.Collections.IEnumerator.Reset() { }
@@ -828,35 +854,55 @@ namespace Meziantou.Framework.Collections
 
     public static class ImmutableEquatableArray
     {
-        public static Meziantou.Framework.Collections.ImmutableEquatableArray<T> ToImmutableEquatableArray<T>(this System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
-        public static Meziantou.Framework.Collections.ImmutableEquatableArray<T> Create<T>(System.ReadOnlySpan<T> values) where T : System.IEquatable<T> => throw null;
         public static Meziantou.Framework.Collections.ImmutableEquatableArray<T> Create<T>(System.Collections.Immutable.ImmutableArray<T> values) where T : System.IEquatable<T> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableArray<T> Create<T>(System.ReadOnlySpan<T> values) where T : System.IEquatable<T> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableArray<T> ToImmutableEquatableArray<T>(this System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
     }
 
     [System.Diagnostics.DebuggerDisplay("Length = {Length}")]
-    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableArray))]
+    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableArray<>.DebugView))]
     [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Collections.ImmutableEquatableArray), "Create")]
     public sealed class ImmutableEquatableArray<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.IEquatable<Meziantou.Framework.Collections.ImmutableEquatableArray<T>> where T : System.IEquatable<T>
     {
+        int System.Collections.Generic.ICollection<T>.Count { get => throw null; }
+        int System.Collections.Generic.IReadOnlyCollection<T>.Count { get => throw null; }
+        int System.Collections.ICollection.Count { get => throw null; }
         public static Meziantou.Framework.Collections.ImmutableEquatableArray<T> Empty { get => throw null; }
+        bool System.Collections.IList.IsFixedSize { get => throw null; }
+        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get => throw null; }
+        bool System.Collections.IList.IsReadOnly { get => throw null; }
+        bool System.Collections.ICollection.IsSynchronized { get => throw null; }
         public ref T this[int index] { get => throw null; }
+        T System.Collections.Generic.IList<T>.this[int index] { get => throw null; set { } }
+        T System.Collections.Generic.IReadOnlyList<T>.this[int index] { get => throw null; }
+        object? System.Collections.IList.this[int index] { get => throw null; set { } }
         public int Length { get => throw null; }
+        object System.Collections.ICollection.SyncRoot { get => throw null; }
+        void System.Collections.Generic.ICollection<T>.Add(T item) { }
+        int System.Collections.IList.Add(object? value) => throw null;
+        void System.Collections.Generic.ICollection<T>.Clear() { }
+        void System.Collections.IList.Clear() { }
+        bool System.Collections.Generic.ICollection<T>.Contains(T item) => throw null;
+        bool System.Collections.IList.Contains(object? value) => throw null;
+        void System.Collections.Generic.ICollection<T>.CopyTo(T[] array, int arrayIndex) { }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Collections.ImmutableEquatableArray<T>? other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public Meziantou.Framework.Collections.ImmutableEquatableArray<T>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public override int GetHashCode() => throw null;
-        public Enumerator<T> GetEnumerator() => throw null;
+        int System.Collections.Generic.IList<T>.IndexOf(T item) => throw null;
+        int System.Collections.IList.IndexOf(object? value) => throw null;
+        void System.Collections.Generic.IList<T>.Insert(int index, T item) { }
+        void System.Collections.IList.Insert(int index, object? value) { }
+        bool System.Collections.Generic.ICollection<T>.Remove(T item) => throw null;
+        void System.Collections.IList.Remove(object? value) { }
+        void System.Collections.Generic.IList<T>.RemoveAt(int index) { }
+        void System.Collections.IList.RemoveAt(int index) { }
         public static bool operator ==(Meziantou.Framework.Collections.ImmutableEquatableArray<T>? left, Meziantou.Framework.Collections.ImmutableEquatableArray<T>? right) => throw null;
         public static bool operator !=(Meziantou.Framework.Collections.ImmutableEquatableArray<T>? left, Meziantou.Framework.Collections.ImmutableEquatableArray<T>? right) => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        int System.Collections.IList.IndexOf(object? value) => throw null;
-        bool System.Collections.IList.Contains(object? value) => throw null;
-        int System.Collections.IList.Add(object? value) => throw null;
-        void System.Collections.IList.Clear() { }
-        void System.Collections.IList.Insert(int index, object? value) { }
-        void System.Collections.IList.Remove(object? value) { }
-        void System.Collections.IList.RemoveAt(int index) { }
-        public struct Enumerator<T> where T : System.IEquatable<T>
+        public struct Enumerator
         {
             public readonly ref T Current { get => throw null; }
             public bool MoveNext() => throw null;
@@ -866,105 +912,148 @@ namespace Meziantou.Framework.Collections
     public static class ImmutableEquatableDictionary
     {
         public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> Empty<TKey, TValue>() where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
-        public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<TValue> values, System.Func<TValue, TKey> keySelector) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
-        public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TSource, TKey, TValue>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Func<TSource, TValue> valueSelector) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
         public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> values) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
         public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.ValueTuple<TKey, TValue>> values) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<TValue> values, System.Func<TValue, TKey> keySelector) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TSource, TKey, TValue>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Func<TSource, TValue> valueSelector) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
     }
 
     [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
-    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableDictionary))]
+    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableDictionary<,>.DebugView))]
     public sealed class ImmutableEquatableDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>> where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue>
     {
-        public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> Empty { get => throw null; }
         public int Count { get => throw null; }
+        public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> Empty { get => throw null; }
+        bool System.Collections.IDictionary.IsFixedSize { get => throw null; }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.IsReadOnly { get => throw null; }
+        bool System.Collections.IDictionary.IsReadOnly { get => throw null; }
+        bool System.Collections.ICollection.IsSynchronized { get => throw null; }
         public TValue this[TKey key] { get => throw null; }
-        public KeyCollection<TKey, TValue> Keys { get => throw null; }
-        public ValueCollection<TKey, TValue> Values { get => throw null; }
+        TValue System.Collections.Generic.IDictionary<TKey,TValue>.this[TKey key] { get => throw null; set { } }
+        object? System.Collections.IDictionary.this[object key] { get => throw null; set { } }
+        public System.Collections.Generic.Dictionary<TKey, TValue>.KeyCollection Keys { get => throw null; }
+        System.Collections.Generic.ICollection<TKey> System.Collections.Generic.IDictionary<TKey,TValue>.Keys { get => throw null; }
+        System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey,TValue>.Keys { get => throw null; }
+        System.Collections.ICollection System.Collections.IDictionary.Keys { get => throw null; }
+        object System.Collections.ICollection.SyncRoot { get => throw null; }
+        public System.Collections.Generic.Dictionary<TKey, TValue>.ValueCollection Values { get => throw null; }
+        System.Collections.Generic.ICollection<TValue> System.Collections.Generic.IDictionary<TKey,TValue>.Values { get => throw null; }
+        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey,TValue>.Values { get => throw null; }
+        System.Collections.ICollection System.Collections.IDictionary.Values { get => throw null; }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.Add(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { }
+        void System.Collections.Generic.IDictionary<TKey,TValue>.Add(TKey key, TValue value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.Clear() { }
+        void System.Collections.IDictionary.Clear() { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.Contains(System.Collections.Generic.KeyValuePair<TKey, TValue> item) => throw null;
+        bool System.Collections.IDictionary.Contains(object key) => throw null;
         public bool ContainsKey(TKey key) => throw null;
-        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value) => throw null;
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.CopyTo(System.Collections.Generic.KeyValuePair<TKey, TValue>[] array, int arrayIndex) { }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public System.Collections.Generic.Dictionary<TKey, TValue>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey,TValue>>.GetEnumerator() => throw null;
+        System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public override int GetHashCode() => throw null;
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> item) => throw null;
+        bool System.Collections.Generic.IDictionary<TKey,TValue>.Remove(TKey key) => throw null;
+        void System.Collections.IDictionary.Remove(object key) { }
+        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value) => throw null;
         public static bool operator ==(Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? left, Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? right) => throw null;
         public static bool operator !=(Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? left, Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? right) => throw null;
-        public Enumerator<TKey, TValue> GetEnumerator() => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() => throw null;
-        bool System.Collections.IDictionary.Contains(object key) => throw null;
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object? value) { }
-        void System.Collections.IDictionary.Remove(object key) { }
-        void System.Collections.IDictionary.Clear() { }
     }
 
     public static class ImmutableEquatableSet
     {
-        public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> ToImmutableEquatableSet<T>(this System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
-        public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> Create<T>(System.ReadOnlySpan<T> values) where T : System.IEquatable<T> => throw null;
         public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> Create<T>(System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> Create<T>(System.ReadOnlySpan<T> values) where T : System.IEquatable<T> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> ToImmutableEquatableSet<T>(this System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
     }
 
     [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
-    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableSet))]
+    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableSet<>.DebugView))]
     [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Collections.ImmutableEquatableSet), "Create")]
     public sealed class ImmutableEquatableSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Collections.ImmutableEquatableSet<T>> where T : System.IEquatable<T>
     {
-        public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> Empty { get => throw null; }
         public int Count { get => throw null; }
+        public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> Empty { get => throw null; }
+        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get => throw null; }
+        bool System.Collections.ICollection.IsSynchronized { get => throw null; }
+        object System.Collections.ICollection.SyncRoot { get => throw null; }
+        void System.Collections.Generic.ICollection<T>.Add(T item) { }
+        bool System.Collections.Generic.ISet<T>.Add(T item) => throw null;
+        void System.Collections.Generic.ICollection<T>.Clear() { }
         public bool Contains(T item) => throw null;
+        void System.Collections.Generic.ICollection<T>.CopyTo(T[] array, int arrayIndex) { }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Collections.ImmutableEquatableSet<T>? other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        void System.Collections.Generic.ISet<T>.ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+        public System.Collections.Generic.HashSet<T>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public override int GetHashCode() => throw null;
+        void System.Collections.Generic.ISet<T>.IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
+        bool System.Collections.Generic.ISet<T>.IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        bool System.Collections.Generic.ISet<T>.IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        bool System.Collections.Generic.ISet<T>.IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        bool System.Collections.Generic.ISet<T>.IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        bool System.Collections.Generic.ISet<T>.Overlaps(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        bool System.Collections.Generic.ICollection<T>.Remove(T item) => throw null;
+        bool System.Collections.Generic.ISet<T>.SetEquals(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        void System.Collections.Generic.ISet<T>.SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+        void System.Collections.Generic.ISet<T>.UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
         public static bool operator ==(Meziantou.Framework.Collections.ImmutableEquatableSet<T>? left, Meziantou.Framework.Collections.ImmutableEquatableSet<T>? right) => throw null;
         public static bool operator !=(Meziantou.Framework.Collections.ImmutableEquatableSet<T>? left, Meziantou.Framework.Collections.ImmutableEquatableSet<T>? right) => throw null;
-        public Enumerator<T> GetEnumerator() => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
     }
 
     public sealed class LimitList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
     {
         public int Capacity { get => throw null; }
         public int Count { get => throw null; }
+        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get => throw null; }
         public T this[int index] { get => throw null; set { } }
         public LimitList(int maximumCount) { }
+        void System.Collections.Generic.ICollection<T>.Add(T item) { }
         public void AddFirst(T value) { }
         public void AddLast(T value) { }
-        public void RemoveFirst() { }
-        public void RemoveLast() { }
         public void Clear() { }
         public bool Contains(T item) => throw null;
         public void CopyTo(T[] array, int arrayIndex) { }
-        public bool Remove(T item) => throw null;
-        public int IndexOf(T item) => throw null;
-        public void RemoveAt(int index) { }
         public System.Collections.Generic.IEnumerator<T> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public int IndexOf(T item) => throw null;
+        public bool Remove(T item) => throw null;
+        public void RemoveAt(int index) { }
+        public void RemoveFirst() { }
+        public void RemoveLast() { }
     }
 
-    public sealed class MultiValueDictionary<TKey, TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>>, System.Collections.Generic.IReadOnlyDictionary<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>, System.Collections.IEnumerable
+    public sealed class MultiValueDictionary<TKey, TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>>, System.Collections.Generic.IReadOnlyDictionary<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>, System.Collections.IEnumerable where TKey : notnull
     {
+        public int Count { get => throw null; }
+        public System.Collections.Generic.IReadOnlyCollection<TValue> this[TKey key] { get => throw null; }
         public System.Collections.Generic.IEnumerable<TKey> Keys { get => throw null; }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.IReadOnlyCollection<TValue>> Values { get => throw null; }
-        public System.Collections.Generic.IReadOnlyCollection<TValue> this[TKey key] { get => throw null; }
-        public int Count { get => throw null; }
-        public MultiValueDictionary(int capacity) { }
-        public MultiValueDictionary(System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
-        public MultiValueDictionary(int capacity, System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
         public MultiValueDictionary(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>> enumerable) { }
+        public MultiValueDictionary(System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
+        public MultiValueDictionary(int capacity) { }
         public MultiValueDictionary(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>> enumerable, System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
+        public MultiValueDictionary(int capacity, System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
         public void Add(TKey key, TValue value) { }
         public void AddRange(TKey key, System.Collections.Generic.IEnumerable<TValue> values) { }
+        public void Clear() { }
+        public bool Contains(TKey key, TValue value) => throw null;
+        public bool ContainsKey(TKey key) => throw null;
+        public bool ContainsValue(TValue value) => throw null;
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>> GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey,System.Collections.Generic.IReadOnlyCollection<TValue>>>.GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public bool Remove(TKey key) => throw null;
         public bool Remove(TKey key, TValue value) => throw null;
-        public bool Contains(TKey key, TValue value) => throw null;
-        public bool ContainsValue(TValue value) => throw null;
-        public void Clear() { }
-        public bool ContainsKey(TKey key) => throw null;
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out System.Collections.Generic.IReadOnlyCollection<TValue> value) => throw null;
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>> GetEnumerator() => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
     public sealed class PruningRadixTree : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, long>>, System.Collections.IEnumerable
@@ -972,33 +1061,39 @@ namespace Meziantou.Framework.Collections
         public int Count { get => throw null; }
         public void Add(string term, long frequency) { }
         public void AddRange(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, long>> terms) { }
-        public bool Remove(System.ReadOnlySpan<char> term) => throw null;
-        public bool TryGetValue(System.ReadOnlySpan<char> term, out long frequency) => throw null;
         public bool ContainsKey(System.ReadOnlySpan<char> term) => throw null;
-        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, long>> GetTopTermsByPrefix(System.ReadOnlySpan<char> prefix, int topK, out long prefixFrequency, bool pruning = true) => throw null;
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, long>> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, long>> GetTopTermsByPrefix(System.ReadOnlySpan<char> prefix, int topK, out long prefixFrequency, bool pruning = true) => throw null;
+        public bool Remove(System.ReadOnlySpan<char> term) => throw null;
+        public bool TryGetValue(System.ReadOnlySpan<char> term, out long frequency) => throw null;
     }
 
     public sealed class SkipList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
-        public int Count { get => throw null; }
         public System.Collections.Generic.IComparer<T> Comparer { get => throw null; }
+        public int Count { get => throw null; }
+        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get => throw null; }
+        bool System.Collections.ICollection.IsSynchronized { get => throw null; }
+        object System.Collections.ICollection.SyncRoot { get => throw null; }
         public SkipList(System.Collections.Generic.IComparer<T>? comparer) { }
         public SkipList(System.Collections.Generic.IEnumerable<T> collection) { }
         public SkipList(System.Collections.Generic.IEnumerable<T> collection, System.Collections.Generic.IComparer<T>? comparer) { }
         public bool Add(T item) => throw null;
-        public bool Remove(T item) => throw null;
-        public bool Contains(T item) => throw null;
-        public bool TryGetValue(T equalValue, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T actualValue) => throw null;
+        void System.Collections.Generic.ICollection<T>.Add(T item) { }
         public void Clear() { }
+        public bool Contains(T item) => throw null;
         public void CopyTo(T[] array, int arrayIndex) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int arrayIndex) { }
-        public Enumerator<T> GetEnumerator() => throw null;
+        public Meziantou.Framework.Collections.SkipList<T>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        public bool Remove(T item) => throw null;
+        public bool TryGetValue(T equalValue, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T actualValue) => throw null;
+        public struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly T Current { get => throw null; }
+            readonly object? System.Collections.IEnumerator.Current { get => throw null; }
             public readonly void Dispose() { }
             public bool MoveNext() => throw null;
             void System.Collections.IEnumerator.Reset() { }
@@ -1007,35 +1102,40 @@ namespace Meziantou.Framework.Collections
 
     public sealed class SortedList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
-        public int Count { get => throw null; }
-        public T this[int index] { get => throw null; }
         public int Capacity { get => throw null; set { } }
-        public SortedList(int capacity) { }
+        public int Count { get => throw null; }
+        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get => throw null; }
+        bool System.Collections.ICollection.IsSynchronized { get => throw null; }
+        public T this[int index] { get => throw null; }
+        object System.Collections.ICollection.SyncRoot { get => throw null; }
         public SortedList(System.Collections.Generic.IComparer<T>? comparer) { }
+        public SortedList(int capacity) { }
         public SortedList(int capacity, System.Collections.Generic.IComparer<T>? comparer) { }
         public void Add(T item) { }
+        public int BinarySearch(T item) => throw null;
+        public void Clear() { }
+        public bool Contains(T item) => throw null;
+        public void CopyTo(System.Memory<T> array) { }
+        public void CopyTo(System.Span<T> array) { }
+        public void CopyTo(T[] array) { }
+        public void CopyTo(T[] array, int arrayIndex) { }
+        public void CopyTo(int index, System.Memory<T> array, int count) { }
+        public void CopyTo(int index, System.Span<T> array, int count) { }
+        public void CopyTo(int index, T[] array, int arrayIndex, int count) { }
+        void System.Collections.ICollection.CopyTo(System.Array array, int arrayIndex) { }
+        public int FirstIndexOf(T item) => throw null;
+        public Meziantou.Framework.Collections.SortedList<T>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public int IndexOf(T item) => throw null;
+        public int LastIndexOf(T item) => throw null;
         public bool Remove(T item) => throw null;
         public void RemoveAt(int index) { }
-        public void Clear() { }
-        public void CopyTo(T[] array) { }
-        public void CopyTo(System.Span<T> array) { }
-        public void CopyTo(System.Memory<T> array) { }
-        void System.Collections.ICollection.CopyTo(System.Array array, int arrayIndex) { }
-        public void CopyTo(int index, T[] array, int arrayIndex, int count) { }
-        public void CopyTo(int index, System.Span<T> array, int count) { }
-        public void CopyTo(int index, System.Memory<T> array, int count) { }
-        public void CopyTo(T[] array, int arrayIndex) { }
-        public bool Contains(T item) => throw null;
-        public int IndexOf(T item) => throw null;
-        public int FirstIndexOf(T item) => throw null;
-        public int LastIndexOf(T item) => throw null;
-        public int BinarySearch(T item) => throw null;
         public System.ReadOnlySpan<T> UnsafeAsReadOnlySpan() => throw null;
-        public Enumerator<T> GetEnumerator() => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        public struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly T Current { get => throw null; }
+            readonly object? System.Collections.IEnumerator.Current { get => throw null; }
             public readonly void Dispose() { }
             public bool MoveNext() => throw null;
             void System.Collections.IEnumerator.Reset() { }
@@ -1048,33 +1148,38 @@ namespace Meziantou.Framework.Collections
         public bool IgnoreCase { get => throw null; }
         public Trie(bool ignoreCase) { }
         public void Add(string key, TValue value) { }
-        public bool Remove(string key) => throw null;
-        public bool TryGetValue(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value) => throw null;
         public bool ContainsKey(string key) => throw null;
-        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, TValue>> StartsWith(string prefix) => throw null;
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, TValue>> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Remove(string key) => throw null;
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, TValue>> StartsWith(string prefix) => throw null;
+        public bool TryGetValue(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value) => throw null;
     }
 
-    public sealed class UnsafeListDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.IEnumerable
+    public sealed class UnsafeListDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.IEnumerable where TKey : notnull
     {
+        public int Count { get => throw null; }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.IsReadOnly { get => throw null; }
         public TValue this[TKey key] { get => throw null; set { } }
         public System.Collections.Generic.ICollection<TKey> Keys { get => throw null; }
+        System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey,TValue>.Keys { get => throw null; }
         public System.Collections.Generic.ICollection<TValue> Values { get => throw null; }
-        public int Count { get => throw null; }
-        public UnsafeListDictionary(int capacity) { }
+        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey,TValue>.Values { get => throw null; }
         public UnsafeListDictionary(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) { }
-        public void Add(TKey key, TValue value) { }
+        public UnsafeListDictionary(int capacity) { }
         public void Add(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { }
+        public void Add(TKey key, TValue value) { }
         public void AddRange(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) { }
         public void Clear() { }
         public bool Contains(System.Collections.Generic.KeyValuePair<TKey, TValue> item) => throw null;
         public bool ContainsKey(TKey key) => throw null;
-        public bool Remove(TKey key) => throw null;
-        public bool Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> item) => throw null;
-        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value) => throw null;
-        public Enumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> GetEnumerator() => throw null;
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.CopyTo(System.Collections.Generic.KeyValuePair<TKey, TValue>[] array, int arrayIndex) { }
+        public System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey,TValue>>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> item) => throw null;
+        public bool Remove(TKey key) => throw null;
+        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value) => throw null;
     }
 }
 namespace Meziantou.Framework.DataAnnotations
@@ -1091,8 +1196,8 @@ namespace Meziantou.Framework.DataAnnotations
     [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
     public sealed class ValidateCollectionItemsAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
-        protected override System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) => throw null;
         public override bool IsValid(object? value) => throw null;
+        protected override System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) => throw null;
     }
 }
 namespace Meziantou.Framework.Diagnostics
@@ -1108,28 +1213,28 @@ namespace Meziantou.Framework.Diagnostics
         public event System.EventHandler<Meziantou.Framework.Diagnostics.ActivityEventArgs>? ActivityStarted;
         public event System.EventHandler<Meziantou.Framework.Diagnostics.ActivityEventArgs>? ActivityStopped;
         public ScopedActivityListener(Meziantou.Framework.Diagnostics.ScopedActivityListenerOptions? options) { }
-        public System.Collections.Generic.IAsyncEnumerable<System.Diagnostics.Activity> GetActivitiesAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = null) => throw null;
         public void Dispose() { }
+        public System.Collections.Generic.IAsyncEnumerable<System.Diagnostics.Activity> GetActivitiesAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class ScopedActivityListenerOptions
     {
-        public System.Func<System.Diagnostics.ActivitySource, bool>? ShouldListenTo { get => throw null; set { } }
-        public System.Collections.Generic.IReadOnlyList<string>? SourceNames { get => throw null; set { } }
-        public System.Diagnostics.ActivitySamplingResult SamplingResult { get => throw null; set { } }
         public bool CaptureChildActivities { get => throw null; set { } }
         public int MaxActivityCount { get => throw null; set { } }
+        public System.Diagnostics.ActivitySamplingResult SamplingResult { get => throw null; set { } }
+        public System.Func<System.Diagnostics.ActivitySource, bool>? ShouldListenTo { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<string>? SourceNames { get => throw null; set { } }
     }
 }
 namespace Meziantou.Framework.Text
 {
     public static class Utf8Extensions
     {
-        public static SpanUtf8BytesRuneEnumerator EnumerateRunesFromUtf8(this System.ReadOnlySpan<byte> utf8Bytes) => throw null;
+        public static Meziantou.Framework.Text.Utf8Extensions.SpanUtf8BytesRuneEnumerator EnumerateRunesFromUtf8(this System.ReadOnlySpan<byte> utf8Bytes) => throw null;
         public ref struct SpanUtf8BytesRuneEnumerator
         {
             public readonly System.Text.Rune Current { get => throw null; }
-            public readonly SpanUtf8BytesRuneEnumerator GetEnumerator() => throw null;
+            public readonly Meziantou.Framework.Text.Utf8Extensions.SpanUtf8BytesRuneEnumerator GetEnumerator() => throw null;
             public bool MoveNext() => throw null;
         }
     }

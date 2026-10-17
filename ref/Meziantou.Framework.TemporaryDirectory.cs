@@ -10,19 +10,19 @@ namespace Meziantou.Framework
         public Meziantou.Framework.FullPath FullPath { get => throw null; }
         public static Meziantou.Framework.TemporaryDirectory Create() => throw null;
         public static Meziantou.Framework.TemporaryDirectory Create(Meziantou.Framework.FullPath rootDirectory) => throw null;
-        public Meziantou.Framework.FullPath GetFullPath(string relativePath) => throw null;
+        public Meziantou.Framework.FullPath CreateDirectory(string relativePath) => throw null;
         public Meziantou.Framework.FullPath CreateEmptyFile(string relativePath) => throw null;
         public Meziantou.Framework.FullPath CreateTextFile(string relativePath, string content) => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.FullPath> CreateTextFileAsync(string relativePath, string content, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public Meziantou.Framework.FullPath CreateDirectory(string relativePath) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.FullPath> CreateTextFileAsync(string relativePath, string content, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
-        public static Meziantou.Framework.FullPath operator /(Meziantou.Framework.TemporaryDirectory temporaryDirectory, string path) => throw null;
-        public static implicit operator Meziantou.Framework.FullPath(Meziantou.Framework.TemporaryDirectory temporaryDirectory) => throw null;
-        public static implicit operator string(Meziantou.Framework.TemporaryDirectory temporaryDirectory) => throw null;
-        public static implicit operator System.IO.DirectoryInfo(Meziantou.Framework.TemporaryDirectory temporaryDirectory) => throw null;
+        public Meziantou.Framework.FullPath GetFullPath(string relativePath) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
         public void OpenInExplorer() { }
+        public static Meziantou.Framework.FullPath operator /(Meziantou.Framework.TemporaryDirectory temporaryDirectory, string path) => throw null;
+        public static implicit operator Meziantou.Framework.FullPath(Meziantou.Framework.TemporaryDirectory temporaryDirectory) => throw null;
+        public static implicit operator System.IO.DirectoryInfo(Meziantou.Framework.TemporaryDirectory temporaryDirectory) => throw null;
+        public static implicit operator string(Meziantou.Framework.TemporaryDirectory temporaryDirectory) => throw null;
     }
 
     [System.Diagnostics.DebuggerDisplay("{FullPath}")]
@@ -30,12 +30,12 @@ namespace Meziantou.Framework
     {
         public Meziantou.Framework.FullPath FullPath { get => throw null; }
         public static Meziantou.Framework.TemporaryFile Create() => throw null;
-        public static Meziantou.Framework.TemporaryFile Create(string fileNameOrPath) => throw null;
         public static Meziantou.Framework.TemporaryFile Create(Meziantou.Framework.FullPath filePath) => throw null;
+        public static Meziantou.Framework.TemporaryFile Create(string fileNameOrPath) => throw null;
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
         public static implicit operator Meziantou.Framework.FullPath(Meziantou.Framework.TemporaryFile temporaryFile) => throw null;
-        public static implicit operator string(Meziantou.Framework.TemporaryFile temporaryFile) => throw null;
         public static implicit operator System.IO.FileInfo(Meziantou.Framework.TemporaryFile temporaryFile) => throw null;
+        public static implicit operator string(Meziantou.Framework.TemporaryFile temporaryFile) => throw null;
     }
 }

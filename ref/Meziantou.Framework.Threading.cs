@@ -4,73 +4,83 @@
 
 namespace Meziantou.Framework.Collections.Concurrent
 {
-    public sealed class ConcurrentHashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.IEnumerable
+    public sealed class ConcurrentHashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.IEnumerable where T : notnull
     {
         public int Count { get => throw null; }
         public bool IsEmpty { get => throw null; }
         public bool IsReadOnly { get => throw null; }
         public ConcurrentHashSet(System.Collections.Generic.IEqualityComparer<T> equalityComparer) { }
-        public bool Contains(T item) => throw null;
         public bool Add(T value) => throw null;
-        public void AddRange(params System.ReadOnlySpan<T> values) { }
+        void System.Collections.Generic.ICollection<T>.Add(T item) { }
         public void AddRange(System.Collections.Generic.IEnumerable<T>? values) { }
-        public bool Remove(T item) => throw null;
+        public void AddRange(params System.ReadOnlySpan<T> values) { }
         public void Clear() { }
-        public void UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
-        public void IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
+        public bool Contains(T item) => throw null;
+        public void CopyTo(T[] array, int arrayIndex) { }
         public void ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
-        public void SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
-        public bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
-        public bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        public Meziantou.Framework.Collections.Concurrent.ConcurrentHashSet<T>.KeyEnumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public void IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
         public bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
         public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        public bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        public bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
         public bool Overlaps(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        public bool Remove(T item) => throw null;
         public bool SetEquals(System.Collections.Generic.IEnumerable<T> other) => throw null;
-        public KeyEnumerator<T> GetEnumerator() => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public void CopyTo(T[] array, int arrayIndex) { }
-        public readonly struct KeyEnumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        public void SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+        public void UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
+        public readonly struct KeyEnumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             public T Current { get => throw null; }
+            object System.Collections.IEnumerator.Current { get => throw null; }
+            public void Dispose() { }
             public bool MoveNext() => throw null;
             public void Reset() { }
-            public void Dispose() { }
         }
     }
 
     public class ConcurrentObservableCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
-        public bool SupportRangeNotifications { get => throw null; set { } }
         public Meziantou.Framework.Collections.Concurrent.IReadOnlyObservableCollection<T> AsObservable { get => throw null; }
         public int Count { get => throw null; }
+        int System.Collections.ICollection.Count { get => throw null; }
+        bool System.Collections.IList.IsFixedSize { get => throw null; }
+        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get => throw null; }
+        bool System.Collections.IList.IsReadOnly { get => throw null; }
+        bool System.Collections.ICollection.IsSynchronized { get => throw null; }
         public T this[int index] { get => throw null; set { } }
+        object? System.Collections.IList.this[int index] { get => throw null; set { } }
+        public bool SupportRangeNotifications { get => throw null; set { } }
+        object System.Collections.ICollection.SyncRoot { get => throw null; }
         public ConcurrentObservableCollection(System.Threading.SynchronizationContext synchronizationContext) { }
-        protected internal virtual bool IsOnSynchronizationContextThread() => throw null;
         public void Add(T item) { }
-        public void AddRange(params T[] items) { }
+        int System.Collections.IList.Add(object? value) => throw null;
         public void AddRange(System.Collections.Generic.IEnumerable<T> items) { }
-        public void InsertRange(int index, System.Collections.Generic.IEnumerable<T> items) { }
+        public void AddRange(params T[] items) { }
         public void Clear() { }
-        public void Insert(int index, T item) { }
-        public bool Remove(T item) => throw null;
-        public void RemoveAt(int index) { }
+        void System.Collections.IList.Clear() { }
+        public bool Contains(T item) => throw null;
+        bool System.Collections.IList.Contains(object? value) => throw null;
+        public void CopyTo(T[] array, int arrayIndex) { }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         public System.Collections.Generic.IEnumerator<T> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public int IndexOf(T item) => throw null;
-        public bool Contains(T item) => throw null;
-        public void CopyTo(T[] array, int arrayIndex) { }
+        int System.Collections.IList.IndexOf(object? value) => throw null;
+        public void Insert(int index, T item) { }
+        void System.Collections.IList.Insert(int index, object? value) { }
+        public void InsertRange(int index, System.Collections.Generic.IEnumerable<T> items) { }
+        protected internal virtual bool IsOnSynchronizationContextThread() => throw null;
+        public bool Remove(T item) => throw null;
+        void System.Collections.IList.Remove(object? value) { }
+        public void RemoveAt(int index) { }
+        void System.Collections.IList.RemoveAt(int index) { }
         public void Sort() { }
         public void Sort(System.Collections.Generic.IComparer<T>? comparer) { }
         public void StableSort() { }
         public void StableSort(System.Collections.Generic.IComparer<T>? comparer) { }
-        int System.Collections.IList.Add(object? value) => throw null;
-        bool System.Collections.IList.Contains(object? value) => throw null;
-        void System.Collections.IList.Clear() { }
-        int System.Collections.IList.IndexOf(object? value) => throw null;
-        void System.Collections.IList.Insert(int index, object? value) { }
-        void System.Collections.IList.Remove(object? value) { }
-        void System.Collections.IList.RemoveAt(int index) { }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
     }
 
     public interface IReadOnlyObservableCollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged, System.ComponentModel.INotifyPropertyChanged
@@ -80,24 +90,27 @@ namespace Meziantou.Framework.Collections.Concurrent
     public sealed class SynchronizedList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
+        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get => throw null; }
+        bool System.Collections.ICollection.IsSynchronized { get => throw null; }
         public T this[int index] { get => throw null; set { } }
-        public SynchronizedList(int capacity) { }
+        object System.Collections.ICollection.SyncRoot { get => throw null; }
         public SynchronizedList(System.Collections.Generic.IEnumerable<T>? items = null) { }
         public SynchronizedList(System.ReadOnlySpan<T> items) { }
-        public void Execute(System.Action<System.Collections.Generic.List<T>> action) { }
-        public TResult Execute<TResult>(System.Func<System.Collections.Generic.List<T>, TResult> func) => throw null;
-        public System.Collections.Generic.IEnumerator<T> GetEnumerator() => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public int EnsureCapacity(int capacity) => throw null;
+        public SynchronizedList(int capacity) { }
         public void Add(T item) { }
         public void Clear() { }
         public bool Contains(T item) => throw null;
         public void CopyTo(T[] array, int arrayIndex) { }
-        public bool Remove(T item) => throw null;
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        public int EnsureCapacity(int capacity) => throw null;
+        public void Execute(System.Action<System.Collections.Generic.List<T>> action) { }
+        public TResult Execute<TResult>(System.Func<System.Collections.Generic.List<T>, TResult> func) => throw null;
+        public System.Collections.Generic.IEnumerator<T> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public int IndexOf(T item) => throw null;
         public void Insert(int index, T item) { }
+        public bool Remove(T item) => throw null;
         public void RemoveAt(int index) { }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
     }
 }
 namespace Meziantou.Framework.Threading
@@ -107,18 +120,18 @@ namespace Meziantou.Framework.Threading
     {
         public AsyncAutoResetEvent(bool initialState) { }
         public AsyncAutoResetEvent(bool initialState, bool allowInliningAwaiters) { }
+        public void Set() { }
         public System.Threading.Tasks.Task WaitAsync() => throw null;
         public System.Threading.Tasks.Task WaitAsync(System.Threading.CancellationToken cancellationToken) => throw null;
-        public void Set() { }
     }
 
     [System.Diagnostics.DebuggerDisplay("Signaled: {_signaled}")]
     public sealed class AsyncLock
     {
         public AsyncLock(bool allowInliningAwaiters) { }
-        public System.Threading.Tasks.ValueTask<AsyncLockLease> LockAsync() => throw null;
-        public System.Threading.Tasks.ValueTask<AsyncLockLease> LockAsync(System.Threading.CancellationToken cancellationToken) => throw null;
-        public bool TryLock(out AsyncLockLease lockObject) => throw null;
+        public System.Threading.Tasks.ValueTask<Meziantou.Framework.Threading.AsyncLock.AsyncLockLease> LockAsync() => throw null;
+        public System.Threading.Tasks.ValueTask<Meziantou.Framework.Threading.AsyncLock.AsyncLockLease> LockAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        public bool TryLock(out Meziantou.Framework.Threading.AsyncLock.AsyncLockLease lockObject) => throw null;
         public readonly struct AsyncLockLease : System.IDisposable
         {
             public void Dispose() { }
@@ -127,27 +140,27 @@ namespace Meziantou.Framework.Threading
 
     public sealed class AsyncReaderWriterLock
     {
-        public System.Threading.Tasks.ValueTask<Releaser> ReaderLockAsync() => throw null;
-        public System.Threading.Tasks.ValueTask<Releaser> ReaderLockAsync(System.Threading.CancellationToken cancellationToken) => throw null;
-        public System.Threading.Tasks.ValueTask<Releaser> WriterLockAsync() => throw null;
-        public System.Threading.Tasks.ValueTask<Releaser> WriterLockAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.ValueTask<Meziantou.Framework.Threading.AsyncReaderWriterLock.Releaser> ReaderLockAsync() => throw null;
+        public System.Threading.Tasks.ValueTask<Meziantou.Framework.Threading.AsyncReaderWriterLock.Releaser> ReaderLockAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.ValueTask<Meziantou.Framework.Threading.AsyncReaderWriterLock.Releaser> WriterLockAsync() => throw null;
+        public System.Threading.Tasks.ValueTask<Meziantou.Framework.Threading.AsyncReaderWriterLock.Releaser> WriterLockAsync(System.Threading.CancellationToken cancellationToken) => throw null;
         public readonly struct Releaser : System.IDisposable
         {
             public void Dispose() { }
         }
     }
 
-    public sealed class KeyedAsyncLock<TKey>
+    public sealed class KeyedAsyncLock<TKey> where TKey : notnull
     {
         public KeyedAsyncLock(System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
-        public System.Threading.Tasks.ValueTask<KeyedAsyncLockLease<TKey>> LockAsync(TKey key, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public readonly struct KeyedAsyncLockLease<TKey> : System.IDisposable
+        public System.Threading.Tasks.ValueTask<Meziantou.Framework.Threading.KeyedAsyncLock<TKey>.KeyedAsyncLockLease> LockAsync(TKey key, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public readonly struct KeyedAsyncLockLease : System.IDisposable
         {
             public void Dispose() { }
         }
     }
 
-    public sealed class KeyedLock<TKey>
+    public sealed class KeyedLock<TKey> where TKey : notnull
     {
         public KeyedLock(System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
         public System.IDisposable Lock(TKey key) => throw null;
@@ -167,10 +180,10 @@ namespace Meziantou.Framework.Threading
     {
         public bool DequeueOnDispose { get => throw null; set { } }
         public System.TimeSpan DisposeThreadJoinTimeout { get => throw null; set { } }
-        public System.TimeSpan WaitTimeout { get => throw null; set { } }
-        public int QueueCount { get => throw null; }
-        public System.Exception? WorkerException { get => throw null; }
         public override int MaximumConcurrencyLevel { get => throw null; }
+        public int QueueCount { get => throw null; }
+        public System.TimeSpan WaitTimeout { get => throw null; set { } }
+        public System.Exception? WorkerException { get => throw null; }
         public MonoThreadedTaskScheduler(string? threadName) { }
         public void Dispose() { }
         protected override System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> GetScheduledTasks() => throw null;
@@ -180,15 +193,15 @@ namespace Meziantou.Framework.Threading
 
     public sealed class ResettableCancellationTokenSource : System.IAsyncDisposable, System.IDisposable
     {
-        public System.Threading.CancellationToken Token { get => throw null; }
         public bool IsCancellationRequested { get => throw null; }
+        public System.Threading.CancellationToken Token { get => throw null; }
         public ResettableCancellationTokenSource(Meziantou.Framework.Threading.ResettableCancellationTokenSourceOptions options) { }
         public ResettableCancellationTokenSource(bool cancelOnResetAndDispose) { }
         public void Cancel() { }
         public void CancelAfter(System.TimeSpan delay) { }
-        public void Reset() { }
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+        public void Reset() { }
     }
 
     [System.Flags]
@@ -202,11 +215,11 @@ namespace Meziantou.Framework.Threading
     public static class SemaphoreSlimExtensions
     {
         [System.Obsolete("Use DisposableWaitUnsafe instead.")]
-        public static SemaphoreDisposer DisposableUnsafeWait(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static SemaphoreDisposer DisposableWaitUnsafe(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<SemaphoreDisposer> DisposableWaitUnsafeAsync(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.IDisposable DisposableWait(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<System.IDisposable> DisposableWaitAsync(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static Meziantou.Framework.Threading.SemaphoreSlimExtensions.SemaphoreDisposer DisposableUnsafeWait(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.IDisposable DisposableWait(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<System.IDisposable> DisposableWaitAsync(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.Threading.SemaphoreSlimExtensions.SemaphoreDisposer DisposableWaitUnsafe(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Threading.SemaphoreSlimExtensions.SemaphoreDisposer> DisposableWaitUnsafeAsync(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public readonly struct SemaphoreDisposer : System.IDisposable
         {
             public SemaphoreDisposer(System.Threading.SemaphoreSlim semaphore) { }
@@ -216,7 +229,7 @@ namespace Meziantou.Framework.Threading
 
     public static class SynchronizationContextExtensions
     {
-        public static SynchronizationContextAwaiter GetAwaiter(this System.Threading.SynchronizationContext synchronizationContext) => throw null;
+        public static Meziantou.Framework.Threading.SynchronizationContextExtensions.SynchronizationContextAwaiter GetAwaiter(this System.Threading.SynchronizationContext synchronizationContext) => throw null;
         public readonly struct SynchronizationContextAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
@@ -231,320 +244,320 @@ namespace Meziantou.Framework.Threading.Tasks
 {
     public static class TaskExtensions
     {
-        public static void Forget(this System.Threading.Tasks.Task task) { }
-        public static System.Runtime.CompilerServices.TaskAwaiter<T1> GetAwaiter<T1>(this System.ValueTuple<System.Threading.Tasks.Task<T1>> tasks) => throw null;
-        public static TupleTaskAwaiter<T1, T2> GetAwaiter<T1, T2>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>> tasks) => throw null;
-        public static TupleTaskAwaiter<T1, T2, T3> GetAwaiter<T1, T2, T3>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>> tasks) => throw null;
-        public static TupleTaskAwaiter<T1, T2, T3, T4> GetAwaiter<T1, T2, T3, T4>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>> tasks) => throw null;
-        public static TupleTaskAwaiter<T1, T2, T3, T4, T5> GetAwaiter<T1, T2, T3, T4, T5>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>> tasks) => throw null;
-        public static TupleTaskAwaiter<T1, T2, T3, T4, T5, T6> GetAwaiter<T1, T2, T3, T4, T5, T6>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>> tasks) => throw null;
-        public static TupleTaskAwaiter<T1, T2, T3, T4, T5, T6, T7> GetAwaiter<T1, T2, T3, T4, T5, T6, T7>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>, System.Threading.Tasks.Task<T7>> tasks) => throw null;
-        public static System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T1> ConfigureAwait<T1>(this System.ValueTuple<System.Threading.Tasks.Task<T1>> tasks, bool continueOnCapturedContext) => throw null;
-        public static System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T1> ConfigureAwait<T1>(this System.ValueTuple<System.Threading.Tasks.Task<T1>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
-        public static TupleConfiguredTaskAwaitable<T1, T2> ConfigureAwait<T1, T2>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>> tasks, bool continueOnCapturedContext) => throw null;
-        public static TupleConfiguredTaskAwaitable<T1, T2> ConfigureAwait<T1, T2>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
-        public static TupleConfiguredTaskAwaitable<T1, T2, T3> ConfigureAwait<T1, T2, T3>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>> tasks, bool continueOnCapturedContext) => throw null;
-        public static TupleConfiguredTaskAwaitable<T1, T2, T3> ConfigureAwait<T1, T2, T3>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
-        public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4> ConfigureAwait<T1, T2, T3, T4>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>> tasks, bool continueOnCapturedContext) => throw null;
-        public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4> ConfigureAwait<T1, T2, T3, T4>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
-        public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5> ConfigureAwait<T1, T2, T3, T4, T5>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>> tasks, bool continueOnCapturedContext) => throw null;
-        public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5> ConfigureAwait<T1, T2, T3, T4, T5>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
-        public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6> ConfigureAwait<T1, T2, T3, T4, T5, T6>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>> tasks, bool continueOnCapturedContext) => throw null;
-        public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6> ConfigureAwait<T1, T2, T3, T4, T5, T6>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
-        public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6, T7> ConfigureAwait<T1, T2, T3, T4, T5, T6, T7>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>, System.Threading.Tasks.Task<T7>> tasks, bool continueOnCapturedContext) => throw null;
-        public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6, T7> ConfigureAwait<T1, T2, T3, T4, T5, T6, T7>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>, System.Threading.Tasks.Task<T7>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
-        public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.Task> tasks) => throw null;
-        public static System.Runtime.CompilerServices.ConfiguredTaskAwaitable ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task> tasks, bool continueOnCapturedContext) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable7 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable7 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, bool continueOnCapturedContext) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable6 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable6 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, bool continueOnCapturedContext) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable5 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable5 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, bool continueOnCapturedContext) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable4 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable4 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, bool continueOnCapturedContext) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable3 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable3 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, bool continueOnCapturedContext) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable2 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable2 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, bool continueOnCapturedContext) => throw null;
         public static System.Runtime.CompilerServices.ConfiguredTaskAwaitable ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
-        public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) => throw null;
-        public static TupleConfiguredTaskAwaitable2 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, bool continueOnCapturedContext) => throw null;
-        public static TupleConfiguredTaskAwaitable2 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
-        public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) => throw null;
-        public static TupleConfiguredTaskAwaitable3 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, bool continueOnCapturedContext) => throw null;
-        public static TupleConfiguredTaskAwaitable3 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
-        public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) => throw null;
-        public static TupleConfiguredTaskAwaitable4 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, bool continueOnCapturedContext) => throw null;
-        public static TupleConfiguredTaskAwaitable4 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
-        public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) => throw null;
-        public static TupleConfiguredTaskAwaitable5 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, bool continueOnCapturedContext) => throw null;
-        public static TupleConfiguredTaskAwaitable5 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
-        public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) => throw null;
-        public static TupleConfiguredTaskAwaitable6 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, bool continueOnCapturedContext) => throw null;
-        public static TupleConfiguredTaskAwaitable6 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public static System.Runtime.CompilerServices.ConfiguredTaskAwaitable ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task> tasks, bool continueOnCapturedContext) => throw null;
+        public static System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T1> ConfigureAwait<T1>(this System.ValueTuple<System.Threading.Tasks.Task<T1>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public static System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T1> ConfigureAwait<T1>(this System.ValueTuple<System.Threading.Tasks.Task<T1>> tasks, bool continueOnCapturedContext) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2> ConfigureAwait<T1, T2>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2> ConfigureAwait<T1, T2>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>> tasks, bool continueOnCapturedContext) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3> ConfigureAwait<T1, T2, T3>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3> ConfigureAwait<T1, T2, T3>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>> tasks, bool continueOnCapturedContext) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3, T4> ConfigureAwait<T1, T2, T3, T4>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3, T4> ConfigureAwait<T1, T2, T3, T4>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>> tasks, bool continueOnCapturedContext) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5> ConfigureAwait<T1, T2, T3, T4, T5>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5> ConfigureAwait<T1, T2, T3, T4, T5>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>> tasks, bool continueOnCapturedContext) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6> ConfigureAwait<T1, T2, T3, T4, T5, T6>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6> ConfigureAwait<T1, T2, T3, T4, T5, T6>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>> tasks, bool continueOnCapturedContext) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6, T7> ConfigureAwait<T1, T2, T3, T4, T5, T6, T7>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>, System.Threading.Tasks.Task<T7>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6, T7> ConfigureAwait<T1, T2, T3, T4, T5, T6, T7>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>, System.Threading.Tasks.Task<T7>> tasks, bool continueOnCapturedContext) => throw null;
+        public static void Forget(this System.Threading.Tasks.Task task) { }
         public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) => throw null;
-        public static TupleConfiguredTaskAwaitable7 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, bool continueOnCapturedContext) => throw null;
-        public static TupleConfiguredTaskAwaitable7 ConfigureAwait(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
-        public static System.Threading.Tasks.ValueTask<System.ValueTuple<T1>> WhenAll<T1>(System.Threading.Tasks.ValueTask<T1> task1) => throw null;
-        public static System.Runtime.CompilerServices.ValueTaskAwaiter<System.ValueTuple<T1>> GetAwaiter<T1>(this System.ValueTuple<System.Threading.Tasks.ValueTask<T1>> tasks) => throw null;
-        public static System.Threading.Tasks.ValueTask<System.ValueTuple<T1, T2>> WhenAll<T1, T2>(System.Threading.Tasks.ValueTask<T1> task1, System.Threading.Tasks.ValueTask<T2> task2) => throw null;
-        public static System.Runtime.CompilerServices.ValueTaskAwaiter<System.ValueTuple<T1, T2>> GetAwaiter<T1, T2>(this System.ValueTuple<System.Threading.Tasks.ValueTask<T1>, System.Threading.Tasks.ValueTask<T2>> tasks) => throw null;
-        public static System.Threading.Tasks.ValueTask<System.ValueTuple<T1, T2, T3>> WhenAll<T1, T2, T3>(System.Threading.Tasks.ValueTask<T1> task1, System.Threading.Tasks.ValueTask<T2> task2, System.Threading.Tasks.ValueTask<T3> task3) => throw null;
-        public static System.Runtime.CompilerServices.ValueTaskAwaiter<System.ValueTuple<T1, T2, T3>> GetAwaiter<T1, T2, T3>(this System.ValueTuple<System.Threading.Tasks.ValueTask<T1>, System.Threading.Tasks.ValueTask<T2>, System.Threading.Tasks.ValueTask<T3>> tasks) => throw null;
-        public static System.Threading.Tasks.ValueTask<System.ValueTuple<T1, T2, T3, T4>> WhenAll<T1, T2, T3, T4>(System.Threading.Tasks.ValueTask<T1> task1, System.Threading.Tasks.ValueTask<T2> task2, System.Threading.Tasks.ValueTask<T3> task3, System.Threading.Tasks.ValueTask<T4> task4) => throw null;
-        public static System.Runtime.CompilerServices.ValueTaskAwaiter<System.ValueTuple<T1, T2, T3, T4>> GetAwaiter<T1, T2, T3, T4>(this System.ValueTuple<System.Threading.Tasks.ValueTask<T1>, System.Threading.Tasks.ValueTask<T2>, System.Threading.Tasks.ValueTask<T3>, System.Threading.Tasks.ValueTask<T4>> tasks) => throw null;
-        public static System.Threading.Tasks.ValueTask<System.ValueTuple<T1, T2, T3, T4, T5>> WhenAll<T1, T2, T3, T4, T5>(System.Threading.Tasks.ValueTask<T1> task1, System.Threading.Tasks.ValueTask<T2> task2, System.Threading.Tasks.ValueTask<T3> task3, System.Threading.Tasks.ValueTask<T4> task4, System.Threading.Tasks.ValueTask<T5> task5) => throw null;
-        public static System.Runtime.CompilerServices.ValueTaskAwaiter<System.ValueTuple<T1, T2, T3, T4, T5>> GetAwaiter<T1, T2, T3, T4, T5>(this System.ValueTuple<System.Threading.Tasks.ValueTask<T1>, System.Threading.Tasks.ValueTask<T2>, System.Threading.Tasks.ValueTask<T3>, System.Threading.Tasks.ValueTask<T4>, System.Threading.Tasks.ValueTask<T5>> tasks) => throw null;
-        public static System.Threading.Tasks.ValueTask<System.ValueTuple<T1, T2, T3, T4, T5, T6>> WhenAll<T1, T2, T3, T4, T5, T6>(System.Threading.Tasks.ValueTask<T1> task1, System.Threading.Tasks.ValueTask<T2> task2, System.Threading.Tasks.ValueTask<T3> task3, System.Threading.Tasks.ValueTask<T4> task4, System.Threading.Tasks.ValueTask<T5> task5, System.Threading.Tasks.ValueTask<T6> task6) => throw null;
-        public static System.Runtime.CompilerServices.ValueTaskAwaiter<System.ValueTuple<T1, T2, T3, T4, T5, T6>> GetAwaiter<T1, T2, T3, T4, T5, T6>(this System.ValueTuple<System.Threading.Tasks.ValueTask<T1>, System.Threading.Tasks.ValueTask<T2>, System.Threading.Tasks.ValueTask<T3>, System.Threading.Tasks.ValueTask<T4>, System.Threading.Tasks.ValueTask<T5>, System.Threading.Tasks.ValueTask<T6>> tasks) => throw null;
-        public static System.Threading.Tasks.ValueTask<System.ValueTuple<T1, T2, T3, T4, T5, T6, T7>> WhenAll<T1, T2, T3, T4, T5, T6, T7>(System.Threading.Tasks.ValueTask<T1> task1, System.Threading.Tasks.ValueTask<T2> task2, System.Threading.Tasks.ValueTask<T3> task3, System.Threading.Tasks.ValueTask<T4> task4, System.Threading.Tasks.ValueTask<T5> task5, System.Threading.Tasks.ValueTask<T6> task6, System.Threading.Tasks.ValueTask<T7> task7) => throw null;
-        public static System.Runtime.CompilerServices.ValueTaskAwaiter<System.ValueTuple<T1, T2, T3, T4, T5, T6, T7>> GetAwaiter<T1, T2, T3, T4, T5, T6, T7>(this System.ValueTuple<System.Threading.Tasks.ValueTask<T1>, System.Threading.Tasks.ValueTask<T2>, System.Threading.Tasks.ValueTask<T3>, System.Threading.Tasks.ValueTask<T4>, System.Threading.Tasks.ValueTask<T5>, System.Threading.Tasks.ValueTask<T6>, System.Threading.Tasks.ValueTask<T7>> tasks) => throw null;
-        public static System.Runtime.CompilerServices.ValueTaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask> tasks) => throw null;
-        public static System.Runtime.CompilerServices.ValueTaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask> tasks) => throw null;
-        public static System.Runtime.CompilerServices.ValueTaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask> tasks) => throw null;
-        public static System.Runtime.CompilerServices.ValueTaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask> tasks) => throw null;
-        public static System.Runtime.CompilerServices.ValueTaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask> tasks) => throw null;
+        public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) => throw null;
+        public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) => throw null;
+        public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) => throw null;
+        public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) => throw null;
+        public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) => throw null;
+        public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.Task> tasks) => throw null;
         public static System.Runtime.CompilerServices.ValueTaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask> tasks) => throw null;
+        public static System.Runtime.CompilerServices.ValueTaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask> tasks) => throw null;
+        public static System.Runtime.CompilerServices.ValueTaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask> tasks) => throw null;
+        public static System.Runtime.CompilerServices.ValueTaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask> tasks) => throw null;
+        public static System.Runtime.CompilerServices.ValueTaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask> tasks) => throw null;
+        public static System.Runtime.CompilerServices.ValueTaskAwaiter GetAwaiter(this System.ValueTuple<System.Threading.Tasks.ValueTask, System.Threading.Tasks.ValueTask> tasks) => throw null;
+        public static System.Runtime.CompilerServices.TaskAwaiter<T1> GetAwaiter<T1>(this System.ValueTuple<System.Threading.Tasks.Task<T1>> tasks) => throw null;
+        public static System.Runtime.CompilerServices.ValueTaskAwaiter<System.ValueTuple<T1>> GetAwaiter<T1>(this System.ValueTuple<System.Threading.Tasks.ValueTask<T1>> tasks) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleTaskAwaiter<T1, T2> GetAwaiter<T1, T2>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>> tasks) => throw null;
+        public static System.Runtime.CompilerServices.ValueTaskAwaiter<System.ValueTuple<T1, T2>> GetAwaiter<T1, T2>(this System.ValueTuple<System.Threading.Tasks.ValueTask<T1>, System.Threading.Tasks.ValueTask<T2>> tasks) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleTaskAwaiter<T1, T2, T3> GetAwaiter<T1, T2, T3>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>> tasks) => throw null;
+        public static System.Runtime.CompilerServices.ValueTaskAwaiter<System.ValueTuple<T1, T2, T3>> GetAwaiter<T1, T2, T3>(this System.ValueTuple<System.Threading.Tasks.ValueTask<T1>, System.Threading.Tasks.ValueTask<T2>, System.Threading.Tasks.ValueTask<T3>> tasks) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleTaskAwaiter<T1, T2, T3, T4> GetAwaiter<T1, T2, T3, T4>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>> tasks) => throw null;
+        public static System.Runtime.CompilerServices.ValueTaskAwaiter<System.ValueTuple<T1, T2, T3, T4>> GetAwaiter<T1, T2, T3, T4>(this System.ValueTuple<System.Threading.Tasks.ValueTask<T1>, System.Threading.Tasks.ValueTask<T2>, System.Threading.Tasks.ValueTask<T3>, System.Threading.Tasks.ValueTask<T4>> tasks) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleTaskAwaiter<T1, T2, T3, T4, T5> GetAwaiter<T1, T2, T3, T4, T5>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>> tasks) => throw null;
+        public static System.Runtime.CompilerServices.ValueTaskAwaiter<System.ValueTuple<T1, T2, T3, T4, T5>> GetAwaiter<T1, T2, T3, T4, T5>(this System.ValueTuple<System.Threading.Tasks.ValueTask<T1>, System.Threading.Tasks.ValueTask<T2>, System.Threading.Tasks.ValueTask<T3>, System.Threading.Tasks.ValueTask<T4>, System.Threading.Tasks.ValueTask<T5>> tasks) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleTaskAwaiter<T1, T2, T3, T4, T5, T6> GetAwaiter<T1, T2, T3, T4, T5, T6>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>> tasks) => throw null;
+        public static System.Runtime.CompilerServices.ValueTaskAwaiter<System.ValueTuple<T1, T2, T3, T4, T5, T6>> GetAwaiter<T1, T2, T3, T4, T5, T6>(this System.ValueTuple<System.Threading.Tasks.ValueTask<T1>, System.Threading.Tasks.ValueTask<T2>, System.Threading.Tasks.ValueTask<T3>, System.Threading.Tasks.ValueTask<T4>, System.Threading.Tasks.ValueTask<T5>, System.Threading.Tasks.ValueTask<T6>> tasks) => throw null;
+        public static Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleTaskAwaiter<T1, T2, T3, T4, T5, T6, T7> GetAwaiter<T1, T2, T3, T4, T5, T6, T7>(this System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>, System.Threading.Tasks.Task<T7>> tasks) => throw null;
+        public static System.Runtime.CompilerServices.ValueTaskAwaiter<System.ValueTuple<T1, T2, T3, T4, T5, T6, T7>> GetAwaiter<T1, T2, T3, T4, T5, T6, T7>(this System.ValueTuple<System.Threading.Tasks.ValueTask<T1>, System.Threading.Tasks.ValueTask<T2>, System.Threading.Tasks.ValueTask<T3>, System.Threading.Tasks.ValueTask<T4>, System.Threading.Tasks.ValueTask<T5>, System.Threading.Tasks.ValueTask<T6>, System.Threading.Tasks.ValueTask<T7>> tasks) => throw null;
+        public static System.Threading.Tasks.ValueTask<System.ValueTuple<T1>> WhenAll<T1>(System.Threading.Tasks.ValueTask<T1> task1) => throw null;
+        public static System.Threading.Tasks.ValueTask<System.ValueTuple<T1, T2>> WhenAll<T1, T2>(System.Threading.Tasks.ValueTask<T1> task1, System.Threading.Tasks.ValueTask<T2> task2) => throw null;
+        public static System.Threading.Tasks.ValueTask<System.ValueTuple<T1, T2, T3>> WhenAll<T1, T2, T3>(System.Threading.Tasks.ValueTask<T1> task1, System.Threading.Tasks.ValueTask<T2> task2, System.Threading.Tasks.ValueTask<T3> task3) => throw null;
+        public static System.Threading.Tasks.ValueTask<System.ValueTuple<T1, T2, T3, T4>> WhenAll<T1, T2, T3, T4>(System.Threading.Tasks.ValueTask<T1> task1, System.Threading.Tasks.ValueTask<T2> task2, System.Threading.Tasks.ValueTask<T3> task3, System.Threading.Tasks.ValueTask<T4> task4) => throw null;
+        public static System.Threading.Tasks.ValueTask<System.ValueTuple<T1, T2, T3, T4, T5>> WhenAll<T1, T2, T3, T4, T5>(System.Threading.Tasks.ValueTask<T1> task1, System.Threading.Tasks.ValueTask<T2> task2, System.Threading.Tasks.ValueTask<T3> task3, System.Threading.Tasks.ValueTask<T4> task4, System.Threading.Tasks.ValueTask<T5> task5) => throw null;
+        public static System.Threading.Tasks.ValueTask<System.ValueTuple<T1, T2, T3, T4, T5, T6>> WhenAll<T1, T2, T3, T4, T5, T6>(System.Threading.Tasks.ValueTask<T1> task1, System.Threading.Tasks.ValueTask<T2> task2, System.Threading.Tasks.ValueTask<T3> task3, System.Threading.Tasks.ValueTask<T4> task4, System.Threading.Tasks.ValueTask<T5> task5, System.Threading.Tasks.ValueTask<T6> task6) => throw null;
+        public static System.Threading.Tasks.ValueTask<System.ValueTuple<T1, T2, T3, T4, T5, T6, T7>> WhenAll<T1, T2, T3, T4, T5, T6, T7>(System.Threading.Tasks.ValueTask<T1> task1, System.Threading.Tasks.ValueTask<T2> task2, System.Threading.Tasks.ValueTask<T3> task3, System.Threading.Tasks.ValueTask<T4> task4, System.Threading.Tasks.ValueTask<T5> task5, System.Threading.Tasks.ValueTask<T6> task6, System.Threading.Tasks.ValueTask<T7> task7) => throw null;
         public readonly struct TupleConfiguredTaskAwaitable2
         {
             public TupleConfiguredTaskAwaitable2(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
-            public Awaiter GetAwaiter() => throw null;
+            public Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable2.Awaiter GetAwaiter() => throw null;
             public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
             {
                 public bool IsCompleted { get => throw null; }
                 public Awaiter(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
+                public void GetResult() { }
                 public void OnCompleted(System.Action continuation) { }
                 public void UnsafeOnCompleted(System.Action continuation) { }
-                public void GetResult() { }
             }
         }
         public readonly struct TupleConfiguredTaskAwaitable3
         {
             public TupleConfiguredTaskAwaitable3(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
-            public Awaiter GetAwaiter() => throw null;
+            public Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable3.Awaiter GetAwaiter() => throw null;
             public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
             {
                 public bool IsCompleted { get => throw null; }
                 public Awaiter(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
+                public void GetResult() { }
                 public void OnCompleted(System.Action continuation) { }
                 public void UnsafeOnCompleted(System.Action continuation) { }
-                public void GetResult() { }
             }
         }
         public readonly struct TupleConfiguredTaskAwaitable4
         {
             public TupleConfiguredTaskAwaitable4(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
-            public Awaiter GetAwaiter() => throw null;
+            public Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable4.Awaiter GetAwaiter() => throw null;
             public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
             {
                 public bool IsCompleted { get => throw null; }
                 public Awaiter(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
+                public void GetResult() { }
                 public void OnCompleted(System.Action continuation) { }
                 public void UnsafeOnCompleted(System.Action continuation) { }
-                public void GetResult() { }
             }
         }
         public readonly struct TupleConfiguredTaskAwaitable5
         {
             public TupleConfiguredTaskAwaitable5(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
-            public Awaiter GetAwaiter() => throw null;
+            public Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable5.Awaiter GetAwaiter() => throw null;
             public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
             {
                 public bool IsCompleted { get => throw null; }
                 public Awaiter(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
+                public void GetResult() { }
                 public void OnCompleted(System.Action continuation) { }
                 public void UnsafeOnCompleted(System.Action continuation) { }
-                public void GetResult() { }
             }
         }
         public readonly struct TupleConfiguredTaskAwaitable6
         {
             public TupleConfiguredTaskAwaitable6(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
-            public Awaiter GetAwaiter() => throw null;
+            public Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable6.Awaiter GetAwaiter() => throw null;
             public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
             {
                 public bool IsCompleted { get => throw null; }
                 public Awaiter(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
+                public void GetResult() { }
                 public void OnCompleted(System.Action continuation) { }
                 public void UnsafeOnCompleted(System.Action continuation) { }
-                public void GetResult() { }
             }
         }
         public readonly struct TupleConfiguredTaskAwaitable7
         {
             public TupleConfiguredTaskAwaitable7(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
-            public Awaiter GetAwaiter() => throw null;
+            public Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable7.Awaiter GetAwaiter() => throw null;
             public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
             {
                 public bool IsCompleted { get => throw null; }
                 public Awaiter(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
+                public void GetResult() { }
                 public void OnCompleted(System.Action continuation) { }
                 public void UnsafeOnCompleted(System.Action continuation) { }
-                public void GetResult() { }
             }
         }
         public readonly struct TupleConfiguredTaskAwaitable<T1, T2>
         {
             public TupleConfiguredTaskAwaitable(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
-            public Awaiter<T1, T2> GetAwaiter() => throw null;
-            public readonly struct Awaiter<T1, T2> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
+            public Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2>.Awaiter GetAwaiter() => throw null;
+            public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
             {
                 public bool IsCompleted { get => throw null; }
                 public Awaiter(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
+                public System.ValueTuple<T1, T2> GetResult() => throw null;
                 public void OnCompleted(System.Action continuation) { }
                 public void UnsafeOnCompleted(System.Action continuation) { }
-                public System.ValueTuple<T1, T2> GetResult() => throw null;
             }
         }
         public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3>
         {
             public TupleConfiguredTaskAwaitable(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
-            public Awaiter<T1, T2, T3> GetAwaiter() => throw null;
-            public readonly struct Awaiter<T1, T2, T3> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
+            public Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3>.Awaiter GetAwaiter() => throw null;
+            public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
             {
                 public bool IsCompleted { get => throw null; }
                 public Awaiter(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
+                public System.ValueTuple<T1, T2, T3> GetResult() => throw null;
                 public void OnCompleted(System.Action continuation) { }
                 public void UnsafeOnCompleted(System.Action continuation) { }
-                public System.ValueTuple<T1, T2, T3> GetResult() => throw null;
             }
         }
         public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3, T4>
         {
             public TupleConfiguredTaskAwaitable(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
-            public Awaiter<T1, T2, T3, T4> GetAwaiter() => throw null;
-            public readonly struct Awaiter<T1, T2, T3, T4> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
+            public Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3, T4>.Awaiter GetAwaiter() => throw null;
+            public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
             {
                 public bool IsCompleted { get => throw null; }
                 public Awaiter(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
+                public System.ValueTuple<T1, T2, T3, T4> GetResult() => throw null;
                 public void OnCompleted(System.Action continuation) { }
                 public void UnsafeOnCompleted(System.Action continuation) { }
-                public System.ValueTuple<T1, T2, T3, T4> GetResult() => throw null;
             }
         }
         public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5>
         {
             public TupleConfiguredTaskAwaitable(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
-            public Awaiter<T1, T2, T3, T4, T5> GetAwaiter() => throw null;
-            public readonly struct Awaiter<T1, T2, T3, T4, T5> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
+            public Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5>.Awaiter GetAwaiter() => throw null;
+            public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
             {
                 public bool IsCompleted { get => throw null; }
                 public Awaiter(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
+                public System.ValueTuple<T1, T2, T3, T4, T5> GetResult() => throw null;
                 public void OnCompleted(System.Action continuation) { }
                 public void UnsafeOnCompleted(System.Action continuation) { }
-                public System.ValueTuple<T1, T2, T3, T4, T5> GetResult() => throw null;
             }
         }
         public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6>
         {
             public TupleConfiguredTaskAwaitable(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
-            public Awaiter<T1, T2, T3, T4, T5, T6> GetAwaiter() => throw null;
-            public readonly struct Awaiter<T1, T2, T3, T4, T5, T6> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
+            public Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6>.Awaiter GetAwaiter() => throw null;
+            public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
             {
                 public bool IsCompleted { get => throw null; }
                 public Awaiter(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
+                public System.ValueTuple<T1, T2, T3, T4, T5, T6> GetResult() => throw null;
                 public void OnCompleted(System.Action continuation) { }
                 public void UnsafeOnCompleted(System.Action continuation) { }
-                public System.ValueTuple<T1, T2, T3, T4, T5, T6> GetResult() => throw null;
             }
         }
         public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6, T7>
         {
             public TupleConfiguredTaskAwaitable(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>, System.Threading.Tasks.Task<T7>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
-            public Awaiter<T1, T2, T3, T4, T5, T6, T7> GetAwaiter() => throw null;
-            public readonly struct Awaiter<T1, T2, T3, T4, T5, T6, T7> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
+            public Meziantou.Framework.Threading.Tasks.TaskExtensions.TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6, T7>.Awaiter GetAwaiter() => throw null;
+            public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
             {
                 public bool IsCompleted { get => throw null; }
                 public Awaiter(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>, System.Threading.Tasks.Task<T7>> tasks, System.Threading.Tasks.ConfigureAwaitOptions options) { }
+                public System.ValueTuple<T1, T2, T3, T4, T5, T6, T7> GetResult() => throw null;
                 public void OnCompleted(System.Action continuation) { }
                 public void UnsafeOnCompleted(System.Action continuation) { }
-                public System.ValueTuple<T1, T2, T3, T4, T5, T6, T7> GetResult() => throw null;
             }
         }
         public readonly struct TupleTaskAwaiter2 : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
             public TupleTaskAwaiter2(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) { }
+            public void GetResult() { }
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }
-            public void GetResult() { }
         }
         public readonly struct TupleTaskAwaiter3 : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
             public TupleTaskAwaiter3(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) { }
+            public void GetResult() { }
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }
-            public void GetResult() { }
         }
         public readonly struct TupleTaskAwaiter4 : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
             public TupleTaskAwaiter4(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) { }
+            public void GetResult() { }
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }
-            public void GetResult() { }
         }
         public readonly struct TupleTaskAwaiter5 : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
             public TupleTaskAwaiter5(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) { }
+            public void GetResult() { }
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }
-            public void GetResult() { }
         }
         public readonly struct TupleTaskAwaiter6 : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
             public TupleTaskAwaiter6(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) { }
+            public void GetResult() { }
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }
-            public void GetResult() { }
         }
         public readonly struct TupleTaskAwaiter7 : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
             public TupleTaskAwaiter7(System.ValueTuple<System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task, System.Threading.Tasks.Task> tasks) { }
+            public void GetResult() { }
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }
-            public void GetResult() { }
         }
         public readonly struct TupleTaskAwaiter<T1, T2> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
             public TupleTaskAwaiter(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>> tasks) { }
+            public System.ValueTuple<T1, T2> GetResult() => throw null;
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }
-            public System.ValueTuple<T1, T2> GetResult() => throw null;
         }
         public readonly struct TupleTaskAwaiter<T1, T2, T3> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
             public TupleTaskAwaiter(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>> tasks) { }
+            public System.ValueTuple<T1, T2, T3> GetResult() => throw null;
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }
-            public System.ValueTuple<T1, T2, T3> GetResult() => throw null;
         }
         public readonly struct TupleTaskAwaiter<T1, T2, T3, T4> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
             public TupleTaskAwaiter(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>> tasks) { }
+            public System.ValueTuple<T1, T2, T3, T4> GetResult() => throw null;
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }
-            public System.ValueTuple<T1, T2, T3, T4> GetResult() => throw null;
         }
         public readonly struct TupleTaskAwaiter<T1, T2, T3, T4, T5> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
             public TupleTaskAwaiter(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>> tasks) { }
+            public System.ValueTuple<T1, T2, T3, T4, T5> GetResult() => throw null;
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }
-            public System.ValueTuple<T1, T2, T3, T4, T5> GetResult() => throw null;
         }
         public readonly struct TupleTaskAwaiter<T1, T2, T3, T4, T5, T6> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
             public TupleTaskAwaiter(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>> tasks) { }
+            public System.ValueTuple<T1, T2, T3, T4, T5, T6> GetResult() => throw null;
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }
-            public System.ValueTuple<T1, T2, T3, T4, T5, T6> GetResult() => throw null;
         }
         public readonly struct TupleTaskAwaiter<T1, T2, T3, T4, T5, T6, T7> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
             public TupleTaskAwaiter(System.ValueTuple<System.Threading.Tasks.Task<T1>, System.Threading.Tasks.Task<T2>, System.Threading.Tasks.Task<T3>, System.Threading.Tasks.Task<T4>, System.Threading.Tasks.Task<T5>, System.Threading.Tasks.Task<T6>, System.Threading.Tasks.Task<T7>> tasks) { }
+            public System.ValueTuple<T1, T2, T3, T4, T5, T6, T7> GetResult() => throw null;
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }
-            public System.ValueTuple<T1, T2, T3, T4, T5, T6, T7> GetResult() => throw null;
         }
     }
 }

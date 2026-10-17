@@ -6,16 +6,16 @@ namespace Meziantou.Framework.MediaTags
 {
     public static class MediaFile
     {
+        public static Meziantou.Framework.MediaTags.MediaFormat? DetectFormat(System.IO.Stream stream) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaFormat? DetectFormat(string filePath) => throw null;
         public static Meziantou.Framework.MediaTags.MediaTagResult<Meziantou.Framework.MediaTags.MediaTagInfo> ReadTags(string filePath) => throw null;
         public static Meziantou.Framework.MediaTags.MediaTagResult<Meziantou.Framework.MediaTags.MediaTagInfo> ReadTags(System.IO.Stream stream, Meziantou.Framework.MediaTags.MediaFormat? format = null) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult RemoveTags(string filePath) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult RemoveTags(System.IO.Stream inputStream, System.IO.Stream outputStream, Meziantou.Framework.MediaTags.MediaFormat format) => throw null;
         public static Meziantou.Framework.MediaTags.MediaTagResult WriteTags(string filePath, Meziantou.Framework.MediaTags.MediaTagInfo tags) => throw null;
         public static Meziantou.Framework.MediaTags.MediaTagResult WriteTags(string filePath, Meziantou.Framework.MediaTags.MediaTagInfo tags, Meziantou.Framework.MediaTags.MediaTagWriteOptions options) => throw null;
-        public static Meziantou.Framework.MediaTags.MediaTagResult RemoveTags(string filePath) => throw null;
         public static Meziantou.Framework.MediaTags.MediaTagResult WriteTags(System.IO.Stream inputStream, System.IO.Stream outputStream, Meziantou.Framework.MediaTags.MediaTagInfo tags, Meziantou.Framework.MediaTags.MediaFormat format) => throw null;
         public static Meziantou.Framework.MediaTags.MediaTagResult WriteTags(System.IO.Stream inputStream, System.IO.Stream outputStream, Meziantou.Framework.MediaTags.MediaTagInfo tags, Meziantou.Framework.MediaTags.MediaFormat format, Meziantou.Framework.MediaTags.MediaTagWriteOptions options) => throw null;
-        public static Meziantou.Framework.MediaTags.MediaTagResult RemoveTags(System.IO.Stream inputStream, System.IO.Stream outputStream, Meziantou.Framework.MediaTags.MediaFormat format) => throw null;
-        public static Meziantou.Framework.MediaTags.MediaFormat? DetectFormat(string filePath) => throw null;
-        public static Meziantou.Framework.MediaTags.MediaFormat? DetectFormat(System.IO.Stream stream) => throw null;
     }
 
     public enum MediaFormat
@@ -31,13 +31,13 @@ namespace Meziantou.Framework.MediaTags
 
     public sealed class MediaPicture
     {
-        public Meziantou.Framework.MediaTags.MediaPictureType PictureType { get => throw null; set { } }
-        public string? MimeType { get => throw null; set { } }
-        public string? Description { get => throw null; set { } }
         public byte[] Data { get => throw null; set { } }
+        public string? Description { get => throw null; set { } }
+        public string? MimeType { get => throw null; set { } }
+        public Meziantou.Framework.MediaTags.MediaPictureType PictureType { get => throw null; set { } }
     }
 
-    public enum MediaPictureType
+    public enum MediaPictureType : byte
     {
         Other = 0,
         FileIcon = 1,
@@ -74,69 +74,69 @@ namespace Meziantou.Framework.MediaTags
 
     public sealed class MediaTagInfo
     {
-        public string? Title { get => throw null; set { } }
-        public string? Artist { get => throw null; set { } }
         public string? Album { get => throw null; set { } }
         public string? AlbumArtist { get => throw null; set { } }
-        public string? Genre { get => throw null; set { } }
-        public int? Year { get => throw null; set { } }
-        public int? TrackNumber { get => throw null; set { } }
-        public int? TrackTotal { get => throw null; set { } }
-        public int? DiscNumber { get => throw null; set { } }
-        public int? DiscTotal { get => throw null; set { } }
+        public string? Artist { get => throw null; set { } }
+        public int? Bpm { get => throw null; set { } }
         public string? Comment { get => throw null; set { } }
-        public string? Lyrics { get => throw null; set { } }
-        public string? Isrc { get => throw null; set { } }
         public string? Composer { get => throw null; set { } }
         public string? Conductor { get => throw null; set { } }
         public string? Copyright { get => throw null; set { } }
-        public int? Bpm { get => throw null; set { } }
+        public System.Collections.Generic.IDictionary<string, string> CustomFields { get => throw null; }
+        public int? DiscNumber { get => throw null; set { } }
+        public int? DiscTotal { get => throw null; set { } }
         public System.TimeSpan? Duration { get => throw null; set { } }
+        public Meziantou.Framework.MediaTags.MediaFormat? Format { get => throw null; set { } }
+        public string? Genre { get => throw null; set { } }
         public bool? IsCompilation { get => throw null; set { } }
+        public string? Isrc { get => throw null; set { } }
+        public string? Lyrics { get => throw null; set { } }
+        public string? MusicBrainzAlbumId { get => throw null; set { } }
+        public string? MusicBrainzArtistId { get => throw null; set { } }
+        public string? MusicBrainzReleaseGroupId { get => throw null; set { } }
+        public string? MusicBrainzTrackId { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.MediaTags.MediaPicture> Pictures { get => throw null; }
         public Meziantou.Framework.MediaTags.ReplayGainInfo? ReplayGain { get => throw null; set { } }
-        public string? MusicBrainzTrackId { get => throw null; set { } }
-        public string? MusicBrainzArtistId { get => throw null; set { } }
-        public string? MusicBrainzAlbumId { get => throw null; set { } }
-        public string? MusicBrainzReleaseGroupId { get => throw null; set { } }
-        public System.Collections.Generic.IDictionary<string, string> CustomFields { get => throw null; }
-        public Meziantou.Framework.MediaTags.MediaFormat? Format { get => throw null; set { } }
+        public string? Title { get => throw null; set { } }
+        public int? TrackNumber { get => throw null; set { } }
+        public int? TrackTotal { get => throw null; set { } }
+        public int? Year { get => throw null; set { } }
     }
 
     public readonly struct MediaTagResult
     {
-        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(false, "Error")]
-        public bool IsSuccess { get => throw null; }
         public Meziantou.Framework.MediaTags.MediaTagError? Error { get => throw null; }
         public string? ErrorMessage { get => throw null; }
-        public static Meziantou.Framework.MediaTags.MediaTagResult Success() => throw null;
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(false, "Error")]
+        public bool IsSuccess { get => throw null; }
         public static Meziantou.Framework.MediaTags.MediaTagResult Failure(Meziantou.Framework.MediaTags.MediaTagError error, string? message = null) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult Success() => throw null;
     }
 
     public readonly struct MediaTagResult<T>
     {
-        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, "Value")]
-        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(false, "Error")]
-        public bool IsSuccess { get => throw null; }
-        public T Value { get => throw null; }
         public Meziantou.Framework.MediaTags.MediaTagError? Error { get => throw null; }
         public string? ErrorMessage { get => throw null; }
-        public static Meziantou.Framework.MediaTags.MediaTagResult<T> Success(T value) => throw null;
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(false, "Error")]
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, "Value")]
+        public bool IsSuccess { get => throw null; }
+        public T Value { get => throw null; }
         public static Meziantou.Framework.MediaTags.MediaTagResult<T> Failure(Meziantou.Framework.MediaTags.MediaTagError error, string? message = null) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult<T> Success(T value) => throw null;
     }
 
     public sealed class MediaTagWriteOptions
     {
-        public bool WriteId3v1Tag { get => throw null; set { } }
         public int Id3v2PaddingSize { get => throw null; set { } }
+        public bool WriteId3v1Tag { get => throw null; set { } }
     }
 
     public readonly struct ReplayGainInfo : System.IEquatable<Meziantou.Framework.MediaTags.ReplayGainInfo>
     {
-        public double? TrackGain { get => throw null; init { } }
-        public double? TrackPeak { get => throw null; init { } }
         public double? AlbumGain { get => throw null; init { } }
         public double? AlbumPeak { get => throw null; init { } }
+        public double? TrackGain { get => throw null; init { } }
+        public double? TrackPeak { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.MediaTags.ReplayGainInfo other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;

@@ -1,6 +1,6 @@
 {
   "sdk": {
-    "version": "11.0.100-rc.1.26425.128",
+    "version": "11.0.100-rc.2.26504.105",
     "rollForward": "latestFeature"
   },
   "test": {
@@ -8,11 +8,11 @@
   },
   "msbuild-sdks": {
     "Microsoft.Build.Traversal": "4.1.82",
-    "Meziantou.NET.Sdk": "1.0.179",
-    "Meziantou.NET.Sdk.BlazorWebAssembly": "1.0.179",
-    "Meziantou.NET.Sdk.Razor": "1.0.179",
-    "Meziantou.NET.Sdk.Test": "1.0.179",
-    "Meziantou.NET.Sdk.Web": "1.0.179",
-    "Meziantou.NET.Sdk.WindowsDesktop": "1.0.179"
+    "Meziantou.NET.Sdk": "1.0.190",
+    "Meziantou.NET.Sdk.BlazorWebAssembly": "1.0.190",
+    "Meziantou.NET.Sdk.Razor": "1.0.190",
+    "Meziantou.NET.Sdk.Test": "1.0.190",
+    "Meziantou.NET.Sdk.Web": "1.0.190",
+    "Meziantou.NET.Sdk.WindowsDesktop": "1.0.190"
   }
 }

@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: $/.github/actions/setup-dotnet
       - run: |
           # Built first and run with --no-build: `dotnet run` exits 1 for a build or restore failure, which is
           # also how the generator reports "files updated", so a broken build would otherwise be committed as
@@ -35,15 +35,21 @@ jobs:
             throw "The Unicode generator failed to build (exit code $LASTEXITCODE)"
           }
 
-          dotnet run --project tools/Meziantou.Framework.Unicode.Generator --configuration Release --no-build
+          # --check-latest moves the pinned version of the Unicode Character Database
+          # (tools/Meziantou.Framework.Unicode.Generator/unicode-version.txt) to the latest published one before
+          # generating: the data, the conformance files and the version change in one reviewed commit.
+          dotnet run --project tools/Meziantou.Framework.Unicode.Generator --configuration Release --no-build -- --check-latest
           # The generator reports its result through the exit code: 0 when the files were already up to
           # date, 1 when it updated them. Any other code is a failure and must not be committed.
           if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1) {
             throw "The Unicode generator failed with exit code $LASTEXITCODE"
           }
           if ($LASTEXITCODE -eq 1) {
-            # A new Unicode version adds blocks and scripts, and those are public members of UnicodeBlocks
-            # and UnicodeScripts, so the public API changes with the data. ref/Meziantou.Framework.Unicode.cs
+            $branch = "update-unicode-confusables"
+            $title = "Update Unicode data"
+
+            # A new Unicode version adds blocks, scripts and property values, and those are public members,
+            # so the public API changes with the data. ref/Meziantou.Framework.Unicode.cs
             # must be part of the same commit: the publish workflow builds main with
             # PublicApiGeneratorVerifyNoChangeOnBuild and fails when it is out of date.
             # PublicApiGeneratorGenerateOnBuild defaults to false on GitHub Actions, hence the explicit value.
@@ -52,9 +58,19 @@ jobs:
               throw "Failed to regenerate ref/Meziantou.Framework.Unicode.cs (exit code $LASTEXITCODE)"
             }
 
+            # Pull requests created with GITHUB_TOKEN run no workflow, so this is the only test run the new data
+            # gets before it is merged. A new version of the standard often changes the rules of the algorithms:
+            # the pull request is still opened, as a draft, so that the change is not lost.
+            dotnet test --project "$PWD/tests/Meziantou.Framework.Unicode.Tests/Meziantou.Framework.Unicode.Tests.csproj" --configuration Release
+            $testsPassed = $LASTEXITCODE -eq 0
+
+            # The generator also writes the diacritic table of StringExtensions.RemoveDiacritics in Meziantou.Framework
+            dotnet test --project "$PWD/tests/Meziantou.Framework.Tests/Meziantou.Framework.Tests.csproj" --configuration Release --filter-class Meziantou.Framework.Tests.StringExtensionsTests
+            $testsPassed = $testsPassed -and $LASTEXITCODE -eq 0
+
             git config --global user.email "git@meziantou.net"
             git config --global user.name "meziantou"
-            git checkout -b update-unicode-confusables
+            git checkout -b $branch
             git add .
             # An unchanged tree must never reach the force-push below: it would reset the shared branch and
             # wipe the diff of a pull request that is already open, while the step still reported success.
@@ -62,15 +78,28 @@ jobs:
             if ($LASTEXITCODE -eq 0) {
               throw "The generator reported an update but nothing changed in the tracked files"
             }
-            git commit -m "Update Unicode confusables data"
-            git push origin update-unicode-confusables --force
+            git commit -m $title
+            git push origin $branch --force
             $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            $body = "Update Unicode confusables data`n`nCreated by: $runUrl"
-            $openPr = gh pr list --head update-unicode-confusables --state open --json number --jq '.[0].number // empty'
-            if ($openPr) {
-              gh pr edit $openPr --title "Update Unicode confusables data" --body $body
+            if ($testsPassed) {
+              $body = "$title`n`nThe Meziantou.Framework.Unicode and StringExtensions tests pass with the new data.`n`nCreated by: $runUrl"
             } else {
-              gh pr create --title "Update Unicode confusables data" --body $body --base main --head update-unicode-confusables
+              $body = "$title`n`n**The Meziantou.Framework.Unicode or StringExtensions tests fail with the new data**: the library needs an update before this can be merged. See the test output of the run.`n`nCreated by: $runUrl"
+            }
+
+            # The branch is reused every week, so update the pull request when one is already open
+            $openPr = gh pr list --head $branch --state open --json number --jq '.[0].number // empty'
+            if ($openPr) {
+              gh pr edit $openPr --title $title --body $body
+              if ($testsPassed) {
+                gh pr ready $openPr
+              } else {
+                gh pr ready $openPr --undo
+              }
+            } elseif ($testsPassed) {
+              gh pr create --title $title --body $body --base main --head $branch
+            } else {
+              gh pr create --title $title --body $body --base main --head $branch --draft
             }
           }
         env:

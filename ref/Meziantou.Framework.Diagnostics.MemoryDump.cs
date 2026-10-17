@@ -6,14 +6,14 @@ namespace Meziantou.Framework.Diagnostics
 {
     public static class MemoryDump
     {
-        [System.Runtime.Versioning.SupportedOSPlatform("windows8.1")]
         [System.Runtime.Versioning.SupportedOSPlatform("linux")]
         [System.Runtime.Versioning.SupportedOSPlatform("macos")]
-        public static void Write(string filePath, Meziantou.Framework.Diagnostics.MemoryDumpType dumpType = 3) { }
         [System.Runtime.Versioning.SupportedOSPlatform("windows8.1")]
+        public static void Write(string filePath, Meziantou.Framework.Diagnostics.MemoryDumpType dumpType = Meziantou.Framework.Diagnostics.MemoryDumpType.Full) { }
         [System.Runtime.Versioning.SupportedOSPlatform("linux")]
         [System.Runtime.Versioning.SupportedOSPlatform("macos")]
-        public static System.Threading.Tasks.Task WriteAsync(string filePath, Meziantou.Framework.Diagnostics.MemoryDumpType dumpType = 3, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Runtime.Versioning.SupportedOSPlatform("windows8.1")]
+        public static System.Threading.Tasks.Task WriteAsync(string filePath, Meziantou.Framework.Diagnostics.MemoryDumpType dumpType = Meziantou.Framework.Diagnostics.MemoryDumpType.Full, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public enum MemoryDumpType

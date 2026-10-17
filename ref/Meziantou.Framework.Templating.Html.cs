@@ -7,8 +7,9 @@ namespace Meziantou.Framework.Templating
     public class HtmlEmailCodeBlock : Meziantou.Framework.Templating.CodeBlock
     {
         public HtmlEmailCodeBlock(Meziantou.Framework.Templating.Template template, string text, int index) { }
-        protected virtual string? HtmlDecode(string? html) => throw null;
         public override string BuildCode() => throw null;
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("html")]
+        protected virtual string? HtmlDecode(string? html) => throw null;
     }
 
     public sealed class HtmlEmailDirectiveBlock : Meziantou.Framework.Templating.DirectiveBlock
@@ -19,8 +20,8 @@ namespace Meziantou.Framework.Templating
 
     public class HtmlEmailMetadata
     {
-        public string? Title { get => throw null; set { } }
         public System.Collections.Generic.IList<string>? ContentIdentifiers { get => throw null; set { } }
+        public string? Title { get => throw null; set { } }
     }
 
     public class HtmlEmailOutput : Meziantou.Framework.Templating.Output
@@ -28,23 +29,23 @@ namespace Meziantou.Framework.Templating
         public const string TitleSectionName = "title";
         public System.Collections.Generic.IList<string> ContentIdentifiers { get => throw null; }
         public HtmlEmailOutput(Meziantou.Framework.Templating.Template template, System.IO.TextWriter writer) { }
-        public override void Write(string? value) { }
-        public override void Write(object? value) { }
-        public override void Write(string format, params object?[] args) { }
-        public virtual void WriteHtmlEncode(object? value) { }
-        public virtual void WriteHtmlEncode(string? value) { }
-        public virtual void WriteHtmlEncode(string format, params object?[] args) { }
-        public virtual void WriteHtmlAttributeEncode(object? value) { }
-        public virtual void WriteHtmlAttributeEncode(string? value) { }
-        public virtual void WriteHtmlAttributeEncode(string format, params object?[] args) { }
-        public virtual void WriteUrlEncode(object? value) { }
-        public virtual void WriteUrlEncode(string? value) { }
-        public virtual void WriteUrlEncode(string format, params object?[] args) { }
-        public virtual void WriteContentIdentifier(string cid) { }
         public void BeginSection(string name) { }
         public void EndSection(string name) { }
         public string? GetSection(string name) => throw null;
         protected virtual string? HtmlDecode(string html) => throw null;
+        public override void Write(object? value) { }
+        public override void Write(string? value) { }
+        public override void Write(string format, params object?[] args) { }
+        public virtual void WriteContentIdentifier(string cid) { }
+        public virtual void WriteHtmlAttributeEncode(object? value) { }
+        public virtual void WriteHtmlAttributeEncode(string? value) { }
+        public virtual void WriteHtmlAttributeEncode(string format, params object?[] args) { }
+        public virtual void WriteHtmlEncode(object? value) { }
+        public virtual void WriteHtmlEncode(string? value) { }
+        public virtual void WriteHtmlEncode(string format, params object?[] args) { }
+        public virtual void WriteUrlEncode(object? value) { }
+        public virtual void WriteUrlEncode(string? value) { }
+        public virtual void WriteUrlEncode(string format, params object?[] args) { }
     }
 
     public class HtmlEmailTemplate : Meziantou.Framework.Templating.Template
@@ -52,12 +53,12 @@ namespace Meziantou.Framework.Templating
         protected override Meziantou.Framework.Templating.CodeBlock CreateCodeBlock(string text, int index) => throw null;
         protected override Meziantou.Framework.Templating.DirectiveBlock CreateDirectiveBlock(string text, string name, string value, int index) => throw null;
         protected override object CreateOutput(System.IO.TextWriter writer) => throw null;
+        protected override void InvokeRunMethod(object?[] p) { }
+        public virtual string Run(out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata) => throw null;
+        public virtual void Run(System.IO.TextWriter writer, out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata) => throw null;
         public virtual string Run(out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, System.Collections.Generic.IDictionary<string, object?> parameters) => throw null;
         public virtual string Run(out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, params object?[] parameters) => throw null;
-        public virtual string Run(out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata) => throw null;
         public virtual void Run(System.IO.TextWriter writer, out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, System.Collections.Generic.IReadOnlyDictionary<string, object?> parameters) => throw null;
         public virtual void Run(System.IO.TextWriter writer, out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, params object?[] parameters) => throw null;
-        public virtual void Run(System.IO.TextWriter writer, out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata) => throw null;
-        protected override void InvokeRunMethod(object?[] p) { }
     }
 }

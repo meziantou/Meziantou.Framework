@@ -78,8 +78,9 @@ internal static class YamlParserUtilities
 
         public void ReportDependencyWithSeparator(DependencyScanner scanner, YamlElement? node, DependencyType dependencyType, char versionSeparator)
         {
+            // An empty value, such as "uses:" without a value, references nothing
             var value = GetScalarValue(node);
-            if (value is null || !TryMarkAsReported(node))
+            if (string.IsNullOrEmpty(value) || !TryMarkAsReported(node))
                 return;
 
             var index = value.IndexOf(versionSeparator, StringComparison.Ordinal);
@@ -117,7 +118,7 @@ internal static class YamlParserUtilities
 
         /// <summary>
         /// Gets the location of a range of a scalar value. The location is only updatable when the source text of the scalar is exactly its value,
-        /// that is plain scalars and quoted scalars without escape sequences that fit on one line. Block scalars, escaped or multi-line scalars
+        /// that is non-empty plain scalars and quoted scalars without escape sequences that fit on one line. Block scalars, escaped or multi-line scalars
         /// get a <see cref="NonUpdatableLocation"/>, as offsets in the value do not map to offsets in the file.
         /// </summary>
         public Location? GetLocation(YamlElement? node, int start = 0, int? length = null)
@@ -133,6 +134,11 @@ internal static class YamlParserUtilities
             var endOfValue = end.Index;
             switch (scalarEvent.Style)
             {
+                // An empty plain scalar has no source text: its mark is the position of the next token, which can be on the next line,
+                // or on the line after the last one at the end of a file without a final line break
+                case ScalarStyle.Plain when value.Length is 0:
+                    return new NonUpdatableLocation(_context);
+
                 case ScalarStyle.Plain:
                     break;
 

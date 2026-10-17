@@ -6,8 +6,8 @@ namespace Meziantou.Framework.HumanReadable
 {
     public static class ConverterListExtensions
     {
-        public static void Add<T>(this System.Collections.Generic.IList<Meziantou.Framework.HumanReadable.HumanReadableConverter> converters, System.Func<T, string> convert) { }
         public static void Add<T>(this System.Collections.Generic.IList<Meziantou.Framework.HumanReadable.HumanReadableConverter> converters, System.Func<T, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions, string> convert) { }
+        public static void Add<T>(this System.Collections.Generic.IList<Meziantou.Framework.HumanReadable.HumanReadableConverter> converters, System.Func<T, string> convert) { }
     }
 
     public abstract class HumanReadableAttribute : System.Attribute
@@ -24,8 +24,8 @@ namespace Meziantou.Framework.HumanReadable
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Enum | System.AttributeTargets.Property | System.AttributeTargets.Field | System.AttributeTargets.Interface, AllowMultiple = false)]
     public sealed class HumanReadableConverterAttribute : Meziantou.Framework.HumanReadable.HumanReadableAttribute
     {
-        public System.Type ConverterType { get => throw null; }
         public Meziantou.Framework.HumanReadable.HumanReadableConverter? ConverterInstance { get => throw null; }
+        public System.Type ConverterType { get => throw null; }
         public HumanReadableConverterAttribute(Meziantou.Framework.HumanReadable.HumanReadableConverter converterInstance) { }
         public HumanReadableConverterAttribute(System.Type converterType) { }
     }
@@ -39,8 +39,8 @@ namespace Meziantou.Framework.HumanReadable
     public abstract class HumanReadableConverter<T> : Meziantou.Framework.HumanReadable.HumanReadableConverter
     {
         public sealed override bool CanConvert(System.Type type) => throw null;
+        protected abstract void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, T? value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options);
         public sealed override void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, object? value, System.Type valueType, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
-        protected abstract void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, T value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options);
     }
 
     [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
@@ -70,8 +70,8 @@ namespace Meziantou.Framework.HumanReadable
 
     public readonly struct HumanReadableIgnoreData
     {
-        public object? Value { get => throw null; }
         public System.Exception? Exception { get => throw null; }
+        public object? Value { get => throw null; }
     }
 
     [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
@@ -98,7 +98,7 @@ namespace Meziantou.Framework.HumanReadable
         public static string Serialize(object? value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? options = null) => throw null;
         public static string Serialize(object? value, System.Type type, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? options = null) => throw null;
         public static void Serialize(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, object? value, System.Type type, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
-        public static void Serialize<T>(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, T value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
+        public static void Serialize<T>(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, T? value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
     }
 
     public class HumanReadableSerializerException : System.Exception
@@ -109,69 +109,69 @@ namespace Meziantou.Framework.HumanReadable
 
     public sealed class HumanReadableSerializerOptions : System.IEquatable<Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions>
     {
-        public bool IsReadOnly { get => throw null; }
-        public int MaxDepth { get => throw null; set { } }
-        public bool ShowInvisibleCharactersInValues { get => throw null; set { } }
-        public string NewLine { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.HumanReadable.HumanReadableConverter> Converters { get => throw null; }
-        public System.Collections.Generic.IComparer<string>? PropertyOrder { get => throw null; set { } }
+        public Meziantou.Framework.HumanReadable.HumanReadableIgnoreCondition DefaultIgnoreCondition { get => throw null; set { } }
         public System.Collections.Generic.IComparer<string>? DictionaryKeyOrder { get => throw null; set { } }
         public bool IncludeFields { get => throw null; set { } }
         public bool IncludeObsoleteMembers { get => throw null; set { } }
-        public Meziantou.Framework.HumanReadable.HumanReadableIgnoreCondition DefaultIgnoreCondition { get => throw null; set { } }
-        public T GetOrSetSerializationData<T>(string name, System.Func<T> addValue) => throw null;
-        public void AddFormatter(string mediaType, Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter formatter) { }
-        public void AddAttribute(System.Type type, Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
-        public void AddAttribute(System.Type type, string memberName, Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
+        public bool IsReadOnly { get => throw null; }
+        public int MaxDepth { get => throw null; set { } }
+        public string NewLine { get => throw null; set { } }
+        public System.Collections.Generic.IComparer<string>? PropertyOrder { get => throw null; set { } }
+        public bool ShowInvisibleCharactersInValues { get => throw null; set { } }
         public void AddAttribute(System.Reflection.FieldInfo member, Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
         public void AddAttribute(System.Reflection.PropertyInfo member, Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
-        public void AddPropertyAttribute(System.Func<System.Reflection.PropertyInfo, bool> condition, Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
+        public void AddAttribute(System.Type type, Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
+        public void AddAttribute(System.Type type, string memberName, Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
         public void AddAttribute<T>(System.Linq.Expressions.Expression<System.Func<T, object>> member, Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
         public void AddFieldAttribute(System.Func<System.Reflection.FieldInfo, bool> condition, Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
+        public void AddFormatter(string mediaType, Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter formatter) { }
+        public void AddPropertyAttribute(System.Func<System.Reflection.PropertyInfo, bool> condition, Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
         public void AddTypeAttribute(System.Func<System.Type, bool> condition, Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
+        public bool Equals(Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
         public Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter? GetFormatter(string mediaType) => throw null;
+        public override int GetHashCode() => throw null;
+        public T GetOrSetSerializationData<T>(string name, System.Func<T> addValue) => throw null;
         public void MakeReadOnly() { }
         public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? left, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? right) => throw null;
         public static bool operator ==(Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? left, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? other) => throw null;
+        public static bool operator !=(Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? left, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? right) => throw null;
     }
 
     public static class HumanReadableSerializerOptionsExtensions
     {
-        public static void IgnoreMembersThatThrow(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
-        public static void IgnoreMembersThatThrow<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
-        public static void IgnoreMembersThatThrow(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Type exceptionType) { }
+        public static void IgnoreMember(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Reflection.FieldInfo fieldInfo) { }
+        public static void IgnoreMember(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Reflection.PropertyInfo propertyInfo) { }
+        public static void IgnoreMember(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Type type, string memberName) { }
+        public static void IgnoreMember(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Type type, params string[] memberNames) { }
         public static void IgnoreMember<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Linq.Expressions.Expression<System.Func<T, object>> member) { }
         public static void IgnoreMember<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string memberName) { }
-        public static void IgnoreMember(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Type type, string memberName) { }
-        public static void IgnoreMember(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Reflection.PropertyInfo propertyInfo) { }
-        public static void IgnoreMember(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Reflection.FieldInfo fieldInfo) { }
         public static void IgnoreMember<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, params string[] memberNames) { }
-        public static void IgnoreMember(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Type type, params string[] memberNames) { }
-        public static void IgnoreMembersWithType<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
+        public static void IgnoreMembersThatThrow(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
+        public static void IgnoreMembersThatThrow(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Type exceptionType) { }
+        public static void IgnoreMembersThatThrow<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
         public static void IgnoreMembersWithType(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Type type) { }
+        public static void IgnoreMembersWithType<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
     }
 
     public sealed class HumanReadableTextWriter
     {
         public HumanReadableTextWriter(Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
-        public void WriteValue(System.ReadOnlySpan<char> value) { }
-        public void WriteValue(string value) { }
+        public void EndArray() { }
+        public void EndArrayItem() { }
+        public void EndObject() { }
+        public void StartArray() { }
+        public void StartArrayItem(string? index = null) { }
+        public void StartObject() { }
+        public override string ToString() => throw null;
+        public void WriteEmptyArray() { }
+        public void WriteEmptyObject() { }
         public void WriteFormattedValue(string mediaTypeName, string value) { }
         public void WriteNullValue() { }
         public void WritePropertyName(string propertyName) { }
-        public void StartObject() { }
-        public void EndObject() { }
-        public void WriteEmptyObject() { }
-        public void StartArray() { }
-        public void EndArray() { }
-        public void WriteEmptyArray() { }
-        public void StartArrayItem(string? index = null) { }
-        public void EndArrayItem() { }
-        public override string ToString() => throw null;
+        public void WriteValue(System.ReadOnlySpan<char> value) { }
+        public void WriteValue(string value) { }
     }
 }
 namespace Meziantou.Framework.HumanReadable.Converters
@@ -201,37 +201,37 @@ namespace Meziantou.Framework.HumanReadable.Converters
         public bool OmitProtocolVersion { get => throw null; set { } }
         protected HumanReadableHttpMessageOptions(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions original) { }
         public virtual bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? other) => throw null;
-        public override int GetHashCode() => throw null;
-        public override string ToString() => throw null;
-        protected virtual bool PrintMembers(System.Text.StringBuilder builder) => throw null;
-        public static bool operator !=(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? right) => throw null;
         public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        protected virtual bool PrintMembers(System.Text.StringBuilder builder) => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? right) => throw null;
     }
 
     public sealed class HumanReadableHttpOptions : System.IEquatable<Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpOptions>
     {
         public Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpRequestMessageOptions RequestMessageOptions { get => throw null; set { } }
         public Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpResponseMessageOptions ResponseMessageOptions { get => throw null; set { } }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpOptions? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpOptions? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
         public bool Equals(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpOptions? right) => throw null;
     }
 
     public sealed class HumanReadableHttpRequestMessageOptions : Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions, System.IEquatable<Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpRequestMessageOptions>
     {
         protected override System.Type EqualityContract { get => throw null; }
-        public override string ToString() => throw null;
-        protected override bool PrintMembers(System.Text.StringBuilder builder) => throw null;
-        public static bool operator !=(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpRequestMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpRequestMessageOptions? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpRequestMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpRequestMessageOptions? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
         public sealed override bool Equals(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? other) => throw null;
         public bool Equals(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpRequestMessageOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        protected override bool PrintMembers(System.Text.StringBuilder builder) => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpRequestMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpRequestMessageOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpRequestMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpRequestMessageOptions? right) => throw null;
     }
 
     public sealed class HumanReadableHttpResponseMessageOptions : Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions, System.IEquatable<Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpResponseMessageOptions>
@@ -239,24 +239,24 @@ namespace Meziantou.Framework.HumanReadable.Converters
         protected override System.Type EqualityContract { get => throw null; }
         public bool RedactContentSecurityPolicyNonce { get => throw null; set { } }
         public Meziantou.Framework.HumanReadable.Converters.HttpRequestMessageFormat RequestMessageFormat { get => throw null; set { } }
-        public override string ToString() => throw null;
-        protected override bool PrintMembers(System.Text.StringBuilder builder) => throw null;
-        public static bool operator !=(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpResponseMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpResponseMessageOptions? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpResponseMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpResponseMessageOptions? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
         public sealed override bool Equals(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? other) => throw null;
         public bool Equals(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpResponseMessageOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        protected override bool PrintMembers(System.Text.StringBuilder builder) => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpResponseMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpResponseMessageOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpResponseMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpResponseMessageOptions? right) => throw null;
     }
 }
 namespace Meziantou.Framework.HumanReadable.ValueFormatters
 {
     public static class FormatterExtensions
     {
-        public static Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions AddJsonFormatter(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions serializerOptions, Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions? formatterOptions = null) => throw null;
-        public static Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions AddXmlFormatter(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions serializerOptions, Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions? formatterOptions = null) => throw null;
         public static Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions AddHtmlFormatter(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions serializerOptions, Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? formatterOptions = null) => throw null;
+        public static Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions AddJsonFormatter(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions serializerOptions, Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions? formatterOptions = null) => throw null;
         public static Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions AddUrlEncodedFormFormatter(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions serializerOptions, Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions? formatterOptions = null) => throw null;
+        public static Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions AddXmlFormatter(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions serializerOptions, Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions? formatterOptions = null) => throw null;
     }
 
     public enum HtmlAttributeQuote
@@ -270,12 +270,12 @@ namespace Meziantou.Framework.HumanReadable.ValueFormatters
         public Meziantou.Framework.HumanReadable.ValueFormatters.HtmlAttributeQuote? AttributeQuote { get => throw null; set { } }
         public bool OrderAttributes { get => throw null; set { } }
         public bool RedactContentSecurityPolicyNonce { get => throw null; set { } }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
         public bool Equals(Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? right) => throw null;
     }
 
     public sealed class JsonFormatter : Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter
@@ -287,37 +287,37 @@ namespace Meziantou.Framework.HumanReadable.ValueFormatters
     public sealed class JsonFormatterOptions : System.IEquatable<Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions>
     {
         public bool FormatAsStandardObject { get => throw null; set { } }
-        public bool WriteIndented { get => throw null; set { } }
         public bool OrderProperties { get => throw null; set { } }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public bool WriteIndented { get => throw null; set { } }
         public bool Equals(Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions? right) => throw null;
     }
 
     public sealed class UrlEncodedFormFormatterOptions : System.IEquatable<Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions>
     {
         public bool OrderProperties { get => throw null; set { } }
-        public bool UnescapeValues { get => throw null; set { } }
         public bool PrettyFormat { get => throw null; set { } }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public bool UnescapeValues { get => throw null; set { } }
         public bool Equals(Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions? right) => throw null;
     }
 
     public abstract class ValueFormatter
     {
-        public const string JsonMediaTypeName = "application/json";
-        public const string XmlMediaTypeName = "application/xml";
-        public const string HtmlMediaTypeName = "text/html";
-        public const string WwwFormUrlEncodedMediaTypeName = "application/x-www-form-urlencoded";
         public const string CssMediaTypeName = "text/css";
+        public const string HtmlMediaTypeName = "text/html";
         public const string JavascriptMediaTypeName = "text/javascript";
+        public const string JsonMediaTypeName = "application/json";
+        public const string WwwFormUrlEncodedMediaTypeName = "application/x-www-form-urlencoded";
+        public const string XmlMediaTypeName = "application/xml";
         public abstract void Format(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, string? value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options);
     }
 
@@ -329,13 +329,13 @@ namespace Meziantou.Framework.HumanReadable.ValueFormatters
 
     public sealed class XmlFormatterOptions : System.IEquatable<Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions>
     {
-        public bool WriteIndented { get => throw null; set { } }
         public bool OrderAttributes { get => throw null; set { } }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public bool WriteIndented { get => throw null; set { } }
         public bool Equals(Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions? right) => throw null;
     }
 }

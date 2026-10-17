@@ -24,6 +24,7 @@ public static class AssemblyUtilities
     /// <summary>Gets the linker timestamp of a specified assembly.</summary>
     /// <param name="assembly">The assembly. May not be null.</param>
     /// <returns>A valid date time or null if an error occurred.</returns>
+    [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file", Justification = "An empty location, as returned for an assembly embedded in a single-file or NativeAOT application, is handled by returning null")]
     public static DateTime? GetLinkerTimestampUtc(this Assembly assembly)
     {
         ArgumentNullException.ThrowIfNull(assembly);

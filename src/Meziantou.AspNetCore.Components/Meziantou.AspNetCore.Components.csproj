@@ -1,9 +1,11 @@
 <Project Sdk="Meziantou.NET.Sdk.Razor">
 
   <PropertyGroup>
+    <!-- TimeZoneService resolves the IANA time zone of the browser -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
 
-    <Version>3.0.8</Version>
+    <Version>3.0.10</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Components and services for Blazor</Description>
     <PackageTags>aspnetcore, blazor, components, razor, ui</PackageTags>
@@ -14,8 +16,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net11.0'">
-    <PackageReference Include="Microsoft.AspNetCore.Components" Version="11.0.0-rc.1.26425.128" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0-rc.1.26425.128" />
+    <PackageReference Include="Microsoft.AspNetCore.Components" Version="11.0.0-rc.2.26504.105" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0-rc.2.26504.105" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net10.0'">

@@ -6,30 +6,30 @@ namespace Meziantou.Framework.AtlassianDataFormat
 {
     public sealed class AdfAlignmentMark : Meziantou.Framework.AtlassianDataFormat.AdfMark
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfMarkKind Kind { get => throw null; }
         public required string Align { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfMarkKind Kind { get => throw null; }
     }
 
     public sealed class AdfAnnotationMark : Meziantou.Framework.AtlassianDataFormat.AdfMark
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfMarkKind Kind { get => throw null; }
-        public required string Id { get => throw null; init { } }
         public string? AnnotationType { get => throw null; init { } }
+        public required string Id { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfMarkKind Kind { get => throw null; }
     }
 
     public sealed class AdfBackgroundColorMark : Meziantou.Framework.AtlassianDataFormat.AdfMark
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfMarkKind Kind { get => throw null; }
         public required string Color { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfMarkKind Kind { get => throw null; }
     }
 
     public sealed class AdfBlockCard : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
-        public string? Url { get => throw null; init { } }
         public System.Text.Json.JsonElement? Data { get => throw null; init { } }
         public System.Text.Json.JsonElement? Datasource { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
         public string? Layout { get => throw null; init { } }
+        public string? Url { get => throw null; init { } }
         public double? Width { get => throw null; init { } }
     }
 
@@ -40,19 +40,19 @@ namespace Meziantou.Framework.AtlassianDataFormat
 
     public sealed class AdfBodiedExtension : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
         public required string ExtensionKey { get => throw null; init { } }
         public required string ExtensionType { get => throw null; init { } }
-        public string? Text { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
         public string? Layout { get => throw null; init { } }
         public System.Text.Json.JsonElement? Parameters { get => throw null; init { } }
+        public string? Text { get => throw null; init { } }
     }
 
     public sealed class AdfBorderMark : Meziantou.Framework.AtlassianDataFormat.AdfMark
     {
+        public string? Color { get => throw null; init { } }
         public override Meziantou.Framework.AtlassianDataFormat.AdfMarkKind Kind { get => throw null; }
         public required int Size { get => throw null; init { } }
-        public string? Color { get => throw null; init { } }
     }
 
     public sealed class AdfBreakoutMark : Meziantou.Framework.AtlassianDataFormat.AdfMark
@@ -115,35 +115,35 @@ namespace Meziantou.Framework.AtlassianDataFormat
 
     public sealed class AdfDocument
     {
-        public int Version { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.AtlassianDataFormat.AdfNode> Content { get => throw null; init { } }
-        public static Meziantou.Framework.AtlassianDataFormat.AdfDocument Parse(string json) => throw null;
+        public int Version { get => throw null; init { } }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.AtlassianDataFormat.AdfNode> Descendants() => throw null;
         public static Meziantou.Framework.AtlassianDataFormat.AdfDocument Parse(System.Text.Json.JsonElement element) => throw null;
         public static Meziantou.Framework.AtlassianDataFormat.AdfDocument Parse(System.Text.Json.Nodes.JsonNode node) => throw null;
-        public static bool TryParse(string? json, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.AtlassianDataFormat.AdfDocument? result) => throw null;
-        public static bool TryParse(System.Text.Json.JsonElement element, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.AtlassianDataFormat.AdfDocument? result) => throw null;
-        public void WriteTo(System.Text.Json.Utf8JsonWriter writer) { }
+        public static Meziantou.Framework.AtlassianDataFormat.AdfDocument Parse(string json) => throw null;
         public string ToJsonString(bool indented = false) => throw null;
         public string ToMarkdown() => throw null;
         public string ToMarkdown(Meziantou.Framework.AtlassianDataFormat.AdfToMarkdownOptions options) => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.AtlassianDataFormat.AdfNode> Descendants() => throw null;
+        public static bool TryParse(System.Text.Json.JsonElement element, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.AtlassianDataFormat.AdfDocument? result) => throw null;
+        public static bool TryParse(string? json, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.AtlassianDataFormat.AdfDocument? result) => throw null;
+        public void WriteTo(System.Text.Json.Utf8JsonWriter writer) { }
     }
 
     public sealed class AdfEmbedCard : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
         public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
-        public required string Url { get => throw null; init { } }
         public string? Layout { get => throw null; init { } }
+        public required string Url { get => throw null; init { } }
         public double? Width { get => throw null; init { } }
     }
 
     public sealed class AdfEmoji : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
+        public string? Fallback { get => throw null; init { } }
+        public string? Id { get => throw null; init { } }
         public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
         public required string ShortName { get => throw null; init { } }
-        public string? Id { get => throw null; init { } }
         public string? Text { get => throw null; init { } }
-        public string? Fallback { get => throw null; init { } }
     }
 
     public enum AdfEmojiRendering
@@ -184,12 +184,12 @@ namespace Meziantou.Framework.AtlassianDataFormat
 
     public sealed class AdfExtension : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
         public required string ExtensionKey { get => throw null; init { } }
         public required string ExtensionType { get => throw null; init { } }
-        public string? Text { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
         public string? Layout { get => throw null; init { } }
         public System.Text.Json.JsonElement? Parameters { get => throw null; init { } }
+        public string? Text { get => throw null; init { } }
     }
 
     public sealed class AdfHardBreak : Meziantou.Framework.AtlassianDataFormat.AdfNode
@@ -217,18 +217,18 @@ namespace Meziantou.Framework.AtlassianDataFormat
 
     public sealed class AdfInlineCard : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
+        public System.Text.Json.JsonElement? Data { get => throw null; init { } }
         public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
         public string? Url { get => throw null; init { } }
-        public System.Text.Json.JsonElement? Data { get => throw null; init { } }
     }
 
     public sealed class AdfInlineExtension : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
         public required string ExtensionKey { get => throw null; init { } }
         public required string ExtensionType { get => throw null; init { } }
-        public string? Text { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
         public System.Text.Json.JsonElement? Parameters { get => throw null; init { } }
+        public string? Text { get => throw null; init { } }
     }
 
     public sealed class AdfLayoutColumn : Meziantou.Framework.AtlassianDataFormat.AdfNode
@@ -250,12 +250,12 @@ namespace Meziantou.Framework.AtlassianDataFormat
 
     public sealed class AdfLinkMark : Meziantou.Framework.AtlassianDataFormat.AdfMark
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfMarkKind Kind { get => throw null; }
-        public required string Href { get => throw null; init { } }
-        public string? Title { get => throw null; init { } }
-        public string? Id { get => throw null; init { } }
         public string? Collection { get => throw null; init { } }
+        public required string Href { get => throw null; init { } }
+        public string? Id { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfMarkKind Kind { get => throw null; }
         public string? OccurrenceKey { get => throw null; init { } }
+        public string? Title { get => throw null; init { } }
     }
 
     public sealed class AdfListItem : Meziantou.Framework.AtlassianDataFormat.AdfNode
@@ -289,15 +289,15 @@ namespace Meziantou.Framework.AtlassianDataFormat
 
     public sealed class AdfMedia : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
-        public Meziantou.Framework.AtlassianDataFormat.AdfMediaType Type { get => throw null; init { } }
-        public string? Id { get => throw null; init { } }
-        public string? Collection { get => throw null; init { } }
-        public string? Url { get => throw null; init { } }
         public string? Alt { get => throw null; init { } }
-        public double? Width { get => throw null; init { } }
+        public string? Collection { get => throw null; init { } }
         public double? Height { get => throw null; init { } }
+        public string? Id { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
         public string? OccurrenceKey { get => throw null; init { } }
+        public Meziantou.Framework.AtlassianDataFormat.AdfMediaType Type { get => throw null; init { } }
+        public string? Url { get => throw null; init { } }
+        public double? Width { get => throw null; init { } }
     }
 
     public sealed class AdfMediaGroup : Meziantou.Framework.AtlassianDataFormat.AdfNode
@@ -307,14 +307,14 @@ namespace Meziantou.Framework.AtlassianDataFormat
 
     public sealed class AdfMediaInline : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
-        public Meziantou.Framework.AtlassianDataFormat.AdfMediaType Type { get => throw null; init { } }
-        public string? Id { get => throw null; init { } }
-        public string? Collection { get => throw null; init { } }
         public string? Alt { get => throw null; init { } }
-        public double? Width { get => throw null; init { } }
+        public string? Collection { get => throw null; init { } }
         public double? Height { get => throw null; init { } }
+        public string? Id { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
         public string? OccurrenceKey { get => throw null; init { } }
+        public Meziantou.Framework.AtlassianDataFormat.AdfMediaType Type { get => throw null; init { } }
+        public double? Width { get => throw null; init { } }
     }
 
     public enum AdfMediaRendering
@@ -344,10 +344,10 @@ namespace Meziantou.Framework.AtlassianDataFormat
 
     public sealed class AdfMention : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
-        public required string Id { get => throw null; init { } }
-        public string? Text { get => throw null; init { } }
         public string? AccessLevel { get => throw null; init { } }
+        public required string Id { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
+        public string? Text { get => throw null; init { } }
         public string? UserType { get => throw null; init { } }
     }
 
@@ -359,12 +359,12 @@ namespace Meziantou.Framework.AtlassianDataFormat
 
     public abstract class AdfNode
     {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.AtlassianDataFormat.AdfNode> Content { get => throw null; init { } }
         public abstract Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get; }
         public string? LocalId { get => throw null; init { } }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.AtlassianDataFormat.AdfNode> Content { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.AtlassianDataFormat.AdfMark> Marks { get => throw null; init { } }
-        public T GetMark<T>() where T : Meziantou.Framework.AtlassianDataFormat.AdfMark => throw null;
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.AtlassianDataFormat.AdfNode> DescendantsAndSelf() => throw null;
+        public T? GetMark<T>() where T : Meziantou.Framework.AtlassianDataFormat.AdfMark => throw null;
     }
 
     public enum AdfNodeKind
@@ -420,10 +420,10 @@ namespace Meziantou.Framework.AtlassianDataFormat
     public sealed class AdfPanel : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
         public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
-        public required Meziantou.Framework.AtlassianDataFormat.AdfPanelType PanelType { get => throw null; init { } }
+        public string? PanelColor { get => throw null; init { } }
         public string? PanelIcon { get => throw null; init { } }
         public string? PanelIconText { get => throw null; init { } }
-        public string? PanelColor { get => throw null; init { } }
+        public required Meziantou.Framework.AtlassianDataFormat.AdfPanelType PanelType { get => throw null; init { } }
     }
 
     public enum AdfPanelStyle
@@ -464,10 +464,10 @@ namespace Meziantou.Framework.AtlassianDataFormat
 
     public sealed class AdfStatus : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
-        public required string Text { get => throw null; init { } }
         public string? Color { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
         public string? Style { get => throw null; init { } }
+        public required string Text { get => throw null; init { } }
     }
 
     public sealed class AdfStrikeMark : Meziantou.Framework.AtlassianDataFormat.AdfMark
@@ -494,28 +494,28 @@ namespace Meziantou.Framework.AtlassianDataFormat
 
     public sealed class AdfTable : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
+        public string? DisplayMode { get => throw null; init { } }
         public bool? IsNumberColumnEnabled { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
         public string? Layout { get => throw null; init { } }
         public double? Width { get => throw null; init { } }
-        public string? DisplayMode { get => throw null; init { } }
     }
 
     public sealed class AdfTableCell : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
-        public int? ColSpan { get => throw null; init { } }
-        public int? RowSpan { get => throw null; init { } }
         public string? Background { get => throw null; init { } }
+        public int? ColSpan { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
+        public int? RowSpan { get => throw null; init { } }
         public string? VerticalAlignment { get => throw null; init { } }
     }
 
     public sealed class AdfTableHeader : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
-        public int? ColSpan { get => throw null; init { } }
-        public int? RowSpan { get => throw null; init { } }
         public string? Background { get => throw null; init { } }
+        public int? ColSpan { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
+        public int? RowSpan { get => throw null; init { } }
         public string? VerticalAlignment { get => throw null; init { } }
     }
 
@@ -562,44 +562,44 @@ namespace Meziantou.Framework.AtlassianDataFormat
 
     public sealed class AdfTextColorMark : Meziantou.Framework.AtlassianDataFormat.AdfMark
     {
-        public override Meziantou.Framework.AtlassianDataFormat.AdfMarkKind Kind { get => throw null; }
         public required string Color { get => throw null; init { } }
+        public override Meziantou.Framework.AtlassianDataFormat.AdfMarkKind Kind { get => throw null; }
     }
 
     public static class AdfToMarkdown
     {
-        public static string Convert(string json) => throw null;
-        public static string Convert(string json, Meziantou.Framework.AtlassianDataFormat.AdfToMarkdownOptions options) => throw null;
-        public static string Convert(System.Text.Json.JsonElement element) => throw null;
-        public static string Convert(System.Text.Json.JsonElement element, Meziantou.Framework.AtlassianDataFormat.AdfToMarkdownOptions options) => throw null;
-        public static string Convert(System.Text.Json.Nodes.JsonNode node) => throw null;
-        public static string Convert(System.Text.Json.Nodes.JsonNode node, Meziantou.Framework.AtlassianDataFormat.AdfToMarkdownOptions options) => throw null;
         public static string Convert(Meziantou.Framework.AtlassianDataFormat.AdfDocument document) => throw null;
+        public static string Convert(System.Text.Json.JsonElement element) => throw null;
+        public static string Convert(System.Text.Json.Nodes.JsonNode node) => throw null;
+        public static string Convert(string json) => throw null;
         public static string Convert(Meziantou.Framework.AtlassianDataFormat.AdfDocument document, Meziantou.Framework.AtlassianDataFormat.AdfToMarkdownOptions options) => throw null;
+        public static string Convert(System.Text.Json.JsonElement element, Meziantou.Framework.AtlassianDataFormat.AdfToMarkdownOptions options) => throw null;
+        public static string Convert(System.Text.Json.Nodes.JsonNode node, Meziantou.Framework.AtlassianDataFormat.AdfToMarkdownOptions options) => throw null;
+        public static string Convert(string json, Meziantou.Framework.AtlassianDataFormat.AdfToMarkdownOptions options) => throw null;
     }
 
     public sealed class AdfToMarkdownOptions
     {
-        public Meziantou.Framework.AtlassianDataFormat.AdfHeadingStyle HeadingStyle { get => throw null; set { } }
-        public Meziantou.Framework.AtlassianDataFormat.AdfEmphasisMarker EmphasisMarker { get => throw null; set { } }
-        public Meziantou.Framework.AtlassianDataFormat.AdfCodeBlockStyle CodeBlockStyle { get => throw null; set { } }
         public char CodeBlockFenceCharacter { get => throw null; set { } }
-        public char UnorderedListMarker { get => throw null; set { } }
-        public string ThematicBreak { get => throw null; set { } }
-        public Meziantou.Framework.AtlassianDataFormat.AdfLineBreakStyle LineBreakStyle { get => throw null; set { } }
-        public Meziantou.Framework.AtlassianDataFormat.AdfPanelStyle PanelStyle { get => throw null; set { } }
-        public Meziantou.Framework.AtlassianDataFormat.AdfExpandStyle ExpandStyle { get => throw null; set { } }
-        public Meziantou.Framework.AtlassianDataFormat.AdfTableStyle TableStyle { get => throw null; set { } }
-        public Meziantou.Framework.AtlassianDataFormat.AdfMediaRendering MediaRendering { get => throw null; set { } }
-        public Meziantou.Framework.AtlassianDataFormat.AdfEmojiRendering EmojiRendering { get => throw null; set { } }
-        public Meziantou.Framework.AtlassianDataFormat.AdfTaskListStyle TaskListStyle { get => throw null; set { } }
-        public Meziantou.Framework.AtlassianDataFormat.AdfDecisionListStyle DecisionListStyle { get => throw null; set { } }
-        public Meziantou.Framework.AtlassianDataFormat.AdfUnknownNodeHandling UnknownNodeHandling { get => throw null; set { } }
-        public string MentionFormat { get => throw null; set { } }
-        public string StatusFormat { get => throw null; set { } }
+        public Meziantou.Framework.AtlassianDataFormat.AdfCodeBlockStyle CodeBlockStyle { get => throw null; set { } }
         public string DateFormat { get => throw null; set { } }
+        public Meziantou.Framework.AtlassianDataFormat.AdfDecisionListStyle DecisionListStyle { get => throw null; set { } }
+        public Meziantou.Framework.AtlassianDataFormat.AdfEmojiRendering EmojiRendering { get => throw null; set { } }
+        public Meziantou.Framework.AtlassianDataFormat.AdfEmphasisMarker EmphasisMarker { get => throw null; set { } }
+        public Meziantou.Framework.AtlassianDataFormat.AdfExpandStyle ExpandStyle { get => throw null; set { } }
+        public Meziantou.Framework.AtlassianDataFormat.AdfHeadingStyle HeadingStyle { get => throw null; set { } }
+        public Meziantou.Framework.AtlassianDataFormat.AdfLineBreakStyle LineBreakStyle { get => throw null; set { } }
+        public Meziantou.Framework.AtlassianDataFormat.AdfMediaRendering MediaRendering { get => throw null; set { } }
         public System.Func<Meziantou.Framework.AtlassianDataFormat.AdfMedia, string?>? MediaUrlResolver { get => throw null; set { } }
+        public string MentionFormat { get => throw null; set { } }
         public System.Func<Meziantou.Framework.AtlassianDataFormat.AdfMention, string?>? MentionResolver { get => throw null; set { } }
+        public Meziantou.Framework.AtlassianDataFormat.AdfPanelStyle PanelStyle { get => throw null; set { } }
+        public string StatusFormat { get => throw null; set { } }
+        public Meziantou.Framework.AtlassianDataFormat.AdfTableStyle TableStyle { get => throw null; set { } }
+        public Meziantou.Framework.AtlassianDataFormat.AdfTaskListStyle TaskListStyle { get => throw null; set { } }
+        public string ThematicBreak { get => throw null; set { } }
+        public Meziantou.Framework.AtlassianDataFormat.AdfUnknownNodeHandling UnknownNodeHandling { get => throw null; set { } }
+        public char UnorderedListMarker { get => throw null; set { } }
     }
 
     public sealed class AdfUnderlineMark : Meziantou.Framework.AtlassianDataFormat.AdfMark
@@ -610,15 +610,15 @@ namespace Meziantou.Framework.AtlassianDataFormat
     public sealed class AdfUnknownMark : Meziantou.Framework.AtlassianDataFormat.AdfMark
     {
         public override Meziantou.Framework.AtlassianDataFormat.AdfMarkKind Kind { get => throw null; }
-        public required string TypeName { get => throw null; init { } }
         public required System.Text.Json.JsonElement RawJson { get => throw null; init { } }
+        public required string TypeName { get => throw null; init { } }
     }
 
     public sealed class AdfUnknownNode : Meziantou.Framework.AtlassianDataFormat.AdfNode
     {
         public override Meziantou.Framework.AtlassianDataFormat.AdfNodeKind Kind { get => throw null; }
-        public required string TypeName { get => throw null; init { } }
         public required System.Text.Json.JsonElement RawJson { get => throw null; init { } }
+        public required string TypeName { get => throw null; init { } }
     }
 
     public enum AdfUnknownNodeHandling

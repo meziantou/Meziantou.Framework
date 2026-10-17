@@ -1,18 +1,20 @@
 <Solution>
   <Folder Name="/benchmarks/">
-    <Project Path="benchmarks/AssertionsBenchmarks/AssertionsBenchmarks.csproj" />
-    <Project Path="benchmarks/BloomFiltersBenchmarks/BloomFiltersBenchmarks.csproj" />
-    <Project Path="benchmarks/DependencyScanningBenchmarks/DependencyScanningBenchmarks.csproj" />
-    <Project Path="benchmarks/FastEnumGeneratorBenchmarks/FastEnumGeneratorBenchmarks.csproj" />
-    <Project Path="benchmarks/GlobbingBenchmarks/GlobbingBenchmarks.csproj" />
-    <Project Path="benchmarks/SnapshotTestingBenchmarks/SnapshotTestingBenchmarks.csproj" />
-    <Project Path="benchmarks/ThreadingBenchmarks/ThreadingBenchmarks.csproj" />
-    <Project Path="benchmarks/YamlBenchmarks/YamlBenchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.Assertions.Benchmarks/Meziantou.Framework.Assertions.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.BloomFilters.Benchmarks/Meziantou.Framework.BloomFilters.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.DependencyScanning.Benchmarks/Meziantou.Framework.DependencyScanning.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.FastEnumGenerator.Benchmarks/Meziantou.Framework.FastEnumGenerator.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.Globbing.Benchmarks/Meziantou.Framework.Globbing.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.Imaging.Benchmarks/Meziantou.Framework.Imaging.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.SnapshotTesting.Benchmarks/Meziantou.Framework.SnapshotTesting.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.Threading.Benchmarks/Meziantou.Framework.Threading.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.Yaml.Benchmarks/Meziantou.Framework.Yaml.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/BlazorAppSample/BlazorAppSample.csproj" />
     <Project Path="samples/DependencyScannerSample/DependencyScannerSample.csproj" />
     <Project Path="samples/Meziantou.Framework.Http.HstsSample/Meziantou.Framework.Http.HstsSample.csproj" />
+    <Project Path="samples/Meziantou.Framework.Imaging.Samples/Meziantou.Framework.Imaging.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.Scheduling.RecurrenceRuleSample/Meziantou.Framework.Scheduling.RecurrenceRuleSample.csproj" />
     <Project Path="samples/Meziantou.Framework.Win32.AccessTokenConsole/Meziantou.Framework.Win32.AccessTokenConsole.csproj" />
     <Project Path="samples/Meziantou.Framework.Win32.ChangeJournal.Sample/Meziantou.Framework.Win32.ChangeJournal.Sample.csproj" />
@@ -87,6 +89,7 @@
     <Project Path="src/Meziantou.Framework.HttpArchive/Meziantou.Framework.HttpArchive.csproj" />
     <Project Path="src/Meziantou.Framework.HttpClientMock/Meziantou.Framework.HttpClientMock.csproj" />
     <Project Path="src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
+    <Project Path="src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
     <Project Path="src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <Project Path="src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="src/Meziantou.Framework.Language.Css/Meziantou.Framework.Language.Css.csproj" />
@@ -115,6 +118,7 @@
     <Project Path="src/Meziantou.Framework.PublicApiGenerator.MSBuild/Meziantou.Framework.PublicApiGenerator.MSBuild.csproj" />
     <Project Path="src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.PublicApiGenerator/Meziantou.Framework.PublicApiGenerator.csproj" />
+    <Project Path="src/Meziantou.Framework.QRCode.Imaging/Meziantou.Framework.QRCode.Imaging.csproj" />
     <Project Path="src/Meziantou.Framework.QRCode/Meziantou.Framework.QRCode.csproj" />
     <Project Path="src/Meziantou.Framework.RelativeDate/Meziantou.Framework.RelativeDate.csproj" />
     <Project Path="src/Meziantou.Framework.ResxSourceGenerator/Meziantou.Framework.ResxSourceGenerator.csproj" />
@@ -125,9 +129,8 @@
     <Project Path="src/Meziantou.Framework.SimpleQueryLanguage/Meziantou.Framework.SimpleQueryLanguage.csproj" />
     <Project Path="src/Meziantou.Framework.SingleInstance/Meziantou.Framework.SingleInstance.csproj" />
     <Project Path="src/Meziantou.Framework.Slug/Meziantou.Framework.Slug.csproj" />
-    <Project Path="src/Meziantou.Framework.SnapshotTesting.ImageSharp/Meziantou.Framework.SnapshotTesting.ImageSharp.csproj" />
+    <Project Path="src/Meziantou.Framework.SnapshotTesting.Imaging/Meziantou.Framework.SnapshotTesting.Imaging.csproj" />
     <Project Path="src/Meziantou.Framework.SnapshotTesting.Roslyn/Meziantou.Framework.SnapshotTesting.Roslyn.csproj" />
-    <Project Path="src/Meziantou.Framework.SnapshotTesting.SkiaSharp/Meziantou.Framework.SnapshotTesting.SkiaSharp.csproj" />
     <Project Path="src/Meziantou.Framework.SnapshotTesting.Tool/Meziantou.Framework.SnapshotTesting.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
     <Project Path="src/Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" />
@@ -217,6 +220,7 @@
     <Project Path="tests/Meziantou.Framework.FixedStringBuilder.Tests/Meziantou.Framework.FixedStringBuilder.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FullPath.Analyzer.Tests/Meziantou.Framework.FullPath.Analyzer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.GlobalizationSensitivity.Analyzer.Tests/Meziantou.Framework.GlobalizationSensitivity.Analyzer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Globbing.Tests/Meziantou.Framework.Globbing.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Html.Tests/Meziantou.Framework.Html.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Html.Tool.Tests/Meziantou.Framework.Html.Tool.Tests.csproj" />
@@ -233,6 +237,29 @@
     <Project Path="tests/Meziantou.Framework.HttpClientMock.Tests/Meziantou.Framework.HttpClientMock.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests.fsproj" />
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.Tests/Meziantou.Framework.HumanReadableSerializer.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.AotSmoke/Meziantou.Framework.Imaging.AotSmoke.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Av1.Tests/Meziantou.Framework.Imaging.Av1.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Avif.Tests/Meziantou.Framework.Imaging.Avif.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.AvifEncoder.Tests/Meziantou.Framework.Imaging.AvifEncoder.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Bmp.Tests/Meziantou.Framework.Imaging.Bmp.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Gif.Tests/Meziantou.Framework.Imaging.Gif.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Heic.Tests/Meziantou.Framework.Imaging.Heic.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.HeicEncoder.Tests/Meziantou.Framework.Imaging.HeicEncoder.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Hevc.Tests/Meziantou.Framework.Imaging.Hevc.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Ico.Tests/Meziantou.Framework.Imaging.Ico.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.InteropTests/Meziantou.Framework.Imaging.InteropTests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Jpeg.Tests/Meziantou.Framework.Imaging.Jpeg.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Jpeg2000.Tests/Meziantou.Framework.Imaging.Jpeg2000.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.JpegXl.Tests/Meziantou.Framework.Imaging.JpegXl.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Png.Tests/Meziantou.Framework.Imaging.Png.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Pnm.Tests/Meziantou.Framework.Imaging.Pnm.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Processing.Tests/Meziantou.Framework.Imaging.Processing.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Qoi.Tests/Meziantou.Framework.Imaging.Qoi.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.TestHarness/Meziantou.Framework.Imaging.TestHarness.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Tests/Meziantou.Framework.Imaging.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Tga.Tests/Meziantou.Framework.Imaging.Tga.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Tiff.Tests/Meziantou.Framework.Imaging.Tiff.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.WebP.Tests/Meziantou.Framework.Imaging.WebP.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.JsonPath.Tests/Meziantou.Framework.JsonPath.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Language.Css.Tests/Meziantou.Framework.Language.Css.Tests.csproj" />
@@ -260,6 +287,7 @@
     <Project Path="tests/Meziantou.Framework.ProcessWrapper.Tests/Meziantou.Framework.ProcessWrapper.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.QRCode.Imaging.Tests/Meziantou.Framework.QRCode.Imaging.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.QRCode.Tests/Meziantou.Framework.QRCode.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.RelativeDate.Tests/Meziantou.Framework.RelativeDate.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ResxSourceGenerator.Tests/Meziantou.Framework.ResxSourceGenerator.Tests.csproj" />
@@ -274,6 +302,7 @@
     <Project Path="tests/Meziantou.Framework.SimpleQueryLanguage.Tests/Meziantou.Framework.SimpleQueryLanguage.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.SingleInstance.Tests/Meziantou.Framework.SingleInstance.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Slug.Tests/Meziantou.Framework.Slug.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.SnapshotTesting.PackageTests/Meziantou.Framework.SnapshotTesting.PackageTests.csproj" />
     <Project Path="tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj" />
@@ -291,7 +320,7 @@
     <Project Path="tests/Meziantou.Framework.TextDiff.Tests/Meziantou.Framework.TextDiff.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Threading.Tests/Meziantou.Framework.Threading.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Threading.Windows.Tests/Meziantou.Framework.Threading.Windows.Tests.csproj" />
-    <Project Path="tests/Meziantou.Framework.Toml.AotSmoke/Meziantou.Framework.Toml.AotSmoke.csproj" />
+    <Project Path="tests/Meziantou.Framework.Toml.AotTests/Meziantou.Framework.Toml.AotTests.csproj" />
     <Project Path="tests/Meziantou.Framework.Toml.Tests/Meziantou.Framework.Toml.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.TypeConverter.Tests/Meziantou.Framework.TypeConverter.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.UndoRedo.Tests/Meziantou.Framework.UndoRedo.Tests.csproj" />
@@ -314,7 +343,7 @@
     <Project Path="tests/Meziantou.Framework.Win32.RecentDocuments.Tests/Meziantou.Framework.Win32.RecentDocuments.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.RestartManager.Tests/Meziantou.Framework.Win32.RestartManager.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
-    <Project Path="tests/Meziantou.Framework.Yaml.AotSmoke/Meziantou.Framework.Yaml.AotSmoke.csproj" />
+    <Project Path="tests/Meziantou.Framework.Yaml.AotTests/Meziantou.Framework.Yaml.AotTests.csproj" />
     <Project Path="tests/Meziantou.Framework.Yaml.FeatureSwitchSmoke/Meziantou.Framework.Yaml.FeatureSwitchSmoke.csproj" />
     <Project Path="tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj" />
   </Folder>
@@ -325,11 +354,29 @@
     <Project Path="tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj" />
   </Folder>
   <Folder Name="/tools/">
+    <Project Path="tools/Meziantou.Framework.GlobalizationSensitivity.Analyzer/Meziantou.Framework.GlobalizationSensitivity.Analyzer.csproj" />
     <Project Path="tools/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Http.Hsts.Generator/Meziantou.Framework.Http.Hsts.Generator.csproj" />
+    <Project Path="tools/Meziantou.Framework.Imaging.Av1TableExtractor/Meziantou.Framework.Imaging.Av1TableExtractor.csproj" />
+    <Project Path="tools/Meziantou.Framework.Imaging.CorpusGenerator/Meziantou.Framework.Imaging.CorpusGenerator.csproj" />
     <Project Path="tools/Meziantou.Framework.Markdown.Specs.Generator/Meziantou.Framework.Markdown.Specs.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Unicode.Generator/Meziantou.Framework.Unicode.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Uri.PublicSuffix.Generator/Meziantou.Framework.Uri.PublicSuffix.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Uri.UrlTestData.Generator/Meziantou.Framework.Uri.UrlTestData.Generator.csproj" />
+  </Folder>
+  <Folder Name="/fuzz/">
+    <Project Path="fuzz/Meziantou.Framework.DependencyScanning.Fuzz/Meziantou.Framework.DependencyScanning.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Fuzzing.Tests/Meziantou.Framework.Fuzzing.Tests.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Globbing.Fuzz/Meziantou.Framework.Globbing.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Imaging.FuzzTests/Meziantou.Framework.Imaging.FuzzTests.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.JsonPath.Fuzz/Meziantou.Framework.JsonPath.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Language.Fuzz/Meziantou.Framework.Language.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.SyntaxHighlighting.Fuzz/Meziantou.Framework.SyntaxHighlighting.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.TdsServer.Fuzz/Meziantou.Framework.TdsServer.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Toml.Fuzz/Meziantou.Framework.Toml.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Unicode.Fuzz/Meziantou.Framework.Unicode.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Yaml.Fuzz/Meziantou.Framework.Yaml.Fuzz.csproj" />
   </Folder>
 </Solution>

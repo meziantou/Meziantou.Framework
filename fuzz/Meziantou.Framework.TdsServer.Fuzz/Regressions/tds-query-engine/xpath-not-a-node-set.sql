@@ -1,0 +1,1 @@
+SELECT Id FROM xml_docs WHERE Payload.exist('1/root/item[@ido.=2]') = 1

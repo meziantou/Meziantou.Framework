@@ -6,31 +6,38 @@ namespace Meziantou.Framework.Globbing
 {
     public sealed class Glob : Meziantou.Framework.Globbing.IGlobEvaluatable
     {
+        bool Meziantou.Framework.Globbing.IGlobEvaluatable.CanMatchDirectories { get => throw null; }
+        bool Meziantou.Framework.Globbing.IGlobEvaluatable.CanMatchFiles { get => throw null; }
         public Meziantou.Framework.Globbing.GlobMode Mode { get => throw null; }
-        public static Meziantou.Framework.Globbing.Glob Parse(string pattern, Meziantou.Framework.Globbing.GlobDialect dialect, Meziantou.Framework.Globbing.GlobOptions options = 0) => throw null;
-        public static Meziantou.Framework.Globbing.Glob Parse(System.ReadOnlySpan<char> pattern, Meziantou.Framework.Globbing.GlobDialect dialect, Meziantou.Framework.Globbing.GlobOptions options = 0) => throw null;
-        public static bool TryParse(string pattern, Meziantou.Framework.Globbing.GlobDialect dialect, Meziantou.Framework.Globbing.GlobOptions options, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Globbing.Glob? result) => throw null;
-        public static bool TryParse(System.ReadOnlySpan<char> pattern, Meziantou.Framework.Globbing.GlobDialect dialect, Meziantou.Framework.Globbing.GlobOptions options, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Globbing.Glob? result) => throw null;
+        bool Meziantou.Framework.Globbing.IGlobEvaluatable.TraverseDirectories { get => throw null; }
         public bool IsMatch(System.ReadOnlySpan<char> directory, System.ReadOnlySpan<char> filename, Meziantou.Framework.Globbing.PathItemType? itemType) => throw null;
         public bool IsPartialMatch(System.ReadOnlySpan<char> folderPath, System.ReadOnlySpan<char> filename) => throw null;
+        public static Meziantou.Framework.Globbing.Glob Parse(System.ReadOnlySpan<char> pattern, Meziantou.Framework.Globbing.GlobDialect dialect, Meziantou.Framework.Globbing.GlobOptions options = Meziantou.Framework.Globbing.GlobOptions.None) => throw null;
+        public static Meziantou.Framework.Globbing.Glob Parse(string pattern, Meziantou.Framework.Globbing.GlobDialect dialect, Meziantou.Framework.Globbing.GlobOptions options = Meziantou.Framework.Globbing.GlobOptions.None) => throw null;
         public override string ToString() => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> pattern, Meziantou.Framework.Globbing.GlobDialect dialect, Meziantou.Framework.Globbing.GlobOptions options, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Globbing.Glob? result) => throw null;
+        public static bool TryParse(string pattern, Meziantou.Framework.Globbing.GlobDialect dialect, Meziantou.Framework.Globbing.GlobOptions options, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Globbing.Glob? result) => throw null;
     }
 
     [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Globbing.GlobCollection), "Create")]
     public sealed class GlobCollection : Meziantou.Framework.Globbing.IGlobEvaluatable, System.Collections.Generic.IEnumerable<Meziantou.Framework.Globbing.IGlobEvaluatable>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Globbing.IGlobEvaluatable>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Globbing.IGlobEvaluatable>, System.Collections.IEnumerable
     {
+        bool Meziantou.Framework.Globbing.IGlobEvaluatable.CanMatchDirectories { get => throw null; }
+        bool Meziantou.Framework.Globbing.IGlobEvaluatable.CanMatchFiles { get => throw null; }
         public int Count { get => throw null; }
         public Meziantou.Framework.Globbing.IGlobEvaluatable this[int index] { get => throw null; }
+        Meziantou.Framework.Globbing.GlobMode Meziantou.Framework.Globbing.IGlobEvaluatable.Mode { get => throw null; }
+        bool Meziantou.Framework.Globbing.IGlobEvaluatable.TraverseDirectories { get => throw null; }
         public GlobCollection(params Meziantou.Framework.Globbing.IGlobEvaluatable[] globs) { }
-        public static Meziantou.Framework.Globbing.GlobCollection ParseGitIgnore(System.ReadOnlySpan<char> gitIgnoreContent) => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.Globbing.GlobCollection> LoadGitIgnoreAsync(string path, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.Globbing.GlobCollection> LoadGitIgnoreAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.Globbing.GlobCollection> LoadGitIgnoreAsync(System.IO.TextReader reader, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public static Meziantou.Framework.Globbing.GlobCollection Create(System.ReadOnlySpan<Meziantou.Framework.Globbing.IGlobEvaluatable> globs) => throw null;
-        public bool IsMatch(System.ReadOnlySpan<char> directory, System.ReadOnlySpan<char> filename, Meziantou.Framework.Globbing.PathItemType? itemType) => throw null;
-        public bool IsPartialMatch(System.ReadOnlySpan<char> folderPath, System.ReadOnlySpan<char> filename) => throw null;
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Globbing.IGlobEvaluatable> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool IsMatch(System.ReadOnlySpan<char> directory, System.ReadOnlySpan<char> filename, Meziantou.Framework.Globbing.PathItemType? itemType) => throw null;
+        public bool IsPartialMatch(System.ReadOnlySpan<char> folderPath, System.ReadOnlySpan<char> filename) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Globbing.GlobCollection> LoadGitIgnoreAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Globbing.GlobCollection> LoadGitIgnoreAsync(System.IO.TextReader reader, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Globbing.GlobCollection> LoadGitIgnoreAsync(string path, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.Globbing.GlobCollection ParseGitIgnore(System.ReadOnlySpan<char> gitIgnoreContent) => throw null;
     }
 
     public enum GlobDialect
@@ -44,17 +51,17 @@ namespace Meziantou.Framework.Globbing
 
     public static class GlobExtensions
     {
-        public static bool IsMatch(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, string path) => throw null;
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, string directory, System.IO.EnumerationOptions? options = null) => throw null;
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, string directory, System.IO.EnumerationOptions? options = null) => throw null;
         public static bool IsMatch(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, System.ReadOnlySpan<char> path) => throw null;
-        public static bool IsMatch(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, string directory, string filename) => throw null;
         public static bool IsMatch(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, ref System.IO.Enumeration.FileSystemEntry entry) => throw null;
+        public static bool IsMatch(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, string path) => throw null;
         public static bool IsMatch(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, System.ReadOnlySpan<char> directory, System.ReadOnlySpan<char> filename) => throw null;
-        public static bool IsPartialMatch(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, string folderPath) => throw null;
+        public static bool IsMatch(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, string directory, string filename) => throw null;
         public static bool IsPartialMatch(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, System.ReadOnlySpan<char> folderPath) => throw null;
         public static bool IsPartialMatch(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, ref System.IO.Enumeration.FileSystemEntry entry) => throw null;
+        public static bool IsPartialMatch(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, string folderPath) => throw null;
         public static bool IsPartialMatch(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, string folderPath, string filename) => throw null;
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, string directory, System.IO.EnumerationOptions? options = null) => throw null;
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(this Meziantou.Framework.Globbing.IGlobEvaluatable glob, string directory, System.IO.EnumerationOptions? options = null) => throw null;
     }
 
     public sealed class GlobFileSystemEnumerator : Meziantou.Framework.Globbing.GlobFileSystemEnumerator<string>
@@ -66,8 +73,8 @@ namespace Meziantou.Framework.Globbing
     public abstract class GlobFileSystemEnumerator<T> : System.IO.Enumeration.FileSystemEnumerator<T>
     {
         protected GlobFileSystemEnumerator(Meziantou.Framework.Globbing.IGlobEvaluatable glob, string directory, System.IO.EnumerationOptions? options = null) { }
-        protected override bool ShouldRecurseIntoEntry(ref System.IO.Enumeration.FileSystemEntry entry) => throw null;
         protected override bool ShouldIncludeEntry(ref System.IO.Enumeration.FileSystemEntry entry) => throw null;
+        protected override bool ShouldRecurseIntoEntry(ref System.IO.Enumeration.FileSystemEntry entry) => throw null;
     }
 
     public enum GlobMode
@@ -86,8 +93,8 @@ namespace Meziantou.Framework.Globbing
 
     public interface IGlobEvaluatable
     {
-        bool CanMatchFiles { get; }
         bool CanMatchDirectories { get; }
+        bool CanMatchFiles { get; }
         Meziantou.Framework.Globbing.GlobMode Mode { get; }
         bool TraverseDirectories { get; }
         bool IsMatch(System.ReadOnlySpan<char> directory, System.ReadOnlySpan<char> filename, Meziantou.Framework.Globbing.PathItemType? itemType);

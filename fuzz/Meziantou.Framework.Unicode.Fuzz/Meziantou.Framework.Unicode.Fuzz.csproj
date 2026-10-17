@@ -1,0 +1,24 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Unicode. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <!-- A namespace Meziantou.Framework.Unicode would hide the Unicode class of the library -->
+    <RootNamespace>Meziantou.Framework.UnicodeFuzz</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- A sample of the conformance files of the Unicode Character Database are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Unicode.Tests\files\GraphemeBreakTest.txt.gz" LogicalName="GraphemeBreakTest.txt.gz" Link="Seeds\GraphemeBreakTest.txt.gz" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Unicode.Tests\files\WordBreakTest.txt.gz" LogicalName="WordBreakTest.txt.gz" Link="Seeds\WordBreakTest.txt.gz" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Unicode.Tests\files\LineBreakTest.txt.gz" LogicalName="LineBreakTest.txt.gz" Link="Seeds\LineBreakTest.txt.gz" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Unicode.Tests\files\NormalizationTest.txt.gz" LogicalName="NormalizationTest.txt.gz" Link="Seeds\NormalizationTest.txt.gz" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Unicode.Tests\files\BidiCharacterTest.txt.gz" LogicalName="BidiCharacterTest.txt.gz" Link="Seeds\BidiCharacterTest.txt.gz" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
+  </ItemGroup>
+</Project>

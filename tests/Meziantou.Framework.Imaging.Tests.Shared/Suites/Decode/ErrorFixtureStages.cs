@@ -1,0 +1,485 @@
+using Meziantou.Framework.Imaging.TestHarness.Golden;
+
+namespace Meziantou.Framework.Imaging.Tests.Conformance;
+
+/// <summary>
+/// Where the defect of each error fixture lies: before the first pixel payload (detected by a header identification and
+/// by every load), in the container structure after it (detected by a full scan and by loads), or inside the compressed
+/// pixel data of a valid container (detected only by pixel decoding: a full scan succeeds). Every error fixture must be
+/// classified here, so that adding one forces an explicit decision.
+/// </summary>
+internal static class ErrorFixtureStages
+{
+    private static readonly HashSet<string> HeaderDefects = new(StringComparer.Ordinal)
+    {
+        "invalid/jxl/codestream-signature",
+        "invalid/jxl/container-box-size",
+        "invalid/jxl/container-parts-out-of-order",
+        "invalid/jxl/container-without-codestream",
+        "invalid/jxl/float-samples",
+        "invalid/jxl/pq-white-point-e",
+        "invalid/jxl/premultiplied-alpha",
+        "invalid/jxl/xyb-icc",
+        "limit/jxl/width-over-limit",
+        "limit/jxl/height-over-limit",
+        "limit/jxl/frame-pixels-over-limit",
+        "limit/jxl/metadata-bytes-over-limit",
+
+        // JPEG 2000: the boxes that precede the codestream of a file, and the main header of the codestream
+        "invalid/jp2/file-box-length",
+        "invalid/jp2/file-header-size",
+        "invalid/jp2/file-no-codestream",
+        "invalid/jp2/file-no-color",
+        "invalid/jp2/file-no-header",
+        "invalid/jp2/five-components",
+        "invalid/jp2/header-no-cod",
+        "invalid/jp2/header-no-qcd",
+        "invalid/jp2/ht-mixed",
+        "invalid/jp2/motion-jpeg-2000",
+        "invalid/jp2/part-2-extensions",
+        "invalid/jp2/premultiplied-opacity",
+        "invalid/jp2/signed-samples",
+        "invalid/jp2/siz-image-offset",
+        "invalid/jp2/siz-no-component",
+        "invalid/jp2/siz-zero-tile-width",
+        "invalid/jp2/subsampled-first-component",
+        "invalid/jp2/two-opacities",
+        "limit/jp2/width-over-limit",
+        "limit/jp2/height-over-limit",
+        "limit/jp2/frame-pixels-over-limit",
+        "limit/jp2/metadata-bytes-over-limit",
+        "invalid/png/apng-default-fctl-partial",
+        "invalid/png/apng-fdat-before-idat",
+        "invalid/png/apng-invalid-dispose-op",
+        "invalid/png/apng-num-plays-overflow",
+        "invalid/png/apng-zero-frames",
+        "invalid/png/bad-ihdr-crc",
+        "invalid/png/chunk-length-overflow",
+        "invalid/png/ihdr-not-first",
+        "invalid/png/illegal-bit-depth",
+        "invalid/png/unknown-critical-chunk",
+        "invalid/gif/plain-text-extension",
+        "invalid/gif/empty-logical-screen",
+        "invalid/gif/graphic-control-wrong-size",
+        "invalid/gif/no-image",
+        "invalid/jpeg/lossless-arithmetic",
+        "invalid/jpeg/non-integral-sampling",
+        "invalid/jpeg/precision-16",
+        "limit/jpeg/frame-pixels-excessive",
+        "limit/png/frame-pixels-over-limit",
+        "limit/png/width-over-limit",
+        "limit/png/ztxt-over-metadata-limit",
+
+        // WebP: the RIFF chunks up to the first image chunk (VP8X, ICCP, ANIM, the first ANMF header) and the bitstream
+        // header (VP8L signature/version/size, VP8 frame tag, start code and first partition size)
+        "invalid/webp/anim-missing-anim-chunk",
+        "invalid/webp/chunk-size-exceeds-riff",
+        "invalid/webp/extended-canvas-mismatch",
+        "invalid/webp/extended-missing-image",
+        "invalid/webp/lossless-bad-signature",
+        "invalid/webp/lossless-bad-version",
+        "invalid/webp/lossy-bad-start-code",
+        "invalid/webp/lossy-first-partition-overflow",
+        "invalid/webp/lossy-interframe",
+        "limit/webp/lossless-metadata-over-limit",
+        "limit/webp/lossless-width-over-limit",
+        "limit/webp/lossy-frame-pixels-over-limit",
+        // QOI: the 14-byte header (magic, dimensions, channels, colorspace)
+        "invalid/qoi/channels-5",
+        "invalid/qoi/colorspace-2",
+        "invalid/qoi/truncated-header",
+        "invalid/qoi/zero-height",
+        "invalid/qoi/zero-width",
+        "limit/qoi/frame-pixels-over-limit",
+        "limit/qoi/width-beyond-int32",
+        "limit/qoi/width-over-limit",
+
+        // BMP: the file header, the Windows or OS/2 DIB header (its compression must agree with its bit count and row
+        // order) and the masks that follow a 40-byte BI_BITFIELDS header, all read before the palette and the pixel data
+        "invalid/bmp/bit-count-2",
+        "invalid/bmp/bit-count-7",
+        "invalid/bmp/embedded-png",
+        "invalid/bmp/mask-10-bits",
+        "invalid/bmp/non-contiguous-mask",
+        "invalid/bmp/os2-core-bit-count-16",
+        "invalid/bmp/os2-core-offset-inside-palette",
+        "invalid/bmp/os2-huffman-1d",
+        "invalid/bmp/overlapping-masks",
+        "invalid/bmp/pixel-offset-too-small",
+        "invalid/bmp/planes-2",
+        "invalid/bmp/rle8-bit-count-4",
+        "invalid/bmp/rle8-top-down",
+        "invalid/bmp/truncated-header",
+        "invalid/bmp/undefined-compression",
+        "invalid/bmp/zero-green-mask",
+        "invalid/bmp/zero-height",
+        "invalid/bmp/zero-width",
+        "limit/bmp/frame-pixels-over-limit",
+        "limit/bmp/width-over-limit",
+
+        // TGA: the 18-byte header (the only part a header identification reads)
+        "limit/tga/width-over-limit",
+
+        // PNM: the magic number and the header tokens or PAM header lines up to ENDHDR
+        "invalid/pnm/comment-in-token",
+        "invalid/pnm/header-too-long",
+        "invalid/pnm/maxval-65536",
+        "invalid/pnm/maxval-zero",
+        "invalid/pnm/pam-depth-mismatch",
+        "invalid/pnm/pam-duplicate-width",
+        "invalid/pnm/pam-missing-endhdr",
+        "invalid/pnm/pam-tuple-cmyk",
+        "invalid/pnm/pam-unknown-keyword",
+        "invalid/pnm/zero-width",
+        "limit/pnm/width-over-limit",
+
+        // AVIF: the file type box and the box that describes the image (the meta box: primary item, item properties,
+        // references; or the moov box of an image sequence: tracks, edit lists, sample tables), which is parsed before any
+        // item data or sample is read. The colr box is one of the item properties: matrix coefficients that are not
+        // supported are known there
+        "invalid/avif/a1op-on-grid",
+        "invalid/avif/alpha-different-size",
+        "invalid/avif/box-size-too-small",
+        "invalid/avif/child-box-exceeds-parent",
+        "invalid/avif/clap-fractional",
+        "invalid/avif/derived-loop",
+        "invalid/avif/grid-derived-tiles-differ",
+        "invalid/avif/iovl-alpha-plane",
+        "invalid/avif/iovl-depth",
+        "invalid/avif/iovl-layers-color-spaces",
+        "invalid/avif/iovl-layers-icc-profiles",
+        "invalid/avif/essential-unknown-property",
+        "invalid/avif/ftyp-without-avif-brand",
+        "invalid/avif/grid-tile-transform-differs",
+        "invalid/avif/iden-alpha-untransformed",
+        "invalid/avif/iden-depth",
+        "invalid/avif/iden-loop",
+        "invalid/avif/iden-missing-input",
+        "invalid/avif/iden-size-mismatch",
+        "invalid/avif/iden-two-inputs",
+        "invalid/avif/grid-tiles-differ",
+        "invalid/avif/lsel-on-grid",
+        "invalid/avif/lsel-out-of-range",
+        "invalid/avif/matrix-chromaticity-unspecified-primaries",
+        "invalid/avif/matrix-ictcp-sdr-transfer",
+        "invalid/avif/matrix-reserved",
+        "invalid/avif/missing-av1c",
+        "invalid/avif/missing-ftyp",
+        "invalid/avif/missing-ispe",
+        "invalid/avif/missing-pitm",
+        "invalid/avif/missing-primary-item",
+        "invalid/avif/sequence-alpha-edit-differs",
+        "invalid/avif/sequence-edit-dwell",
+        "invalid/avif/sequence-edit-empty",
+        "invalid/avif/sequence-edit-negative-media-time",
+        "invalid/avif/sequence-edit-rate",
+        "invalid/avif/sequence-edit-shows-nothing",
+        "invalid/avif/sequence-edits-out-of-order",
+        "invalid/avif/sequence-edits-overlap",
+        "invalid/avif/sequence-fragment-before-moov",
+        "invalid/avif/sequence-fragmented-edit-list",
+        "invalid/avif/sequence-matrix-constant-luminance-unspecified-transfer",
+        "invalid/avif/sequence-missing-chunk-offsets",
+        "invalid/avif/sequence-no-av1-track",
+        "invalid/avif/truncated-meta",
+        "limit/avif/frame-pixels-over-limit",
+        "limit/avif/height-over-limit",
+        "limit/avif/icc-over-metadata-limit",
+        "limit/avif/width-over-limit",
+        // HEIC: as for AVIF, the file type box and the box that describes the image. The configuration record of an HEVC
+        // image is one of its item properties (or a box of the sample entry of a track): its version, the size of the
+        // lengths of its NAL units, its sample format and its own length are known there, and so is the type of the coded
+        // item, the brands that go with it, and a clean aperture on the tile of a grid
+        "invalid/heic/alpha-different-size",
+        "invalid/heic/bitstream-unequal-bit-depths",
+        "invalid/heic/child-box-exceeds-parent",
+        "invalid/heic/clap-fractional",
+        "invalid/heic/derived-iden",
+        "invalid/heic/derived-iovl",
+        "invalid/heic/essential-unknown-property",
+        "invalid/heic/ftyp-without-heic-brand",
+        "invalid/heic/grid-missing-tile",
+        "invalid/heic/grid-tile-clap",
+        "invalid/heic/grid-tiles-differ",
+        "invalid/heic/hvcc-length-size-reserved",
+        "invalid/heic/hvcc-truncated",
+        "invalid/heic/hvcc-version",
+        "invalid/heic/item-av01",
+        "invalid/heic/item-lhv1",
+        "invalid/heic/layer-selector",
+        "invalid/heic/matrix-ictcp",
+        "invalid/heic/missing-ftyp",
+        "invalid/heic/missing-hvcc",
+        "invalid/heic/missing-ispe",
+        "invalid/heic/missing-pitm",
+        "invalid/heic/premultiplied-alpha",
+        "invalid/heic/sequence-edit-list-offset",
+        "invalid/heic/sequence-fragmented",
+        "invalid/heic/sequence-missing-chunk-offsets",
+        "invalid/heic/sequence-no-hevc-track",
+        "invalid/heic/truncated-meta",
+        "limit/heic/clap-picture-over-limit",
+        "limit/heic/frame-pixels-over-limit",
+        "limit/heic/height-over-limit",
+        "limit/heic/icc-over-metadata-limit",
+        "limit/heic/width-over-limit",
+    };
+
+    private static readonly HashSet<string> StructureDefects = new(StringComparer.Ordinal)
+    {
+        // JPEG 2000: the chain of the tile-parts, the end of the codestream and the boxes that follow it
+        "invalid/jp2/codestream-cut",
+        "invalid/jp2/codestream-no-end",
+        "invalid/jp2/file-codestream-cut",
+        "invalid/jp2/tile-index",
+        "invalid/jp2/tile-part-index",
+        "invalid/jp2/tile-part-length",
+        "invalid/jp2/two-codestreams",
+        "limit/jp2/metadata-bytes-after-codestream",
+        "invalid/jxl/container-two-codestreams",
+        "invalid/jxl/frame-header-corrupt",
+        "limit/jxl/frames-over-limit",
+        "invalid/png/apng-fctl-without-fdat",
+        "invalid/png/apng-fdat-without-sequence",
+        "invalid/png/apng-frame-count-excess",
+        "invalid/png/apng-frame-count-short",
+        "invalid/png/apng-invalid-blend-op",
+        "invalid/png/apng-region-out-of-bounds",
+        "invalid/png/apng-sequence-gap",
+        "limit/png/apng-frames-over-limit",
+        "invalid/png/bad-idat-crc",
+        "invalid/png/missing-iend",
+        "invalid/png/non-consecutive-idat",
+        "invalid/png/plte-after-idat",
+        "invalid/png/truncated-idat",
+        "invalid/gif/truncated-image-data",
+        "invalid/gif/unknown-block",
+        "invalid/gif/lzw-minimum-code-size-12",
+        "invalid/gif/missing-trailer",
+        "invalid/jpeg/interleaved-scan-too-many-blocks",
+        "invalid/jpeg/lossless-point-transform-8",
+        "invalid/jpeg/lossless-predictor-0",
+
+        // Progressive scan parameters and coefficient progression are validated from the scan headers by the walker
+        "invalid/jpeg/progressive-invalid-spectral-range",
+        "invalid/jpeg/progressive-refinement-before-first-scan",
+        "limit/gif/frames-over-limit",
+        "limit/png/encoded-bytes-over-limit",
+
+        // WebP: chunks after the first image chunk (later ANMF rectangles) and the RIFF/chunk sizes against the input length
+        "invalid/webp/anim-frame-outside-canvas",
+        "invalid/webp/anim-truncated",
+        "invalid/webp/lossless-truncated",
+        "invalid/webp/riff-size-exceeds-file",
+        "limit/webp/anim-frames-over-limit",
+        // QOI: the chunk stream is the structure (a full scan walks every chunk to find the end marker)
+        "invalid/qoi/bad-end-marker",
+        "invalid/qoi/chunk-after-last-pixel",
+        "invalid/qoi/end-marker-truncated",
+        "invalid/qoi/missing-end-marker",
+        "invalid/qoi/run-past-end",
+        "invalid/qoi/truncated-chunks",
+        "invalid/qoi/truncated-in-chunk",
+        "limit/qoi/encoded-bytes-over-limit",
+
+        // BMP: the palette, the gap and the padded rows or the commands of the run-length stream, all walked by a full scan
+        "invalid/bmp/rle4-delta-outside-canvas",
+        "invalid/bmp/rle8-data-after-last-row",
+        "invalid/bmp/rle8-missing-end-of-bitmap",
+        "invalid/bmp/rle8-run-past-row-end",
+        "invalid/bmp/truncated-pixels",
+
+        // TGA: the packets and the TGA 2.0 trailer, which a full scan walks to the end of the input
+        "invalid/tga/packet-past-end",
+        "invalid/tga/truncated-packet",
+        "invalid/tga/truncated-pixels",
+        "invalid/tga/extension-premultiplied-alpha",
+        "invalid/tga/extension-offset-past-footer",
+        "invalid/tga/extension-size-too-small",
+        "limit/tga/encoded-bytes-over-limit",
+
+        // PNM: the raster; the plain reader parses every sample (and validates it against MAXVAL) to find the end of the image
+        "invalid/pnm/plain-pbm-digit-2",
+        "invalid/pnm/sample-above-maxval",
+        "invalid/pnm/truncated-raster",
+
+        // AVIF: the boxes that follow the one that describes the image, the location of the item data and of the samples,
+        // the grid descriptor (item data), the Exif and XMP items, and the sequence header of each coded item, which a
+        // full scan compares with the av1C record
+        "invalid/avif/a1op-beyond-operating-points",
+        "invalid/avif/a1op-missing-operating-point",
+        "invalid/avif/av1c-mismatch",
+        "invalid/avif/grid-size-mismatch",
+        "invalid/avif/grid-tile-count-mismatch",
+        "invalid/avif/iovl-bitstream-other-color-space",
+        "invalid/avif/iovl-descriptor-truncated",
+        "invalid/avif/iovl-fill-other-color-space",
+        "invalid/avif/iovl-size-mismatch",
+        "invalid/avif/item-outside-file",
+        "invalid/avif/item-outside-idat",
+        // The Exif and XMP items of an image sequence are data of the file: a header identification does not read them,
+        // nor the meta box of the track that locates them
+        "invalid/avif/sequence-file-metadata-outside-file",
+        "invalid/avif/sequence-fragment-without-mvex",
+        "invalid/avif/sequence-fragmented-alpha-missing",
+        "invalid/avif/sequence-fragmented-composition-offsets",
+        "invalid/avif/sequence-fragmented-data-first",
+        "invalid/avif/sequence-fragmented-gap",
+        "invalid/avif/sequence-track-meta-malformed",
+        "invalid/avif/sequence-track-metadata-outside-file",
+        "invalid/avif/sequence-truncated",
+        "invalid/avif/truncated-item-data",
+        "invalid/avif/two-meta-boxes",
+        "limit/avif/encoded-bytes-over-limit",
+        "limit/avif/exif-over-metadata-limit",
+        "limit/avif/sequence-frames-over-limit",
+        "limit/avif/sequence-xmp-over-metadata-limit",
+        // HEIC: as for AVIF, what follows the box that describes the image: the location of the item data and of the
+        // samples, the grid descriptor, the Exif and XMP items, the composition times of the samples. A full scan parses
+        // the sequence parameter set of each coded item and of each track (it is in the configuration record, or else in
+        // the coded data) and compares it with the record: a sample format that the record does not announce, a feature
+        // of the bitstream that is not decoded and a chroma sample location that is not converted are found there
+        "invalid/heic/bitstream-16bit",
+        "invalid/heic/bitstream-extended-precision",
+        "invalid/heic/chroma-sample-location-3",
+        "invalid/heic/grid-size-mismatch",
+        "invalid/heic/grid-tile-count-mismatch",
+        "invalid/heic/hvcc-bit-depth-mismatch",
+        "invalid/heic/hvcc-chroma-format-mismatch",
+        "invalid/heic/item-outside-file",
+        "invalid/heic/sequence-ctts-collision",
+        "invalid/heic/sequence-record-mismatch",
+        "invalid/heic/sequence-track-meta-malformed",
+        "invalid/heic/sequence-truncated",
+        "invalid/heic/truncated-item-data",
+        "limit/heic/encoded-bytes-over-limit",
+        "limit/heic/exif-over-metadata-limit",
+        "limit/heic/sequence-frames-over-limit",
+        "limit/heic/sequence-xmp-over-metadata-limit",
+    };
+
+    private static readonly HashSet<string> PixelDefects = new(StringComparer.Ordinal)
+    {
+        // JPEG 2000: the packets of a tile and the coding passes of a code-block
+        "invalid/jp2/ht-placeholders-alone",
+        "invalid/jp2/ht-suffix-length",
+        "invalid/jp2/ht-two-sets",
+        "invalid/jxl/frame-data-corrupt",
+        "limit/jxl/total-pixels-hidden-layer",
+        "invalid/png/apng-fdat-extra-scanline",
+
+        // GIF LZW datastreams and color tables are only interpreted by the decoder; full scans charge frames, not pixels
+        "invalid/gif/lzw-code-out-of-range",
+        "invalid/gif/lzw-end-code-too-early",
+        "invalid/gif/lzw-first-code-not-literal",
+        "invalid/gif/lzw-truncated-without-end-code",
+        "invalid/gif/missing-color-table",
+        "invalid/gif/palette-index-out-of-range",
+        "limit/gif/total-pixels-over-limit",
+        "invalid/png/apng-fdat-truncated-zlib",
+
+        // Not a pixel-data defect, but likewise only found by decoding: full scans charge frames, never displayed pixels
+        "limit/png/apng-total-pixels-over-limit",
+        "invalid/png/bad-adler32",
+        "invalid/png/bad-filter-type",
+        "invalid/png/extra-bytes-after-zlib",
+        "invalid/png/extra-image-data",
+        "invalid/png/missing-adler32",
+        "invalid/png/palette-index-out-of-range",
+        "invalid/png/too-little-image-data",
+        "invalid/png/truncated-zlib",
+        // Four components are inks: the file is identified, and only a load without color conversion rejects it
+        "invalid/jpeg/cmyk-adobe-progressive",
+        "invalid/jpeg/cmyk-without-adobe-restart",
+        "invalid/jpeg/cmyk-ycck-embedded-profile",
+        "invalid/jpeg/invalid-huffman-code",
+        "invalid/jpeg/lossless-restart-interval-partial-line",
+        "invalid/jpeg/lossless-truncated-scan",
+        "invalid/jpeg/restart-marker-missing",
+        "invalid/jpeg/restart-out-of-sequence",
+        "invalid/jpeg/truncated-entropy-data",
+        "invalid/jpeg/progressive-refinement-invalid-code",
+        "invalid/jpeg/progressive-truncated-scan",
+
+        // JPEG table contents and scan coverage are only parsed by the decoder (identification walks the segments without
+        // interpreting DQT/DHT payloads or checking that every component is coded)
+        "invalid/jpeg/missing-component-scan",
+        "invalid/jpeg/progressive-missing-component",
+        "invalid/jpeg/oversubscribed-huffman-table",
+        "invalid/jpeg/truncated-quantization-table",
+        "invalid/jpeg/undefined-huffman-table",
+        "invalid/jpeg/zero-quantization-value",
+
+        // WebP: VP8L entropy-coded data, VP8 token partitions and ALPH payloads are only interpreted by the decoders; displayed
+        // animation pixels are charged when composed
+        "invalid/webp/lossless-corrupt-entropy-code",
+        "invalid/webp/lossy-alpha-bad-compression",
+        "invalid/webp/lossy-truncated-partition",
+        "limit/webp/anim-total-pixels-over-limit",
+
+        // BMP and TGA palettes are only looked up by the decoder; a full scan charges frames, never displayed pixels
+        "invalid/bmp/palette-index-out-of-range",
+        "invalid/bmp/rle8-palette-index-out-of-range",
+        "invalid/tga/colormap-index-out-of-range",
+        "invalid/tga/colormap16-index-out-of-range",
+        "limit/pnm/total-pixels-over-limit",
+
+        // AVIF: the frame headers and the tile data of the AV1 bitstream are only interpreted by the decoder (the size of a
+        // frame is in its frame header, and its spatial layer in the header of its unit); displayed and hidden frames, and
+        // the lower layers of a layered image, are charged when they are decoded
+        "invalid/avif/ispe-mismatch",
+        "invalid/avif/lsel-beyond-layers",
+        "invalid/avif/lsel-layer-size-mismatch",
+        "invalid/avif/lsel-missing-layer",
+        "invalid/avif/lsel-outside-operating-point",
+        "invalid/avif/sequence-size-changes",
+        "limit/avif/layered-lower-layers-total-pixels",
+        "limit/avif/live-allocation-over-limit",
+        "limit/avif/sequence-hidden-frames-total-pixels",
+        "limit/avif/sequence-total-pixels-over-limit",
+        // HEIC: the NAL units of an item or of a sample are only split and interpreted by the decoder (their lengths, the
+        // pictures they hold, the type of the first one, the slice data, the reference pictures), and the size of a
+        // picture after its conformance window is only compared with the size the file declares once it is decoded;
+        // displayed frames are charged when they are decoded
+        "invalid/heic/cabac-garbage",
+        "invalid/heic/first-picture-not-irap",
+        "invalid/heic/ispe-mismatch",
+        "invalid/heic/nal-length-exceeds-item",
+        "invalid/heic/nal-length-truncated",
+        "invalid/heic/no-picture",
+        "invalid/heic/sequence-missing-reference",
+        "invalid/heic/sequence-padded-pictures",
+        "invalid/heic/sequence-size-mismatch",
+        "invalid/heic/slice-data-truncated",
+        "invalid/heic/two-pictures",
+        "limit/heic/live-allocation-over-limit",
+        "limit/heic/sequence-total-pixels-over-limit",
+    };
+
+    /// <summary>Gets a value indicating whether a header identification detects the defect.</summary>
+    public static bool IsHeaderDefect(GoldenFixture fixture) => GetStage(fixture) == Stage.Header;
+
+    /// <summary>Gets a value indicating whether only pixel decoding detects the defect (identification, even a full scan, succeeds).</summary>
+    public static bool IsPixelDefect(GoldenFixture fixture) => GetStage(fixture) == Stage.Pixels;
+
+    private static Stage GetStage(GoldenFixture fixture)
+    {
+        if (HeaderDefects.Contains(fixture.Id))
+            return Stage.Header;
+
+        if (StructureDefects.Contains(fixture.Id))
+            return Stage.Structure;
+
+        if (PixelDefects.Contains(fixture.Id))
+            return Stage.Pixels;
+
+        throw new InvalidOperationException($"The error fixture '{fixture.Id}' is not classified in {nameof(ErrorFixtureStages)}: add it to the header, structure or pixel defects.");
+    }
+
+    private enum Stage
+    {
+        Header,
+        Structure,
+        Pixels,
+    }
+}

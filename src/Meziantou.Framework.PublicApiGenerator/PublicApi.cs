@@ -42,6 +42,27 @@ public static class PublicApi
         return Generate(mergedModel, options, targetFrameworks);
     }
 
+    /// <summary>Reads the public API of an assembly file, without loading it.</summary>
+    public static PublicApiAssembly ReadAssembly(string assemblyPath, PublicApiReadOptions? options = null)
+    {
+        return PublicApiModelReader.ReadAssembly(assemblyPath, options);
+    }
+
+    /// <summary>Reads the public API of an assembly from a stream that contains a PE image, without loading it. The stream is not closed.</summary>
+    public static PublicApiAssembly ReadAssembly(Stream stream, PublicApiReadOptions? options = null)
+    {
+        return PublicApiModelReader.ReadAssembly(stream, options);
+    }
+
+    /// <summary>
+    /// Aggregates the builds of an assembly for several target frameworks, to find the symbols that are specific to some of them and the declarations that differ.
+    /// </summary>
+    /// <param name="assemblies">The builds of the same assembly. They must have the same name and distinct target frameworks.</param>
+    public static PublicApiAggregatedAssembly Aggregate(IReadOnlyList<PublicApiAssembly> assemblies)
+    {
+        return PublicApiAggregator.Aggregate(assemblies);
+    }
+
     public static void GenerateToDirectory(string assemblyPath, string outputDirectory, PublicApiOptions? options = null)
     {
         var files = Generate(assemblyPath, options);

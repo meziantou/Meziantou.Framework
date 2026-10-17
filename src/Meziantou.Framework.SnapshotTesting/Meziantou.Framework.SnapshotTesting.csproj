@@ -3,7 +3,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Enables verification of objects using file-based snapshots</Description>
     <PackageTags>snapshot-testing, approval-tests, testing, assertions</PackageTags>
-    <Version>3.1.12</Version>
+    <Version>3.1.14</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.SnapshotTesting.Tests" />
-    <InternalsVisibleTo Include="SnapshotTestingBenchmarks" />
+    <InternalsVisibleTo Include="Meziantou.Framework.SnapshotTesting.Benchmarks" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,7 +35,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.IO.Hashing" Version="10.0.12" />
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.333">
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.346">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

@@ -225,6 +225,9 @@ public class GlobParserTests
     [InlineData(GlobDialect.MSBuild, "/a/", "/a/", "a/")]
     [InlineData(GlobDialect.Posix, @"a\*", "a*", "ab")]
     [InlineData(GlobDialect.Posix, "[[:alpha:]-]", "a", "-", "1")]
+    [InlineData(GlobDialect.Posix, @"[[=]\=]", "[=]", "==]", "[==]")]
+    [InlineData(GlobDialect.Posix, "[[=a]x", "[x", "=x", "ax", "[=a]x")]
+    [InlineData(GlobDialect.PosixPath, @"[[=]\=]", "[=]", "==]", "[==]")]
     [InlineData(GlobDialect.PosixPath, "//a/", "//a/", "/a/")]
     public void ToStringParsesBackToAnEquivalentGlob(GlobDialect dialect, string pattern, params string[] paths)
     {
@@ -244,6 +247,19 @@ public class GlobParserTests
     {
         // '\' is a path separator on Windows, so no path can check this one by matching
         Assert.Equal(@"a\\b", Glob.Parse(@"a\\b", GlobDialect.Standard).ToString());
+    }
+
+    [Fact]
+    public void ToStringEscapesABracketThatDoesNotOpenAnEquivalenceClass()
+    {
+        // glibc reads "[=" that is not followed by "c=]" as two ordinary characters, so this pattern matches "[=]" and
+        // "==]". Written back as is, the bracket expression would be followed by "=]" and hold the equivalence class "[=]=]".
+        var glob = Glob.Parse(@"[[=]\=]", GlobDialect.Posix);
+
+        Assert.Equal(@"[\[=]=]", glob.ToString());
+        Assert.True(glob.IsMatch("[=]"));
+        Assert.True(glob.IsMatch("==]"));
+        Assert.False(glob.IsMatch("[==]"));
     }
 
     [Fact]

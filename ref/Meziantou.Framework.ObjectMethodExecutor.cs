@@ -4,13 +4,13 @@
 
 namespace Meziantou.Framework
 {
-    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("ObjectMethodExecutor performs reflection on arbitrary types.")]
     [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("ObjectMethodExecutor compiles expression trees and may construct generic types at runtime.")]
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("ObjectMethodExecutor performs reflection on arbitrary types.")]
     public sealed class ObjectMethodExecutor
     {
         public bool IsMethodAsync { get => throw null; }
         public static Meziantou.Framework.ObjectMethodExecutor Create(System.Reflection.MethodInfo methodInfo) => throw null;
-        public static Meziantou.Framework.ObjectMethodExecutor Create(System.Reflection.MethodInfo methodInfo, object[]? parameterDefaultValues) => throw null;
+        public static Meziantou.Framework.ObjectMethodExecutor Create(System.Reflection.MethodInfo methodInfo, object?[]? parameterDefaultValues) => throw null;
         public object? Execute(object? target, object?[]? parameters) => throw null;
         public Meziantou.Framework.ObjectMethodExecutorAwaitable ExecuteAsync(object? target, object?[]? parameters) => throw null;
         public object? GetDefaultValueForParameter(int index) => throw null;
@@ -18,7 +18,7 @@ namespace Meziantou.Framework
 
     public readonly struct ObjectMethodExecutorAwaitable
     {
-        public Awaiter GetAwaiter() => throw null;
+        public Meziantou.Framework.ObjectMethodExecutorAwaitable.Awaiter GetAwaiter() => throw null;
         public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }

@@ -1273,6 +1273,24 @@ public class GlobTests
     }
 
     [Theory]
+    // The path reader trims one trailing '/' of a directory, and the matcher reads a second one as the end of the last
+    // segment. With MatchLeadingDot, '**' and the segments that follow it are rewritten into a single segment that
+    // must read the path the same way.
+    [InlineData("**/ba//", "x/ba//", true)]
+    [InlineData("**/ba//", "ba//", true)]
+    [InlineData("**/b?a//", "x/bxa//", true)]
+    [InlineData("**/a/ba//", "x/a/ba//", true)]
+    [InlineData("**/*.txt//", "x/a.txt//", true)]
+    [InlineData("**/ba//", "x/ba///", false)]
+    [InlineData("**/a/ba//", "x/a/ba///", false)]
+    [InlineData("**/*.txt//", "x/a.txt///", false)]
+    public void MatchLeadingDotDoesNotChangeTheMatchOfAPathWithoutDot(string pattern, string path, bool expected)
+    {
+        Assert.Equal(expected, Glob.Parse(pattern, GlobDialect.Standard).IsMatch(path));
+        Assert.Equal(expected, Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot).IsMatch(path));
+    }
+
+    [Theory]
     [InlineData(GlobDialect.Git)]
     [InlineData(GlobDialect.MSBuild)]
     public void TrailingRecursiveWildcardMatchesTheRestOfThePathInEveryDialect(GlobDialect dialect)

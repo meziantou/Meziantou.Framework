@@ -1596,4 +1596,14 @@ public sealed class XmlSyntaxTreeTests
             }
         });
     }
+
+    [Theory]
+    [InlineData("<xmlns:a/>")]
+    [InlineData("<root><xmlns:a/></root>")]
+    public void Formatter_ADocumentXmlWriterRefuses_IsReturnedUnchanged(string text)
+    {
+        var document = XmlSyntaxTree.ParseText(text).GetRoot();
+
+        Assert.Same(document, Formatter.Format(document));
+    }
 }

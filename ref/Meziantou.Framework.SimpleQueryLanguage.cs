@@ -7,19 +7,19 @@ namespace Meziantou.Framework.SimpleQueryLanguage
     public sealed class ExpressionQueryBuilder<T>
     {
         public ExpressionQueryBuilder(System.TimeProvider? timeProvider) { }
+        public void AddHandler(string key, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
+        public void AddHandler(string key, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator op, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
         public void AddHandler(string key, System.Linq.Expressions.Expression<System.Func<T, string?>> selector, System.StringComparison? comparisonType = null) { }
         public void AddHandler<TValue>(string key, System.Linq.Expressions.Expression<System.Func<T, TValue>> selector, Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue = null) { }
-        public void AddHandler(string key, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator op, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
-        public void AddHandler(string key, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
+        public Meziantou.Framework.SimpleQueryLanguage.ExpressionQuery<T> Build(string query) => throw null;
         public void SetFreeTextHandler(Meziantou.Framework.SimpleQueryLanguage.FreeTextExpressionHandler<T>? handler) { }
         public void SetUnhandledPropertyHandler(Meziantou.Framework.SimpleQueryLanguage.UnhandledPropertyExpressionHandler<T>? handler) { }
-        public Meziantou.Framework.SimpleQueryLanguage.ExpressionQuery<T> Build(string query) => throw null;
     }
 
     public sealed class ExpressionQuery<T>
     {
-        public string Text { get => throw null; }
         public System.Linq.Expressions.Expression<System.Func<T, bool>>? Predicate { get => throw null; }
+        public string Text { get => throw null; }
         public System.Linq.IQueryable<T> Apply(System.Linq.IQueryable<T> queryable) => throw null;
     }
 
@@ -38,19 +38,19 @@ namespace Meziantou.Framework.SimpleQueryLanguage
     public sealed class QueryBuilder<T>
     {
         public QueryBuilder(System.TimeProvider? timeProvider) { }
-        public void AddHandler(string key, string? value, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, bool> predicate) { }
         public void AddHandler(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, string, bool> predicate) { }
-        public void AddHandler<TValue>(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, TValue, bool> predicate) { }
-        public void AddHandler<TValue>(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, TValue, bool> predicate, Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue) { }
-        public void AddHandler(string key, string? value, System.Func<T, bool> predicate) { }
         public void AddHandler(string key, System.Func<T, string, bool> predicate) { }
+        public void AddHandler(string key, string? value, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, bool> predicate) { }
+        public void AddHandler(string key, string? value, System.Func<T, bool> predicate) { }
+        public void AddHandler<TValue>(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, TValue, bool> predicate) { }
         public void AddHandler<TValue>(string key, System.Func<T, TValue, bool> predicate) { }
+        public void AddHandler<TValue>(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, TValue, bool> predicate, Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue) { }
         public void AddHandler<TValue>(string key, System.Func<T, TValue, bool> predicate, Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue) { }
-        public void AddRangeHandler<TValue>(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax<TValue>, bool> predicate, Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue) { }
         public void AddRangeHandler<TValue>(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax<TValue>, bool> predicate) { }
+        public void AddRangeHandler<TValue>(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax<TValue>, bool> predicate, Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue) { }
+        public Meziantou.Framework.SimpleQueryLanguage.Query<T> Build(string query) => throw null;
         public void SetTextFilterHandler(System.Func<T, string, bool> predicate) { }
         public void SetUnhandledPropertyHandler(Meziantou.Framework.SimpleQueryLanguage.UnhandledPropertyDelegate<T>? predicate) { }
-        public Meziantou.Framework.SimpleQueryLanguage.Query<T> Build(string query) => throw null;
     }
 
     public sealed class QueryTooComplexException : System.Exception
@@ -83,8 +83,8 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Binding
     {
         public bool IsNegated { get => throw null; }
         public string Key { get => throw null; }
-        public string Value { get => throw null; }
         public Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator Operator { get => throw null; }
+        public string Value { get => throw null; }
     }
 
     public sealed class BoundNegatedQuery : Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery
@@ -124,21 +124,21 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Syntax
 {
     public sealed class AndQuerySyntax : Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
     {
+        public bool IsImplicit { get => throw null; }
         public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
-        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
         public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Left { get => throw null; }
         public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken? Operator { get => throw null; }
         public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Right { get => throw null; }
-        public bool IsImplicit { get => throw null; }
+        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
         public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
     }
 
     public sealed class KeyValueQuerySyntax : Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
     {
-        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
-        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
         public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken KeyToken { get => throw null; }
+        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
         public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken OperatorToken { get => throw null; }
+        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
         public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken ValueToken { get => throw null; }
         public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
     }
@@ -146,29 +146,29 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Syntax
     public sealed class NegatedQuerySyntax : Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
     {
         public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
-        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
         public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken OperatorToken { get => throw null; }
         public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Query { get => throw null; }
+        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
         public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
     }
 
     public sealed class OrQuerySyntax : Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
     {
         public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
-        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
         public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Left { get => throw null; }
         public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken OperatorToken { get => throw null; }
         public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Right { get => throw null; }
+        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
         public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
     }
 
     public sealed class ParenthesizedQuerySyntax : Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
     {
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken CloseParenthesisToken { get => throw null; }
         public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
-        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
         public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken OpenParenthesisToken { get => throw null; }
         public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Query { get => throw null; }
-        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken CloseParenthesisToken { get => throw null; }
+        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
         public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
     }
 
@@ -215,13 +215,13 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Syntax
     public sealed class QueryToken : Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken
     {
         public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
-        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
         public string QueryText { get => throw null; }
+        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
         public string Text { get => throw null; }
         public string? Value { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken AsText() => throw null;
         public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
         public override string ToString() => throw null;
-        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken AsText() => throw null;
     }
 
     public sealed class TextQuerySyntax : Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
@@ -234,9 +234,9 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Syntax
 
     public readonly struct TextSpan
     {
-        public int Start { get => throw null; }
         public int End { get => throw null; }
         public int Length { get => throw null; }
+        public int Start { get => throw null; }
         public TextSpan(int start, int length) { }
         public static Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan FromBounds(int start, int end) => throw null;
         public override string ToString() => throw null;

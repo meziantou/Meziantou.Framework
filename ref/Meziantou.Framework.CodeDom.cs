@@ -50,8 +50,8 @@ namespace Meziantou.Framework.CodeDom
 
     public class BinaryExpression : Meziantou.Framework.CodeDom.Expression
     {
-        public Meziantou.Framework.CodeDom.BinaryOperator Operator { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.Expression? LeftExpression { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.BinaryOperator Operator { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.Expression? RightExpression { get => throw null; set { } }
         public BinaryExpression(Meziantou.Framework.CodeDom.BinaryOperator op, Meziantou.Framework.CodeDom.Expression? leftExpression, Meziantou.Framework.CodeDom.Expression? rightExpression) { }
     }
@@ -81,124 +81,124 @@ namespace Meziantou.Framework.CodeDom
 
     public class CSharpCodeGenerator
     {
-        protected virtual void WriteExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.Expression? expression) { }
-        protected virtual void WriteIsInstanceOfTypeExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.IsInstanceOfTypeExpression expression) { }
-        protected virtual void WriteTypeReferenceExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.TypeReferenceExpression expression) { }
-        protected virtual void WriteThisExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ThisExpression expression) { }
-        protected virtual void WriteBaseExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.BaseExpression expression) { }
-        protected virtual void WriteMethodInvokeExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.MethodInvokeExpression expression) { }
-        protected virtual void WriteMethodInvokeArgumentExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.MethodInvokeArgumentExpression expression) { }
-        protected virtual void WriteArgumentReferenceExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ArgumentReferenceExpression expression) { }
-        protected virtual void WriteMemberReferenceExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.MemberReferenceExpression expression) { }
-        protected virtual void WriteLiteralExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.LiteralExpression expression) { }
-        protected virtual void WriteNullLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer) { }
-        protected virtual void WriteBooleanLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, bool value) { }
-        protected virtual void WriteSByteLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, sbyte value) { }
-        protected virtual void WriteByteLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, byte value) { }
-        protected virtual void WriteInt16Literal(Meziantou.Framework.CodeDom.IndentedTextWriter writer, short value) { }
-        protected virtual void WriteUInt16Literal(Meziantou.Framework.CodeDom.IndentedTextWriter writer, ushort value) { }
-        protected virtual void WriteInt32Literal(Meziantou.Framework.CodeDom.IndentedTextWriter writer, int value) { }
-        protected virtual void WriteUint32Literal(Meziantou.Framework.CodeDom.IndentedTextWriter writer, uint value) { }
         protected virtual void Int64Literal(Meziantou.Framework.CodeDom.IndentedTextWriter writer, long value) { }
-        protected virtual void WriteUInt64Literal(Meziantou.Framework.CodeDom.IndentedTextWriter writer, ulong value) { }
-        protected virtual void WriteStringLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, string value) { }
-        protected virtual void WriteCharLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, char value) { }
-        protected virtual void WriteDecimalLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, decimal value) { }
-        protected virtual void WriteSingleLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, float value) { }
-        protected virtual void WriteDoubleLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, double value) { }
-        protected virtual void WriteBinaryExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.BinaryExpression expression) { }
-        protected virtual void WriteUnaryExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.UnaryExpression expression) { }
-        protected virtual void WriteArrayIndexerExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ArrayIndexerExpression expression) { }
-        protected virtual void WriteDefaultValueExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.DefaultValueExpression expression) { }
-        protected virtual void WriteNameofExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.NameofExpression expression) { }
-        protected virtual void WriteNewObjectExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.NewObjectExpression expression) { }
-        protected virtual void WriteNewArrayExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.NewArrayExpression expression) { }
-        protected virtual void WriteSnippetExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.SnippetExpression expression) { }
-        protected virtual void WriteValueArgumentExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ValueArgumentExpression expression) { }
-        protected virtual void WriteCastExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CastExpression expression) { }
-        protected virtual void WriteConvertExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ConvertExpression expression) { }
-        protected virtual void WriteTypeOfExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.TypeOfExpression expression) { }
-        protected virtual void WriteVariableReferenceExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.VariableReferenceExpression expression) { }
-        protected virtual void WriteAwaitExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.AwaitExpression expression) { }
-        protected virtual void WriteStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.Statement statement) { }
-        protected virtual void WriteStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.Statement? statement, WriteStatementOptions options) { }
-        protected virtual void WriteTryCatchFinallyStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.TryCatchFinallyStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteSnippetStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.SnippetStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteGotoNextLoopIterationStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.GotoNextLoopIterationStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteExitLoopStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ExitLoopStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteReturnStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ReturnStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteYieldReturnStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.YieldReturnStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteYieldBreakStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.YieldBreakStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteConditionStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ConditionStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteAssignStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.AssignStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteExpressionStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ExpressionStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteThrowStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ThrowStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteUsingStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.UsingStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteVariableDeclarationStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.VariableDeclarationStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteWhileStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.WhileStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteIterationStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.IterationStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteAddEventHandlerStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.AddEventHandlerStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteRemoveEventHandlerStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.RemoveEventHandlerStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteExpressionCollectionStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ExpressionCollectionStatement statement, WriteStatementOptions options) { }
-        protected virtual void WriteCommentStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CommentStatement statement, WriteStatementOptions options) { }
+        protected virtual bool IsPrefixOperator(Meziantou.Framework.CodeDom.UnaryOperator op) => throw null;
+        protected virtual bool TryWriteInlineComment(Meziantou.Framework.CodeDom.IndentedTextWriter writer, string? comment) => throw null;
         public string Write(Meziantou.Framework.CodeDom.CodeObject codeObject) => throw null;
-        public void Write(System.IO.TextWriter writer, Meziantou.Framework.CodeDom.CodeObject codeObject) { }
         public void Write(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CodeObject codeObject) { }
-        protected virtual void WriteCompilationUnit(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CompilationUnit unit) { }
-        protected virtual void WriteNamespaceDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.NamespaceDeclaration ns) { }
-        protected virtual void WriteTypeDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.TypeDeclaration type) { }
-        protected virtual void WriteEnumerationDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.EnumerationDeclaration enumeration) { }
-        protected virtual void WriteEnumerationMember(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.EnumerationMember member) { }
-        protected virtual void WriteDelegateDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.DelegateDeclaration d) { }
-        protected virtual void WriteMethodDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.MethodDeclaration member) { }
-        protected virtual void WriteOperatorDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.OperatorDeclaration member) { }
-        protected virtual void WriteMethodArguments(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.MethodArgumentCollection args) { }
-        protected virtual void WriteMethodArgument(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.MethodArgumentDeclaration arg) { }
-        protected virtual void WriteDirection(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.Direction direction) { }
-        protected virtual void WriteFieldDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.FieldDeclaration member) { }
-        protected virtual void WriteEventFieldDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.EventFieldDeclaration member) { }
-        protected virtual void WriteConstructorDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ConstructorDeclaration member) { }
-        protected virtual void WritePropertyDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.PropertyDeclaration member) { }
-        protected virtual void WriteClassDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ClassDeclaration type) { }
-        protected virtual void WriteRecordDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.RecordDeclaration type) { }
-        protected virtual void WriteRecordStructDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.RecordStructDeclaration type) { }
-        protected virtual void WriteStructDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.StructDeclaration type) { }
-        protected virtual void WriteInterfaceDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.InterfaceDeclaration type) { }
-        protected virtual void WriteModifiers(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.Modifiers modifiers) { }
-        protected virtual void WriteCustomAttributes(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.CustomAttribute> attributes) { }
-        protected virtual void WriteCustomAttribute(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CustomAttribute attribute) { }
-        protected virtual void WriteCustomAttributeArgument(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CustomAttributeArgument arg) { }
-        protected virtual void WriteMemberDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.MemberDeclaration member) { }
-        protected virtual void WriteDirective(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.Directive directive) { }
-        protected virtual void WriteUsingDirective(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.UsingDirective usingDirective) { }
+        public void Write(System.IO.TextWriter writer, Meziantou.Framework.CodeDom.CodeObject codeObject) { }
+        protected virtual void WriteAddEventHandlerStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.AddEventHandlerStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteAfterComments(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ICommentable commentable) { }
+        protected virtual void WriteArgumentReferenceExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ArgumentReferenceExpression expression) { }
+        protected virtual void WriteArrayIndexerExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ArrayIndexerExpression expression) { }
+        protected virtual void WriteAssignStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.AssignStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteAwaitExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.AwaitExpression expression) { }
+        protected virtual void WriteBaseExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.BaseExpression expression) { }
+        protected virtual void WriteBaseTypeParameterContraint(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.BaseTypeParameterConstraint constraint) { }
+        protected virtual void WriteBeforeComments(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ICommentable commentable) { }
+        protected virtual void WriteBinaryExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.BinaryExpression expression) { }
+        protected virtual string WriteBinaryOperator(Meziantou.Framework.CodeDom.BinaryOperator op) => throw null;
+        protected virtual void WriteBooleanLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, bool value) { }
+        protected virtual void WriteByteLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, byte value) { }
+        protected virtual void WriteCastExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CastExpression expression) { }
         protected virtual void WriteCatchClause(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CatchClause catchClause) { }
         protected virtual void WriteCatchClauseCollection(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CatchClauseCollection clauses) { }
-        protected virtual void WriteConstructorInitializer(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ConstructorInitializer initializer) { }
-        protected virtual void WriteTypeParameterConstraint(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.TypeParameterConstraint constraint) { }
-        protected virtual void WriteBaseTypeParameterContraint(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.BaseTypeParameterConstraint constraint) { }
+        protected virtual void WriteCharLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, char value) { }
+        protected virtual void WriteClassDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ClassDeclaration type) { }
         protected virtual void WriteClassTypeParameterConstraint(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ClassTypeParameterConstraint constraint) { }
-        protected virtual void WriteValueTypeParameterContraint(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ValueTypeTypeParameterConstraint constraint) { }
-        protected virtual void WriteUnmanagedTypeParameterConstraint(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.UnmanagedTypeParameterConstraint constraint) { }
-        protected virtual void WriteConstructParameterConstraint(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ConstructorParameterConstraint constraint) { }
         protected virtual Meziantou.Framework.CodeDom.CommentType WriteComment(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.Comment comment) => throw null;
-        protected virtual void WriteXmlComment(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.XmlComment comment) { }
-        protected virtual string WriteBinaryOperator(Meziantou.Framework.CodeDom.BinaryOperator op) => throw null;
-        protected virtual bool IsPrefixOperator(Meziantou.Framework.CodeDom.UnaryOperator op) => throw null;
-        protected virtual string WriteUnaryOperator(Meziantou.Framework.CodeDom.UnaryOperator op) => throw null;
-        protected virtual string WriteCustomAttributeTarget(Meziantou.Framework.CodeDom.CustomAttributeTarget target) => throw null;
-        protected virtual void WriteIdentifier(Meziantou.Framework.CodeDom.IndentedTextWriter writer, string? name) { }
-        protected virtual void WriteStatements(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.StatementCollection? statements) { }
+        protected virtual void WriteCommentStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CommentStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteCompilationUnit(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CompilationUnit unit) { }
+        protected virtual void WriteConditionStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ConditionStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
         protected virtual void WriteConstraints(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.TypeParameter parameter) { }
+        protected virtual void WriteConstructParameterConstraint(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ConstructorParameterConstraint constraint) { }
+        protected virtual void WriteConstructorDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ConstructorDeclaration member) { }
+        protected virtual void WriteConstructorInitializer(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ConstructorInitializer initializer) { }
+        protected virtual void WriteConvertExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ConvertExpression expression) { }
+        protected virtual void WriteCustomAttribute(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CustomAttribute attribute) { }
+        protected virtual void WriteCustomAttributeArgument(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CustomAttributeArgument arg) { }
+        protected virtual string WriteCustomAttributeTarget(Meziantou.Framework.CodeDom.CustomAttributeTarget target) => throw null;
+        protected virtual void WriteCustomAttributes(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.CustomAttribute> attributes) { }
+        protected virtual void WriteDecimalLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, decimal value) { }
+        protected virtual void WriteDefaultValueExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.DefaultValueExpression expression) { }
+        protected virtual void WriteDelegateDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.DelegateDeclaration d) { }
+        protected virtual void WriteDirection(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.Direction direction) { }
+        protected virtual void WriteDirective(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.Directive directive) { }
         protected virtual void WriteDocumentationComment(Meziantou.Framework.CodeDom.IndentedTextWriter writer, string? comment) { }
+        protected virtual void WriteDoubleLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, double value) { }
+        protected virtual void WriteEnumerationDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.EnumerationDeclaration enumeration) { }
+        protected virtual void WriteEnumerationMember(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.EnumerationMember member) { }
+        protected virtual void WriteEventFieldDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.EventFieldDeclaration member) { }
+        protected virtual void WriteExitLoopStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ExitLoopStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.Expression? expression) { }
+        protected virtual void WriteExpressionCollectionStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ExpressionCollectionStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteExpressionStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ExpressionStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteFieldDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.FieldDeclaration member) { }
+        protected virtual void WriteGotoNextLoopIterationStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.GotoNextLoopIterationStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteIdentifier(Meziantou.Framework.CodeDom.IndentedTextWriter writer, string? name) { }
+        protected virtual void WriteInt16Literal(Meziantou.Framework.CodeDom.IndentedTextWriter writer, short value) { }
+        protected virtual void WriteInt32Literal(Meziantou.Framework.CodeDom.IndentedTextWriter writer, int value) { }
+        protected virtual void WriteInterfaceDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.InterfaceDeclaration type) { }
+        protected virtual void WriteIsInstanceOfTypeExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.IsInstanceOfTypeExpression expression) { }
+        protected virtual void WriteIterationStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.IterationStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
         protected virtual void WriteLineComment(Meziantou.Framework.CodeDom.IndentedTextWriter writer, string? comment) { }
-        protected virtual bool TryWriteInlineComment(Meziantou.Framework.CodeDom.IndentedTextWriter writer, string? comment) => throw null;
-        protected virtual void WriteXmlComments(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.IXmlCommentable commentable) { }
-        protected virtual void WriteBeforeComments(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ICommentable commentable) { }
-        protected virtual void WriteAfterComments(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ICommentable commentable) { }
-        protected virtual void WriteTypeReference(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.TypeReference? type) { }
-        protected virtual void WriteTypeReferences(Meziantou.Framework.CodeDom.IndentedTextWriter writer, System.Collections.Generic.IEnumerable<Meziantou.Framework.CodeDom.TypeReference?> types, string separator) { }
-        protected virtual void WriteNullableContextBefore(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.INullableContext nullableContext) { }
+        protected virtual void WriteLiteralExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.LiteralExpression expression) { }
+        protected virtual void WriteMemberDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.MemberDeclaration member) { }
+        protected virtual void WriteMemberReferenceExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.MemberReferenceExpression expression) { }
+        protected virtual void WriteMethodArgument(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.MethodArgumentDeclaration arg) { }
+        protected virtual void WriteMethodArguments(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.MethodArgumentCollection args) { }
+        protected virtual void WriteMethodDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.MethodDeclaration member) { }
+        protected virtual void WriteMethodInvokeArgumentExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.MethodInvokeArgumentExpression expression) { }
+        protected virtual void WriteMethodInvokeExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.MethodInvokeExpression expression) { }
+        protected virtual void WriteModifiers(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.Modifiers modifiers) { }
+        protected virtual void WriteNameofExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.NameofExpression expression) { }
+        protected virtual void WriteNamespaceDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.NamespaceDeclaration ns) { }
+        protected virtual void WriteNewArrayExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.NewArrayExpression expression) { }
+        protected virtual void WriteNewObjectExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.NewObjectExpression expression) { }
+        protected virtual void WriteNullLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer) { }
         protected virtual void WriteNullableContextAfter(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.INullableContext nullableContext) { }
+        protected virtual void WriteNullableContextBefore(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.INullableContext nullableContext) { }
+        protected virtual void WriteOperatorDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.OperatorDeclaration member) { }
+        protected virtual void WritePropertyDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.PropertyDeclaration member) { }
+        protected virtual void WriteRecordDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.RecordDeclaration type) { }
+        protected virtual void WriteRecordStructDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.RecordStructDeclaration type) { }
+        protected virtual void WriteRemoveEventHandlerStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.RemoveEventHandlerStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteReturnStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ReturnStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteSByteLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, sbyte value) { }
+        protected virtual void WriteSingleLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, float value) { }
+        protected virtual void WriteSnippetExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.SnippetExpression expression) { }
+        protected virtual void WriteSnippetStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.SnippetStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.Statement statement) { }
+        protected virtual void WriteStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.Statement? statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteStatements(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.StatementCollection? statements) { }
+        protected virtual void WriteStringLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, string value) { }
+        protected virtual void WriteStructDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.StructDeclaration type) { }
+        protected virtual void WriteThisExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ThisExpression expression) { }
+        protected virtual void WriteThrowStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ThrowStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteTryCatchFinallyStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.TryCatchFinallyStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteTypeDeclaration(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.TypeDeclaration type) { }
+        protected virtual void WriteTypeOfExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.TypeOfExpression expression) { }
+        protected virtual void WriteTypeParameterConstraint(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.TypeParameterConstraint constraint) { }
+        protected virtual void WriteTypeReference(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.TypeReference? type) { }
+        protected virtual void WriteTypeReferenceExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.TypeReferenceExpression expression) { }
+        protected virtual void WriteTypeReferences(Meziantou.Framework.CodeDom.IndentedTextWriter writer, System.Collections.Generic.IEnumerable<Meziantou.Framework.CodeDom.TypeReference?> types, string separator) { }
+        protected virtual void WriteUInt16Literal(Meziantou.Framework.CodeDom.IndentedTextWriter writer, ushort value) { }
+        protected virtual void WriteUInt64Literal(Meziantou.Framework.CodeDom.IndentedTextWriter writer, ulong value) { }
+        protected virtual void WriteUint32Literal(Meziantou.Framework.CodeDom.IndentedTextWriter writer, uint value) { }
+        protected virtual void WriteUnaryExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.UnaryExpression expression) { }
+        protected virtual string WriteUnaryOperator(Meziantou.Framework.CodeDom.UnaryOperator op) => throw null;
+        protected virtual void WriteUnmanagedTypeParameterConstraint(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.UnmanagedTypeParameterConstraint constraint) { }
+        protected virtual void WriteUsingDirective(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.UsingDirective usingDirective) { }
+        protected virtual void WriteUsingStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.UsingStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteValueArgumentExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ValueArgumentExpression expression) { }
+        protected virtual void WriteValueTypeParameterContraint(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.ValueTypeTypeParameterConstraint constraint) { }
+        protected virtual void WriteVariableDeclarationStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.VariableDeclarationStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteVariableReferenceExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.VariableReferenceExpression expression) { }
+        protected virtual void WriteWhileStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.WhileStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteXmlComment(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.XmlComment comment) { }
+        protected virtual void WriteXmlComments(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.IXmlCommentable commentable) { }
+        protected virtual void WriteYieldBreakStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.YieldBreakStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
+        protected virtual void WriteYieldReturnStatement(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.YieldReturnStatement statement, Meziantou.Framework.CodeDom.CSharpCodeGenerator.WriteStatementOptions options) { }
         protected class WriteStatementOptions
         {
             public bool EndStatement { get => throw null; set { } }
@@ -215,11 +215,11 @@ namespace Meziantou.Framework.CodeDom
 
     public class CatchClause : Meziantou.Framework.CodeDom.CodeObject, Meziantou.Framework.CodeDom.ICommentable
     {
-        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
-        public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
-        public string? ExceptionVariableName { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.TypeReference? ExceptionType { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.StatementCollection? Body { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
+        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
+        public Meziantou.Framework.CodeDom.TypeReference? ExceptionType { get => throw null; set { } }
+        public string? ExceptionVariableName { get => throw null; set { } }
     }
 
     public class CatchClauseCollection : Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.CatchClause>
@@ -235,8 +235,8 @@ namespace Meziantou.Framework.CodeDom
     public abstract class ClassOrStructDeclaration : Meziantou.Framework.CodeDom.TypeDeclaration, Meziantou.Framework.CodeDom.IMemberContainer, Meziantou.Framework.CodeDom.IParametrableType, Meziantou.Framework.CodeDom.ITypeDeclarationContainer
     {
         public System.Collections.Generic.IList<Meziantou.Framework.CodeDom.TypeReference> Implements { get => throw null; }
-        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeParameter> Parameters { get => throw null; }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.MemberDeclaration> Members { get => throw null; }
+        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeParameter> Parameters { get => throw null; }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeDeclaration> Types { get => throw null; }
     }
 
@@ -249,12 +249,12 @@ namespace Meziantou.Framework.CodeDom
         public System.Collections.Generic.IDictionary<string, object?> Data { get => throw null; }
         public Meziantou.Framework.CodeDom.CodeObject? Parent { get => throw null; }
         public void SetData(string key, object? value) { }
-        protected void SetParent<T>(ref T field, T value) where T : Meziantou.Framework.CodeDom.CodeObject { }
-        protected static void SetParent<T>(Meziantou.Framework.CodeDom.CodeObject parent, ref T field, T value) where T : Meziantou.Framework.CodeDom.CodeObject { }
-        protected T SetParent<T>(T value) where T : Meziantou.Framework.CodeDom.CodeObject => throw null;
-        protected static T SetParent<T>(Meziantou.Framework.CodeDom.CodeObject parent, T value) where T : Meziantou.Framework.CodeDom.CodeObject => throw null;
-        public override string ToString() => throw null;
+        protected T SetParent<T>(T? value) where T : Meziantou.Framework.CodeDom.CodeObject => throw null;
+        protected static T SetParent<T>(Meziantou.Framework.CodeDom.CodeObject parent, T? value) where T : Meziantou.Framework.CodeDom.CodeObject => throw null;
+        protected void SetParent<T>(ref T? field, T? value) where T : Meziantou.Framework.CodeDom.CodeObject { }
+        protected static void SetParent<T>(Meziantou.Framework.CodeDom.CodeObject parent, ref T? field, T? value) where T : Meziantou.Framework.CodeDom.CodeObject { }
         public string ToCsharpString() => throw null;
+        public override string ToString() => throw null;
     }
 
     public class CodeObjectCollection<T> : Meziantou.Framework.CodeDom.CodeObject, System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable where T : Meziantou.Framework.CodeDom.CodeObject
@@ -263,16 +263,17 @@ namespace Meziantou.Framework.CodeDom
         public bool IsReadOnly { get => throw null; }
         public T this[int index] { get => throw null; set { } }
         public CodeObjectCollection(Meziantou.Framework.CodeDom.CodeObject parent) { }
-        public System.Collections.Generic.IEnumerator<T> GetEnumerator() => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public void AddRange(System.Collections.Generic.IEnumerable<T> items) { }
         public TCodeObject Add<TCodeObject>(TCodeObject item) where TCodeObject : T => throw null;
+        void System.Collections.Generic.ICollection<T>.Add(T item) { }
+        public void AddRange(System.Collections.Generic.IEnumerable<T> items) { }
         public void Clear() { }
         public bool Contains(T item) => throw null;
         public void CopyTo(T[] array, int arrayIndex) { }
-        public bool Remove(T item) => throw null;
+        public System.Collections.Generic.IEnumerator<T> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public int IndexOf(T item) => throw null;
         public void Insert(int index, T item) { }
+        public bool Remove(T item) => throw null;
         public void RemoveAt(int index) { }
         public void Sort(System.Collections.Generic.IComparer<T> comparer) { }
     }
@@ -306,19 +307,19 @@ namespace Meziantou.Framework.CodeDom
 
     public class CompilationUnit : Meziantou.Framework.CodeDom.CodeObject, Meziantou.Framework.CodeDom.ICommentable, Meziantou.Framework.CodeDom.INamespaceDeclarationContainer, Meziantou.Framework.CodeDom.INullableContext, Meziantou.Framework.CodeDom.ITypeDeclarationContainer, Meziantou.Framework.CodeDom.IUsingDirectiveContainer
     {
-        public Meziantou.Framework.CodeDom.NullableContext NullableContext { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeDeclaration> Types { get => throw null; }
-        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.NamespaceDeclaration> Namespaces { get => throw null; }
-        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.UsingDirective> Usings { get => throw null; }
         public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
         public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
+        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.NamespaceDeclaration> Namespaces { get => throw null; }
+        public Meziantou.Framework.CodeDom.NullableContext NullableContext { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeDeclaration> Types { get => throw null; }
+        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.UsingDirective> Usings { get => throw null; }
     }
 
     public class ConditionStatement : Meziantou.Framework.CodeDom.Statement
     {
         public Meziantou.Framework.CodeDom.Expression? Condition { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.StatementCollection? TrueStatements { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.StatementCollection? FalseStatements { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.StatementCollection? TrueStatements { get => throw null; set { } }
         public static Meziantou.Framework.CodeDom.ConditionStatement CreateIfNotNull(Meziantou.Framework.CodeDom.Expression leftExpression) => throw null;
     }
 
@@ -331,17 +332,17 @@ namespace Meziantou.Framework.CodeDom
     public class ConstructorDeclaration : Meziantou.Framework.CodeDom.MemberDeclaration
     {
         public Meziantou.Framework.CodeDom.MethodArgumentCollection Arguments { get => throw null; }
-        public Meziantou.Framework.CodeDom.StatementCollection? Statements { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.ConstructorInitializer? Initializer { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.Modifiers Modifiers { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.TypeDeclaration? ParentType { get => throw null; }
+        public Meziantou.Framework.CodeDom.StatementCollection? Statements { get => throw null; set { } }
     }
 
     public abstract class ConstructorInitializer : Meziantou.Framework.CodeDom.CodeObject, Meziantou.Framework.CodeDom.ICommentable
     {
-        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
-        public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.Expression> Arguments { get => throw null; }
+        public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
+        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
         protected ConstructorInitializer(params Meziantou.Framework.CodeDom.Expression[] codeExpressions) { }
         protected ConstructorInitializer(System.Collections.Generic.IEnumerable<Meziantou.Framework.CodeDom.Expression>? codeExpressions) { }
     }
@@ -365,18 +366,18 @@ namespace Meziantou.Framework.CodeDom
 
     public class CustomAttribute : Meziantou.Framework.CodeDom.CodeObject, Meziantou.Framework.CodeDom.ICommentable
     {
-        public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.CustomAttributeTarget? Target { get => throw null; }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.CustomAttributeArgument> Arguments { get => throw null; }
-        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
         public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
+        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
+        public Meziantou.Framework.CodeDom.CustomAttributeTarget? Target { get => throw null; }
+        public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
         public CustomAttribute(Meziantou.Framework.CodeDom.TypeReference? typeReference) { }
     }
 
     public class CustomAttributeArgument : Meziantou.Framework.CodeDom.CodeObject, Meziantou.Framework.CodeDom.ICommentable
     {
-        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
         public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
+        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
         public string? PropertyName { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.Expression? Value { get => throw null; set { } }
         public CustomAttributeArgument(Meziantou.Framework.CodeDom.Expression? value) { }
@@ -400,8 +401,8 @@ namespace Meziantou.Framework.CodeDom
     {
         public static Meziantou.Framework.CodeDom.DefaultFormatterVisitor Instance { get => throw null; }
         public override void VisitClassDeclaration(Meziantou.Framework.CodeDom.ClassDeclaration classDeclaration) { }
-        public override void VisitStructDeclaration(Meziantou.Framework.CodeDom.StructDeclaration structDeclaration) { }
         public override void VisitInterfaceDeclaration(Meziantou.Framework.CodeDom.InterfaceDeclaration interfaceDeclaration) { }
+        public override void VisitStructDeclaration(Meziantou.Framework.CodeDom.StructDeclaration structDeclaration) { }
     }
 
     public class DefaultValueExpression : Meziantou.Framework.CodeDom.Expression
@@ -412,9 +413,9 @@ namespace Meziantou.Framework.CodeDom
 
     public class DelegateDeclaration : Meziantou.Framework.CodeDom.TypeDeclaration, Meziantou.Framework.CodeDom.IParametrableType
     {
-        public Meziantou.Framework.CodeDom.TypeReference? ReturnType { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeParameter> Parameters { get => throw null; }
         public Meziantou.Framework.CodeDom.MethodArgumentCollection Arguments { get => throw null; }
+        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeParameter> Parameters { get => throw null; }
+        public Meziantou.Framework.CodeDom.TypeReference? ReturnType { get => throw null; set { } }
         public DelegateDeclaration(string? name) { }
     }
 
@@ -428,8 +429,8 @@ namespace Meziantou.Framework.CodeDom
 
     public abstract class Directive : Meziantou.Framework.CodeDom.CodeObject, Meziantou.Framework.CodeDom.ICommentable
     {
-        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
         public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
+        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
     }
 
     public class EnumerationDeclaration : Meziantou.Framework.CodeDom.TypeDeclaration
@@ -448,11 +449,11 @@ namespace Meziantou.Framework.CodeDom
 
     public class EventFieldDeclaration : Meziantou.Framework.CodeDom.MemberDeclaration
     {
-        public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.StatementCollection? AddAccessor { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.StatementCollection? RemoveAccessor { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.TypeReference? PrivateImplementationType { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.Modifiers Modifiers { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.TypeReference? PrivateImplementationType { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.StatementCollection? RemoveAccessor { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
         public EventFieldDeclaration(string? name, Meziantou.Framework.CodeDom.TypeReference? type) { }
         public EventFieldDeclaration(string? name, Meziantou.Framework.CodeDom.TypeReference? type, Meziantou.Framework.CodeDom.Modifiers modifiers) { }
     }
@@ -472,36 +473,38 @@ namespace Meziantou.Framework.CodeDom
     {
         public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
         public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(Meziantou.Framework.CodeDom.MemberDeclaration memberDeclaration) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(System.Enum value) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression?(Meziantou.Framework.CodeDom.VariableDeclarationStatement? variableDeclarationStatement) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression?(Meziantou.Framework.CodeDom.MethodArgumentDeclaration? argument) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(Meziantou.Framework.CodeDom.TypeReference typeReference) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(byte value) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(sbyte value) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(short value) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(ushort value) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(int value) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(uint value) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(long value) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(ulong value) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(float value) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(double value) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(decimal value) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(string value) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(bool value) => throw null;
-        public static Meziantou.Framework.CodeDom.LiteralExpression Null() => throw null;
-        public static Meziantou.Framework.CodeDom.LiteralExpression True() => throw null;
-        public static Meziantou.Framework.CodeDom.LiteralExpression False() => throw null;
-        public static Meziantou.Framework.CodeDom.MemberReferenceExpression Member(System.Type type, string name, params string[] names) => throw null;
-        public static Meziantou.Framework.CodeDom.BinaryExpression ReferenceEqualsNull(Meziantou.Framework.CodeDom.Expression expression) => throw null;
-        public static Meziantou.Framework.CodeDom.MethodInvokeExpression IsNullOrEmpty(Meziantou.Framework.CodeDom.Expression expression) => throw null;
-        public static Meziantou.Framework.CodeDom.MethodInvokeExpression IsNullOrWhitespace(Meziantou.Framework.CodeDom.Expression expression) => throw null;
-        public static Meziantou.Framework.CodeDom.BinaryExpression EqualsNull(Meziantou.Framework.CodeDom.Expression expr) => throw null;
-        public static Meziantou.Framework.CodeDom.BinaryExpression NotEqualsNull(Meziantou.Framework.CodeDom.Expression expr) => throw null;
         public static Meziantou.Framework.CodeDom.BinaryExpression Add(Meziantou.Framework.CodeDom.Expression expr1, Meziantou.Framework.CodeDom.Expression expr2, params Meziantou.Framework.CodeDom.Expression[] expressions) => throw null;
         public static Meziantou.Framework.CodeDom.BinaryExpression And(Meziantou.Framework.CodeDom.Expression expr1, Meziantou.Framework.CodeDom.Expression expr2, params Meziantou.Framework.CodeDom.Expression[] expressions) => throw null;
+        public static Meziantou.Framework.CodeDom.BinaryExpression EqualsNull(Meziantou.Framework.CodeDom.Expression expr) => throw null;
+        public static Meziantou.Framework.CodeDom.LiteralExpression False() => throw null;
+        public static Meziantou.Framework.CodeDom.MethodInvokeExpression IsNullOrEmpty(Meziantou.Framework.CodeDom.Expression expression) => throw null;
+        public static Meziantou.Framework.CodeDom.MethodInvokeExpression IsNullOrWhitespace(Meziantou.Framework.CodeDom.Expression expression) => throw null;
+        public static Meziantou.Framework.CodeDom.MemberReferenceExpression Member(System.Type type, string name, params string[] names) => throw null;
+        public static Meziantou.Framework.CodeDom.BinaryExpression NotEqualsNull(Meziantou.Framework.CodeDom.Expression expr) => throw null;
+        public static Meziantou.Framework.CodeDom.LiteralExpression Null() => throw null;
         public static Meziantou.Framework.CodeDom.BinaryExpression Or(Meziantou.Framework.CodeDom.Expression expr1, Meziantou.Framework.CodeDom.Expression expr2, params Meziantou.Framework.CodeDom.Expression[] expressions) => throw null;
+        public static Meziantou.Framework.CodeDom.BinaryExpression ReferenceEqualsNull(Meziantou.Framework.CodeDom.Expression expression) => throw null;
+        public static Meziantou.Framework.CodeDom.LiteralExpression True() => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(Meziantou.Framework.CodeDom.MemberDeclaration memberDeclaration) => throw null;
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("argument")]
+        public static implicit operator Meziantou.Framework.CodeDom.Expression?(Meziantou.Framework.CodeDom.MethodArgumentDeclaration? argument) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(Meziantou.Framework.CodeDom.TypeReference typeReference) => throw null;
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("variableDeclarationStatement")]
+        public static implicit operator Meziantou.Framework.CodeDom.Expression?(Meziantou.Framework.CodeDom.VariableDeclarationStatement? variableDeclarationStatement) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(System.Enum value) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(bool value) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(byte value) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(decimal value) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(double value) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(float value) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(int value) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(long value) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(sbyte value) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(short value) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(string value) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(uint value) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(ulong value) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(ushort value) => throw null;
     }
 
     public class ExpressionCollectionStatement : Meziantou.Framework.CodeDom.Statement, System.Collections.Generic.IEnumerable<Meziantou.Framework.CodeDom.Expression>, System.Collections.IEnumerable
@@ -510,15 +513,15 @@ namespace Meziantou.Framework.CodeDom
         public bool IsReadOnly { get => throw null; }
         public Meziantou.Framework.CodeDom.Expression this[int index] { get => throw null; set { } }
         public ExpressionCollectionStatement(params Meziantou.Framework.CodeDom.Expression[] expressions) { }
-        public System.Collections.Generic.IEnumerator<Meziantou.Framework.CodeDom.Expression> GetEnumerator() => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public void Add(Meziantou.Framework.CodeDom.Expression item) { }
         public void Clear() { }
         public bool Contains(Meziantou.Framework.CodeDom.Expression item) => throw null;
         public void CopyTo(Meziantou.Framework.CodeDom.Expression[] array, int arrayIndex) { }
-        public bool Remove(Meziantou.Framework.CodeDom.Expression item) => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.CodeDom.Expression> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public int IndexOf(Meziantou.Framework.CodeDom.Expression item) => throw null;
         public void Insert(int index, Meziantou.Framework.CodeDom.Expression item) { }
+        public bool Remove(Meziantou.Framework.CodeDom.Expression item) => throw null;
         public void RemoveAt(int index) { }
         public static implicit operator Meziantou.Framework.CodeDom.ExpressionCollectionStatement(Meziantou.Framework.CodeDom.Expression expression) => throw null;
     }
@@ -531,33 +534,33 @@ namespace Meziantou.Framework.CodeDom
 
     public static class Extensions
     {
-        public static T SelfOrAnscestorOfType<T>(this Meziantou.Framework.CodeDom.CodeObject? codeObject) where T : Meziantou.Framework.CodeDom.CodeObject => throw null;
-        public static T AnscestorOfType<T>(this Meziantou.Framework.CodeDom.CodeObject? codeObject) where T : Meziantou.Framework.CodeDom.CodeObject => throw null;
-        public static Meziantou.Framework.CodeDom.NamespaceDeclaration AddNamespace(this Meziantou.Framework.CodeDom.INamespaceDeclarationContainer unit, string name) => throw null;
-        public static Meziantou.Framework.CodeDom.NamespaceDeclaration AddNamespace(this Meziantou.Framework.CodeDom.INamespaceDeclarationContainer unit, Meziantou.Framework.CodeDom.NamespaceDeclaration ns) => throw null;
-        public static T AddType<T>(this Meziantou.Framework.CodeDom.ITypeDeclarationContainer unit, T type) where T : Meziantou.Framework.CodeDom.TypeDeclaration => throw null;
-        public static Meziantou.Framework.CodeDom.UsingDirective AddUsing(this Meziantou.Framework.CodeDom.IUsingDirectiveContainer unit, string ns) => throw null;
         public static Meziantou.Framework.CodeDom.MethodArgumentDeclaration AddArgument(this Meziantou.Framework.CodeDom.MethodDeclaration method, Meziantou.Framework.CodeDom.MethodArgumentDeclaration argument) => throw null;
         public static Meziantou.Framework.CodeDom.MethodArgumentDeclaration AddArgument(this Meziantou.Framework.CodeDom.MethodDeclaration method, string name, Meziantou.Framework.CodeDom.TypeReference type) => throw null;
         public static Meziantou.Framework.CodeDom.MethodArgumentDeclaration AddArgument(this Meziantou.Framework.CodeDom.MethodDeclaration method, string name, Meziantou.Framework.CodeDom.TypeReference type, Meziantou.Framework.CodeDom.Direction direction) => throw null;
         public static T AddMember<T>(this Meziantou.Framework.CodeDom.IMemberContainer c, T member) where T : Meziantou.Framework.CodeDom.MemberDeclaration => throw null;
+        public static Meziantou.Framework.CodeDom.NamespaceDeclaration AddNamespace(this Meziantou.Framework.CodeDom.INamespaceDeclarationContainer unit, Meziantou.Framework.CodeDom.NamespaceDeclaration ns) => throw null;
+        public static Meziantou.Framework.CodeDom.NamespaceDeclaration AddNamespace(this Meziantou.Framework.CodeDom.INamespaceDeclarationContainer unit, string name) => throw null;
+        public static T AddType<T>(this Meziantou.Framework.CodeDom.ITypeDeclarationContainer unit, T type) where T : Meziantou.Framework.CodeDom.TypeDeclaration => throw null;
+        public static Meziantou.Framework.CodeDom.UsingDirective AddUsing(this Meziantou.Framework.CodeDom.IUsingDirectiveContainer unit, string ns) => throw null;
+        public static T? AnscestorOfType<T>(this Meziantou.Framework.CodeDom.CodeObject? codeObject) where T : Meziantou.Framework.CodeDom.CodeObject => throw null;
         public static Meziantou.Framework.CodeDom.ConditionStatement CreateThrowIfNullStatement(this Meziantou.Framework.CodeDom.MethodArgumentDeclaration argument) => throw null;
         public static Meziantou.Framework.CodeDom.MethodInvokeExpression InvokeMethod(this Meziantou.Framework.CodeDom.Expression expression, params Meziantou.Framework.CodeDom.Expression[] arguments) => throw null;
-        public static Meziantou.Framework.CodeDom.MethodInvokeExpression InvokeMethod(this Meziantou.Framework.CodeDom.Expression expression, Meziantou.Framework.CodeDom.TypeReference[] parameters, params Meziantou.Framework.CodeDom.Expression[] arguments) => throw null;
         public static Meziantou.Framework.CodeDom.MethodInvokeExpression InvokeMethod(this Meziantou.Framework.CodeDom.VariableDeclarationStatement expression, params Meziantou.Framework.CodeDom.Expression[] arguments) => throw null;
+        public static Meziantou.Framework.CodeDom.MethodInvokeExpression InvokeMethod(this Meziantou.Framework.CodeDom.Expression expression, Meziantou.Framework.CodeDom.TypeReference[] parameters, params Meziantou.Framework.CodeDom.Expression[] arguments) => throw null;
         public static Meziantou.Framework.CodeDom.MethodInvokeExpression InvokeMethod(this Meziantou.Framework.CodeDom.VariableDeclarationStatement expression, Meziantou.Framework.CodeDom.TypeReference[] parameters, params Meziantou.Framework.CodeDom.Expression[] arguments) => throw null;
         public static Meziantou.Framework.CodeDom.MemberReferenceExpression Member(this Meziantou.Framework.CodeDom.Expression expression, string name, params string[] names) => throw null;
-        public static Meziantou.Framework.CodeDom.MemberReferenceExpression Member(this Meziantou.Framework.CodeDom.VariableDeclarationStatement variable, string name, params string[] names) => throw null;
-        public static Meziantou.Framework.CodeDom.MemberReferenceExpression Member(this Meziantou.Framework.CodeDom.MethodArgumentDeclaration argument, string name, params string[] names) => throw null;
         public static Meziantou.Framework.CodeDom.MemberReferenceExpression Member(this Meziantou.Framework.CodeDom.FieldDeclaration field, string name, params string[] names) => throw null;
+        public static Meziantou.Framework.CodeDom.MemberReferenceExpression Member(this Meziantou.Framework.CodeDom.MethodArgumentDeclaration argument, string name, params string[] names) => throw null;
         public static Meziantou.Framework.CodeDom.MemberReferenceExpression Member(this Meziantou.Framework.CodeDom.PropertyDeclaration prop, string name, params string[] names) => throw null;
+        public static Meziantou.Framework.CodeDom.MemberReferenceExpression Member(this Meziantou.Framework.CodeDom.VariableDeclarationStatement variable, string name, params string[] names) => throw null;
+        public static T? SelfOrAnscestorOfType<T>(this Meziantou.Framework.CodeDom.CodeObject? codeObject) where T : Meziantou.Framework.CodeDom.CodeObject => throw null;
     }
 
     public class FieldDeclaration : Meziantou.Framework.CodeDom.MemberDeclaration
     {
         public Meziantou.Framework.CodeDom.Expression? InitExpression { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.Modifiers Modifiers { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
         public FieldDeclaration(string? name, Meziantou.Framework.CodeDom.TypeReference? type) { }
         public FieldDeclaration(string? name, Meziantou.Framework.CodeDom.TypeReference? type, Meziantou.Framework.CodeDom.Modifiers modifiers) { }
         public FieldDeclaration(string? name, Meziantou.Framework.CodeDom.TypeReference? type, Meziantou.Framework.CodeDom.Modifiers modifiers, Meziantou.Framework.CodeDom.Expression? initExpression) { }
@@ -616,56 +619,57 @@ namespace Meziantou.Framework.CodeDom
     public class IndentedTextWriter : System.IO.TextWriter
     {
         public const string DefaultTabString = "    ";
-        public override System.Text.Encoding Encoding { get => throw null; }
-        public override string NewLine { get => throw null; set { } }
-        public int Indent { get => throw null; set { } }
         public bool CloseWriter { get => throw null; }
+        public override System.Text.Encoding Encoding { get => throw null; }
+        public int Indent { get => throw null; set { } }
         public System.IO.TextWriter InnerWriter { get => throw null; }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
+        public override string NewLine { get => throw null; set { } }
         public string TabString { get => throw null; }
         public IndentedTextWriter(System.IO.TextWriter writer) { }
         public IndentedTextWriter(System.IO.TextWriter writer, string tabString) { }
         public IndentedTextWriter(System.IO.TextWriter writer, string tabString, bool closeWriter) { }
         public override void Close() { }
+        public void EnsureNewLine() { }
         public override void Flush() { }
         protected virtual void OutputTabs() { }
-        public void EnsureNewLine() { }
-        public override void Write(string? value) { }
         public override void Write(bool value) { }
         public override void Write(char value) { }
         public override void Write(char[]? buffer) { }
-        public override void Write(char[] buffer, int index, int count) { }
         public override void Write(double value) { }
         public override void Write(float value) { }
         public override void Write(int value) { }
         public override void Write(long value) { }
         public override void Write(object? value) { }
+        public override void Write(string? value) { }
         public override void Write(string format, object? arg0) { }
-        public override void Write(string format, object? arg0, object? arg1) { }
         public override void Write(string format, params object?[] arg) { }
-        public void WriteLineNoTabs(string s) { }
-        public override void WriteLine(string? value) { }
+        public override void Write(char[] buffer, int index, int count) { }
+        public override void Write(string format, object? arg0, object? arg1) { }
         public override void WriteLine() { }
         public override void WriteLine(bool value) { }
         public override void WriteLine(char value) { }
         public override void WriteLine(char[]? buffer) { }
-        public override void WriteLine(char[] buffer, int index, int count) { }
         public override void WriteLine(double value) { }
         public override void WriteLine(float value) { }
         public override void WriteLine(int value) { }
         public override void WriteLine(long value) { }
         public override void WriteLine(object? value) { }
-        public override void WriteLine(string format, object? arg0) { }
-        public override void WriteLine(string format, object? arg0, object? arg1) { }
-        public override void WriteLine(string format, params object?[] arg) { }
+        public override void WriteLine(string? value) { }
         public override void WriteLine(uint value) { }
+        public override void WriteLine(string format, object? arg0) { }
+        public override void WriteLine(string format, params object?[] arg) { }
+        public override void WriteLine(char[] buffer, int index, int count) { }
+        public override void WriteLine(string format, object? arg0, object? arg1) { }
+        public void WriteLineNoTabs(string s) { }
     }
 
     public class InterfaceDeclaration : Meziantou.Framework.CodeDom.TypeDeclaration, Meziantou.Framework.CodeDom.IMemberContainer, Meziantou.Framework.CodeDom.IParametrableType, Meziantou.Framework.CodeDom.ITypeDeclarationContainer
     {
         public Meziantou.Framework.CodeDom.TypeReference? BaseType { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.CodeDom.TypeReference> Implements { get => throw null; }
-        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeParameter> Parameters { get => throw null; }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.MemberDeclaration> Members { get => throw null; }
+        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeParameter> Parameters { get => throw null; }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeDeclaration> Types { get => throw null; }
         public InterfaceDeclaration(string? name) { }
     }
@@ -679,10 +683,10 @@ namespace Meziantou.Framework.CodeDom
 
     public class IterationStatement : Meziantou.Framework.CodeDom.Statement
     {
-        public Meziantou.Framework.CodeDom.Statement? Initialization { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.Statement? IncrementStatement { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.Expression? Condition { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.StatementCollection? Body { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.Expression? Condition { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.Statement? IncrementStatement { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.Statement? Initialization { get => throw null; set { } }
     }
 
     public class LiteralExpression : Meziantou.Framework.CodeDom.Expression
@@ -693,13 +697,13 @@ namespace Meziantou.Framework.CodeDom
 
     public abstract class MemberDeclaration : Meziantou.Framework.CodeDom.CodeObject, Meziantou.Framework.CodeDom.ICommentable, Meziantou.Framework.CodeDom.ICustomAttributeContainer, Meziantou.Framework.CodeDom.INullableContext, Meziantou.Framework.CodeDom.IXmlCommentable
     {
-        public string? Name { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
+        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.CustomAttribute> CustomAttributes { get => throw null; }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.MemberReferenceExpression> Implements { get => throw null; }
-        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
-        public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
-        public Meziantou.Framework.CodeDom.XmlCommentCollection XmlComments { get => throw null; }
+        public string? Name { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.NullableContext NullableContext { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.XmlCommentCollection XmlComments { get => throw null; }
         protected MemberDeclaration(string? name) { }
     }
 
@@ -719,43 +723,44 @@ namespace Meziantou.Framework.CodeDom
         public bool IsReadOnly { get => throw null; }
         public Meziantou.Framework.CodeDom.MethodArgumentDeclaration this[int index] { get => throw null; set { } }
         public MethodArgumentCollection(Meziantou.Framework.CodeDom.CodeObject parent) { }
-        public System.Collections.Generic.IEnumerator<Meziantou.Framework.CodeDom.MethodArgumentDeclaration> GetEnumerator() => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public void AddRange(System.Collections.Generic.IEnumerable<Meziantou.Framework.CodeDom.MethodArgumentDeclaration> items) { }
         public Meziantou.Framework.CodeDom.MethodArgumentDeclaration Add(Meziantou.Framework.CodeDom.MethodArgumentDeclaration item) => throw null;
         public Meziantou.Framework.CodeDom.MethodArgumentDeclaration Add(Meziantou.Framework.CodeDom.TypeReference type, string name) => throw null;
         public Meziantou.Framework.CodeDom.MethodArgumentDeclaration Add(Meziantou.Framework.CodeDom.TypeReference type, string name, Meziantou.Framework.CodeDom.Direction direction) => throw null;
+        void System.Collections.Generic.ICollection<Meziantou.Framework.CodeDom.MethodArgumentDeclaration>.Add(Meziantou.Framework.CodeDom.MethodArgumentDeclaration item) { }
+        public void AddRange(System.Collections.Generic.IEnumerable<Meziantou.Framework.CodeDom.MethodArgumentDeclaration> items) { }
         public void Clear() { }
         public bool Contains(Meziantou.Framework.CodeDom.MethodArgumentDeclaration item) => throw null;
         public void CopyTo(Meziantou.Framework.CodeDom.MethodArgumentDeclaration[] array, int arrayIndex) { }
-        public bool Remove(Meziantou.Framework.CodeDom.MethodArgumentDeclaration item) => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.CodeDom.MethodArgumentDeclaration> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public int IndexOf(Meziantou.Framework.CodeDom.MethodArgumentDeclaration item) => throw null;
         public void Insert(int index, Meziantou.Framework.CodeDom.MethodArgumentDeclaration item) { }
+        public bool Remove(Meziantou.Framework.CodeDom.MethodArgumentDeclaration item) => throw null;
         public void RemoveAt(int index) { }
         public void Sort(System.Collections.Generic.IComparer<Meziantou.Framework.CodeDom.MethodArgumentDeclaration> comparer) { }
     }
 
     public class MethodArgumentDeclaration : Meziantou.Framework.CodeDom.CodeObject, Meziantou.Framework.CodeDom.ICommentable, Meziantou.Framework.CodeDom.ICustomAttributeContainer
     {
-        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
         public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
+        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.CustomAttribute> CustomAttributes { get => throw null; }
-        public string? Name { get => throw null; set { } }
-        public bool IsExtension { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.Expression? DefaultValue { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.Direction Direction { get => throw null; set { } }
+        public bool IsExtension { get => throw null; set { } }
+        public string? Name { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
         public MethodArgumentDeclaration(Meziantou.Framework.CodeDom.TypeReference? type, string? name) { }
     }
 
     public class MethodDeclaration : Meziantou.Framework.CodeDom.MemberDeclaration, Meziantou.Framework.CodeDom.IParametrableType
     {
-        public Meziantou.Framework.CodeDom.TypeReference? ReturnType { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.TypeReference? PrivateImplementationType { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeParameter> Parameters { get => throw null; }
         public Meziantou.Framework.CodeDom.MethodArgumentCollection Arguments { get => throw null; }
-        public Meziantou.Framework.CodeDom.StatementCollection? Statements { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.Modifiers Modifiers { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeParameter> Parameters { get => throw null; }
+        public Meziantou.Framework.CodeDom.TypeReference? PrivateImplementationType { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.TypeReference? ReturnType { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.StatementCollection? Statements { get => throw null; set { } }
         public MethodDeclaration(string? name) { }
     }
 
@@ -765,21 +770,21 @@ namespace Meziantou.Framework.CodeDom
 
     public class MethodInvokeArgumentExpression : Meziantou.Framework.CodeDom.Expression
     {
-        public string? Name { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.Direction Direction { get => throw null; set { } }
+        public string? Name { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.Expression? Value { get => throw null; set { } }
-        public MethodInvokeArgumentExpression(string? name, Meziantou.Framework.CodeDom.Expression? value) { }
-        public MethodInvokeArgumentExpression(string? name, Meziantou.Framework.CodeDom.Expression? value, Meziantou.Framework.CodeDom.Direction direction) { }
         public MethodInvokeArgumentExpression(Meziantou.Framework.CodeDom.Expression? value) { }
         public MethodInvokeArgumentExpression(Meziantou.Framework.CodeDom.Expression? value, Meziantou.Framework.CodeDom.Direction direction) { }
+        public MethodInvokeArgumentExpression(string? name, Meziantou.Framework.CodeDom.Expression? value) { }
+        public MethodInvokeArgumentExpression(string? name, Meziantou.Framework.CodeDom.Expression? value, Meziantou.Framework.CodeDom.Direction direction) { }
         public static implicit operator Meziantou.Framework.CodeDom.MethodInvokeArgumentExpression(Meziantou.Framework.CodeDom.MethodArgumentDeclaration argument) => throw null;
         public static implicit operator Meziantou.Framework.CodeDom.MethodInvokeArgumentExpression(Meziantou.Framework.CodeDom.VariableDeclarationStatement variable) => throw null;
     }
 
     public class MethodInvokeExpression : Meziantou.Framework.CodeDom.Expression
     {
-        public Meziantou.Framework.CodeDom.Expression? Method { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.Expression> Arguments { get => throw null; }
+        public Meziantou.Framework.CodeDom.Expression? Method { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.CodeDom.TypeReference> Parameters { get => throw null; }
         public MethodInvokeExpression(Meziantou.Framework.CodeDom.Expression? method) { }
         public MethodInvokeExpression(Meziantou.Framework.CodeDom.Expression? method, params Meziantou.Framework.CodeDom.Expression[] arguments) { }
@@ -819,26 +824,26 @@ namespace Meziantou.Framework.CodeDom
 
     public class NamespaceDeclaration : Meziantou.Framework.CodeDom.CodeObject, Meziantou.Framework.CodeDom.ICommentable, Meziantou.Framework.CodeDom.INamespaceDeclarationContainer, Meziantou.Framework.CodeDom.ITypeDeclarationContainer, Meziantou.Framework.CodeDom.IUsingDirectiveContainer
     {
+        public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
+        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
         public string? Name { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.NamespaceDeclaration> Namespaces { get => throw null; }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeDeclaration> Types { get => throw null; }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.UsingDirective> Usings { get => throw null; }
-        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.NamespaceDeclaration> Namespaces { get => throw null; }
-        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
-        public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
         public NamespaceDeclaration(string? name) { }
     }
 
     public class NewArrayExpression : Meziantou.Framework.CodeDom.Expression
     {
-        public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.Expression> Arguments { get => throw null; }
+        public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
         public NewArrayExpression(Meziantou.Framework.CodeDom.TypeReference? type, params Meziantou.Framework.CodeDom.Expression[] arguments) { }
     }
 
     public class NewObjectExpression : Meziantou.Framework.CodeDom.Expression
     {
-        public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.Expression> Arguments { get => throw null; }
+        public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
         public NewObjectExpression(Meziantou.Framework.CodeDom.TypeReference? type, params Meziantou.Framework.CodeDom.Expression[] arguments) { }
     }
 
@@ -858,30 +863,30 @@ namespace Meziantou.Framework.CodeDom
 
     public class OperatorDeclaration : Meziantou.Framework.CodeDom.MemberDeclaration
     {
-        public Meziantou.Framework.CodeDom.TypeReference? ReturnType { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.MethodArgumentCollection Arguments { get => throw null; }
-        public Meziantou.Framework.CodeDom.StatementCollection Statements { get => throw null; }
         public Meziantou.Framework.CodeDom.Modifiers Modifiers { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.TypeReference? ReturnType { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.StatementCollection Statements { get => throw null; }
         public OperatorDeclaration(string? name) { }
     }
 
     public class PropertyAccessorDeclaration : Meziantou.Framework.CodeDom.CodeObject
     {
-        public Meziantou.Framework.CodeDom.Modifiers Modifiers { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.CustomAttribute> CustomAttributes { get => throw null; }
+        public Meziantou.Framework.CodeDom.Modifiers Modifiers { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.StatementCollection? Statements { get => throw null; set { } }
         public PropertyAccessorDeclaration(Meziantou.Framework.CodeDom.StatementCollection? statements) { }
-        public static implicit operator Meziantou.Framework.CodeDom.PropertyAccessorDeclaration(Meziantou.Framework.CodeDom.StatementCollection statements) => throw null;
         public static implicit operator Meziantou.Framework.CodeDom.PropertyAccessorDeclaration(Meziantou.Framework.CodeDom.Statement statement) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.PropertyAccessorDeclaration(Meziantou.Framework.CodeDom.StatementCollection statements) => throw null;
     }
 
     public class PropertyDeclaration : Meziantou.Framework.CodeDom.MemberDeclaration
     {
-        public Meziantou.Framework.CodeDom.Modifiers Modifiers { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.PropertyAccessorDeclaration? Getter { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.PropertyAccessorDeclaration? Setter { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.Modifiers Modifiers { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.TypeReference? PrivateImplementationType { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.PropertyAccessorDeclaration? Setter { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
         public PropertyDeclaration(string? name, Meziantou.Framework.CodeDom.TypeReference? type) { }
     }
 
@@ -921,8 +926,8 @@ namespace Meziantou.Framework.CodeDom
 
     public abstract class Statement : Meziantou.Framework.CodeDom.CodeObject, Meziantou.Framework.CodeDom.ICommentable, Meziantou.Framework.CodeDom.INullableContext
     {
-        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
         public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
+        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
         public Meziantou.Framework.CodeDom.NullableContext NullableContext { get => throw null; set { } }
         public static implicit operator Meziantou.Framework.CodeDom.Statement(Meziantou.Framework.CodeDom.Expression expression) => throw null;
     }
@@ -930,10 +935,10 @@ namespace Meziantou.Framework.CodeDom
     public class StatementCollection : Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.Statement>
     {
         public StatementCollection(Meziantou.Framework.CodeDom.CodeObject parent) { }
-        public TCodeObject Add<TCodeObject>(TCodeObject item) where TCodeObject : Meziantou.Framework.CodeDom.Statement => throw null;
         public Meziantou.Framework.CodeDom.Expression Add(Meziantou.Framework.CodeDom.Expression expression) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.StatementCollection(Meziantou.Framework.CodeDom.Statement codeStatement) => throw null;
+        public new TCodeObject Add<TCodeObject>(TCodeObject item) where TCodeObject : Meziantou.Framework.CodeDom.Statement => throw null;
         public static implicit operator Meziantou.Framework.CodeDom.StatementCollection(Meziantou.Framework.CodeDom.Expression codeExpression) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.StatementCollection(Meziantou.Framework.CodeDom.Statement codeStatement) => throw null;
     }
 
     public class StructDeclaration : Meziantou.Framework.CodeDom.ClassOrStructDeclaration
@@ -953,21 +958,21 @@ namespace Meziantou.Framework.CodeDom
 
     public class TryCatchFinallyStatement : Meziantou.Framework.CodeDom.Statement
     {
-        public Meziantou.Framework.CodeDom.StatementCollection? Try { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.CatchClauseCollection? Catch { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.StatementCollection? Finally { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.StatementCollection? Try { get => throw null; set { } }
     }
 
     public abstract class TypeDeclaration : Meziantou.Framework.CodeDom.CodeObject, Meziantou.Framework.CodeDom.ICommentable, Meziantou.Framework.CodeDom.ICustomAttributeContainer, Meziantou.Framework.CodeDom.INullableContext, Meziantou.Framework.CodeDom.IXmlCommentable
     {
-        public string? Name { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.Modifiers Modifiers { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.CustomAttribute> CustomAttributes { get => throw null; }
-        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
         public Meziantou.Framework.CodeDom.CommentCollection CommentsAfter { get => throw null; }
-        public Meziantou.Framework.CodeDom.XmlCommentCollection XmlComments { get => throw null; }
-        public Meziantou.Framework.CodeDom.NullableContext NullableContext { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.CommentCollection CommentsBefore { get => throw null; }
+        public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.CustomAttribute> CustomAttributes { get => throw null; }
+        public Meziantou.Framework.CodeDom.Modifiers Modifiers { get => throw null; set { } }
+        public string? Name { get => throw null; set { } }
         public string? Namespace { get => throw null; }
+        public Meziantou.Framework.CodeDom.NullableContext NullableContext { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.XmlCommentCollection XmlComments { get => throw null; }
     }
 
     public class TypeOfExpression : Meziantou.Framework.CodeDom.Expression
@@ -978,8 +983,8 @@ namespace Meziantou.Framework.CodeDom
 
     public class TypeParameter : Meziantou.Framework.CodeDom.CodeObject
     {
-        public string? Name { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.TypeParameterConstraintCollection Constraints { get => throw null; }
+        public string? Name { get => throw null; set { } }
         public TypeParameter(string? name) { }
     }
 
@@ -994,23 +999,23 @@ namespace Meziantou.Framework.CodeDom
 
     public class TypeReference
     {
-        public bool IsArray { get => throw null; }
         public int ArrayRank { get => throw null; set { } }
+        public string ClrFullTypeName { get => throw null; }
+        public bool IsArray { get => throw null; }
         public Meziantou.Framework.CodeDom.NullableAnnotation Nullable { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.CodeDom.TypeReference> Parameters { get => throw null; }
         public string? TypeName { get => throw null; }
-        public string ClrFullTypeName { get => throw null; }
         public TypeReference(Meziantou.Framework.CodeDom.TypeDeclaration typeDeclaration) { }
         public TypeReference(Meziantou.Framework.CodeDom.TypeParameter typeParameter) { }
-        public TypeReference(string typeName) { }
         public TypeReference(System.Type type) { }
+        public TypeReference(string typeName) { }
         public Meziantou.Framework.CodeDom.TypeReference Clone() => throw null;
-        public Meziantou.Framework.CodeDom.TypeReference MakeGeneric(params Meziantou.Framework.CodeDom.TypeReference[] typeArguments) => throw null;
         public Meziantou.Framework.CodeDom.TypeReference MakeArray(int rank) => throw null;
-        public Meziantou.Framework.CodeDom.TypeReference MakeNullable(Meziantou.Framework.CodeDom.NullableAnnotation value = 2) => throw null;
+        public Meziantou.Framework.CodeDom.TypeReference MakeGeneric(params Meziantou.Framework.CodeDom.TypeReference[] typeArguments) => throw null;
+        public Meziantou.Framework.CodeDom.TypeReference MakeNullable(Meziantou.Framework.CodeDom.NullableAnnotation value = Meziantou.Framework.CodeDom.NullableAnnotation.Nullable) => throw null;
         public static implicit operator Meziantou.Framework.CodeDom.TypeReference(Meziantou.Framework.CodeDom.TypeDeclaration typeDeclaration) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.TypeReference(System.Type type) => throw null;
         public static implicit operator Meziantou.Framework.CodeDom.TypeReference(Meziantou.Framework.CodeDom.TypeParameter type) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.TypeReference(System.Type type) => throw null;
     }
 
     public class TypeReferenceExpression : Meziantou.Framework.CodeDom.Expression
@@ -1021,11 +1026,11 @@ namespace Meziantou.Framework.CodeDom
 
     public class UnaryExpression : Meziantou.Framework.CodeDom.Expression
     {
-        public Meziantou.Framework.CodeDom.UnaryOperator Operator { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.Expression? Expression { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.UnaryOperator Operator { get => throw null; set { } }
         public UnaryExpression(Meziantou.Framework.CodeDom.UnaryOperator op, Meziantou.Framework.CodeDom.Expression? expression) { }
-        public static Meziantou.Framework.CodeDom.UnaryExpression Not(Meziantou.Framework.CodeDom.Expression expression) => throw null;
         public static Meziantou.Framework.CodeDom.UnaryExpression Minus(Meziantou.Framework.CodeDom.Expression expression) => throw null;
+        public static Meziantou.Framework.CodeDom.UnaryExpression Not(Meziantou.Framework.CodeDom.Expression expression) => throw null;
     }
 
     public enum UnaryOperator
@@ -1053,8 +1058,8 @@ namespace Meziantou.Framework.CodeDom
 
     public class UsingStatement : Meziantou.Framework.CodeDom.Statement
     {
-        public Meziantou.Framework.CodeDom.Statement? Statement { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.StatementCollection? Body { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.Statement? Statement { get => throw null; set { } }
     }
 
     public class ValueArgumentExpression : Meziantou.Framework.CodeDom.Expression
@@ -1067,9 +1072,9 @@ namespace Meziantou.Framework.CodeDom
 
     public class VariableDeclarationStatement : Meziantou.Framework.CodeDom.Statement
     {
+        public Meziantou.Framework.CodeDom.Expression? InitExpression { get => throw null; set { } }
         public string? Name { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
-        public Meziantou.Framework.CodeDom.Expression? InitExpression { get => throw null; set { } }
         public VariableDeclarationStatement(string? name, Meziantou.Framework.CodeDom.TypeReference? type, Meziantou.Framework.CodeDom.Expression? initExpression = null) { }
     }
 
@@ -1084,97 +1089,97 @@ namespace Meziantou.Framework.CodeDom
     public class Visitor
     {
         public virtual void Visit(Meziantou.Framework.CodeDom.CodeObject? codeObject) { }
-        protected virtual void VisitIsInstanceOfTypeExpression(Meziantou.Framework.CodeDom.IsInstanceOfTypeExpression isInstanceOfTypeExpression) { }
-        protected virtual void VisitNewArrayExpression(Meziantou.Framework.CodeDom.NewArrayExpression newArrayExpression) { }
-        public virtual void VisitTypeParameterConstraintCollection(Meziantou.Framework.CodeDom.TypeParameterConstraintCollection typeParameterConstraintCollection) { }
-        public virtual void VisitExpressionCollectionStatement(Meziantou.Framework.CodeDom.ExpressionCollectionStatement expressionCollectionStatement) { }
-        public virtual void VisitXmlCommentCollection(Meziantou.Framework.CodeDom.XmlCommentCollection xmlCommentCollection) { }
-        public virtual void VisitCommentCollection(Meziantou.Framework.CodeDom.CommentCollection commentCollection) { }
-        public virtual void VisitYieldReturnStatement(Meziantou.Framework.CodeDom.YieldReturnStatement yieldReturnStatement) { }
-        public virtual void VisitYieldBreakStatement(Meziantou.Framework.CodeDom.YieldBreakStatement yieldBreakStatement) { }
-        public virtual void VisitXmlComment(Meziantou.Framework.CodeDom.XmlComment xmlComment) { }
-        public virtual void VisitWhileStatement(Meziantou.Framework.CodeDom.WhileStatement whileStatement) { }
-        public virtual void VisitVariableReference(Meziantou.Framework.CodeDom.VariableReferenceExpression variableReferenceExpression) { }
-        public virtual void VisitVariableDeclarationStatement(Meziantou.Framework.CodeDom.VariableDeclarationStatement variableDeclarationStatement) { }
-        public virtual void VisitValueTypeTypeParameterConstraint(Meziantou.Framework.CodeDom.ValueTypeTypeParameterConstraint valueTypeTypeParameterConstraint) { }
-        public virtual void VisitValueArgumentExpression(Meziantou.Framework.CodeDom.ValueArgumentExpression valueArgumentExpression) { }
-        public virtual void VisitUsingStatement(Meziantou.Framework.CodeDom.UsingStatement usingStatement) { }
-        public virtual void VisitUsingDirective(Meziantou.Framework.CodeDom.UsingDirective usingDirective) { }
-        public virtual void VisitUnmanagedTypeParameterConstraint(Meziantou.Framework.CodeDom.UnmanagedTypeParameterConstraint unmanagedTypeParameterConstraint) { }
-        public virtual void VisitUnaryExpression(Meziantou.Framework.CodeDom.UnaryExpression unaryExpression) { }
-        public virtual void VisitTypeReference(Meziantou.Framework.CodeDom.TypeReference typeReference) { }
-        public virtual void VisitTypeReferenceExpression(Meziantou.Framework.CodeDom.TypeReferenceExpression typeReference) { }
-        public virtual void VisitTypeOfExpression(Meziantou.Framework.CodeDom.TypeOfExpression typeOfExpression) { }
-        public virtual void VisitTryCatchFinallyStatement(Meziantou.Framework.CodeDom.TryCatchFinallyStatement tryCatchFinallyStatement) { }
-        public virtual void VisitCatchClauseCollection(Meziantou.Framework.CodeDom.CatchClauseCollection catchClauseCollection) { }
-        public virtual void VisitThrowStatement(Meziantou.Framework.CodeDom.ThrowStatement throwStatement) { }
-        public virtual void VisitThisExpression(Meziantou.Framework.CodeDom.ThisExpression thisExpression) { }
-        public virtual void VisitSnippetStatement(Meziantou.Framework.CodeDom.SnippetStatement snippetStatement) { }
-        public virtual void VisitSnippetExpression(Meziantou.Framework.CodeDom.SnippetExpression snippetExpression) { }
-        public virtual void VisitReturnStatement(Meziantou.Framework.CodeDom.ReturnStatement returnStatement) { }
-        public virtual void VisitPropertyDeclaration(Meziantou.Framework.CodeDom.PropertyDeclaration propertyDeclaration) { }
-        public virtual void VisitPropertyAccessorDeclaration(Meziantou.Framework.CodeDom.PropertyAccessorDeclaration propertyAccessorDeclaration) { }
-        public virtual void VisitOperatorDeclaration(Meziantou.Framework.CodeDom.OperatorDeclaration operatorDeclaration) { }
-        public virtual void VisitNewObjectExpression(Meziantou.Framework.CodeDom.NewObjectExpression newObjectExpression) { }
-        public virtual void VisitNamespaceDeclaration(Meziantou.Framework.CodeDom.NamespaceDeclaration namespaceDeclaration) { }
-        public virtual void VisitNameofExpression(Meziantou.Framework.CodeDom.NameofExpression nameofExpression) { }
-        public virtual void VisitMethodInvokeExpression(Meziantou.Framework.CodeDom.MethodInvokeExpression methodInvokeExpression) { }
-        public virtual void VisitMethodInvokeArgumentExpression(Meziantou.Framework.CodeDom.MethodInvokeArgumentExpression methodInvokeArgumentExpression) { }
-        public virtual void VisitMethodExitStatement(Meziantou.Framework.CodeDom.MethodExitStatement methodExitStatement) { }
-        public virtual void VisitMethodDeclaration(Meziantou.Framework.CodeDom.MethodDeclaration methodDeclaration) { }
-        public virtual void VisitMethodArgumentDeclaration(Meziantou.Framework.CodeDom.MethodArgumentDeclaration methodArgumentDeclaration) { }
-        public virtual void VisitMemberReferenceExpression(Meziantou.Framework.CodeDom.MemberReferenceExpression memberReferenceExpression) { }
-        public virtual void VisitLiteralExpression(Meziantou.Framework.CodeDom.LiteralExpression literalExpression) { }
-        public virtual void VisitIterationStatement(Meziantou.Framework.CodeDom.IterationStatement iterationStatement) { }
-        public virtual void VisitGotoNextLoopIterationStatement(Meziantou.Framework.CodeDom.GotoNextLoopIterationStatement gotoNextLoopIterationStatement) { }
-        public virtual void VisitFieldDeclaration(Meziantou.Framework.CodeDom.FieldDeclaration fieldDeclaration) { }
-        public virtual void VisitExpressionStatement(Meziantou.Framework.CodeDom.ExpressionStatement expressionStatement) { }
-        public virtual void VisitExitLoopStatement(Meziantou.Framework.CodeDom.ExitLoopStatement exitLoopStatement) { }
-        public virtual void VisitEventFieldDeclaration(Meziantou.Framework.CodeDom.EventFieldDeclaration eventFieldDeclaration) { }
-        public virtual void VisitEnumerationMember(Meziantou.Framework.CodeDom.EnumerationMember enumerationMember) { }
-        public virtual void VisitEnumerationDeclaration(Meziantou.Framework.CodeDom.EnumerationDeclaration enumerationDeclaration) { }
-        public virtual void VisitDelegateDeclaration(Meziantou.Framework.CodeDom.DelegateDeclaration delegateDeclaration) { }
-        public virtual void VisitDefaultValueExpression(Meziantou.Framework.CodeDom.DefaultValueExpression defaultValueExpression) { }
-        public virtual void VisitCustomAttributeArgument(Meziantou.Framework.CodeDom.CustomAttributeArgument customAttributeArgument) { }
-        public virtual void VisitCustomAttribute(Meziantou.Framework.CodeDom.CustomAttribute customAttribute) { }
-        public virtual void VisitConvertExpression(Meziantou.Framework.CodeDom.ConvertExpression convertExpression) { }
-        public virtual void VisitConstructorThisInitializer(Meziantou.Framework.CodeDom.ConstructorThisInitializer constructorThisInitializer) { }
-        public virtual void VisitConstructorParameterConstraint(Meziantou.Framework.CodeDom.ConstructorParameterConstraint constructorParameterConstraint) { }
-        public virtual void VisitConstructorDeclaration(Meziantou.Framework.CodeDom.ConstructorDeclaration constructorDeclaration) { }
-        public virtual void VisitConstructorBaseInitializer(Meziantou.Framework.CodeDom.ConstructorBaseInitializer constructorBaseInitializer) { }
-        public virtual void VisitConditionStatement(Meziantou.Framework.CodeDom.ConditionStatement conditionStatement) { }
-        public virtual void VisitCommentStatement(Meziantou.Framework.CodeDom.CommentStatement commentStatement) { }
-        public virtual void VisitComment(Meziantou.Framework.CodeDom.Comment comment) { }
-        public virtual void VisitClassTypeParameterConstraint(Meziantou.Framework.CodeDom.ClassTypeParameterConstraint classTypeParameterConstraint) { }
-        public virtual void VisitCatchClause(Meziantou.Framework.CodeDom.CatchClause catchClause) { }
-        public virtual void VisitCastExpression(Meziantou.Framework.CodeDom.CastExpression castExpression) { }
-        public virtual void VisitBinaryExpression(Meziantou.Framework.CodeDom.BinaryExpression binaryExpression) { }
-        public virtual void VisitBaseTypeParameterConstraint(Meziantou.Framework.CodeDom.BaseTypeParameterConstraint baseTypeParameterConstraint) { }
-        public virtual void VisitBaseExpression(Meziantou.Framework.CodeDom.BaseExpression baseExpression) { }
-        public virtual void VisitAwaitExpression(Meziantou.Framework.CodeDom.AwaitExpression awaitExpression) { }
-        public virtual void VisitAssignStatement(Meziantou.Framework.CodeDom.AssignStatement assignStatement) { }
-        public virtual void VisitArgumentReferenceExpression(Meziantou.Framework.CodeDom.ArgumentReferenceExpression argumentReferenceExpression) { }
         public virtual void VisitAddEventHandlerStatement(Meziantou.Framework.CodeDom.AddEventHandlerStatement addEventHandlerStatement) { }
-        public virtual void VisitRemoveEventHandlerStatement(Meziantou.Framework.CodeDom.RemoveEventHandlerStatement removeEventHandlerStatement) { }
+        public virtual void VisitArgumentReferenceExpression(Meziantou.Framework.CodeDom.ArgumentReferenceExpression argumentReferenceExpression) { }
         public virtual void VisitArrayIndexerExpression(Meziantou.Framework.CodeDom.ArrayIndexerExpression arrayIndexerExpression) { }
-        public virtual void VisitInterfaceDeclaration(Meziantou.Framework.CodeDom.InterfaceDeclaration interfaceDeclaration) { }
-        public virtual void VisitTypeParameterConstraint(Meziantou.Framework.CodeDom.TypeParameterConstraint typeParameterConstraint) { }
-        public virtual void VisitTypeParameter(Meziantou.Framework.CodeDom.TypeParameter typeParameter) { }
-        public virtual void VisitCompilationUnit(Meziantou.Framework.CodeDom.CompilationUnit compilationUnit) { }
-        public virtual void VisitNamespace(Meziantou.Framework.CodeDom.NamespaceDeclaration namespaceDeclaration) { }
-        public virtual void VisitStructDeclaration(Meziantou.Framework.CodeDom.StructDeclaration structDeclaration) { }
+        public virtual void VisitAssignStatement(Meziantou.Framework.CodeDom.AssignStatement assignStatement) { }
+        public virtual void VisitAwaitExpression(Meziantou.Framework.CodeDom.AwaitExpression awaitExpression) { }
+        public virtual void VisitBaseExpression(Meziantou.Framework.CodeDom.BaseExpression baseExpression) { }
+        public virtual void VisitBaseTypeParameterConstraint(Meziantou.Framework.CodeDom.BaseTypeParameterConstraint baseTypeParameterConstraint) { }
+        public virtual void VisitBinaryExpression(Meziantou.Framework.CodeDom.BinaryExpression binaryExpression) { }
+        public virtual void VisitCastExpression(Meziantou.Framework.CodeDom.CastExpression castExpression) { }
+        public virtual void VisitCatchClause(Meziantou.Framework.CodeDom.CatchClause catchClause) { }
+        public virtual void VisitCatchClauseCollection(Meziantou.Framework.CodeDom.CatchClauseCollection catchClauseCollection) { }
         public virtual void VisitClassDeclaration(Meziantou.Framework.CodeDom.ClassDeclaration classDeclaration) { }
+        public virtual void VisitClassTypeParameterConstraint(Meziantou.Framework.CodeDom.ClassTypeParameterConstraint classTypeParameterConstraint) { }
+        public virtual void VisitComment(Meziantou.Framework.CodeDom.Comment comment) { }
+        public virtual void VisitCommentCollection(Meziantou.Framework.CodeDom.CommentCollection commentCollection) { }
+        public virtual void VisitCommentStatement(Meziantou.Framework.CodeDom.CommentStatement commentStatement) { }
+        public virtual void VisitCompilationUnit(Meziantou.Framework.CodeDom.CompilationUnit compilationUnit) { }
+        public virtual void VisitConditionStatement(Meziantou.Framework.CodeDom.ConditionStatement conditionStatement) { }
+        public virtual void VisitConstructorBaseInitializer(Meziantou.Framework.CodeDom.ConstructorBaseInitializer constructorBaseInitializer) { }
+        public virtual void VisitConstructorDeclaration(Meziantou.Framework.CodeDom.ConstructorDeclaration constructorDeclaration) { }
+        public virtual void VisitConstructorParameterConstraint(Meziantou.Framework.CodeDom.ConstructorParameterConstraint constructorParameterConstraint) { }
+        public virtual void VisitConstructorThisInitializer(Meziantou.Framework.CodeDom.ConstructorThisInitializer constructorThisInitializer) { }
+        public virtual void VisitConvertExpression(Meziantou.Framework.CodeDom.ConvertExpression convertExpression) { }
+        public virtual void VisitCustomAttribute(Meziantou.Framework.CodeDom.CustomAttribute customAttribute) { }
+        public virtual void VisitCustomAttributeArgument(Meziantou.Framework.CodeDom.CustomAttributeArgument customAttributeArgument) { }
+        public virtual void VisitDefaultValueExpression(Meziantou.Framework.CodeDom.DefaultValueExpression defaultValueExpression) { }
+        public virtual void VisitDelegateDeclaration(Meziantou.Framework.CodeDom.DelegateDeclaration delegateDeclaration) { }
+        public virtual void VisitEnumerationDeclaration(Meziantou.Framework.CodeDom.EnumerationDeclaration enumerationDeclaration) { }
+        public virtual void VisitEnumerationMember(Meziantou.Framework.CodeDom.EnumerationMember enumerationMember) { }
+        public virtual void VisitEventFieldDeclaration(Meziantou.Framework.CodeDom.EventFieldDeclaration eventFieldDeclaration) { }
+        public virtual void VisitExitLoopStatement(Meziantou.Framework.CodeDom.ExitLoopStatement exitLoopStatement) { }
+        public virtual void VisitExpressionCollectionStatement(Meziantou.Framework.CodeDom.ExpressionCollectionStatement expressionCollectionStatement) { }
+        public virtual void VisitExpressionStatement(Meziantou.Framework.CodeDom.ExpressionStatement expressionStatement) { }
+        public virtual void VisitExpressions(Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.Expression> expressions) { }
+        public virtual void VisitFieldDeclaration(Meziantou.Framework.CodeDom.FieldDeclaration fieldDeclaration) { }
+        public virtual void VisitGotoNextLoopIterationStatement(Meziantou.Framework.CodeDom.GotoNextLoopIterationStatement gotoNextLoopIterationStatement) { }
+        public virtual void VisitInterfaceDeclaration(Meziantou.Framework.CodeDom.InterfaceDeclaration interfaceDeclaration) { }
+        protected virtual void VisitIsInstanceOfTypeExpression(Meziantou.Framework.CodeDom.IsInstanceOfTypeExpression isInstanceOfTypeExpression) { }
+        public virtual void VisitIterationStatement(Meziantou.Framework.CodeDom.IterationStatement iterationStatement) { }
+        public virtual void VisitLiteralExpression(Meziantou.Framework.CodeDom.LiteralExpression literalExpression) { }
+        public virtual void VisitMemberReferenceExpression(Meziantou.Framework.CodeDom.MemberReferenceExpression memberReferenceExpression) { }
+        public virtual void VisitMethodArgumentCollection(Meziantou.Framework.CodeDom.MethodArgumentCollection arguments) { }
+        public virtual void VisitMethodArgumentDeclaration(Meziantou.Framework.CodeDom.MethodArgumentDeclaration methodArgumentDeclaration) { }
+        public virtual void VisitMethodDeclaration(Meziantou.Framework.CodeDom.MethodDeclaration methodDeclaration) { }
+        public virtual void VisitMethodExitStatement(Meziantou.Framework.CodeDom.MethodExitStatement methodExitStatement) { }
+        public virtual void VisitMethodInvokeArgumentExpression(Meziantou.Framework.CodeDom.MethodInvokeArgumentExpression methodInvokeArgumentExpression) { }
+        public virtual void VisitMethodInvokeExpression(Meziantou.Framework.CodeDom.MethodInvokeExpression methodInvokeExpression) { }
+        public virtual void VisitNameofExpression(Meziantou.Framework.CodeDom.NameofExpression nameofExpression) { }
+        public virtual void VisitNamespace(Meziantou.Framework.CodeDom.NamespaceDeclaration namespaceDeclaration) { }
+        public virtual void VisitNamespaceDeclaration(Meziantou.Framework.CodeDom.NamespaceDeclaration namespaceDeclaration) { }
+        protected virtual void VisitNewArrayExpression(Meziantou.Framework.CodeDom.NewArrayExpression newArrayExpression) { }
+        public virtual void VisitNewObjectExpression(Meziantou.Framework.CodeDom.NewObjectExpression newObjectExpression) { }
+        public virtual void VisitOperatorDeclaration(Meziantou.Framework.CodeDom.OperatorDeclaration operatorDeclaration) { }
+        public virtual void VisitPropertyAccessorDeclaration(Meziantou.Framework.CodeDom.PropertyAccessorDeclaration propertyAccessorDeclaration) { }
+        public virtual void VisitPropertyDeclaration(Meziantou.Framework.CodeDom.PropertyDeclaration propertyDeclaration) { }
         public virtual void VisitRecordDeclaration(Meziantou.Framework.CodeDom.RecordDeclaration recordDeclaration) { }
         public virtual void VisitRecordStructDeclaration(Meziantou.Framework.CodeDom.RecordStructDeclaration recordDeclaration) { }
-        public virtual void VisitExpressions(Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.Expression> expressions) { }
+        public virtual void VisitRemoveEventHandlerStatement(Meziantou.Framework.CodeDom.RemoveEventHandlerStatement removeEventHandlerStatement) { }
+        public virtual void VisitReturnStatement(Meziantou.Framework.CodeDom.ReturnStatement returnStatement) { }
+        public virtual void VisitSnippetExpression(Meziantou.Framework.CodeDom.SnippetExpression snippetExpression) { }
+        public virtual void VisitSnippetStatement(Meziantou.Framework.CodeDom.SnippetStatement snippetStatement) { }
         public virtual void VisitStatementCollection(Meziantou.Framework.CodeDom.StatementCollection statements) { }
-        public virtual void VisitMethodArgumentCollection(Meziantou.Framework.CodeDom.MethodArgumentCollection arguments) { }
+        public virtual void VisitStructDeclaration(Meziantou.Framework.CodeDom.StructDeclaration structDeclaration) { }
+        public virtual void VisitThisExpression(Meziantou.Framework.CodeDom.ThisExpression thisExpression) { }
+        public virtual void VisitThrowStatement(Meziantou.Framework.CodeDom.ThrowStatement throwStatement) { }
+        public virtual void VisitTryCatchFinallyStatement(Meziantou.Framework.CodeDom.TryCatchFinallyStatement tryCatchFinallyStatement) { }
+        public virtual void VisitTypeOfExpression(Meziantou.Framework.CodeDom.TypeOfExpression typeOfExpression) { }
+        public virtual void VisitTypeParameter(Meziantou.Framework.CodeDom.TypeParameter typeParameter) { }
+        public virtual void VisitTypeParameterConstraint(Meziantou.Framework.CodeDom.TypeParameterConstraint typeParameterConstraint) { }
+        public virtual void VisitTypeParameterConstraintCollection(Meziantou.Framework.CodeDom.TypeParameterConstraintCollection typeParameterConstraintCollection) { }
+        public virtual void VisitTypeReference(Meziantou.Framework.CodeDom.TypeReference typeReference) { }
+        public virtual void VisitTypeReferenceExpression(Meziantou.Framework.CodeDom.TypeReferenceExpression typeReference) { }
+        public virtual void VisitUnaryExpression(Meziantou.Framework.CodeDom.UnaryExpression unaryExpression) { }
+        public virtual void VisitUnmanagedTypeParameterConstraint(Meziantou.Framework.CodeDom.UnmanagedTypeParameterConstraint unmanagedTypeParameterConstraint) { }
+        public virtual void VisitUsingDirective(Meziantou.Framework.CodeDom.UsingDirective usingDirective) { }
+        public virtual void VisitUsingStatement(Meziantou.Framework.CodeDom.UsingStatement usingStatement) { }
+        public virtual void VisitValueArgumentExpression(Meziantou.Framework.CodeDom.ValueArgumentExpression valueArgumentExpression) { }
+        public virtual void VisitValueTypeTypeParameterConstraint(Meziantou.Framework.CodeDom.ValueTypeTypeParameterConstraint valueTypeTypeParameterConstraint) { }
+        public virtual void VisitVariableDeclarationStatement(Meziantou.Framework.CodeDom.VariableDeclarationStatement variableDeclarationStatement) { }
+        public virtual void VisitVariableReference(Meziantou.Framework.CodeDom.VariableReferenceExpression variableReferenceExpression) { }
+        public virtual void VisitWhileStatement(Meziantou.Framework.CodeDom.WhileStatement whileStatement) { }
+        public virtual void VisitXmlComment(Meziantou.Framework.CodeDom.XmlComment xmlComment) { }
+        public virtual void VisitXmlCommentCollection(Meziantou.Framework.CodeDom.XmlCommentCollection xmlCommentCollection) { }
+        public virtual void VisitYieldBreakStatement(Meziantou.Framework.CodeDom.YieldBreakStatement yieldBreakStatement) { }
+        public virtual void VisitYieldReturnStatement(Meziantou.Framework.CodeDom.YieldReturnStatement yieldReturnStatement) { }
     }
 
     public class WhileStatement : Meziantou.Framework.CodeDom.Statement
     {
-        public Meziantou.Framework.CodeDom.Expression? Condition { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.StatementCollection? Body { get => throw null; set { } }
+        public Meziantou.Framework.CodeDom.Expression? Condition { get => throw null; set { } }
     }
 
     public class XmlComment : Meziantou.Framework.CodeDom.CodeObject
@@ -1187,9 +1192,9 @@ namespace Meziantou.Framework.CodeDom
     {
         public XmlCommentCollection(Meziantou.Framework.CodeDom.CodeObject parent) { }
         public void Add(System.Xml.Linq.XElement element) { }
-        public void AddSummary(string description) { }
-        public void AddReturn(string text) { }
         public void AddParam(string name, string description) { }
+        public void AddReturn(string text) { }
+        public void AddSummary(string description) { }
         public void AddTypeParam(string name, string description) { }
     }
 

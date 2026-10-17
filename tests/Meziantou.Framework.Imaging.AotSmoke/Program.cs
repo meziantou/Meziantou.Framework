@@ -1,0 +1,53 @@
+using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using Meziantou.Framework.Imaging.AotSmoke;
+
+// NativeAOT/trimming smoke test: every first-release codec through the public API (eager, streaming, identification,
+// processing, metadata, errors). Exit code 0 when everything matches, 1 otherwise.
+var failures = 0;
+var runtime = string.Create(CultureInfo.InvariantCulture, $"{Environment.Version} {System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture} dynamic-code={RuntimeFeature.IsDynamicCodeSupported}");
+Console.WriteLine("Meziantou.Framework.Imaging smoke test on .NET " + runtime);
+
+Run("png", SmokeTests.Png);
+Run("apng", SmokeTests.Apng);
+Run("gif", SmokeTests.Gif);
+Run("jpeg", SmokeTests.Jpeg);
+Run("jpeg-cmyk", SmokeTests.CmykJpegConversion);
+Run("jpeg-lossless", SmokeTests.LosslessJpeg);
+Run("webp", SmokeTests.WebP);
+Run("qoi", SmokeTests.Qoi);
+Run("bmp", SmokeTests.Bmp);
+Run("tga", SmokeTests.Tga);
+Run("pnm", SmokeTests.Pnm);
+Run("tiff", SmokeTests.Tiff);
+Run("icon", SmokeTests.Icon);
+Run("ani", SmokeTests.Ani);
+Run("avif", SmokeTests.Avif);
+Run("heic", SmokeTests.Heic);
+Run("jxl", SmokeTests.JpegXl);
+Run("jp2", SmokeTests.Jpeg2000);
+Run("processing", SmokeTests.Processing);
+Run("drawing", SmokeTests.Drawing);
+Run("text", SmokeTests.Text);
+Run("color", SmokeTests.ColorConversion);
+Run("streaming", SmokeTests.Streaming);
+Run("errors", SmokeTests.Errors);
+
+Console.WriteLine(failures == 0 ? "All smoke tests passed." : $"{failures} smoke test(s) failed.");
+return failures == 0 ? 0 : 1;
+
+void Run(string name, Action test)
+{
+    var stopwatch = Stopwatch.StartNew();
+    try
+    {
+        test();
+        Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"  ok   {name} ({stopwatch.ElapsedMilliseconds} ms)"));
+    }
+    catch (Exception exception)
+    {
+        failures++;
+        Console.WriteLine($"  FAIL {name}: {exception}");
+    }
+}

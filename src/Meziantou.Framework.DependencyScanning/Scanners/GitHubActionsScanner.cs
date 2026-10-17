@@ -94,11 +94,19 @@ public sealed class GitHubActionsScanner : DependencyScanner
     private void ExtractSteps(YamlFile yaml, YamlMapping node)
     {
         var stepsNode = GetProperty(node, "steps", StringComparison.OrdinalIgnoreCase);
+        ExtractSteps(yaml, stepsNode);
+    }
+
+    private void ExtractSteps(YamlFile yaml, YamlElement? stepsNode)
+    {
         if (stepsNode is YamlSequence steps)
         {
             foreach (var step in steps.OfType<YamlMapping>())
             {
                 ExtractUsesProperty(yaml, step);
+
+                // Parallel steps: - parallel: [ steps... ]
+                ExtractSteps(yaml, GetProperty(step, "parallel", StringComparison.OrdinalIgnoreCase));
             }
         }
     }
@@ -114,8 +122,9 @@ public sealed class GitHubActionsScanner : DependencyScanner
                 yaml.ReportDockerImage(this, usesValue, DockerPrefix.Length);
             }
             // use: action@v1
-            // Local actions and reusable workflows (uses: ./.github/actions/local) are part of the repository, not dependencies
-            else if (!value.StartsWith("./", StringComparison.Ordinal) && !value.StartsWith("../", StringComparison.Ordinal))
+            // Local actions and reusable workflows (uses: ./.github/actions/local, or uses: $/actions/local which is resolved
+            // at the running commit) are part of the repository, not dependencies
+            else if (!value.StartsWith("./", StringComparison.Ordinal) && !value.StartsWith("../", StringComparison.Ordinal) && !value.StartsWith("$/", StringComparison.Ordinal))
             {
                 yaml.ReportDependencyWithSeparator(this, usesValue, DependencyType.GitHubActions, '@');
             }

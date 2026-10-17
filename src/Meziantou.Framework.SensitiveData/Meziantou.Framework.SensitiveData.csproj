@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Represent sensitive data which should be difficult to accidentally disclose, even accounting for some types of application bugs.</Description>
     <PackageTags>security, sensitive-data, secrets, memory, protection</PackageTags>
-    <Version>2.0.7</Version>
+    <Version>2.0.8</Version>
     <IsTrimmable>true</IsTrimmable>
     <RootNamespace>Meziantou.Framework</RootNamespace>
   </PropertyGroup>
@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.333">
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.346">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

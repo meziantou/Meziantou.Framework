@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.AspNetCore.Components</RootNamespace>
-    <Version>2.0.6</Version>
+    <Version>2.0.7</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>A log viewer component for Blazor</Description>
     <PackageTags>aspnetcore, blazor, components, logging, log-viewer, ui</PackageTags>
@@ -17,8 +17,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net11.0'">
-    <PackageReference Include="Microsoft.AspNetCore.Components" Version="11.0.0-rc.1.26425.128" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0-rc.1.26425.128" />
+    <PackageReference Include="Microsoft.AspNetCore.Components" Version="11.0.0-rc.2.26504.105" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0-rc.2.26504.105" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net10.0'">

@@ -1,0 +1,576 @@
+using System.Runtime.InteropServices;
+using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Metadata;
+
+namespace Meziantou.Framework.Imaging.Internals;
+
+/// <summary>
+/// The metadata an encoder writes, computed once from <see cref="ImageMetadata"/>, the output format and the encoder's
+/// <see cref="MetadataHandling"/> policy. Every encoder uses this plan so that the save-time
+/// metadata policy is identical across formats:
+/// <list type="bullet">
+/// <item><see cref="MetadataHandling.Strict"/>: metadata the format cannot represent throws <see cref="UnsupportedImageFeatureException"/>;</item>
+/// <item><see cref="MetadataHandling.DiscardUnsupported"/>: such metadata is silently dropped;</item>
+/// <item><see cref="MetadataHandling.Strip"/>: no optional metadata is written (and nothing is validated).</item>
+/// </list>
+/// Malformed caller-supplied payloads (EXIF, ICC, XMP) that would be written throw <see cref="InvalidImageContentException"/>
+/// regardless of the policy (except <see cref="MetadataHandling.Strip"/>). The typed orientation is authoritative: the EXIF
+/// payload is rewritten (or synthesized) from it and its pixel-dimension tags are reconciled with the canvas size.
+/// <see cref="ImageMetadata.SourceFormat"/> never influences the plan. Animation timing is not metadata and is not handled here.
+/// </summary>
+[SuppressMessage("Design", "MA0182:Unused internal type", Justification = "Shared codec infrastructure; consumed by the codecs and covered by unit tests.")]
+internal sealed class MetadataWritePlan
+{
+    /// <summary>The largest XMP packet storable in one JPEG APP1 segment (65,533 payload bytes minus the 29-byte namespace header).</summary>
+    public const int MaxJpegStandardXmpBytes = 65_533 - 29;
+
+    /// <summary>The largest EXIF payload storable in one JPEG APP1 segment (65,533 payload bytes minus the 6-byte <c>Exif\0\0</c> header).</summary>
+    public const int MaxJpegExifBytes = 65_533 - 6;
+
+    /// <summary>The largest ICC profile storable in JPEG APP2 segments (255 segments of 65,533 - 14 bytes).</summary>
+    public const long MaxJpegIccBytes = 255L * (65_533 - 14);
+
+    /// <summary>The largest comment storable in one JPEG COM segment (Latin-1, one byte per character).</summary>
+    public const int MaxJpegCommentLength = 65_533;
+
+    private static readonly MetadataWritePlan Empty = new(null, null, null, [], null, ColorTransferFunction.Srgb);
+
+    private MetadataWritePlan(IccProfile? iccProfile, byte[]? exif, XmpProfile? xmpProfile, IReadOnlyList<ImageTextEntry> textEntries, ImageResolution? resolution, ColorTransferFunction transferFunction, ExifOrientation orientation = ExifOrientation.TopLeft, CicpColorDescription? cicp = null, ContentLightLevel? contentLightLevel = null, MasteringDisplayColorVolume? masteringDisplay = null, PixelAspectRatio? pixelAspectRatio = null)
+    {
+        TransferFunction = transferFunction;
+        Cicp = cicp;
+        ContentLightLevel = contentLightLevel;
+        MasteringDisplay = masteringDisplay;
+        PixelAspectRatio = pixelAspectRatio;
+        IccProfile = iccProfile;
+        Exif = exif;
+        XmpProfile = xmpProfile;
+        TextEntries = textEntries;
+        Resolution = resolution;
+        Orientation = orientation;
+    }
+
+    /// <summary>
+    /// Gets the orientation to write in the format's own orientation field (the TIFF <c>Orientation</c> tag), or
+    /// <see cref="ExifOrientation.TopLeft"/>. Formats that store orientation inside an EXIF block get it from
+    /// <see cref="Exif"/> instead, which <see cref="ExifTiff"/> already reconciled.
+    /// </summary>
+    public ExifOrientation Orientation { get; }
+
+    /// <summary>
+    /// Gets the CICP color description to write, or <see langword="null"/>: for AVIF, which stores any description, and
+    /// for JPEG XL, which stores the ones its enumerated color encoding expresses, when no ICC profile is written.
+    /// </summary>
+    public CicpColorDescription? Cicp { get; }
+
+    /// <summary>Gets the content light level to write, or <see langword="null"/>.</summary>
+    public ContentLightLevel? ContentLightLevel { get; }
+
+    /// <summary>Gets the mastering display color volume to write, or <see langword="null"/>.</summary>
+    public MasteringDisplayColorVolume? MasteringDisplay { get; }
+
+    /// <summary>Gets the pixel aspect ratio to write, or <see langword="null"/> (square pixels included, when the format has no field for them).</summary>
+    public PixelAspectRatio? PixelAspectRatio { get; }
+
+    /// <summary>Gets the ICC profile to write, or <see langword="null"/>.</summary>
+    public IccProfile? IccProfile { get; }
+
+    /// <summary>Gets the TIFF-structured EXIF data to write (orientation and dimensions reconciled), or <see langword="null"/>.</summary>
+    public byte[]? Exif { get; }
+
+    /// <summary>Gets the XMP packet to write, or <see langword="null"/>.</summary>
+    public XmpProfile? XmpProfile { get; }
+
+    /// <summary>Gets the text entries to write, in order.</summary>
+    public IReadOnlyList<ImageTextEntry> TextEntries { get; }
+
+    /// <summary>Gets the resolution to write, or <see langword="null"/>.</summary>
+    public ImageResolution? Resolution { get; }
+
+    /// <summary>
+    /// Gets the transfer function to declare: <see cref="ColorTransferFunction.Linear"/> only for formats that store the label
+    /// (QOI); <see cref="ColorTransferFunction.Srgb"/> otherwise, or when the label is discarded or stripped.
+    /// </summary>
+    public ColorTransferFunction TransferFunction { get; }
+
+    /// <summary>Creates the plan for an encoder.</summary>
+    /// <param name="metadata">The image metadata, or <see langword="null"/> for none.</param>
+    /// <param name="format">The output format.</param>
+    /// <param name="handling">The encoder's metadata policy.</param>
+    /// <param name="canvasSize">The canvas size, used to reconcile EXIF dimension tags.</param>
+    /// <param name="pixelFormat">
+    /// The pixel format of the written frames, or <see langword="null"/> when unknown. When known, an ICC profile whose color
+    /// space cannot label these pixels (gray profiles for gray formats, RGB profiles for color
+    /// formats) is unsupported metadata: it follows <paramref name="handling"/> like any other unrepresentable item.
+    /// </param>
+    /// <param name="encoder">The encoder settings, for the formats whose settings change what the output stores; <see langword="null"/> otherwise.</param>
+    /// <returns>The plan.</returns>
+    /// <exception cref="UnsupportedImageFeatureException">Metadata cannot be represented and <paramref name="handling"/> is <see cref="MetadataHandling.Strict"/>.</exception>
+    /// <exception cref="InvalidImageContentException">A payload that would be written is malformed.</exception>
+    public static MetadataWritePlan Create(ImageMetadata? metadata, ImageFormat format, MetadataHandling handling, Size canvasSize, PixelFormat? pixelFormat = null, ImageEncoder? encoder = null)
+    {
+        if (metadata is null || handling == MetadataHandling.Strip)
+            return Empty;
+
+        // A JPEG 2000 codestream that is not in a JP2 file stores no metadata
+        var capabilities = encoder is Jpeg2000Encoder { Container: Jpeg2000Container.Codestream } ? FormatCapabilities.Get(ImageFormat.Unknown) : FormatCapabilities.Get(format);
+        var context = new PlanContext(format, handling);
+
+        IccProfile? icc = null;
+        if (metadata.IccProfile is { } iccProfile)
+        {
+            if (!capabilities.Icc)
+            {
+                context.Unsupported("ICC color profile");
+            }
+            else
+            {
+                if (!MetadataValidation.TryValidateIccProfile(iccProfile.Data.Span, out var error))
+                    throw new InvalidImageContentException("The ICC profile is malformed: " + error, format);
+
+                // WebP stores RGB samples whatever the pixel format: a gray source is written as RGB
+                var labeled = format == ImageFormat.WebP && pixelFormat is { } source && PixelFormats.IsGrayscale(source) ? PixelFormat.Rgb24 : pixelFormat;
+                if (labeled is { } pixels && !ColorProfileCompatibility.IsCompatible(iccProfile.ColorSpace, pixels))
+                {
+                    context.Unsupported(string.Create(CultureInfo.InvariantCulture, $"ICC color profile declaring the {iccProfile.ColorSpace} color space for {pixels} pixels"));
+                }
+                else if (format == ImageFormat.Jpeg && iccProfile.Data.Length > MaxJpegIccBytes)
+                {
+                    context.Unsupported("ICC color profile larger than 255 JPEG APP2 segments");
+                }
+                else if (format == ImageFormat.Jpeg2000 && !Jpeg2000RestrictedIcc.IsRestricted(iccProfile.Data.Span))
+                {
+                    context.Unsupported("ICC color profile that is neither a grayscale profile nor a matrix-based RGB profile (the only ones a JP2 file allows)");
+                }
+                else
+                {
+                    icc = iccProfile;
+                }
+            }
+        }
+
+        byte[]? exif = null;
+        if (capabilities.Exif)
+        {
+            if (metadata.ExifProfile is { } exifProfile)
+            {
+                exif = ExifTiff.Rewrite(exifProfile.Data.Span, metadata.Orientation, canvasSize, removeThumbnail: false, format);
+            }
+            else if (metadata.Orientation != ExifOrientation.TopLeft && !capabilities.NativeOrientation)
+            {
+                exif = ExifTiff.CreateMinimal(metadata.Orientation);
+            }
+
+            if (exif is not null && format == ImageFormat.Jpeg && exif.Length > MaxJpegExifBytes)
+            {
+                context.Unsupported("EXIF profile larger than one JPEG APP1 segment");
+                exif = null;
+            }
+        }
+        else
+        {
+            if (metadata.ExifProfile is not null)
+            {
+                context.Unsupported("EXIF profile");
+            }
+
+            if (metadata.Orientation != ExifOrientation.TopLeft && !capabilities.NativeOrientation)
+            {
+                context.Unsupported("EXIF orientation other than TopLeft");
+            }
+        }
+
+        XmpProfile? xmp = null;
+        if (metadata.XmpProfile is { } xmpProfile)
+        {
+            if (!capabilities.Xmp)
+            {
+                context.Unsupported("XMP packet");
+            }
+            else
+            {
+                if (!MetadataValidation.TryValidateXmpPacket(xmpProfile.Data.Span, out var error))
+                    throw new InvalidImageContentException("The XMP packet is malformed: " + error, format);
+
+                if (format == ImageFormat.Jpeg && xmpProfile.Data.Length > MaxJpegStandardXmpBytes)
+                {
+                    context.Unsupported("XMP packet larger than one JPEG APP1 segment (extended XMP)");
+                }
+                else
+                {
+                    xmp = xmpProfile;
+                }
+            }
+        }
+
+        var text = new List<ImageTextEntry>(metadata.TextEntries.Count);
+        foreach (var entry in metadata.TextEntries)
+        {
+            if (capabilities.IsTextEntrySupported(entry) && !(capabilities.HasUniqueTextKeywords && ContainsKeyword(text, entry.Keyword)))
+            {
+                text.Add(entry);
+            }
+            else
+            {
+                context.Unsupported(string.Create(CultureInfo.InvariantCulture, $"text entry '{entry.Keyword}'"));
+            }
+        }
+
+        ImageResolution? resolution = null;
+        if (metadata.Resolution is { } value)
+        {
+            if (!capabilities.Resolution)
+            {
+                context.Unsupported("resolution");
+            }
+            else
+            {
+                bool representable;
+                try
+                {
+                    if (format == ImageFormat.Jpeg)
+                    {
+                        _ = ResolutionConversion.ToJfifDensity(value);
+                    }
+                    else if (format == ImageFormat.Tiff)
+                    {
+                        _ = ResolutionConversion.ToTiffRational(value);
+                    }
+                    else if (format == ImageFormat.Jpeg2000)
+                    {
+                        _ = ResolutionConversion.ToJp2Resolution(value);
+                    }
+                    else
+                    {
+                        _ = ResolutionConversion.ToPngPhys(value);
+                    }
+
+                    representable = true;
+                }
+                catch (UnsupportedImageFeatureException)
+                {
+                    representable = false;
+                }
+
+                if (representable)
+                {
+                    resolution = value;
+                }
+                else
+                {
+                    context.Unsupported("resolution (outside the range of the format's integer density fields)");
+                }
+            }
+        }
+
+        var transferFunction = ColorTransferFunction.Srgb;
+        if (metadata.TransferFunction == ColorTransferFunction.Linear)
+        {
+            if (capabilities.LinearTransfer)
+            {
+                transferFunction = ColorTransferFunction.Linear;
+            }
+            else
+            {
+                // Writing linear-light samples without the label would relabel them as sRGB
+                context.Unsupported("linear transfer function (linear-light samples would be read as sRGB)");
+            }
+        }
+
+        // AVIF stores any CICP color description; PNG stores it when no ICC profile is written (its cICP chunk takes
+        // precedence over the profile); JPEG XL stores the ones it can enumerate, as its color encoding, when no ICC profile
+        // is written. Elsewhere a written ICC profile describes the colors in its place; without one, dropping a
+        // description that is not equivalent to sRGB would relabel the samples as sRGB
+        var storedCicp = capabilities.Cicp || (capabilities.CicpWithoutIcc && icc is null) ? metadata.Cicp : null;
+        if (storedCicp is null && metadata.Cicp is { } cicp && icc is null && !IsSrgbEquivalent(cicp) && !(metadata.TransferFunction == ColorTransferFunction.Linear && cicp.TransferCharacteristics is 8))
+        {
+            if (capabilities.EnumeratedCicp && JpegXlEncoderColor.FromCicp(cicp) is not null)
+            {
+                storedCicp = cicp;
+            }
+            else
+            {
+                context.Unsupported("CICP color description (the samples would be read as sRGB)");
+            }
+        }
+
+        // The light levels and the mastering display describe high dynamic range samples: dropping them changes how the
+        // samples are displayed, like dropping the color description they complete
+        var contentLightLevel = capabilities.ContentLightLevel ? metadata.ContentLightLevel : null;
+        if (metadata.ContentLightLevel is not null && !capabilities.ContentLightLevel)
+        {
+            context.Unsupported("content light level");
+        }
+
+        // PNG stores the mastering display with a color description only (mDCV needs a cICP chunk)
+        var hasMasteringDisplay = capabilities.MasteringDisplay && (!capabilities.CicpWithoutIcc || storedCicp is not null);
+        var masteringDisplay = hasMasteringDisplay ? metadata.MasteringDisplay : null;
+        if (metadata.MasteringDisplay is not null && !hasMasteringDisplay)
+        {
+            context.Unsupported("mastering display color volume");
+        }
+
+        // Pixels are square in a format that has no field for their shape: only another ratio would be lost
+        var pixelAspectRatio = capabilities.PixelAspectRatio ? metadata.PixelAspectRatio : null;
+        if (metadata.PixelAspectRatio is { IsSquare: false } && !capabilities.PixelAspectRatio)
+        {
+            context.Unsupported("pixel aspect ratio");
+        }
+
+        var orientation = capabilities.NativeOrientation ? metadata.Orientation : ExifOrientation.TopLeft;
+        return new MetadataWritePlan(icc, exif, xmp, text, resolution, transferFunction, orientation, storedCicp, contentLightLevel, masteringDisplay, pixelAspectRatio);
+    }
+
+    private static bool ContainsKeyword(List<ImageTextEntry> entries, string keyword)
+    {
+        foreach (var entry in entries)
+        {
+            if (string.Equals(entry.Keyword, keyword, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Applies the metadata policy to the settings of one frame: a cursor hotspot is stored by cursor outputs only, so for
+    /// any other output it is metadata the format cannot represent.
+    /// </summary>
+    /// <param name="metadata">The frame settings.</param>
+    /// <param name="format">The output format.</param>
+    /// <param name="handling">The encoder's metadata policy.</param>
+    /// <exception cref="UnsupportedImageFeatureException">The frame has a hotspot the output cannot store and <paramref name="handling"/> is <see cref="MetadataHandling.Strict"/>.</exception>
+    public static void ValidateFrameMetadata(FrameMetadata metadata, ImageFormat format, MetadataHandling handling)
+    {
+        ArgumentNullException.ThrowIfNull(metadata);
+        if (metadata.Hotspot is not null && !ImageOutputCapabilities.StoresFrameHotspot(format))
+        {
+            new PlanContext(format, handling).Unsupported("cursor hotspot");
+        }
+    }
+
+    /// <summary>
+    /// Returns whether a CICP color description labels samples that are displayed like untagged sRGB samples: BT.709 or
+    /// unspecified primaries (1, 2) with the sRGB or an unspecified transfer function (13, 2).
+    /// </summary>
+    internal static bool IsSrgbEquivalent(CicpColorDescription cicp) => cicp.ColorPrimaries is 1 or 2 && cicp.TransferCharacteristics is 13 or 2;
+
+    [StructLayout(LayoutKind.Auto)]
+    private readonly struct PlanContext(ImageFormat format, MetadataHandling handling)
+    {
+        public void Unsupported(string feature)
+        {
+            if (handling == MetadataHandling.Strict)
+                throw new UnsupportedImageFeatureException($"The {format} format cannot store the {feature}. Remove it, or set the encoder's MetadataHandling to DiscardUnsupported or Strip.", format, "Metadata: " + feature);
+        }
+    }
+
+    /// <summary>The metadata each output format can store.</summary>
+    internal sealed class FormatCapabilities
+    {
+        private static readonly FormatCapabilities None = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None);
+        private static readonly FormatCapabilities Qoi = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true);
+        // PNG stores a CICP color description in a cICP chunk when no ICC profile is written, with the mastering display
+        // (mDCV, which needs the cICP chunk) and the light levels (cLLI)
+        private static readonly FormatCapabilities Png = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.PngKeywords, cicpWithoutIcc: true, contentLightLevel: true, masteringDisplay: true);
+        private static readonly FormatCapabilities Gif = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.CommentsOnly);
+        private static readonly FormatCapabilities Jpeg = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.JpegComments);
+        private static readonly FormatCapabilities WebP = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None);
+        private static readonly FormatCapabilities Bmp = new(icc: false, exif: false, xmp: false, resolution: true, TextSupport.None);
+
+        private static readonly FormatCapabilities Ani = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.AniInfo);
+
+        // TIFF stores the orientation in its own tag, so no EXIF block has to be synthesized for it
+        private static readonly FormatCapabilities Tiff = new(icc: true, exif: false, xmp: true, resolution: true, TextSupport.None, nativeOrientation: true);
+
+        // AVIF stores the orientation as item properties (irot and imir), the color description in a colr box, and the
+        // light levels, the mastering display and the shape of the pixels in clli, mdcv and pasp boxes
+        private static readonly FormatCapabilities Avif = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, nativeOrientation: true, cicp: true, contentLightLevel: true, masteringDisplay: true, pixelAspectRatio: true);
+
+        // HEIC has the container of AVIF; its codec does not write the clli, mdcv and pasp boxes yet
+        // (HeifContainerFeatures.DisplayMetadata)
+        private static readonly FormatCapabilities Heic = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, nativeOrientation: true, cicp: true);
+
+        // JPEG XL stores the orientation, the linear transfer function and an enumerable CICP description in its image header
+        private static readonly FormatCapabilities JpegXl = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true, enumeratedCicp: true);
+
+        // A JP2 file; the orientation is the one of its EXIF data
+        private static readonly FormatCapabilities Jp2 = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.None);
+
+        private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false, bool contentLightLevel = false, bool masteringDisplay = false, bool pixelAspectRatio = false, bool cicpWithoutIcc = false)
+        {
+            CicpWithoutIcc = cicpWithoutIcc;
+            ContentLightLevel = contentLightLevel;
+            MasteringDisplay = masteringDisplay;
+            PixelAspectRatio = pixelAspectRatio;
+            Cicp = cicp;
+            EnumeratedCicp = enumeratedCicp;
+            LinearTransfer = linearTransfer;
+            NativeOrientation = nativeOrientation;
+            Icc = icc;
+            Exif = exif;
+            Xmp = xmp;
+            Resolution = resolution;
+            Text = text;
+        }
+
+        private enum TextSupport
+        {
+            None,
+            CommentsOnly,
+            JpegComments,
+            PngKeywords,
+            AniInfo,
+        }
+
+        public bool Icc { get; }
+
+        public bool Exif { get; }
+
+        public bool Xmp { get; }
+
+        public bool Resolution { get; }
+
+        /// <summary>Gets a value indicating whether the format can declare linear-light samples (QOI colorspace 1).</summary>
+        public bool LinearTransfer { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the format stores the orientation in a field of its own (the TIFF <c>Orientation</c>
+        /// tag, the AVIF <c>irot</c> and <c>imir</c> properties): no EXIF block is created to hold it.
+        /// </summary>
+        public bool NativeOrientation { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the format stores the CICP color descriptions that its own color encoding can
+        /// enumerate, when no ICC profile is written (JPEG XL).
+        /// </summary>
+        public bool EnumeratedCicp { get; }
+
+        /// <summary>Gets a value indicating whether the format stores any CICP color description (AVIF).</summary>
+        public bool Cicp { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the format stores any CICP color description when no ICC profile is written (PNG,
+        /// whose description takes precedence over the profile), and the mastering display only with it.
+        /// </summary>
+        public bool CicpWithoutIcc { get; }
+
+        /// <summary>Gets a value indicating whether the format stores a content light level (the AVIF <c>clli</c> box).</summary>
+        public bool ContentLightLevel { get; }
+
+        /// <summary>Gets a value indicating whether the format stores a mastering display color volume (the AVIF <c>mdcv</c> box).</summary>
+        public bool MasteringDisplay { get; }
+
+        /// <summary>Gets a value indicating whether the format stores the aspect ratio of the pixels (the AVIF <c>pasp</c> box).</summary>
+        public bool PixelAspectRatio { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the format stores at most one text entry per keyword (the ANI <c>INFO</c> list has
+        /// one title and one author): a second entry with the same keyword cannot be represented.
+        /// </summary>
+        public bool HasUniqueTextKeywords => Text == TextSupport.AniInfo;
+
+        private TextSupport Text { get; }
+
+        public static FormatCapabilities Get(ImageFormat format) => format switch
+        {
+            ImageFormat.Png => Png,
+            ImageFormat.Gif => Gif,
+            ImageFormat.Jpeg => Jpeg,
+            ImageFormat.WebP => WebP,
+            ImageFormat.Qoi => Qoi,
+            ImageFormat.Bmp => Bmp,
+            ImageFormat.Tiff => Tiff,
+            ImageFormat.Ani => Ani,
+            ImageFormat.Avif => Avif,
+            ImageFormat.Heic => Heic,
+            ImageFormat.JpegXl => JpegXl,
+            ImageFormat.Jpeg2000 => Jp2,
+            _ => None,
+        };
+
+        public bool IsTextEntrySupported(ImageTextEntry entry) => Text switch
+        {
+            // GIF comment extensions store a bare comment (no keyword, language or translation) in any number of sub-blocks;
+            // they are read as Latin-1, so the value must be Latin-1 to round-trip
+            TextSupport.CommentsOnly => IsBareComment(entry) && !entry.Value.AsSpan().ContainsAnyExceptInRange('\0', 'ÿ'),
+
+            // JPEG COM segments are read as Latin-1: one segment per comment, so the value must be
+            // Latin-1 and fit one segment (a longer comment would come back as several entries)
+            TextSupport.JpegComments => IsBareComment(entry) && entry.Value.Length <= MaxJpegCommentLength && !entry.Value.AsSpan().ContainsAnyExceptInRange('\0', 'ÿ'),
+            TextSupport.PngKeywords => IsValidPngTextEntry(entry),
+
+            // The ANI INFO list stores a title (INAM) and an author (IART) as NUL-terminated strings read as Latin-1
+            TextSupport.AniInfo => IsAniInfoKeyword(entry.Keyword) && entry.LanguageTag is null && entry.TranslatedKeyword is null && !entry.Value.AsSpan().ContainsAnyExceptInRange('\u0001', 'ÿ'),
+            _ => false,
+        };
+
+        private static bool IsAniInfoKeyword(string keyword) => keyword is AniFormat.TitleKeyword or AniFormat.AuthorKeyword;
+
+        private static bool IsBareComment(ImageTextEntry entry) => string.Equals(entry.Keyword, ImageTextEntry.CommentKeyword, StringComparison.Ordinal) && entry.LanguageTag is null && entry.TranslatedKeyword is null;
+
+        /// <summary>
+        /// PNG text entries (tEXt/zTXt/iTXt): a valid keyword (<see cref="IsValidPngKeyword"/>) other than the XMP keyword
+        /// <c>XML:com.adobe.xmp</c> (reserved for <see cref="ImageMetadata.XmpProfile"/>); a value and a translated keyword
+        /// without NUL characters and encodable as UTF-8 (no unpaired surrogate); a language tag made of ASCII letters, digits
+        /// and hyphens (RFC 5646 syntax characters).
+        /// </summary>
+        internal static bool IsValidPngTextEntry(ImageTextEntry entry)
+        {
+            if (!IsValidPngKeyword(entry.Keyword) || string.Equals(entry.Keyword, "XML:com.adobe.xmp", StringComparison.Ordinal))
+                return false;
+
+            if (!IsValidPngText(entry.Value) || (entry.TranslatedKeyword is not null && !IsValidPngText(entry.TranslatedKeyword)))
+                return false;
+
+            if (entry.LanguageTag is { } language)
+            {
+                foreach (var c in language)
+                {
+                    if (!char.IsAsciiLetterOrDigit(c) && c != '-')
+                        return false;
+                }
+            }
+
+            return true;
+
+            static bool IsValidPngText(string value) => !value.Contains('\0', StringComparison.Ordinal) && !HasLoneSurrogate(value);
+
+            static bool HasLoneSurrogate(string value)
+            {
+                for (var i = 0; i < value.Length; i++)
+                {
+                    if (char.IsHighSurrogate(value[i]) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]))
+                    {
+                        i++;
+                    }
+                    else if (char.IsSurrogate(value[i]))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>PNG keywords: 1-79 printable Latin-1 characters (32-126, 161-255), no leading, trailing or consecutive spaces.</summary>
+        internal static bool IsValidPngKeyword(string keyword)
+        {
+            if (keyword.Length is < 1 or > 79 || keyword[0] == ' ' || keyword[^1] == ' ')
+                return false;
+
+            for (var i = 0; i < keyword.Length; i++)
+            {
+                var c = keyword[i];
+                if (c is not ((>= ' ' and <= '~') or (>= '¡' and <= 'ÿ')))
+                    return false;
+
+                if (c == ' ' && keyword[i - 1] == ' ')
+                    return false;
+            }
+
+            return true;
+        }
+    }
+}

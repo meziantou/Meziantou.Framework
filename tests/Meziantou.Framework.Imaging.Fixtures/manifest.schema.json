@@ -1,0 +1,675 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/meziantou/Meziantou.Framework/tests/Meziantou.Framework.Imaging.Fixtures/manifest.schema.json",
+  "title": "Meziantou.Framework.Imaging golden corpus manifest",
+  "description": "Schema version 4 (adds fonts, the font files of the text rendering tests and the reference values recorded from independent font readers, written by FontCorpus.cs; version 3 added colorProfiles and colorTransforms, the ICC color management references written by IccCorpus.cs): identity, files, hashes, provenance and licensing; expected full-canvas displayed frames and posters with exact raw-buffer layouts; rational timing, loop and metadata expectations; reference provenance and independent cross-checks; comparison policies; expected errors. An optional section holds the AV1 conformance vectors (raw OBU streams with plane digests, written by AvifCorpus.cs), and another one the HEVC conformance vectors (raw HEVC byte streams with plane digests and picture hashes, written by HevcCorpus.cs). Written by tools/Meziantou.Framework.Imaging.CorpusGenerator (GoldenCorpus.cs) and validated by Meziantou.Framework.Imaging.TestHarness.Fixtures.FixtureManifestValidator (which also checks hashes, lengths, conventions and policy discrimination).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "fixtures"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 5 },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["script", "command", "tools"],
+      "properties": {
+        "script": { "type": "string" },
+        "command": { "type": "string" },
+        "tools": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "fixtures": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/fixture" }
+    },
+    "av1Vectors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generator", "headerParser", "decoders", "planeDigest", "entries"],
+      "description": "AV1 conformance vectors: raw OBU streams (av1/*.obu) with the SHA-256 of every plane of every output frame. Not fixtures: they have no pixel reference. Written by tools/Meziantou.Framework.Imaging.CorpusGenerator (AvifCorpus.cs).",
+      "properties": {
+        "generator": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["script", "command", "tools"],
+          "properties": {
+            "script": { "type": "string" },
+            "command": { "type": "string" },
+            "tools": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+          }
+        },
+        "headerParser": { "$ref": "#/$defs/av1Tool", "description": "Independent header parser the feature tags are derived from." },
+        "decoders": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/av1Tool" }, "description": "Independent decoders; a digest is recorded only when they produce the same bytes." },
+        "planeDigest": { "type": "string", "description": "Definition of a plane digest: sample order, sample size, plane order, plane dimensions." },
+        "entries": { "type": "array", "items": { "$ref": "#/$defs/av1Vector" } }
+      }
+    },
+    "hevcVectors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generator", "headerParser", "decoders", "planeDigest", "pictureHash", "entries"],
+      "description": "HEVC conformance vectors: raw HEVC byte streams (hevc/*.hevc, H.265 Annex B) with the SHA-256 of every plane of every output picture. Not fixtures: they have no pixel reference. Written by tools/Meziantou.Framework.Imaging.CorpusGenerator (HevcCorpus.cs).",
+      "properties": {
+        "generator": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["script", "command", "tools"],
+          "properties": {
+            "script": { "type": "string" },
+            "command": { "type": "string" },
+            "tools": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+          }
+        },
+        "headerParser": { "$ref": "#/$defs/hevcTool", "description": "Independent header parser the feature tags are derived from." },
+        "decoders": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/hevcTool" }, "description": "Independent decoders, each with an id the vectors refer to; a digest is recorded only when at least two of them produce the same bytes." },
+        "planeDigest": { "type": "string", "description": "Definition of a plane digest: sample order, sample size, plane order, plane dimensions." },
+        "pictureHash": { "type": "string", "description": "Definition of the picture hashes recorded for each output picture." },
+        "entries": { "type": "array", "items": { "$ref": "#/$defs/hevcVector" } }
+      }
+    },
+    "colorProfiles": {
+      "type": "array",
+      "description": "ICC profiles used by colorTransforms.",
+      "items": { "$ref": "#/$defs/colorProfile" }
+    },
+    "colorTransforms": {
+      "type": "array",
+      "description": "Colors converted between two colorProfiles by an independent color management system.",
+      "items": { "$ref": "#/$defs/colorTransform" }
+    },
+    "fonts": {
+      "type": "array",
+      "description": "Font files of the text rendering tests. They are not image fixtures.",
+      "items": { "$ref": "#/$defs/font" }
+    },
+    "fontSuites": {
+      "type": "array",
+      "description": "Third-party suites of test fonts and expectations, each a directory stored as published.",
+      "items": { "$ref": "#/$defs/fontSuite" }
+    }
+  },
+  "$defs": {
+    "chromaticity": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "integer", "minimum": 0, "maximum": 65535 }
+    },
+    "fontSuite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "directory", "provenance", "fileCount", "sha256", "description"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
+        "directory": { "type": "string", "description": "The directory of the suite, relative to the corpus root." },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "fileCount": { "type": "integer", "minimum": 1 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of the list of the files: for each file, by ordinal order of its path relative to the directory, the path, a line feed, the hexadecimal SHA-256 of its content, a line feed." },
+        "description": { "type": "string" }
+      }
+    },
+    "font": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "file", "provenance", "flavor", "modification"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
+        "file": { "$ref": "#/$defs/file" },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "flavor": { "enum": ["ttf", "otf", "ttc", "woff", "woff2"], "description": "ttf: TrueType outlines; otf: CFF outlines; ttc: collection." },
+        "faceCount": { "type": "integer", "minimum": 1 },
+        "modification": { "enum": ["none", "subset", "container"], "description": "none: the original file or the output of the generator; subset: glyphs and tables removed by the pinned subsetter; container: the tables of 'original' in another container." },
+        "reservedFontName": { "type": "string", "description": "The Reserved Font Name the license of the font declares: such a font is only stored unmodified." },
+        "original": { "type": "string", "description": "The id of the font this file is another container of." },
+        "features": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "vectors": { "$ref": "#/$defs/file", "description": "Reference values recorded from independent font readers (JSON): names, metrics, character map, advances and outlines of each face." },
+        "shaping": { "$ref": "#/$defs/file", "description": "The glyphs and positions the reference shaper gives for texts set in the font (JSON)." },
+        "renderTool": { "type": "string", "description": "The tool that drew 'renders', with its version and options." },
+        "renders": {
+          "type": "array",
+          "description": "Lines of text drawn with the font by the reference renderer, on a white background: the box of the line with a margin on each side.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file", "text", "size", "margin", "ascent", "descent"],
+            "properties": {
+              "file": { "$ref": "#/$defs/file" },
+              "text": { "type": "string", "description": "Hexadecimal code points separated by spaces." },
+              "size": { "type": "integer", "minimum": 1, "description": "Pixels per em." },
+              "margin": { "type": "integer", "minimum": 0 },
+              "ascent": { "type": "integer", "minimum": 0, "description": "Pixels from the top of the box of the line to its baseline." },
+              "descent": { "type": "integer", "minimum": 0 },
+              "variations": { "type": "string" },
+              "palette": { "type": "integer", "minimum": 0 },
+              "foreground": { "type": "string", "pattern": "^[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$" },
+              "imageShift": { "type": "integer", "description": "Pixels, downward, between where the font places the images of its bitmap glyphs and where the reference renderer drew them." }
+            }
+          }
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "colorProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "file", "provenance"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
+        "file": { "$ref": "#/$defs/file" },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "features": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "notes": { "type": "string" }
+      }
+    },
+    "colorTransform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source", "destination", "intent", "blackPointCompensation", "sourceChannels", "destinationChannels", "sampleCount", "vectors", "reference", "comparison"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
+        "source": { "type": "string", "description": "Id of the source colorProfile." },
+        "destination": { "type": "string", "description": "Id of the destination colorProfile." },
+        "intent": { "enum": ["perceptual", "relative-colorimetric", "saturation", "absolute-colorimetric"] },
+        "blackPointCompensation": { "type": "boolean" },
+        "sourceChannels": { "enum": [1, 3, 4] },
+        "destinationChannels": { "enum": [1, 3, 4] },
+        "sampleCount": { "type": "integer", "minimum": 1 },
+        "vectors": { "$ref": "#/$defs/file", "description": "For each color, the source samples then the reference destination samples: little-endian 16-bit numbers covering the device range (0 is no light or no ink)." },
+        "reference": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tool", "command", "generator"],
+          "properties": {
+            "tool": { "type": "string", "description": "Tool and exact version, e.g. 'transicc (LittleCMS 2.19)'." },
+            "command": { "type": "string", "description": "Exact command line; the colors are its standard input." },
+            "generator": { "type": "string", "description": "Committed script path and function." }
+          }
+        },
+        "comparison": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maxAbsoluteError", "maxMeanAbsoluteError", "justification"],
+          "properties": {
+            "maxAbsoluteError": { "type": "integer", "minimum": 0, "maximum": 64, "description": "16-bit units: 257 is one level of 255." },
+            "maxMeanAbsoluteError": { "type": "number", "minimum": 0, "description": "Mean over all samples, 16-bit units." },
+            "justification": { "type": "string", "minLength": 40 }
+          }
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "path": { "type": "string", "pattern": "^[^\\\\/][^\\\\]*$", "description": "Path relative to tests/Meziantou.Framework.Imaging.Fixtures, '/' separators." },
+    "profile": {
+      "description": "Exact identity of a preserved payload, null when absent: SHA-256 and length of the EXIF data from the TIFF header, the uncompressed ICC profile, or the XMP packet.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sha256", "length"],
+          "properties": { "sha256": { "$ref": "#/$defs/sha256" }, "length": { "type": "integer", "minimum": 1 } }
+        }
+      ]
+    },
+    "rational": { "type": "string", "pattern": "^[0-9]+/[1-9][0-9]*$", "description": "Exact non-negative rational number of seconds: numerator/denominator." },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "role": { "type": "string", "description": "e.g. encoded." }
+      }
+    },
+    "buffer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "layout", "width", "height", "rowBytes", "byteLength", "alpha", "rowOrder", "compression"],
+      "description": "Tightly packed raw pixels. Raw files carry no metadata: this descriptor is authoritative.",
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "sha256": { "$ref": "#/$defs/sha256", "description": "Hash of the stored file." },
+        "layout": { "enum": ["rgba8", "rgba16le", "rgb8", "gray8", "gray16le", "graya8", "graya16le"], "description": "Channel order and precision; 16-bit samples are little-endian." },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "rowBytes": { "type": "integer", "minimum": 1, "description": "width x bytes per pixel (no padding)." },
+        "byteLength": { "type": "integer", "minimum": 1, "description": "rowBytes x height; exact decoded length." },
+        "alpha": { "enum": ["straight", "premultiplied", "none"] },
+        "rowOrder": { "const": "top-down" },
+        "compression": { "enum": ["none", "gzip"], "description": "gzip is decompressed with a bounded non-image decompressor." }
+      }
+    },
+    "frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["buffers"],
+      "properties": {
+        "duration": { "$ref": "#/$defs/rational", "description": "Required for displayed frames; absent for posters." },
+        "encodedDelay": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "numerator": { "type": "integer", "minimum": 0, "maximum": 65535 },
+            "denominator": { "type": "integer", "minimum": 0, "maximum": 65535 },
+            "hundredths": { "type": "integer", "minimum": 0, "maximum": 65535 },
+            "milliseconds": { "type": "integer", "minimum": 0, "maximum": 16777215 },
+            "sampleDelta": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+            "timescale": { "type": "integer", "minimum": 1, "maximum": 4294967295 },
+            "ticks": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+            "ticksPerSecondNumerator": { "type": "integer", "minimum": 1, "maximum": 1073741824 },
+            "ticksPerSecondDenominator": { "type": "integer", "minimum": 1, "maximum": 1024 }
+          },
+          "description": "Raw delay field read from the encoded input: APNG fcTL delay_num/delay_den (den 0 means 100), GIF Graphic Control Extension hundredths, WebP ANMF frame duration in milliseconds, the stts sample delta of an AVIF image sequence with the mdhd time scale of its media, or the duration of a JPEG XL frame in ticks with the ticks per second (a fraction) of its image header. Absent when the input has no delay field for the frame."
+        },
+        "encoding": { "type": "string", "description": "How the frame is encoded (delta rectangle, blend/dispose, delay field)." },
+        "buffers": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/buffer" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origin", "license"],
+      "properties": {
+        "origin": { "enum": ["hand-authored", "generated", "external"] },
+        "license": { "enum": ["CC0-1.0", "MIT", "Unlicense", "CC-BY-4.0", "Libpng", "Zlib", "Apache-2.0", "Unicode-3.0", "OFL-1.1"], "description": "OFL-1.1 is only accepted for the entries of fonts." },
+        "author": { "type": "string" },
+        "source": { "type": "string", "description": "Required for external fixtures: URL or citation of the original." },
+        "generator": { "type": "string", "description": "Required for generated fixtures: committed script path and function." },
+        "tools": { "type": "array", "items": { "type": "string" }, "description": "Pinned tools with exact versions, e.g. 'ffmpeg 9.0.2'." },
+        "parameters": { "type": "object", "description": "Synthetic pattern parameters and seeds." },
+        "commands": { "type": "array", "items": { "type": "string" }, "description": "Exact external-tool command lines." }
+      }
+    },
+    "crossCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decoder", "result"],
+      "properties": {
+        "decoder": { "type": "string" },
+        "command": { "type": "string" },
+        "result": { "enum": ["exact", "equivalent", "within-tolerance", "differs"] },
+        "maxAbsoluteError": { "type": "integer", "minimum": 0 },
+        "meanAbsoluteError": { "type": "number", "minimum": 0 },
+        "excludedFromTolerance": { "type": "boolean" },
+        "notes": { "type": "string" }
+      }
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "description"],
+      "properties": {
+        "method": { "enum": ["hand-computed", "decoded"] },
+        "description": { "type": "string" },
+        "decoder": { "type": "string" },
+        "backend": { "type": "string", "description": "Actual decoder implementation and settings behind the tool." },
+        "command": { "type": "string" },
+        "crossChecks": { "type": "array", "items": { "$ref": "#/$defs/crossCheck" } }
+      }
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "pixelFormat", "orientation", "iccProfile", "resolution", "profiles", "text", "animation", "frameCount", "frames", "poster"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "pixelFormat": { "enum": ["Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16"] },
+        "colorModel": { "enum": ["Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr", "Cmyk", "Ycck"] },
+        "bitsPerComponent": { "type": "integer", "minimum": 1, "maximum": 16, "description": "1, 2, 4, 8 or 16; 10 and 12 are the bit depths of AVIF and JPEG XL inputs only, 12 the one of JPEG inputs with 12-bit samples, and any depth from 2 to 16 the one of a lossless JPEG input." },
+        "orientation": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "iccProfile": { "enum": ["none", "rgb", "gray"] },
+        "cicp": {
+          "description": "Color description of an AVIF or JPEG XL input (ImageMetadata.Cicp): the ITU-T H.273 code points of the colr box of type nclx of an AVIF input, or else of its AV1 sequence header, and those equivalent to the enumerated color encoding of a JPEG XL input (full-range RGB); null or absent when the input declares none, and for every other format.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["colorPrimaries", "transferCharacteristics", "matrixCoefficients", "fullRange"],
+              "properties": {
+                "colorPrimaries": { "type": "integer", "minimum": 0, "maximum": 255 },
+                "transferCharacteristics": { "type": "integer", "minimum": 0, "maximum": 255 },
+                "matrixCoefficients": { "type": "integer", "minimum": 0, "maximum": 255 },
+                "fullRange": { "type": "boolean" }
+              }
+            }
+          ]
+        },
+        "contentLightLevel": {
+          "description": "Content light level of an AVIF input (ImageMetadata.ContentLightLevel): the fields of the clli box of its primary item, or of the sample entry of its track, in candelas per square meter (0 means unknown); null or absent when the input has no such box, and for every other format.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["maxContentLightLevel", "maxPictureAverageLightLevel"],
+              "properties": {
+                "maxContentLightLevel": { "type": "integer", "minimum": 0, "maximum": 65535 },
+                "maxPictureAverageLightLevel": { "type": "integer", "minimum": 0, "maximum": 65535 }
+              }
+            }
+          ]
+        },
+        "masteringDisplay": {
+          "description": "Mastering display color volume of an AVIF input (ImageMetadata.MasteringDisplay): the fields of the mdcv box of its primary item, or of the sample entry of its track, as they are stored (chromaticities [x, y] in units of 0.00002, luminances in units of 0.0001 candela per square meter); null or absent when the input has no such box, and for every other format.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["red", "green", "blue", "whitePoint", "maxLuminance", "minLuminance"],
+              "properties": {
+                "red": { "$ref": "#/$defs/chromaticity" },
+                "green": { "$ref": "#/$defs/chromaticity" },
+                "blue": { "$ref": "#/$defs/chromaticity" },
+                "whitePoint": { "$ref": "#/$defs/chromaticity" },
+                "maxLuminance": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+                "minLuminance": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+              }
+            }
+          ]
+        },
+        "pixelAspectRatio": {
+          "description": "Pixel aspect ratio of an AVIF input (ImageMetadata.PixelAspectRatio): the terms of the pasp box of its primary item, or of the sample entry of its track, as they are stored (not reduced); null or absent when the input has no such box, and for every other format.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["horizontalSpacing", "verticalSpacing"],
+              "properties": {
+                "horizontalSpacing": { "type": "integer", "minimum": 1, "maximum": 4294967295 },
+                "verticalSpacing": { "type": "integer", "minimum": 1, "maximum": 4294967295 }
+              }
+            }
+          ]
+        },
+        "transferFunction": { "enum": ["srgb", "linear"], "description": "Transfer function label of the decoded samples (ImageMetadata.TransferFunction); absent means srgb. QOI colorspace 1 is linear, and so is a JPEG XL color encoding with the sRGB primaries and a linear transfer function." },
+        "resolution": {
+          "description": "Physical resolution in dots per inch converted from the encoded fields (dpi = x * 0.0254 per meter, x per inch, x * 2.54 per centimeter); null when absent or aspect-ratio only.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["horizontalDpi", "verticalDpi", "encoded"],
+              "properties": {
+                "horizontalDpi": { "type": "number", "exclusiveMinimum": 0 },
+                "verticalDpi": { "type": "number", "exclusiveMinimum": 0 },
+                "encoded": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["unit", "x", "y"],
+                  "properties": {
+                    "unit": { "enum": ["meter", "inch", "centimeter"] },
+                    "x": { "type": "integer", "minimum": 1 },
+                    "y": { "type": "integer", "minimum": 1 }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "profiles": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["icc", "exif", "xmp"],
+          "properties": {
+            "icc": { "$ref": "#/$defs/profile" },
+            "exif": { "$ref": "#/$defs/profile" },
+            "xmp": { "$ref": "#/$defs/profile" }
+          }
+        },
+        "text": {
+          "type": "array",
+          "description": "Text entries in file order (PNG tEXt/zTXt/iTXt except XMP; GIF comments and JPEG COM use the keyword 'Comment'; WebP has none).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["keyword", "value", "languageTag", "translatedKeyword"],
+            "properties": {
+              "keyword": { "type": "string", "minLength": 1 },
+              "value": { "type": "string" },
+              "languageTag": { "type": ["string", "null"] },
+              "translatedKeyword": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "animation": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["totalPlays"],
+              "properties": {
+                "totalPlays": { "type": ["integer", "null"], "minimum": 1, "description": "Total plays including the first; null is infinite." },
+                "encodedLoopValue": { "type": ["integer", "null"], "minimum": 0, "description": "Raw APNG num_plays, GIF NETSCAPE2.0 loop count, WebP ANIM loop count or JPEG XL num_loops; null when absent." },
+                "editList": {
+                  "description": "AVIF image sequences: the edit list of the track of the color images and the duration of its track header, which give the number of plays (none: forever; not repeating: once; repeating: the track duration over the edit duration, rounded up; forever when the track duration is indefinite). null without edit list.",
+                  "oneOf": [
+                    { "type": "null" },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["repeating", "segmentDuration", "trackDuration"],
+                      "properties": {
+                        "repeating": { "type": "boolean", "description": "flags and 1 of the elst box." },
+                        "segmentDuration": { "type": ["integer", "null"], "minimum": 0, "description": "Duration of the edit in units of the movie time scale; null when every bit is set." },
+                        "trackDuration": { "type": ["integer", "null"], "minimum": 0, "description": "Duration of the track header in units of the movie time scale; null when every bit is set (indefinite)." }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "frameCount": { "type": "integer", "minimum": 1 },
+        "frames": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/frame" } },
+        "poster": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/frame" }] }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": { "enum": ["exact", "tolerance"] },
+        "maxAbsoluteError": { "type": "integer", "minimum": 1, "maximum": 12, "description": "Color samples only, 8-bit scale (x257 for 16-bit). Alpha is always exact." },
+        "maxMeanAbsoluteError": { "type": "number", "minimum": 0, "maximum": 2, "description": "Mean over color samples, 8-bit scale." },
+        "justification": { "type": "string", "minLength": 40 }
+      }
+    },
+    "expectedError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exception"],
+      "properties": {
+        "exception": { "type": "string", "description": "Exception type name." },
+        "format": { "type": "string", "description": "Expected exception Format (ImageFormat member name)." },
+        "feature": { "type": "string" },
+        "limitKind": { "type": "string", "description": "Expected ImageResourceLimitException.Kind (member name)." }
+      }
+    },
+    "decodeOptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "MaxWidth": { "type": "integer", "minimum": 1 },
+            "MaxHeight": { "type": "integer", "minimum": 1 },
+            "MaxFramePixels": { "type": "integer", "minimum": 1 },
+            "MaxFrames": { "type": "integer", "minimum": 1 },
+            "MaxTotalPixels": { "type": "integer", "minimum": 1 },
+            "MaxEncodedBytes": { "type": "integer", "minimum": 1 },
+            "MaxMetadataBytes": { "type": "integer", "minimum": 1 },
+            "MaxLiveAllocationBytes": { "type": "integer", "minimum": 1 },
+            "MaxFontBytes": { "type": "integer", "minimum": 1 },
+            "MaxGlyphComplexity": { "type": "integer", "minimum": 1 },
+            "MaxTextLength": { "type": "integer", "minimum": 1 },
+            "MaxTextGlyphs": { "type": "integer", "minimum": 1 },
+            "MaxTextLines": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "frameLimit": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "inkConversion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceProfile", "destinationProfile", "intent", "blackPointCompensation", "colorModel", "buffer", "reference", "comparison"],
+      "description": "Unsupported JPEG fixtures with four components (CMYK or YCCK inks) only: no pixel format holds inks, so the file is rejected by a load without conversion. This is the color conversion it is loaded with (CmykConversionOptions) and the converted pixels.",
+      "properties": {
+        "sourceProfile": { "enum": ["embedded", "assumed"], "description": "embedded: the CMYK profile of the file. assumed: the file has no profile and the CMYK profile provided by the library is assumed (the colorProfile icc/cgats001-compat-v2-micro)." },
+        "destinationProfile": { "type": "string", "description": "Id of the destination colorProfile (RGB)." },
+        "intent": { "enum": ["perceptual", "relative-colorimetric", "saturation", "absolute-colorimetric"] },
+        "blackPointCompensation": { "type": "boolean" },
+        "colorModel": { "enum": ["Cmyk", "Ycck"], "description": "Expected ImageColorModel of the identified file." },
+        "buffer": { "$ref": "#/$defs/buffer", "description": "The converted pixels (rgb8)." },
+        "reference": { "$ref": "#/$defs/reference" },
+        "comparison": { "$ref": "#/$defs/comparison" }
+      }
+    },
+    "av1Tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "command"],
+      "properties": {
+        "name": { "type": "string", "description": "Tool and exact version, e.g. 'libdav1d 1.5.4'." },
+        "command": { "type": "string", "description": "Exact command line (symbolic file names)." }
+      }
+    },
+    "av1Frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "planes"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1, "description": "Luma width of this output frame, after super-resolution upscaling. The frames of a stream can have different sizes (reference scaling)." },
+        "height": { "type": "integer", "minimum": 1 },
+        "planes": { "type": "array", "minItems": 1, "maxItems": 3, "items": { "$ref": "#/$defs/sha256" }, "description": "SHA-256 of each plane in bitstream order Y, U, V (one plane for 4:0:0), film grain applied; see av1Vectors.planeDigest." }
+      }
+    },
+    "av1Vector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "input", "provenance", "features", "pixelFormat", "bitDepth", "subsampling", "frameCount", "frames"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^av1/[a-z0-9][a-z0-9._/-]*$" },
+        "input": { "$ref": "#/$defs/file", "description": "Raw OBU stream, av1/*.obu." },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "features": { "type": "array", "minItems": 1, "items": { "type": "string" }, "uniqueItems": true, "description": "What the headers signal, as parsed by av1Vectors.headerParser; never the encoder options." },
+        "pixelFormat": { "type": "string", "description": "FFmpeg pixel format the decoders produced without conversion." },
+        "bitDepth": { "enum": [8, 10, 12] },
+        "subsampling": { "enum": ["4:0:0", "4:2:0", "4:2:2", "4:4:4"] },
+        "frameCount": { "type": "integer", "minimum": 1, "description": "Number of output frames." },
+        "frames": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/av1Frame" }, "description": "Output frames in output order: one per shown frame and per show_existing_frame; a hidden frame produces none. When the operating point has several spatial layers, one per temporal unit: the shown frame of its highest layer." }
+      }
+    },
+    "hevcTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "command"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+$", "description": "Short identifier of a decoder, which the vectors refer to (ffmpeg, libde265, hm); absent for the header parser." },
+        "name": { "type": "string", "description": "Tool and exact version, e.g. 'libde265 1.1.3 (dec265)'." },
+        "command": { "type": "string", "description": "Exact command line (symbolic file names)." }
+      }
+    },
+    "hevcFrame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "poc", "decodeOrder", "planes", "hash"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1, "description": "Luma width of this output picture: the decoded picture cropped to the conformance window. The pictures of a stream can have different sizes (two coded video sequences)." },
+        "height": { "type": "integer", "minimum": 1 },
+        "poc": { "type": "integer", "description": "PicOrderCntVal of the picture; it starts again with each coded video sequence." },
+        "decodeOrder": { "type": "integer", "minimum": 0, "description": "Index of the picture among the coded pictures of the stream, in decoding order. The frames are in output order." },
+        "planes": { "type": "array", "maxItems": 3, "items": { "$ref": "#/$defs/sha256" }, "description": "SHA-256 of each plane of the cropped picture in bitstream order Y, Cb, Cr (one plane for 4:0:0); empty for a vector without digests; see hevcVectors.planeDigest." },
+        "hash": { "type": "array", "minItems": 1, "maxItems": 3, "items": { "type": "string", "pattern": "^([0-9a-f]{4}|[0-9a-f]{8}|[0-9a-f]{32})$" }, "description": "Decoded picture hash of the picture (the whole decoded picture, before cropping), read from its SEI message: one value per colour component; see hevcVectors.pictureHash." }
+      }
+    },
+    "hevcExclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decoder", "outcome", "reason", "observed"],
+      "properties": {
+        "decoder": { "type": "string", "description": "Id of the decoder that is left out." },
+        "outcome": { "enum": ["rejects", "differs"], "description": "rejects: the decoder does not decode the stream; differs: it outputs other samples or other pictures." },
+        "reason": { "type": "string", "minLength": 1, "description": "Known behavior of that version of the decoder, declared by the recipe of the vector." },
+        "observed": { "type": "string", "minLength": 1, "description": "What the generator observed: the message of the decoder, or the pictures and planes that differ." }
+      }
+    },
+    "hevcVector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "input", "provenance", "features", "pixelFormat", "bitDepth", "chromaFormat", "pictureCount", "frameCount", "outputOrder", "decoders", "pictureHash", "frames"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^hevc/[a-z0-9][a-z0-9._/-]*$" },
+        "input": { "$ref": "#/$defs/file", "description": "Raw HEVC byte stream (H.265 Annex B), hevc/*.hevc." },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "features": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^hevc\\.[A-Za-z0-9.]+(=.+)?$" }, "uniqueItems": true, "description": "What the headers signal, as parsed by hevcVectors.headerParser; never the encoder options. The keys are those of FixtureManifestValidator.AllowedHevcFeatureKeys." },
+        "pixelFormat": { "type": "string", "description": "FFmpeg pixel format that holds the planes without conversion, or a name of the same form where FFmpeg has none." },
+        "bitDepth": { "enum": [8, 10, 12, 16], "description": "Bit depth of the luma samples; 16 is a stream the library rejects." },
+        "bitDepthChroma": { "enum": [8, 10, 12, 16], "description": "Bit depth of the chroma samples, only when it differs from bitDepth (a stream the library rejects)." },
+        "chromaFormat": { "enum": ["4:0:0", "4:2:0", "4:2:2", "4:4:4"] },
+        "pictureCount": { "type": "integer", "minimum": 1, "description": "Number of coded pictures of the stream, including the ones that are not output." },
+        "frameCount": { "type": "integer", "minimum": 1, "description": "Number of output pictures." },
+        "outputOrder": { "enum": ["decoding", "reordered"], "description": "Whether the pictures are output in the order they are decoded." },
+        "decoders": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["agree", "excluded"],
+          "properties": {
+            "agree": { "type": "array", "minItems": 1, "items": { "type": "string" }, "uniqueItems": true, "description": "Ids of the decoders that produced the same bytes: two or three for a vector with digests, one (confirmed by the picture hashes) for a vector without." },
+            "excluded": { "type": "array", "items": { "$ref": "#/$defs/hevcExclusion" }, "description": "The other decoders of hevcVectors.decoders." }
+          }
+        },
+        "pictureHash": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "verifiedBy"],
+          "properties": {
+            "type": { "enum": ["md5", "crc", "checksum"], "description": "Type of the decoded picture hash SEI messages of the stream (H.265, clause D.3.19)." },
+            "verifiedBy": { "type": "array", "minItems": 1, "items": { "type": "string" }, "uniqueItems": true, "description": "Ids of the agreeing decoders that computed the hashes and found the values of the stream." }
+          }
+        },
+        "frames": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/hevcFrame" }, "description": "Output pictures in output order." }
+      }
+    },
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "format", "input", "provenance"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
+        "kind": { "enum": ["valid", "invalid", "unsupported", "limit"] },
+        "format": { "enum": ["png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl", "jp2"] },
+        "input": { "$ref": "#/$defs/file" },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "features": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "reference": { "$ref": "#/$defs/reference" },
+        "expected": { "$ref": "#/$defs/expected" },
+        "comparison": { "$ref": "#/$defs/comparison" },
+        "expectedError": { "$ref": "#/$defs/expectedError" },
+        "decodeOptions": { "$ref": "#/$defs/decodeOptions" },
+        "inkConversion": { "$ref": "#/$defs/inkConversion" },
+        "notes": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "valid" } } },
+          "then": { "required": ["reference", "expected", "comparison"], "not": { "required": ["expectedError"] } },
+          "else": { "required": ["expectedError"], "not": { "anyOf": [{ "required": ["expected"] }, { "required": ["comparison"] }] } }
+        }
+      ]
+    }
+  }
+}

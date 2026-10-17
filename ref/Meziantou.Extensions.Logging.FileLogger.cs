@@ -8,73 +8,74 @@ namespace Meziantou.Extensions.Logging
     {
         public string Name { get => throw null; }
         protected FileFormatter(string name) { }
-        public abstract void Write<TState>(in Microsoft.Extensions.Logging.Abstractions.LogEntry<TState> logEntry, System.DateTimeOffset timestamp, Meziantou.Extensions.Logging.FileLoggerOptions options, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider, System.IO.TextWriter textWriter);
         protected static string GetLogLevelString(Microsoft.Extensions.Logging.LogLevel logLevel) => throw null;
+        public abstract void Write<TState>(in Microsoft.Extensions.Logging.Abstractions.LogEntry<TState> logEntry, System.DateTimeOffset timestamp, Meziantou.Extensions.Logging.FileLoggerOptions options, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider, System.IO.TextWriter textWriter);
     }
 
     public static class FileFormatterNames
     {
-        public const string Simple = "simple";
         public const string Json = "json";
+        public const string Simple = "simple";
     }
 
     public static class FileLoggerBuilderExtensions
     {
         [System.Diagnostics.CodeAnalysis.DynamicDependency(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties, typeof(Meziantou.Extensions.Logging.FileLoggerOptions))]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling", Justification = "The configuration binder only generates code at runtime to create collections, and FileLoggerOptions has no collection property")]
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access", Justification = "The members of FileLoggerOptions used by the configuration binder are preserved by the DynamicDependency attribute")]
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddFile(this Microsoft.Extensions.Logging.ILoggingBuilder builder) => throw null;
-        public static Microsoft.Extensions.Logging.ILoggingBuilder AddFile(this Microsoft.Extensions.Logging.ILoggingBuilder builder, string logsDirectory) => throw null;
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddFile(this Microsoft.Extensions.Logging.ILoggingBuilder builder, System.Action<Meziantou.Extensions.Logging.FileLoggerOptions> configure) => throw null;
+        public static Microsoft.Extensions.Logging.ILoggingBuilder AddFile(this Microsoft.Extensions.Logging.ILoggingBuilder builder, string logsDirectory) => throw null;
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddFile(this Microsoft.Extensions.Logging.ILoggingBuilder builder, string logsDirectory, System.Action<Meziantou.Extensions.Logging.FileLoggerOptions> configure) => throw null;
     }
 
     public sealed class FileLoggerOptions
     {
-        public string? Directory { get => throw null; set { } }
-        public string FileNamePrefix { get => throw null; set { } }
-        public string FileNameExtension { get => throw null; set { } }
-        public bool IncludeProcessIdInFileName { get => throw null; set { } }
         public bool Append { get => throw null; set { } }
-        public Meziantou.Extensions.Logging.RollInterval RollInterval { get => throw null; set { } }
-        public long? MaxFileSizeInBytes { get => throw null; set { } }
-        public int? MaxRetainedFiles { get => throw null; set { } }
-        public System.IO.UnixFileMode? UnixCreateMode { get => throw null; set { } }
         public Meziantou.Extensions.Logging.LogFileCompression Compression { get => throw null; set { } }
-        public Meziantou.Extensions.Logging.LogFileCompressionMode CompressionMode { get => throw null; set { } }
         public System.IO.Compression.CompressionLevel CompressionLevel { get => throw null; set { } }
-        public Microsoft.Extensions.Logging.LogLevel MinLevel { get => throw null; set { } }
-        public bool IncludeScopes { get => throw null; set { } }
-        public bool IncludeCategory { get => throw null; set { } }
-        public bool IncludeLogLevel { get => throw null; set { } }
-        public bool IncludeEventId { get => throw null; set { } }
-        public bool IncludeThreadId { get => throw null; set { } }
-        public bool IncludeActivityTracking { get => throw null; set { } }
+        public Meziantou.Extensions.Logging.LogFileCompressionMode CompressionMode { get => throw null; set { } }
+        public string? Directory { get => throw null; set { } }
         public bool EscapeControlCharacters { get => throw null; set { } }
-        public bool UseShortCategoryName { get => throw null; set { } }
+        public string FileNameExtension { get => throw null; set { } }
+        public string FileNamePrefix { get => throw null; set { } }
+        public System.TimeSpan FlushInterval { get => throw null; set { } }
+        public Meziantou.Extensions.Logging.FileFormatter? Formatter { get => throw null; set { } }
+        public string FormatterName { get => throw null; set { } }
+        public bool IncludeActivityTracking { get => throw null; set { } }
+        public bool IncludeCategory { get => throw null; set { } }
+        public bool IncludeEventId { get => throw null; set { } }
+        public bool IncludeLogLevel { get => throw null; set { } }
+        public bool IncludeProcessIdInFileName { get => throw null; set { } }
+        public bool IncludeScopes { get => throw null; set { } }
+        public bool IncludeThreadId { get => throw null; set { } }
+        public long? MaxFileSizeInBytes { get => throw null; set { } }
+        public int MaxQueueLength { get => throw null; set { } }
+        public int? MaxRetainedFiles { get => throw null; set { } }
+        public Microsoft.Extensions.Logging.LogLevel MinLevel { get => throw null; set { } }
+        public Meziantou.Extensions.Logging.FileLoggerQueueFullMode QueueFullMode { get => throw null; set { } }
+        public Meziantou.Extensions.Logging.RollInterval RollInterval { get => throw null; set { } }
         [System.Diagnostics.CodeAnalysis.StringSyntax("DateTimeFormat")]
         public string? TimestampFormat { get => throw null; set { } }
+        public System.IO.UnixFileMode? UnixCreateMode { get => throw null; set { } }
+        public bool UseShortCategoryName { get => throw null; set { } }
         public bool UseUtcTimestamp { get => throw null; set { } }
-        public int MaxQueueLength { get => throw null; set { } }
-        public Meziantou.Extensions.Logging.FileLoggerQueueFullMode QueueFullMode { get => throw null; set { } }
-        public System.TimeSpan FlushInterval { get => throw null; set { } }
-        public string FormatterName { get => throw null; set { } }
-        public Meziantou.Extensions.Logging.FileFormatter? Formatter { get => throw null; set { } }
     }
 
     public sealed class FileLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.ISupportExternalScope, System.IAsyncDisposable, System.IDisposable
     {
         public string? LogFilePath { get => throw null; }
-        public FileLoggerProvider(string logsDirectory) { }
-        public FileLoggerProvider(string logsDirectory, System.TimeProvider timeProvider) { }
         public FileLoggerProvider(Meziantou.Extensions.Logging.FileLoggerOptions options) { }
-        public FileLoggerProvider(Meziantou.Extensions.Logging.FileLoggerOptions options, System.TimeProvider timeProvider) { }
         public FileLoggerProvider(Microsoft.Extensions.Options.IOptionsMonitor<Meziantou.Extensions.Logging.FileLoggerOptions> options) { }
+        public FileLoggerProvider(string logsDirectory) { }
+        public FileLoggerProvider(Meziantou.Extensions.Logging.FileLoggerOptions options, System.TimeProvider timeProvider) { }
         public FileLoggerProvider(Microsoft.Extensions.Options.IOptionsMonitor<Meziantou.Extensions.Logging.FileLoggerOptions> options, System.TimeProvider timeProvider) { }
+        public FileLoggerProvider(string logsDirectory, System.TimeProvider timeProvider) { }
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => throw null;
-        public void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider) { }
-        public System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+        public System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider) { }
     }
 
     public enum FileLoggerQueueFullMode

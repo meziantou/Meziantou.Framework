@@ -3032,6 +3032,126 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1SimdOperationsMatchTheirDefinitions()
+    {
+        // The operations on random and extreme lanes: the AdvSimd instructions on Arm64, the SSE ones on x64
+        if (!Av1Simd.IsSupported)
+            return;
+
+        var random = new Random(5);
+        for (var round = 0; round < 2000; round++)
+        {
+            var a = RandomInts(random, round);
+            var b = RandomInts(random, round);
+            var c = Vector128.Create(random.NextInt64(-(1L << 50), 1L << 50), random.NextInt64(-(1L << 50), 1L << 50));
+            var va = Vector128.Create(a);
+            var vb = Vector128.Create(b);
+            Assert.Equal(Vector128.Create((long)a[0] * b[0], (long)a[1] * b[1]), Av1Simd.MultiplyWideningLower(va, vb));
+            Assert.Equal(Vector128.Create((long)a[2] * b[2], (long)a[3] * b[3]), Av1Simd.MultiplyWideningUpper(va, vb));
+            Assert.Equal(c + Av1Simd.MultiplyWideningLower(va, vb), Av1Simd.MultiplyWideningLowerAndAdd(c, va, vb));
+            Assert.Equal(c + Av1Simd.MultiplyWideningUpper(va, vb), Av1Simd.MultiplyWideningUpperAndAdd(c, va, vb));
+            Assert.Equal(c - Av1Simd.MultiplyWideningLower(va, vb), Av1Simd.MultiplyWideningLowerAndSubtract(c, va, vb));
+            Assert.Equal(c - Av1Simd.MultiplyWideningUpper(va, vb), Av1Simd.MultiplyWideningUpperAndSubtract(c, va, vb));
+            var d = Vector128.Create(-c.GetElement(1), c.GetElement(0) >> 7);
+            Assert.Equal(Vector128.Create(Round(c.GetElement(0), 12), Round(c.GetElement(1), 12), Round(d.GetElement(0), 12), Round(d.GetElement(1), 12)), Av1Simd.RoundNarrow12(c, d));
+            var shift = 1 + (round % 12);
+            Assert.Equal(Vector128.Create(Round(a[0], shift), Round(a[1], shift), Round(a[2], shift), Round(a[3], shift)), Av1Simd.ShiftRightArithmeticRounded(va, shift));
+            Assert.Equal(Vector128.Create(Saturate((long)a[0] + b[0]), Saturate((long)a[1] + b[1]), Saturate((long)a[2] + b[2]), Saturate((long)a[3] + b[3])), Av1Simd.AddSaturate(va, vb));
+            Assert.Equal(Vector128.Create(Saturate((long)a[0] - b[0]), Saturate((long)a[1] - b[1]), Saturate((long)a[2] - b[2]), Saturate((long)a[3] - b[3])), Av1Simd.SubtractSaturate(va, vb));
+            Assert.Equal(unchecked(a[0] + a[1] + a[2] + a[3]), Av1Simd.AddAcross(va));
+
+            var e = RandomInts(random, round);
+            var f = RandomInts(random, round);
+            Av1Simd.Transpose(va, vb, Vector128.Create(e), Vector128.Create(f), out var r0, out var r1, out var r2, out var r3);
+            Vector128<int>[] transposed = [r0, r1, r2, r3];
+            int[][] rows = [a, b, e, f];
+            for (var i = 0; i < 4; i++)
+            {
+                for (var j = 0; j < 4; j++)
+                {
+                    Assert.Equal(rows[i][j], transposed[j].GetElement(i));
+                }
+            }
+
+            var x = new short[8];
+            var y = new short[8];
+            for (var i = 0; i < 8; i++)
+            {
+                x[i] = round % 3 is 0 ? (short)(random.Next(2) == 0 ? short.MinValue : short.MaxValue) : (short)random.Next(short.MinValue, short.MaxValue + 1);
+                y[i] = (short)random.Next(short.MinValue, short.MaxValue + 1);
+            }
+
+            var vx = Vector128.Create(x);
+            var vy = Vector128.Create(y);
+            Assert.Equal(Vector128.Create(x[0] * y[0], x[1] * y[1], x[2] * y[2], x[3] * y[3]), Av1Simd.MultiplyWideningLower(vx, vy));
+            Assert.Equal(Vector128.Create(x[4] * y[4], x[5] * y[5], x[6] * y[6], x[7] * y[7]), Av1Simd.MultiplyWideningUpper(vx, vy));
+            Assert.Equal(unchecked((short)(x[0] + x[1] + x[2] + x[3] + x[4] + x[5] + x[6] + x[7])), Av1Simd.AddAcross(vx));
+            Assert.Equal(Vector128.Create(unchecked((short)(x[0] + x[1])), (short)(x[2] + x[3]), (short)(x[4] + x[5]), (short)(x[6] + x[7]), 0, 0, 0, 0), Av1Simd.AddPairwise(vx));
+            CheckExtract(x, y, 0, Av1Simd.ExtractVector128(vx, vy, 0));
+            CheckExtract(x, y, 1, Av1Simd.ExtractVector128(vx, vy, 1));
+            CheckExtract(x, y, 2, Av1Simd.ExtractVector128(vx, vy, 2));
+            CheckExtract(x, y, 3, Av1Simd.ExtractVector128(vx, vy, 3));
+            CheckExtract(x, y, 4, Av1Simd.ExtractVector128(vx, vy, 4));
+            CheckExtract(x, y, 5, Av1Simd.ExtractVector128(vx, vy, 5));
+            CheckExtract(x, y, 6, Av1Simd.ExtractVector128(vx, vy, 6));
+            CheckExtract(x, y, 7, Av1Simd.ExtractVector128(vx, vy, 7));
+
+            const int LineStep = 11;
+            var samples = new ushort[(3 * LineStep) + 8 + 3];
+            for (var i = 0; i < samples.Length; i++)
+            {
+                samples[i] = (ushort)random.Next(ushort.MaxValue + 1);
+            }
+
+            var columns = new Vector128<int>[8];
+            Av1Simd.LoadTransposed(samples, 3, LineStep, columns);
+            for (var i = 0; i < 4; i++)
+            {
+                for (var j = 0; j < 8; j++)
+                {
+                    Assert.Equal(samples[3 + (i * LineStep) + j], columns[j].GetElement(i));
+                }
+            }
+
+            var stored = new ushort[samples.Length];
+            Av1Simd.StoreTransposed(stored, 3, LineStep, columns);
+            for (var i = 0; i < 4; i++)
+            {
+                Assert.True(samples.AsSpan(3 + (i * LineStep), 8).SequenceEqual(stored.AsSpan(3 + (i * LineStep), 8)), $"Row {i}.");
+            }
+        }
+
+        static int[] RandomInts(Random random, int round)
+        {
+            var values = new int[4];
+            for (var i = 0; i < values.Length; i++)
+            {
+                values[i] = (round % 4) switch
+                {
+                    0 => random.Next(2) == 0 ? int.MinValue : int.MaxValue,
+                    1 => random.Next(-5000, 5001),
+                    _ => random.Next(int.MinValue, int.MaxValue),
+                };
+            }
+
+            return values;
+        }
+
+        static void CheckExtract(short[] upper, short[] lower, int index, Vector128<short> actual)
+        {
+            for (var i = 0; i < 8; i++)
+            {
+                Assert.Equal(i + index < 8 ? upper[i + index] : lower[i + index - 8], actual.GetElement(i));
+            }
+        }
+
+        static int Round(long value, int bits) => (int)((value + (1L << (bits - 1))) >> bits);
+
+        static int Saturate(long value) => (int)Math.Clamp(value, int.MinValue, int.MaxValue);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1EncoderKernelsMatchTheScalarReferences()
     {
         // Rows of every length around the vector sizes, longer than a chunk of the 32-bit sums, of random and extreme 12-bit

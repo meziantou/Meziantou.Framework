@@ -1,7 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -52,9 +51,9 @@ internal static class Av1ForwardTransform
     /// <param name="txType">The transform type (<c>PlaneTxType</c>).</param>
     public static void Forward(ReadOnlySpan<int> residual, Span<int> coefficients, int txSz, int txType)
     {
-        if (AdvSimd.IsSupported)
+        if (Av1Simd.IsSupported)
         {
-            ForwardAdvSimd(residual, coefficients, txSz, txType);
+            ForwardVector(residual, coefficients, txSz, txType);
         }
         else
         {
@@ -130,9 +129,10 @@ internal static class Av1ForwardTransform
     // The same sums of exact products as ForwardScalar, accumulated in 64 bits for 4 columns or 4 coefficients at once. The
     // samples of the residual are differences of samples (at most 2^12 in magnitude) and the bases are below 2^22, so the
     // intermediate values, a sum of at most 64 products divided by 2^12, are below 2^28: they are stored in 32 bits, and
-    // multiplied by the bases into 64-bit products like the scalar reference does
+    // multiplied by the bases into 64-bit products like the scalar reference does. The narrowing of a column sum keeps the bits
+    // 12 to 43 of the sum, which a logical shift gives like an arithmetic one
     [SkipLocalsInit]
-    private static void ForwardAdvSimd(ReadOnlySpan<int> residual, Span<int> coefficients, int txSz, int txType)
+    private static void ForwardVector(ReadOnlySpan<int> residual, Span<int> coefficients, int txSz, int txType)
     {
         var log2W = Av1Tables.TxWidthLog2[txSz];
         var log2H = Av1Tables.TxHeightLog2[txSz];
@@ -186,17 +186,17 @@ internal static class Av1ForwardTransform
                     var offset = firstRow + c;
                     for (var r = 0; r < h; r++, offset += rowStep)
                     {
-                        var factor = Vector64.Create(unsafe(Unsafe.Add(ref basis, r)));
+                        var factor = Vector128.Create(unsafe(Unsafe.Add(ref basis, r)));
                         var low = unsafe(Vector128.LoadUnsafe(ref samples, (nuint)offset));
                         var high = unsafe(Vector128.LoadUnsafe(ref samples, (nuint)(offset + 4)));
-                        sum0 = AdvSimd.MultiplyWideningLowerAndAdd(sum0, low.GetLower(), factor);
-                        sum1 = AdvSimd.MultiplyWideningLowerAndAdd(sum1, low.GetUpper(), factor);
-                        sum2 = AdvSimd.MultiplyWideningLowerAndAdd(sum2, high.GetLower(), factor);
-                        sum3 = AdvSimd.MultiplyWideningLowerAndAdd(sum3, high.GetUpper(), factor);
+                        sum0 = Av1Simd.MultiplyWideningLowerAndAdd(sum0, low, factor);
+                        sum1 = Av1Simd.MultiplyWideningUpperAndAdd(sum1, low, factor);
+                        sum2 = Av1Simd.MultiplyWideningLowerAndAdd(sum2, high, factor);
+                        sum3 = Av1Simd.MultiplyWideningUpperAndAdd(sum3, high, factor);
                     }
 
-                    Vector128.Narrow(Vector128.ShiftRightArithmetic(sum0, BasisBits - IntermediateBits), Vector128.ShiftRightArithmetic(sum1, BasisBits - IntermediateBits)).CopyTo(output[c..]);
-                    Vector128.Narrow(Vector128.ShiftRightArithmetic(sum2, BasisBits - IntermediateBits), Vector128.ShiftRightArithmetic(sum3, BasisBits - IntermediateBits)).CopyTo(output[(c + 4)..]);
+                    Vector128.Narrow(Vector128.ShiftRightLogical(sum0, BasisBits - IntermediateBits), Vector128.ShiftRightLogical(sum1, BasisBits - IntermediateBits)).CopyTo(output[c..]);
+                    Vector128.Narrow(Vector128.ShiftRightLogical(sum2, BasisBits - IntermediateBits), Vector128.ShiftRightLogical(sum3, BasisBits - IntermediateBits)).CopyTo(output[(c + 4)..]);
                 }
 
                 if (c < w)
@@ -206,13 +206,13 @@ internal static class Av1ForwardTransform
                     var offset = firstRow + c;
                     for (var r = 0; r < h; r++, offset += rowStep)
                     {
-                        var factor = Vector64.Create(unsafe(Unsafe.Add(ref basis, r)));
+                        var factor = Vector128.Create(unsafe(Unsafe.Add(ref basis, r)));
                         var low = unsafe(Vector128.LoadUnsafe(ref samples, (nuint)offset));
-                        sum0 = AdvSimd.MultiplyWideningLowerAndAdd(sum0, low.GetLower(), factor);
-                        sum1 = AdvSimd.MultiplyWideningLowerAndAdd(sum1, low.GetUpper(), factor);
+                        sum0 = Av1Simd.MultiplyWideningLowerAndAdd(sum0, low, factor);
+                        sum1 = Av1Simd.MultiplyWideningUpperAndAdd(sum1, low, factor);
                     }
 
-                    Vector128.Narrow(Vector128.ShiftRightArithmetic(sum0, BasisBits - IntermediateBits), Vector128.ShiftRightArithmetic(sum1, BasisBits - IntermediateBits)).CopyTo(output[c..]);
+                    Vector128.Narrow(Vector128.ShiftRightLogical(sum0, BasisBits - IntermediateBits), Vector128.ShiftRightLogical(sum1, BasisBits - IntermediateBits)).CopyTo(output[c..]);
                 }
             }
         }
@@ -259,13 +259,13 @@ internal static class Av1ForwardTransform
                         for (var c = 0; c < w; c++)
                         {
                             var offset = (c * tw) + l;
-                            var factor = Vector64.Create(unsafe(Unsafe.Add(ref samples, c)));
+                            var factor = Vector128.Create(unsafe(Unsafe.Add(ref samples, c)));
                             var low = unsafe(Vector128.LoadUnsafe(ref basis, (nuint)offset));
                             var high = unsafe(Vector128.LoadUnsafe(ref basis, (nuint)(offset + 4)));
-                            sum0 = AdvSimd.MultiplyWideningLowerAndAdd(sum0, low.GetLower(), factor);
-                            sum1 = AdvSimd.MultiplyWideningLowerAndAdd(sum1, low.GetUpper(), factor);
-                            sum2 = AdvSimd.MultiplyWideningLowerAndAdd(sum2, high.GetLower(), factor);
-                            sum3 = AdvSimd.MultiplyWideningLowerAndAdd(sum3, high.GetUpper(), factor);
+                            sum0 = Av1Simd.MultiplyWideningLowerAndAdd(sum0, low, factor);
+                            sum1 = Av1Simd.MultiplyWideningUpperAndAdd(sum1, low, factor);
+                            sum2 = Av1Simd.MultiplyWideningLowerAndAdd(sum2, high, factor);
+                            sum3 = Av1Simd.MultiplyWideningUpperAndAdd(sum3, high, factor);
                         }
 
                         sum2.CopyTo(sums[4..]);
@@ -275,10 +275,10 @@ internal static class Av1ForwardTransform
                     {
                         for (var c = 0; c < w; c++)
                         {
-                            var factor = Vector64.Create(unsafe(Unsafe.Add(ref samples, c)));
+                            var factor = Vector128.Create(unsafe(Unsafe.Add(ref samples, c)));
                             var low = unsafe(Vector128.LoadUnsafe(ref basis, (nuint)((c * tw) + l)));
-                            sum0 = AdvSimd.MultiplyWideningLowerAndAdd(sum0, low.GetLower(), factor);
-                            sum1 = AdvSimd.MultiplyWideningLowerAndAdd(sum1, low.GetUpper(), factor);
+                            sum0 = Av1Simd.MultiplyWideningLowerAndAdd(sum0, low, factor);
+                            sum1 = Av1Simd.MultiplyWideningUpperAndAdd(sum1, low, factor);
                         }
                     }
 

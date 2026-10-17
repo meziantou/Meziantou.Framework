@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -139,9 +138,9 @@ internal static class Av1Cdef
     /// </summary>
     internal static void FindDirection(ReadOnlySpan<ushort> source, int stride, int x0, int bitDepth, out int yDir, out int variance)
     {
-        if (AdvSimd.Arm64.IsSupported)
+        if (Av1Simd.IsSupported)
         {
-            FindDirectionAdvSimd(source, stride, x0, bitDepth, out yDir, out variance);
+            FindDirectionVector(source, stride, x0, bitDepth, out yDir, out variance);
         }
         else
         {
@@ -153,7 +152,7 @@ internal static class Av1Cdef
     // samples whose index (a linear function of the row and of the column) is the same, so the samples of a row, shifted
     // by the part of the index that depends on the row, are added to 15 (or 11) lanes held by 2 vectors. The costs are the
     // same sums of products of the scalar code, in 32-bit lanes
-    private static void FindDirectionAdvSimd(ReadOnlySpan<ushort> source, int stride, int x0, int bitDepth, out int yDir, out int variance)
+    private static void FindDirectionVector(ReadOnlySpan<ushort> source, int stride, int x0, int bitDepth, out int yDir, out int variance)
     {
         var shift = bitDepth - 8;
         // The shifts are constants, with 8 minus them for the lane extractions (0 when the shift is 0)
@@ -212,12 +211,13 @@ internal static class Av1Cdef
     }
 
     // The sum of the squares of the partial sums times their weights, in 32 bits like the scalar costs
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int WeightedSquares(Vector128<short> sums, Vector128<short> weights)
     {
-        var squaresLow = AdvSimd.MultiplyWideningLower(sums.GetLower(), sums.GetLower());
-        var squaresHigh = AdvSimd.MultiplyWideningUpper(sums, sums);
+        var squaresLow = Av1Simd.MultiplyWideningLower(sums, sums);
+        var squaresHigh = Av1Simd.MultiplyWideningUpper(sums, sums);
         var weighted = (squaresLow * Vector128.WidenLower(weights).AsInt32()) + (squaresHigh * Vector128.WidenUpper(weights).AsInt32());
-        return AdvSimd.Arm64.AddAcross(weighted).ToScalar();
+        return Av1Simd.AddAcross(weighted);
     }
 
     // Adds the row i of the block to the partial sums of the directions 0 to 4 and 6 (complement is 8 - i, or 0)
@@ -228,11 +228,11 @@ internal static class Av1Cdef
         AddShifted(ref state.Diagonal0Low, ref state.Diagonal0High, x, i, complement);
         var reversed = Vector128.Shuffle(x, Vector128.Create((short)7, 6, 5, 4, 3, 2, 1, 0));
         AddShifted(ref state.Diagonal4Low, ref state.Diagonal4High, reversed, i, complement);
-        state.Rows = state.Rows.WithElement(i, AdvSimd.Arm64.AddAcross(x).ToScalar());
+        state.Rows = state.Rows.WithElement(i, Av1Simd.AddAcross(x));
         state.Columns += x;
 
         // Directions 1 and 3: i + j / 2 and 3 + i - j / 2, from the sums of the pairs of samples of the row
-        var pairs = AdvSimd.Arm64.AddPairwise(x, Vector128<short>.Zero);
+        var pairs = Av1Simd.AddPairwise(x);
         AddShifted(ref state.Partial1Low, ref state.Partial1High, pairs, i, complement);
         AddShifted(ref state.Partial3Low, ref state.Partial3High, Vector128.Shuffle(pairs, Vector128.Create((short)3, 2, 1, 0, -1, -1, -1, -1)), i, complement);
     }
@@ -255,8 +255,8 @@ internal static class Av1Cdef
             return;
         }
 
-        low += AdvSimd.ExtractVector128(Vector128<short>.Zero, x, complement);
-        high += AdvSimd.ExtractVector128(x, Vector128<short>.Zero, complement);
+        low += Av1Simd.ExtractVector128(Vector128<short>.Zero, x, complement);
+        high += Av1Simd.ExtractVector128(x, Vector128<short>.Zero, complement);
     }
 
     // The partial sums of the direction process: the sums of index 0 to 7 in the Low vector and 8 to 14 in the High one

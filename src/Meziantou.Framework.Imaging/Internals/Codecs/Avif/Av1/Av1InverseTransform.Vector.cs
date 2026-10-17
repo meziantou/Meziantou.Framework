@@ -1,22 +1,22 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <content>
-/// The inverse transform of 4 rows or 4 columns at once, in the 32-bit lanes of AdvSimd vectors. Each step is the step of the
-/// scalar kernels, with the same 64-bit arithmetic: the products of the rotations are widening multiplications, their sums
-/// are 64-bit, Round2 is a rounding shift of the 64-bit value (which cannot overflow) and the cast to 32 bits is a
-/// truncating narrowing; the sums of the Hadamard rotations, which the scalar code computes in 64 bits before clamping them,
-/// are saturating additions, whose clamped result is the same. The results are the scalar ones for every input.
+/// The inverse transform of 4 rows or 4 columns at once, in the 32-bit lanes of vectors (the operations of
+/// <see cref="Av1Simd"/>). Each step is the step of the scalar kernels, with the same 64-bit arithmetic: the products of the
+/// rotations are widening multiplications, their sums are 64-bit, Round2 is a rounding of the 64-bit value (which cannot
+/// overflow) and the cast to 32 bits is a truncating narrowing; the sums of the Hadamard rotations, which the scalar code
+/// computes in 64 bits before clamping them, are saturating additions, whose clamped result is the same. The results are
+/// the scalar ones for every input.
 /// </content>
 internal static partial class Av1InverseTransform
 {
     // The 2D transform of TransformScalar: the rows by groups of 4 (transposed into the lanes of the vectors), then the
     // columns by groups of 4 (whose samples are the lanes of consecutive rows)
     [SkipLocalsInit]
-    private static void TransformAdvSimd(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth)
+    private static void TransformVector(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth)
     {
         var log2W = Av1Tables.TxWidthLog2[txSz];
         var log2H = Av1Tables.TxHeightLog2[txSz];
@@ -61,7 +61,7 @@ internal static partial class Av1InverseTransform
 
             for (var k = 0; k < tw; k += 4)
             {
-                Transpose(
+                Av1Simd.Transpose(
                     Vector128.Create(dequant.Slice((i * tw) + k, 4)),
                     Vector128.Create(dequant.Slice(((i + 1) * tw) + k, 4)),
                     Vector128.Create(dequant.Slice(((i + 2) * tw) + k, 4)),
@@ -84,7 +84,7 @@ internal static partial class Av1InverseTransform
             Apply(rowKind, t[..w], log2W, rowClampRange);
             for (var k = 0; k < w; k += 4)
             {
-                Transpose(
+                Av1Simd.Transpose(
                     RowOutput(t[k], rowShift, colMin, colMax),
                     RowOutput(t[k + 1], rowShift, colMin, colMax),
                     RowOutput(t[k + 2], rowShift, colMin, colMax),
@@ -120,39 +120,18 @@ internal static partial class Av1InverseTransform
             Apply(colKind, column, log2H, colClampRange);
             for (var i = 0; i < h; i++)
             {
-                AdvSimd.ShiftRightArithmeticRounded(column[i], ColShift).CopyTo(residual.Slice((i * w) + j, 4));
+                Av1Simd.ShiftRightArithmeticRounded(column[i], ColShift).CopyTo(residual.Slice((i * w) + j, 4));
             }
         }
 
         static Vector128<int> RowOutput(Vector128<int> value, int shift, Vector128<int> min, Vector128<int> max)
         {
             if (shift is not 0)
-                value = ShiftRightArithmeticRounded(value, shift);
+                value = Av1Simd.ShiftRightArithmeticRounded(value, shift);
 
             return Vector128.Min(Vector128.Max(value, min), max);
         }
     }
-
-    // A 4x4 transposition: the lanes of the outputs are the vectors of the inputs
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void Transpose(Vector128<int> v0, Vector128<int> v1, Vector128<int> v2, Vector128<int> v3, out Vector128<int> r0, out Vector128<int> r1, out Vector128<int> r2, out Vector128<int> r3)
-    {
-        var t0 = AdvSimd.Arm64.TransposeEven(v0, v1).AsInt64();
-        var t1 = AdvSimd.Arm64.TransposeOdd(v0, v1).AsInt64();
-        var t2 = AdvSimd.Arm64.TransposeEven(v2, v3).AsInt64();
-        var t3 = AdvSimd.Arm64.TransposeOdd(v2, v3).AsInt64();
-        r0 = AdvSimd.Arm64.TransposeEven(t0, t2).AsInt32();
-        r1 = AdvSimd.Arm64.TransposeEven(t1, t3).AsInt32();
-        r2 = AdvSimd.Arm64.TransposeOdd(t0, t2).AsInt32();
-        r3 = AdvSimd.Arm64.TransposeOdd(t1, t3).AsInt32();
-    }
-
-    private static Vector128<int> ShiftRightArithmeticRounded(Vector128<int> value, int shift) => shift switch
-    {
-        1 => AdvSimd.ShiftRightArithmeticRounded(value, 1),
-        2 => AdvSimd.ShiftRightArithmeticRounded(value, 2),
-        _ => (value >> shift) + ((value >> (shift - 1)) & Vector128<int>.One),
-    };
 
     private static void Apply(Kind kind, Span<Vector128<int>> t, int n, int r)
     {
@@ -455,24 +434,27 @@ internal static partial class Av1InverseTransform
         var t1 = t[1];
         var t2 = t[2];
         var t3 = t[3];
-        var x0 = Adst4Outputs(t0.GetLower(), t1.GetLower(), t2.GetLower(), t3.GetLower(), out var x1, out var x2, out var x3);
-        var y0 = Adst4Outputs(t0.GetUpper(), t1.GetUpper(), t2.GetUpper(), t3.GetUpper(), out var y1, out var y2, out var y3);
-        t[0] = Narrow(x0, y0);
-        t[1] = Narrow(x1, y1);
-        t[2] = Narrow(x2, y2);
-        t[3] = Narrow(x3, y3);
+        var x0 = Adst4Outputs(t0, t1, t2, t3, upper: false, out var x1, out var x2, out var x3);
+        var y0 = Adst4Outputs(t0, t1, t2, t3, upper: true, out var y1, out var y2, out var y3);
+        t[0] = Av1Simd.RoundNarrow12(x0, y0);
+        t[1] = Av1Simd.RoundNarrow12(x1, y1);
+        t[2] = Av1Simd.RoundNarrow12(x2, y2);
+        t[3] = Av1Simd.RoundNarrow12(x3, y3);
 
-        static Vector128<long> Adst4Outputs(Vector64<int> t0, Vector64<int> t1, Vector64<int> t2, Vector64<int> t3, out Vector128<long> x1, out Vector128<long> x2, out Vector128<long> x3)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<long> Adst4Outputs(Vector128<int> t0, Vector128<int> t1, Vector128<int> t2, Vector128<int> t3, bool upper, out Vector128<long> x1, out Vector128<long> x2, out Vector128<long> x3)
         {
-            var s0 = AdvSimd.MultiplyWideningLower(t0, Vector64.Create(Av1Constants.Sinpi19));
-            var s1 = AdvSimd.MultiplyWideningLower(t0, Vector64.Create(Av1Constants.Sinpi29));
-            var s2 = AdvSimd.MultiplyWideningLower(t1, Vector64.Create(Av1Constants.Sinpi39));
-            var s3 = AdvSimd.MultiplyWideningLower(t2, Vector64.Create(Av1Constants.Sinpi49));
-            var s4 = AdvSimd.MultiplyWideningLower(t2, Vector64.Create(Av1Constants.Sinpi19));
-            var s5 = AdvSimd.MultiplyWideningLower(t3, Vector64.Create(Av1Constants.Sinpi29));
-            var s6 = AdvSimd.MultiplyWideningLower(t3, Vector64.Create(Av1Constants.Sinpi49));
-            var sinpi39 = Vector64.Create(Av1Constants.Sinpi39);
-            var b7 = AdvSimd.MultiplyWideningLowerAndAdd(AdvSimd.MultiplyWideningLowerAndSubtract(AdvSimd.MultiplyWideningLower(t0, sinpi39), t2, sinpi39), t3, sinpi39);
+            var s0 = Multiply(t0, Av1Constants.Sinpi19, upper);
+            var s1 = Multiply(t0, Av1Constants.Sinpi29, upper);
+            var s2 = Multiply(t1, Av1Constants.Sinpi39, upper);
+            var s3 = Multiply(t2, Av1Constants.Sinpi49, upper);
+            var s4 = Multiply(t2, Av1Constants.Sinpi19, upper);
+            var s5 = Multiply(t3, Av1Constants.Sinpi29, upper);
+            var s6 = Multiply(t3, Av1Constants.Sinpi49, upper);
+            var sinpi39 = Vector128.Create(Av1Constants.Sinpi39);
+            var b7 = upper
+                ? Av1Simd.MultiplyWideningUpperAndAdd(Av1Simd.MultiplyWideningUpperAndSubtract(Av1Simd.MultiplyWideningUpper(t0, sinpi39), t2, sinpi39), t3, sinpi39)
+                : Av1Simd.MultiplyWideningLowerAndAdd(Av1Simd.MultiplyWideningLowerAndSubtract(Av1Simd.MultiplyWideningLower(t0, sinpi39), t2, sinpi39), t3, sinpi39);
             s0 += s3;
             s1 -= s4;
             s3 = s2;
@@ -485,6 +467,10 @@ internal static partial class Av1InverseTransform
             x3 = s0 + s1 - s3;
             return x0;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<long> Multiply(Vector128<int> value, int factor, bool upper)
+            => upper ? Av1Simd.MultiplyWideningUpper(value, Vector128.Create(factor)) : Av1Simd.MultiplyWideningLower(value, Vector128.Create(factor));
     }
 
     // InverseAdst8 on vectors: the same steps
@@ -622,38 +608,27 @@ internal static partial class Av1InverseTransform
     }
 
     // Round2( value * factor, 12 ) with a 64-bit product
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Vector128<int> MultiplyRound12(Vector128<int> value, int factor)
     {
-        var low = AdvSimd.MultiplyWideningLower(value.GetLower(), Vector64.Create(factor));
-        var high = AdvSimd.MultiplyWideningUpper(value, Vector128.Create(factor));
-        return Narrow(low, high);
-    }
-
-    // (int)Round2( value, 12 ) of two vectors of 64-bit values
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Vector128<int> Narrow(Vector128<long> low, Vector128<long> high)
-    {
-        return AdvSimd.ExtractNarrowingUpper(AdvSimd.ExtractNarrowingLower(AdvSimd.ShiftRightArithmeticRounded(low, 12)), AdvSimd.ShiftRightArithmeticRounded(high, 12));
+        var factors = Vector128.Create(factor);
+        return Av1Simd.RoundNarrow12(Av1Simd.MultiplyWideningLower(value, factors), Av1Simd.MultiplyWideningUpper(value, factors));
     }
 
     // The butterfly rotation B( a, b, angle, flip ) on vectors
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void B(Span<Vector128<int>> t, int a, int b, int angle, bool flip)
     {
-        var cos = Cos128(angle);
-        var sin = Cos128(angle - 64);
+        var cos = Vector128.Create(Cos128(angle));
+        var sin = Vector128.Create(Cos128(angle - 64));
         var va = t[a];
         var vb = t[b];
-        var cosLow = Vector64.Create(cos);
-        var sinLow = Vector64.Create(sin);
-        var cosHigh = Vector128.Create(cos);
-        var sinHigh = Vector128.Create(sin);
-        var x = Narrow(
-            AdvSimd.MultiplyWideningLowerAndSubtract(AdvSimd.MultiplyWideningLower(va.GetLower(), cosLow), vb.GetLower(), sinLow),
-            AdvSimd.MultiplyWideningUpperAndSubtract(AdvSimd.MultiplyWideningUpper(va, cosHigh), vb, sinHigh));
-        var y = Narrow(
-            AdvSimd.MultiplyWideningLowerAndAdd(AdvSimd.MultiplyWideningLower(va.GetLower(), sinLow), vb.GetLower(), cosLow),
-            AdvSimd.MultiplyWideningUpperAndAdd(AdvSimd.MultiplyWideningUpper(va, sinHigh), vb, cosHigh));
+        var x = Av1Simd.RoundNarrow12(
+            Av1Simd.MultiplyWideningLowerAndSubtract(Av1Simd.MultiplyWideningLower(va, cos), vb, sin),
+            Av1Simd.MultiplyWideningUpperAndSubtract(Av1Simd.MultiplyWideningUpper(va, cos), vb, sin));
+        var y = Av1Simd.RoundNarrow12(
+            Av1Simd.MultiplyWideningLowerAndAdd(Av1Simd.MultiplyWideningLower(va, sin), vb, cos),
+            Av1Simd.MultiplyWideningUpperAndAdd(Av1Simd.MultiplyWideningUpper(va, sin), vb, cos));
         if (flip)
         {
             t[b] = x;
@@ -675,7 +650,7 @@ internal static partial class Av1InverseTransform
 
         var x = t[a];
         var y = t[b];
-        t[a] = Vector128.Min(Vector128.Max(AdvSimd.AddSaturate(x, y), min), max);
-        t[b] = Vector128.Min(Vector128.Max(AdvSimd.SubtractSaturate(x, y), min), max);
+        t[a] = Vector128.Min(Vector128.Max(Av1Simd.AddSaturate(x, y), min), max);
+        t[b] = Vector128.Min(Vector128.Max(Av1Simd.SubtractSaturate(x, y), min), max);
     }
 }

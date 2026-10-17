@@ -1,5 +1,3 @@
-using System.Runtime.Intrinsics.Arm;
-
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -36,9 +34,9 @@ internal static partial class Av1InverseTransform
     /// <param name="bitDepth">The bit depth of the samples.</param>
     public static void Transform(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, bool lossless, int bitDepth)
     {
-        if (AdvSimd.Arm64.IsSupported && !lossless)
+        if (Av1Simd.IsSupported && !lossless)
         {
-            TransformAdvSimd(dequant, residual, txSz, txType, bitDepth);
+            TransformVector(dequant, residual, txSz, txType, bitDepth);
         }
         else
         {

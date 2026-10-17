@@ -442,10 +442,9 @@ public sealed class ImagingRenderingBackendTests
 
     /// <summary>A font of the tests of the glyph outlines of the core library (tests/Meziantou.Framework.WebPlatform.Tests/Css/Fonts/Resources/Outlines).</summary>
     /// <summary>Loads a font of the test data (fonts of WPT: COLR-palettes-test-font.ttf, and a subset of Noto Color Emoji under the OFL).</summary>
-    private static Css.Fonts.FontFile LoadTestFont(string name, [System.Runtime.CompilerServices.CallerFilePath] string path = "")
+    private static Css.Fonts.FontFile LoadTestFont(string name)
     {
-        var file = Path.Combine(Path.GetDirectoryName(path)!, "TestData", name);
-        return Css.Fonts.FontFile.Load(File.ReadAllBytes(file)) ?? throw new InvalidOperationException(name + " is invalid");
+        return Css.Fonts.FontFile.Load(File.ReadAllBytes(TestPaths.TestData(name))) ?? throw new InvalidOperationException(name + " is invalid");
     }
 
     private static HashSet<(byte R, byte G, byte B)> ReadOpaqueColors(RenderingSurface surface)

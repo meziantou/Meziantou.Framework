@@ -317,7 +317,7 @@ public sealed class ImageDecodingTests : IDisposable
     {
         // A CMYK JPEG image of WPT (html/canvas/element/manual/wide-gamut-canvas/resources): the color of the
         // cyan ink at 100% (FF000000), converted to sRGB with the CMYK profile of the file
-        var data = System.IO.File.ReadAllBytes(Path.Combine(GetTestDataDirectory(), "Generic-CMYK-FF000000.jpg"));
+        var data = System.IO.File.ReadAllBytes(TestPaths.TestData("Generic-CMYK-FF000000.jpg"));
         using var decoder = _backend.CreateImageDecoder(data, mimeType: null);
         Assert.NotNull(decoder);
         var pixels = DecodePixels(decoder, 0);
@@ -328,8 +328,6 @@ public sealed class ImageDecodingTests : IDisposable
         Assert.True(r < 64 && g > 128 && b > 192, $"({r}, {g}, {b})");
         Assert.True(pixels.AsSpan(0, 4).SequenceEqual(pixels.AsSpan(pixels.Length - 4)));
     }
-
-    private static string GetTestDataDirectory([System.Runtime.CompilerServices.CallerFilePath] string path = "") => Path.Combine(Path.GetDirectoryName(path)!, "TestData");
 
     [Theory]
     [InlineData("qoi")]

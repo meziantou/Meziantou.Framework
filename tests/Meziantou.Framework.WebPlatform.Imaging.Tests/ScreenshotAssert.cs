@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Meziantou.Framework.Imaging;
 
 namespace Meziantou.Framework.WebPlatform.Imaging.Tests;
@@ -17,7 +16,7 @@ internal static class ScreenshotAssert
     /// </summary>
     public static void Matches(Image<Rgba32> actual, string name, int maxChannelDifference = 8, int maxDifferentPixels = 0)
     {
-        var expectedPath = Path.Combine(GetProjectDirectory(), "Screenshots", name + ".png");
+        var expectedPath = Path.Combine(TestPaths.ProjectDirectory, "Screenshots", name + ".png");
         if (Environment.GetEnvironmentVariable("SCREENSHOT_UPDATE_EXPECTATIONS") == "1")
         {
             Save(actual, expectedPath);
@@ -86,8 +85,6 @@ internal static class ScreenshotAssert
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         image.Save(path, new Meziantou.Framework.Imaging.Formats.PngEncoder());
     }
-
-    private static string GetProjectDirectory([CallerFilePath] string path = "") => Path.GetDirectoryName(path)!;
 }
 
 /// <summary>The colors of the pixels of the tests (not premultiplied).</summary>

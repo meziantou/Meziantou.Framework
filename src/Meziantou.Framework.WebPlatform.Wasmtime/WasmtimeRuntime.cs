@@ -92,8 +92,12 @@ public sealed class WasmtimeRuntime : WebAssemblyRuntime, IDisposable
         // unwinds one native frame with libunwind). A garbage collection that starts while threads wait for that lock can
         // hang the process: the collection waits for the waiting threads, whose waits are interrupted again and again by
         // its suspension signals, and they never get the lock (all the readers and the writers end up blocked on it).
-        // The traps and the backtraces of Wasmtime walk the frame pointers: they do not need this information.
-        NativeMethods.wasmtime_config_native_unwind_info_set(config, value: false);
+        // The traps and the backtraces of Wasmtime walk the frame pointers: they do not need this information. Windows
+        // requires it (Wasmtime panics when it is disabled there), and its unwinder has no such lock.
+        if (!OperatingSystem.IsWindows())
+        {
+            NativeMethods.wasmtime_config_native_unwind_info_set(config, value: false);
+        }
 
         // The memories are .NET arrays (see LinearMemory): they are allocated with their exact size, without guard pages,
         // and move when they grow

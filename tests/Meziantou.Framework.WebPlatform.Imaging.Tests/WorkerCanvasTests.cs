@@ -21,7 +21,7 @@ public sealed class WorkerCanvasTests : IDisposable
     private async Task<string> RunWorkerAsync(string script)
     {
         _pages.Resources["/worker.js"] = (System.Text.Encoding.UTF8.GetBytes(script), "text/javascript");
-        _pages.Resources["/font.ttf"] = (File.ReadAllBytes(Path.Combine(FindRoot(), "src", "Meziantou.Framework.WebPlatform", "Css", "Fonts", "Bundled", "Ahem.ttf")), "font/ttf");
+        _pages.Resources["/font.ttf"] = (File.ReadAllBytes(Path.Combine(TestPaths.Root, "src", "Meziantou.Framework.WebPlatform", "Css", "Fonts", "Bundled", "Ahem.ttf")), "font/ttf");
         var context = _pages.Load("<script>new Worker('/worker.js').onmessage = e => document.title = e.data;</script>", scriptEngine: _engine);
         var document = context.Document;
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -37,17 +37,6 @@ public sealed class WorkerCanvasTests : IDisposable
         }
 
         return document.Title;
-    }
-
-    private static string FindRoot()
-    {
-        var directory = AppContext.BaseDirectory;
-        while (directory is not null && !File.Exists(Path.Combine(directory, "Meziantou.Framework.slnx")))
-        {
-            directory = Path.GetDirectoryName(directory);
-        }
-
-        return directory ?? throw new InvalidOperationException("Cannot find the repository root");
     }
 
     [Fact]

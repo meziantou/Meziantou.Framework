@@ -61,6 +61,11 @@ internal sealed class FontFace
     private readonly int _vvarAdvanceMap;
     private readonly int _vvarOriginMap;
 
+    // The baselines of each script
+    private readonly BaseTable _base;
+    private readonly int _baseOffset;
+    private readonly int _baseLength;
+
     private readonly ColrTable? _colr;
     private readonly int _colrOffset;
     private readonly int _colrLength;
@@ -146,6 +151,14 @@ internal sealed class FontFace
         {
             _vorgOffset = vorgOffset;
             _vorgLength = vorgLength;
+        }
+
+        // BASE: the baselines. A table whose header is not understood is left out: the font then has no baseline
+        // table, and text is aligned with its ascent and its descent.
+        if (_directory.TryFind(FontTags.Base, out var baseOffset, out var baseLength) && BaseTable.TryRead(file.Slice(baseOffset, baseLength), out _base))
+        {
+            _baseOffset = baseOffset;
+            _baseLength = baseLength;
         }
 
         // OS/2: optional in old fonts. Its fields were added by versions; a field beyond the table is absent.
@@ -585,6 +598,54 @@ internal sealed class FontFace
         y = top + ((ascender + descender - height) >> 1);
     }
 
+    /// <summary>Gets a baseline of a script, in font units: along the y axis of the glyphs for horizontal lines, along their x axis for vertical lines.</summary>
+    /// <param name="isVertical"><see langword="true"/> for the baselines of vertical lines.</param>
+    /// <param name="scripts">The script tags of the text, by order of preference.</param>
+    /// <param name="baseline">The tag of the baseline.</param>
+    /// <param name="coordinate">The coordinate of the baseline, with the delta of the <c>BASE</c> table in an instance of a variable font.</param>
+    /// <returns><see langword="false"/> when the font has no <c>BASE</c> table, or the table does not give the baseline.</returns>
+    /// <exception cref="InvalidImageContentException">The table is malformed.</exception>
+    public bool TryGetBaseline(bool isVertical, ReadOnlySpan<uint> scripts, uint baseline, out int coordinate)
+    {
+        var table = Data.Bytes.AsSpan(_baseOffset, _baseLength);
+        if (_baseLength == 0 || !_base.TryGetBaseline(table, isVertical, scripts, baseline, out coordinate, out var outer, out var inner))
+        {
+            coordinate = 0;
+            return false;
+        }
+
+        if (outer >= 0 && _instance is not null && _base.VariationStore != 0)
+        {
+            coordinate = ItemVariationStore.Round(coordinate + ItemVariationStore.GetDelta(table, _base.VariationStore, outer, inner, _instance.BaselineScalars));
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Gets the middle of the ideographic em box of a script, in font units: halfway between the bottom and the top of
+    /// the box (the <c>ideo</c> and <c>idtp</c> baselines), one em apart when the table only gives one of them.
+    /// </summary>
+    /// <param name="isVertical"><see langword="true"/> for the middle of the box of vertical lines, along the x axis of the glyphs.</param>
+    /// <param name="scripts">The script tags of the text, by order of preference.</param>
+    /// <param name="center">The middle of the box.</param>
+    /// <returns><see langword="false"/> when the font does not give the ideographic em box of the script.</returns>
+    /// <exception cref="InvalidImageContentException">The <c>BASE</c> table is malformed.</exception>
+    public bool TryGetIdeographicCenter(bool isVertical, ReadOnlySpan<uint> scripts, out double center)
+    {
+        var hasBottom = TryGetBaseline(isVertical, scripts, BaseTable.IdeographicBottom, out var bottom);
+        var hasTop = TryGetBaseline(isVertical, scripts, BaseTable.IdeographicTop, out var top);
+        center = (hasBottom, hasTop) switch
+        {
+            (true, true) => (bottom + top) / 2.0,
+            (true, false) => bottom + (UnitsPerEm / 2.0),
+            (false, true) => top - (UnitsPerEm / 2.0),
+            _ => 0,
+        };
+
+        return hasBottom || hasTop;
+    }
+
     /// <summary>Gets the top of the outline of a glyph and its height, in font units: both 0 for a glyph without outline.</summary>
     private void GetVerticalExtents(int glyphId, GlyphScratch? scratch, out int top, out int height)
     {
@@ -760,6 +821,11 @@ internal sealed class FontFace
         if (root._vvarStore != 0)
         {
             instance.VerticalScalars = ItemVariationStore.ComputeScalars(bytes.Slice(root._vvarOffset, root._vvarLength), root._vvarStore, coordinates);
+        }
+
+        if (root._base.VariationStore != 0)
+        {
+            instance.BaselineScalars = ItemVariationStore.ComputeScalars(bytes.Slice(root._baseOffset, root._baseLength), root._base.VariationStore, coordinates);
         }
 
         if (root.Gdef is { VariationStore: not 0 } gdef)

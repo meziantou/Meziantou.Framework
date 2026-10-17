@@ -203,7 +203,7 @@ public sealed class TextLayout
     internal int RunCount => _runs.Length;
 
     /// <summary>Gets a run of glyphs of one font, one size, one paint and one orientation.</summary>
-    internal void GetRun(int index, out FontFace face, out double scale, out int start, out int count, out int brush, out bool isSideways)
+    internal void GetRun(int index, out FontFace face, out double scale, out int start, out int count, out int brush, out bool isSideways, out double widthScale)
     {
         var run = _runs[index];
         face = _fonts[run.Font].Face;
@@ -212,16 +212,17 @@ public sealed class TextLayout
         count = run.Count;
         brush = run.Brush;
         isSideways = run.IsSideways;
+        widthScale = run.WidthScale;
     }
 
     /// <summary>Gets the display list of a glyph that is drawn with its own colors, or <see langword="null"/> for a glyph that is drawn with its outline.</summary>
     internal ColorGlyph? GetColorGlyph(int glyph) => _colorIndexes is null || _colorIndexes[glyph] < 0 ? null : _colorGlyphs[_colorIndexes[glyph]];
 
     /// <summary>Gets the transformation from the units of a glyph to the pixels of a canvas the layout is drawn on at a point, for a glyph that is not slanted.</summary>
-    internal Affine2D GetGlyphTransform(int glyph, double scale, bool isSideways, double originX, double originY)
+    internal Affine2D GetGlyphTransform(int glyph, double scale, bool isSideways, double widthScale, double originX, double originY)
         => isSideways
             ? Affine2D.ForSidewaysGlyph(scale, originX + _positions[glyph * 2], originY + _positions[(glyph * 2) + 1], shear: 0)
-            : Affine2D.ForGlyph(scale, originX + _positions[glyph * 2], originY + _positions[(glyph * 2) + 1]);
+            : Affine2D.ForGlyph(scale, originX + _positions[glyph * 2], originY + _positions[(glyph * 2) + 1], shear: 0, widthScale);
 
     /// <summary>Lays out a text with one font, on one line per paragraph.</summary>
     /// <param name="text">The text.</param>
@@ -855,7 +856,7 @@ public sealed class TextLayout
                 if (isColorGlyph && skipColorGlyphs)
                     continue;
 
-                if (!TryGetGlyphTransformOnPath(i, scale, run.IsSideways, measure, options, out var transform))
+                if (!TryGetGlyphTransformOnPath(i, scale, run.IsSideways, run.WidthScale, measure, options, out var transform))
                     continue;
 
                 // A slanted glyph is slanted before it is placed and turned.
@@ -989,7 +990,7 @@ public sealed class TextLayout
     /// to the direction of the path there.
     /// </summary>
     /// <returns><see langword="false"/> when the glyph is not drawn: it is beyond an end of a path that clips.</returns>
-    internal bool TryGetGlyphTransformOnPath(int glyph, double scale, bool isSideways, PathMeasure measure, TextPathOptions options, out Affine2D transform)
+    internal bool TryGetGlyphTransformOnPath(int glyph, double scale, bool isSideways, double widthScale, PathMeasure measure, TextPathOptions options, out Affine2D transform)
     {
         var length = measure.Length;
         transform = default;
@@ -1010,9 +1011,10 @@ public sealed class TextLayout
         var originX = (x + (along * directionX)) - (across * directionY);
         var originY = (y + (along * directionY)) + (across * directionX);
 
-        // An upright glyph of a vertical line stands across the line: its top is where the line comes from
+        // An upright glyph of a vertical line stands across the line: its top is where the line comes from. A
+        // narrowed glyph is narrowed along its own baseline.
         transform = _vertical is not null && !isSideways
-            ? new Affine2D(scale * directionY, -(scale * directionX), -(scale * directionX), -(scale * directionY), originX, originY)
+            ? new Affine2D(scale * widthScale * directionY, -(scale * widthScale * directionX), -(scale * directionX), -(scale * directionY), originX, originY)
             : new Affine2D(scale * directionX, scale * directionY, scale * directionY, -(scale * directionX), originX, originY);
         return true;
     }

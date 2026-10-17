@@ -206,6 +206,28 @@ public sealed class TextStyle
     }
 
     /// <summary>
+    /// Gets a value indicating whether the text of the style is set horizontally in the room of one upright character
+    /// when it is in a vertical line (tate-chu-yoko): a few digits or letters across a column of Japanese or Chinese
+    /// text. <see langword="false"/> by default.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The text of each span of the style is one unit of its line: it is shaped as a horizontal line of one font
+    /// (the first font of the stack that has all its characters), centered across the line and on the middle of one
+    /// em down the line, and it advances by one em. Text that is wider than one em takes the forms its font has for
+    /// half, a third or a quarter of an em when it is two, three or four characters long (<c>hwid</c>, <c>twid</c>,
+    /// <c>qwid</c>), and is narrowed to one em if it is still too wide. A line never ends inside it, and the letter
+    /// spacing, the word spacing and justification do not change it. Its decorations are those of upright text.
+    /// </para>
+    /// <para>
+    /// It is the <c>all</c> value of the <c>text-combine-upright</c> property of CSS;
+    /// <see cref="TextLayoutOptions.CombineUprightDigits"/> combines the short numbers of a text. It changes nothing in
+    /// a horizontal layout, nor in one whose orientation is <see cref="TextOrientation.Sideways"/>.
+    /// </para>
+    /// </remarks>
+    public bool IsCombinedUpright { get; init; }
+
+    /// <summary>
     /// Gets the hyphenation patterns of the language of the text, or <see langword="null"/> (the default). They are
     /// used when the layout hyphenates automatically (<see cref="TextHyphenation.Automatic"/>).
     /// </summary>

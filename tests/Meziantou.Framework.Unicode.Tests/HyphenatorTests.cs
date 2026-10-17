@@ -64,6 +64,20 @@ public sealed class HyphenatorTests
     }
 
     [Fact]
+    public void Hyphenate_LastDuplicatePatternWins_WhenThereAreManyPatterns()
+    {
+        // More than 16 patterns: List<T>.Sort switches to an unstable introsort, which must not reorder the duplicates.
+        var patterns = new[] { "ph", "he2n", "h", "n2a", "he2n", "hena4", "hen5at", "1na", "n2at", "1tio", "he2n", "h", "n2a", "he2n", "hena3", "hen5at", "1na", "n2at", "2io" };
+        var options = new HyphenatorOptions { LeftHyphenMin = 2, RightHyphenMin = 1 };
+        var hyphenator = Hyphenator.Parse(string.Join(' ', patterns), options: options);
+
+        var distinctPatterns = patterns.GroupBy(pattern => new string(pattern.Where(c => !char.IsAsciiDigit(c)).ToArray()), StringComparer.Ordinal).Select(group => group.Last()).ToArray();
+        Assert.Equal(distinctPatterns.Length, hyphenator.PatternCount);
+        Assert.Equal(new[] { 4, 5 }, ReferenceHyphenate(distinctPatterns, "hhenatixyon", 2, 1));
+        Assert.Equal(new[] { 4, 5 }, GetBreaks(hyphenator, "hhenatixyon"));
+    }
+
+    [Fact]
     public void Hyphenate_UsesTheExceptionsInsteadOfThePatterns()
     {
         var hyphenator = Hyphenator.Parse(LiangExample + " 1b", "hy-phe-na-tion table A-Bcd- -xy", NoMinimum);

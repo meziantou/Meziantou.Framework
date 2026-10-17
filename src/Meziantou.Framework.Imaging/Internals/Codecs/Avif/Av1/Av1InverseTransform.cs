@@ -38,7 +38,11 @@ internal static partial class Av1InverseTransform
     {
         if (AdvSimd.Arm64.IsSupported && !lossless)
         {
-            TransformAdvSimd(dequant, residual, txSz, txType, bitDepth);
+            TransformVector<Av1AdvSimd>(dequant, residual, txSz, txType, bitDepth);
+        }
+        else if (Av1PortableSimd.IsAccelerated && !lossless)
+        {
+            TransformVector<Av1PortableSimd>(dequant, residual, txSz, txType, bitDepth);
         }
         else
         {

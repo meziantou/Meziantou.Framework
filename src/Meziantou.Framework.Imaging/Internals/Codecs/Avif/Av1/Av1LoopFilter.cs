@@ -175,9 +175,13 @@ internal ref struct Av1LoopFilter
     /// </remarks>
     internal static void FilterLines(Span<ushort> samples, int position, int step, int lineStep, int plane, int filterSize, int bitDepth, int limit, int blimit, int thresh)
     {
-        if (Vector128.IsHardwareAccelerated)
+        if (AdvSimd.Arm64.IsSupported)
         {
-            FilterLinesVector(samples, position, step, lineStep, plane, filterSize, bitDepth, limit, blimit, thresh);
+            FilterLinesVector<Av1AdvSimd>(samples, position, step, lineStep, plane, filterSize, bitDepth, limit, blimit, thresh);
+        }
+        else if (Vector128.IsHardwareAccelerated)
+        {
+            FilterLinesVector<Av1PortableSimd>(samples, position, step, lineStep, plane, filterSize, bitDepth, limit, blimit, thresh);
         }
         else
         {
@@ -197,7 +201,8 @@ internal ref struct Av1LoopFilter
     // The entries of the vectors of the samples are written before they are read: the masks and the filters read the
     // offsets -reach to reach - 1, which are loaded, and the outputs are copied from them
     [SkipLocalsInit]
-    private static void FilterLinesVector(Span<ushort> samples, int position, int step, int lineStep, int plane, int filterSize, int bitDepth, int limit, int blimit, int thresh)
+    internal static void FilterLinesVector<TSimd>(Span<ushort> samples, int position, int step, int lineStep, int plane, int filterSize, int bitDepth, int limit, int blimit, int thresh)
+        where TSimd : struct, IAv1Simd
     {
         var shift = bitDepth - 8;
         int filterLen;
@@ -218,7 +223,7 @@ internal ref struct Av1LoopFilter
         // filter of the edge read
         var reach = filterSize >= 16 ? 7 : filterLen >= 8 ? 4 : filterLen >= 6 ? 3 : 2;
         Span<Vector128<int>> v = unsafe(stackalloc Vector128<int>[16]);
-        var transposed = step is 1 && AdvSimd.Arm64.IsSupported;
+        var transposed = step is 1;
         if (transposed)
         {
             // A vertical edge: the samples of a line are consecutive samples of a row, 8 on each side of the edge for the
@@ -227,7 +232,7 @@ internal ref struct Av1LoopFilter
             for (var start = -half; start < half; start += 8)
             {
                 var first = position + start;
-                LoadTransposed(samples, first, lineStep, v.Slice(8 + start, 8));
+                TSimd.LoadTransposed(samples, first, lineStep, v.Slice(8 + start, 8));
             }
         }
         else
@@ -299,7 +304,7 @@ internal ref struct Av1LoopFilter
             // The rows are written back whole: the samples that no filter changed are written with their value
             for (var start = -loaded; start < loaded; start += 8)
             {
-                StoreTransposed(samples, position + start, lineStep, output.Slice(8 + start, 8));
+                TSimd.StoreTransposed(samples, position + start, lineStep, output.Slice(8 + start, 8));
             }
 
             return;
@@ -334,50 +339,6 @@ internal ref struct Av1LoopFilter
             samples[position + (2 * lineStep)] = (ushort)values.GetElement(2);
             samples[position + (3 * lineStep)] = (ushort)values.GetElement(3);
         }
-    }
-
-    // Loads 8 consecutive samples of 4 rows, from first, as 8 vectors of 4 lanes (one per row)
-    private static void LoadTransposed(Span<ushort> samples, int first, int lineStep, Span<Vector128<int>> columns)
-    {
-        var r0 = Vector128.Create(samples.Slice(first, 8));
-        var r1 = Vector128.Create(samples.Slice(first + lineStep, 8));
-        var r2 = Vector128.Create(samples.Slice(first + (2 * lineStep), 8));
-        var r3 = Vector128.Create(samples.Slice(first + (3 * lineStep), 8));
-        var t0 = AdvSimd.Arm64.TransposeEven(r0, r1).AsUInt32();
-        var t1 = AdvSimd.Arm64.TransposeOdd(r0, r1).AsUInt32();
-        var t2 = AdvSimd.Arm64.TransposeEven(r2, r3).AsUInt32();
-        var t3 = AdvSimd.Arm64.TransposeOdd(r2, r3).AsUInt32();
-
-        // Columns 0 and 4, 2 and 6, 1 and 5, 3 and 7
-        var u0 = AdvSimd.Arm64.TransposeEven(t0, t2).AsUInt16();
-        var u1 = AdvSimd.Arm64.TransposeOdd(t0, t2).AsUInt16();
-        var u2 = AdvSimd.Arm64.TransposeEven(t1, t3).AsUInt16();
-        var u3 = AdvSimd.Arm64.TransposeOdd(t1, t3).AsUInt16();
-        columns[0] = Vector128.WidenLower(u0).AsInt32();
-        columns[4] = Vector128.WidenUpper(u0).AsInt32();
-        columns[2] = Vector128.WidenLower(u1).AsInt32();
-        columns[6] = Vector128.WidenUpper(u1).AsInt32();
-        columns[1] = Vector128.WidenLower(u2).AsInt32();
-        columns[5] = Vector128.WidenUpper(u2).AsInt32();
-        columns[3] = Vector128.WidenLower(u3).AsInt32();
-        columns[7] = Vector128.WidenUpper(u3).AsInt32();
-    }
-
-    // The inverse of LoadTransposed
-    private static void StoreTransposed(Span<ushort> samples, int first, int lineStep, ReadOnlySpan<Vector128<int>> columns)
-    {
-        var u0 = Vector128.Narrow(columns[0].AsUInt32(), columns[4].AsUInt32()).AsUInt32();
-        var u1 = Vector128.Narrow(columns[2].AsUInt32(), columns[6].AsUInt32()).AsUInt32();
-        var u2 = Vector128.Narrow(columns[1].AsUInt32(), columns[5].AsUInt32()).AsUInt32();
-        var u3 = Vector128.Narrow(columns[3].AsUInt32(), columns[7].AsUInt32()).AsUInt32();
-        var t0 = AdvSimd.Arm64.TransposeEven(u0, u1).AsUInt16();
-        var t2 = AdvSimd.Arm64.TransposeOdd(u0, u1).AsUInt16();
-        var t1 = AdvSimd.Arm64.TransposeEven(u2, u3).AsUInt16();
-        var t3 = AdvSimd.Arm64.TransposeOdd(u2, u3).AsUInt16();
-        AdvSimd.Arm64.TransposeEven(t0, t1).CopyTo(samples.Slice(first, 8));
-        AdvSimd.Arm64.TransposeOdd(t0, t1).CopyTo(samples.Slice(first + lineStep, 8));
-        AdvSimd.Arm64.TransposeEven(t2, t3).CopyTo(samples.Slice(first + (2 * lineStep), 8));
-        AdvSimd.Arm64.TransposeOdd(t2, t3).CopyTo(samples.Slice(first + (3 * lineStep), 8));
     }
 
     // NarrowFilter on the lanes of selected: the samples p1 to q1 of the output

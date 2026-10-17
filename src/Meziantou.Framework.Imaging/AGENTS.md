@@ -1030,6 +1030,10 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 - Remove unnecessary decodes, conversions and copies before micro-optimizing. Profile first and keep the evidence.
 - Scalar kernels are the numerical reference. A vectorized kernel keeps its scalar version (`...Scalar`) and needs a
   test proving identical results (`VectorizedKernelTests`). No fused multiply-add in the DCTs.
+- A kernel that only has an `AdvSimd` path runs its scalar reference on x64. The AV1 vector kernels are generic over
+  `IAv1Simd`: `Av1AdvSimd` on Arm64, `Av1PortableSimd` (SSE where x64 has the instruction, `Vector128` otherwise)
+  elsewhere. The tests call the `Av1PortableSimd` instantiation directly, so Arm64 checks its `Vector128` form and x64
+  its SSE form.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize` and `Convolve` are
   parallel, and their result must not depend on the worker count. Decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).

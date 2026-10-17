@@ -656,6 +656,24 @@ public sealed class DrawingFuzzTests
         _ => NextDouble(random) * 20,
     };
 
+    /// <summary>
+    /// The radii of an arc to a point, which are scaled up until the arc reaches the point. In perspective, they are of the
+    /// same order: a thin ellipse through two points of the canvas is millions of pixels long, and a dashed pen draws as
+    /// many dashes where it converges on a horizon that a filtered layer shows.
+    /// </summary>
+    private static (double X, double Y) CreateArcRadii(FuzzRandom random)
+    {
+        var radiusX = CreateLength(random);
+        var radiusY = CreateLength(random);
+        if (s_isInPerspective && radiusX > 0 && radiusY > 0)
+        {
+            radiusX = Math.Max(radiusX, radiusY / 10);
+            radiusY = Math.Max(radiusY, radiusX / 10);
+        }
+
+        return (radiusX, radiusY);
+    }
+
     private static Rgba64 CreateColor(FuzzRandom random)
     {
         var alpha = random.Next(5) switch
@@ -857,8 +875,12 @@ public sealed class DrawingFuzzTests
                         builder.CubicBezierTo(CreatePoint(random, canvas), CreatePoint(random, canvas), CreatePoint(random, canvas));
                         break;
                     case 14 or 15:
-                        builder.ArcTo(CreateLength(random), CreateLength(random), CreateAngle(random), random.Chance(50), random.Chance(50), CreatePoint(random, canvas));
+                    {
+                        var (radiusX, radiusY) = CreateArcRadii(random);
+                        builder.ArcTo(radiusX, radiusY, CreateAngle(random), random.Chance(50), random.Chance(50), CreatePoint(random, canvas));
                         break;
+                    }
+
                     case 16:
                         builder.ArcTo(CreatePoint(random, canvas), CreateLength(random), CreateLength(random), CreateAngle(random), CreateAngle(random));
                         break;

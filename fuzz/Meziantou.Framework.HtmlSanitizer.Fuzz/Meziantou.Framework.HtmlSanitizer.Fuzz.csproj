@@ -1,0 +1,15 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.HtmlSanitizer. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <!-- The namespace of the library: a namespace Meziantou.Framework.HtmlSanitizer would hide the HtmlSanitizer class -->
+    <RootNamespace>Meziantou.Framework.Sanitizers.Fuzz</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.HtmlSanitizer\Meziantou.Framework.HtmlSanitizer.csproj" />
+  </ItemGroup>
+</Project>

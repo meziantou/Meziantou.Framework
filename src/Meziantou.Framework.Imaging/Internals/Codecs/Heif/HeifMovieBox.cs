@@ -618,7 +618,9 @@ internal sealed class HeifMovieBox : IDisposable
         ulong mediaDuration = 0;
         for (uint i = 0; i < durationCount; i++)
         {
-            var count = timeToSample.ReadUInt32();
+            // The counts of the runs add up to the number of samples: a run that goes beyond the last sample describes
+            // no other sample
+            var count = (uint)Math.Min(timeToSample.ReadUInt32(), sampleCount - covered);
             var delta = timeToSample.ReadUInt32();
             if (count is 0)
                 continue;

@@ -12,6 +12,10 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
     public static SnapshotType Webp { get; } = new("webp", "image/webp", "WebP image");
     public static SnapshotType Gif { get; } = new("gif", "image/gif", "GIF image");
     public static SnapshotType Ico { get; } = new("ico", "image/x-icon", "ICO image");
+    public static SnapshotType Avif { get; } = new("avif", "image/avif", "AVIF image");
+    public static SnapshotType Heic { get; } = new("heic", "image/heic", "HEIC image");
+    public static SnapshotType JpegXl { get; } = new("jxl", "image/jxl", "JPEG XL image");
+    public static SnapshotType Jpeg2000 { get; } = new("jp2", "image/jp2", "JPEG 2000 image");
 
     private static readonly Dictionary<string, SnapshotType> Cache = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -26,6 +30,10 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
         ["webp"] = Webp,
         ["gif"] = Gif,
         ["ico"] = Ico,
+        ["avif"] = Avif,
+        ["heic"] = Heic,
+        ["jxl"] = JpegXl,
+        ["jp2"] = Jpeg2000,
     };
 
     // Formats whose content is text. They are compared without regard to line endings or a leading UTF-8 byte
@@ -51,7 +59,8 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
     private static readonly HashSet<string> KnownBinaryTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "bin", "dat",
-        "png", "bmp", "jpeg", "jpg", "tiff", "tif", "webp", "gif", "ico", "avif", "heic", "heif",
+        "png", "apng", "bmp", "dib", "jpeg", "jpg", "tiff", "tif", "webp", "gif", "ico", "cur", "ani", "qoi", "tga", "icb", "vda", "vst",
+        "pnm", "pbm", "pgm", "ppm", "pam", "avif", "avifs", "heic", "heif", "heics", "heifs", "jxl", "jp2", "j2k", "j2c", "jpc", "jpx", "jpf", "jph", "jhc",
         "pdf", "zip", "gz", "tgz", "7z", "tar", "br", "zst", "nupkg", "snupkg",
         "docx", "xlsx", "pptx", "odt", "ods", "odp",
         "dll", "exe", "pdb", "so", "dylib", "wasm",

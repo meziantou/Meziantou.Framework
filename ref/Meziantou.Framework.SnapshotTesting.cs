@@ -254,13 +254,17 @@ namespace Meziantou.Framework.SnapshotTesting
 
     public sealed class SnapshotType : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotType>
     {
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType Avif { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Bmp { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Default { get => throw null; }
         public string? DisplayName { get => throw null; }
         public string FileExtension { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Gif { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType Heic { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Ico { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Jpeg { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType Jpeg2000 { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType JpegXl { get => throw null; }
         public string? MimeType { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType None { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Png { get => throw null; }

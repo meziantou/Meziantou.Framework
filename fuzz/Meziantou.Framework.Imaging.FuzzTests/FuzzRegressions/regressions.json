@@ -77,6 +77,28 @@
       "defect": "An animation whose first frame is a layer (no duration), without JPEG reconstruction data: JpegXlTranscoder.TryReconstructJpeg stops at the first frame, before any frame is counted, and JpegXlStructureParser built an ImageInfo with a frame count of 0, which threw ArgumentOutOfRangeException instead of returning false. Fixed in JpegXlStructureParser.CreateInfo (the count is unknown).",
       "expectedIdentify": "InvalidImageContentException",
       "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "jp2/missing-tiles-min",
+      "file": "jp2-missing-tiles.min.j2k",
+      "sha256": "f6b7c5b601aa1b9181dd24d5b0f14726ef45d163059a66a7ee1637c4bdf4ef8f",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group jp2-reversible, weekly campaign (run 39012479568), base seed 39012479568, 420 s, mutation 13013 of jp2/tiles-offsets (reader variant 235); minimized by FuzzMinimizer from 2437 to 132 bytes",
+      "defect": "A codestream of 8 tiles has the tile-parts of only 1 tile, the last one extending to the EOC marker: full identification threw InvalidImageContentException while the loads decoded the image. The walker reported its walk complete from the EOC marker on, so the decoder finished before the tiles the EOC marker completes were handed over and before the check that every tile is there. Fixed in Jpeg2000CodestreamWalker.IsComplete, which waits for the End event.",
+      "expectedIdentify": "InvalidImageContentException",
+      "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "jp2/ht-missing-tiles-min",
+      "file": "jp2-ht-missing-tiles.min.j2k",
+      "sha256": "bfee3184c2fbb6c2c14a48a3cd7698735034630082255e244755dc6caf49a78a",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group jp2-ht, weekly campaign (run 39012479568), base seed 39012479568, 420 s, mutation 272963 of jp2/ht-tiles (reader variant 235); minimized by FuzzMinimizer from 2599 to 2307 bytes",
+      "defect": "Same defect as jp2/missing-tiles-min with an HTJ2K codestream that has the tile-parts of 4 of its 6 tiles.",
+      "expectedIdentify": "InvalidImageContentException",
+      "expectedLoad": "InvalidImageContentException"
     }
   ]
 }

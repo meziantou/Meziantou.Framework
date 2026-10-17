@@ -40,18 +40,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Every fuzz/*.Fuzz project (Meziantou.Framework.Fuzzing.Tests checks that none is missing)
-        project:
-          - Meziantou.Framework.DependencyScanning.Fuzz
-          - Meziantou.Framework.Globbing.Fuzz
-          - Meziantou.Framework.HtmlSanitizer.Fuzz
-          - Meziantou.Framework.JsonPath.Fuzz
-          - Meziantou.Framework.Language.Fuzz
-          - Meziantou.Framework.SyntaxHighlighting.Fuzz
-          - Meziantou.Framework.TdsServer.Fuzz
-          - Meziantou.Framework.Toml.Fuzz
-          - Meziantou.Framework.Unicode.Fuzz
-          - Meziantou.Framework.Yaml.Fuzz
+        # Every fuzz/*.Fuzz project and the component label of its issues (Meziantou.Framework.Fuzzing.Tests checks that
+        # none is missing, here and in the report job)
+        include:
+          - { project: Meziantou.Framework.DependencyScanning.Fuzz, component: dependency-scanning }
+          - { project: Meziantou.Framework.Globbing.Fuzz, component: globbing }
+          - { project: Meziantou.Framework.HtmlSanitizer.Fuzz, component: html-sanitizer }
+          - { project: Meziantou.Framework.JsonPath.Fuzz, component: jsonpath }
+          - { project: Meziantou.Framework.Language.Fuzz, component: language }
+          - { project: Meziantou.Framework.SyntaxHighlighting.Fuzz, component: syntax-highlighting }
+          - { project: Meziantou.Framework.TdsServer.Fuzz, component: tds-server }
+          - { project: Meziantou.Framework.Toml.Fuzz, component: toml }
+          - { project: Meziantou.Framework.Unicode.Fuzz, component: unicode }
+          - { project: Meziantou.Framework.Yaml.Fuzz, component: yaml }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
@@ -96,7 +97,9 @@ jobs:
             !artifacts/fuzz/results/*/seeds/**
             !artifacts/fuzz/results/*/merged-corpus/**
 
+  # One job per project, so that the issues of each project get the label of its component
   report:
+    name: report (${{ matrix.project }})
     needs: [ fuzz ]
     if: always() && github.repository == 'meziantou/Meziantou.Framework'
     runs-on: ubuntu-26.04
@@ -104,15 +107,30 @@ jobs:
     permissions:
       contents: read
       issues: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { project: Meziantou.Framework.DependencyScanning.Fuzz, component: dependency-scanning }
+          - { project: Meziantou.Framework.Globbing.Fuzz, component: globbing }
+          - { project: Meziantou.Framework.HtmlSanitizer.Fuzz, component: html-sanitizer }
+          - { project: Meziantou.Framework.JsonPath.Fuzz, component: jsonpath }
+          - { project: Meziantou.Framework.Language.Fuzz, component: language }
+          - { project: Meziantou.Framework.SyntaxHighlighting.Fuzz, component: syntax-highlighting }
+          - { project: Meziantou.Framework.TdsServer.Fuzz, component: tds-server }
+          - { project: Meziantou.Framework.Toml.Fuzz, component: toml }
+          - { project: Meziantou.Framework.Unicode.Fuzz, component: unicode }
+          - { project: Meziantou.Framework.Yaml.Fuzz, component: yaml }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Download fuzz results
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
-          pattern: fuzz-results-*
+          # A pattern: a job that failed before uploading its results leaves no artifact
+          pattern: fuzz-results-${{ matrix.project }}
           path: fuzz-results
       - name: Open or update issues
-        run: ./eng/report-fuzz-crashes.ps1 -ResultsDirectory fuzz-results
+        run: ./eng/report-fuzz-crashes.ps1 -Project ${{ matrix.project }} -ResultsDirectory fuzz-results -Labels fuzzing, component:${{ matrix.component }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FUZZ_JOB_RESULT: ${{ needs.fuzz.result }}

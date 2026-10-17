@@ -3,17 +3,27 @@
 Opens an issue for each target that failed in the weekly SharpFuzz campaign (.github/workflows/fuzz.yml).
 
 .DESCRIPTION
-Reads the result.json and failure.md files that eng/run-fuzz.ps1 writes for each target. Each failed target gets an
-issue titled "Fuzzing: <target> failed", labeled "fuzzing" and "component:<library>", with the libFuzzer report, the
-failing input and the commands that reproduce it. When an open issue with the same title exists, the details are added
-to it as a comment instead. A failed campaign without any failed target (a build error, a job timeout) gets a single
+Reads the result.json and failure.md files that eng/run-fuzz.ps1 writes for each target of a fuzz project. Each failed
+target gets an issue titled "Fuzzing: <target> failed", with the libFuzzer report, the failing input and the commands
+that reproduce it. When an open issue with the same title and all the labels exists, the details are added to it as a
+comment instead. A failed campaign without any result for the project (a build error, a job timeout) gets a single
 issue pointing to the run.
 
 Reads GITHUB_SHA, RUN_URL and FUZZ_JOB_RESULT from the environment.
 #>
 param(
+    # The fuzz project, for instance Meziantou.Framework.Yaml.Fuzz
+    [Parameter(Mandatory)]
+    [string]$Project,
+
+    # The results of the project (the fuzz-results-<project> artifact)
     [Parameter(Mandatory)]
     [string]$ResultsDirectory,
+
+    # Labels of the issues, created when missing. An open issue with the same title and all these labels is commented
+    # on instead of opening another one.
+    [Parameter(Mandatory)]
+    [string[]]$Labels,
 
     # Writes the issues to this directory instead of calling gh
     [string]$DryRunDirectory
@@ -34,15 +44,16 @@ function Limit-Length([string]$Text) {
     return $Text.Substring(0, $MaxBodyLength) + "`n`n... (truncated, see the run: $RunUrl)"
 }
 
+# 'a,b' arrives as a single value through pwsh -File
+$Labels = @($Labels | ForEach-Object { $_ -split ',' } | ForEach-Object Trim | Where-Object { $_ })
 $issues = [System.Collections.Generic.List[object]]::new()
-foreach ($file in Get-ChildItem -Path $ResultsDirectory -Recurse -Filter 'result.json' | Sort-Object FullName) {
+$results = @(if (Test-Path -LiteralPath $ResultsDirectory) { Get-ChildItem -Path $ResultsDirectory -Recurse -Filter 'result.json' | Sort-Object FullName })
+foreach ($file in $results) {
     $result = Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json
     if (-not $result.failed) {
         continue
     }
 
-    # Meziantou.Framework.Yaml.Fuzz -> component:yaml
-    $component = 'component:' + ($result.project -replace '^Meziantou\.Framework\.', '' -replace '\.Fuzz$', '').ToLowerInvariant().Replace('.', '-')
     $failure = Join-Path $file.DirectoryName 'failure.md'
     $details = if (Test-Path -LiteralPath $failure) { Get-Content -LiteralPath $failure -Raw } else { "No failure report, see the run." }
     $body = [System.Text.StringBuilder]::new()
@@ -52,12 +63,14 @@ foreach ($file in Get-ChildItem -Path $ResultsDirectory -Recurse -Filter 'result
     [void]$body.AppendLine("- Commit: $Commit")
     [void]$body.AppendLine()
     [void]$body.AppendLine($details)
-    $issues.Add([pscustomobject]@{ Title = "Fuzzing: $($result.target) failed"; Labels = @('fuzzing', $component); Body = Limit-Length $body.ToString() })
+    $issues.Add([pscustomobject]@{ Title = "Fuzzing: $($result.target) failed"; Body = Limit-Length $body.ToString() })
 }
 
-if ($issues.Count -eq 0 -and $env:FUZZ_JOB_RESULT -eq 'failure') {
-    $body = "The weekly fuzzing campaign failed without a failed target in its results: a build error, an error of the tools, or a job timeout. See the run: $RunUrl`n`n- Commit: $Commit"
-    $issues.Add([pscustomobject]@{ Title = 'Fuzzing: the campaign failed without a reported target failure'; Labels = @('fuzzing'); Body = $body })
+# The job of a project always uploads the results of the targets it fuzzed; none means it failed before (FUZZ_JOB_RESULT
+# is the result of all the jobs, so it says that some project failed, not which one)
+if ($results.Count -eq 0 -and $env:FUZZ_JOB_RESULT -eq 'failure') {
+    $body = "The weekly fuzzing campaign of ``fuzz/$Project`` failed without any target result: a build error, an error of the tools, or a job timeout. See the run: $RunUrl`n`n- Commit: $Commit"
+    $issues.Add([pscustomobject]@{ Title = "Fuzzing: the campaign of $Project failed without a reported target failure"; Body = $body })
 }
 
 if ($issues.Count -eq 0) {
@@ -70,7 +83,7 @@ if ($DryRunDirectory) {
     $index = 0
     foreach ($issue in $issues) {
         $index++
-        Set-Content -LiteralPath (Join-Path $DryRunDirectory "issue-$index.md") -Value "# $($issue.Title)`n`nLabels: $($issue.Labels -join ', ')`n`n$($issue.Body)"
+        Set-Content -LiteralPath (Join-Path $DryRunDirectory "issue-$index.md") -Value "# $($issue.Title)`n`nLabels: $($Labels -join ', ')`n`n$($issue.Body)"
     }
 
     Write-Host "$($issues.Count) issue(s) written to $DryRunDirectory"
@@ -89,11 +102,12 @@ if ($LASTEXITCODE -ne 0) {
     throw "gh label list failed with exit code $LASTEXITCODE"
 }
 
-foreach ($label in $issues.Labels | Sort-Object -Unique | Where-Object { $_ -cnotin $existingLabels }) {
+foreach ($label in $Labels | Where-Object { $_ -cnotin $existingLabels }) {
     Invoke-Gh label create $label --description 'Added to the issues of the weekly fuzzing campaign'
 }
 
-$openIssues = gh issue list --label fuzzing --state open --limit 500 --json number,title | ConvertFrom-Json
+$labelArguments = $Labels | ForEach-Object { '--label', $_ }
+$openIssues = gh issue list @labelArguments --state open --limit 500 --json number,title | ConvertFrom-Json
 if ($LASTEXITCODE -ne 0) {
     throw "gh issue list failed with exit code $LASTEXITCODE"
 }
@@ -109,7 +123,6 @@ foreach ($issue in $issues) {
         }
         else {
             Write-Host "Opening: $($issue.Title)"
-            $labelArguments = $issue.Labels | ForEach-Object { '--label', $_ }
             Invoke-Gh issue create --title $issue.Title --body-file $bodyFile @labelArguments
         }
     }

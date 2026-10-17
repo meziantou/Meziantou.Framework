@@ -4571,6 +4571,18 @@ jobs:
         Assert.Empty(result);
     }
 
+    [Theory]
+    [InlineData("jobs:\n  build:\n    steps:\n      - uses: &a")]
+    [InlineData("jobs:\n  build:\n    steps:\n      - uses: &a\n")]
+    [InlineData("jobs:\n  build:\n    steps:\n      - uses:")]
+    [InlineData("jobs:\n  build:\n    steps:\n      - uses: ''")]
+    public async Task GitHubActions_EmptyUses_NoDependency(string content)
+    {
+        AddFile(".github/workflows/sample.yml", content);
+        var result = await GetDependencies<GitHubActionsScanner>();
+        Assert.Empty(result);
+    }
+
     [Fact]
     public async Task GitHubActions_ImageReferencesAndLocalActions()
     {
@@ -6204,6 +6216,22 @@ jobs:
         Assert.Equal("@bitnami", redis.Metadata["repository"]);
         Assert.Equal("cache", redis.Metadata["alias"]);
         Assert.Null(Assert.Single(result, d => d.Name == "local-chart").Metadata["repository"]);
+    }
+
+    [Fact]
+    public async Task HelmChartsDependencies_EmptyVersions()
+    {
+        // An empty plain scalar has no source text. At the end of a file without a final line break, the parser marks it on the line after the last one.
+        AddFile("Chart.yaml", "dependencies:\n- name: nginx\n  version: \"\"\n- name: redis\n  version: &v");
+
+        var result = await GetDependencies<HelmChartDependencyScanner>();
+
+        Assert.HasCount(2, result);
+        AssertContainDependency(result,
+            (DependencyType.HelmChart, "nginx", "", 3, 13),
+            (DependencyType.HelmChart, "redis", "", 0, 0));
+        Assert.True(Assert.Single(result, d => d.Name == "nginx").VersionLocation!.IsUpdatable);
+        Assert.False(Assert.Single(result, d => d.Name == "redis").VersionLocation!.IsUpdatable);
     }
 
     [Fact]

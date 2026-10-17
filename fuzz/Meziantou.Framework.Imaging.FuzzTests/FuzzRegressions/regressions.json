@@ -154,6 +154,17 @@
       "defect": "Same defect as avif/stts-beyond-samples: a run of 1,728,053,249 samples for a track of 6 under an edit list that selects parts of the media made full identification exceed the frame limit while the loads decoded 6 images.",
       "expectedIdentify": "success",
       "expectedLoad": "success"
+    },
+    {
+      "id": "heic/ctts-first-presentation-not-first-sample",
+      "file": "heic-ctts-first-presentation-not-first-sample.heics",
+      "sha256": "8b5c528eed3459893675e7244f11554a0fd37480d4534a5921b73e3b6d58716d",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group heic-sequence, weekly campaign (run 39012479568), base seed 39012479568, 420 s, mutation 69864 of invalid/heic/sequence-ctts-collision (reader variant 64); not reducible by FuzzMinimizer, which moves the offsets of the container",
+      "defect": "The first sample of the track is presented last (composition offset 67,108,868) and the only edit starts at the presentation time of the second one: header identification, which locates the first sample only, took its time for the first presentation time and threw UnsupportedImageFeatureException while full identification and the loads accepted the edit list. Fixed in HeifMovieBox: the first presentation time is the smallest one of every sample, located or not.",
+      "expectedIdentify": "success",
+      "expectedLoad": "success"
     }
   ]
 }

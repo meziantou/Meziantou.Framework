@@ -189,10 +189,10 @@ internal sealed class HeifTrack : IDisposable
     }
 
     /// <summary>
-    /// Gets the presentation time of the first image, in units of <see cref="Timescale"/>: 0 for a track whose samples are in
-    /// presentation order.
+    /// Gets or sets the presentation time of the first image, in units of <see cref="Timescale"/>: the smallest one of every
+    /// sample of the track, located or not; 0 for a track whose samples are in presentation order.
     /// </summary>
-    public long FirstPresentationTime => _presentationTimes is { Length: > 0 } times ? times.Span[0] : 0;
+    public long FirstPresentationTime { get; set; }
 
     /// <summary>Gets or sets the duration of the located sample that is presented last, in units of <see cref="Timescale"/>.</summary>
     public uint LastPresentedDuration { get; set; }

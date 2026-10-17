@@ -60,6 +60,17 @@ internal abstract class ImageEncoderSession : IDisposable
     {
     }
 
+    /// <summary>
+    /// Receives every image of an eager save once each of them passed <see cref="ValidateFrame"/>, before anything is written.
+    /// These are the images the save writes next, unchanged and in this order: a session may keep references to them until
+    /// it writes its header (for example to choose a layout that fits all of them). A sequential writer never calls it.
+    /// </summary>
+    /// <param name="poster">The separate poster frame, or <see langword="null"/>.</param>
+    /// <param name="frames">The displayed frames.</param>
+    public virtual void PlanFrames(ImageFrame? poster, IReadOnlyList<ImageFrame> frames)
+    {
+    }
+
     /// <summary>Starts writing the separate poster frame (before frame zero).</summary>
     /// <param name="frame">The poster, borrowed until the operation completes. Its duration is ignored.</param>
     public abstract void BeginPosterFrame(ImageFrame frame);

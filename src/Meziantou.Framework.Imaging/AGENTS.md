@@ -108,6 +108,22 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   the format reference of `readme.md`. A format that is also written adds an encoder codec in `ImageEncoderRegistry`, a
   public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (none
   today) makes `ImageEncoder.FromPath` reject its extensions with a message that says so.
+- **PNG `MinimumSize`** (`PngOptimizedEncoderSession`, a session of its own): the default session must keep writing the
+  same bytes, so the search never goes through it. Candidates are compressed to a byte counter
+  (`PngImageDataEncoder.StartSource` with `count: true`), in bands, and the winner is compressed again for real; nothing
+  is buffered. Every still image keeps the layout of the pixel format among the candidates and the level of the default
+  encoder among the trials, so it is never larger than the default output (the conformance suite asserts it for the
+  corpus, animations included). Keep these findings:
+  - A lower zlib level is sometimes smaller than `SmallestSize` (zlib-ng uses other match strategies): the last stage
+    tries `Fastest`, `Optimal` and `SmallestSize`.
+  - FFmpeg 9 misplaces the packed samples (1, 2 and 4 bits) of an APNG frame region that does not start at column 0, even
+    on a byte boundary; full-canvas frames are fine. Animations therefore use 8-bit samples at least.
+  - FFmpeg's conversion of 8-bit PNG output to `rgba64le` is not exact (errors of a few units): the interoperability
+    tests ask FFmpeg for the native layout of the file (`PngEncoderInteropTests.GetNativeRawFormat`) and widen it
+    themselves.
+  - The harness reader decodes every color type and bit depth to 16-bit RGBA and composites APNG frames
+    (`ReferencePng.Canonical.cs`), rejecting any OVER pixel whose result depends on the rounding of a decoder; verify
+    `MinimumSize` output with `OptimizedPngOutputVerifier`, never with `ApngOutputVerifier` (full-canvas frames only).
 - **HEIF container** (`Internals/Codecs/Heif`), shared by AVIF and HEIC: there is one implementation of the container
   rules. The walker (`HeifStructureParser`) resolves the image (`HeifImagePlan`, from the `meta` box) or the image
   sequence (`HeifMovieBox`, from the `moov` box) before any data is read, then captures the items or samples as their

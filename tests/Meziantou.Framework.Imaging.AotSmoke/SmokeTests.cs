@@ -44,6 +44,14 @@ internal static class SmokeTests
         // It never reduces colors: more than 256 of them are rejected
         using var manyColors = CreatePattern(seed: 1);
         Expect<UnsupportedImageFeatureException>(() => Encode(manyColors, new PngEncoder { PixelLayout = PngPixelLayout.Indexed }));
+
+        // The smallest layout, filters and zlib level, chosen by compressing the candidates: the pixels are stored exactly
+        var smallest = Encode(fewColors, new PngEncoder { Optimization = PngOptimization.MinimumSize });
+        Check(smallest.Length <= Encode(fewColors, new PngEncoder()).Length, "PNG minimum size");
+        using (var decoded = Image.Load<Rgba32>(smallest))
+        {
+            CheckEqual(fewColors, decoded, "PNG minimum size round trip");
+        }
     }
 
     public static void Apng()
@@ -62,6 +70,12 @@ internal static class SmokeTests
         Check(Image.Identify(indexed).ColorModel == ImageColorModel.Indexed, "APNG palette identification");
         using var indexedDecoded = Image.Load<Rgba32>(indexed);
         CheckEqual(fewColors, indexedDecoded, "APNG palette round trip");
+
+        // Minimum size: frame regions, blending and disposals chosen by compressing the candidates
+        var smallest = Encode(animation, new PngEncoder { AnimationMode = PngAnimationMode.Animated, Optimization = PngOptimization.MinimumSize });
+        using var smallestDecoded = Image.Load<Rgba32>(smallest);
+        Check(smallestDecoded.Frames.Count == 3 && smallestDecoded.Animation?.TotalPlays == 2, "APNG minimum size frames and plays");
+        CheckEqual(animation, smallestDecoded, "APNG minimum size round trip");
     }
 
     public static void Gif()

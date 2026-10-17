@@ -8,11 +8,14 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// By default the PNG color type and bit depth follow the pixel format: grayscale for <see cref="Gray8"/>/<see cref="Gray16"/>,
 /// RGB for <see cref="Rgb24"/>, RGBA for <see cref="Rgba32"/>/<see cref="Bgra32"/>, and 16-bit samples for
 /// <see cref="Rgba64"/> and <see cref="Gray16"/>. <see cref="PngPixelLayout.Indexed"/> writes a palette instead, for the
-/// images whose colors it can hold exactly. Encoding never reduces precision, never reduces colors and never drops alpha.
+/// images whose colors it can hold exactly. <see cref="PngOptimization.MinimumSize"/> chooses the layout, the filters and
+/// the animation frame rectangles that give the smallest file instead. Encoding never reduces precision, never reduces
+/// colors and never drops alpha.
 /// </para>
 /// <para>
-/// Animated output is written as full-canvas frames with freshly computed control data; delta information from a decoded
-/// source is never reused. PNG and APNG writers require <see cref="ImageWriterOptions.ExpectedFrameCount"/>.
+/// Animated output is written with freshly computed control data: full-canvas frames by default, or the rectangles that
+/// changed with <see cref="PngOptimization.MinimumSize"/>; delta information from a decoded source is never reused. PNG
+/// and APNG writers require <see cref="ImageWriterOptions.ExpectedFrameCount"/>.
 /// </para>
 /// </remarks>
 public sealed class PngEncoder : ImageEncoder
@@ -48,7 +51,24 @@ public sealed class PngEncoder : ImageEncoder
         }
     }
 
-    /// <summary>Gets the zlib compression level. Defaults to <see cref="System.IO.Compression.CompressionLevel.Optimal"/>.</summary>
+    /// <summary>Gets the optimization mode. Defaults to <see cref="PngOptimization.None"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="PngOptimization"/>.</exception>
+    public PngOptimization Optimization
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The optimization mode is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the zlib compression level. Defaults to <see cref="System.IO.Compression.CompressionLevel.Optimal"/>. Ignored by
+    /// <see cref="PngOptimization.MinimumSize"/>, which tries several levels and keeps the smallest data.
+    /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="System.IO.Compression.CompressionLevel"/>.</exception>
     public CompressionLevel CompressionLevel
     {

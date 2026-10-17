@@ -37,6 +37,23 @@ internal sealed class TextLayoutEngine
 {
     private const int SoftHyphen = 0x00AD;
 
+    private static readonly uint Vert = ShapingFeature.ToTag("vert");
+    private static readonly uint Vrt2 = ShapingFeature.ToTag("vrt2");
+    private static readonly uint Vrtr = ShapingFeature.ToTag("vrtr");
+
+    // The forms of a font that are half, a third and a quarter of an em wide
+    private static readonly uint[] WidthFeatures = [ShapingFeature.ToTag("hwid"), ShapingFeature.ToTag("twid"), ShapingFeature.ToTag("qwid")];
+
+    // The features of a horizontal line that have a counterpart for a vertical line
+    private static readonly (uint Horizontal, uint Vertical)[] DirectionalFeatures =
+    [
+        (ShapingFeature.ToTag("kern"), ShapingFeature.ToTag("vkrn")),
+        (ShapingFeature.ToTag("palt"), ShapingFeature.ToTag("vpal")),
+        (ShapingFeature.ToTag("halt"), ShapingFeature.ToTag("vhal")),
+        (ShapingFeature.ToTag("chws"), ShapingFeature.ToTag("vchw")),
+        (ShapingFeature.ToTag("hkna"), ShapingFeature.ToTag("vkna")),
+    ];
+
     /// <summary>The fewest characters of the text after a line that are shaped again for the next line.</summary>
     private const int MinShapingLength = 64;
 
@@ -62,7 +79,8 @@ internal sealed class TextLayoutEngine
     // A vertical line has a central baseline, in its middle, unless all of its text is on its side: it is then a
     // horizontal line turned, with the baseline of one.
     private readonly bool _hasCentralBaseline;
-    private readonly Dictionary<(FontFace Face, int CodePoint), bool> _verticalForms = [];
+    private readonly Dictionary<(FontFace Face, int CodePoint, bool UsesRotatedForms), bool> _verticalForms = [];
+    private readonly List<ShapingFeature> _features = [];
     private GlyphBuffer? _probeBuffer;
     private readonly ShapingCache _shapingCache = new();
     private GlyphScratch? _scratch;
@@ -202,6 +220,13 @@ internal sealed class TextLayoutEngine
 
         paragraph.Advances = new double[content.Length];
         Itemize(paragraph);
+
+        // A line never ends inside a text set in the room of one upright character
+        if (paragraph.CombinedEnds.Length != 0)
+        {
+            paragraph.Breaks.RemoveAll(position => IsInsideCombined(paragraph, position));
+        }
+
         foreach (var item in paragraph.Items)
         {
             Shape(paragraph, item);
@@ -243,18 +268,47 @@ internal sealed class TextLayoutEngine
             scripts.AsSpan(run.Index, run.Length).Fill(run.Script);
         }
 
+        // The texts set horizontally in the room of one upright character: each one is one item, of one font, one
+        // script and one level, and is shaped in the direction of its first character.
+        var combined = FindCombinedRanges(paragraph);
+        paragraph.CombinedEnds = combined;
+        var combinedRightToLeft = combined.Length == 0 ? [] : new bool[content.Length];
+
         // The font of each character: the one chosen for its grapheme cluster. In a vertical line, whether the
         // cluster is upright.
         var upright = _isVertical ? new bool[content.Length] : [];
         var fonts = new int[content.Length];
         for (var i = 0; i < content.Length;)
         {
+            if (combined.Length != 0 && combined[i] != 0)
+            {
+                var end = combined[i] - paragraph.Start;
+                var combinedStyle = _spans[FindSpan(paragraph.Start + i)].Style;
+                fonts.AsSpan(i, end - i).Fill(SelectFont(combinedStyle.Fonts, content[i..end]));
+                var script = scripts[i];
+                foreach (var candidate in scripts.AsSpan(i, end - i))
+                {
+                    if (candidate is not (UnicodeScript.Common or UnicodeScript.Inherited))
+                    {
+                        script = candidate;
+                        break;
+                    }
+                }
+
+                scripts.AsSpan(i, end - i).Fill(script);
+                upright.AsSpan(i, end - i).Fill(value: true);
+                combinedRightToLeft[i] = (paragraph.Levels[i] & 1) != 0;
+                paragraph.Levels.AsSpan(i, end - i).Fill((byte)(paragraph.Levels[i] + (paragraph.Levels[i] & 1)));
+                i = end;
+                continue;
+            }
+
             // A cluster that two spans share is cut where the span changes: each span has its own fonts.
             var length = Math.Max(Unicode.GetGraphemeClusterLength(content[i..]), 1);
             var span = _spans[FindSpan(paragraph.Start + i)];
             length = Math.Min(length, span.Start + span.Length - (paragraph.Start + i));
             fonts.AsSpan(i, length).Fill(SelectFont(span.Style.Fonts, content.Slice(i, length)));
-            if (_isVertical && !span.IsPlaceholder && IsUpright(span.Style.Fonts.FontSpan[fonts[i]], content.Slice(i, length)))
+            if (_isVertical && !span.IsPlaceholder && IsUpright(span.Style.Fonts.FontSpan[fonts[i]], content.Slice(i, length), UsesRotatedForms(span.Style)))
             {
                 // Upright text goes down the line whatever is around it: among right-to-left text, which goes
                 // up, it keeps the order of the text, as a number does
@@ -283,9 +337,12 @@ internal sealed class TextLayoutEngine
                 }
             }
 
+            // A combined text is one item, whatever it holds
+            var isCombinedBoundary = !isEnd && combined.Length != 0 && combined[i] != combined[i - 1];
+            var isInsideCombined = !isEnd && combined.Length != 0 && combined[i] != 0 && !isCombinedBoundary;
             if (isEnd
-                || content[i] == '\t'
-                || content[i - 1] == '\t'
+                || isCombinedBoundary
+                || (!isInsideCombined && (content[i] == '\t' || content[i - 1] == '\t'))
                 || paragraph.Levels[i] != paragraph.Levels[start]
                 || scripts[i] != scripts[start]
                 || fonts[i] != fonts[start]
@@ -293,6 +350,7 @@ internal sealed class TextLayoutEngine
                 || (nextSpan != span && (_spans[span].IsPlaceholder || _spans[nextSpan].IsPlaceholder || !AreShapedTogether(_spans[span].Style, _spans[nextSpan].Style))))
             {
                 var style = _spans[span].Style;
+                var isCombined = combined.Length != 0 && combined[start] != 0;
                 paragraph.Items.Add(new Item
                 {
                     Start = paragraph.Start + start,
@@ -301,9 +359,11 @@ internal sealed class TextLayoutEngine
                     Font = style.Fonts.FontSpan[fonts[start]],
                     Level = paragraph.Levels[start],
                     Script = scripts[start],
-                    IsTabulation = content[start] == '\t',
+                    IsTabulation = content[start] == '\t' && !isCombined,
                     Placeholder = _spans[span].IsPlaceholder ? span : -1,
                     IsUpright = _isVertical && upright[start],
+                    IsCombined = isCombined,
+                    IsCombinedRightToLeft = isCombined && combinedRightToLeft[start],
                 });
                 start = i;
             }
@@ -317,11 +377,17 @@ internal sealed class TextLayoutEngine
     /// the Vertical_Orientation property of its first character (UAX #50).
     /// </summary>
     /// <remarks>
+    /// <para>
     /// A character the standard sets on its side unless the font has a vertical form for it (<c>Tr</c>: brackets, the
     /// long vowel mark) is upright when the vertical forms of the font replace its glyph, and on its side otherwise:
     /// its horizontal glyph, turned, is then the form a vertical line needs.
+    /// </para>
+    /// <para>
+    /// With the rotated forms of the font (<c>vrt2</c>), which replace the vertical forms, a character the standard
+    /// sets on its side is upright too when the font has a rotated glyph for it: the glyph is already turned.
+    /// </para>
     /// </remarks>
-    private bool IsUpright(Font font, ReadOnlySpan<char> cluster)
+    private bool IsUpright(Font font, ReadOnlySpan<char> cluster, bool usesRotatedForms)
     {
         if (_orientation != TextOrientation.Mixed)
             return _orientation == TextOrientation.Upright;
@@ -337,12 +403,15 @@ internal sealed class TextLayoutEngine
             case UnicodeVerticalOrientation.TransformedRotated:
                 break;
 
+            case UnicodeVerticalOrientation.Rotated when usesRotatedForms:
+                break;
+
             default:
                 return false;
         }
 
         var face = font.Face;
-        if (_verticalForms.TryGetValue((face, rune.Value), out var hasVerticalForm))
+        if (_verticalForms.TryGetValue((face, rune.Value, usesRotatedForms), out var hasVerticalForm))
             return hasVerticalForm;
 
         // The character alone, shaped for a vertical line: its glyph is another one when the font has a form for it
@@ -352,12 +421,105 @@ internal sealed class TextLayoutEngine
             var buffer = _probeBuffer ??= new GlyphBuffer(_limits);
             buffer.Clear();
             buffer.Add(rune.Value, 0);
-            TextShaper.Shape(buffer, face, UnicodeScripts.GetScript(rune.Value), [], isRightToLeft: false, [], isVertical: true, GetScratch(face), _shapingCache);
+            ReadOnlySpan<ShapingFeature> features = usesRotatedForms ? [new ShapingFeature(Vrt2, 1), new ShapingFeature(Vert, 0)] : [];
+            TextShaper.Shape(buffer, face, UnicodeScripts.GetScript(rune.Value), [], isRightToLeft: false, features, isVertical: true, GetScratch(face), _shapingCache);
             hasVerticalForm = buffer.Length == 1 && buffer.Info[0].Glyph != glyph;
         }
 
-        _verticalForms.Add((face, rune.Value), hasVerticalForm);
+        _verticalForms.Add((face, rune.Value, usesRotatedForms), hasVerticalForm);
         return hasVerticalForm;
+    }
+
+    /// <summary>Determines whether a style uses the rotated forms of its fonts in vertical lines: the last setting of the feature <c>vrt2</c> turns it on.</summary>
+    private static bool UsesRotatedForms(TextStyle style)
+    {
+        var value = 0;
+        foreach (var feature in style.Features)
+        {
+            if (feature.TagValue == Vrt2)
+            {
+                value = feature.Value;
+            }
+        }
+
+        return value != 0;
+    }
+
+    /// <summary>
+    /// Finds the texts of a paragraph that are set horizontally in the room of one upright character of a vertical line
+    /// (tate-chu-yoko): the text of each span of a style that is combined upright, and the short runs of digits the
+    /// options combine.
+    /// </summary>
+    /// <returns>
+    /// For each character of the paragraph, the end of the combined text it is in, or 0; empty when the paragraph has
+    /// no combined text.
+    /// </returns>
+    private int[] FindCombinedRanges(Paragraph paragraph)
+    {
+        if (!_hasCentralBaseline)
+            return [];
+
+        var digits = _options.CombineUprightDigits;
+        int[]? ends = null;
+        for (var index = FindSpan(paragraph.Start); index < _spans.Length && _spans[index].Start < paragraph.End; index++)
+        {
+            var span = _spans[index];
+            var start = Math.Max(span.Start, paragraph.Start);
+            var end = Math.Min(span.Start + span.Length, paragraph.End);
+            if (span.IsPlaceholder || start >= end)
+                continue;
+
+            if (span.Style.IsCombinedUpright)
+            {
+                ends ??= new int[paragraph.End - paragraph.Start];
+                ends.AsSpan(start - paragraph.Start, end - start).Fill(end);
+                continue;
+            }
+
+            if (digits == 0)
+                continue;
+
+            for (var i = start; i < end;)
+            {
+                if (!char.IsAsciiDigit(_text[i]))
+                {
+                    i++;
+                    continue;
+                }
+
+                var runEnd = i + 1;
+                while (runEnd < end && char.IsAsciiDigit(_text[runEnd]))
+                {
+                    runEnd++;
+                }
+
+                // A run of digits that continues in another span is not combined, nor one that is too long
+                var isWhole = (i == paragraph.Start || !char.IsAsciiDigit(_text[i - 1])) && (runEnd == paragraph.End || !char.IsAsciiDigit(_text[runEnd]));
+                if (isWhole && runEnd - i <= digits)
+                {
+                    ends ??= new int[paragraph.End - paragraph.Start];
+                    ends.AsSpan(i - paragraph.Start, runEnd - i).Fill(runEnd);
+                }
+
+                i = runEnd;
+            }
+        }
+
+        return ends ?? [];
+    }
+
+    /// <summary>Determines whether a position of a paragraph is inside a text set in the room of one upright character: a line never ends there.</summary>
+    private static bool IsInsideCombined(Paragraph paragraph, int position)
+        => paragraph.CombinedEnds.Length != 0 && position > paragraph.Start && position < paragraph.End && paragraph.CombinedEnds[position - 1 - paragraph.Start] > position;
+
+    /// <summary>Gets the end of the unit of text at a position: its grapheme cluster, or the text set in the room of one upright character that starts there.</summary>
+    private static int GetUnitEnd(Paragraph paragraph, ReadOnlySpan<char> text, int position)
+    {
+        var index = position - paragraph.Start;
+        if ((uint)index < (uint)paragraph.CombinedEnds.Length && paragraph.CombinedEnds[index] != 0)
+            return Math.Min(paragraph.CombinedEnds[index], text.Length);
+
+        return position + Math.Max(Unicode.GetGraphemeClusterLength(text[position..]), 1);
     }
 
     /// <summary>Gets the working storage that measures the outlines of a font without vertical origins.</summary>
@@ -500,41 +662,19 @@ internal sealed class TextLayoutEngine
             return;
         }
 
-        _buffer.Clear();
-        var text = _text.AsSpan(item.Start, item.End - item.Start);
-        var lastCluster = item.Start;
-        for (var i = 0; i < text.Length;)
+        if (item.IsCombined)
         {
-            Rune.DecodeFromUtf16(text[i..], out var rune, out var consumed);
-            if (!IsControl(rune.Value))
-            {
-                lastCluster = item.Start + i;
-                _buffer.Add(rune.Value, lastCluster);
-            }
-
-            i += consumed;
+            ShapeCombined(paragraph, item);
+            return;
         }
 
-        // What a line adds after its last character (a hyphen, an ellipsis) belongs to the cluster of that character.
-        if (suffix is not null)
-        {
-            foreach (var rune in suffix.EnumerateRunes())
-            {
-                _buffer.Add(rune.Value, lastCluster);
-            }
-        }
-
+        FillBuffer(item, suffix);
         if (_buffer.Length == 0)
             return;
 
         var style = item.Style;
         var isRightToLeft = (item.Level & 1) != 0;
-        Span<ShapingFeature> features = style.Features.Count <= 16 ? stackalloc ShapingFeature[style.Features.Count] : new ShapingFeature[style.Features.Count];
-        for (var i = 0; i < features.Length; i++)
-        {
-            features[i] = new ShapingFeature(style.Features[i].TagValue, style.Features[i].Value);
-        }
-
+        var features = GetFeatures(style, !_isVertical ? ShapingOrientation.Horizontal : item.IsUpright ? ShapingOrientation.Upright : ShapingOrientation.Sideways);
         TextShaper.Shape(_buffer, item.Font.Face, item.Script, style.LanguageTags, isRightToLeft, features, item.IsUpright, item.IsUpright ? GetScratch(item.Font.Face) : null, _shapingCache);
         var scale = GetSize(style) / item.Font.UnitsPerEm;
         var info = _buffer.Info;
@@ -552,6 +692,7 @@ internal sealed class TextLayoutEngine
                 XOffset = (item.IsUpright ? -positions[i].YOffset : positions[i].XOffset) * scale,
                 YOffset = (item.IsUpright ? positions[i].XOffset : positions[i].YOffset) * scale,
                 IsInvisible = info[i].IsIgnorable,
+                WidthScale = 1,
             });
         }
 
@@ -575,6 +716,175 @@ internal sealed class TextLayoutEngine
         {
             paragraph.Advances[Math.Clamp(glyph.Cluster, item.Start, item.End - 1) - paragraph.Start] += glyph.Advance;
         }
+    }
+
+    /// <summary>Puts the characters of an item in the buffer of the shaper, with what a line adds after its last character.</summary>
+    private void FillBuffer(Item item, string? suffix)
+    {
+        _buffer.Clear();
+        var text = _text.AsSpan(item.Start, item.End - item.Start);
+        var lastCluster = item.Start;
+        for (var i = 0; i < text.Length;)
+        {
+            Rune.DecodeFromUtf16(text[i..], out var rune, out var consumed);
+            if (!IsControl(rune.Value))
+            {
+                lastCluster = item.Start + i;
+                _buffer.Add(rune.Value, lastCluster);
+            }
+
+            i += consumed;
+        }
+
+        // What a line adds after its last character (a hyphen, an ellipsis) belongs to the cluster of that character.
+        if (suffix is not null)
+        {
+            foreach (var rune in suffix.EnumerateRunes())
+            {
+                _buffer.Add(rune.Value, lastCluster);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the features a run is shaped with: those of its style and, in a vertical line, those of its orientation.
+    /// </summary>
+    /// <remarks>
+    /// In a vertical line, the features of a style that have a counterpart in the other direction are applied as
+    /// that counterpart where the glyphs go the other way: <c>kern</c> is <c>vkrn</c> for upright glyphs, and
+    /// <c>vkrn</c> is <c>kern</c> for the glyphs of a horizontal run. The forms of upright glyphs (<c>vert</c>,
+    /// <c>vrt2</c>) are not applied to the glyphs of a horizontal run, and the forms of turned glyphs (<c>vrtr</c>)
+    /// are only applied to the glyphs that are turned on their side: by default, unless the style uses the rotated
+    /// forms of the font (<c>vrt2</c>), which replace both the vertical forms and the turning of the glyphs.
+    /// </remarks>
+    private ReadOnlySpan<ShapingFeature> GetFeatures(TextStyle style, ShapingOrientation orientation)
+    {
+        _features.Clear();
+        if (orientation == ShapingOrientation.Horizontal)
+        {
+            foreach (var feature in style.Features)
+            {
+                _features.Add(new ShapingFeature(feature.TagValue, feature.Value));
+            }
+
+            return System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_features);
+        }
+
+        var isUpright = orientation == ShapingOrientation.Upright;
+        var usesRotatedForms = UsesRotatedForms(style);
+        if (orientation == ShapingOrientation.Sideways && !usesRotatedForms)
+        {
+            _features.Add(new ShapingFeature(Vrtr, 1));
+        }
+
+        foreach (var feature in style.Features)
+        {
+            var tag = feature.TagValue;
+            if (isUpright ? tag == Vrtr : tag == Vert || tag == Vrt2 || (orientation == ShapingOrientation.Combined && tag == Vrtr))
+                continue;
+
+            foreach (var (horizontal, vertical) in DirectionalFeatures)
+            {
+                if (tag == (isUpright ? horizontal : vertical))
+                {
+                    tag = isUpright ? vertical : horizontal;
+                    break;
+                }
+            }
+
+            _features.Add(new ShapingFeature(tag, feature.Value));
+        }
+
+        if (isUpright && usesRotatedForms)
+        {
+            _features.Add(new ShapingFeature(Vert, 0));
+        }
+
+        return System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_features);
+    }
+
+    /// <summary>
+    /// Shapes a text that is set horizontally in the room of one upright character of a vertical line
+    /// (tate-chu-yoko): its glyphs are those of a horizontal line, centered across the line and on the middle of one
+    /// em down the line, and they are one cluster that advances by one em.
+    /// </summary>
+    /// <remarks>
+    /// A text wider than one em takes the forms its font has for half, a third or a quarter of an em when it has two,
+    /// three or four characters, and is narrowed to one em if it is still too wide. In the coordinates of the line,
+    /// what is along the baseline of the glyphs is across the line, toward its top side, and what is above it is
+    /// toward the top of the line.
+    /// </remarks>
+    private void ShapeCombined(Paragraph paragraph, Item item)
+    {
+        FillBuffer(item, suffix: null);
+        if (_buffer.Length == 0)
+            return;
+
+        var style = item.Style;
+        var face = item.Font.Face;
+        var size = GetSize(style);
+        var scale = size / item.Font.UnitsPerEm;
+        var characterCount = _buffer.Length;
+        var features = GetFeatures(style, ShapingOrientation.Combined);
+        TextShaper.Shape(_buffer, face, item.Script, style.LanguageTags, item.IsCombinedRightToLeft, features, isVertical: false, scratch: null, _shapingCache);
+        var width = GetBufferWidth() * scale;
+        if (width > size && characterCount is >= 2 and <= 4)
+        {
+            _features.Add(new ShapingFeature(WidthFeatures[characterCount - 2], 1));
+            FillBuffer(item, suffix: null);
+            TextShaper.Shape(_buffer, face, item.Script, style.LanguageTags, item.IsCombinedRightToLeft, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_features), isVertical: false, scratch: null, _shapingCache);
+            width = GetBufferWidth() * scale;
+        }
+
+        var widthScale = width > size ? size / width : 1;
+        var central = GetCentral(item.Font, size, item.Script);
+        var info = _buffer.Info;
+        var positions = _buffer.Positions;
+        var pen = 0.0;
+        for (var i = 0; i < info.Length; i++)
+        {
+            paragraph.Glyphs.Add(new ShapedGlyph
+            {
+                Glyph = info[i].Glyph,
+                Cluster = item.Start,
+                Advance = i == info.Length - 1 ? size : 0,
+                XOffset = (size / 2) + central - (positions[i].YOffset * scale),
+                YOffset = ((pen + positions[i].XOffset) * scale * widthScale) - (width * widthScale / 2),
+                IsInvisible = info[i].IsIgnorable,
+                WidthScale = widthScale,
+            });
+            pen += positions[i].XAdvance;
+        }
+
+        item.GlyphCount = info.Length;
+        paragraph.Advances[item.Start - paragraph.Start] = size;
+
+        double GetBufferWidth()
+        {
+            var advance = 0;
+            foreach (ref readonly var position in _buffer.Positions)
+            {
+                advance += position.XAdvance;
+            }
+
+            return advance;
+        }
+    }
+
+    /// <summary>
+    /// Gets how far above the baseline of a font its middle is, in a line with a central baseline: the middle of the
+    /// ideographic em box the <c>BASE</c> table of the font gives for the script, or else the middle of its ascent
+    /// and its descent.
+    /// </summary>
+    private static double GetCentral(Font font, double size, UnicodeScript script)
+    {
+        Span<uint> scripts = stackalloc uint[OpenTypeScript.MaxTagCount];
+        scripts = scripts[..OpenTypeScript.GetTags(script, scripts)];
+        if (font.Face.TryGetIdeographicCenter(isVertical: false, scripts, out var center))
+            return center * size / font.UnitsPerEm;
+
+        var metrics = font.GetMetrics(size);
+        return (metrics.Ascent - metrics.Descent) / 2;
     }
 
     /// <summary>
@@ -773,7 +1083,7 @@ internal sealed class TextLayoutEngine
             for (var i = 0; i < count; i++)
             {
                 var position = wordStart + positions[i];
-                if (position > best && Measure(paragraph, from, position, 0) + MeasureHyphen(paragraph, position) <= available)
+                if (position > best && !IsInsideCombined(paragraph, position) && Measure(paragraph, from, position, 0) + MeasureHyphen(paragraph, position) <= available)
                 {
                     best = position;
                 }
@@ -792,7 +1102,7 @@ internal sealed class TextLayoutEngine
         var text = _text.AsSpan(0, end);
         while (position < end)
         {
-            var next = position + Math.Max(Unicode.GetGraphemeClusterLength(text[position..]), 1);
+            var next = GetUnitEnd(paragraph, text, position);
             width = Measure(paragraph, position, next, width);
             if (width > available && best > from)
                 break;
@@ -864,7 +1174,7 @@ internal sealed class TextLayoutEngine
             {
                 var next = _options.Trimming == TextTrimming.Word
                     ? NextBreak(paragraph, position, to)
-                    : position + Math.Max(Unicode.GetGraphemeClusterLength(text[position..]), 1);
+                    : GetUnitEnd(paragraph, text, position);
                 width = Measure(paragraph, position, next, width);
                 var item = FindItem(paragraph, next - 1) ?? FindItem(paragraph, from);
                 var ellipsis = item is null ? 0 : MeasureText(item, GetEllipsis(item));
@@ -877,7 +1187,7 @@ internal sealed class TextLayoutEngine
         }
 
         // The spaces before the ellipsis are dropped: it follows the last word.
-        while (best > from && IsBreakingSpace(_text[best - 1]))
+        while (best > from && IsBreakingSpace(_text[best - 1]) && !IsInsideCombined(paragraph, best - 1))
         {
             best--;
         }
@@ -922,7 +1232,7 @@ internal sealed class TextLayoutEngine
         var contentEnd = to;
         if (isWrapped && end == LineEnd.None)
         {
-            while (contentEnd > from && IsBreakingSpace(_text[contentEnd - 1]))
+            while (contentEnd > from && IsBreakingSpace(_text[contentEnd - 1]) && !IsInsideCombined(paragraph, contentEnd - 1))
             {
                 contentEnd--;
             }
@@ -981,7 +1291,15 @@ internal sealed class TextLayoutEngine
             }
 
             var last = items[^1];
-            Shape(paragraph, last, end == LineEnd.Hyphen ? GetHyphen(last) : GetEllipsis(last));
+            var suffix = end == LineEnd.Hyphen ? GetHyphen(last) : GetEllipsis(last);
+            if (last.IsCombined)
+            {
+                // What the line adds follows a text set in the room of one upright character: it is not part of it
+                last = new Item { Start = last.End, End = last.End, Style = last.Style, Font = last.Font, Level = last.Level, Script = UnicodeScript.Common, IsUpright = IsUpright(last.Font, suffix, UsesRotatedForms(last.Style)) };
+                items.Add(last);
+            }
+
+            Shape(paragraph, last, suffix);
         }
 
         var line = new Line
@@ -1032,10 +1350,11 @@ internal sealed class TextLayoutEngine
             var item = items[order[i]];
             var font = GetFontIndex(item.Font);
             var isHanging = item.Start >= contentEnd && item.Start < item.End;
-            var baselineShift = IncludeMetrics(line, item.Font, GetSize(item.Style), item.IsUpright);
+            var central = IncludeMetrics(line, item.Font, GetSize(item.Style), item.Script);
+            var baselineShift = item.IsUpright ? 0 : central;
             if (item.IsTabulation)
             {
-                line.Glyphs.Add(new PlacedGlyph { Glyph = -1, Cluster = item.Start, PenX = pen, Advance = tabulations[order[i]], Font = font, Size = GetSize(item.Style), Span = FindSpan(item.Start), IsInvisible = true, IsHanging = isHanging, IsRightToLeft = (levels[order[i]] & 1) != 0 });
+                line.Glyphs.Add(new PlacedGlyph { Glyph = -1, Cluster = item.Start, PenX = pen, Advance = tabulations[order[i]], Font = font, Size = GetSize(item.Style), Span = FindSpan(item.Start), IsInvisible = true, IsHanging = isHanging, IsRightToLeft = (levels[order[i]] & 1) != 0, Central = central });
                 pen += tabulations[order[i]];
                 hanging += isHanging ? tabulations[order[i]] : 0;
                 continue;
@@ -1079,11 +1398,13 @@ internal sealed class TextLayoutEngine
                     Size = GetSize(item.Style),
                     Span = FindSpan(Math.Min(glyph.Cluster, Math.Max(_text.Length - 1, 0))),
                     IsInvisible = glyph.IsInvisible,
-                    IsExpandable = !isHanging && character is ' ' or '\u00A0',
+                    IsExpandable = !isHanging && !item.IsCombined && character is ' ' or '\u00A0',
                     IsHanging = isHanging,
                     IsRightToLeft = (levels[order[i]] & 1) != 0,
                     IsUpright = item.IsUpright,
                     BaselineShift = baselineShift,
+                    Central = central,
+                    WidthScale = glyph.WidthScale,
                 });
                 pen += glyph.Advance;
                 hanging += isHanging ? glyph.Advance : 0;
@@ -1094,7 +1415,7 @@ internal sealed class TextLayoutEngine
         {
             // An empty line is as tall as the font of the place it is at.
             var style = _spans[FindSpan(Math.Min(from, Math.Max(_text.Length - 1, 0)))].Style;
-            IncludeMetrics(line, style.Fonts.Primary, GetSize(style), isUpright: false);
+            IncludeMetrics(line, style.Fonts.Primary, GetSize(style), UnicodeScript.Common);
         }
 
         // The hanging white space of a right-to-left paragraph is on the left of the line: the text starts after it.
@@ -1121,12 +1442,15 @@ internal sealed class TextLayoutEngine
     /// <remarks>
     /// A vertical line has a central baseline: it is as wide as the widest of its fonts is tall, half on each side
     /// of that baseline. Upright glyphs are centered on it by their vertical origins; the text that is on its side
-    /// has the middle of its ascent and its descent on it, so that its own baseline is further from the top of the
-    /// line by half of what its ascent has more than its descent. A vertical line whose text is all on its side is
-    /// a horizontal line turned: its baseline is the one of its text.
+    /// has the middle of its font on it (<see cref="GetCentral"/>), so that its own baseline is that far from the
+    /// central baseline, toward the top of the line. A vertical line whose text is all on its side is a horizontal
+    /// line turned: its baseline is the one of its text.
     /// </remarks>
-    /// <returns>How far from the baseline of the line, on the side of its bottom, the glyphs of the item have their baseline.</returns>
-    private double IncludeMetrics(Line line, Font font, double size, bool isUpright)
+    /// <returns>
+    /// In a line with a central baseline, how far above its baseline the font has its middle: how far below the
+    /// central baseline the text that is on its side has its own. Otherwise, 0.
+    /// </returns>
+    private double IncludeMetrics(Line line, Font font, double size, UnicodeScript script)
     {
         var metrics = font.GetMetrics(size);
         if (_hasCentralBaseline)
@@ -1134,7 +1458,7 @@ internal sealed class TextLayoutEngine
             var half = (metrics.Ascent + metrics.Descent + metrics.LineGap) / 2;
             line.Ascent = Math.Max(line.Ascent, half);
             line.Descent = Math.Max(line.Descent, half);
-            return isUpright ? 0 : (metrics.Ascent - metrics.Descent) / 2;
+            return GetCentral(font, size, script);
         }
 
         line.Ascent = Math.Max(line.Ascent, metrics.Ascent + (metrics.LineGap / 2));
@@ -1164,7 +1488,7 @@ internal sealed class TextLayoutEngine
                 Shape(paragraph, item);
             }
 
-            var second = new Item { Start = position, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsTabulation = item.IsTabulation, Placeholder = item.Placeholder, IsUpright = item.IsUpright };
+            var second = new Item { Start = position, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsTabulation = item.IsTabulation, Placeholder = item.Placeholder, IsUpright = item.IsUpright, IsCombined = item.IsCombined, IsCombinedRightToLeft = item.IsCombinedRightToLeft };
             item.End = position;
             paragraph.Items.Insert(i + 1, second);
             if (item.Start >= lineStart)
@@ -1224,7 +1548,7 @@ internal sealed class TextLayoutEngine
         var end = FindShapingEnd(paragraph, item);
         if (end < item.End)
         {
-            paragraph.Items.Insert(index + 1, new Item { Start = end, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsPending = true, IsUpright = item.IsUpright });
+            paragraph.Items.Insert(index + 1, new Item { Start = end, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsPending = true, IsUpright = item.IsUpright, IsCombined = item.IsCombined, IsCombinedRightToLeft = item.IsCombinedRightToLeft });
             item.End = end;
         }
 
@@ -1234,7 +1558,8 @@ internal sealed class TextLayoutEngine
     private static bool IsSameRun(Item first, Item second)
     {
         return ReferenceEquals(first.Style, second.Style) && ReferenceEquals(first.Font, second.Font) && first.Level == second.Level && first.Script == second.Script
-            && !first.IsTabulation && !second.IsTabulation && first.Placeholder < 0 && second.Placeholder < 0 && first.IsUpright == second.IsUpright;
+            && !first.IsTabulation && !second.IsTabulation && first.Placeholder < 0 && second.Placeholder < 0 && first.IsUpright == second.IsUpright
+            && !first.IsCombined && !second.IsCombined;
     }
 
     /// <summary>
@@ -1243,7 +1568,7 @@ internal sealed class TextLayoutEngine
     /// </summary>
     private int FindShapingEnd(Paragraph paragraph, Item item)
     {
-        if (!_wraps || item.IsTabulation || item.End - item.Start < 2 * MinShapingLength)
+        if (!_wraps || item.IsTabulation || item.IsCombined || item.End - item.Start < 2 * MinShapingLength)
             return item.End;
 
         // The advances are the ones of the last time these characters were shaped, in a longer text.
@@ -1512,9 +1837,9 @@ internal sealed class TextLayoutEngine
                     var brush = GetBrushIndex(brushes, style.Brush);
                     var outline = style.Outline is null ? -1 : GetOutlineIndex(outlines, style.Outline);
                     var isSideways = _isVertical && !glyph.IsUpright;
-                    if (runs.Count == 0 || runs[^1].Font != glyph.Font || runs[^1].Size != glyph.Size || runs[^1].Brush != brush || runs[^1].Palette != style.ColorPaletteIndex || runs[^1].Synthesis != style.Synthesis || runs[^1].Outline != outline || runs[^1].IsSideways != isSideways)
+                    if (runs.Count == 0 || runs[^1].Font != glyph.Font || runs[^1].Size != glyph.Size || runs[^1].Brush != brush || runs[^1].Palette != style.ColorPaletteIndex || runs[^1].Synthesis != style.Synthesis || runs[^1].Outline != outline || runs[^1].IsSideways != isSideways || runs[^1].WidthScale != glyph.WidthScale)
                     {
-                        runs.Add(new GlyphRun(glyph.Font, glyph.Size, brush, glyphs.Count, 0, style.ColorPaletteIndex, style.Synthesis, outline, isSideways));
+                        runs.Add(new GlyphRun(glyph.Font, glyph.Size, brush, glyphs.Count, 0, style.ColorPaletteIndex, style.Synthesis, outline, isSideways, glyph.WidthScale));
                     }
 
                     runs[^1] = runs[^1] with { Count = runs[^1].Count + 1 };
@@ -1570,10 +1895,10 @@ internal sealed class TextLayoutEngine
 
                 // A decoration is one rectangle as long as the same style continues on the line.
                 var kind = glyph.IsHanging ? TextDecorations.None : style.Decorations;
-                if (kind == TextDecorations.None || kind != decoration.Kind || !ReferenceEquals(style, decoration.Style) || glyph.Font != decoration.Font || glyph.IsUpright != decoration.IsUpright || start != decoration.End)
+                if (kind == TextDecorations.None || kind != decoration.Kind || !ReferenceEquals(style, decoration.Style) || glyph.Font != decoration.Font || glyph.IsUpright != decoration.IsUpright || glyph.Central != decoration.Central || start != decoration.End)
                 {
                     AddDecorations(decorations, brushes, decoration, baseline);
-                    decoration = new DecorationSegment { Kind = kind, Style = style, Font = glyph.Font, IsUpright = glyph.IsUpright, Start = start, End = start };
+                    decoration = new DecorationSegment { Kind = kind, Style = style, Font = glyph.Font, IsUpright = glyph.IsUpright, Central = glyph.Central, Start = start, End = start };
                 }
 
                 decoration.End = start + glyph.Advance;
@@ -1721,11 +2046,11 @@ internal sealed class TextLayoutEngine
         if (_hasCentralBaseline)
         {
             // The baseline of a vertical line is its central one: the baseline the font has when it is on its side
-            // is half of what its ascent has more than its descent further from the top of the line. The lines of
-            // upright text are at the same places, beside its glyphs, but the line through them, which is in the
-            // middle of the line.
+            // is as far from it as the middle of the font is above that baseline, toward the top of the line. The
+            // lines of upright text are at the same places, beside its glyphs, but the line through them, which is
+            // in the middle of the line.
             var central = baseline;
-            baseline += (metrics.Ascent - metrics.Descent) / 2;
+            baseline += segment.Central;
             if (segment.IsUpright && (segment.Kind & TextDecorations.Strikethrough) != TextDecorations.None && metrics.StrikethroughThickness > 0)
             {
                 decorations.Add(new DecorationRectangle(segment.Start, central - (metrics.StrikethroughThickness / 2), width, metrics.StrikethroughThickness, brush));
@@ -1808,6 +2133,22 @@ internal sealed class TextLayoutEngine
         Emoji,
     }
 
+    /// <summary>How the glyphs of a run go.</summary>
+    private enum ShapingOrientation
+    {
+        /// <summary>A run of a horizontal line.</summary>
+        Horizontal,
+
+        /// <summary>Upright glyphs of a vertical line, one under the other.</summary>
+        Upright,
+
+        /// <summary>A horizontal run turned on its side in a vertical line.</summary>
+        Sideways,
+
+        /// <summary>A horizontal run set upright in the room of one character of a vertical line.</summary>
+        Combined,
+    }
+
     private enum LineEnd
     {
         None,
@@ -1824,6 +2165,7 @@ internal sealed class TextLayoutEngine
         public double XOffset;
         public double YOffset;
         public bool IsInvisible;
+        public double WidthScale;
     }
 
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
@@ -1833,6 +2175,7 @@ internal sealed class TextLayoutEngine
         public TextStyle? Style;
         public int Font;
         public bool IsUpright;
+        public double Central;
         public double Start;
         public double End;
     }
@@ -1852,6 +2195,15 @@ internal sealed class TextLayoutEngine
 
         /// <summary>The glyphs of the item are upright in a vertical line, and shaped for it; the others are on their side, shaped as in a horizontal line.</summary>
         public bool IsUpright;
+
+        /// <summary>
+        /// The item is a text set horizontally in the room of one upright character of a vertical line
+        /// (tate-chu-yoko): it is upright, and shaped as a horizontal line.
+        /// </summary>
+        public bool IsCombined;
+
+        /// <summary>The combined text is shaped from right to left: its first character is right to left.</summary>
+        public bool IsCombinedRightToLeft;
 
         /// <summary>
         /// The item is text of lines to come that was not shaped again when the line before it was made: it has no
@@ -1890,6 +2242,12 @@ internal sealed class TextLayoutEngine
         public List<Item> Items { get; } = [];
 
         public List<ShapedGlyph> Glyphs { get; } = [];
+
+        /// <summary>
+        /// Gets or sets, for each character, the end of the text set in the room of one upright character it is in,
+        /// or 0; empty when the paragraph has no such text.
+        /// </summary>
+        public int[] CombinedEnds { get; set; } = [];
     }
 
     private sealed class Line

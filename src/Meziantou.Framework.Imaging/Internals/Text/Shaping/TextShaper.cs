@@ -72,6 +72,8 @@ internal static class TextShaper
     private static readonly uint Rvrn = ShapingFeature.ToTag("rvrn");
     private static readonly uint Mark = ShapingFeature.ToTag("mark");
     private static readonly uint Vert = ShapingFeature.ToTag("vert");
+    private static readonly uint Vrt2 = ShapingFeature.ToTag("vrt2");
+    private static readonly uint Vrtr = ShapingFeature.ToTag("vrtr");
     private static readonly uint Cfar = ShapingFeature.ToTag("cfar");
 
     private static readonly uint[] LeftToRightFeatures = [ShapingFeature.ToTag("ltra"), ShapingFeature.ToTag("ltrm")];
@@ -92,6 +94,11 @@ internal static class TextShaper
         ShapingFeature.ToTag("abvm"), ShapingFeature.ToTag("blwm"), ShapingFeature.ToTag("ccmp"), ShapingFeature.ToTag("locl"),
         ShapingFeature.ToTag("mark"), ShapingFeature.ToTag("mkmk"), ShapingFeature.ToTag("rlig"), Rvrn, Vert,
     ];
+
+    // The forms of the glyphs of a vertical line, which a font may list under a few scripts only: those of upright
+    // glyphs, and those of glyphs on their side.
+    private static readonly uint[] UprightFormFeatures = [Vert, Vrt2];
+    private static readonly uint[] SidewaysFormFeatures = [Vrtr];
 
     // The features that place marks.
     private static readonly uint[] MarkFeatures = [Mark, ShapingFeature.ToTag("mkmk")];
@@ -121,7 +128,9 @@ internal static class TextShaper
     /// horizontal line: <c>calt</c>, <c>clig</c>, <c>curs</c>, <c>dist</c>, <c>kern</c>, <c>liga</c>, <c>rclt</c>),
     /// a vertical advance (<see cref="GlyphPosition.YAdvance"/>, negative since the y axis of a font goes up) and
     /// no horizontal one, and an offset from the pen to their horizontal origin: the opposite of their vertical
-    /// origin (<see cref="FontFace.GetVerticalOrigin"/>). A vertical run is never right to left.
+    /// origin (<see cref="FontFace.GetVerticalOrigin"/>). A vertical run is never right to left. The rotated forms
+    /// (<c>vrt2</c>) of a vertical run, and the forms of turned glyphs (<c>vrtr</c>) of a horizontal one, are found
+    /// wherever the font has them too, when the caller asks for them.
     /// </param>
     /// <param name="scratch">The working storage that measures the outlines of a font without vertical origins, or <see langword="null"/> when the run is horizontal.</param>
     /// <param name="cache">What the runs of a layout share about their fonts, or <see langword="null"/> when the run is shaped on its own.</param>
@@ -1146,7 +1155,7 @@ internal static class TextShaper
         var substitutions = table.FindFeatureSubstitutions(data, coordinates);
         if (system == 0)
         {
-            AddVerticalForms(table, data, isVertical, hasVerticalForms: false, plan, shaper, lookups, substitutions);
+            AddOrientationForms(table, data, isVertical, listed: [], plan, shaper, lookups, substitutions);
             return lookups;
         }
 
@@ -1163,17 +1172,22 @@ internal static class TextShaper
         var hasFrac = false;
         var hasNumr = false;
         var hasDnom = false;
-        var hasVerticalForms = false;
+        Span<bool> listed = stackalloc bool[2];
+        var orientationFeatures = isVertical ? UprightFormFeatures : SidewaysFormFeatures;
         for (var i = 0; i < count; i++)
         {
             var tag = table.GetFeatureTag(data, LayoutTable.GetFeatureIndex(data, system, i));
             hasFrac |= tag == Frac;
             hasNumr |= tag == Numr;
             hasDnom |= tag == Dnom;
-            hasVerticalForms |= tag == Vert;
+            var orientation = orientationFeatures.AsSpan().IndexOf(tag);
+            if (orientation >= 0)
+            {
+                listed[orientation] = true;
+            }
         }
 
-        AddVerticalForms(table, data, isVertical, hasVerticalForms, plan, shaper, lookups, substitutions);
+        AddOrientationForms(table, data, isVertical, listed, plan, shaper, lookups, substitutions);
 
         hasFractions = hasFrac || (hasNumr && hasDnom);
         for (var i = 0; i < count; i++)
@@ -1273,28 +1287,44 @@ internal static class TextShaper
     }
 
     /// <summary>
-    /// Adds the lookups of the vertical forms of a font that does not list them for the script and the language of a
-    /// vertical run: the first feature of that name in the font, whatever lists it. Fonts list it under a few scripts
-    /// only, and a vertical line has characters of any of them.
+    /// Adds the lookups of the forms of a vertical line that a font does not list for the script and the language of
+    /// a run: the first feature of that name in the font, whatever lists it. Fonts list them under a few scripts only,
+    /// and a vertical line has characters of any of them. An upright run has the vertical forms (<c>vert</c>, applied
+    /// by default) and the rotated forms (<c>vrt2</c>, when the caller asks for them); a horizontal run, the forms of
+    /// the glyphs that are turned on their side in a vertical line (<c>vrtr</c>, when the caller asks for them).
     /// </summary>
-    private static void AddVerticalForms(LayoutTable table, ReadOnlySpan<byte> data, bool isVertical, bool hasVerticalForms, FeaturePlan plan, ShaperPlan shaper, List<PlannedLookup> lookups, int substitutions)
+    /// <param name="table">The table.</param>
+    /// <param name="data">The data of the table.</param>
+    /// <param name="isVertical">Whether the run is a vertical line of upright glyphs.</param>
+    /// <param name="listed">Whether the language system of the run lists each of these features; empty when the run has no language system.</param>
+    /// <param name="plan">The features the caller sets.</param>
+    /// <param name="shaper">The features of the shaping model of the script.</param>
+    /// <param name="lookups">The lookups of the run.</param>
+    /// <param name="substitutions">The features an instance of a variable font replaces.</param>
+    private static void AddOrientationForms(LayoutTable table, ReadOnlySpan<byte> data, bool isVertical, ReadOnlySpan<bool> listed, FeaturePlan plan, ShaperPlan shaper, List<PlannedLookup> lookups, int substitutions)
     {
-        if (!isVertical || hasVerticalForms)
-            return;
-
-        var mask = GlobalMask;
-        if (plan.TryGetMask(Vert, out var callerMask))
+        var tags = isVertical ? UprightFormFeatures : SidewaysFormFeatures;
+        for (var i = 0; i < tags.Length; i++)
         {
-            if (callerMask == 0)
-                return;
+            if (i < listed.Length && listed[i])
+                continue;
 
-            mask = callerMask;
-        }
+            // The vertical forms are applied by default, the other ones when the caller asks for them
+            var tag = tags[i];
+            var mask = tag == Vert ? GlobalMask : 0;
+            if (plan.TryGetMask(tag, out var callerMask))
+            {
+                mask = callerMask;
+            }
 
-        var feature = table.FindFeature(data, Vert);
-        if (feature != LayoutTable.NoFeature)
-        {
-            AddLookups(table, data, feature, mask, lookups, substitutions, shaper.FinalStage, ShaperFeatureFlags.None);
+            if (mask == 0)
+                continue;
+
+            var feature = table.FindFeature(data, tag);
+            if (feature != LayoutTable.NoFeature)
+            {
+                AddLookups(table, data, feature, mask, lookups, substitutions, shaper.FinalStage, ShaperFeatureFlags.None);
+            }
         }
     }
 

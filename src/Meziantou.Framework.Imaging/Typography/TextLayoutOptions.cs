@@ -174,9 +174,19 @@ public sealed class TextLayoutOptions
     /// <para>
     /// A vertical line has a central baseline, in the middle of its width: upright characters are centered on it
     /// (with the vertical metrics of their font: <c>vhea</c>, <c>vmtx</c>, <c>VORG</c>, and the vertical forms of the
-    /// <c>vert</c> feature), and the text that is on its side has the middle of its ascent and its descent on it.
+    /// <c>vert</c> feature), and the text that is on its side has the middle of its font on it: the middle of the
+    /// ideographic em box the <c>BASE</c> table of the font gives for its script, or of its ascent and its descent.
     /// With <see cref="TextOrientation.Sideways"/>, the line is a horizontal line turned a quarter of a turn
     /// clockwise, and its baseline is the one of its text.
+    /// </para>
+    /// <para>
+    /// The features a style turns on for one direction apply to the other one where the font has their counterpart:
+    /// <c>kern</c>, <c>palt</c>, <c>halt</c>, <c>chws</c> and <c>hkna</c> are applied to upright text as
+    /// <c>vkrn</c>, <c>vpal</c>, <c>vhal</c>, <c>vchw</c> and <c>vkna</c>, and the vertical ones to the text that is
+    /// on its side as the horizontal ones. The text that is on its side has the forms its font has for that
+    /// (<c>vrtr</c>). A style that turns <c>vrt2</c> on uses the rotated glyphs of the font instead: the characters
+    /// the font has a rotated glyph for are set upright with that glyph, in the place of the vertical forms, and
+    /// the others are turned.
     /// </para>
     /// </remarks>
     public TextWritingMode WritingMode
@@ -206,6 +216,30 @@ public sealed class TextLayoutOptions
         init
         {
             ValidateEnum((int)value, (int)TextOrientation.Sideways, nameof(value));
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the length of the runs of digits that are set horizontally in the room of one upright character of a
+    /// vertical line (tate-chu-yoko): 0 (the default) for none, or 2, 3 or 4.
+    /// </summary>
+    /// <remarks>
+    /// A run of ASCII digits (0 to 9) that is not longer than this, between two characters that are not digits and in
+    /// one span, is set as the text of a style that is combined upright (<see cref="TextStyle.IsCombinedUpright"/>):
+    /// the date 2026 or the number 12 in a column of Japanese text. Longer numbers are on their side, as other text
+    /// is. It is the <c>digits</c> value of the <c>text-combine-upright</c> property of CSS. It is not used in a
+    /// horizontal layout, nor with <see cref="TextOrientation.Sideways"/>.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not 0, 2, 3 or 4.</exception>
+    public int CombineUprightDigits
+    {
+        get;
+        init
+        {
+            if (value is not (0 or 2 or 3 or 4))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The length of the combined digits is 0, 2, 3 or 4.");
+
             field = value;
         }
     }

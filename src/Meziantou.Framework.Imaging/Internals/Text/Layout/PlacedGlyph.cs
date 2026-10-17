@@ -47,6 +47,15 @@ internal struct PlacedGlyph
     /// <summary>How far below the baseline of its line the glyph has its own: in a vertical line, the text that is on its side has the middle of its font on the central baseline.</summary>
     public double BaselineShift;
 
+    /// <summary>
+    /// In a line with a central baseline, how far above its own baseline the font of the glyph has its middle: the
+    /// middle of its ideographic em box, or of its ascent and its descent. Where its decorations are drawn from.
+    /// </summary>
+    public double Central;
+
+    /// <summary>What the glyph is narrowed to along its baseline: 1, or less for a horizontal text set in the room of one upright character.</summary>
+    public double WidthScale;
+
     /// <summary>The glyph is the room of what the caller draws in the line: it has no outline.</summary>
     public bool IsPlaceholder;
 

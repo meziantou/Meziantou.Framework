@@ -39,7 +39,7 @@ public sealed class TextLayoutTests
 
     private static TextStyle Style { get; } = new(Boxes, 16);
 
-    private static Font CreateIdeographs()
+    private static Font CreateIdeographs(Action<FontBuilder>? configure = null)
     {
         var builder = FontSamples.Boxes();
         builder.CharacterMap[0x4E00] = FontSamples.BoxA;
@@ -49,6 +49,7 @@ public sealed class TextLayoutTests
         builder.CharacterMap[0x300C] = FontSamples.BoxB;
         builder.CharacterMap[0x05D0] = FontSamples.BoxC;
         builder.CharacterMap[0x05D1] = FontSamples.BoxA;
+        configure?.Invoke(builder);
         return FontTestSupport.Load(builder);
     }
 
@@ -1232,14 +1233,33 @@ public sealed class TextLayoutTests
         Assert.Equal(RenderVertical(TextLayout.Create(Japanese, style, Vertical(orientation: TextOrientation.Upright))), mixed);
         Assert.NotEqual(RenderVertical(TextLayout.Create(Japanese, style, Vertical(orientation: TextOrientation.Sideways))), mixed);
 
-        mixed = RenderVertical(TextLayout.Create("ABC", style, Vertical()));
-        Assert.Equal(RenderVertical(TextLayout.Create("ABC", style, Vertical(orientation: TextOrientation.Sideways))), mixed);
-        Assert.NotEqual(RenderVertical(TextLayout.Create("ABC", style, Vertical(orientation: TextOrientation.Upright))), mixed);
+        // On their side, the Latin letters have the middle of the ideographic em box of the font (BASE: 380 units
+        // above the baseline) on the central baseline, not the middle of its ascent and its descent (436 units): they
+        // are 0.896 pixels on the right of where a line whose text is all on its side has them
+        var mixedLayout = TextLayout.Create("ABC", style, Vertical());
+        var sideways = TextLayout.Create("ABC", style, Vertical(orientation: TextOrientation.Sideways));
+        Assert.Equal(sideways.Width, mixedLayout.Width, 1e-9);
+        Assert.Equal(sideways.InkBounds.X + 0.896, mixedLayout.InkBounds.X, 1e-9);
+        Assert.Equal(sideways.InkBounds.Width, mixedLayout.InkBounds.Width, 1e-9);
+        Assert.Equal(sideways.InkBounds.Y, mixedLayout.InkBounds.Y, 1e-9);
+        Assert.Equal(sideways.InkBounds.Height, mixedLayout.InkBounds.Height, 1e-9);
+        Assert.NotEqual(RenderVertical(TextLayout.Create("ABC", style, Vertical(orientation: TextOrientation.Upright))), RenderVertical(mixedLayout));
 
         // The vertical forms are a feature of the font, which a style can turn off: the glyphs of a horizontal line
         // are then set upright
         var withoutForms = TextLayout.Create(Japanese, new TextStyle(font, 16) { Features = [new FontFeature("vert", 0)] }, Vertical(orientation: TextOrientation.Upright));
         Assert.NotEqual(RenderVertical(TextLayout.Create(Japanese, style, Vertical(orientation: TextOrientation.Upright))), RenderVertical(withoutForms));
+
+        // The rotated forms of this font are its vertical forms: it has no rotated glyph for the Latin letters
+        var rotated = new TextStyle(font, 16) { Features = [new FontFeature("vrt2")] };
+        Assert.Equal(RenderVertical(TextLayout.Create(Japanese, style, Vertical())), RenderVertical(TextLayout.Create(Japanese, rotated, Vertical())));
+        Assert.Equal(RenderVertical(mixedLayout), RenderVertical(TextLayout.Create("ABC", rotated, Vertical())));
+
+        // Two digits set in the room of one character take the forms of the font that are half an em wide (hwid);
+        // three are narrowed, since the font has no forms a third of an em wide
+        var combined = new TextStyle(font, 16) { IsCombinedUpright = true };
+        Assert.Equal(1, GetWidthScale(TextLayout.Create("12", combined, Vertical())));
+        Assert.Equal(1000.0 / 1665, GetWidthScale(TextLayout.Create("123", combined, Vertical())), 1e-9);
 
         // Every glyph advances by one em, the advance height of the font, and the line is as wide as its line height
         var layout = TextLayout.Create(Japanese, style, Vertical());
@@ -1250,6 +1270,272 @@ public sealed class TextLayoutTests
         Assert.False(layout.HasMissingGlyphs);
 
         static int[] RenderVertical(TextLayout layout) => Render(60, 140, canvas => canvas.FillText(White, layout, new PointD(10, 5)));
+
+        static double GetWidthScale(TextLayout layout)
+        {
+            Assert.Equal(1, layout.RunCount);
+            layout.GetRun(0, out _, out _, out _, out _, out _, out var isSideways, out var widthScale);
+            Assert.False(isSideways);
+            return widthScale;
+        }
+    }
+
+    [Fact]
+    public void ABaselineTablePlacesTheTextOnItsSideInAVerticalLine()
+    {
+        // The ideographic em box of the font is from -128 to 896 units: its middle, 6 pixels above the baseline, is
+        // on the central baseline of the line, where the middle of the ascent and the descent, 5 pixels above it, is
+        // without the table. The text on its side is 1 pixel further to the left, and so is the underline.
+        var font = CreateIdeographs(builder => builder.RawTables["BASE"] = BuildBaseTable(("ideo", -128), ("idtp", 896)));
+        var style = new TextStyle(font, 16);
+        var layout = TextLayout.Create("AB", style, Vertical());
+        Assert.Equal(16, layout.Width);
+        AssertRectangles(layout, new PointD(0, 0), SidewaysA(-1, 0), SidewaysB(-1, 14));
+        layout = TextLayout.Create("\u4E00A", style, Vertical());
+        AssertRectangles(layout, new PointD(2, 1), UprightA(0, 0), SidewaysA(-1, 16));
+        layout = TextLayout.Create("\u4E8C", new TextStyle(font, 16) { Decorations = TextDecorations.Underline }, Vertical());
+        AssertRectangles(layout, new PointD(4, 2), UprightB(0, 0), (new RectangleD(-1, 0, 1, 16), null));
+
+        // The top of the box is one em above its bottom when the table only gives the bottom
+        font = CreateIdeographs(builder => builder.RawTables["BASE"] = BuildBaseTable(("ideo", -128)));
+        AssertRectangles(TextLayout.Create("AB", new TextStyle(font, 16), Vertical()), new PointD(0, 0), SidewaysA(-1, 0), SidewaysB(-1, 14));
+
+        // A horizontal line, and a vertical line whose text is all on its side, have the baseline of their text
+        Assert.Equal(13, TextLayout.Create("AB", new TextStyle(font, 16)).Baseline);
+        AssertRectangles(TextLayout.Create("AB", new TextStyle(font, 16), Vertical(orientation: TextOrientation.Sideways)), new PointD(0, 0), SidewaysA(0, 0), SidewaysB(0, 14));
+    }
+
+    [Fact]
+    public void AVerticalLineAppliesTheFeaturesOfItsOrientation()
+    {
+        // The glyphs on their side have the forms their font has for that (vrtr): B in the place of A
+        var font = CreateIdeographs(builder => builder.RawTables["GSUB"] = BuildSingleSubstitutions(("vrtr", FontSamples.BoxA, FontSamples.BoxB)));
+        AssertRectangles(TextLayout.Create("A", new TextStyle(font, 16), Vertical()), new PointD(0, 0), SidewaysB(0, 0));
+        AssertRectangles(TextLayout.Create("A", new TextStyle(font, 16), Vertical(orientation: TextOrientation.Upright)), new PointD(0, 0), UprightA(0, 0));
+        AssertRectangles(TextLayout.Create("A", new TextStyle(font, 16)), new PointD(0, 0), A(0, 0));
+        AssertRectangles(TextLayout.Create("A", new TextStyle(font, 16) { Features = [new FontFeature("vrtr", 0)] }, Vertical()), new PointD(0, 0), SidewaysA(0, 0));
+
+        // A feature of one direction is applied as its counterpart where the glyphs go the other way: the
+        // horizontal kana alternates of the style are the vertical ones of the font for upright text
+        font = CreateIdeographs(builder => builder.RawTables["GSUB"] = BuildSingleSubstitutions(("vkna", FontSamples.BoxA, FontSamples.BoxC)));
+        var style = new TextStyle(font, 16) { Features = [new FontFeature("hkna")] };
+        AssertRectangles(TextLayout.Create("\u4E00", style, Vertical()), new PointD(0, 0), UprightC(0, 0));
+        AssertRectangles(TextLayout.Create("\u4E00", style), new PointD(0, 0), A(0, 0));
+        AssertRectangles(TextLayout.Create("\u4E00", new TextStyle(font, 16), Vertical()), new PointD(0, 0), UprightA(0, 0));
+
+        // With the rotated forms of the font (vrt2), a character the font has a rotated glyph for is upright with
+        // that glyph, the frame E as C here; the vertical forms are not applied, and the other characters are turned
+        font = CreateIdeographs(builder => builder.RawTables["GSUB"] = BuildSingleSubstitutions(("vert", FontSamples.BoxA, FontSamples.BoxB), ("vrt2", 6, FontSamples.BoxC)));
+        style = new TextStyle(font, 16) { Features = [new FontFeature("vrt2")] };
+        var layout = TextLayout.Create("E\u4E00B", style, Vertical());
+        Assert.Equal(40, layout.Height);
+        AssertRectangles(layout, new PointD(0, 0), UprightC(0, 0), UprightA(0, 16), SidewaysB(0, 32));
+        layout = TextLayout.Create("E\u4E00", new TextStyle(font, 16), Vertical());
+        Assert.Equal(32, layout.Height);
+        AssertRectangles(layout, new PointD(0, 0), (new RectangleD(3, 0, 12, 2), null), (new RectangleD(3, 14, 12, 2), null), (new RectangleD(3, 0, 2, 16), null), (new RectangleD(13, 0, 2, 16), null), UprightB(0, 16));
+    }
+
+    [Fact]
+    public void ATextIsSetHorizontallyInTheRoomOfOneUprightCharacter()
+    {
+        // B and B are 16 pixels wide, one em: across the line, centered on it, and down the line in the middle of
+        // the em, with the middle of the font (5 pixels above the baseline) there. The unit advances by one em.
+        var style = new TextStyle(Ideographs, 16);
+        var combined = new TextStyle(Ideographs, 16) { IsCombinedUpright = true };
+        var text = new RichTextBuilder().Append("\u4E00", style).Append("BB", combined).Append("\u4E00", style).Build();
+        var layout = TextLayout.Create(text, Vertical());
+        Assert.Equal(16, layout.Width);
+        Assert.Equal(48, layout.Height);
+        AssertRectangles(layout, new PointD(0, 0), UprightA(0, 0), CombinedB(0, 16), CombinedB(8, 16), UprightA(0, 32));
+
+        // It is one cluster down the line, whose characters share the em
+        Assert.Equal(new RectangleD(0, 16, 16, 0), layout.GetCaretRectangle(1));
+        Assert.Equal(new RectangleD(0, 24, 16, 0), layout.GetCaretRectangle(2));
+        Assert.Equal(new RectangleD(0, 32, 16, 0), layout.GetCaretRectangle(3));
+        Assert.Equal([new RectangleD(0, 16, 16, 16)], layout.GetSelectionRectangles(1, 2));
+
+        // A wider text is narrowed to one em: A and A, 32 pixels, are drawn at half their width
+        layout = TextLayout.Create("AA", combined, Vertical());
+        Assert.Equal(16, layout.Height);
+        Assert.Equal(RectangleD.FromLTRB(1, 1, 15, 13), layout.InkBounds);
+        AssertRectangles(layout, new PointD(0, 0), (new RectangleD(1, 1, 6, 12), null), (new RectangleD(9, 1, 6, 12), null));
+        var down = new VectorPathBuilder().MoveTo(60, 5).LineTo(60, 70).Build();
+        Assert.Equal(
+            Render(120, 70, canvas => canvas.FillText(White, layout, new PointD(60 - layout.Baseline, 5))),
+            Render(120, 70, canvas => canvas.FillText(White, layout, down)));
+
+        // Unless its font has forms half an em wide for two characters (hwid): B in the place of A
+        var withWidths = new TextStyle(CreateIdeographs(builder => builder.RawTables["GSUB"] = BuildSingleSubstitutions(("hwid", FontSamples.BoxA, FontSamples.BoxB))), 16) { IsCombinedUpright = true };
+        AssertRectangles(TextLayout.Create("AA", withWidths, Vertical()), new PointD(0, 0), CombinedB(0, 0), CombinedB(8, 0));
+
+        // A line never ends inside it: B, a space and B are 24 pixels on their side, but one unit of 16 pixels
+        var spaced = new RichTextBuilder().Append("\u4E00", style).Append("B B", combined).Append("\u4E00", style).Build();
+        layout = TextLayout.Create(spaced, Vertical(maxHeight: 20));
+        Assert.Equal(3, layout.LineCount);
+        Assert.Equal(new TextLine(1, 3, 16, 0, 16, 16, 8, false), layout.Lines[1]);
+        layout = TextLayout.Create(spaced, new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, MaxHeight = 10, OverflowWrap = TextOverflowWrap.Anywhere });
+        Assert.Equal(3, layout.LineCount);
+
+        // Nothing changes in a horizontal line, or in a vertical line whose text is all on its side
+        Assert.Equal(16, TextLayout.Create("BB", combined).Width);
+        Assert.Equal(16, TextLayout.Create("BB", combined, Vertical(orientation: TextOrientation.Sideways)).Height);
+        Assert.Equal(8, TextLayout.Create("B", combined, Vertical(orientation: TextOrientation.Sideways)).Height);
+        Assert.Equal(16, TextLayout.Create("B", combined, Vertical()).Height);
+    }
+
+    [Fact]
+    public void ShortRunsOfDigitsAreSetInTheRoomOfOneUprightCharacter()
+    {
+        // The digits are drawn as B. Two digits are one unit, three are on their side, each one 8 pixels down the line.
+        var font = CreateIdeographs(builder =>
+        {
+            builder.CharacterMap['1'] = FontSamples.BoxB;
+            builder.CharacterMap['2'] = FontSamples.BoxB;
+            builder.CharacterMap['3'] = FontSamples.BoxB;
+        });
+        var style = new TextStyle(font, 16);
+        var digits = new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, CombineUprightDigits = 2 };
+        var layout = TextLayout.Create("\u4E0012\u4E00", style, digits);
+        Assert.Equal(48, layout.Height);
+        AssertRectangles(layout, new PointD(0, 0), UprightA(0, 0), CombinedB(0, 16), CombinedB(8, 16), UprightA(0, 32));
+        Assert.Equal(56, TextLayout.Create("\u4E00123\u4E00", style, digits).Height);
+        Assert.Equal(48, TextLayout.Create("\u4E00123\u4E00", style, new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, CombineUprightDigits = 3 }).Height);
+        Assert.Equal(48, TextLayout.Create("\u4E001\u4E00", style, digits).Height);
+        Assert.Equal(40, TextLayout.Create("\u4E001\u4E00", style, Vertical()).Height);
+
+        // A run of digits that continues in another span is not combined
+        var split = new RichTextBuilder().Append("1", style).Append("2", new TextStyle(font, 16) { Brush = Red }).Build();
+        Assert.Equal(16, TextLayout.Create(split, digits).Height);
+        Assert.Equal(32, TextLayout.Create(new RichTextBuilder().Append("1", style).Append("\u4E00", style).Build(), digits).Height);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { CombineUprightDigits = 1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { CombineUprightDigits = 5 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { CombineUprightDigits = -1 });
+    }
+
+    /// <summary>The glyph B of a text set in the room of one upright character, from the left of the line and from where the unit starts down the line.</summary>
+    private static (RectangleD Rectangle, Brush? Brush) CombinedB(double x, double y) => (new RectangleD(x + 1, y + 5, 6, 8), null);
+
+    /// <summary>Builds a BASE table whose horizontal axis gives baselines to the default script.</summary>
+    private static byte[] BuildBaseTable(params (string Tag, int Coordinate)[] baselines)
+    {
+        var table = new List<byte>();
+        var count = baselines.Length;
+        UInt16(table, 1);
+        UInt16(table, 0);
+        UInt16(table, 8);
+        UInt16(table, 0);
+
+        // The axis: its baselines, sorted by tag, then its one script, whose values are in their order
+        UInt16(table, 4);
+        UInt16(table, 4 + 2 + (4 * count));
+        UInt16(table, count);
+        foreach (var (tag, _) in baselines)
+        {
+            Tag(table, tag);
+        }
+
+        UInt16(table, 1);
+        Tag(table, "DFLT");
+        UInt16(table, 8);
+        UInt16(table, 6);
+        UInt16(table, 0);
+        UInt16(table, 0);
+        UInt16(table, 0);
+        UInt16(table, count);
+        for (var i = 0; i < count; i++)
+        {
+            UInt16(table, 4 + (2 * count) + (4 * i));
+        }
+
+        foreach (var (_, coordinate) in baselines)
+        {
+            UInt16(table, 1);
+            UInt16(table, coordinate);
+        }
+
+        return [.. table];
+    }
+
+    /// <summary>Builds a GSUB table whose default script has one feature per substitution: a single substitution of one glyph.</summary>
+    private static byte[] BuildSingleSubstitutions(params (string Feature, int From, int To)[] substitutions)
+    {
+        var table = new List<byte>();
+        var count = substitutions.Length;
+        var featureList = 28 + (2 * count);
+        var lookupList = featureList + 2 + (12 * count);
+        UInt16(table, 1);
+        UInt16(table, 0);
+        UInt16(table, 10);
+        UInt16(table, featureList);
+        UInt16(table, lookupList);
+
+        // The script list: the default script, whose default language system has every feature
+        UInt16(table, 1);
+        Tag(table, "DFLT");
+        UInt16(table, 8);
+        UInt16(table, 4);
+        UInt16(table, 0);
+        UInt16(table, 0);
+        UInt16(table, 0xFFFF);
+        UInt16(table, count);
+        for (var i = 0; i < count; i++)
+        {
+            UInt16(table, i);
+        }
+
+        // The feature list: each feature has its own lookup
+        UInt16(table, count);
+        for (var i = 0; i < count; i++)
+        {
+            Tag(table, substitutions[i].Feature);
+            UInt16(table, 2 + (6 * count) + (6 * i));
+        }
+
+        for (var i = 0; i < count; i++)
+        {
+            UInt16(table, 0);
+            UInt16(table, 1);
+            UInt16(table, i);
+        }
+
+        // The lookup list: a single substitution of the second format, one glyph for another
+        UInt16(table, count);
+        for (var i = 0; i < count; i++)
+        {
+            UInt16(table, 2 + (2 * count) + (22 * i));
+        }
+
+        foreach (var (_, from, to) in substitutions)
+        {
+            UInt16(table, 1);
+            UInt16(table, 0);
+            UInt16(table, 1);
+            UInt16(table, 8);
+            UInt16(table, 2);
+            UInt16(table, 8);
+            UInt16(table, 1);
+            UInt16(table, to);
+            UInt16(table, 1);
+            UInt16(table, 1);
+            UInt16(table, from);
+        }
+
+        return [.. table];
+    }
+
+    private static void UInt16(List<byte> table, int value)
+    {
+        table.Add((byte)(value >> 8));
+        table.Add((byte)value);
+    }
+
+    private static void Tag(List<byte> table, string tag)
+    {
+        foreach (var character in tag)
+        {
+            table.Add((byte)character);
+        }
     }
 
     private static (RectangleD Rectangle, Brush? Brush) A(double x, double y) => (new RectangleD(x + 2, y + 1, 12, 12), null);

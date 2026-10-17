@@ -2836,6 +2836,7 @@ namespace Meziantou.Framework.Imaging.Typography
     public sealed class TextLayoutOptions
     {
         public Meziantou.Framework.Imaging.Typography.TextAlignment Alignment { get => throw null; init { } }
+        public int CombineUprightDigits { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.Typography.TextLayoutOptions Default { get => throw null; }
         public Meziantou.Framework.Imaging.Typography.TextDirection Direction { get => throw null; init { } }
         public string? Ellipsis { get => throw null; init { } }
@@ -2917,6 +2918,7 @@ namespace Meziantou.Framework.Imaging.Typography
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontFeature> Features { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.FontStack Fonts { get => throw null; }
         public Meziantou.Framework.Hyphenator? Hyphenator { get => throw null; init { } }
+        public bool IsCombinedUpright { get => throw null; init { } }
         public string? Language { get => throw null; init { } }
         public double LetterSpacing { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.Pen? Outline { get => throw null; init { } }

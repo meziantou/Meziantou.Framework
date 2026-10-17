@@ -38,6 +38,7 @@ internal static class FontTags
     public const uint Vmtx = ((uint)'v' << 24) | ((uint)'m' << 16) | ((uint)'t' << 8) | 'x';
     public const uint Vorg = ((uint)'V' << 24) | ((uint)'O' << 16) | ((uint)'R' << 8) | 'G';
     public const uint Vvar = ((uint)'V' << 24) | ((uint)'V' << 16) | ((uint)'A' << 8) | 'R';
+    public const uint Base = ((uint)'B' << 24) | ((uint)'A' << 16) | ((uint)'S' << 8) | 'E';
     public const uint Colr = ((uint)'C' << 24) | ((uint)'O' << 16) | ((uint)'L' << 8) | 'R';
     public const uint Cpal = ((uint)'C' << 24) | ((uint)'P' << 16) | ((uint)'A' << 8) | 'L';
     public const uint Sbix = ((uint)'s' << 24) | ((uint)'b' << 16) | ((uint)'i' << 8) | 'x';

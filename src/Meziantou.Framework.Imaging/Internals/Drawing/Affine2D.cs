@@ -47,6 +47,13 @@ internal readonly struct Affine2D
     public static Affine2D ForGlyph(double scale, double originX, double originY, double shear) => new(scale, 0, shear * scale, -scale, originX, originY);
 
     /// <summary>
+    /// Creates the transformation of a slanted glyph that is narrowed: its points also move toward its origin, to
+    /// <paramref name="widthScale"/> times their distance from it along the baseline. With a width scale of 1, it is the
+    /// transformation of a slanted glyph, bit for bit.
+    /// </summary>
+    public static Affine2D ForGlyph(double scale, double originX, double originY, double shear, double widthScale) => new(scale * widthScale, 0, shear * scale, -scale, originX, originY);
+
+    /// <summary>
     /// Creates the transformation of a glyph that is on its side in a vertical line: the glyph of a horizontal line,
     /// slanted or not, turned a quarter of a turn clockwise around its origin. Its baseline goes down from the origin,
     /// and what is above the baseline is on its right.

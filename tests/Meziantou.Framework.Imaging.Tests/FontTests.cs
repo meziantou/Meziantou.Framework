@@ -142,6 +142,59 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void TheBaselinesOfAScriptComeFromTheBaseTable()
+    {
+        // The values of the reference shaper (hb-info --list-baselines): the horizontal axis gives heights above the
+        // baseline, the vertical axis distances from the left of the glyphs. The font gives no top of the
+        // ideographic em box: the middle of the box is half an em above its bottom.
+        var fonts = FixtureRoot.GetDirectory() / "fonts";
+        var face = Font.Load(fonts / "noto-sans-cjk" / "NotoSansCJKjp-Regular.subset.otf").Face;
+        Assert.Equal((0, -74, 834, -120), GetBaselines(face, isVertical: false, UnicodeScript.Han));
+        Assert.Equal((0, -74, 834, -120), GetBaselines(face, isVertical: false, UnicodeScript.Latin));
+        Assert.Equal((120, 46, 954, 0), GetBaselines(face, isVertical: true, UnicodeScript.Han));
+        Assert.False(face.TryGetBaseline(isVertical: false, GetScripts(UnicodeScript.Han), BaseTable.IdeographicTop, out _));
+        Assert.True(face.TryGetIdeographicCenter(isVertical: false, GetScripts(UnicodeScript.Latin), out var center));
+        Assert.Equal(380, center);
+        Assert.True(face.TryGetIdeographicCenter(isVertical: true, GetScripts(UnicodeScript.Han), out center));
+        Assert.Equal(500, center);
+
+        // An instance of a variable font varies the baselines by the deltas of the variation store of the table
+        var variable = Font.Load(fonts / "noto-sans-cjk-variable" / "NotoSansCJKjp-Variable.subset.otf");
+        foreach (var (variations, horizontal, vertical) in ((string, (int, int, int, int), (int, int, int, int))[])
+            [
+                ("wght=100", (0, -67, 827, -120), (120, 53, 947, 0)),
+                ("wght=650", (0, -87, 847, -120), (120, 33, 967, 0)),
+                ("wght=900", (0, -94, 854, -120), (120, 26, 974, 0)),
+            ])
+        {
+            var instance = FontTestSupport.WithVariations(variable, variations).Face;
+            Assert.Equal(horizontal, GetBaselines(instance, isVertical: false, UnicodeScript.Han));
+            Assert.Equal(vertical, GetBaselines(instance, isVertical: true, UnicodeScript.Han));
+        }
+
+        // A font without the table has no baselines
+        var boxes = FontTestSupport.Load(FontSamples.Boxes()).Face;
+        Assert.False(boxes.TryGetBaseline(isVertical: false, GetScripts(UnicodeScript.Latin), BaseTable.Roman, out _));
+        Assert.False(boxes.TryGetIdeographicCenter(isVertical: false, GetScripts(UnicodeScript.Latin), out _));
+
+        static (int Roman, int FaceBottom, int FaceTop, int Bottom) GetBaselines(FontFace face, bool isVertical, UnicodeScript script)
+        {
+            var scripts = GetScripts(script);
+            Assert.True(face.TryGetBaseline(isVertical, scripts, BaseTable.Roman, out var roman));
+            Assert.True(face.TryGetBaseline(isVertical, scripts, ShapingFeature.ToTag("icfb"), out var faceBottom));
+            Assert.True(face.TryGetBaseline(isVertical, scripts, ShapingFeature.ToTag("icft"), out var faceTop));
+            Assert.True(face.TryGetBaseline(isVertical, scripts, BaseTable.IdeographicBottom, out var bottom));
+            return (roman, faceBottom, faceTop, bottom);
+        }
+
+        static uint[] GetScripts(UnicodeScript script)
+        {
+            var tags = new uint[OpenTypeScript.MaxTagCount];
+            return tags[..OpenTypeScript.GetTags(script, tags)];
+        }
+    }
+
+    [Fact]
     public void TheVerticalMetricsComeFromTheTableTheFontDesignates()
     {
         FontBuilder Create()
@@ -1270,7 +1323,7 @@ public sealed class FontTests
         {
             var record = 12 + (table * 16);
             var tag = Encoding.ASCII.GetString(data, record, 4);
-            if (tag is not ("vhea" or "vmtx" or "VORG" or "VVAR"))
+            if (tag is not ("vhea" or "vmtx" or "VORG" or "VVAR" or "BASE"))
                 continue;
 
             var offset = (int)BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(record + 8));

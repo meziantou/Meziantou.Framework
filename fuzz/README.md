@@ -3,10 +3,14 @@
 The fuzz projects live apart from `tests/` because their campaigns run at a different cadence.
 
 - `Meziantou.Framework.Imaging.FuzzTests`: deterministic mutation fuzz tests over the Imaging golden corpus, with their own
-  harness. The weekly campaign is `.github/workflows/fuzz-imaging.yml`.
+  harness.
 - `Meziantou.Framework.*.Fuzz`: coverage-guided fuzzing with [SharpFuzz](https://github.com/Metalnem/sharpfuzz) and
   [libFuzzer](https://llvm.org/docs/LibFuzzer.html) (through [libfuzzer-dotnet](https://github.com/Metalnem/libfuzzer-dotnet)).
-  The weekly campaign is `.github/workflows/fuzz.yml`.
+
+Both run in the weekly campaign of `.github/workflows/fuzz.yml`. `eng/run-fuzz.ps1` (SharpFuzz) and
+`eng/run-imaging-fuzz.ps1` (Imaging) write a `result.json` and a `failure.md` file for each target under
+`artifacts/fuzz/results`, and `eng/report-fuzz-failures.ps1` opens an issue for each failed target, labeled with the
+component of the project.
 
 ## SharpFuzz projects
 
@@ -67,3 +71,19 @@ and `failure.md`, the body of the issue the weekly workflow opens. The corpus is
 
 Once a failure is fixed, commit its input under `fuzz/<Library>.Fuzz/Regressions/<target>/`.
 `Meziantou.Framework.Fuzzing.Tests` runs every target on its seeds and on its regressions in every CI build.
+
+## Imaging fuzz tests
+
+`Meziantou.Framework.Imaging.FuzzTests` is a test project: every CI build runs it with a small, deterministic budget, and
+the `MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_*` environment variables (`FuzzSettings`) set a longer campaign. `eng/run-imaging-fuzz.ps1`
+builds and runs it, then writes a result for each failed test and one for the campaign (any OS):
+
+```bash
+export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED=1234
+export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_ITERATIONS=2000000000
+export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_DURATION_SECONDS=60
+pwsh eng/run-imaging-fuzz.ps1 -Filter '--filter-class Meziantou.Framework.Imaging.FuzzTests.MutationFuzzTests'
+```
+
+The minimized failing inputs are written to `artifacts/fuzz/inputs`. Once a failure is fixed, commit the minimized input
+under `fuzz/Meziantou.Framework.Imaging.FuzzTests/FuzzRegressions` (see `regressions.json`).

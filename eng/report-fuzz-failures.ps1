@@ -1,17 +1,22 @@
 <#
 .SYNOPSIS
-Opens an issue for each test that failed in the weekly Imaging fuzzing campaign (.github/workflows/fuzz-imaging.yml).
+Opens an issue for each target of a fuzz project that failed in the weekly fuzzing campaign (.github/workflows/fuzz.yml).
 
 .DESCRIPTION
-Reads the .trx files of the campaign. Each failed test gets an issue titled "Imaging fuzzing: <test> failed" with the
-failure messages (signature, case, minimized input in base64) and the commands that reproduce it. When an open issue
-with the same title exists, the details are added to it as a comment instead. A failed campaign without any failed
-test (a hang dump, a crash, a build error) gets a single issue pointing to the run.
+Reads the result.json and failure.md files that eng/run-fuzz.ps1 (SharpFuzz projects) and eng/run-imaging-fuzz.ps1
+(Imaging fuzz tests) write for each target of a fuzz project. Each failed target gets an issue titled
+"Fuzzing: <target> failed", with the failure report, the failing input and the commands that reproduce it. When an open
+issue with the same title and all the labels exists, the details are added to it as a comment instead. A failed campaign
+without any result for the project (a build error, a job timeout) gets a single issue pointing to the run.
 
-Reads GITHUB_SHA, RUN_URL, FUZZ_JOB_RESULT, MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED and
-MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_DURATION_SECONDS from the environment.
+Reads GITHUB_SHA, RUN_URL and FUZZ_JOB_RESULT from the environment.
 #>
 param(
+    # The fuzz project, for instance Meziantou.Framework.Yaml.Fuzz
+    [Parameter(Mandatory)]
+    [string]$Project,
+
+    # The results of the project (the fuzz-results-<project> artifacts)
     [Parameter(Mandatory)]
     [string]$ResultsDirectory,
 
@@ -26,20 +31,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$Project = 'fuzz/Meziantou.Framework.Imaging.FuzzTests'
 # GitHub refuses an issue body or comment longer than 65536 characters
 $MaxBodyLength = 60000
-$Seed = $env:MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED
-$Duration = $env:MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_DURATION_SECONDS
 $RunUrl = $env:RUN_URL
 $Commit = $env:GITHUB_SHA
-$Namespace = @{ t = 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010' }
-
-function Get-Fence([string]$Text) {
-    # A fence longer than any backtick run of the text, so the text cannot close it
-    $longest = ([regex]::Matches($Text, '`+') | ForEach-Object Length | Measure-Object -Maximum).Maximum
-    return '`' * [Math]::Max(3, $longest + 1)
-}
 
 function Limit-Length([string]$Text) {
     if ($Text.Length -le $MaxBodyLength) {
@@ -49,103 +44,33 @@ function Limit-Length([string]$Text) {
     return $Text.Substring(0, $MaxBodyLength) + "`n`n... (truncated, see the run: $RunUrl)"
 }
 
-# Failed tests by name; a test fails once per target framework, usually with the same message
-$failures = [ordered]@{}
-# The merged report repeats the results of the per-framework reports
-foreach ($file in Get-ChildItem -Path $ResultsDirectory -Recurse -Filter '*.trx' | Where-Object { $_.Directory.Name -ne 'merged' }) {
-    [xml]$trx = Get-Content -LiteralPath $file.FullName -Raw
-    $methods = @{}
-    foreach ($test in Select-Xml -Xml $trx -XPath '//t:UnitTest' -Namespace $Namespace) {
-        $methods[$test.Node.id] = $test.Node.SelectSingleNode('*[local-name()="TestMethod"]')
-    }
-
-    foreach ($result in Select-Xml -Xml $trx -XPath '//t:UnitTestResult[@outcome="Failed"]' -Namespace $Namespace) {
-        $node = $result.Node
-        $method = $methods[$node.testId]
-        $framework = if ($method -and $method.codeBase -match '(net\d+\.\d+)') { $Matches[1] } else { 'unknown framework' }
-        $message = $node.SelectSingleNode('*[local-name()="Output"]/*[local-name()="ErrorInfo"]/*[local-name()="Message"]')?.InnerText
-        $stdout = $node.SelectSingleNode('*[local-name()="Output"]/*[local-name()="StdOut"]')?.InnerText
-        if (-not $failures.Contains($node.testName)) {
-            $failures[$node.testName] = [pscustomobject]@{
-                ClassName  = ${method}?.className
-                MethodName = ${method}?.name
-                Results    = [System.Collections.Generic.List[object]]::new()
-            }
-        }
-
-        $failures[$node.testName].Results.Add([pscustomobject]@{ Framework = $framework; Message = "$message".Trim(); StdOut = "$stdout".Trim() })
-    }
-}
-
+# 'a,b' arrives as a single value through pwsh -File
+$Labels = @($Labels | ForEach-Object { $_ -split ',' } | ForEach-Object Trim | Where-Object { $_ })
 $issues = [System.Collections.Generic.List[object]]::new()
-foreach ($testName in $failures.Keys) {
-    $failure = $failures[$testName]
-    $frameworks = @($failure.Results.Framework | Sort-Object -Unique)
+$results = @(if (Test-Path -LiteralPath $ResultsDirectory) { Get-ChildItem -Path $ResultsDirectory -Recurse -Filter 'result.json' | Sort-Object FullName })
+foreach ($file in $results) {
+    $result = Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json
+    if (-not $result.failed) {
+        continue
+    }
+
+    $failure = Join-Path $file.DirectoryName 'failure.md'
+    $details = if (Test-Path -LiteralPath $failure) { Get-Content -LiteralPath $failure -Raw } else { "No failure report, see the run." }
     $body = [System.Text.StringBuilder]::new()
-    [void]$body.AppendLine("The weekly Imaging fuzzing campaign found a failure in ``$testName``.")
+    [void]$body.AppendLine("The weekly fuzzing campaign found a failure in the target ``$($result.target)`` of ``fuzz/$($result.project)``.")
     [void]$body.AppendLine()
-    [void]$body.AppendLine("- Run: $RunUrl (the minimized and original inputs are in the ``fuzz-*`` artifacts)")
+    [void]$body.AppendLine("- Run: $RunUrl (the failing inputs and the logs are in the ``fuzz-results-$($result.project)`` artifacts)")
     [void]$body.AppendLine("- Commit: $Commit")
-    [void]$body.AppendLine("- Base seed: ``$Seed``, $Duration s per campaign")
-    [void]$body.AppendLine("- Target frameworks: $($frameworks -join ', ')")
-
-    # Frameworks that failed the same way share one section
-    foreach ($group in $failure.Results | Group-Object Message) {
-        [void]$body.AppendLine()
-        [void]$body.AppendLine("### Failure ($(@($group.Group.Framework | Sort-Object -Unique) -join ', '))")
-        [void]$body.AppendLine()
-        $fence = Get-Fence $group.Name
-        [void]$body.AppendLine("${fence}text")
-        [void]$body.AppendLine($group.Name)
-        [void]$body.AppendLine($fence)
-        $stdout = $group.Group[0].StdOut
-        if ($stdout) {
-            [void]$body.AppendLine()
-            $fence = Get-Fence $stdout
-            [void]$body.AppendLine("Campaign statistics:")
-            [void]$body.AppendLine()
-            [void]$body.AppendLine("${fence}text")
-            [void]$body.AppendLine($stdout)
-            [void]$body.AppendLine($fence)
-        }
-    }
-
-    # The cases are deterministic for a base seed: a campaign that stops right after the failing case ("mutation N",
-    # "iteration N") replays it without the time budget
-    $lastCase = ([regex]::Matches(($failure.Results.Message -join "`n"), '\b(?:mutation|iteration) (\d+)\b') | ForEach-Object { [long]($_.Groups[1].Value) } | Measure-Object -Maximum).Maximum
-    $iterations = if ($null -ne $lastCase) { $lastCase + 1 } else { $null }
-    $group = if ($testName -match 'group: "([^"]+)"') { $Matches[1] } else { $null }
-    $framework = if ($frameworks[0] -ne 'unknown framework') { " --framework $($frameworks[0])" } else { '' }
-    $filter = if ($failure.ClassName -and $failure.MethodName) { " --filter-method $($failure.ClassName).$($failure.MethodName)" } else { '' }
     [void]$body.AppendLine()
-    [void]$body.AppendLine('### Reproduce')
-    [void]$body.AppendLine()
-    [void]$body.AppendLine('```bash')
-    [void]$body.AppendLine("git checkout $Commit")
-    [void]$body.AppendLine("export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED=$Seed")
-    if ($group) {
-        [void]$body.AppendLine("export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_GROUPS=$group")
-    }
-
-    if ($iterations) {
-        [void]$body.AppendLine("export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_ITERATIONS=$iterations")
-    }
-    else {
-        # Without a case number, the campaign has to run as long as on CI to reach the case
-        [void]$body.AppendLine("export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_ITERATIONS=2000000000")
-        [void]$body.AppendLine("export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_DURATION_SECONDS=$Duration")
-    }
-
-    [void]$body.AppendLine("dotnet test --project `"`$PWD/$Project`" --configuration Release$framework$filter")
-    [void]$body.AppendLine('```')
-    [void]$body.AppendLine()
-    [void]$body.AppendLine("Once fixed, commit the minimized input under ``$Project/FuzzRegressions`` (see ``regressions.json``).")
-    $issues.Add([pscustomobject]@{ Title = "Imaging fuzzing: $testName failed"; Body = Limit-Length $body.ToString() })
+    [void]$body.AppendLine($details)
+    $issues.Add([pscustomobject]@{ Title = "Fuzzing: $($result.target) failed"; Body = Limit-Length $body.ToString() })
 }
 
-if ($issues.Count -eq 0 -and $env:FUZZ_JOB_RESULT -eq 'failure') {
-    $body = "The weekly Imaging fuzzing campaign failed without a failed test in its reports: a test host killed by the hang dump (a campaign running longer than 10 minutes), a crash, or a build error. See the run: $RunUrl`n`n- Commit: $Commit`n- Base seed: ``$Seed``, $Duration s per campaign"
-    $issues.Add([pscustomobject]@{ Title = 'Imaging fuzzing: the campaign failed without a reported test failure'; Body = $body })
+# The jobs of a project always upload the results of the targets they fuzzed; none means they failed before
+# (FUZZ_JOB_RESULT is the result of all the jobs of the matrix, so it says that some project failed, not which one)
+if ($results.Count -eq 0 -and $env:FUZZ_JOB_RESULT -eq 'failure') {
+    $body = "The weekly fuzzing campaign of ``fuzz/$Project`` failed without any target result: a build error, an error of the tools, or a job timeout. See the run: $RunUrl`n`n- Commit: $Commit"
+    $issues.Add([pscustomobject]@{ Title = "Fuzzing: the campaign of $Project failed without a reported target failure"; Body = $body })
 }
 
 if ($issues.Count -eq 0) {

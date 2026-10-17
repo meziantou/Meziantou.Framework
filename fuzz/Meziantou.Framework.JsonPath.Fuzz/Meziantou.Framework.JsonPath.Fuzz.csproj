@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.JsonPath. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The JSONPath Compliance Test Suite cases are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.JsonPath.Tests\cts.json" LogicalName="cts.json" Link="Seeds\cts.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
+  </ItemGroup>
+</Project>

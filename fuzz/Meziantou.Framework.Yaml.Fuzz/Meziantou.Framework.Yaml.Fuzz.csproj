@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Yaml. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The yaml-test-suite cases are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Yaml.Tests\files\yaml-test-suite\cases.json" LogicalName="yaml-test-suite.cases.json" Link="Seeds\yaml-test-suite.cases.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Yaml\Meziantou.Framework.Yaml.csproj" />
+  </ItemGroup>
+</Project>

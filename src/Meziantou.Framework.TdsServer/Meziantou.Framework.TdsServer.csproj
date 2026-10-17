@@ -19,4 +19,8 @@
     <ProjectReference Include="../Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.TdsServer.Fuzz" />
+  </ItemGroup>
+
 </Project>

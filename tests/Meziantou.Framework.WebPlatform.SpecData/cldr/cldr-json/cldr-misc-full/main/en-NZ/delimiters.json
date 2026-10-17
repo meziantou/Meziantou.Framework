@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-NZ": {
+      "identity": {
+        "language": "en",
+        "territory": "NZ"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

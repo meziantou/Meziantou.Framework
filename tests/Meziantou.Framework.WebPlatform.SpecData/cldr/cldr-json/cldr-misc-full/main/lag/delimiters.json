@@ -1,0 +1,15 @@
+{
+  "main": {
+    "lag": {
+      "identity": {
+        "language": "lag"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

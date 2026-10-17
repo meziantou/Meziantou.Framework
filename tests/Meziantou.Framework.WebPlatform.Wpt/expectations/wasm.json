@@ -1,0 +1,2140 @@
+{
+  "wasm/core/address.wast.js.html": {
+    "total": 373
+  },
+  "wasm/core/align.wast.js.html": {
+    "total": 336
+  },
+  "wasm/core/annotations.wast.js.html": {
+    "total": 160
+  },
+  "wasm/core/binary-leb128.wast.js.html": {
+    "total": 217
+  },
+  "wasm/core/binary.wast.js.html": {
+    "total": 276
+  },
+  "wasm/core/block.wast.js.html": {
+    "total": 397
+  },
+  "wasm/core/br.wast.js.html": {
+    "total": 136
+  },
+  "wasm/core/br_if.wast.js.html": {
+    "total": 162
+  },
+  "wasm/core/br_on_non_null.wast.js.html": {
+    "total": 21
+  },
+  "wasm/core/br_on_null.wast.js.html": {
+    "total": 19
+  },
+  "wasm/core/br_table.wast.js.html": {
+    "total": 226
+  },
+  "wasm/core/bulk-memory/bulk.wast.js.html": {
+    "total": 145
+  },
+  "wasm/core/bulk-memory/memory_copy.wast.js.html": {
+    "total": 4582
+  },
+  "wasm/core/bulk-memory/memory_fill.wast.js.html": {
+    "total": 188
+  },
+  "wasm/core/bulk-memory/memory_init.wast.js.html": {
+    "total": 377
+  },
+  "wasm/core/bulk-memory/table-sub.wast.js.html": {
+    "total": 9
+  },
+  "wasm/core/bulk-memory/table_copy.wast.js.html": {
+    "total": 1833
+  },
+  "wasm/core/bulk-memory/table_fill.wast.js.html": {
+    "total": 58
+  },
+  "wasm/core/bulk-memory/table_init.wast.js.html": {
+    "total": 942
+  },
+  "wasm/core/call.wast.js.html": {
+    "total": 143
+  },
+  "wasm/core/call_indirect.wast.js.html": {
+    "total": 350
+  },
+  "wasm/core/call_ref.wast.js.html": {
+    "total": 49
+  },
+  "wasm/core/comments.wast.js.html": {
+    "total": 20
+  },
+  "wasm/core/const.wast.js.html": {
+    "total": 2560
+  },
+  "wasm/core/conversions.wast.js.html": {
+    "total": 2355
+  },
+  "wasm/core/custom.wast.js.html": {
+    "total": 27
+  },
+  "wasm/core/data.wast.js.html": {
+    "total": 196
+  },
+  "wasm/core/elem.wast.js.html": {
+    "total": 369
+  },
+  "wasm/core/endianness.wast.js.html": {
+    "total": 121
+  },
+  "wasm/core/exceptions/tag.wast.js.html": {
+    "total": 26
+  },
+  "wasm/core/exceptions/throw.wast.js.html": {
+    "total": 26
+  },
+  "wasm/core/exceptions/throw_ref.wast.js.html": {
+    "total": 21
+  },
+  "wasm/core/exceptions/try_table.wast.js.html": {
+    "total": 115
+  },
+  "wasm/core/exports.wast.js.html": {
+    "total": 243
+  },
+  "wasm/core/f32.wast.js.html": {
+    "total": 10031
+  },
+  "wasm/core/f32_bitwise.wast.js.html": {
+    "total": 1451
+  },
+  "wasm/core/f32_cmp.wast.js.html": {
+    "total": 9617
+  },
+  "wasm/core/f64.wast.js.html": {
+    "total": 10031
+  },
+  "wasm/core/f64_bitwise.wast.js.html": {
+    "total": 1451
+  },
+  "wasm/core/f64_cmp.wast.js.html": {
+    "total": 9617
+  },
+  "wasm/core/fac.wast.js.html": {
+    "total": 12
+  },
+  "wasm/core/float_exprs.wast.js.html": {
+    "total": 3471
+  },
+  "wasm/core/float_literals.wast.js.html": {
+    "total": 326
+  },
+  "wasm/core/float_memory.wast.js.html": {
+    "total": 194
+  },
+  "wasm/core/float_misc.wast.js.html": {
+    "total": 1885
+  },
+  "wasm/core/forward.wast.js.html": {
+    "total": 9
+  },
+  "wasm/core/func.wast.js.html": {
+    "total": 344
+  },
+  "wasm/core/func_ptrs.wast.js.html": {
+    "total": 51
+  },
+  "wasm/core/gc/array.wast.js.html": {
+    "total": 100
+  },
+  "wasm/core/gc/array_copy.wast.js.html": {
+    "total": 43
+  },
+  "wasm/core/gc/array_fill.wast.js.html": {
+    "total": 37
+  },
+  "wasm/core/gc/array_init_data.wast.js.html": {
+    "total": 54
+  },
+  "wasm/core/gc/array_init_elem.wast.js.html": {
+    "total": 47
+  },
+  "wasm/core/gc/array_new_data.wast.js.html": {
+    "total": 40
+  },
+  "wasm/core/gc/array_new_elem.wast.js.html": {
+    "total": 36
+  },
+  "wasm/core/gc/binary-gc.wast.js.html": {
+    "total": 4
+  },
+  "wasm/core/gc/br_on_cast.wast.js.html": {
+    "total": 51
+  },
+  "wasm/core/gc/br_on_cast_fail.wast.js.html": {
+    "total": 51
+  },
+  "wasm/core/gc/extern.wast.js.html": {
+    "total": 22
+  },
+  "wasm/core/gc/i31.wast.js.html": {
+    "total": 88
+  },
+  "wasm/core/gc/ref_cast.wast.js.html": {
+    "total": 51
+  },
+  "wasm/core/gc/ref_eq.wast.js.html": {
+    "total": 99
+  },
+  "wasm/core/gc/ref_test.wast.js.html": {
+    "total": 77
+  },
+  "wasm/core/gc/struct.wast.js.html": {
+    "total": 67
+  },
+  "wasm/core/gc/type-subtyping.wast.js.html": {
+    "total": 293
+  },
+  "wasm/core/global.wast.js.html": {
+    "total": 226
+  },
+  "wasm/core/i32.wast.js.html": {
+    "total": 549
+  },
+  "wasm/core/i64.wast.js.html": {
+    "total": 451
+  },
+  "wasm/core/id.wast.js.html": {
+    "total": 17
+  },
+  "wasm/core/if.wast.js.html": {
+    "total": 361
+  },
+  "wasm/core/imports.wast.js.html": {
+    "total": 652
+  },
+  "wasm/core/inline-module.wast.js.html": {
+    "total": 4
+  },
+  "wasm/core/instance.wast.js.html": {
+    "total": 30
+  },
+  "wasm/core/int_exprs.wast.js.html": {
+    "total": 148
+  },
+  "wasm/core/int_literals.wast.js.html": {
+    "total": 75
+  },
+  "wasm/core/labels.wast.js.html": {
+    "total": 36
+  },
+  "wasm/core/left-to-right.wast.js.html": {
+    "total": 100
+  },
+  "wasm/core/linking.wast.js.html": {
+    "total": 360
+  },
+  "wasm/core/load.wast.js.html": {
+    "total": 160
+  },
+  "wasm/core/local_get.wast.js.html": {
+    "total": 74
+  },
+  "wasm/core/local_init.wast.js.html": {
+    "total": 20
+  },
+  "wasm/core/local_set.wast.js.html": {
+    "total": 102
+  },
+  "wasm/core/local_tee.wast.js.html": {
+    "total": 168
+  },
+  "wasm/core/loop.wast.js.html": {
+    "total": 215
+  },
+  "wasm/core/memory.wast.js.html": {
+    "total": 143
+  },
+  "wasm/core/memory64/address64.wast.js.html": {
+    "total": 342
+  },
+  "wasm/core/memory64/align64.wast.js.html": {
+    "total": 321
+  },
+  "wasm/core/memory64/binary_leb128_64.wast.js.html": {
+    "total": 7
+  },
+  "wasm/core/memory64/bulk64.wast.js.html": {
+    "total": 82
+  },
+  "wasm/core/memory64/call_indirect64.wast.js.html": {
+    "total": 6
+  },
+  "wasm/core/memory64/endianness64.wast.js.html": {
+    "total": 121
+  },
+  "wasm/core/memory64/float_memory64.wast.js.html": {
+    "total": 194
+  },
+  "wasm/core/memory64/load64.wast.js.html": {
+    "total": 162
+  },
+  "wasm/core/memory64/memory64-imports.wast.js.html": {
+    "total": 242
+  },
+  "wasm/core/memory64/memory64.wast.js.html": {
+    "total": 107
+  },
+  "wasm/core/memory64/memory_copy64.wast.js.html": {
+    "total": 4582
+  },
+  "wasm/core/memory64/memory_fill64.wast.js.html": {
+    "total": 188
+  },
+  "wasm/core/memory64/memory_grow64.wast.js.html": {
+    "total": 59
+  },
+  "wasm/core/memory64/memory_init64.wast.js.html": {
+    "total": 377
+  },
+  "wasm/core/memory64/memory_redundancy64.wast.js.html": {
+    "total": 15
+  },
+  "wasm/core/memory64/memory_trap64.wast.js.html": {
+    "total": 322
+  },
+  "wasm/core/memory64/table64.wast.js.html": {
+    "total": 41
+  },
+  "wasm/core/memory64/table_copy64.wast.js.html": {
+    "total": 1833
+  },
+  "wasm/core/memory64/table_copy_mixed.wast.js.html": {
+    "total": 11
+  },
+  "wasm/core/memory64/table_fill64.wast.js.html": {
+    "total": 93
+  },
+  "wasm/core/memory64/table_get64.wast.js.html": {
+    "total": 15
+  },
+  "wasm/core/memory64/table_grow64.wast.js.html": {
+    "total": 26
+  },
+  "wasm/core/memory64/table_init64.wast.js.html": {
+    "total": 1044
+  },
+  "wasm/core/memory64/table_set64.wast.js.html": {
+    "total": 23
+  },
+  "wasm/core/memory64/table_size64.wast.js.html": {
+    "total": 41
+  },
+  "wasm/core/memory_grow.wast.js.html": {
+    "total": 131
+  },
+  "wasm/core/memory_redundancy.wast.js.html": {
+    "total": 15
+  },
+  "wasm/core/memory_size.wast.js.html": {
+    "total": 54
+  },
+  "wasm/core/memory_trap.wast.js.html": {
+    "total": 344
+  },
+  "wasm/core/multi-memory/address0.wast.js.html": {
+    "total": 96
+  },
+  "wasm/core/multi-memory/address1.wast.js.html": {
+    "total": 131
+  },
+  "wasm/core/multi-memory/align0.wast.js.html": {
+    "total": 21
+  },
+  "wasm/core/multi-memory/binary0.wast.js.html": {
+    "total": 21
+  },
+  "wasm/core/multi-memory/data0.wast.js.html": {
+    "total": 23
+  },
+  "wasm/core/multi-memory/data1.wast.js.html": {
+    "total": 58
+  },
+  "wasm/core/multi-memory/data_drop0.wast.js.html": {
+    "total": 15
+  },
+  "wasm/core/multi-memory/exports0.wast.js.html": {
+    "total": 26
+  },
+  "wasm/core/multi-memory/float_exprs0.wast.js.html": {
+    "total": 57
+  },
+  "wasm/core/multi-memory/float_exprs1.wast.js.html": {
+    "total": 13
+  },
+  "wasm/core/multi-memory/float_memory0.wast.js.html": {
+    "total": 66
+  },
+  "wasm/core/multi-memory/imports0.wast.js.html": {
+    "total": 29
+  },
+  "wasm/core/multi-memory/imports1.wast.js.html": {
+    "total": 9
+  },
+  "wasm/core/multi-memory/imports2.wast.js.html": {
+    "total": 49
+  },
+  "wasm/core/multi-memory/imports3.wast.js.html": {
+    "total": 37
+  },
+  "wasm/core/multi-memory/imports4.wast.js.html": {
+    "total": 25
+  },
+  "wasm/core/multi-memory/linking0.wast.js.html": {
+    "total": 15
+  },
+  "wasm/core/multi-memory/linking1.wast.js.html": {
+    "total": 29
+  },
+  "wasm/core/multi-memory/linking2.wast.js.html": {
+    "total": 16
+  },
+  "wasm/core/multi-memory/linking3.wast.js.html": {
+    "total": 30
+  },
+  "wasm/core/multi-memory/load0.wast.js.html": {
+    "total": 7
+  },
+  "wasm/core/multi-memory/load1.wast.js.html": {
+    "total": 23
+  },
+  "wasm/core/multi-memory/load2.wast.js.html": {
+    "total": 42
+  },
+  "wasm/core/multi-memory/memory-multi.wast.js.html": {
+    "total": 12
+  },
+  "wasm/core/multi-memory/memory_copy0.wast.js.html": {
+    "total": 33
+  },
+  "wasm/core/multi-memory/memory_copy1.wast.js.html": {
+    "total": 18
+  },
+  "wasm/core/multi-memory/memory_fill0.wast.js.html": {
+    "total": 20
+  },
+  "wasm/core/multi-memory/memory_grow.wast.js.html": {
+    "total": 58
+  },
+  "wasm/core/multi-memory/memory_init0.wast.js.html": {
+    "total": 17
+  },
+  "wasm/core/multi-memory/memory_size0.wast.js.html": {
+    "total": 12
+  },
+  "wasm/core/multi-memory/memory_size1.wast.js.html": {
+    "total": 19
+  },
+  "wasm/core/multi-memory/memory_size2.wast.js.html": {
+    "total": 25
+  },
+  "wasm/core/multi-memory/memory_size3.wast.js.html": {
+    "total": 6
+  },
+  "wasm/core/multi-memory/memory_size_import.wast.js.html": {
+    "total": 12
+  },
+  "wasm/core/multi-memory/memory_trap0.wast.js.html": {
+    "total": 18
+  },
+  "wasm/core/multi-memory/memory_trap1.wast.js.html": {
+    "total": 328
+  },
+  "wasm/core/multi-memory/start0.wast.js.html": {
+    "total": 13
+  },
+  "wasm/core/multi-memory/store0.wast.js.html": {
+    "total": 9
+  },
+  "wasm/core/multi-memory/store1.wast.js.html": {
+    "total": 19
+  },
+  "wasm/core/multi-memory/store2.wast.js.html": {
+    "total": 30
+  },
+  "wasm/core/multi-memory/traps0.wast.js.html": {
+    "total": 19
+  },
+  "wasm/core/names.wast.js.html": {
+    "total": 496
+  },
+  "wasm/core/nop.wast.js.html": {
+    "total": 96
+  },
+  "wasm/core/obsolete-keywords.wast.js.html": {
+    "total": 24
+  },
+  "wasm/core/ref.wast.js.html": {
+    "total": 29
+  },
+  "wasm/core/ref_as_non_null.wast.js.html": {
+    "total": 14
+  },
+  "wasm/core/ref_func.wast.js.html": {
+    "total": 27
+  },
+  "wasm/core/ref_is_null.wast.js.html": {
+    "total": 30
+  },
+  "wasm/core/ref_null.wast.js.html": {
+    "total": 61
+  },
+  "wasm/core/relaxed-simd/i16x8_relaxed_q15mulr_s.wast.js.html": {
+    "total": 13
+  },
+  "wasm/core/relaxed-simd/i32x4_relaxed_trunc.wast.js.html": {
+    "total": 5
+  },
+  "wasm/core/relaxed-simd/i8x16_relaxed_swizzle.wast.js.html": {
+    "total": 25
+  },
+  "wasm/core/relaxed-simd/relaxed_dot_product.wast.js.html": {
+    "total": 45
+  },
+  "wasm/core/relaxed-simd/relaxed_laneselect.wast.js.html": {
+    "total": 49
+  },
+  "wasm/core/relaxed-simd/relaxed_madd_nmadd.wast.js.html": {
+    "total": 76
+  },
+  "wasm/core/relaxed-simd/relaxed_min_max.wast.js.html": {
+    "total": 101
+  },
+  "wasm/core/return.wast.js.html": {
+    "total": 123
+  },
+  "wasm/core/return_call.wast.js.html": {
+    "total": 97
+  },
+  "wasm/core/return_call_indirect.wast.js.html": {
+    "total": 145
+  },
+  "wasm/core/return_call_ref.wast.js.html": {
+    "total": 96
+  },
+  "wasm/core/select.wast.js.html": {
+    "total": 303
+  },
+  "wasm/core/simd/simd_address.wast.js.html": {
+    "total": 175
+  },
+  "wasm/core/simd/simd_align.wast.js.html": {
+    "total": 264
+  },
+  "wasm/core/simd/simd_bit_shift.wast.js.html": {
+    "total": 858
+  },
+  "wasm/core/simd/simd_bitwise.wast.js.html": {
+    "total": 581
+  },
+  "wasm/core/simd/simd_boolean.wast.js.html": {
+    "total": 1076
+  },
+  "wasm/core/simd/simd_const.wast.js.html": {
+    "total": 2354
+  },
+  "wasm/core/simd/simd_conversions.wast.js.html": {
+    "total": 1032
+  },
+  "wasm/core/simd/simd_f32x4.wast.js.html": {
+    "total": 3128
+  },
+  "wasm/core/simd/simd_f32x4_arith.wast.js.html": {
+    "total": 7255
+  },
+  "wasm/core/simd/simd_f32x4_cmp.wast.js.html": {
+    "total": 10341
+  },
+  "wasm/core/simd/simd_f32x4_pmin_pmax.wast.js.html": {
+    "total": 15521
+  },
+  "wasm/core/simd/simd_f32x4_rounding.wast.js.html": {
+    "total": 757
+  },
+  "wasm/core/simd/simd_f64x2.wast.js.html": {
+    "total": 3196
+  },
+  "wasm/core/simd/simd_f64x2_arith.wast.js.html": {
+    "total": 7267
+  },
+  "wasm/core/simd/simd_f64x2_cmp.wast.js.html": {
+    "total": 10653
+  },
+  "wasm/core/simd/simd_f64x2_pmin_pmax.wast.js.html": {
+    "total": 15521
+  },
+  "wasm/core/simd/simd_f64x2_rounding.wast.js.html": {
+    "total": 757
+  },
+  "wasm/core/simd/simd_i16x8_arith.wast.js.html": {
+    "total": 754
+  },
+  "wasm/core/simd/simd_i16x8_arith2.wast.js.html": {
+    "total": 650
+  },
+  "wasm/core/simd/simd_i16x8_cmp.wast.js.html": {
+    "total": 1761
+  },
+  "wasm/core/simd/simd_i16x8_extadd_pairwise_i8x16.wast.js.html": {
+    "total": 77
+  },
+  "wasm/core/simd/simd_i16x8_extmul_i8x16.wast.js.html": {
+    "total": 445
+  },
+  "wasm/core/simd/simd_i16x8_q15mulr_sat_s.wast.js.html": {
+    "total": 115
+  },
+  "wasm/core/simd/simd_i16x8_sat_arith.wast.js.html": {
+    "total": 856
+  },
+  "wasm/core/simd/simd_i32x4_arith.wast.js.html": {
+    "total": 754
+  },
+  "wasm/core/simd/simd_i32x4_arith2.wast.js.html": {
+    "total": 544
+  },
+  "wasm/core/simd/simd_i32x4_cmp.wast.js.html": {
+    "total": 1781
+  },
+  "wasm/core/simd/simd_i32x4_dot_i16x8.wast.js.html": {
+    "total": 123
+  },
+  "wasm/core/simd/simd_i32x4_extadd_pairwise_i16x8.wast.js.html": {
+    "total": 77
+  },
+  "wasm/core/simd/simd_i32x4_extmul_i16x8.wast.js.html": {
+    "total": 445
+  },
+  "wasm/core/simd/simd_i32x4_trunc_sat_f32x4.wast.js.html": {
+    "total": 421
+  },
+  "wasm/core/simd/simd_i32x4_trunc_sat_f64x2.wast.js.html": {
+    "total": 421
+  },
+  "wasm/core/simd/simd_i64x2_arith.wast.js.html": {
+    "total": 778
+  },
+  "wasm/core/simd/simd_i64x2_arith2.wast.js.html": {
+    "total": 96
+  },
+  "wasm/core/simd/simd_i64x2_cmp.wast.js.html": {
+    "total": 433
+  },
+  "wasm/core/simd/simd_i64x2_extmul_i32x4.wast.js.html": {
+    "total": 445
+  },
+  "wasm/core/simd/simd_i8x16_arith.wast.js.html": {
+    "total": 508
+  },
+  "wasm/core/simd/simd_i8x16_arith2.wast.js.html": {
+    "total": 794
+  },
+  "wasm/core/simd/simd_i8x16_cmp.wast.js.html": {
+    "total": 1681
+  },
+  "wasm/core/simd/simd_i8x16_sat_arith.wast.js.html": {
+    "total": 808
+  },
+  "wasm/core/simd/simd_int_to_int_extend.wast.js.html": {
+    "total": 965
+  },
+  "wasm/core/simd/simd_lane.wast.js.html": {
+    "total": 1512
+  },
+  "wasm/core/simd/simd_linking.wast.js.html": {
+    "total": 8
+  },
+  "wasm/core/simd/simd_load.wast.js.html": {
+    "total": 122
+  },
+  "wasm/core/simd/simd_load16_lane.wast.js.html": {
+    "total": 139
+  },
+  "wasm/core/simd/simd_load32_lane.wast.js.html": {
+    "total": 91
+  },
+  "wasm/core/simd/simd_load64_lane.wast.js.html": {
+    "total": 59
+  },
+  "wasm/core/simd/simd_load8_lane.wast.js.html": {
+    "total": 203
+  },
+  "wasm/core/simd/simd_load_extend.wast.js.html": {
+    "total": 362
+  },
+  "wasm/core/simd/simd_load_splat.wast.js.html": {
+    "total": 468
+  },
+  "wasm/core/simd/simd_load_zero.wast.js.html": {
+    "total": 130
+  },
+  "wasm/core/simd/simd_memory-multi.wast.js.html": {
+    "total": 5
+  },
+  "wasm/core/simd/simd_select.wast.js.html": {
+    "total": 29
+  },
+  "wasm/core/simd/simd_splat.wast.js.html": {
+    "total": 656
+  },
+  "wasm/core/simd/simd_store.wast.js.html": {
+    "total": 67
+  },
+  "wasm/core/simd/simd_store16_lane.wast.js.html": {
+    "total": 139
+  },
+  "wasm/core/simd/simd_store32_lane.wast.js.html": {
+    "total": 91
+  },
+  "wasm/core/simd/simd_store64_lane.wast.js.html": {
+    "total": 59
+  },
+  "wasm/core/simd/simd_store8_lane.wast.js.html": {
+    "total": 203
+  },
+  "wasm/core/skip-stack-guard-page.wast.js.html": {
+    "total": 15
+  },
+  "wasm/core/stack.wast.js.html": {
+    "total": 13
+  },
+  "wasm/core/start.wast.js.html": {
+    "total": 39
+  },
+  "wasm/core/store.wast.js.html": {
+    "total": 130
+  },
+  "wasm/core/switch.wast.js.html": {
+    "total": 33
+  },
+  "wasm/core/table.wast.js.html": {
+    "total": 104
+  },
+  "wasm/core/table_get.wast.js.html": {
+    "total": 25
+  },
+  "wasm/core/table_grow.wast.js.html": {
+    "total": 81
+  },
+  "wasm/core/table_set.wast.js.html": {
+    "total": 37
+  },
+  "wasm/core/table_size.wast.js.html": {
+    "total": 45
+  },
+  "wasm/core/token.wast.js.html": {
+    "total": 159
+  },
+  "wasm/core/traps.wast.js.html": {
+    "total": 70
+  },
+  "wasm/core/type-canon.wast.js.html": {
+    "total": 8
+  },
+  "wasm/core/type-equivalence.wast.js.html": {
+    "total": 71
+  },
+  "wasm/core/type-rec.wast.js.html": {
+    "total": 66
+  },
+  "wasm/core/type.wast.js.html": {
+    "total": 9
+  },
+  "wasm/core/unreachable.wast.js.html": {
+    "total": 86
+  },
+  "wasm/core/unreached-invalid.wast.js.html": {
+    "total": 244
+  },
+  "wasm/core/unreached-valid.wast.js.html": {
+    "total": 21
+  },
+  "wasm/core/unwind.wast.js.html": {
+    "total": 54
+  },
+  "wasm/core/utf8-custom-section-id.wast.js.html": {
+    "total": 354
+  },
+  "wasm/core/utf8-import-field.wast.js.html": {
+    "total": 354
+  },
+  "wasm/core/utf8-import-module.wast.js.html": {
+    "total": 354
+  },
+  "wasm/core/utf8-invalid-encoding.wast.js.html": {
+    "total": 354
+  },
+  "wasm/create_multiple_memory.worker.js": {
+    "total": 1
+  },
+  "wasm/jsapi/constructor/compile.any.js": {
+    "total": 9
+  },
+  "wasm/jsapi/constructor/compile.any.js#dedicatedworker": {
+    "total": 9
+  },
+  "wasm/jsapi/constructor/instantiate-bad-imports.any.js": {
+    "total": 212
+  },
+  "wasm/jsapi/constructor/instantiate-bad-imports.any.js#dedicatedworker": {
+    "total": 212
+  },
+  "wasm/jsapi/constructor/instantiate.any.js": {
+    "total": 57
+  },
+  "wasm/jsapi/constructor/instantiate.any.js#dedicatedworker": {
+    "total": 57
+  },
+  "wasm/jsapi/constructor/multi-value.any.js": {
+    "total": 3
+  },
+  "wasm/jsapi/constructor/multi-value.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "wasm/jsapi/constructor/toStringTag.any.js": {
+    "total": 4
+  },
+  "wasm/jsapi/constructor/toStringTag.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "wasm/jsapi/constructor/validate.any.js": {
+    "total": 62
+  },
+  "wasm/jsapi/constructor/validate.any.js#dedicatedworker": {
+    "total": 62
+  },
+  "wasm/jsapi/esm-integration/exports.tentative.any.js": {
+    "total": 1,
+    "failures": {
+      "Exported names from a WebAssembly module": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/exports.tentative.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "Exported names from a WebAssembly module": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/global-exports-live-bindings.tentative.any.js": {
+    "total": 2,
+    "failures": {
+      "Dep module mutable global exports should be live bindings": "FAIL",
+      "Local mutable global exports should be live bindings": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/global-exports-live-bindings.tentative.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "Dep module mutable global exports should be live bindings": "FAIL",
+      "Local mutable global exports should be live bindings": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/global-exports.tentative.any.js": {
+    "total": 5,
+    "failures": {
+      "WebAssembly local global values should be unwrapped when exporting in ESM integration": "FAIL",
+      "WebAssembly module global values should be unwrapped when importing in ESM integration": "FAIL",
+      "WebAssembly module globals from imported WebAssembly modules should be unwrapped": "FAIL",
+      "WebAssembly mutable global values should be unwrapped when importing in ESM integration": "FAIL",
+      "WebAssembly should properly handle all global types": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/global-exports.tentative.any.js#dedicatedworker": {
+    "total": 5,
+    "failures": {
+      "WebAssembly local global values should be unwrapped when exporting in ESM integration": "FAIL",
+      "WebAssembly module global values should be unwrapped when importing in ESM integration": "FAIL",
+      "WebAssembly module globals from imported WebAssembly modules should be unwrapped": "FAIL",
+      "WebAssembly mutable global values should be unwrapped when importing in ESM integration": "FAIL",
+      "WebAssembly should properly handle all global types": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/js-wasm-cycle.tentative.any.js": {
+    "total": 1,
+    "failures": {
+      "Check bindings in JavaScript and WebAssembly cycle (JS higher)": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/js-wasm-cycle.tentative.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "Check bindings in JavaScript and WebAssembly cycle (JS higher)": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/mutable-global-sharing.tentative.any.js": {
+    "total": 5,
+    "failures": {
+      "Multiple JavaScript imports return the same WebAssembly module instance": "FAIL",
+      "Wasm-to-Wasm mutable global sharing is live": "FAIL",
+      "WebAssembly modules should export shared mutable globals with correct initial values": "FAIL",
+      "v128 global mutations should work correctly between WebAssembly modules": "FAIL",
+      "v128 globals should work correctly in WebAssembly-to-WebAssembly imports": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/mutable-global-sharing.tentative.any.js#dedicatedworker": {
+    "total": 5,
+    "failures": {
+      "Multiple JavaScript imports return the same WebAssembly module instance": "FAIL",
+      "Wasm-to-Wasm mutable global sharing is live": "FAIL",
+      "WebAssembly modules should export shared mutable globals with correct initial values": "FAIL",
+      "v128 global mutations should work correctly between WebAssembly modules": "FAIL",
+      "v128 globals should work correctly in WebAssembly-to-WebAssembly imports": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/namespace-instance.tentative.any.js": {
+    "total": 3,
+    "failures": {
+      "WebAssembly.namespaceInstance() should return the underlying instance with shared state": "FAIL",
+      "WebAssembly.namespaceInstance() should work correctly with multiple modules": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/namespace-instance.tentative.any.js#dedicatedworker": {
+    "total": 3,
+    "failures": {
+      "WebAssembly.namespaceInstance() should return the underlying instance with shared state": "FAIL",
+      "WebAssembly.namespaceInstance() should work correctly with multiple modules": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/reserved-import-names.tentative.any.js": {
+    "total": 5,
+    "failures": {
+      "wasm-js: reserved export names should cause WebAssembly.LinkError": "FAIL",
+      "wasm-js: reserved import names should cause WebAssembly.LinkError": "FAIL",
+      "wasm-js: reserved module names should cause WebAssembly.LinkError": "FAIL",
+      "wasm: reserved export names should cause WebAssembly.LinkError": "FAIL",
+      "wasm: reserved import names should cause WebAssembly.LinkError": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/reserved-import-names.tentative.any.js#dedicatedworker": {
+    "total": 5,
+    "failures": {
+      "wasm-js: reserved export names should cause WebAssembly.LinkError": "FAIL",
+      "wasm-js: reserved import names should cause WebAssembly.LinkError": "FAIL",
+      "wasm-js: reserved module names should cause WebAssembly.LinkError": "FAIL",
+      "wasm: reserved export names should cause WebAssembly.LinkError": "FAIL",
+      "wasm: reserved import names should cause WebAssembly.LinkError": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/resolve-export.tentative.any.js": {
+    "total": 1,
+    "failures": {
+      "ResolveExport on invalid re-export from WebAssembly": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/resolve-export.tentative.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "ResolveExport on invalid re-export from WebAssembly": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/source-phase-string-builtins.tentative.any.js": {
+    "total": 3,
+    "failures": {
+      "Source phase import should handle string builtin import reflection correctly": "FAIL",
+      "Source phase import should properly expose string builtin exports": "FAIL",
+      "String builtins should be supported in source phase imports": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/source-phase-string-builtins.tentative.any.js#dedicatedworker": {
+    "total": 3,
+    "failures": {
+      "Source phase import should handle string builtin import reflection correctly": "FAIL",
+      "Source phase import should properly expose string builtin exports": "FAIL",
+      "String builtins should be supported in source phase imports": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/source-phase-string-constants.tentative.any.js": {
+    "total": 3,
+    "failures": {
+      "Source phase import should handle string constants import reflection correctly": "FAIL",
+      "Source phase import should properly expose string constants exports": "FAIL",
+      "String constants from wasm:js/string-constants should be supported in source phase imports": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/source-phase-string-constants.tentative.any.js#dedicatedworker": {
+    "total": 3,
+    "failures": {
+      "Source phase import should handle string constants import reflection correctly": "FAIL",
+      "Source phase import should properly expose string constants exports": "FAIL",
+      "String constants from wasm:js/string-constants should be supported in source phase imports": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/source-phase.tentative.any.js": {
+    "total": 2,
+    "failures": {
+      "Source phase identities": "FAIL",
+      "Source phase imports": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/source-phase.tentative.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "Source phase identities": "FAIL",
+      "Source phase imports": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/string-builtins.tentative.any.js": {
+    "total": 1,
+    "failures": {
+      "String builtins should be supported in imports in ESM integration": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/string-builtins.tentative.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "String builtins should be supported in imports in ESM integration": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/string-constants.tentative.any.js": {
+    "total": 1,
+    "failures": {
+      "String constants from wasm:js/string-constants should be supported in ESM integration": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/string-constants.tentative.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "String constants from wasm:js/string-constants should be supported in ESM integration": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/v128-tdz.tentative.any.js": {
+    "total": 1,
+    "failures": {
+      "v128 global exports should cause TDZ errors": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/v128-tdz.tentative.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "v128 global exports should cause TDZ errors": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/wasm-import-wasm-export.tentative.any.js": {
+    "total": 1,
+    "failures": {
+      "Check import and export between WebAssembly modules": "FAIL"
+    }
+  },
+  "wasm/jsapi/esm-integration/wasm-import-wasm-export.tentative.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "Check import and export between WebAssembly modules": "FAIL"
+    }
+  },
+  "wasm/jsapi/exception/basic.tentative.any.js": {
+    "total": 5,
+    "failures": {
+      "Imported JS function throws": "FAIL",
+      "Imported JS function throws, Wasm catches and rethrows": "FAIL"
+    }
+  },
+  "wasm/jsapi/exception/basic.tentative.any.js#dedicatedworker": {
+    "total": 5,
+    "failures": {
+      "Imported JS function throws": "FAIL",
+      "Imported JS function throws, Wasm catches and rethrows": "FAIL"
+    }
+  },
+  "wasm/jsapi/exception/basic.tentative.any.js#sharedworker": {
+    "total": 5,
+    "failures": {
+      "Imported JS function throws": "FAIL",
+      "Imported JS function throws, Wasm catches and rethrows": "FAIL"
+    }
+  },
+  "wasm/jsapi/exception/constructor.tentative.any.js": {
+    "total": 6
+  },
+  "wasm/jsapi/exception/constructor.tentative.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "wasm/jsapi/exception/getArg.tentative.any.js": {
+    "total": 5,
+    "failures": {
+      "Getting out-of-range argument": "FAIL"
+    }
+  },
+  "wasm/jsapi/exception/getArg.tentative.any.js#dedicatedworker": {
+    "total": 5,
+    "failures": {
+      "Getting out-of-range argument": "FAIL"
+    }
+  },
+  "wasm/jsapi/exception/identity.tentative.any.js": {
+    "harness": "ERROR",
+    "total": 1
+  },
+  "wasm/jsapi/exception/identity.tentative.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "wasm/jsapi/exception/is.tentative.any.js": {
+    "total": 3
+  },
+  "wasm/jsapi/exception/is.tentative.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "wasm/jsapi/exception/toString.tentative.any.js": {
+    "total": 2
+  },
+  "wasm/jsapi/exception/toString.tentative.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "wasm/jsapi/function/call.tentative.any.js": {
+    "total": 2,
+    "failures": {
+      "test calling function": "FAIL",
+      "test constructing function": "FAIL"
+    }
+  },
+  "wasm/jsapi/function/call.tentative.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "test calling function": "FAIL",
+      "test constructing function": "FAIL"
+    }
+  },
+  "wasm/jsapi/function/constructor.tentative.any.js": {
+    "total": 11,
+    "failures": {
+      "Calling": "FAIL",
+      "Too few arguments": "FAIL",
+      "construct with JS function": "FAIL",
+      "fail to construct with non-callable object": "FAIL",
+      "fail with missing parameters": "FAIL",
+      "fail with missing results": "FAIL",
+      "fail with non-existent parameter and result type": "FAIL",
+      "fail with non-function object": "FAIL",
+      "fail with non-string parameters & results": "FAIL",
+      "length": "FAIL",
+      "name": "FAIL"
+    }
+  },
+  "wasm/jsapi/function/constructor.tentative.any.js#dedicatedworker": {
+    "total": 11,
+    "failures": {
+      "Calling": "FAIL",
+      "Too few arguments": "FAIL",
+      "construct with JS function": "FAIL",
+      "fail to construct with non-callable object": "FAIL",
+      "fail with missing parameters": "FAIL",
+      "fail with missing results": "FAIL",
+      "fail with non-existent parameter and result type": "FAIL",
+      "fail with non-function object": "FAIL",
+      "fail with non-string parameters & results": "FAIL",
+      "length": "FAIL",
+      "name": "FAIL"
+    }
+  },
+  "wasm/jsapi/function/table.tentative.any.js": {
+    "total": 1,
+    "failures": {
+      "Test insertion into table": "FAIL"
+    }
+  },
+  "wasm/jsapi/function/table.tentative.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "Test insertion into table": "FAIL"
+    }
+  },
+  "wasm/jsapi/function/type.tentative.any.js": {
+    "total": 2,
+    "failures": {
+      "Check all types": "FAIL",
+      "Check empty results and parameters": "FAIL"
+    }
+  },
+  "wasm/jsapi/function/type.tentative.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "Check all types": "FAIL",
+      "Check empty results and parameters": "FAIL"
+    }
+  },
+  "wasm/jsapi/functions/entry-different-function-realm.html": {
+    "total": 1
+  },
+  "wasm/jsapi/functions/entry.html": {
+    "total": 2
+  },
+  "wasm/jsapi/functions/incumbent.html": {
+    "total": 2,
+    "failures": {
+      "Start function": "FAIL"
+    }
+  },
+  "wasm/jsapi/gc/casts.tentative.any.js": {
+    "total": 11
+  },
+  "wasm/jsapi/gc/casts.tentative.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "wasm/jsapi/gc/exported-object.tentative.any.js": {
+    "total": 19
+  },
+  "wasm/jsapi/gc/exported-object.tentative.any.js#dedicatedworker": {
+    "total": 19
+  },
+  "wasm/jsapi/gc/i31.tentative.any.js": {
+    "total": 6
+  },
+  "wasm/jsapi/gc/i31.tentative.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "wasm/jsapi/global/constructor.any.js": {
+    "total": 60
+  },
+  "wasm/jsapi/global/constructor.any.js#dedicatedworker": {
+    "total": 60
+  },
+  "wasm/jsapi/global/toString.any.js": {
+    "total": 2
+  },
+  "wasm/jsapi/global/toString.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "wasm/jsapi/global/type.tentative.any.js": {
+    "total": 13,
+    "failures": {
+      "externref, immutable": "FAIL",
+      "externref, mutable": "FAIL",
+      "f32, immutable": "FAIL",
+      "f32, mutable": "FAIL",
+      "f64, immutable": "FAIL",
+      "f64, mutable": "FAIL",
+      "funcref, immutable": "FAIL",
+      "funcref, mutable": "FAIL",
+      "i32, immutable": "FAIL",
+      "i32, mutable": "FAIL",
+      "i64, immutable": "FAIL",
+      "i64, mutable": "FAIL",
+      "key ordering": "FAIL"
+    }
+  },
+  "wasm/jsapi/global/type.tentative.any.js#dedicatedworker": {
+    "total": 13,
+    "failures": {
+      "externref, immutable": "FAIL",
+      "externref, mutable": "FAIL",
+      "f32, immutable": "FAIL",
+      "f32, mutable": "FAIL",
+      "f64, immutable": "FAIL",
+      "f64, mutable": "FAIL",
+      "funcref, immutable": "FAIL",
+      "funcref, mutable": "FAIL",
+      "i32, immutable": "FAIL",
+      "i32, mutable": "FAIL",
+      "i64, immutable": "FAIL",
+      "i64, mutable": "FAIL",
+      "key ordering": "FAIL"
+    }
+  },
+  "wasm/jsapi/global/value-get-set.any.js": {
+    "total": 68
+  },
+  "wasm/jsapi/global/value-get-set.any.js#dedicatedworker": {
+    "total": 68
+  },
+  "wasm/jsapi/global/valueOf.any.js": {
+    "total": 2
+  },
+  "wasm/jsapi/global/valueOf.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "wasm/jsapi/idlharness.any.js": {
+    "total": 91
+  },
+  "wasm/jsapi/idlharness.any.js#dedicatedworker": {
+    "total": 91
+  },
+  "wasm/jsapi/instance/constructor-bad-imports.any.js": {
+    "total": 106
+  },
+  "wasm/jsapi/instance/constructor-bad-imports.any.js#dedicatedworker": {
+    "total": 106
+  },
+  "wasm/jsapi/instance/constructor-caching.any.js": {
+    "total": 1
+  },
+  "wasm/jsapi/instance/constructor-caching.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "wasm/jsapi/instance/constructor.any.js": {
+    "total": 29
+  },
+  "wasm/jsapi/instance/constructor.any.js#dedicatedworker": {
+    "total": 29
+  },
+  "wasm/jsapi/instance/exports.any.js": {
+    "total": 4
+  },
+  "wasm/jsapi/instance/exports.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "wasm/jsapi/instance/toString.any.js": {
+    "total": 2
+  },
+  "wasm/jsapi/instance/toString.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "wasm/jsapi/interface.any.js": {
+    "total": 72
+  },
+  "wasm/jsapi/interface.any.js#dedicatedworker": {
+    "total": 72
+  },
+  "wasm/jsapi/js-string/basic.any.js": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "wasm/jsapi/js-string/basic.any.js#dedicatedworker": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "wasm/jsapi/js-string/constants.any.js": {
+    "total": 40,
+    "failures": {
+      "constants": "FAIL",
+      "constants 1": "FAIL",
+      "constants 10": "FAIL",
+      "constants 11": "FAIL",
+      "constants 12": "FAIL",
+      "constants 13": "FAIL",
+      "constants 14": "FAIL",
+      "constants 15": "FAIL",
+      "constants 16": "FAIL",
+      "constants 17": "FAIL",
+      "constants 18": "FAIL",
+      "constants 19": "FAIL",
+      "constants 2": "FAIL",
+      "constants 20": "FAIL",
+      "constants 21": "FAIL",
+      "constants 22": "FAIL",
+      "constants 23": "FAIL",
+      "constants 24": "FAIL",
+      "constants 25": "FAIL",
+      "constants 26": "FAIL",
+      "constants 27": "FAIL",
+      "constants 28": "FAIL",
+      "constants 29": "FAIL",
+      "constants 3": "FAIL",
+      "constants 30": "FAIL",
+      "constants 31": "FAIL",
+      "constants 32": "FAIL",
+      "constants 33": "FAIL",
+      "constants 34": "FAIL",
+      "constants 35": "FAIL",
+      "constants 36": "FAIL",
+      "constants 37": "FAIL",
+      "constants 38": "FAIL",
+      "constants 39": "FAIL",
+      "constants 4": "FAIL",
+      "constants 5": "FAIL",
+      "constants 6": "FAIL",
+      "constants 7": "FAIL",
+      "constants 8": "FAIL",
+      "constants 9": "FAIL"
+    }
+  },
+  "wasm/jsapi/js-string/constants.any.js#dedicatedworker": {
+    "total": 40,
+    "failures": {
+      "constants": "FAIL",
+      "constants 1": "FAIL",
+      "constants 10": "FAIL",
+      "constants 11": "FAIL",
+      "constants 12": "FAIL",
+      "constants 13": "FAIL",
+      "constants 14": "FAIL",
+      "constants 15": "FAIL",
+      "constants 16": "FAIL",
+      "constants 17": "FAIL",
+      "constants 18": "FAIL",
+      "constants 19": "FAIL",
+      "constants 2": "FAIL",
+      "constants 20": "FAIL",
+      "constants 21": "FAIL",
+      "constants 22": "FAIL",
+      "constants 23": "FAIL",
+      "constants 24": "FAIL",
+      "constants 25": "FAIL",
+      "constants 26": "FAIL",
+      "constants 27": "FAIL",
+      "constants 28": "FAIL",
+      "constants 29": "FAIL",
+      "constants 3": "FAIL",
+      "constants 30": "FAIL",
+      "constants 31": "FAIL",
+      "constants 32": "FAIL",
+      "constants 33": "FAIL",
+      "constants 34": "FAIL",
+      "constants 35": "FAIL",
+      "constants 36": "FAIL",
+      "constants 37": "FAIL",
+      "constants 38": "FAIL",
+      "constants 39": "FAIL",
+      "constants 4": "FAIL",
+      "constants 5": "FAIL",
+      "constants 6": "FAIL",
+      "constants 7": "FAIL",
+      "constants 8": "FAIL",
+      "constants 9": "FAIL"
+    }
+  },
+  "wasm/jsapi/js-string/imports.any.js": {
+    "total": 1,
+    "failures": {
+      "imports": "FAIL"
+    }
+  },
+  "wasm/jsapi/js-string/imports.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "imports": "FAIL"
+    }
+  },
+  "wasm/jsapi/jspi/js-promise-integration.any.js": {
+    "total": 13,
+    "failures": {
+      "Always get a Promise": "FAIL",
+      "Catch rejected promise": "FAIL",
+      "Do suspend even if the import's return value is not a Promise by wrapping it with Promise.resolve": "FAIL",
+      "Make sure we actually suspend": "FAIL",
+      "Promising function always entered": "FAIL",
+      "Promising with no return": "FAIL",
+      "Suspend once": "FAIL",
+      "Suspend two modules": "FAIL",
+      "Suspend/resume in a loop": "FAIL",
+      "Suspending with mismatched args and via Proxy": "FAIL",
+      "Test sandwich with no suspension": "FAIL",
+      "Test sandwich with suspension": "FAIL"
+    }
+  },
+  "wasm/jsapi/jspi/js-promise-integration.any.js#dedicatedworker": {
+    "total": 13,
+    "failures": {
+      "Always get a Promise": "FAIL",
+      "Catch rejected promise": "FAIL",
+      "Do suspend even if the import's return value is not a Promise by wrapping it with Promise.resolve": "FAIL",
+      "Make sure we actually suspend": "FAIL",
+      "Promising function always entered": "FAIL",
+      "Promising with no return": "FAIL",
+      "Suspend once": "FAIL",
+      "Suspend two modules": "FAIL",
+      "Suspend/resume in a loop": "FAIL",
+      "Suspending with mismatched args and via Proxy": "FAIL",
+      "Test sandwich with no suspension": "FAIL",
+      "Test sandwich with suspension": "FAIL"
+    }
+  },
+  "wasm/jsapi/jspi/notraps.any.js": {
+    "total": 3,
+    "failures": {
+      "catch SuspendError": "FAIL",
+      "throw on reentrance": "FAIL",
+      "unwrapped export": "FAIL"
+    }
+  },
+  "wasm/jsapi/jspi/notraps.any.js#dedicatedworker": {
+    "total": 3,
+    "failures": {
+      "catch SuspendError": "FAIL",
+      "throw on reentrance": "FAIL",
+      "unwrapped export": "FAIL"
+    }
+  },
+  "wasm/jsapi/jspi/rejects.any.js": {
+    "total": 5,
+    "failures": {
+      "Stack overflow": "FAIL",
+      "Throw after the first suspension": "FAIL",
+      "Throw and propagate via Promise": "FAIL",
+      "Throw before suspending": "FAIL",
+      "Try to suspend JS": "FAIL"
+    }
+  },
+  "wasm/jsapi/jspi/rejects.any.js#dedicatedworker": {
+    "total": 5,
+    "failures": {
+      "Stack overflow": "FAIL",
+      "Throw after the first suspension": "FAIL",
+      "Throw and propagate via Promise": "FAIL",
+      "Throw before suspending": "FAIL",
+      "Try to suspend JS": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/buffer.any.js": {
+    "total": 4
+  },
+  "wasm/jsapi/memory/buffer.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "wasm/jsapi/memory/constructor-shared.tentative.any.js": {
+    "total": 3,
+    "failures": {
+      "Shared memory": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/constructor-shared.tentative.any.js#dedicatedworker": {
+    "total": 3,
+    "failures": {
+      "Shared memory": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/constructor-types.tentative.any.js": {
+    "total": 3,
+    "failures": {
+      "Initializing with both initial and minimum": "FAIL",
+      "Non-zero minimum": "FAIL",
+      "Zero minimum": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/constructor-types.tentative.any.js#dedicatedworker": {
+    "total": 3,
+    "failures": {
+      "Initializing with both initial and minimum": "FAIL",
+      "Non-zero minimum": "FAIL",
+      "Zero minimum": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/constructor.any.js": {
+    "total": 24
+  },
+  "wasm/jsapi/memory/constructor.any.js#dedicatedworker": {
+    "total": 24
+  },
+  "wasm/jsapi/memory/grow.any.js": {
+    "total": 19,
+    "failures": {
+      "Growing shared memory does not detach old buffer": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/grow.any.js#dedicatedworker": {
+    "total": 19,
+    "failures": {
+      "Growing shared memory does not detach old buffer": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/to-fixed-length-buffer-shared.any.js": {
+    "total": 1,
+    "failures": {
+      "toFixedLengthBuffer caching behavior": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/to-fixed-length-buffer-shared.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "toFixedLengthBuffer caching behavior": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/to-fixed-length-buffer.any.js": {
+    "total": 2,
+    "failures": {
+      "toFixedLengthBuffer caching behavior": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/to-fixed-length-buffer.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "toFixedLengthBuffer caching behavior": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/to-resizable-buffer-shared.any.js": {
+    "total": 3,
+    "failures": {
+      "Resizing a Memory's resizable buffer": "FAIL",
+      "toResizableBuffer caching behavior": "FAIL",
+      "toResizableBuffer max size": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/to-resizable-buffer-shared.any.js#dedicatedworker": {
+    "total": 3,
+    "failures": {
+      "Resizing a Memory's resizable buffer": "FAIL",
+      "toResizableBuffer caching behavior": "FAIL",
+      "toResizableBuffer max size": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/to-resizable-buffer.any.js": {
+    "total": 5,
+    "failures": {
+      "Resizable buffers from Memory cannot be detached by JS": "FAIL",
+      "Resizing a Memory's resizable buffer": "FAIL",
+      "toResizableBuffer caching behavior": "FAIL",
+      "toResizableBuffer max size": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/to-resizable-buffer.any.js#dedicatedworker": {
+    "total": 5,
+    "failures": {
+      "Resizable buffers from Memory cannot be detached by JS": "FAIL",
+      "Resizing a Memory's resizable buffer": "FAIL",
+      "toResizableBuffer caching behavior": "FAIL",
+      "toResizableBuffer max size": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/toString.any.js": {
+    "total": 2
+  },
+  "wasm/jsapi/memory/toString.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "wasm/jsapi/memory/type.tentative.any.js": {
+    "total": 6,
+    "failures": {
+      "Non-zero initial, no maximum": "FAIL",
+      "None-zero maximum": "FAIL",
+      "Zero initial, no maximum": "FAIL",
+      "Zero maximum": "FAIL",
+      "non-shared memory": "FAIL",
+      "shared memory": "FAIL"
+    }
+  },
+  "wasm/jsapi/memory/type.tentative.any.js#dedicatedworker": {
+    "total": 6,
+    "failures": {
+      "Non-zero initial, no maximum": "FAIL",
+      "None-zero maximum": "FAIL",
+      "Zero initial, no maximum": "FAIL",
+      "Zero maximum": "FAIL",
+      "non-shared memory": "FAIL",
+      "shared memory": "FAIL"
+    }
+  },
+  "wasm/jsapi/module/constructor.any.js": {
+    "total": 10
+  },
+  "wasm/jsapi/module/constructor.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "wasm/jsapi/module/customSections.any.js": {
+    "total": 11
+  },
+  "wasm/jsapi/module/customSections.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "wasm/jsapi/module/exports.any.js": {
+    "total": 11
+  },
+  "wasm/jsapi/module/exports.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "wasm/jsapi/module/imports.any.js": {
+    "total": 11
+  },
+  "wasm/jsapi/module/imports.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "wasm/jsapi/module/moduleSource.tentative.any.js": {
+    "total": 4,
+    "failures": {
+      "AbstractModuleSource intrinsic": "FAIL",
+      "AbstractModuleSourceProto intrinsic": "FAIL",
+      "AbstractModuleSourceProto toStringTag brand check": "FAIL"
+    }
+  },
+  "wasm/jsapi/module/moduleSource.tentative.any.js#dedicatedworker": {
+    "total": 4,
+    "failures": {
+      "AbstractModuleSource intrinsic": "FAIL",
+      "AbstractModuleSourceProto intrinsic": "FAIL",
+      "AbstractModuleSourceProto toStringTag brand check": "FAIL"
+    }
+  },
+  "wasm/jsapi/module/toString.any.js": {
+    "total": 2
+  },
+  "wasm/jsapi/module/toString.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "wasm/jsapi/proto-from-ctor-realm.html": {
+    "total": 120
+  },
+  "wasm/jsapi/prototypes.any.js": {
+    "total": 5
+  },
+  "wasm/jsapi/prototypes.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "wasm/jsapi/table/constructor-types.tentative.any.js": {
+    "total": 3,
+    "failures": {
+      "Initializing with both initial and minimum": "FAIL",
+      "Non-zero minimum": "FAIL",
+      "Zero minimum": "FAIL"
+    }
+  },
+  "wasm/jsapi/table/constructor-types.tentative.any.js#dedicatedworker": {
+    "total": 3,
+    "failures": {
+      "Initializing with both initial and minimum": "FAIL",
+      "Non-zero minimum": "FAIL",
+      "Zero minimum": "FAIL"
+    }
+  },
+  "wasm/jsapi/table/constructor.any.js": {
+    "total": 32
+  },
+  "wasm/jsapi/table/constructor.any.js#dedicatedworker": {
+    "total": 32
+  },
+  "wasm/jsapi/table/get-set.any.js": {
+    "total": 32
+  },
+  "wasm/jsapi/table/get-set.any.js#dedicatedworker": {
+    "total": 32
+  },
+  "wasm/jsapi/table/grow.any.js": {
+    "total": 18
+  },
+  "wasm/jsapi/table/grow.any.js#dedicatedworker": {
+    "total": 18
+  },
+  "wasm/jsapi/table/length.any.js": {
+    "total": 4
+  },
+  "wasm/jsapi/table/length.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "wasm/jsapi/table/toString.any.js": {
+    "total": 2
+  },
+  "wasm/jsapi/table/toString.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "wasm/jsapi/table/type.tentative.any.js": {
+    "total": 4,
+    "failures": {
+      "Non-zero initial, no maximum": "FAIL",
+      "Non-zero maximum": "FAIL",
+      "Zero initial, no maximum": "FAIL",
+      "Zero maximum": "FAIL"
+    }
+  },
+  "wasm/jsapi/table/type.tentative.any.js#dedicatedworker": {
+    "total": 4,
+    "failures": {
+      "Non-zero initial, no maximum": "FAIL",
+      "Non-zero maximum": "FAIL",
+      "Zero initial, no maximum": "FAIL",
+      "Zero maximum": "FAIL"
+    }
+  },
+  "wasm/jsapi/tag/constructor.tentative.any.js": {
+    "total": 6
+  },
+  "wasm/jsapi/tag/constructor.tentative.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "wasm/jsapi/tag/toString.tentative.any.js": {
+    "total": 2
+  },
+  "wasm/jsapi/tag/toString.tentative.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "wasm/jsapi/tag/type.tentative.any.js": {
+    "total": 3,
+    "failures": {
+      "[]": "FAIL",
+      "[i32 i64 f32 f64]": "FAIL",
+      "[i32 i64]": "FAIL"
+    }
+  },
+  "wasm/jsapi/tag/type.tentative.any.js#dedicatedworker": {
+    "total": 3,
+    "failures": {
+      "[]": "FAIL",
+      "[i32 i64 f32 f64]": "FAIL",
+      "[i32 i64]": "FAIL"
+    }
+  },
+  "wasm/proposals/wide-arithmetic/core/wide-arithmetic.wast.js.tentative.html": {
+    "total": 123
+  },
+  "wasm/serialization/arraybuffer/transfer.window.js": {
+    "total": 2
+  },
+  "wasm/serialization/memory/clone-error.tentative.https.any.js": {
+    "total": 6
+  },
+  "wasm/serialization/memory/clone-error.tentative.https.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "wasm/serialization/memory/clone-error.tentative.https.any.js#sharedworker": {
+    "total": 5
+  },
+  "wasm/serialization/memory/messageport-via-sharedworker-success.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "Shared WebAssembly.Memory cloned through a MessagePort that round-tripped via a SharedWorker": "FAIL"
+    }
+  },
+  "wasm/serialization/memory/no-transferring.tentative.html": {
+    "total": 6
+  },
+  "wasm/serialization/memory/window-nested-dedicated-worker-failure.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "Shared WebAssembly.Memory sent to a dedicated worker in a SharedWorker's agent cluster fires messageerror": "FAIL"
+    }
+  },
+  "wasm/serialization/memory/window-sharedworker-failure.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "Shared WebAssembly.Memory from SharedWorker to window fires messageerror on the window": "FAIL",
+      "Shared WebAssembly.Memory from window to SharedWorker fires messageerror on the SharedWorker": "FAIL"
+    }
+  },
+  "wasm/serialization/memory/window-success.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "Cloning a shared WebAssembly.Memory through a MessageChannel": "FAIL",
+      "postMessaging a shared WebAssembly.Memory to a dedicated worker": "FAIL",
+      "postMessaging a shared WebAssembly.Memory to a same-origin iframe": "FAIL"
+    }
+  },
+  "wasm/serialization/module/broadcastchannel-success-and-failure.html": {
+    "total": 1
+  },
+  "wasm/serialization/module/broadcastchannel-success.html": {
+    "total": 1
+  },
+  "wasm/serialization/module/cross-origin-module-sharing-fails.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "postMessaging a wasm module to a cross-origin iframe in the same agent cluster fails": "NOTRUN",
+      "postMessaging a wasm module to an iframe in a different agent cluster fails": "TIMEOUT"
+    }
+  },
+  "wasm/serialization/module/identity-not-preserved.html": {
+    "total": 3
+  },
+  "wasm/serialization/module/nested-worker-success.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "wasm/serialization/module/nested-worker-success.any.js#sharedworker": {
+    "total": 1
+  },
+  "wasm/serialization/module/no-transferring.html": {
+    "total": 3
+  },
+  "wasm/serialization/module/serialization-via-history.html": {
+    "total": 4
+  },
+  "wasm/serialization/module/serialization-via-idb.any.js": {
+    "total": 2
+  },
+  "wasm/serialization/module/serialization-via-idb.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "wasm/serialization/module/serialization-via-notifications-api.any.js": {
+    "total": 2,
+    "failures": {
+      "WebAssembly.Module cloning via the Notifications API's data member: basic case": "FAIL",
+      "WebAssembly.Module cloning via the Notifications API's data member: is interleaved correctly": "FAIL"
+    }
+  },
+  "wasm/serialization/module/serialization-via-notifications-api.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "WebAssembly.Module cloning via the Notifications API's data member: basic case": "FAIL",
+      "WebAssembly.Module cloning via the Notifications API's data member: is interleaved correctly": "FAIL"
+    }
+  },
+  "wasm/serialization/module/share-module-cross-origin-fails.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "postMessaging a wasm module to a cross-origin iframe fails": "TIMEOUT"
+    }
+  },
+  "wasm/serialization/module/window-domain-success.sub.html": {
+    "total": 1
+  },
+  "wasm/serialization/module/window-messagechannel-success.html": {
+    "total": 1
+  },
+  "wasm/serialization/module/window-serviceworker-failure.https.html": {
+    "total": 1
+  },
+  "wasm/serialization/module/window-sharedworker-failure.html": {
+    "total": 1
+  },
+  "wasm/serialization/module/window-similar-but-cross-origin-success.sub.html": {
+    "total": 1
+  },
+  "wasm/serialization/module/window-simple-success.html": {
+    "total": 4
+  },
+  "wasm/webapi/abort.any.js": {
+    "total": 6
+  },
+  "wasm/webapi/abort.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "wasm/webapi/body.any.js": {
+    "total": 4
+  },
+  "wasm/webapi/body.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "wasm/webapi/body.any.js#sharedworker": {
+    "total": 4
+  },
+  "wasm/webapi/contenttype.any.js": {
+    "total": 22
+  },
+  "wasm/webapi/contenttype.any.js#dedicatedworker": {
+    "total": 22
+  },
+  "wasm/webapi/contenttype.any.js#sharedworker": {
+    "total": 22
+  },
+  "wasm/webapi/empty-body.any.js": {
+    "total": 8
+  },
+  "wasm/webapi/empty-body.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "wasm/webapi/empty-body.any.js#sharedworker": {
+    "total": 8
+  },
+  "wasm/webapi/esm-integration/execute-start.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Importing a WebAssembly module should execute the start function.": "FAIL"
+    }
+  },
+  "wasm/webapi/esm-integration/exported-names.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "wasm/webapi/esm-integration/invalid-bytecode.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test that imports of invalid WebAssembly modules leads to WebAssembly.CompileError on window.": "FAIL"
+    }
+  },
+  "wasm/webapi/esm-integration/js-wasm-cycle-errors.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Check cyclic linking between JavaScript and WebAssembly where JavaScript is higher in the module graph.": "FAIL"
+    }
+  },
+  "wasm/webapi/esm-integration/js-wasm-cycle.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "wasm/webapi/esm-integration/module-parse-error.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test that imports of invalid WebAssembly modules leads to WebAssembly.CompileError on window.": "FAIL"
+    }
+  },
+  "wasm/webapi/esm-integration/resolve-export.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Re-export of missing Wasm export should result in SyntaxError.": "FAIL"
+    }
+  },
+  "wasm/webapi/esm-integration/reuse-wasm-loaded-as-classic-script.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Reuse Wasm loaded as classic script": "TIMEOUT"
+    }
+  },
+  "wasm/webapi/esm-integration/script-src-allows-source-phase-wasm.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "wasm/webapi/esm-integration/script-src-allows-wasm.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Importing a WebAssembly module should be allowed by script-src CSP.": "FAIL"
+    }
+  },
+  "wasm/webapi/esm-integration/script-src-blocks-wasm.tentative.sub.html": {
+    "total": 1
+  },
+  "wasm/webapi/esm-integration/scripting-disabled.tentative.html": {
+    "total": 1
+  },
+  "wasm/webapi/esm-integration/source-phase-blocked-by-csp.tentative.html": {
+    "total": 1
+  },
+  "wasm/webapi/esm-integration/source-phase-import-non-UTF8.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "wasm/webapi/esm-integration/source-phase-js-string.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "wasm/webapi/esm-integration/source-phase-preload.tentative.html": {
+    "total": 2,
+    "failures": {
+      "Dynamic source phase import.": "FAIL",
+      "Static source phase import.": "FAIL"
+    }
+  },
+  "wasm/webapi/esm-integration/source-phase.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "wasm/webapi/esm-integration/wasm-import-wasm-export.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "wasm/webapi/esm-integration/wasm-import.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Invalid imports for WebAssembly modules should error.": "FAIL"
+    }
+  },
+  "wasm/webapi/esm-integration/wasm-js-cycle.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "wasm/webapi/esm-integration/wasm-to-wasm-link-error.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Link errors for imports between WebAssembly modules should be reported.": "FAIL"
+    }
+  },
+  "wasm/webapi/esm-integration/worker-import-source-phase.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Testing import of WebAssembly source phase from JavaScript worker": "NOTRUN"
+    }
+  },
+  "wasm/webapi/esm-integration/worker-import.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Testing import of WebAssembly from JavaScript worker": "NOTRUN"
+    }
+  },
+  "wasm/webapi/esm-integration/worker.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Testing WebAssembly worker": "FAIL"
+    }
+  },
+  "wasm/webapi/esm-integration/worklet-import-source-phase.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "Import a source phase module to a worklet": "FAIL"
+    }
+  },
+  "wasm/webapi/historical.any.js": {
+    "total": 1
+  },
+  "wasm/webapi/historical.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "wasm/webapi/historical.any.js#sharedworker": {
+    "total": 1
+  },
+  "wasm/webapi/idlharness.any.js": {
+    "total": 12
+  },
+  "wasm/webapi/idlharness.any.js#dedicatedworker": {
+    "total": 12
+  },
+  "wasm/webapi/instantiateStreaming-bad-imports.any.js": {
+    "total": 106
+  },
+  "wasm/webapi/instantiateStreaming-bad-imports.any.js#dedicatedworker": {
+    "total": 106
+  },
+  "wasm/webapi/instantiateStreaming-bad-imports.any.js#sharedworker": {
+    "total": 106
+  },
+  "wasm/webapi/instantiateStreaming.any.js": {
+    "total": 25
+  },
+  "wasm/webapi/instantiateStreaming.any.js#dedicatedworker": {
+    "total": 25
+  },
+  "wasm/webapi/instantiateStreaming.any.js#sharedworker": {
+    "total": 25
+  },
+  "wasm/webapi/invalid-args.any.js": {
+    "total": 44
+  },
+  "wasm/webapi/invalid-args.any.js#dedicatedworker": {
+    "total": 44
+  },
+  "wasm/webapi/invalid-args.any.js#sharedworker": {
+    "total": 44
+  },
+  "wasm/webapi/invalid-code.any.js": {
+    "total": 4
+  },
+  "wasm/webapi/invalid-code.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "wasm/webapi/invalid-code.any.js#sharedworker": {
+    "total": 4
+  },
+  "wasm/webapi/modified-contenttype.any.js": {
+    "total": 4
+  },
+  "wasm/webapi/modified-contenttype.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "wasm/webapi/modified-contenttype.any.js#sharedworker": {
+    "total": 4
+  },
+  "wasm/webapi/origin.sub.any.js": {
+    "total": 4
+  },
+  "wasm/webapi/origin.sub.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "wasm/webapi/origin.sub.any.js#sharedworker": {
+    "total": 4
+  },
+  "wasm/webapi/rejected-arg.any.js": {
+    "total": 2
+  },
+  "wasm/webapi/rejected-arg.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "wasm/webapi/rejected-arg.any.js#sharedworker": {
+    "total": 2
+  },
+  "wasm/webapi/status.any.js": {
+    "total": 16
+  },
+  "wasm/webapi/status.any.js#dedicatedworker": {
+    "total": 16
+  },
+  "wasm/webapi/status.any.js#sharedworker": {
+    "total": 16
+  },
+  "wasm/webapi/wasm_stream_compile_test.any.js": {
+    "total": 13
+  },
+  "wasm/webapi/wasm_stream_compile_test.any.js#dedicatedworker": {
+    "total": 13
+  },
+  "wasm/webapi/wasm_stream_instantiate_test.any.js": {
+    "total": 13
+  },
+  "wasm/webapi/wasm_stream_instantiate_test.any.js#dedicatedworker": {
+    "total": 13
+  }
+}

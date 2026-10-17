@@ -1,0 +1,310 @@
+{
+  "spec": {
+    "title": "Motion Path Module Level 1",
+    "url": "https://drafts.csswg.org/motion-1/"
+  },
+  "properties": [
+    {
+      "name": "offset-path",
+      "href": "https://drafts.csswg.org/motion-1/#propdef-offset-path",
+      "value": "none | <offset-path> || <coord-box>",
+      "initial": "none",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The element does not have an offset transform.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-offset-path-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<offset-path> || <coord-box>",
+          "prose": "The element has an offset transform, defined by some offset path. See § 2.7 Calculating The Offset Transform for details on how to calculate the offset transform. All the usual effects of having a transform apply (such as creating a stacking context, etc.) See CSS Transforms 1 § 2 The Transform Rendering Model for details. If <offset-path> is omitted, it defaults to inset(0 round X), where X is the value of border-radius on the element that establishes the containing block for this element. If <coord-box> is omitted, it defaults to border-box. See the specific values (below) for the interpretation of each component.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-offset-path-offset-path--coord-box",
+          "type": "value",
+          "value": "<offset-path> || <coord-box>"
+        },
+        {
+          "name": "<ray()>",
+          "prose": "The offset path is a line extending from the origin at some angle. See § 2.1.1 The ray() Function for details. The <coord-box> provides the reference box for the ray.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-offset-path-ray",
+          "type": "value",
+          "value": "<ray()>"
+        },
+        {
+          "name": "<url>",
+          "prose": "A URL reference to an SVG shape element. The offset path is the referenced element’s equivalent path. [SVG2] If the URL does not reference a shape element (because it references a different element, or resolves to a non-SVG document, or doesn’t resolve at all, etc) this behaves as path(\"m 0 0\") (a <basic-shape>) instead. The <coord-box> defines the viewport and user coordinate system for the shape element, with the origin (the 0,0 point) at the top left corner, and units being 1px in size.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-offset-path-url",
+          "type": "value",
+          "value": "<url>"
+        },
+        {
+          "name": "<basic-shape>",
+          "prose": "The offset path is the equivalent path of the <basic-shape> function. For all <basic-shape>s, if they accept an at <position> argument but that argument is omitted, and the element defines an offset starting position via offset-position, it uses the specified offset starting position for that argument. Otherwise it defaults as specified for each function. The <coord-box> provides the reference box for the <basic-shape>.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-offset-path-basic-shape",
+          "type": "value",
+          "value": "<basic-shape>"
+        },
+        {
+          "name": "<coord-box>",
+          "prose": "Defines the box that the <offset-path> sizes into. In CSS contexts, the boxes being referenced are from the element that establishes the containing block for this element. In SVG contexts, all values behave as view-box.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-offset-path-coord-box",
+          "type": "value",
+          "value": "<coord-box>"
+        }
+      ],
+      "styleDeclaration": [
+        "offset-path",
+        "offsetPath"
+      ]
+    },
+    {
+      "name": "offset-distance",
+      "href": "https://drafts.csswg.org/motion-1/#propdef-offset-distance",
+      "value": "<length-percentage>",
+      "initial": "0",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "relative to the offset path length",
+      "computedValue": "a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "styleDeclaration": [
+        "offset-distance",
+        "offsetDistance"
+      ]
+    },
+    {
+      "name": "offset-position",
+      "href": "https://drafts.csswg.org/motion-1/#propdef-offset-position",
+      "value": "normal | auto | <position>",
+      "initial": "normal",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "Refer to the size of containing block",
+      "computedValue": "The normal or auto keywords, or a computed <position>",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "The element does not have an offset starting position.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-offset-position-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "auto",
+          "prose": "The offset starting position is the top-left corner of the box.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-offset-position-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "<position>",
+          "prose": "The offset starting position is the result of using the <position> to position a 0x0 object area within the box’s containing block.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-offset-position-position",
+          "type": "value",
+          "value": "<position>"
+        }
+      ],
+      "styleDeclaration": [
+        "offset-position",
+        "offsetPosition"
+      ]
+    },
+    {
+      "name": "offset-anchor",
+      "href": "https://drafts.csswg.org/motion-1/#propdef-offset-anchor",
+      "value": "auto | <position>",
+      "initial": "auto",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "relative to the width and the height of the element’s reference box",
+      "computedValue": "the auto keyword or a computed <position>",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The anchor point is the same as the point indicated by transform-origin. Specifically, the computed value of transform-origin is resolved as a <position> against the element’s reference box.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-offset-anchor-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "<position>",
+          "prose": "The anchor point is the result of resolving the <position> against the element’s reference box.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-offset-anchor-position",
+          "type": "value",
+          "value": "<position>"
+        }
+      ],
+      "styleDeclaration": [
+        "offset-anchor",
+        "offsetAnchor"
+      ]
+    },
+    {
+      "name": "offset-rotate",
+      "href": "https://drafts.csswg.org/motion-1/#propdef-offset-rotate",
+      "value": "[ auto | reverse ] || <angle>",
+      "initial": "auto",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "computed <angle> value, optionally preceded by auto",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The offset transform will have a rotation component equal to the difference between the offset path’s direction at the offset position and the direction of the positive X axis (that is, a line going toward the right). See SVG’s direction of a path for details on how to calculate this. If specified with an <angle>, the angle is added to the rotation component.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-offset-rotate-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "reverse",
+          "prose": "Identical to auto, but adds an additional 180deg to the rotation.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-offset-rotate-reverse",
+          "type": "value",
+          "value": "reverse"
+        },
+        {
+          "name": "<angle>",
+          "prose": "When specified on its own, adds a rotation component to the offset transform of the specified angle. (That is, offset-rotate: 45deg; is similar to transform: rotate(45deg); it’s just ordered to be part of the offset transform.)",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-offset-rotate-angle",
+          "type": "value",
+          "value": "<angle>"
+        }
+      ],
+      "styleDeclaration": [
+        "offset-rotate",
+        "offsetRotate"
+      ]
+    },
+    {
+      "name": "offset",
+      "href": "https://drafts.csswg.org/motion-1/#propdef-offset",
+      "value": "[ <'offset-position'>? [ <'offset-path'> [ <'offset-distance'> || <'offset-rotate'> ]? ]? ]! [ / <'offset-anchor'> ]?",
+      "initial": "see individual properties",
+      "appliesTo": "transformable elements",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "offset"
+      ],
+      "longhands": [
+        "offset-path",
+        "offset-distance",
+        "offset-rotate",
+        "offset-anchor",
+        "offset-position"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<offset-path>",
+      "href": "https://drafts.csswg.org/motion-1/#typedef-offset-path",
+      "type": "type",
+      "value": "<ray()> | <url> | <basic-shape>"
+    },
+    {
+      "name": "ray()",
+      "value": "ray( <angle> && <ray-size>? && contain? && [at <position>]? )",
+      "href": "https://drafts.csswg.org/motion-1/#funcdef-ray",
+      "type": "function",
+      "values": [
+        {
+          "name": "<angle>",
+          "prose": "The offset path is a single line segment that starts from the offset starting position and proceeds in the direction defined by the specified <angle>. (Its length is determined by the other arguments.) As with gradient functions, <angle> values are interpreted as bearing angles, with 0deg pointing up and positive angles representing clockwise rotation.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-ray-angle",
+          "type": "value",
+          "value": "<angle>"
+        },
+        {
+          "name": "<ray-size>",
+          "prose": "Specifies the length of the offset path (the distance between the offset-distance: 0% and offset-distance: 100% points) relative to the containing box. If no <ray-size> is specified it defaults to closest-side. Individual keywords are:",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-ray-ray-size",
+          "type": "value",
+          "value": "<ray-size>"
+        },
+        {
+          "name": "contain",
+          "prose": "The length of the offset path is reduced so that the element stays within the containing block even at offset-distance: 100%. Specifically, the path’s length is reduced by half the width or half the height of the element’s border box, whichever is larger, and floored at zero.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-ray-contain",
+          "type": "value",
+          "value": "contain"
+        },
+        {
+          "name": "at <position>",
+          "prose": "Specifies the origin of the ray, where the ray’s line begins (the 0% position). It’s resolved by using the <position> to position a 0x0 object area within the box’s containing block. If omitted, it uses the offset starting position of the element, given by offset-position. If the element doesn’t have an offset starting position either, it behaves as at center.",
+          "href": "https://drafts.csswg.org/motion-1/#valdef-ray-at-position",
+          "type": "value",
+          "value": "at <position>"
+        }
+      ]
+    },
+    {
+      "name": "<ray-size>",
+      "href": "https://drafts.csswg.org/motion-1/#typedef-ray-size",
+      "type": "type",
+      "value": "<radial-extent> | sides",
+      "values": [
+        {
+          "name": "closest-side",
+          "prose": "The distance from the ray’s starting point to whichever side of the containing block is closest.",
+          "href": "https://drafts.csswg.org/motion-1/#size-closest-side",
+          "type": "value",
+          "value": "closest-side"
+        },
+        {
+          "name": "closest-corner",
+          "prose": "The distance from the ray’s starting point to whichever corner of the containing block is closest.",
+          "href": "https://drafts.csswg.org/motion-1/#size-closest-corner",
+          "type": "value",
+          "value": "closest-corner"
+        },
+        {
+          "name": "farthest-side",
+          "prose": "The distance from the ray’s starting point to whichever side of the containing block is farthest.",
+          "href": "https://drafts.csswg.org/motion-1/#size-farthest-side",
+          "type": "value",
+          "value": "farthest-side"
+        },
+        {
+          "name": "farthest-corner",
+          "prose": "The distance from the ray’s starting point to whichever corner of the containing block is farthest.",
+          "href": "https://drafts.csswg.org/motion-1/#size-farthest-corner",
+          "type": "value",
+          "value": "farthest-corner"
+        },
+        {
+          "name": "sides",
+          "prose": "The distance from the ray’s starting point to the point where the offset path intersects the containing block’s boundary. If the ray’s starting point is on the containing block’s boundary, or outside its bounds entirely, the distance is zero.",
+          "href": "https://drafts.csswg.org/motion-1/#size-sides",
+          "type": "value",
+          "value": "sides"
+        }
+      ]
+    }
+  ]
+}

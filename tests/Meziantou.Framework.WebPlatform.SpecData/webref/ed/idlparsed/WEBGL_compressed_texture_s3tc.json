@@ -1,0 +1,137 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_compressed_texture_s3tc Khronos Ratified Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_compressed_texture_s3tc/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_compressed_texture_s3tc"
+        ],
+        "Worker": [
+          "WEBGL_compressed_texture_s3tc"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_compressed_texture_s3tc": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_compressed_texture_s3tc {\n    /* Compressed Texture Formats */\n    const GLenum COMPRESSED_RGB_S3TC_DXT1_EXT        = 0x83F0;\n    const GLenum COMPRESSED_RGBA_S3TC_DXT1_EXT       = 0x83F1;\n    const GLenum COMPRESSED_RGBA_S3TC_DXT3_EXT       = 0x83F2;\n    const GLenum COMPRESSED_RGBA_S3TC_DXT5_EXT       = 0x83F3;\n};",
+        "type": "interface",
+        "name": "WEBGL_compressed_texture_s3tc",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGB_S3TC_DXT1_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x83F0"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_S3TC_DXT1_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x83F1"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_S3TC_DXT3_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x83F2"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_S3TC_DXT5_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x83F3"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_compressed_texture_s3tc"
+      ],
+      "Worker": [
+        "WEBGL_compressed_texture_s3tc"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_compressed_texture_s3tc": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

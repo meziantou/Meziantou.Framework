@@ -208,6 +208,8 @@ jobs:
             "tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests.csproj"
             # Writes memory dumps of the test process, which suspends it and needs hundreds of MB of disk
             "tests/Meziantou.Framework.Diagnostics.MemoryDump.Tests/Meziantou.Framework.Diagnostics.MemoryDump.Tests.csproj"
+            # Runs the web-platform-tests: tens of thousands of pages, rendered with a script engine
+            "tests/Meziantou.Framework.WebPlatform.Wpt/Meziantou.Framework.WebPlatform.Wpt.csproj"
           )
 
           # The DNS suites bind sockets, so they run in their own job instead of competing with the
@@ -529,6 +531,22 @@ jobs:
             if: startsWith(matrix.runs-on, 'windows') && matrix.test-group.id == 'TemporaryContainers' && steps.build-project.outputs.has-project == 'true'
             uses: $/.github/actions/setup-wslc
 
+      # The WebPlatform tests read the external test suites (html5lib-tests, web-platform-tests...) at the revisions
+      # pinned in tests/Meziantou.Framework.WebPlatform.SpecData: they are fetched, not committed
+      - name: Restore the WebPlatform external test suites
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.WebPlatform.')
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.WebPlatform.External
+          key: webplatform-external-tests-${{ hashFiles('tests/Meziantou.Framework.WebPlatform.SpecData/versions.json', 'tests/Meziantou.Framework.WebPlatform.SpecData/sources.json') }}
+          restore-keys: webplatform-external-tests-
+
+      - name: Fetch the WebPlatform external test suites
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.WebPlatform.')
+        run: dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate --configuration Release -- fetch-tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
         run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl ${{ env.ADDITIONAL_ARGUMENTS }}
@@ -700,10 +718,86 @@ jobs:
             test-result.coverage
             test-result.cobertura.xml
 
+  # The checks of the WebPlatform specification data and of the code generated from it, and the differential testing of
+  # the HTML parser with Chromium. They only run when a file they depend on changed.
+  webplatform:
+    name: webplatform (${{ matrix.check }})
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        check: [ specs, chromium-diff ]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        id: changes
+        run: |
+          if ($env:GITHUB_EVENT_NAME -ne "pull_request") {
+            "changed=true" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+
+          $files = @(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+          if ($LASTEXITCODE -ne 0) { throw "git diff failed with exit code $LASTEXITCODE" }
+          $patterns = @(
+            '^src/Meziantou\.Framework\.WebPlatform/'
+            '^tests/Meziantou\.Framework\.WebPlatform\.(SpecData|Wpt)/'
+            '^tools/Meziantou\.Framework\.WebPlatform\.'
+            '^eng/webplatform/'
+            '^\.github/workflows/ci\.yml$'
+            '^global\.json$'
+            '^Directory\.Build\.(props|targets)$'
+            '^\.editorconfig$'
+          )
+          $changed = @($files | Where-Object { $file = $_; $patterns | Where-Object { $file -match $_ } }).Count -gt 0
+          "changed=$($changed.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
+      - name: Setup .NET
+        if: steps.changes.outputs.changed == 'true'
+        uses: $/.github/actions/setup-dotnet
+
+      - name: Restore the external test suites
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.WebPlatform.External
+          key: webplatform-external-tests-${{ hashFiles('tests/Meziantou.Framework.WebPlatform.SpecData/versions.json', 'tests/Meziantou.Framework.WebPlatform.SpecData/sources.json') }}
+          restore-keys: webplatform-external-tests-
+
+      - name: Fetch the external test suites
+        if: steps.changes.outputs.changed == 'true'
+        run: dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate --configuration Release -- fetch-tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify the specification data and the generated code
+        if: steps.changes.outputs.changed == 'true' && matrix.check == 'specs'
+        run: |
+          dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate --configuration Release --no-build -- verify
+          if ($LASTEXITCODE -ne 0) { throw "The specification data does not match its checksums" }
+          dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecGen --configuration Release -- --check
+          if ($LASTEXITCODE -ne 0) { throw "The generated code is not up to date: run 'dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecGen'" }
+          dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate --configuration Release --no-build -- wpt-coverage --check
+          if ($LASTEXITCODE -ne 0) { throw "The WPT coverage is not up to date: run 'dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- wpt-coverage'" }
+
+      # The trees of the tree construction tests must be the same as the trees of Chromium, except for the deviations
+      # of Chromium listed in tools/Meziantou.Framework.WebPlatform.ChromiumDiff/known-differences.json
+      - name: Compare the HTML trees with Chromium
+        if: steps.changes.outputs.changed == 'true' && matrix.check == 'chromium-diff'
+        run: |
+          dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff --configuration Release -- install --with-deps
+          if ($LASTEXITCODE -ne 0) { throw "The installation of Chromium failed with exit code $LASTEXITCODE" }
+          dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff --configuration Release --no-build
+          if ($LASTEXITCODE -ne 0) { throw "The HTML trees differ from Chromium" }
+
   final_status_check:
     runs-on: ubuntu-slim
     if: always()
-    needs: [ build_eng_scripts, validate_generated_files, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf, test_aot, merge_coverage ]
+    needs: [ build_eng_scripts, validate_generated_files, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf, test_aot, merge_coverage, webplatform ]
     steps:
       - name: Check previous jobs status
         env:

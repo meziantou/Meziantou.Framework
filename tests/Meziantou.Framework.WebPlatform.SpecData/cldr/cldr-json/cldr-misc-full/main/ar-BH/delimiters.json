@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ar-BH": {
+      "identity": {
+        "language": "ar",
+        "territory": "BH"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

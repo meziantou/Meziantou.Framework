@@ -1,0 +1,16 @@
+{
+  "main": {
+    "el-polyton": {
+      "identity": {
+        "language": "el",
+        "variant": "POLYTON"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

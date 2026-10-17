@@ -1,0 +1,110 @@
+{
+  "inert/dynamic-inert-on-focused-element.html": {
+    "total": 6
+  },
+  "inert/inert-and-contenteditable.html": {
+    "total": 2
+  },
+  "inert/inert-and-find-flat-tree.html": {
+    "total": 2,
+    "failures": {
+      "Text inside a dialog inside a shadowroot should be findable.": "FAIL",
+      "Text slotted into a dialog which is inside a shadowroot should be findable.": "FAIL"
+    }
+  },
+  "inert/inert-and-find.html": {
+    "total": 1,
+    "failures": {
+      "Basic test for inert and find": "FAIL"
+    }
+  },
+  "inert/inert-canvas-fallback-content.html": {
+    "total": 12
+  },
+  "inert/inert-computed-style.html": {
+    "total": 1
+  },
+  "inert/inert-does-not-match-disabled-selector.html": {
+    "total": 1
+  },
+  "inert/inert-focus-in-frames.html": {
+    "total": 1
+  },
+  "inert/inert-form-control.html": {
+    "total": 1
+  },
+  "inert/inert-iframe-hittest.html": {
+    "total": 2
+  },
+  "inert/inert-iframe-tabbing.html": {
+    "total": 6
+  },
+  "inert/inert-in-shadow-dom.html": {
+    "total": 1
+  },
+  "inert/inert-inlines-around-selection-range-in-contenteditable.html": {
+    "total": 13,
+    "failures": {
+      "<span inert>d[ef</span><span>ab]c</span>": "FAIL",
+      "<span>a[bc</span><span inert>de]f</span>": "FAIL"
+    }
+  },
+  "inert/inert-inlines.html": {
+    "total": 1
+  },
+  "inert/inert-label-focus.html": {
+    "total": 3
+  },
+  "inert/inert-node-is-uneditable.html": {
+    "total": 3
+  },
+  "inert/inert-node-is-unfocusable.html": {
+    "total": 6
+  },
+  "inert/inert-node-is-unselectable.html": {
+    "total": 1
+  },
+  "inert/inert-on-non-html.html": {
+    "total": 27
+  },
+  "inert/inert-on-slots.html": {
+    "total": 1
+  },
+  "inert/inert-pseudo-element-hittest.html": {
+    "total": 2
+  },
+  "inert/inert-resize-handle.html": {
+    "total": 1
+  },
+  "inert/inert-scrollbar-hittest.html": {
+    "total": 1
+  },
+  "inert/inert-svg-hittest.html": {
+    "total": 2
+  },
+  "inert/inert-with-fullscreen-element.html": {
+    "total": 3,
+    "failures": {
+      "If an ancestor of the fullscreen element has the 'inert' attribute, the fullscreen element escapes inertness": "FAIL",
+      "If the fullscreen element has the 'inert' attribute, everything becomes inert": "FAIL",
+      "Inner nodes with 'inert' attribute become inert anyways": "FAIL"
+    }
+  },
+  "inert/inert-with-modal-dialog-001.html": {
+    "total": 4
+  },
+  "inert/inert-with-modal-dialog-002.html": {
+    "total": 3
+  },
+  "inert/inert-with-modal-dialog-003.html": {
+    "total": 3,
+    "failures": {
+      "If an ancestor of the dialog has the 'inert' attribute, the dialog escapes inertness": "FAIL",
+      "If the modal dialog has the 'inert' attribute, everything becomes inert": "FAIL",
+      "Inner nodes with 'inert' attribute become inert anyways": "FAIL"
+    }
+  },
+  "inert/nested-inert-unfocusable.html": {
+    "total": 3
+  }
+}

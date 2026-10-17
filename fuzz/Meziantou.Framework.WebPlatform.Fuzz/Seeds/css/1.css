@@ -1,0 +1,16 @@
+@charset "utf-8";
+@import url("a.css") layer(base) supports(display: grid) screen and (min-width: 100px);
+@namespace svg url(http://www.w3.org/2000/svg);
+@layer base, components;
+:root { --x: calc(1px + 2em * var(--y, 3)); --empty:; color: color-mix(in oklch, red 40%, rgb(0 0 255 / .5)); }
+@media (prefers-color-scheme: dark) and (width >= 600px) { a:hover { color: light-dark(#fff, hsl(120deg 50% 50%)) !important } }
+@supports (display: grid) and (not (selector(:has(a)))) { .grid { display: grid; grid-template: "a b" 1fr / auto minmax(0, 1fr) } }
+@font-face { font-family: X; src: url(x.woff2) format("woff2"); unicode-range: U+0-7F, U+4??; }
+@keyframes spin { from { transform: rotate(0turn) } to { transform: rotate(1turn) translate3d(1px, 2px, 3px) } }
+@container sidebar (min-width: 400px) { .card { container-type: inline-size; } }
+@scope (.a) to (.b) { :scope > p { margin: 1px 2px 3px 4px } }
+@property --p { syntax: "<length>+"; inherits: false; initial-value: 0px; }
+.n { & .c { color: red } &:hover { color: blue } @media print { display: none } }
+@counter-style x { system: cyclic; symbols: "*" "+"; }
+@page :first { margin: 1in; @top-left { content: "a" } }
+p::first-line { font: italic small-caps bold condensed 16px/2 cursive; background: url(a.png) no-repeat center / cover, linear-gradient(45deg, red 0 50%, blue) }

@@ -1,0 +1,1622 @@
+{
+  "css/css-typed-om/CSSMatrixComponent-DOMMatrix-mutable.html": {
+    "total": 1
+  },
+  "css/css-typed-om/background-image-gradient.html": {
+    "reftest": "PASS"
+  },
+  "css/css-typed-om/declared-styleMap-accepts-inherit.html": {
+    "total": 1
+  },
+  "css/css-typed-om/factory-absolute-length.html": {
+    "total": 7
+  },
+  "css/css-typed-om/factory-duration.html": {
+    "total": 2
+  },
+  "css/css-typed-om/factory-font-relative-length.html": {
+    "total": 12
+  },
+  "css/css-typed-om/factory-frequency.html": {
+    "total": 2
+  },
+  "css/css-typed-om/historical.html": {
+    "total": 11
+  },
+  "css/css-typed-om/idlharness.html": {
+    "total": 544,
+    "failures": {
+      "CSSNumericValue interface: calling parse(USVString) on mathSum with too few arguments must throw TypeError": "FAIL",
+      "CSSNumericValue interface: calling parse(USVString) on unitValue with too few arguments must throw TypeError": "FAIL",
+      "CSSStyleValue interface: calling parse(USVString, USVString) on mathSum with too few arguments must throw TypeError": "FAIL",
+      "CSSStyleValue interface: calling parse(USVString, USVString) on transformValue with too few arguments must throw TypeError": "FAIL",
+      "CSSStyleValue interface: calling parse(USVString, USVString) on unitValue with too few arguments must throw TypeError": "FAIL",
+      "CSSStyleValue interface: calling parseAll(USVString, USVString) on mathSum with too few arguments must throw TypeError": "FAIL",
+      "CSSStyleValue interface: calling parseAll(USVString, USVString) on transformValue with too few arguments must throw TypeError": "FAIL",
+      "CSSStyleValue interface: calling parseAll(USVString, USVString) on unitValue with too few arguments must throw TypeError": "FAIL"
+    }
+  },
+  "css/css-typed-om/parse-calc-expressions.html": {
+    "total": 2
+  },
+  "css/css-typed-om/rotate-by-added-angle.html": {
+    "reftest": "PASS"
+  },
+  "css/css-typed-om/set-var-reference-thcrash.html": {
+    "total": 1
+  },
+  "css/css-typed-om/stylevalue-normalization/normalize-ident.tentative.html": {
+    "total": 2
+  },
+  "css/css-typed-om/stylevalue-normalization/normalize-image.html": {
+    "total": 3
+  },
+  "css/css-typed-om/stylevalue-normalization/normalize-numeric.tentative.html": {
+    "total": 6
+  },
+  "css/css-typed-om/stylevalue-normalization/normalize-tokens.tentative.html": {
+    "total": 16
+  },
+  "css/css-typed-om/stylevalue-normalization/transformvalue-normalization.tentative.html": {
+    "total": 28
+  },
+  "css/css-typed-om/stylevalue-objects/parse-invalid.html": {
+    "total": 5
+  },
+  "css/css-typed-om/stylevalue-objects/parse.html": {
+    "total": 5
+  },
+  "css/css-typed-om/stylevalue-objects/parseAll-invalid.html": {
+    "total": 6
+  },
+  "css/css-typed-om/stylevalue-objects/parseAll.html": {
+    "total": 5
+  },
+  "css/css-typed-om/stylevalue-serialization/cssImageValue.html": {
+    "total": 1
+  },
+  "css/css-typed-om/stylevalue-serialization/cssKeywordValue.tentative.html": {
+    "total": 4
+  },
+  "css/css-typed-om/stylevalue-serialization/cssMathValue.tentative.html": {
+    "total": 25
+  },
+  "css/css-typed-om/stylevalue-serialization/cssStyleValue-cssom.html": {
+    "total": 4
+  },
+  "css/css-typed-om/stylevalue-serialization/cssStyleValue-string.html": {
+    "total": 2
+  },
+  "css/css-typed-om/stylevalue-serialization/cssTransformValue.tentative.html": {
+    "total": 22,
+    "failures": {
+      "CSSTransformValue containing CSSMathValues serializes correctly": "FAIL"
+    }
+  },
+  "css/css-typed-om/stylevalue-serialization/cssUnitValue.tentative.html": {
+    "total": 6
+  },
+  "css/css-typed-om/stylevalue-serialization/cssUnparsedValue.html": {
+    "total": 6
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssColorValue.html": {
+    "total": 20
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssHSL.html": {
+    "total": 24
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssHWB.html": {
+    "total": 21
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssKeywordValue-invalid.any.js": {
+    "total": 1
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssKeywordValue-invalid.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssKeywordValue-invalid.any.js#sharedworker": {
+    "total": 1
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssKeywordValue-value.any.js": {
+    "total": 6
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssKeywordValue-value.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssKeywordValue-value.any.js#sharedworker": {
+    "total": 6
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssKeywordValue.any.js": {
+    "total": 5
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssKeywordValue.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssKeywordValue.any.js#sharedworker": {
+    "total": 5
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssLCH.html": {
+    "total": 18
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssLab.html": {
+    "total": 15
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssMatrixComponent.tentative.html": {
+    "total": 10
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssOKLCH.html": {
+    "total": 18
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssOKLab.html": {
+    "total": 15
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssPerspective.tentative.html": {
+    "total": 25
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssRGB.html": {
+    "total": 51
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssRotate.tentative.html": {
+    "total": 27
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssScale.tentative.html": {
+    "total": 22
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssSkew.tentative.html": {
+    "total": 30
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssSkewX.tentative.html": {
+    "total": 19
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssSkewY.tentative.html": {
+    "total": 19
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssTransformComponent-2d-flattening.html": {
+    "total": 4
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssTransformComponent-toMatrix-relative-units.html": {
+    "total": 2
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssTransformComponent-toMatrix.html": {
+    "total": 8
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssTransformValue-toMatrix.html": {
+    "total": 2
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssTransformValue.tentative.html": {
+    "total": 8
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssTranslate.tentative.html": {
+    "total": 23
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssUnparsedValue-empty.any.js": {
+    "total": 1
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssUnparsedValue-empty.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssUnparsedValue-empty.any.js#sharedworker": {
+    "total": 1
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssUnparsedValue-indexed-getter-setter.html": {
+    "total": 6
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssUnparsedValue-iterable.html": {
+    "total": 2
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssUnparsedValue-length.html": {
+    "total": 4
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssUnparsedValue.html": {
+    "total": 4
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssVariableReferenceValue-invalid.html": {
+    "total": 2
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssVariableReferenceValue-variable.html": {
+    "total": 3
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssVariableReferenceValue.html": {
+    "total": 3
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/add-two-types.tentative.any.js": {
+    "total": 28
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/add-two-types.tentative.any.js#dedicatedworker": {
+    "total": 28
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/add-two-types.tentative.any.js#sharedworker": {
+    "total": 28
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/arithmetic.tentative.any.js": {
+    "total": 67
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/arithmetic.tentative.any.js#dedicatedworker": {
+    "total": 67,
+    "failures": {
+      "CSSNumericValue.add should throw TypeError when the types are different.": "FAIL",
+      "CSSNumericValue.div should throw TypeError when the types are different.": "FAIL",
+      "CSSNumericValue.max should throw TypeError when the types are different.": "FAIL",
+      "CSSNumericValue.min should throw TypeError when the types are different.": "FAIL",
+      "CSSNumericValue.mul should throw TypeError when the types are different.": "FAIL",
+      "CSSNumericValue.sub should throw TypeError when the types are different.": "FAIL",
+      "Calling CSSMathMax.max with number CSSUnitValues simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSMathMin.min with number CSSUnitValues simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSMathProduct.div with number CSSUnitValues simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSMathProduct.mul with number CSSUnitValues simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSMathSum.add with number CSSUnitValues simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSMathSum.sub with number CSSUnitValues simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSMathValue.add with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSMathValue.add with no arguments returns itself": "FAIL",
+      "Calling CSSMathValue.div with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSMathValue.div with no arguments returns itself": "FAIL",
+      "Calling CSSMathValue.max with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSMathValue.max with no arguments returns itself": "FAIL",
+      "Calling CSSMathValue.min with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSMathValue.min with no arguments returns itself": "FAIL",
+      "Calling CSSMathValue.mul with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSMathValue.mul with no arguments returns itself": "FAIL",
+      "Calling CSSMathValue.sub with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSMathValue.sub with no arguments returns itself": "FAIL",
+      "Calling CSSNumericValue.add can take numberish values": "FAIL",
+      "Calling CSSNumericValue.add with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSNumericValue.add with incompatible types throws TypeError": "FAIL",
+      "Calling CSSNumericValue.add with more than one number CSSNumericValues returns correct type": "FAIL",
+      "Calling CSSNumericValue.div can take numberish values": "FAIL",
+      "Calling CSSNumericValue.div inverts all argument values": "FAIL",
+      "Calling CSSNumericValue.div with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSNumericValue.div with incompatible types throws TypeError": "FAIL",
+      "Calling CSSNumericValue.div with more than one number CSSNumericValues returns correct type": "FAIL",
+      "Calling CSSNumericValue.max can take numberish values": "FAIL",
+      "Calling CSSNumericValue.max with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSNumericValue.max with incompatible types throws TypeError": "FAIL",
+      "Calling CSSNumericValue.max with more than one number CSSNumericValues returns correct type": "FAIL",
+      "Calling CSSNumericValue.min can take numberish values": "FAIL",
+      "Calling CSSNumericValue.min with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSNumericValue.min with incompatible types throws TypeError": "FAIL",
+      "Calling CSSNumericValue.min with more than one number CSSNumericValues returns correct type": "FAIL",
+      "Calling CSSNumericValue.mul can take numberish values": "FAIL",
+      "Calling CSSNumericValue.mul with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSNumericValue.mul with incompatible types throws TypeError": "FAIL",
+      "Calling CSSNumericValue.mul with more than one number CSSNumericValues returns correct type": "FAIL",
+      "Calling CSSNumericValue.sub can take numberish values": "FAIL",
+      "Calling CSSNumericValue.sub negates all argument values": "FAIL",
+      "Calling CSSNumericValue.sub with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSNumericValue.sub with incompatible types throws TypeError": "FAIL",
+      "Calling CSSNumericValue.sub with more than one number CSSNumericValues returns correct type": "FAIL",
+      "Calling CSSUnitValue.add with CSSUnitValues with same unit simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.add with no arguments returns itself": "FAIL",
+      "Calling CSSUnitValue.div on a non-number value simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.div with a non-number value in the arguments does not simplify to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.div with all numbers simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.div with no arguments returns itself": "FAIL",
+      "Calling CSSUnitValue.max with CSSUnitValues with same unit simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.max with no arguments returns itself": "FAIL",
+      "Calling CSSUnitValue.min with CSSUnitValues with same unit simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.min with no arguments returns itself": "FAIL",
+      "Calling CSSUnitValue.mul with all numbers simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.mul with more than one non-number does not simplify to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.mul with no arguments returns itself": "FAIL",
+      "Calling CSSUnitValue.mul with only one non-number simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.sub with CSSUnitValues with same unit simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.sub with no arguments returns itself": "FAIL",
+      "Can not divide with CSSUnitValue which has zero value and number type": "FAIL"
+    }
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/arithmetic.tentative.any.js#sharedworker": {
+    "total": 67,
+    "failures": {
+      "CSSNumericValue.add should throw TypeError when the types are different.": "FAIL",
+      "CSSNumericValue.div should throw TypeError when the types are different.": "FAIL",
+      "CSSNumericValue.max should throw TypeError when the types are different.": "FAIL",
+      "CSSNumericValue.min should throw TypeError when the types are different.": "FAIL",
+      "CSSNumericValue.mul should throw TypeError when the types are different.": "FAIL",
+      "CSSNumericValue.sub should throw TypeError when the types are different.": "FAIL",
+      "Calling CSSMathMax.max with number CSSUnitValues simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSMathMin.min with number CSSUnitValues simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSMathProduct.div with number CSSUnitValues simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSMathProduct.mul with number CSSUnitValues simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSMathSum.add with number CSSUnitValues simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSMathSum.sub with number CSSUnitValues simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSMathValue.add with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSMathValue.add with no arguments returns itself": "FAIL",
+      "Calling CSSMathValue.div with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSMathValue.div with no arguments returns itself": "FAIL",
+      "Calling CSSMathValue.max with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSMathValue.max with no arguments returns itself": "FAIL",
+      "Calling CSSMathValue.min with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSMathValue.min with no arguments returns itself": "FAIL",
+      "Calling CSSMathValue.mul with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSMathValue.mul with no arguments returns itself": "FAIL",
+      "Calling CSSMathValue.sub with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSMathValue.sub with no arguments returns itself": "FAIL",
+      "Calling CSSNumericValue.add can take numberish values": "FAIL",
+      "Calling CSSNumericValue.add with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSNumericValue.add with incompatible types throws TypeError": "FAIL",
+      "Calling CSSNumericValue.add with more than one number CSSNumericValues returns correct type": "FAIL",
+      "Calling CSSNumericValue.div can take numberish values": "FAIL",
+      "Calling CSSNumericValue.div inverts all argument values": "FAIL",
+      "Calling CSSNumericValue.div with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSNumericValue.div with incompatible types throws TypeError": "FAIL",
+      "Calling CSSNumericValue.div with more than one number CSSNumericValues returns correct type": "FAIL",
+      "Calling CSSNumericValue.max can take numberish values": "FAIL",
+      "Calling CSSNumericValue.max with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSNumericValue.max with incompatible types throws TypeError": "FAIL",
+      "Calling CSSNumericValue.max with more than one number CSSNumericValues returns correct type": "FAIL",
+      "Calling CSSNumericValue.min can take numberish values": "FAIL",
+      "Calling CSSNumericValue.min with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSNumericValue.min with incompatible types throws TypeError": "FAIL",
+      "Calling CSSNumericValue.min with more than one number CSSNumericValues returns correct type": "FAIL",
+      "Calling CSSNumericValue.mul can take numberish values": "FAIL",
+      "Calling CSSNumericValue.mul with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSNumericValue.mul with incompatible types throws TypeError": "FAIL",
+      "Calling CSSNumericValue.mul with more than one number CSSNumericValues returns correct type": "FAIL",
+      "Calling CSSNumericValue.sub can take numberish values": "FAIL",
+      "Calling CSSNumericValue.sub negates all argument values": "FAIL",
+      "Calling CSSNumericValue.sub with a single CSSNumericValue returns correct type": "FAIL",
+      "Calling CSSNumericValue.sub with incompatible types throws TypeError": "FAIL",
+      "Calling CSSNumericValue.sub with more than one number CSSNumericValues returns correct type": "FAIL",
+      "Calling CSSUnitValue.add with CSSUnitValues with same unit simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.add with no arguments returns itself": "FAIL",
+      "Calling CSSUnitValue.div on a non-number value simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.div with a non-number value in the arguments does not simplify to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.div with all numbers simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.div with no arguments returns itself": "FAIL",
+      "Calling CSSUnitValue.max with CSSUnitValues with same unit simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.max with no arguments returns itself": "FAIL",
+      "Calling CSSUnitValue.min with CSSUnitValues with same unit simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.min with no arguments returns itself": "FAIL",
+      "Calling CSSUnitValue.mul with all numbers simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.mul with more than one non-number does not simplify to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.mul with no arguments returns itself": "FAIL",
+      "Calling CSSUnitValue.mul with only one non-number simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.sub with CSSUnitValues with same unit simplifies to a CSSUnitValue": "FAIL",
+      "Calling CSSUnitValue.sub with no arguments returns itself": "FAIL",
+      "Can not divide with CSSUnitValue which has zero value and number type": "FAIL"
+    }
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/create-a-type.tentative.any.js": {
+    "total": 8
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/create-a-type.tentative.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/create-a-type.tentative.any.js#sharedworker": {
+    "total": 8
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/cssMathInvert-type.any.js": {
+    "total": 3
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/cssMathInvert-type.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/cssMathInvert-type.any.js#sharedworker": {
+    "total": 3
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/cssMathNegate-type.any.js": {
+    "total": 2
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/cssMathNegate-type.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/cssMathNegate-type.any.js#sharedworker": {
+    "total": 2
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/cssMathValue.tentative.html": {
+    "total": 23
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/cssUnitValue-value.html": {
+    "total": 1
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/cssUnitValue.html": {
+    "total": 36
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/cssnumericvalue-multiply-two-types.tentative.any.js": {
+    "total": 7
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/cssnumericvalue-multiply-two-types.tentative.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/cssnumericvalue-multiply-two-types.tentative.any.js#sharedworker": {
+    "total": 7
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/equals.tentative.html": {
+    "total": 11
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/numeric-factory.tentative.html": {
+    "total": 34
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/parse.tentative.html": {
+    "total": 22
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/to.tentative.any.js": {
+    "total": 19
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/to.tentative.any.js#dedicatedworker": {
+    "total": 19,
+    "failures": {
+      "Converting a CSSMathClamp to a single unit returns the clamped value": "FAIL",
+      "Converting a CSSMathClamp to a single unit with different units throws a TypeError": "FAIL",
+      "Converting a CSSMathInvert to a single unit inverts its value and units": "FAIL",
+      "Converting a CSSMathMax to a single unit finds the max value": "FAIL",
+      "Converting a CSSMathMax to a single unit with different units throws a TypeError": "FAIL",
+      "Converting a CSSMathMin to a single unit finds the min value": "FAIL",
+      "Converting a CSSMathMin to a single unit with different units throws a TypeError": "FAIL",
+      "Converting a CSSMathNegate to a single unit negates its value": "FAIL",
+      "Converting a CSSMathProduct to a single unit multiplies the values": "FAIL",
+      "Converting a CSSMathSum to a single unit adds the values": "FAIL",
+      "Converting a CSSNumericValue with invalid sum value throws TypeError": "FAIL",
+      "Converting a CSSNumericValue with sum value containing more than one value throws TypeError": "FAIL",
+      "Converting a CSSUnitValue to a compatible unit returns correct value": "FAIL",
+      "Converting a CSSUnitValue to an incompatible unit throws TypeError": "FAIL",
+      "Converting a CSSUnitValue to an invalid unit throws SyntaxError": "FAIL",
+      "Converting a CSSUnitValue to its canonical unit returns correct value": "FAIL",
+      "Converting a CSSUnitValue to its own unit returns itself": "FAIL",
+      "Converting a complex expression to a single unit": "FAIL"
+    }
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/to.tentative.any.js#sharedworker": {
+    "total": 19,
+    "failures": {
+      "Converting a CSSMathClamp to a single unit returns the clamped value": "FAIL",
+      "Converting a CSSMathClamp to a single unit with different units throws a TypeError": "FAIL",
+      "Converting a CSSMathInvert to a single unit inverts its value and units": "FAIL",
+      "Converting a CSSMathMax to a single unit finds the max value": "FAIL",
+      "Converting a CSSMathMax to a single unit with different units throws a TypeError": "FAIL",
+      "Converting a CSSMathMin to a single unit finds the min value": "FAIL",
+      "Converting a CSSMathMin to a single unit with different units throws a TypeError": "FAIL",
+      "Converting a CSSMathNegate to a single unit negates its value": "FAIL",
+      "Converting a CSSMathProduct to a single unit multiplies the values": "FAIL",
+      "Converting a CSSMathSum to a single unit adds the values": "FAIL",
+      "Converting a CSSNumericValue with invalid sum value throws TypeError": "FAIL",
+      "Converting a CSSNumericValue with sum value containing more than one value throws TypeError": "FAIL",
+      "Converting a CSSUnitValue to a compatible unit returns correct value": "FAIL",
+      "Converting a CSSUnitValue to an incompatible unit throws TypeError": "FAIL",
+      "Converting a CSSUnitValue to an invalid unit throws SyntaxError": "FAIL",
+      "Converting a CSSUnitValue to its canonical unit returns correct value": "FAIL",
+      "Converting a CSSUnitValue to its own unit returns itself": "FAIL",
+      "Converting a complex expression to a single unit": "FAIL"
+    }
+  },
+  "css/css-typed-om/stylevalue-subclasses/numeric-objects/toSum.tentative.html": {
+    "total": 11
+  },
+  "css/css-typed-om/the-stylepropertymap/computed/computed.tentative.html": {
+    "total": 7
+  },
+  "css/css-typed-om/the-stylepropertymap/computed/get-auto-min-size.html": {
+    "total": 6
+  },
+  "css/css-typed-om/the-stylepropertymap/computed/get-disconnected-element.html": {
+    "total": 1
+  },
+  "css/css-typed-om/the-stylepropertymap/computed/get-invalid.html": {
+    "total": 1
+  },
+  "css/css-typed-om/the-stylepropertymap/computed/get-position.html": {
+    "total": 2
+  },
+  "css/css-typed-om/the-stylepropertymap/computed/get-shorthand.html": {
+    "total": 2
+  },
+  "css/css-typed-om/the-stylepropertymap/computed/get.html": {
+    "total": 6
+  },
+  "css/css-typed-om/the-stylepropertymap/computed/getAll-shorthand.html": {
+    "total": 2
+  },
+  "css/css-typed-om/the-stylepropertymap/computed/getAll.tentative.html": {
+    "total": 6
+  },
+  "css/css-typed-om/the-stylepropertymap/computed/has.tentative.html": {
+    "total": 7
+  },
+  "css/css-typed-om/the-stylepropertymap/computed/iterable.tentative.html": {
+    "total": 5
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/append.tentative.html": {
+    "total": 14
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/clear.html": {
+    "total": 3
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/declared.tentative.html": {
+    "total": 7
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/delete-invalid.html": {
+    "total": 1
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/delete-shorthand.html": {
+    "total": 3
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/delete.html": {
+    "total": 5
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/get-invalid.html": {
+    "total": 1
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/get-shorthand.html": {
+    "total": 2
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/get.html": {
+    "total": 7
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/getAll-shorthand.html": {
+    "total": 2
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/getAll.tentative.html": {
+    "total": 7
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/has.tentative.html": {
+    "total": 9
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/iterable.tentative.html": {
+    "total": 5
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/set-shorthand.html": {
+    "total": 4
+  },
+  "css/css-typed-om/the-stylepropertymap/declared/set.tentative.html": {
+    "total": 15
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/append.tentative.html": {
+    "total": 14
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/attribute-changed-callback.html": {
+    "total": 10
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/clear.html": {
+    "total": 3
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/delete-invalid.html": {
+    "total": 1
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/delete-shorthand.html": {
+    "total": 3
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/delete.html": {
+    "total": 5
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/get-invalid.html": {
+    "total": 1
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/get-shorthand.html": {
+    "total": 3
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/get.html": {
+    "total": 7
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/getAll-shorthand.html": {
+    "total": 2
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/getAll.tentative.html": {
+    "total": 7
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/has.tentative.html": {
+    "total": 8
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/iterable.tentative.html": {
+    "total": 5
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/set-shorthand.html": {
+    "total": 4
+  },
+  "css/css-typed-om/the-stylepropertymap/inline/set.tentative.html": {
+    "total": 15
+  },
+  "css/css-typed-om/the-stylepropertymap/invalidation.html": {
+    "total": 1
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/accent-color.html": {
+    "total": 38
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/alignment-baseline.html": {
+    "total": 39
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/all.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/anchor-scope.html": {
+    "total": 35,
+    "failures": {
+      "Can set 'anchor-scope' to the '--a' keyword: --a": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/animation-delay.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/animation-direction.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/animation-duration.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/animation-fill-mode.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/animation-iteration-count.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/animation-name.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/animation-play-state.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/animation-timing-function.html": {
+    "total": 40
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/animation.html": {
+    "total": 2
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/backdrop-filter.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/backface-visibility.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/background-attachment.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/background-blend-mode.html": {
+    "total": 47
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/background-clip.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/background-color.html": {
+    "total": 37
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/background-image.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/background-origin.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/background-position.html": {
+    "harness": "ERROR",
+    "total": 5
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/background-repeat.html": {
+    "total": 38
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/background-size.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/background.html": {
+    "total": 36,
+    "failures": {
+      "Setting 'background' to a length: -3.14em throws TypeError": "FAIL",
+      "Setting 'background' to a length: 0px throws TypeError": "FAIL",
+      "Setting 'background' to a length: 3.14cm throws TypeError": "FAIL",
+      "Setting 'background' to a length: calc(0px + 0em) throws TypeError": "FAIL",
+      "Setting 'background' to a percent: -3.14% throws TypeError": "FAIL",
+      "Setting 'background' to a percent: 0% throws TypeError": "FAIL",
+      "Setting 'background' to a percent: 3.14% throws TypeError": "FAIL",
+      "Setting 'background' to a percent: calc(0% + 0%) throws TypeError": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/baseline-shift.html": {
+    "total": 36
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/block-size.html": {
+    "total": 95
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/border-collapse.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/border-color.html": {
+    "total": 148
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/border-image-outset.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/border-image-repeat.html": {
+    "total": 37
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/border-image-slice.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/border-image-source.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/border-image-width.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/border-radius.html": {
+    "total": 128
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/border-style.html": {
+    "total": 132
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/border-width.html": {
+    "total": 136
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/bottom.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/box-shadow.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/box-sizing.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/break.html": {
+    "total": 122
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/caption-side.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/caret-color.html": {
+    "total": 38
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/center-coordinate.html": {
+    "total": 62
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/clear.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/clip-path.html": {
+    "total": 40,
+    "failures": {
+      "'clip' does not support 'inset(22% 12% 15px 35px)'": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/clip-rule.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/clip.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/color-interpolation.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/color.html": {
+    "total": 37,
+    "failures": {
+      "Can set 'color' to the 'currentcolor' keyword: currentcolor": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/column-count.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/column-height.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/column-rule-color.html": {
+    "total": 37
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/column-rule-style.html": {
+    "total": 41
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/column-rule-width.html": {
+    "total": 41
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/column-span.html": {
+    "total": 33,
+    "failures": {
+      "Setting 'column-span' to a number: -3.14 throws TypeError": "FAIL",
+      "Setting 'column-span' to a number: 0 throws TypeError": "FAIL",
+      "Setting 'column-span' to a number: 3.14 throws TypeError": "FAIL",
+      "Setting 'column-span' to a number: calc(2 + 3) throws TypeError": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/column-width.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/contain.html": {
+    "total": 41
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/container-name.html": {
+    "total": 39
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/container-type.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/coordinate.html": {
+    "total": 62
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/counter-increment.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/counter-reset.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/counter-set.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/cursor.html": {
+    "total": 69
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/d.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/direction.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/display.html": {
+    "total": 60
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/dominant-baseline.html": {
+    "total": 40
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/empty-cells.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/fill-color.html": {
+    "total": 37
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/fill-opacity.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/fill-rule.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/fill.html": {
+    "total": 2,
+    "failures": {
+      "'fill' does not support 'red gray'": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/filter.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/flex-basis.html": {
+    "total": 36
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/flex-direction.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/flex-flow.html": {
+    "total": 3
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/flex-grow.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/flex-shrink.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/flex-wrap.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/flex.html": {
+    "total": 4
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/float.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/flood-color.html": {
+    "total": 37
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/flood-opacity.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-family.html": {
+    "total": 3
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-feature-settings.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-kerning.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-language-override.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-optical-sizing.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-palette.html": {
+    "total": 35,
+    "failures": {
+      "'font-palette' does not support 'Augusta'": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-presentation.html": {
+    "total": 34,
+    "failures": {
+      "Can set 'font-presentation' to CSS-wide keywords: inherit": "FAIL",
+      "Can set 'font-presentation' to CSS-wide keywords: initial": "FAIL",
+      "Can set 'font-presentation' to CSS-wide keywords: revert": "FAIL",
+      "Can set 'font-presentation' to CSS-wide keywords: unset": "FAIL",
+      "Can set 'font-presentation' to the 'auto' keyword: auto": "FAIL",
+      "Can set 'font-presentation' to the 'emoji' keyword: emoji": "FAIL",
+      "Can set 'font-presentation' to the 'text' keyword: text": "FAIL",
+      "Can set 'font-presentation' to var() references:  var(--A)": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-size-adjust.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-size.html": {
+    "total": 41
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-stretch.html": {
+    "total": 40,
+    "failures": {
+      "Can set 'font-stretch' to the 'condensed' keyword: condensed": "FAIL",
+      "Can set 'font-stretch' to the 'expanded' keyword: expanded": "FAIL",
+      "Can set 'font-stretch' to the 'extra-condensed' keyword: extra-condensed": "FAIL",
+      "Can set 'font-stretch' to the 'extra-expanded' keyword: extra-expanded": "FAIL",
+      "Can set 'font-stretch' to the 'normal' keyword: normal": "FAIL",
+      "Can set 'font-stretch' to the 'semi-condensed' keyword: semi-condensed": "FAIL",
+      "Can set 'font-stretch' to the 'semi-expanded' keyword: semi-expanded": "FAIL",
+      "Can set 'font-stretch' to the 'ultra-condensed' keyword: ultra-condensed": "FAIL",
+      "Can set 'font-stretch' to the 'ultra-expanded' keyword: ultra-expanded": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-style.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-synthesis.html": {
+    "total": 102
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-variant-alternates.html": {
+    "total": 40
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-variant-caps.html": {
+    "total": 38
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-variant-east-asian.html": {
+    "total": 43
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-variant-emoji.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-variant-ligatures.html": {
+    "total": 43
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-variant-numeric.html": {
+    "total": 42
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-variant.html": {
+    "total": 4
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-variation-settings.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font-weight.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/font.html": {
+    "total": 5
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/gap.html": {
+    "total": 64
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/grid-area.html": {
+    "total": 7
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/grid-auto-columns-rows.html": {
+    "total": 72,
+    "failures": {
+      "Setting 'grid-auto-columns' to a flexible length: -3.14fr throws TypeError": "FAIL",
+      "Setting 'grid-auto-rows' to a flexible length: -3.14fr throws TypeError": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/grid-auto-flow.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/grid-gap.html": {
+    "total": 5
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/grid-start-end.html": {
+    "total": 140
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/grid-template-areas.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/grid-template-columns-rows.html": {
+    "total": 68,
+    "failures": {
+      "Setting 'grid-template-columns' to a flexible length: -3.14fr throws TypeError": "FAIL",
+      "Setting 'grid-template-rows' to a flexible length: -3.14fr throws TypeError": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/grid-template.html": {
+    "total": 6
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/grid.html": {
+    "total": 3
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/height.html": {
+    "total": 95
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/hyphens.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/image-rendering.html": {
+    "total": 36
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/inline-size.html": {
+    "total": 95
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/isolation.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/left.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/letter-spacing.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/lighting-color.html": {
+    "total": 37
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/line-break.html": {
+    "total": 36
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/line-height.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/list-style-image.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/list-style-position.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/list-style-type.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/logical.html": {
+    "total": 1468,
+    "failures": {
+      "Can set 'border-block' to the 'none' keyword: none": "FAIL",
+      "Can set 'border-block-color' to the 'currentcolor' keyword: currentcolor": "FAIL",
+      "Can set 'border-block-end' to the 'none' keyword: none": "FAIL",
+      "Can set 'border-block-start' to the 'none' keyword: none": "FAIL",
+      "Can set 'border-block-style' to the 'none' keyword: none": "FAIL",
+      "Can set 'border-block-style' to the 'solid' keyword: solid": "FAIL",
+      "Can set 'border-block-width' to a length: -3.14em": "FAIL",
+      "Can set 'border-block-width' to a length: 0px": "FAIL",
+      "Can set 'border-block-width' to a length: 3.14cm": "FAIL",
+      "Can set 'border-block-width' to a length: calc(0px + 0em)": "FAIL",
+      "Can set 'border-block-width' to the 'medium' keyword: medium": "FAIL",
+      "Can set 'border-block-width' to the 'thick' keyword: thick": "FAIL",
+      "Can set 'border-block-width' to the 'thin' keyword: thin": "FAIL",
+      "Can set 'border-end-end-radius' to a length: -3.14em": "FAIL",
+      "Can set 'border-end-end-radius' to a length: 0px": "FAIL",
+      "Can set 'border-end-end-radius' to a length: 3.14cm": "FAIL",
+      "Can set 'border-end-end-radius' to a length: calc(0px + 0em)": "FAIL",
+      "Can set 'border-end-end-radius' to a percent: -3.14%": "FAIL",
+      "Can set 'border-end-end-radius' to a percent: 0%": "FAIL",
+      "Can set 'border-end-end-radius' to a percent: 3.14%": "FAIL",
+      "Can set 'border-end-end-radius' to a percent: calc(0% + 0%)": "FAIL",
+      "Can set 'border-end-start-radius' to a length: -3.14em": "FAIL",
+      "Can set 'border-end-start-radius' to a length: 0px": "FAIL",
+      "Can set 'border-end-start-radius' to a length: 3.14cm": "FAIL",
+      "Can set 'border-end-start-radius' to a length: calc(0px + 0em)": "FAIL",
+      "Can set 'border-end-start-radius' to a percent: -3.14%": "FAIL",
+      "Can set 'border-end-start-radius' to a percent: 0%": "FAIL",
+      "Can set 'border-end-start-radius' to a percent: 3.14%": "FAIL",
+      "Can set 'border-end-start-radius' to a percent: calc(0% + 0%)": "FAIL",
+      "Can set 'border-inline' to the 'none' keyword: none": "FAIL",
+      "Can set 'border-inline-color' to the 'currentcolor' keyword: currentcolor": "FAIL",
+      "Can set 'border-inline-end' to the 'none' keyword: none": "FAIL",
+      "Can set 'border-inline-start' to the 'none' keyword: none": "FAIL",
+      "Can set 'border-inline-style' to the 'none' keyword: none": "FAIL",
+      "Can set 'border-inline-style' to the 'solid' keyword: solid": "FAIL",
+      "Can set 'border-inline-width' to a length: -3.14em": "FAIL",
+      "Can set 'border-inline-width' to a length: 0px": "FAIL",
+      "Can set 'border-inline-width' to a length: 3.14cm": "FAIL",
+      "Can set 'border-inline-width' to a length: calc(0px + 0em)": "FAIL",
+      "Can set 'border-inline-width' to the 'medium' keyword: medium": "FAIL",
+      "Can set 'border-inline-width' to the 'thick' keyword: thick": "FAIL",
+      "Can set 'border-inline-width' to the 'thin' keyword: thin": "FAIL",
+      "Can set 'border-start-end-radius' to a length: -3.14em": "FAIL",
+      "Can set 'border-start-end-radius' to a length: 0px": "FAIL",
+      "Can set 'border-start-end-radius' to a length: 3.14cm": "FAIL",
+      "Can set 'border-start-end-radius' to a length: calc(0px + 0em)": "FAIL",
+      "Can set 'border-start-end-radius' to a percent: -3.14%": "FAIL",
+      "Can set 'border-start-end-radius' to a percent: 0%": "FAIL",
+      "Can set 'border-start-end-radius' to a percent: 3.14%": "FAIL",
+      "Can set 'border-start-end-radius' to a percent: calc(0% + 0%)": "FAIL",
+      "Can set 'border-start-start-radius' to a length: -3.14em": "FAIL",
+      "Can set 'border-start-start-radius' to a length: 0px": "FAIL",
+      "Can set 'border-start-start-radius' to a length: 3.14cm": "FAIL",
+      "Can set 'border-start-start-radius' to a length: calc(0px + 0em)": "FAIL",
+      "Can set 'border-start-start-radius' to a percent: -3.14%": "FAIL",
+      "Can set 'border-start-start-radius' to a percent: 0%": "FAIL",
+      "Can set 'border-start-start-radius' to a percent: 3.14%": "FAIL",
+      "Can set 'border-start-start-radius' to a percent: calc(0% + 0%)": "FAIL",
+      "Can set 'inset-block' to a length: -3.14em": "FAIL",
+      "Can set 'inset-block' to a length: 0px": "FAIL",
+      "Can set 'inset-block' to a length: 3.14cm": "FAIL",
+      "Can set 'inset-block' to a length: calc(0px + 0em)": "FAIL",
+      "Can set 'inset-block' to a percent: -3.14%": "FAIL",
+      "Can set 'inset-block' to a percent: 0%": "FAIL",
+      "Can set 'inset-block' to a percent: 3.14%": "FAIL",
+      "Can set 'inset-block' to a percent: calc(0% + 0%)": "FAIL",
+      "Can set 'inset-inline' to a length: -3.14em": "FAIL",
+      "Can set 'inset-inline' to a length: 0px": "FAIL",
+      "Can set 'inset-inline' to a length: 3.14cm": "FAIL",
+      "Can set 'inset-inline' to a length: calc(0px + 0em)": "FAIL",
+      "Can set 'inset-inline' to a percent: -3.14%": "FAIL",
+      "Can set 'inset-inline' to a percent: 0%": "FAIL",
+      "Can set 'inset-inline' to a percent: 3.14%": "FAIL",
+      "Can set 'inset-inline' to a percent: calc(0% + 0%)": "FAIL",
+      "Can set 'margin-block' to a length: -3.14em": "FAIL",
+      "Can set 'margin-block' to a length: 0px": "FAIL",
+      "Can set 'margin-block' to a length: 3.14cm": "FAIL",
+      "Can set 'margin-block' to a length: calc(0px + 0em)": "FAIL",
+      "Can set 'margin-block' to a percent: -3.14%": "FAIL",
+      "Can set 'margin-block' to a percent: 0%": "FAIL",
+      "Can set 'margin-block' to a percent: 3.14%": "FAIL",
+      "Can set 'margin-block' to a percent: calc(0% + 0%)": "FAIL",
+      "Can set 'margin-inline' to a length: -3.14em": "FAIL",
+      "Can set 'margin-inline' to a length: 0px": "FAIL",
+      "Can set 'margin-inline' to a length: 3.14cm": "FAIL",
+      "Can set 'margin-inline' to a length: calc(0px + 0em)": "FAIL",
+      "Can set 'margin-inline' to a percent: -3.14%": "FAIL",
+      "Can set 'margin-inline' to a percent: 0%": "FAIL",
+      "Can set 'margin-inline' to a percent: 3.14%": "FAIL",
+      "Can set 'margin-inline' to a percent: calc(0% + 0%)": "FAIL",
+      "Can set 'padding-block' to a length: -3.14em": "FAIL",
+      "Can set 'padding-block' to a length: 0px": "FAIL",
+      "Can set 'padding-block' to a length: 3.14cm": "FAIL",
+      "Can set 'padding-block' to a length: calc(0px + 0em)": "FAIL",
+      "Can set 'padding-block' to a percent: -3.14%": "FAIL",
+      "Can set 'padding-block' to a percent: 0%": "FAIL",
+      "Can set 'padding-block' to a percent: 3.14%": "FAIL",
+      "Can set 'padding-block' to a percent: calc(0% + 0%)": "FAIL",
+      "Can set 'padding-inline' to a length: -3.14em": "FAIL",
+      "Can set 'padding-inline' to a length: 0px": "FAIL",
+      "Can set 'padding-inline' to a length: 3.14cm": "FAIL",
+      "Can set 'padding-inline' to a length: calc(0px + 0em)": "FAIL",
+      "Can set 'padding-inline' to a percent: -3.14%": "FAIL",
+      "Can set 'padding-inline' to a percent: 0%": "FAIL",
+      "Can set 'padding-inline' to a percent: 3.14%": "FAIL",
+      "Can set 'padding-inline' to a percent: calc(0% + 0%)": "FAIL",
+      "Setting 'border-block' to a length: -3.14em throws TypeError": "FAIL",
+      "Setting 'border-block' to a length: 0px throws TypeError": "FAIL",
+      "Setting 'border-block' to a length: 3.14cm throws TypeError": "FAIL",
+      "Setting 'border-block' to a length: calc(0px + 0em) throws TypeError": "FAIL",
+      "Setting 'border-block-end' to a length: -3.14em throws TypeError": "FAIL",
+      "Setting 'border-block-end' to a length: 0px throws TypeError": "FAIL",
+      "Setting 'border-block-end' to a length: 3.14cm throws TypeError": "FAIL",
+      "Setting 'border-block-end' to a length: calc(0px + 0em) throws TypeError": "FAIL",
+      "Setting 'border-block-start' to a length: -3.14em throws TypeError": "FAIL",
+      "Setting 'border-block-start' to a length: 0px throws TypeError": "FAIL",
+      "Setting 'border-block-start' to a length: 3.14cm throws TypeError": "FAIL",
+      "Setting 'border-block-start' to a length: calc(0px + 0em) throws TypeError": "FAIL",
+      "Setting 'border-inline' to a length: -3.14em throws TypeError": "FAIL",
+      "Setting 'border-inline' to a length: 0px throws TypeError": "FAIL",
+      "Setting 'border-inline' to a length: 3.14cm throws TypeError": "FAIL",
+      "Setting 'border-inline' to a length: calc(0px + 0em) throws TypeError": "FAIL",
+      "Setting 'border-inline-end' to a length: -3.14em throws TypeError": "FAIL",
+      "Setting 'border-inline-end' to a length: 0px throws TypeError": "FAIL",
+      "Setting 'border-inline-end' to a length: 3.14cm throws TypeError": "FAIL",
+      "Setting 'border-inline-end' to a length: calc(0px + 0em) throws TypeError": "FAIL",
+      "Setting 'border-inline-start' to a length: -3.14em throws TypeError": "FAIL",
+      "Setting 'border-inline-start' to a length: 0px throws TypeError": "FAIL",
+      "Setting 'border-inline-start' to a length: 3.14cm throws TypeError": "FAIL",
+      "Setting 'border-inline-start' to a length: calc(0px + 0em) throws TypeError": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/margin.html": {
+    "total": 161,
+    "failures": {
+      "Setting 'margin' to a length: -3.14em throws TypeError": "FAIL",
+      "Setting 'margin' to a length: 0px throws TypeError": "FAIL",
+      "Setting 'margin' to a length: 3.14cm throws TypeError": "FAIL",
+      "Setting 'margin' to a length: calc(0px + 0em) throws TypeError": "FAIL",
+      "Setting 'margin' to a percent: -3.14% throws TypeError": "FAIL",
+      "Setting 'margin' to a percent: 0% throws TypeError": "FAIL",
+      "Setting 'margin' to a percent: 3.14% throws TypeError": "FAIL",
+      "Setting 'margin' to a percent: calc(0% + 0%) throws TypeError": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/marker.html": {
+    "total": 98
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/mask-image.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/mask-type.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/mask.html": {
+    "total": 2
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/mix-blend-mode.html": {
+    "total": 47
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/object-fit.html": {
+    "total": 36
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/object-position.html": {
+    "harness": "ERROR",
+    "total": 5
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/offset-anchor.html": {
+    "harness": "ERROR",
+    "total": 6
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/offset-distance.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/offset-path.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/offset-position.html": {
+    "harness": "ERROR",
+    "total": 7
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/offset-rotate.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/offset.html": {
+    "total": 6
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/opacity.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/order.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/orphans.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/outline-color.html": {
+    "total": 37
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/outline-offset.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/outline-style.html": {
+    "total": 41
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/outline-width.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/overflow-anchor.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/overflow-clip-margin.html": {
+    "total": 36,
+    "failures": {
+      "Can set 'overflow-clip-margin' to a length: -3.14em": "FAIL",
+      "Can set 'overflow-clip-margin' to a length: 0px": "FAIL",
+      "Can set 'overflow-clip-margin' to a length: 3.14cm": "FAIL",
+      "Can set 'overflow-clip-margin' to a length: calc(0px + 0em)": "FAIL",
+      "Can set 'overflow-clip-margin' to the 'border-box' keyword: border-box": "FAIL",
+      "Can set 'overflow-clip-margin' to the 'content-box' keyword: content-box": "FAIL",
+      "Can set 'overflow-clip-margin' to the 'padding-box' keyword: padding-box": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/overflow-wrap.html": {
+    "total": 35,
+    "failures": {
+      "'overflow-wrap' does not support 'break-overflow break-spaces'": "FAIL",
+      "Can set 'overflow-wrap' to the 'break-spaces' keyword: break-spaces": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/overflow.html": {
+    "total": 72
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/overscroll-behavior.html": {
+    "total": 68
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/padding.html": {
+    "total": 124
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/page.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/paint-order.html": {
+    "total": 37,
+    "failures": {
+      "'paint-order' does not support 'fill stroke'": "FAIL",
+      "'paint-order' does not support 'markers fill stroke'": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/perspective-origin.html": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Can set 'perspective-origin' to the 'none' keyword: none": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/perspective.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/pointer-events.html": {
+    "total": 41
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/position-visibility.html": {
+    "total": 39
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/position.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/quotes.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/radius.html": {
+    "total": 95
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/resize.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/right.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/scroll-behavior.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/scroll-margin.html": {
+    "total": 252
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/scroll-padding.html": {
+    "total": 252
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/scroll-snap-align.html": {
+    "total": 37,
+    "failures": {
+      "Can set 'scroll-snap-align' to the 'center' keyword: center": "FAIL",
+      "Can set 'scroll-snap-align' to the 'end' keyword: end": "FAIL",
+      "Can set 'scroll-snap-align' to the 'none' keyword: none": "FAIL",
+      "Can set 'scroll-snap-align' to the 'start' keyword: start": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/scroll-snap-stop.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/scroll-snap-type.html": {
+    "total": 39,
+    "failures": {
+      "'scroll-snap-type' does not support 'inline proximity'": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/scrollbar-gutter.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/scrollbar-width.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/shape-image-threshold.html": {
+    "total": 31,
+    "failures": {
+      "Setting 'shape-image-threshold' to a percent: -3.14% throws TypeError": "FAIL",
+      "Setting 'shape-image-threshold' to a percent: 0% throws TypeError": "FAIL",
+      "Setting 'shape-image-threshold' to a percent: 3.14% throws TypeError": "FAIL",
+      "Setting 'shape-image-threshold' to a percent: calc(0% + 0%) throws TypeError": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/shape-margin.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/shape-outside.html": {
+    "total": 41
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/shape-rendering.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/speak.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/stop-color.html": {
+    "total": 37
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/stop-opacity.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/stroke-dasharray.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/stroke-dashoffset.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/stroke-linecap.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/stroke-linejoin.html": {
+    "total": 39,
+    "failures": {
+      "Can set 'stroke-linejoin' to the 'stupid' keyword: stupid": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/stroke-miterlimit.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/stroke-opacity.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/stroke-width.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/stroke.html": {
+    "total": 2,
+    "failures": {
+      "'stroke' does not support 'red gray'": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/tab-size.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/table-layout.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-align-last.html": {
+    "total": 38
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-align.html": {
+    "total": 37
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-anchor.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-autospace.html": {
+    "total": 41
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-box-trim.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-combine-upright.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-decoration-color.html": {
+    "total": 37
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-decoration-line.html": {
+    "total": 38
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-decoration-skip-ink.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-decoration-skip.html": {
+    "total": 39,
+    "failures": {
+      "'text-decoration-skip' does not support 'leading-spaces trailing-spaces'": "FAIL",
+      "'text-decoration-skip' does not support 'objects edges box-decoration'": "FAIL",
+      "'text-decoration-skip' does not support 'objects spaces'": "FAIL",
+      "Can set 'text-decoration-skip' to the 'box-decoration' keyword: box-decoration": "FAIL",
+      "Can set 'text-decoration-skip' to the 'edges' keyword: edges": "FAIL",
+      "Can set 'text-decoration-skip' to the 'none' keyword: none": "FAIL",
+      "Can set 'text-decoration-skip' to the 'objects' keyword: objects": "FAIL",
+      "Can set 'text-decoration-skip' to the 'spaces' keyword: spaces": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-decoration-style.html": {
+    "total": 36
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-decoration-thickness.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-decoration.html": {
+    "total": 3
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-emphasis-color.html": {
+    "total": 37
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-emphasis-position.html": {
+    "total": 38
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-indent.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-justify.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-orientation.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-overflow.html": {
+    "total": 37,
+    "failures": {
+      "'text-overflow' does not support 'fade(1px, 50%)'": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-rendering.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-shadow.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-size-adjust.html": {
+    "total": 33,
+    "failures": {
+      "Can set 'text-size-adjust' to a percent: -3.14%": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-transform.html": {
+    "total": 36
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-underline-offset.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/text-underline-position.html": {
+    "total": 37
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/top.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/touch-action.html": {
+    "total": 43
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/transform-box.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/transform-interpolated.html": {
+    "total": 1
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/transform-style.html": {
+    "total": 34,
+    "failures": {
+      "Can set 'transform-style' to the 'auto' keyword: auto": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/transform.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/transition-delay.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/transition-duration.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/transition-property.html": {
+    "total": 35
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/transition-timing-function.html": {
+    "total": 40
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/transition.html": {
+    "total": 4
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/unicode-bidi.html": {
+    "total": 37
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/user-select.html": {
+    "total": 36
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/vector-effect.html": {
+    "total": 33
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/vertical-align.html": {
+    "total": 16
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/visibility.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/white-space.html": {
+    "total": 144
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/widows.html": {
+    "total": 31
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/width.html": {
+    "total": 95
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/will-change.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/word-break.html": {
+    "total": 34
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/word-spacing.html": {
+    "total": 32
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/word-wrap.html": {
+    "total": 35,
+    "failures": {
+      "'word-wrap' does not support 'break-word break-spaces'": "FAIL",
+      "Can set 'word-wrap' to the 'break-spaces' keyword: break-spaces": "FAIL"
+    }
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/writing-mode.html": {
+    "total": 36
+  },
+  "css/css-typed-om/the-stylepropertymap/properties/z-index.html": {
+    "total": 32
+  },
+  "css/css-typed-om/width-by-clamp-px-em.html": {
+    "reftest": "PASS"
+  },
+  "css/css-typed-om/width-by-max-px-em.html": {
+    "reftest": "PASS"
+  },
+  "css/css-typed-om/width-by-min-px-em.html": {
+    "reftest": "PASS"
+  }
+}

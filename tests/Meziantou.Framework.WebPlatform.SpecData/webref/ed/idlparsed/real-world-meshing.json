@@ -1,0 +1,224 @@
+{
+  "spec": {
+    "title": "WebXR Mesh Detection Module",
+    "url": "https://immersive-web.github.io/real-world-meshing/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "XRMesh",
+          "XRMeshSet"
+        ]
+      }
+    },
+    "idlNames": {
+      "XRMesh": {
+        "fragment": "[Exposed=Window] interface XRMesh {\n    [SameObject] readonly attribute XRSpace meshSpace;\n\n    readonly attribute Float32Array vertices;\n    readonly attribute Uint32Array indices;\n    readonly attribute DOMHighResTimeStamp lastChangedTime;\n    readonly attribute DOMString? semanticLabel;\n};",
+        "type": "interface",
+        "name": "XRMesh",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "meshSpace",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRSpace"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/real-world-meshing/#dom-xrmesh-meshspace"
+          },
+          {
+            "type": "attribute",
+            "name": "vertices",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Float32Array"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/real-world-meshing/#dom-xrmesh-vertices"
+          },
+          {
+            "type": "attribute",
+            "name": "indices",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Uint32Array"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/real-world-meshing/#dom-xrmesh-indices"
+          },
+          {
+            "type": "attribute",
+            "name": "lastChangedTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/real-world-meshing/#dom-xrmesh-lastchangedtime"
+          },
+          {
+            "type": "attribute",
+            "name": "semanticLabel",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/real-world-meshing/#dom-xrmesh-semanticlabel"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/real-world-meshing/#xrmesh"
+      },
+      "XRMeshSet": {
+        "fragment": "[Exposed=Window] interface XRMeshSet {\n  readonly setlike<XRMesh>;\n};",
+        "type": "interface",
+        "name": "XRMeshSet",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "setlike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XRMesh"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": true,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/real-world-meshing/#xrmeshset"
+      }
+    },
+    "idlExtendedNames": {
+      "XRFrame": [
+        {
+          "fragment": "partial interface XRFrame {\n  readonly attribute XRMeshSet detectedMeshes;\n};",
+          "type": "interface",
+          "name": "XRFrame",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "detectedMeshes",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XRMeshSet"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/real-world-meshing/#dom-xrframe-detectedmeshes"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "XRMesh",
+        "XRMeshSet"
+      ]
+    },
+    "dependencies": {
+      "XRMesh": [
+        "XRSpace",
+        "Float32Array",
+        "Uint32Array",
+        "DOMHighResTimeStamp"
+      ],
+      "XRMeshSet": [
+        "XRMesh"
+      ],
+      "XRFrame": [
+        "XRMeshSet"
+      ]
+    },
+    "externalDependencies": [
+      "XRSpace",
+      "Float32Array",
+      "Uint32Array",
+      "DOMHighResTimeStamp",
+      "XRFrame"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

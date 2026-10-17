@@ -1,0 +1,137 @@
+{
+  "spec": {
+    "title": "WebGL EXT_texture_compression_rgtc Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/EXT_texture_compression_rgtc/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "EXT_texture_compression_rgtc"
+        ],
+        "Worker": [
+          "EXT_texture_compression_rgtc"
+        ]
+      }
+    },
+    "idlNames": {
+      "EXT_texture_compression_rgtc": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface EXT_texture_compression_rgtc {\n    const GLenum COMPRESSED_RED_RGTC1_EXT = 0x8DBB;\n    const GLenum COMPRESSED_SIGNED_RED_RGTC1_EXT = 0x8DBC;\n    const GLenum COMPRESSED_RED_GREEN_RGTC2_EXT = 0x8DBD;\n    const GLenum COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT = 0x8DBE;\n};",
+        "type": "interface",
+        "name": "EXT_texture_compression_rgtc",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "COMPRESSED_RED_RGTC1_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8DBB"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SIGNED_RED_RGTC1_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8DBC"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RED_GREEN_RGTC2_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8DBD"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8DBE"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EXT_texture_compression_rgtc"
+      ],
+      "Worker": [
+        "EXT_texture_compression_rgtc"
+      ]
+    },
+    "dependencies": {
+      "EXT_texture_compression_rgtc": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

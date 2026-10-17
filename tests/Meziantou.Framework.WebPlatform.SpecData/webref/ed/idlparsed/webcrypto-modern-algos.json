@@ -1,0 +1,1534 @@
+{
+  "spec": {
+    "title": "Modern Algorithms in the Web Cryptography API",
+    "url": "https://wicg.github.io/webcrypto-modern-algos/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "SubtleCrypto"
+        ],
+        "Worker": [
+          "SubtleCrypto"
+        ]
+      }
+    },
+    "idlNames": {
+      "KeyFormat": {
+        "fragment": "enum KeyFormat { \"raw-public\", \"raw-private\", \"raw-seed\", \"raw-secret\", \"raw\", \"spki\", \"pkcs8\", \"jwk\" };",
+        "type": "enum",
+        "name": "KeyFormat",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "raw-public",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyformat-raw-public"
+          },
+          {
+            "type": "enum-value",
+            "value": "raw-private",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyformat-raw-private"
+          },
+          {
+            "type": "enum-value",
+            "value": "raw-seed",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyformat-raw-seed"
+          },
+          {
+            "type": "enum-value",
+            "value": "raw-secret",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyformat-raw-secret"
+          },
+          {
+            "type": "enum-value",
+            "value": "raw",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyformat-raw"
+          },
+          {
+            "type": "enum-value",
+            "value": "spki",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyformat-spki"
+          },
+          {
+            "type": "enum-value",
+            "value": "pkcs8",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyformat-pkcs8"
+          },
+          {
+            "type": "enum-value",
+            "value": "jwk",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyformat-jwk"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyformat"
+      },
+      "KeyUsage": {
+        "fragment": "enum KeyUsage { \"encrypt\", \"decrypt\", \"sign\", \"verify\", \"deriveKey\", \"deriveBits\", \"wrapKey\", \"unwrapKey\", \"encapsulateKey\", \"encapsulateBits\", \"decapsulateKey\", \"decapsulateBits\" };",
+        "type": "enum",
+        "name": "KeyUsage",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "encrypt",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyusage-encrypt"
+          },
+          {
+            "type": "enum-value",
+            "value": "decrypt",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyusage-decrypt"
+          },
+          {
+            "type": "enum-value",
+            "value": "sign",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyusage-sign"
+          },
+          {
+            "type": "enum-value",
+            "value": "verify",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyusage-verify"
+          },
+          {
+            "type": "enum-value",
+            "value": "deriveKey",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyusage-derivekey"
+          },
+          {
+            "type": "enum-value",
+            "value": "deriveBits",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyusage-derivebits"
+          },
+          {
+            "type": "enum-value",
+            "value": "wrapKey",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyusage-wrapkey"
+          },
+          {
+            "type": "enum-value",
+            "value": "unwrapKey",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyusage-unwrapkey"
+          },
+          {
+            "type": "enum-value",
+            "value": "encapsulateKey",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyusage-encapsulatekey"
+          },
+          {
+            "type": "enum-value",
+            "value": "encapsulateBits",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyusage-encapsulatebits"
+          },
+          {
+            "type": "enum-value",
+            "value": "decapsulateKey",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyusage-decapsulatekey"
+          },
+          {
+            "type": "enum-value",
+            "value": "decapsulateBits",
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyusage-decapsulatebits"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-keyusage"
+      },
+      "EncapsulatedKey": {
+        "fragment": "dictionary EncapsulatedKey {\n  CryptoKey sharedKey;\n  ArrayBuffer ciphertext;\n};",
+        "type": "dictionary",
+        "name": "EncapsulatedKey",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "sharedKey",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CryptoKey"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-EncapsulatedKey-sharedKey"
+          },
+          {
+            "type": "field",
+            "name": "ciphertext",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-EncapsulatedKey-ciphertext"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-EncapsulatedKey"
+      },
+      "EncapsulatedBits": {
+        "fragment": "dictionary EncapsulatedBits {\n  ArrayBuffer sharedKey;\n  ArrayBuffer ciphertext;\n};",
+        "type": "dictionary",
+        "name": "EncapsulatedBits",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "sharedKey",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-EncapsulatedBits-sharedKey"
+          },
+          {
+            "type": "field",
+            "name": "ciphertext",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-EncapsulatedBits-ciphertext"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-EncapsulatedBits"
+      },
+      "ContextParams": {
+        "fragment": "dictionary ContextParams : Algorithm {\n  BufferSource context;\n};",
+        "type": "dictionary",
+        "name": "ContextParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "context",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-ContextParams-context"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-ContextParams"
+      },
+      "AeadParams": {
+        "fragment": "dictionary AeadParams : Algorithm {\n  required BufferSource iv;\n  BufferSource additionalData;\n  [EnforceRange] octet tagLength;\n};",
+        "type": "dictionary",
+        "name": "AeadParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "iv",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-AeadParams-iv"
+          },
+          {
+            "type": "field",
+            "name": "additionalData",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-AeadParams-additionalData"
+          },
+          {
+            "type": "field",
+            "name": "tagLength",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-AeadParams-tagLength"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-AeadParams"
+      },
+      "CShakeParams": {
+        "fragment": "dictionary CShakeParams : Algorithm {\n  required [EnforceRange] unsigned long outputLength;\n  BufferSource functionName;\n  BufferSource customization;\n};",
+        "type": "dictionary",
+        "name": "CShakeParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "outputLength",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-CShakeParams-outputLength"
+          },
+          {
+            "type": "field",
+            "name": "functionName",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-CShakeParams-functionName"
+          },
+          {
+            "type": "field",
+            "name": "customization",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-CShakeParams-customization"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-CShakeParams"
+      },
+      "TurboShakeParams": {
+        "fragment": "dictionary TurboShakeParams : Algorithm {\n  required [EnforceRange] unsigned long outputLength;\n  [EnforceRange] octet domainSeparation;\n};",
+        "type": "dictionary",
+        "name": "TurboShakeParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "outputLength",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-TurboShakeParams-outputLength"
+          },
+          {
+            "type": "field",
+            "name": "domainSeparation",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-TurboShakeParams-domainSeparation"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-TurboShakeParams"
+      },
+      "KangarooTwelveParams": {
+        "fragment": "dictionary KangarooTwelveParams : Algorithm {\n  required [EnforceRange] unsigned long outputLength;\n  BufferSource customization;\n};",
+        "type": "dictionary",
+        "name": "KangarooTwelveParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "outputLength",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-KangarooTwelveParams-outputLength"
+          },
+          {
+            "type": "field",
+            "name": "customization",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-KangarooTwelveParams-customization"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-KangarooTwelveParams"
+      },
+      "KmacKeyGenParams": {
+        "fragment": "dictionary KmacKeyGenParams : Algorithm {\n  [EnforceRange] unsigned long length;\n};",
+        "type": "dictionary",
+        "name": "KmacKeyGenParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "length",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-KmacKeyGenParams-length"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-KmacKeyGenParams"
+      },
+      "KmacImportParams": {
+        "fragment": "dictionary KmacImportParams : Algorithm {\n  [EnforceRange] unsigned long length;\n};",
+        "type": "dictionary",
+        "name": "KmacImportParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "length",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-KmacImportParams-length"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-KmacImportParams"
+      },
+      "KmacKeyAlgorithm": {
+        "fragment": "dictionary KmacKeyAlgorithm : KeyAlgorithm {\n  required [EnforceRange] unsigned long length;\n};",
+        "type": "dictionary",
+        "name": "KmacKeyAlgorithm",
+        "inheritance": "KeyAlgorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "length",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-KmacKeyAlgorithm-length"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-KmacKeyAlgorithm"
+      },
+      "KmacParams": {
+        "fragment": "dictionary KmacParams : Algorithm {\n  required [EnforceRange] unsigned long outputLength;\n  BufferSource customization;\n};",
+        "type": "dictionary",
+        "name": "KmacParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "outputLength",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-KmacParams-outputLength"
+          },
+          {
+            "type": "field",
+            "name": "customization",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-KmacParams-customization"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-KmacParams"
+      },
+      "Argon2Params": {
+        "fragment": "dictionary Argon2Params : Algorithm {\n  required BufferSource nonce;\n  required [EnforceRange] unsigned long parallelism;\n  required [EnforceRange] unsigned long memory;\n  required [EnforceRange] unsigned long passes;\n  [EnforceRange] octet version;\n  BufferSource secretValue;\n  BufferSource associatedData;\n};",
+        "type": "dictionary",
+        "name": "Argon2Params",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "nonce",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-Argon2Params-nonce"
+          },
+          {
+            "type": "field",
+            "name": "parallelism",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-Argon2Params-parallelism"
+          },
+          {
+            "type": "field",
+            "name": "memory",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-Argon2Params-memory"
+          },
+          {
+            "type": "field",
+            "name": "passes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-Argon2Params-passes"
+          },
+          {
+            "type": "field",
+            "name": "version",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-Argon2Params-version"
+          },
+          {
+            "type": "field",
+            "name": "secretValue",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-Argon2Params-secretValue"
+          },
+          {
+            "type": "field",
+            "name": "associatedData",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-Argon2Params-associatedData"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-Argon2Params"
+      }
+    },
+    "idlExtendedNames": {
+      "SubtleCrypto": [
+        {
+          "fragment": "[SecureContext,Exposed=(Window,Worker)]\npartial interface SubtleCrypto {\n  Promise<EncapsulatedKey> encapsulateKey(\n    AlgorithmIdentifier encapsulationAlgorithm,\n    CryptoKey encapsulationKey,\n    AlgorithmIdentifier sharedKeyAlgorithm,\n    boolean extractable,\n    sequence<KeyUsage> keyUsages\n  );\n  Promise<EncapsulatedBits> encapsulateBits(\n    AlgorithmIdentifier encapsulationAlgorithm,\n    CryptoKey encapsulationKey\n  );\n\n  Promise<CryptoKey> decapsulateKey(\n    AlgorithmIdentifier decapsulationAlgorithm,\n    CryptoKey decapsulationKey,\n    BufferSource ciphertext,\n    AlgorithmIdentifier sharedKeyAlgorithm,\n    boolean extractable,\n    sequence<KeyUsage> keyUsages\n  );\n  Promise<ArrayBuffer> decapsulateBits(\n    AlgorithmIdentifier decapsulationAlgorithm,\n    CryptoKey decapsulationKey,\n    BufferSource ciphertext\n  );\n\n  Promise<CryptoKey> getPublicKey(\n    CryptoKey key,\n    sequence<KeyUsage> keyUsages\n  );\n\n  static boolean supports(DOMString operation,\n                   AlgorithmIdentifier algorithm,\n                   optional [EnforceRange] unsigned long? length = null);\n  static boolean supports(DOMString operation,\n                   AlgorithmIdentifier algorithm,\n                   AlgorithmIdentifier additionalAlgorithm);\n};",
+          "type": "interface",
+          "name": "SubtleCrypto",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "encapsulateKey",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "EncapsulatedKey"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "encapsulationAlgorithm",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AlgorithmIdentifier"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "encapsulationKey",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CryptoKey"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "sharedKeyAlgorithm",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AlgorithmIdentifier"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "extractable",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "keyUsages",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "KeyUsage"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-SubtleCrypto-method-encapsulateKey"
+            },
+            {
+              "type": "operation",
+              "name": "encapsulateBits",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "EncapsulatedBits"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "encapsulationAlgorithm",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AlgorithmIdentifier"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "encapsulationKey",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CryptoKey"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-SubtleCrypto-method-encapsulateBits"
+            },
+            {
+              "type": "operation",
+              "name": "decapsulateKey",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CryptoKey"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "decapsulationAlgorithm",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AlgorithmIdentifier"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "decapsulationKey",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CryptoKey"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "ciphertext",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "BufferSource"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "sharedKeyAlgorithm",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AlgorithmIdentifier"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "extractable",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "keyUsages",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "KeyUsage"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-SubtleCrypto-method-decapsulateKey"
+            },
+            {
+              "type": "operation",
+              "name": "decapsulateBits",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "ArrayBuffer"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "decapsulationAlgorithm",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AlgorithmIdentifier"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "decapsulationKey",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CryptoKey"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "ciphertext",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "BufferSource"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-SubtleCrypto-method-decapsulateBits"
+            },
+            {
+              "type": "operation",
+              "name": "getPublicKey",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CryptoKey"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "key",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CryptoKey"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "keyUsages",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "KeyUsage"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-SubtleCrypto-method-getPublicKey"
+            },
+            {
+              "type": "operation",
+              "name": "supports",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "operation",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "algorithm",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AlgorithmIdentifier"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "length",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [
+                      {
+                        "type": "extended-attribute",
+                        "name": "EnforceRange",
+                        "rhs": null,
+                        "arguments": []
+                      }
+                    ],
+                    "generic": "",
+                    "nullable": true,
+                    "union": false,
+                    "idlType": "unsigned long"
+                  },
+                  "default": {
+                    "type": "null"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "static",
+              "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-SubtleCrypto-method-supports"
+            },
+            {
+              "type": "operation",
+              "name": "supports",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "operation",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "algorithm",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AlgorithmIdentifier"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "additionalAlgorithm",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AlgorithmIdentifier"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "static",
+              "href": "https://wicg.github.io/webcrypto-modern-algos/#dfn-SubtleCrypto-method-supports-additionalAlgorithm"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "Window"
+                  },
+                  {
+                    "value": "Worker"
+                  }
+                ]
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "JsonWebKey": [
+        {
+          "fragment": "partial dictionary JsonWebKey {\n  // The following fields are defined in RFC 9964\n  DOMString pub;\n  DOMString priv;\n};",
+          "type": "dictionary",
+          "name": "JsonWebKey",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "pub",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-jsonwebkey-pub"
+            },
+            {
+              "type": "field",
+              "name": "priv",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://wicg.github.io/webcrypto-modern-algos/#dom-jsonwebkey-priv"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "SubtleCrypto"
+      ],
+      "Worker": [
+        "SubtleCrypto"
+      ]
+    },
+    "dependencies": {
+      "SubtleCrypto": [
+        "EncapsulatedKey",
+        "AlgorithmIdentifier",
+        "CryptoKey",
+        "KeyUsage",
+        "EncapsulatedBits",
+        "BufferSource",
+        "ArrayBuffer"
+      ],
+      "EncapsulatedKey": [
+        "CryptoKey",
+        "ArrayBuffer"
+      ],
+      "EncapsulatedBits": [
+        "ArrayBuffer"
+      ],
+      "JsonWebKey": [],
+      "ContextParams": [
+        "Algorithm",
+        "BufferSource"
+      ],
+      "AeadParams": [
+        "Algorithm",
+        "BufferSource"
+      ],
+      "CShakeParams": [
+        "Algorithm",
+        "BufferSource"
+      ],
+      "TurboShakeParams": [
+        "Algorithm"
+      ],
+      "KangarooTwelveParams": [
+        "Algorithm",
+        "BufferSource"
+      ],
+      "KmacKeyGenParams": [
+        "Algorithm"
+      ],
+      "KmacImportParams": [
+        "Algorithm"
+      ],
+      "KmacKeyAlgorithm": [
+        "KeyAlgorithm"
+      ],
+      "KmacParams": [
+        "Algorithm",
+        "BufferSource"
+      ],
+      "Argon2Params": [
+        "Algorithm",
+        "BufferSource"
+      ]
+    },
+    "externalDependencies": [
+      "SubtleCrypto",
+      "AlgorithmIdentifier",
+      "CryptoKey",
+      "BufferSource",
+      "ArrayBuffer",
+      "JsonWebKey",
+      "Algorithm",
+      "KeyAlgorithm"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

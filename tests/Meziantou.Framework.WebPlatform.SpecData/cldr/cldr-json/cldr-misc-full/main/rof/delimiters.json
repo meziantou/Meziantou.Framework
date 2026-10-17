@@ -1,0 +1,15 @@
+{
+  "main": {
+    "rof": {
+      "identity": {
+        "language": "rof"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,195 @@
+{
+  "webidl/ecmascript-binding/allow-resizable.html": {
+    "total": 2,
+    "failures": {
+      "APIs with [AllowShared] but without [AllowResizable] throw when passed growable SharedArrayBuffers": "FAIL"
+    }
+  },
+  "webidl/ecmascript-binding/allow-shared.https.html": {
+    "total": 1,
+    "failures": {
+      "APIs without [AllowShared] do not accept SharedArrayBuffer-backed views with pre-existing wrapper": "FAIL"
+    }
+  },
+  "webidl/ecmascript-binding/attributes-accessors-unique-function-objects.html": {
+    "total": 1
+  },
+  "webidl/ecmascript-binding/builtin-function-properties.any.js": {
+    "total": 3
+  },
+  "webidl/ecmascript-binding/builtin-function-properties.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "webidl/ecmascript-binding/class-string-interface.any.js": {
+    "total": 8
+  },
+  "webidl/ecmascript-binding/class-string-interface.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "webidl/ecmascript-binding/class-string-iterator-prototype-object.any.js": {
+    "total": 5
+  },
+  "webidl/ecmascript-binding/class-string-iterator-prototype-object.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "webidl/ecmascript-binding/class-string-named-properties-object.window.js": {
+    "total": 2
+  },
+  "webidl/ecmascript-binding/constructors.html": {
+    "total": 15
+  },
+  "webidl/ecmascript-binding/default-iterator-object.html": {
+    "total": 3
+  },
+  "webidl/ecmascript-binding/default-toJSON-cross-realm.html": {
+    "total": 2
+  },
+  "webidl/ecmascript-binding/es-exceptions/DOMException-constants.any.js": {
+    "total": 51
+  },
+  "webidl/ecmascript-binding/es-exceptions/DOMException-constants.any.js#dedicatedworker": {
+    "total": 51
+  },
+  "webidl/ecmascript-binding/es-exceptions/DOMException-constructor-and-prototype.any.js": {
+    "total": 3
+  },
+  "webidl/ecmascript-binding/es-exceptions/DOMException-constructor-and-prototype.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "webidl/ecmascript-binding/es-exceptions/DOMException-constructor-behavior.any.js": {
+    "total": 46
+  },
+  "webidl/ecmascript-binding/es-exceptions/DOMException-constructor-behavior.any.js#dedicatedworker": {
+    "total": 46
+  },
+  "webidl/ecmascript-binding/es-exceptions/DOMException-custom-bindings.any.js": {
+    "total": 15
+  },
+  "webidl/ecmascript-binding/es-exceptions/DOMException-custom-bindings.any.js#dedicatedworker": {
+    "total": 15
+  },
+  "webidl/ecmascript-binding/es-exceptions/DOMException-is-error.any.js": {
+    "total": 1,
+    "failures": {
+      "DOMException-is-error": "FAIL"
+    }
+  },
+  "webidl/ecmascript-binding/es-exceptions/DOMException-is-error.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "DOMException-is-error": "FAIL"
+    }
+  },
+  "webidl/ecmascript-binding/es-exceptions/DOMException-stack-accessor.any.js": {
+    "total": 9,
+    "failures": {
+      "DOMException.prototype does not have an own stack property": "FAIL",
+      "Error.prototype.stack getter works on DOMException instances": "FAIL",
+      "Error.prototype.stack setter ignores Error.prototype itself": "FAIL"
+    }
+  },
+  "webidl/ecmascript-binding/es-exceptions/DOMException-stack-accessor.any.js#dedicatedworker": {
+    "total": 8,
+    "failures": {
+      "DOMException.prototype does not have an own stack property": "FAIL",
+      "Error.prototype.stack getter works on DOMException instances": "FAIL",
+      "Error.prototype.stack setter ignores Error.prototype itself": "FAIL"
+    }
+  },
+  "webidl/ecmascript-binding/es-exceptions/exceptions.html": {
+    "total": 12
+  },
+  "webidl/ecmascript-binding/global-immutable-prototype.any.js": {
+    "total": 2
+  },
+  "webidl/ecmascript-binding/global-immutable-prototype.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "webidl/ecmascript-binding/global-immutable-prototype.any.js#sharedworker": {
+    "total": 2
+  },
+  "webidl/ecmascript-binding/global-object-implicit-this-value-cross-realm.html": {
+    "total": 6
+  },
+  "webidl/ecmascript-binding/global-object-implicit-this-value.any.js": {
+    "total": 9
+  },
+  "webidl/ecmascript-binding/global-object-implicit-this-value.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "webidl/ecmascript-binding/global-object-implicit-this-value.any.js#sharedworker": {
+    "total": 6
+  },
+  "webidl/ecmascript-binding/has-instance.html": {
+    "total": 3
+  },
+  "webidl/ecmascript-binding/interface-object-set-receiver.html": {
+    "total": 2
+  },
+  "webidl/ecmascript-binding/interface-object.html": {
+    "total": 4
+  },
+  "webidl/ecmascript-binding/interface-prototype-constructor-set-receiver.html": {
+    "total": 2
+  },
+  "webidl/ecmascript-binding/interface-prototype-object.html": {
+    "total": 1
+  },
+  "webidl/ecmascript-binding/invalid-this-value-cross-realm.html": {
+    "total": 3
+  },
+  "webidl/ecmascript-binding/iterator-invalidation-foreach.html": {
+    "total": 3
+  },
+  "webidl/ecmascript-binding/iterator-prototype-object.html": {
+    "total": 4
+  },
+  "webidl/ecmascript-binding/legacy-callback-interface-object.html": {
+    "total": 8
+  },
+  "webidl/ecmascript-binding/legacy-factor-function-subclass.window.js": {
+    "total": 1
+  },
+  "webidl/ecmascript-binding/legacy-factory-function-builtin-properties.window.js": {
+    "total": 1
+  },
+  "webidl/ecmascript-binding/legacy-platform-object/DefineOwnProperty.html": {
+    "total": 4
+  },
+  "webidl/ecmascript-binding/legacy-platform-object/GetOwnProperty.html": {
+    "total": 3
+  },
+  "webidl/ecmascript-binding/legacy-platform-object/OwnPropertyKeys.html": {
+    "total": 5
+  },
+  "webidl/ecmascript-binding/legacy-platform-object/Set.html": {
+    "total": 11
+  },
+  "webidl/ecmascript-binding/no-regexp-special-casing.any.js": {
+    "total": 4
+  },
+  "webidl/ecmascript-binding/no-regexp-special-casing.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "webidl/ecmascript-binding/observable-array-no-leak-of-internals.window.js": {
+    "total": 1
+  },
+  "webidl/ecmascript-binding/observable-array-ownkeys.window.js": {
+    "total": 1
+  },
+  "webidl/ecmascript-binding/put-forwards.html": {
+    "total": 11
+  },
+  "webidl/ecmascript-binding/replaceable-setter-throws-if-defineownproperty-fails.html": {
+    "total": 8
+  },
+  "webidl/ecmascript-binding/sequence-conversion.html": {
+    "total": 8
+  },
+  "webidl/ecmascript-binding/setter-argument.html": {
+    "total": 17
+  },
+  "webidl/ecmascript-binding/window-named-properties-object.html": {
+    "total": 13
+  }
+}

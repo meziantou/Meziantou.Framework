@@ -1,0 +1,16 @@
+{
+  "main": {
+    "sat-Deva": {
+      "identity": {
+        "language": "sat",
+        "script": "Deva"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

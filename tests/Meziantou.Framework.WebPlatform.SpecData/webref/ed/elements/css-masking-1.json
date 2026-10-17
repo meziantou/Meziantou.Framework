@@ -1,0 +1,18 @@
+{
+  "spec": {
+    "title": "CSS Masking Module Level 1",
+    "url": "https://drafts.csswg.org/css-masking-1/"
+  },
+  "elements": [
+    {
+      "name": "clipPath",
+      "href": "https://drafts.csswg.org/css-masking-1/#elementdef-clippath",
+      "interface": "SVGClipPathElement"
+    },
+    {
+      "name": "mask",
+      "href": "https://drafts.csswg.org/css-masking-1/#elementdef-mask",
+      "interface": "SVGMaskElement"
+    }
+  ]
+}

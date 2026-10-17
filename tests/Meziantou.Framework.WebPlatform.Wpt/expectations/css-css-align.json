@@ -1,0 +1,1170 @@
+{
+  "css/css-align/abspos/align-items-static-position-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/align-items-static-position-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/align-items-static-position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/align-out-of-flow-only-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/align-self-default-overflow-htb-ltr-htb.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/align-self-default-overflow-htb-ltr-vrl.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/align-self-default-overflow-htb-rtl-htb.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/align-self-default-overflow-htb-rtl-vrl.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/align-self-default-overflow-vrl-ltr-htb.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/align-self-default-overflow-vrl-ltr-vrl.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/align-self-default-overflow-vrl-rtl-htb.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/align-self-default-overflow-vrl-rtl-vrl.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/align-self-htb-ltr-htb.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-htb-ltr-vlr.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-htb-ltr-vrl.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-htb-rtl-htb.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-htb-rtl-vlr.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-htb-rtl-vrl.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-static-position-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/align-self-static-position-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/align-self-static-position-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-align/abspos/align-self-static-position-004.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-align/abspos/align-self-static-position-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/align-self-static-position-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/align-self-static-position-007.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-align/abspos/align-self-static-position-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/align-self-stretch-auto-margins-aspect-ratio.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/align-self-stretch-auto-margins.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/align-self-stretch-auto-size.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/align-self-vlr-ltr-htb.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-vlr-ltr-vlr.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-vlr-ltr-vrl.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-vlr-rtl-htb.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-vlr-rtl-vlr.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-vlr-rtl-vrl.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-vrl-ltr-htb.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-vrl-ltr-vlr.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-vrl-ltr-vrl.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-vrl-rtl-htb.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-vrl-rtl-vlr.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-vrl-rtl-vrl.html": {
+    "total": 16
+  },
+  "css/css-align/abspos/align-self-with-flex-grid-parent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/default-overflow-with-scroll.html": {
+    "total": 6
+  },
+  "css/css-align/abspos/justify-self-default-overflow-htb-ltr-htb.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/justify-self-default-overflow-htb-ltr-vrl.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/justify-self-default-overflow-htb-rtl-htb.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/justify-self-default-overflow-htb-rtl-vrl.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/justify-self-default-overflow-vrl-ltr-htb.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/justify-self-default-overflow-vrl-ltr-vrl.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/justify-self-default-overflow-vrl-rtl-htb.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/justify-self-default-overflow-vrl-rtl-vrl.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/justify-self-htb-ltr-htb.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-htb-ltr-vlr.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-htb-ltr-vrl.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-htb-rtl-htb.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-htb-rtl-vlr.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-htb-rtl-vrl.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-static-position-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/justify-self-stretch-auto-margins-aspect-ratio.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/justify-self-stretch-auto-margins.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/abspos/justify-self-vlr-ltr-htb.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-vlr-ltr-vlr.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-vlr-ltr-vrl.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-vlr-rtl-htb.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-vlr-rtl-vlr.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-vlr-rtl-vrl.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-vrl-ltr-htb.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-vrl-ltr-vlr.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-vrl-ltr-vrl.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-vrl-rtl-htb.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-vrl-rtl-vlr.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/justify-self-vrl-rtl-vrl.html": {
+    "total": 20
+  },
+  "css/css-align/abspos/safe-align-self-htb.html": {
+    "total": 24
+  },
+  "css/css-align/abspos/safe-align-self-vlr.html": {
+    "total": 24
+  },
+  "css/css-align/abspos/safe-align-self-vrl.html": {
+    "total": 24
+  },
+  "css/css-align/abspos/safe-justify-self-htb.html": {
+    "total": 24
+  },
+  "css/css-align/abspos/safe-justify-self-vlr.html": {
+    "total": 24
+  },
+  "css/css-align/abspos/safe-justify-self-vrl.html": {
+    "total": 24
+  },
+  "css/css-align/abspos/stretch-intrinsic-size-htb-htb.html": {
+    "total": 12
+  },
+  "css/css-align/abspos/stretch-intrinsic-size-htb-vrl.html": {
+    "total": 12
+  },
+  "css/css-align/abspos/stretch-intrinsic-size-vrl-htb.html": {
+    "total": 12
+  },
+  "css/css-align/abspos/stretch-intrinsic-size-vrl-vrl.html": {
+    "total": 12
+  },
+  "css/css-align/abspos/table-align-self-stretch.html": {
+    "total": 8
+  },
+  "css/css-align/abspos/table-justify-self-stretch.html": {
+    "total": 8
+  },
+  "css/css-align/animation/align-no-interpolation.html": {
+    "total": 126
+  },
+  "css/css-align/animation/column-gap-composition.html": {
+    "total": 40
+  },
+  "css/css-align/animation/column-gap-interpolation.html": {
+    "total": 198
+  },
+  "css/css-align/animation/justify-no-interpolation.html": {
+    "total": 84
+  },
+  "css/css-align/animation/row-gap-composition.html": {
+    "total": 40
+  },
+  "css/css-align/animation/row-gap-interpolation.html": {
+    "total": 198
+  },
+  "css/css-align/baseline-of-scrollable-1a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/baseline-of-scrollable-1b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/baseline-of-scrollable-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/baseline-of-single-axis-scroll-container.html": {
+    "total": 2
+  },
+  "css/css-align/baseline-rules/grid-item-input-type-number.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/baseline-rules/grid-item-input-type-text.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/baseline-rules/inline-table-inline-block-baseline-vert-rl-export.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/baseline-rules/inline-table-inline-block-baseline-vert-rl-synthesis.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/baseline-rules/inline-table-inline-block-baseline-vert-rl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/baseline-rules/inline-table-inline-block-baseline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/baseline-rules/synthesized-baseline-flexbox-001.html": {
+    "total": 7
+  },
+  "css/css-align/baseline-rules/synthesized-baseline-grid-001.html": {
+    "total": 7
+  },
+  "css/css-align/baseline-rules/synthesized-baseline-inline-block-001.html": {
+    "total": 3
+  },
+  "css/css-align/baseline-rules/synthesized-baseline-table-cell-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-align/blocks/align-content-block-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/align-content-block-002.html": {
+    "total": 17
+  },
+  "css/css-align/blocks/align-content-block-003.html": {
+    "total": 17
+  },
+  "css/css-align/blocks/align-content-block-004.html": {
+    "total": 17
+  },
+  "css/css-align/blocks/align-content-block-005.html": {
+    "total": 17
+  },
+  "css/css-align/blocks/align-content-block-006.html": {
+    "total": 17
+  },
+  "css/css-align/blocks/align-content-block-007.html": {
+    "total": 17
+  },
+  "css/css-align/blocks/align-content-block-008.html": {
+    "total": 17
+  },
+  "css/css-align/blocks/align-content-block-009.html": {
+    "total": 17
+  },
+  "css/css-align/blocks/align-content-block-010.html": {
+    "total": 17
+  },
+  "css/css-align/blocks/align-content-block-011.html": {
+    "total": 17
+  },
+  "css/css-align/blocks/align-content-block-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/align-content-block-break-content-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/align-content-block-break-content-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/align-content-block-break-overflow-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/align-content-block-break-overflow-020.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-align/blocks/align-content-block-display-coverage.html": {
+    "total": 8
+  },
+  "css/css-align/blocks/align-content-block-dynamic-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/align-content-block-overflow-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/align-content-block-simple-height-change.html": {
+    "total": 1
+  },
+  "css/css-align/blocks/align-content-table-cell-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/align-content-table-cell-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/align-content-table-cell-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/align-content-table-cell-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/align-content-table-cell.html": {
+    "total": 8
+  },
+  "css/css-align/blocks/justify-items-anonymous.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/justify-self-auto-margins-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/justify-self-auto-margins-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/justify-self-block-in-inline-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/justify-self-block-in-inline.html": {
+    "total": 2
+  },
+  "css/css-align/blocks/justify-self-htb-ltr-htb.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-htb-ltr-vlr.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-htb-ltr-vrl.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-htb-rtl-htb.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-htb-rtl-vlr.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-htb-rtl-vrl.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-normal-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/justify-self-text-align-2.html": {
+    "total": 3,
+    "failures": {
+      ".item 1": "FAIL"
+    }
+  },
+  "css/css-align/blocks/justify-self-text-align.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/justify-self-vlr-ltr-htb.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-vlr-ltr-vlr.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-vlr-ltr-vrl.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-vlr-rtl-htb.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-vlr-rtl-vlr.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-vlr-rtl-vrl.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-vrl-ltr-htb.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-vrl-ltr-vlr.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-vrl-ltr-vrl.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-vrl-rtl-htb.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-vrl-rtl-vlr.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-vrl-rtl-vrl.html": {
+    "total": 16
+  },
+  "css/css-align/blocks/justify-self-widgets.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-align/blocks/safe-justify-self-htb.html": {
+    "total": 24
+  },
+  "css/css-align/blocks/safe-justify-self-text-align-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/safe-justify-self-vlr.html": {
+    "total": 24
+  },
+  "css/css-align/blocks/safe-justify-self-vrl.html": {
+    "total": 24
+  },
+  "css/css-align/content-distribution/default-overflow-alignment-single-axis-scroll-container.html": {
+    "total": 4
+  },
+  "css/css-align/content-distribution/parse-align-content-001.html": {
+    "total": 18,
+    "failures": {
+      "Checking align-content: flex-end": "FAIL",
+      "Checking align-content: flex-start": "FAIL",
+      "Checking align-content: safe flex-end": "FAIL",
+      "Checking align-content: unsafe flex-start": "FAIL"
+    }
+  },
+  "css/css-align/content-distribution/parse-align-content-002.html": {
+    "total": 7
+  },
+  "css/css-align/content-distribution/parse-align-content-003.html": {
+    "total": 18,
+    "failures": {
+      "Checking align-content: flex-end": "FAIL",
+      "Checking align-content: flex-start": "FAIL",
+      "Checking align-content: safe flex-end": "FAIL",
+      "Checking align-content: unsafe flex-start": "FAIL"
+    }
+  },
+  "css/css-align/content-distribution/parse-align-content-004.html": {
+    "total": 40
+  },
+  "css/css-align/content-distribution/parse-align-content-005.html": {
+    "total": 3
+  },
+  "css/css-align/content-distribution/parse-justify-content-001.html": {
+    "total": 17,
+    "failures": {
+      "Checking justify-content: flex-end": "FAIL",
+      "Checking justify-content: flex-start": "FAIL",
+      "Checking justify-content: safe flex-end": "FAIL",
+      "Checking justify-content: unsafe flex-start": "FAIL"
+    }
+  },
+  "css/css-align/content-distribution/parse-justify-content-002.html": {
+    "total": 7
+  },
+  "css/css-align/content-distribution/parse-justify-content-003.html": {
+    "total": 17,
+    "failures": {
+      "Checking justify-content: flex-end": "FAIL",
+      "Checking justify-content: flex-start": "FAIL",
+      "Checking justify-content: safe flex-end": "FAIL",
+      "Checking justify-content: unsafe flex-start": "FAIL"
+    }
+  },
+  "css/css-align/content-distribution/parse-justify-content-004.html": {
+    "total": 41
+  },
+  "css/css-align/content-distribution/parse-justify-content-005.html": {
+    "total": 3
+  },
+  "css/css-align/content-distribution/place-content-shorthand-001.html": {
+    "total": 15
+  },
+  "css/css-align/content-distribution/place-content-shorthand-002.html": {
+    "total": 216
+  },
+  "css/css-align/content-distribution/place-content-shorthand-003.html": {
+    "total": 2
+  },
+  "css/css-align/content-distribution/place-content-shorthand-004.html": {
+    "total": 7
+  },
+  "css/css-align/content-distribution/place-content-shorthand-005.html": {
+    "total": 2
+  },
+  "css/css-align/content-distribution/place-content-shorthand-006.html": {
+    "total": 156,
+    "failures": {
+      "Checking place-content: baseline flex-end": "FAIL",
+      "Checking place-content: baseline flex-start": "FAIL",
+      "Checking place-content: center flex-end": "FAIL",
+      "Checking place-content: center flex-start": "FAIL",
+      "Checking place-content: end flex-end": "FAIL",
+      "Checking place-content: end flex-start": "FAIL",
+      "Checking place-content: first baseline flex-end": "FAIL",
+      "Checking place-content: first baseline flex-start": "FAIL",
+      "Checking place-content: flex-end center": "FAIL",
+      "Checking place-content: flex-end end": "FAIL",
+      "Checking place-content: flex-end flex-end": "FAIL",
+      "Checking place-content: flex-end flex-start": "FAIL",
+      "Checking place-content: flex-end left": "FAIL",
+      "Checking place-content: flex-end normal": "FAIL",
+      "Checking place-content: flex-end right": "FAIL",
+      "Checking place-content: flex-end space-around": "FAIL",
+      "Checking place-content: flex-end space-between": "FAIL",
+      "Checking place-content: flex-end space-evenly": "FAIL",
+      "Checking place-content: flex-end start": "FAIL",
+      "Checking place-content: flex-end stretch": "FAIL",
+      "Checking place-content: flex-start center": "FAIL",
+      "Checking place-content: flex-start end": "FAIL",
+      "Checking place-content: flex-start flex-end": "FAIL",
+      "Checking place-content: flex-start flex-start": "FAIL",
+      "Checking place-content: flex-start left": "FAIL",
+      "Checking place-content: flex-start normal": "FAIL",
+      "Checking place-content: flex-start right": "FAIL",
+      "Checking place-content: flex-start space-around": "FAIL",
+      "Checking place-content: flex-start space-between": "FAIL",
+      "Checking place-content: flex-start space-evenly": "FAIL",
+      "Checking place-content: flex-start start": "FAIL",
+      "Checking place-content: flex-start stretch": "FAIL",
+      "Checking place-content: last baseline flex-end": "FAIL",
+      "Checking place-content: last baseline flex-start": "FAIL",
+      "Checking place-content: normal flex-end": "FAIL",
+      "Checking place-content: normal flex-start": "FAIL",
+      "Checking place-content: space-around flex-end": "FAIL",
+      "Checking place-content: space-around flex-start": "FAIL",
+      "Checking place-content: space-between flex-end": "FAIL",
+      "Checking place-content: space-between flex-start": "FAIL",
+      "Checking place-content: space-evenly flex-end": "FAIL",
+      "Checking place-content: space-evenly flex-start": "FAIL",
+      "Checking place-content: start flex-end": "FAIL",
+      "Checking place-content: start flex-start": "FAIL",
+      "Checking place-content: stretch flex-end": "FAIL",
+      "Checking place-content: stretch flex-start": "FAIL"
+    }
+  },
+  "css/css-align/content-distribution/place-content-shorthand-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/default-alignment/justify-items-legacy-001.html": {
+    "total": 1
+  },
+  "css/css-align/default-alignment/parse-align-items-001.html": {
+    "total": 17,
+    "failures": {
+      "Checking align-items: flex-end": "FAIL",
+      "Checking align-items: flex-start": "FAIL",
+      "Checking align-items: safe flex-end": "FAIL",
+      "Checking align-items: unsafe flex-start": "FAIL"
+    }
+  },
+  "css/css-align/default-alignment/parse-align-items-002.html": {
+    "total": 7
+  },
+  "css/css-align/default-alignment/parse-align-items-003.html": {
+    "total": 17,
+    "failures": {
+      "Checking align-items: flex-end": "FAIL",
+      "Checking align-items: flex-start": "FAIL",
+      "Checking align-items: safe flex-end": "FAIL",
+      "Checking align-items: unsafe flex-start": "FAIL"
+    }
+  },
+  "css/css-align/default-alignment/parse-align-items-004.html": {
+    "total": 29
+  },
+  "css/css-align/default-alignment/parse-align-items-005.html": {
+    "total": 3
+  },
+  "css/css-align/default-alignment/parse-justify-items-001.html": {
+    "total": 22,
+    "failures": {
+      "Checking justify-items: flex-end": "FAIL",
+      "Checking justify-items: flex-start": "FAIL",
+      "Checking justify-items: safe flex-end": "FAIL",
+      "Checking justify-items: unsafe flex-start": "FAIL"
+    }
+  },
+  "css/css-align/default-alignment/parse-justify-items-002.html": {
+    "total": 7
+  },
+  "css/css-align/default-alignment/parse-justify-items-003.html": {
+    "total": 22,
+    "failures": {
+      "Checking justify-items: flex-end": "FAIL",
+      "Checking justify-items: flex-start": "FAIL",
+      "Checking justify-items: safe flex-end": "FAIL",
+      "Checking justify-items: unsafe flex-start": "FAIL"
+    }
+  },
+  "css/css-align/default-alignment/parse-justify-items-004.html": {
+    "total": 32
+  },
+  "css/css-align/default-alignment/parse-justify-items-005.html": {
+    "total": 3
+  },
+  "css/css-align/default-alignment/parse-justify-items-006.html": {
+    "total": 3
+  },
+  "css/css-align/default-alignment/place-items-shorthand-001.html": {
+    "total": 17
+  },
+  "css/css-align/default-alignment/place-items-shorthand-002.html": {
+    "total": 374
+  },
+  "css/css-align/default-alignment/place-items-shorthand-003.html": {
+    "total": 2
+  },
+  "css/css-align/default-alignment/place-items-shorthand-004.html": {
+    "total": 4
+  },
+  "css/css-align/default-alignment/place-items-shorthand-005.html": {
+    "total": 2
+  },
+  "css/css-align/default-alignment/place-items-shorthand-006.html": {
+    "total": 168,
+    "failures": {
+      "Checking place-items: baseline flex-end": "FAIL",
+      "Checking place-items: baseline flex-start": "FAIL",
+      "Checking place-items: center flex-end": "FAIL",
+      "Checking place-items: center flex-start": "FAIL",
+      "Checking place-items: end flex-end": "FAIL",
+      "Checking place-items: end flex-start": "FAIL",
+      "Checking place-items: first baseline flex-end": "FAIL",
+      "Checking place-items: first baseline flex-start": "FAIL",
+      "Checking place-items: flex-end baseline": "FAIL",
+      "Checking place-items: flex-end center": "FAIL",
+      "Checking place-items: flex-end end": "FAIL",
+      "Checking place-items: flex-end first baseline": "FAIL",
+      "Checking place-items: flex-end flex-end": "FAIL",
+      "Checking place-items: flex-end flex-start": "FAIL",
+      "Checking place-items: flex-end last baseline": "FAIL",
+      "Checking place-items: flex-end left": "FAIL",
+      "Checking place-items: flex-end normal": "FAIL",
+      "Checking place-items: flex-end right": "FAIL",
+      "Checking place-items: flex-end self-end": "FAIL",
+      "Checking place-items: flex-end self-start": "FAIL",
+      "Checking place-items: flex-end start": "FAIL",
+      "Checking place-items: flex-end stretch": "FAIL",
+      "Checking place-items: flex-start baseline": "FAIL",
+      "Checking place-items: flex-start center": "FAIL",
+      "Checking place-items: flex-start end": "FAIL",
+      "Checking place-items: flex-start first baseline": "FAIL",
+      "Checking place-items: flex-start flex-end": "FAIL",
+      "Checking place-items: flex-start flex-start": "FAIL",
+      "Checking place-items: flex-start last baseline": "FAIL",
+      "Checking place-items: flex-start left": "FAIL",
+      "Checking place-items: flex-start normal": "FAIL",
+      "Checking place-items: flex-start right": "FAIL",
+      "Checking place-items: flex-start self-end": "FAIL",
+      "Checking place-items: flex-start self-start": "FAIL",
+      "Checking place-items: flex-start start": "FAIL",
+      "Checking place-items: flex-start stretch": "FAIL",
+      "Checking place-items: last baseline flex-end": "FAIL",
+      "Checking place-items: last baseline flex-start": "FAIL",
+      "Checking place-items: normal flex-end": "FAIL",
+      "Checking place-items: normal flex-start": "FAIL",
+      "Checking place-items: self-end flex-end": "FAIL",
+      "Checking place-items: self-end flex-start": "FAIL",
+      "Checking place-items: self-start flex-end": "FAIL",
+      "Checking place-items: self-start flex-start": "FAIL",
+      "Checking place-items: start flex-end": "FAIL",
+      "Checking place-items: start flex-start": "FAIL",
+      "Checking place-items: stretch flex-end": "FAIL",
+      "Checking place-items: stretch flex-start": "FAIL"
+    }
+  },
+  "css/css-align/default-alignment/shorthand-serialization-001.html": {
+    "total": 17
+  },
+  "css/css-align/distribution-values/space-evenly-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/flow-start-and-end-serialization.html": {
+    "total": 9,
+    "failures": {
+      "align-content uses flow-start and flow-end computed serialization": "FAIL",
+      "align-items uses flow-start and flow-end computed serialization": "FAIL",
+      "align-self uses flow-start and flow-end computed serialization": "FAIL",
+      "justify-content uses flow-start and flow-end computed serialization": "FAIL",
+      "justify-items uses flow-start and flow-end computed serialization": "FAIL",
+      "justify-self uses flow-start and flow-end computed serialization": "FAIL",
+      "place-content inherits flow-start and flow-end computed serialization": "FAIL",
+      "place-items inherits flow-start and flow-end computed serialization": "FAIL",
+      "place-self inherits flow-start and flow-end computed serialization": "FAIL"
+    }
+  },
+  "css/css-align/gaps/column-gap-animation-001.html": {
+    "total": 1
+  },
+  "css/css-align/gaps/column-gap-animation-002.html": {
+    "total": 1
+  },
+  "css/css-align/gaps/column-gap-animation-003.html": {
+    "total": 1
+  },
+  "css/css-align/gaps/column-gap-parsing-001.html": {
+    "total": 18
+  },
+  "css/css-align/gaps/gap-animation-001.html": {
+    "total": 1
+  },
+  "css/css-align/gaps/gap-animation-002.html": {
+    "total": 1
+  },
+  "css/css-align/gaps/gap-animation-003.html": {
+    "total": 1
+  },
+  "css/css-align/gaps/gap-animation-004.html": {
+    "total": 1
+  },
+  "css/css-align/gaps/gap-normal-computed-001.html": {
+    "total": 6
+  },
+  "css/css-align/gaps/gap-normal-used-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/gaps/gap-normal-used-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/gaps/gap-parsing-001.html": {
+    "total": 26
+  },
+  "css/css-align/gaps/gap-parsing-002.html": {
+    "total": 16
+  },
+  "css/css-align/gaps/grid-column-gap-parsing-001.html": {
+    "total": 18
+  },
+  "css/css-align/gaps/grid-gap-parsing-001.html": {
+    "total": 26
+  },
+  "css/css-align/gaps/grid-row-gap-parsing-001.html": {
+    "total": 18
+  },
+  "css/css-align/gaps/legacy-gap-aliases-001.html": {
+    "total": 3
+  },
+  "css/css-align/gaps/row-gap-animation-001.html": {
+    "total": 1
+  },
+  "css/css-align/gaps/row-gap-animation-002.html": {
+    "total": 1
+  },
+  "css/css-align/gaps/row-gap-animation-003.html": {
+    "total": 1
+  },
+  "css/css-align/gaps/row-gap-parsing-001.html": {
+    "total": 18
+  },
+  "css/css-align/inheritance.html": {
+    "total": 16
+  },
+  "css/css-align/multicol/align-content-multicol.html": {
+    "total": 32
+  },
+  "css/css-align/parsing/align-content-computed.html": {
+    "total": 18,
+    "failures": {
+      "Property align-content value 'flex-end'": "FAIL",
+      "Property align-content value 'flex-start'": "FAIL",
+      "Property align-content value 'safe flex-start'": "FAIL"
+    }
+  },
+  "css/css-align/parsing/align-content-invalid.html": {
+    "total": 23
+  },
+  "css/css-align/parsing/align-content-valid.html": {
+    "total": 19
+  },
+  "css/css-align/parsing/align-items-computed.html": {
+    "total": 17,
+    "failures": {
+      "Property align-items value 'flex-end'": "FAIL",
+      "Property align-items value 'flex-start'": "FAIL"
+    }
+  },
+  "css/css-align/parsing/align-items-invalid.html": {
+    "total": 24
+  },
+  "css/css-align/parsing/align-items-valid.html": {
+    "total": 18
+  },
+  "css/css-align/parsing/align-self-computed.html": {
+    "total": 18,
+    "failures": {
+      "Property align-self value 'flex-end'": "FAIL",
+      "Property align-self value 'flex-start'": "FAIL"
+    }
+  },
+  "css/css-align/parsing/align-self-invalid.html": {
+    "total": 22
+  },
+  "css/css-align/parsing/align-self-valid.html": {
+    "total": 19
+  },
+  "css/css-align/parsing/column-gap-computed.html": {
+    "total": 5
+  },
+  "css/css-align/parsing/column-gap-invalid.html": {
+    "total": 5
+  },
+  "css/css-align/parsing/column-gap-valid.html": {
+    "total": 6
+  },
+  "css/css-align/parsing/gap-computed.html": {
+    "total": 11
+  },
+  "css/css-align/parsing/gap-invalid.html": {
+    "total": 4
+  },
+  "css/css-align/parsing/gap-shorthand.html": {
+    "total": 12
+  },
+  "css/css-align/parsing/gap-valid.html": {
+    "total": 9
+  },
+  "css/css-align/parsing/grid-column-gap-computed.html": {
+    "total": 5
+  },
+  "css/css-align/parsing/grid-column-gap-invalid.html": {
+    "total": 5
+  },
+  "css/css-align/parsing/grid-column-gap-valid.html": {
+    "total": 6
+  },
+  "css/css-align/parsing/grid-gap-computed.html": {
+    "total": 11
+  },
+  "css/css-align/parsing/grid-gap-invalid.html": {
+    "total": 4
+  },
+  "css/css-align/parsing/grid-gap-shorthand.html": {
+    "total": 12
+  },
+  "css/css-align/parsing/grid-gap-valid.html": {
+    "total": 9
+  },
+  "css/css-align/parsing/grid-row-gap-computed.html": {
+    "total": 6
+  },
+  "css/css-align/parsing/grid-row-gap-invalid.html": {
+    "total": 4
+  },
+  "css/css-align/parsing/grid-row-gap-valid.html": {
+    "total": 5
+  },
+  "css/css-align/parsing/justify-content-computed.html": {
+    "total": 18,
+    "failures": {
+      "Property justify-content value 'flex-end'": "FAIL",
+      "Property justify-content value 'flex-start'": "FAIL",
+      "Property justify-content value 'safe flex-start'": "FAIL"
+    }
+  },
+  "css/css-align/parsing/justify-content-invalid.html": {
+    "total": 24
+  },
+  "css/css-align/parsing/justify-content-valid.html": {
+    "total": 18
+  },
+  "css/css-align/parsing/justify-items-computed.html": {
+    "total": 24,
+    "failures": {
+      "Property justify-items value 'flex-end'": "FAIL",
+      "Property justify-items value 'flex-start'": "FAIL"
+    }
+  },
+  "css/css-align/parsing/justify-items-invalid.html": {
+    "total": 19
+  },
+  "css/css-align/parsing/justify-items-valid.html": {
+    "total": 24
+  },
+  "css/css-align/parsing/justify-self-computed.html": {
+    "total": 20,
+    "failures": {
+      "Property justify-self value 'flex-end'": "FAIL",
+      "Property justify-self value 'flex-start'": "FAIL"
+    }
+  },
+  "css/css-align/parsing/justify-self-invalid.html": {
+    "total": 20
+  },
+  "css/css-align/parsing/justify-self-valid.html": {
+    "total": 21
+  },
+  "css/css-align/parsing/place-content-computed.html": {
+    "total": 25,
+    "failures": {
+      "Property place-content value 'flex-start flex-start'": "FAIL",
+      "Property place-content value 'last baseline flex-start'": "FAIL",
+      "Property place-content value 'safe flex-start'": "FAIL"
+    }
+  },
+  "css/css-align/parsing/place-content-invalid.html": {
+    "total": 10
+  },
+  "css/css-align/parsing/place-content-shorthand.html": {
+    "total": 15
+  },
+  "css/css-align/parsing/place-content-valid.html": {
+    "total": 26
+  },
+  "css/css-align/parsing/place-items-computed.html": {
+    "total": 21,
+    "failures": {
+      "Property place-items value 'flex-end legacy'": "FAIL",
+      "Property place-items value 'flex-end'": "FAIL"
+    }
+  },
+  "css/css-align/parsing/place-items-invalid.html": {
+    "total": 15
+  },
+  "css/css-align/parsing/place-items-shorthand.html": {
+    "total": 12
+  },
+  "css/css-align/parsing/place-items-valid.html": {
+    "total": 20
+  },
+  "css/css-align/parsing/place-self-computed.html": {
+    "total": 18,
+    "failures": {
+      "Property place-self value 'baseline flex-end'": "FAIL",
+      "Property place-self value 'flex-end'": "FAIL"
+    }
+  },
+  "css/css-align/parsing/place-self-invalid.html": {
+    "total": 9
+  },
+  "css/css-align/parsing/place-self-shorthand.html": {
+    "total": 12
+  },
+  "css/css-align/parsing/place-self-valid.html": {
+    "total": 18
+  },
+  "css/css-align/parsing/row-gap-computed.html": {
+    "total": 6
+  },
+  "css/css-align/parsing/row-gap-invalid.html": {
+    "total": 4
+  },
+  "css/css-align/parsing/row-gap-valid.html": {
+    "total": 5
+  },
+  "css/css-align/self-alignment/block-justify-self.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/self-alignment/parse-align-self-001.html": {
+    "total": 18,
+    "failures": {
+      "Checking align-self: flex-end": "FAIL",
+      "Checking align-self: flex-start": "FAIL",
+      "Checking align-self: safe flex-end": "FAIL",
+      "Checking align-self: unsafe flex-start": "FAIL"
+    }
+  },
+  "css/css-align/self-alignment/parse-align-self-002.html": {
+    "total": 7
+  },
+  "css/css-align/self-alignment/parse-align-self-003.html": {
+    "total": 18,
+    "failures": {
+      "Checking align-self: flex-end": "FAIL",
+      "Checking align-self: flex-start": "FAIL",
+      "Checking align-self: safe flex-end": "FAIL",
+      "Checking align-self: unsafe flex-start": "FAIL"
+    }
+  },
+  "css/css-align/self-alignment/parse-align-self-004.html": {
+    "total": 28
+  },
+  "css/css-align/self-alignment/parse-align-self-005.html": {
+    "total": 3
+  },
+  "css/css-align/self-alignment/parse-justify-self-001.html": {
+    "total": 20,
+    "failures": {
+      "Checking justify-self: flex-end": "FAIL",
+      "Checking justify-self: flex-start": "FAIL",
+      "Checking justify-self: safe flex-end": "FAIL",
+      "Checking justify-self: unsafe flex-start": "FAIL"
+    }
+  },
+  "css/css-align/self-alignment/parse-justify-self-002.html": {
+    "total": 7
+  },
+  "css/css-align/self-alignment/parse-justify-self-003.html": {
+    "total": 20,
+    "failures": {
+      "Checking justify-self: flex-end": "FAIL",
+      "Checking justify-self: flex-start": "FAIL",
+      "Checking justify-self: safe flex-end": "FAIL",
+      "Checking justify-self: unsafe flex-start": "FAIL"
+    }
+  },
+  "css/css-align/self-alignment/parse-justify-self-004.html": {
+    "total": 26
+  },
+  "css/css-align/self-alignment/parse-justify-self-005.html": {
+    "total": 3
+  },
+  "css/css-align/self-alignment/place-self-shorthand-001.html": {
+    "total": 18
+  },
+  "css/css-align/self-alignment/place-self-shorthand-002.html": {
+    "total": 360
+  },
+  "css/css-align/self-alignment/place-self-shorthand-003.html": {
+    "total": 2
+  },
+  "css/css-align/self-alignment/place-self-shorthand-004.html": {
+    "total": 4
+  },
+  "css/css-align/self-alignment/place-self-shorthand-005.html": {
+    "total": 2
+  },
+  "css/css-align/self-alignment/place-self-shorthand-006.html": {
+    "total": 195,
+    "failures": {
+      "Checking place-self: auto flex-end": "FAIL",
+      "Checking place-self: auto flex-start": "FAIL",
+      "Checking place-self: baseline flex-end": "FAIL",
+      "Checking place-self: baseline flex-start": "FAIL",
+      "Checking place-self: center flex-end": "FAIL",
+      "Checking place-self: center flex-start": "FAIL",
+      "Checking place-self: end flex-end": "FAIL",
+      "Checking place-self: end flex-start": "FAIL",
+      "Checking place-self: first baseline flex-end": "FAIL",
+      "Checking place-self: first baseline flex-start": "FAIL",
+      "Checking place-self: flex-end auto": "FAIL",
+      "Checking place-self: flex-end baseline": "FAIL",
+      "Checking place-self: flex-end center": "FAIL",
+      "Checking place-self: flex-end end": "FAIL",
+      "Checking place-self: flex-end first baseline": "FAIL",
+      "Checking place-self: flex-end flex-end": "FAIL",
+      "Checking place-self: flex-end flex-start": "FAIL",
+      "Checking place-self: flex-end last baseline": "FAIL",
+      "Checking place-self: flex-end left": "FAIL",
+      "Checking place-self: flex-end normal": "FAIL",
+      "Checking place-self: flex-end right": "FAIL",
+      "Checking place-self: flex-end self-end": "FAIL",
+      "Checking place-self: flex-end self-start": "FAIL",
+      "Checking place-self: flex-end start": "FAIL",
+      "Checking place-self: flex-end stretch": "FAIL",
+      "Checking place-self: flex-start auto": "FAIL",
+      "Checking place-self: flex-start baseline": "FAIL",
+      "Checking place-self: flex-start center": "FAIL",
+      "Checking place-self: flex-start end": "FAIL",
+      "Checking place-self: flex-start first baseline": "FAIL",
+      "Checking place-self: flex-start flex-end": "FAIL",
+      "Checking place-self: flex-start flex-start": "FAIL",
+      "Checking place-self: flex-start last baseline": "FAIL",
+      "Checking place-self: flex-start left": "FAIL",
+      "Checking place-self: flex-start normal": "FAIL",
+      "Checking place-self: flex-start right": "FAIL",
+      "Checking place-self: flex-start self-end": "FAIL",
+      "Checking place-self: flex-start self-start": "FAIL",
+      "Checking place-self: flex-start start": "FAIL",
+      "Checking place-self: flex-start stretch": "FAIL",
+      "Checking place-self: last baseline flex-end": "FAIL",
+      "Checking place-self: last baseline flex-start": "FAIL",
+      "Checking place-self: normal flex-end": "FAIL",
+      "Checking place-self: normal flex-start": "FAIL",
+      "Checking place-self: self-end flex-end": "FAIL",
+      "Checking place-self: self-end flex-start": "FAIL",
+      "Checking place-self: self-start flex-end": "FAIL",
+      "Checking place-self: self-start flex-start": "FAIL",
+      "Checking place-self: start flex-end": "FAIL",
+      "Checking place-self: start flex-start": "FAIL",
+      "Checking place-self: stretch flex-end": "FAIL",
+      "Checking place-self: stretch flex-start": "FAIL"
+    }
+  },
+  "css/css-align/self-alignment/self-align-normal-flex.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/self-alignment/self-align-safe-unsafe-flex-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/self-alignment/self-align-safe-unsafe-flex-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/self-alignment/self-align-safe-unsafe-flex-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/self-alignment/self-align-safe-unsafe-grid-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/self-alignment/self-align-safe-unsafe-grid-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/self-alignment/self-align-safe-unsafe-grid-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/self-alignment/self-align-start-end-flex-001.html": {
+    "reftest": "PASS"
+  }
+}

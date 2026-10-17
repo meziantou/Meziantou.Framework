@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ms-BN": {
+      "identity": {
+        "language": "ms",
+        "territory": "BN"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

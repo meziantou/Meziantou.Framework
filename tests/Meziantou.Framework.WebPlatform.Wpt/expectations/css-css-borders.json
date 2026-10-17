@@ -1,0 +1,861 @@
+{
+  "css/css-borders/border-image-color-scheme.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-image-width-interpolation-math-functions.html": {
+    "total": 48
+  },
+  "css/css-borders/border-radius-currentcolor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-radius-greater-than-width.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/border-shape-absolute-coords-shape.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-animation.html": {
+    "total": 100
+  },
+  "css/css-borders/border-shape/border-shape-background-origin-border-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-circle-extent-keywords.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-circle-hit-test-overflow-clip-margin.html": {
+    "total": 1
+  },
+  "css/css-borders/border-shape/border-shape-circle-hit-test-overflow-clip.html": {
+    "total": 1
+  },
+  "css/css-borders/border-shape/border-shape-circle-hit-test-siblings.html": {
+    "total": 3
+  },
+  "css/css-borders/border-shape/border-shape-circle-hit-test.html": {
+    "total": 1
+  },
+  "css/css-borders/border-shape/border-shape-clips-background.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/border-shape/border-shape-collapsed-shape-clips-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-combined-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-double-shape-default.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-dynamic-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-ellipse-corner-keywords.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-ellipse-extent-keywords.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-geometry-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-half-border-box-default.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-hit-test-overflow.html": {
+    "total": 1
+  },
+  "css/css-borders/border-shape/border-shape-ignore-radius-computed.html": {
+    "total": 1
+  },
+  "css/css-borders/border-shape/border-shape-ignore-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-inner-outer.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-inset-shadow-blur.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-inset-shadow-negative-spread.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-inset-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-outline-auto-forms.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-outline-auto-with-border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-outline-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-outline-double-path.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-outline-double-shape.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-outline-double.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-outline-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-outline-offset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-outline-with-border-double-ellipse.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-outline-with-border-ellipse.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-outline-with-border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-outline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-overflow-child-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-overflow-clip-margin-hit-test-ref-boxes.html": {
+    "total": 3
+  },
+  "css/css-borders/border-shape/border-shape-overflow-clip-margin-hit-test.html": {
+    "total": 1
+  },
+  "css/css-borders/border-shape/border-shape-overflow-replaced-canvas.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-overflow-replaced-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-overflow-replaced-img.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-overflow-replaced-self.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-overflow-solid-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-polygon-miter-limit.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-replaced-hit-test.html": {
+    "total": 1
+  },
+  "css/css-borders/border-shape/border-shape-shadow-blur.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-shadow-circle.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-shadow-ellipse.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-shadow-inset-blur.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-shadow-negative-spread.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-shadow-semitransparent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-shadow-transparent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-shape-arc-miter-limit.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-stacking-context-hit-test.html": {
+    "total": 6
+  },
+  "css/css-borders/border-shape/border-shape-stroke-from-border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-stroke-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-two-shapes-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-width-hairline.html": {
+    "total": 5
+  },
+  "css/css-borders/border-width-rounding.tentative.html": {
+    "total": 22
+  },
+  "css/css-borders/borders-on-sub-unit-sized-elements.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-block-start-computed.html": {
+    "total": 4
+  },
+  "css/css-borders/corner-shape/corner-block-start-valid.html": {
+    "total": 14
+  },
+  "css/css-borders/corner-shape/corner-block-start-writing-modes.html": {
+    "total": 3
+  },
+  "css/css-borders/corner-shape/corner-computed.html": {
+    "total": 24
+  },
+  "css/css-borders/corner-shape/corner-invalid.html": {
+    "total": 14
+  },
+  "css/css-borders/corner-shape/corner-shape-backdrop-filter-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-backdrop-filter-video-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-backdrop-filter.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/corner-shape/corner-shape-bevel-overflow-composite.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-bevel-overflow.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/corner-shape/corner-shape-bevel-round-scoop-square-outset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-bevel.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-box-shadow-spread-bevel.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/corner-shape/corner-shape-box-shadow-spread-elliptical.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/corner-shape/corner-shape-computed.html": {
+    "total": 38
+  },
+  "css/css-borders/corner-shape/corner-shape-fill.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-hittest.html": {
+    "total": 1
+  },
+  "css/css-borders/corner-shape/corner-shape-iframe-border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-img-border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-img.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-inset-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-interpolation.html": {
+    "total": 478
+  },
+  "css/css-borders/corner-shape/corner-shape-invalid.html": {
+    "total": 71
+  },
+  "css/css-borders/corner-shape/corner-shape-noop-keyframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-notch-mixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-notch-squircle-outset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-notch.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-offset-path-coord-box-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/corner-shape/corner-shape-offset-path-coord-box-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-outline-offset-bevel.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-outline-offset-elliptical.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/corner-shape/corner-shape-outside-left.html": {
+    "total": 8,
+    "failures": {
+      "corner-shape: superellipse(-.8) with shape-outside": "FAIL"
+    }
+  },
+  "css/css-borders/corner-shape/corner-shape-outside-right.html": {
+    "total": 8,
+    "failures": {
+      "corner-shape: notch bevel with shape-outside": "FAIL",
+      "corner-shape: notch with shape-outside": "FAIL"
+    }
+  },
+  "css/css-borders/corner-shape/corner-shape-overflow-clip-margin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-scoop.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-square-notch-mixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-square-notch-superellipse.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-square.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-squircle.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-superellipse-bevel.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-superellipse-concave-outset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-superellipse-concave.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/corner-shape/corner-shape-superellipse-convex-outset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-superellipse-convex.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-superellipse-negative-100.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-superellipse-negative-inf.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-superellipse-scoop.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-superellipse-squircle.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-svg-border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-valid.html": {
+    "total": 241
+  },
+  "css/css-borders/corner-shape/corner-shape-video-border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shorthand-rendering.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-top-computed.html": {
+    "total": 4
+  },
+  "css/css-borders/corner-shape/corner-top-left-computed.html": {
+    "total": 6
+  },
+  "css/css-borders/corner-shape/corner-top-left-invalid.html": {
+    "total": 10
+  },
+  "css/css-borders/corner-shape/corner-top-left-valid.html": {
+    "total": 11
+  },
+  "css/css-borders/corner-shape/corner-top-valid.html": {
+    "total": 14
+  },
+  "css/css-borders/corner-shape/corner-valid.html": {
+    "total": 12
+  },
+  "css/css-borders/corner-shape/corners-invalid.html": {
+    "total": 23
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=10,50%&corner-shape=0&shadow-spread=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=20&corner-shape=-0.5&shadow-spread=30": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=20&corner-shape=0&shadow-spread=80&clip-path=margin-box&margin=15&margin-top=40&margin-bottom=40&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=20&corner-shape=0.7&border-width=30": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=20,40&corner-shape=-0.5&shadow-spread=16": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=20,40&corner-shape=-0.5&shadow-spread=40": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=20,40&corner-shape=-1&shadow-spread=16": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=20,50%&corner-shape=0&shadow-spread=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=25&corner-shape=2&shadow-spread=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=40&corner-shape=-1.5&shadow-spread=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=40&corner-shape=-infinity&shadow-spread=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=40&corner-shape=3&shadow-spread=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=5&corner-top-left-shape=0.5&corner-bottom-right-shape=-0.5&shadow-spread=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=50%&corner-shape=0&shadow-spread=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=50%&corner-top-left-shape=scoop&corner-bottom-right-shape=scoop&corner-top-right-shape=notch&corner-bottom-left-shape=notch": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=50%&corner-top-right-shape=scoop&corner-bottom-left-shape=scoop&corner-top-left-shape=notch&corner-bottom-right-shape=notch": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=50%,25&corner-shape=-0.4&shadow-spread=20&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=50%,25&corner-shape=-1&shadow-spread=20&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=50%,25&corner-shape=0&shadow-spread=20&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=50%,25&corner-shape=0.4&shadow-spread=20&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=50%,25&corner-shape=1&shadow-spread=20&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=50%,40&corner-shape=-0.5&border-top-width=20&border-bottom-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-radius=50&corner-shape=0&shadow-spread=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-left-radius=10,70&corner-top-left-shape=-0.5&shadow-spread=15": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-left-radius=10,70&corner-top-left-shape=0&shadow-spread=15": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-left-radius=100%&corner-shape=-0.3&border-left-width=50": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-left-radius=50%&corner-shape=0.7&border-left-width=30&border-top-width=30": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-left-radius=50&corner-shape=-5&border-left-width=55&border-top-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=100&corner-top-right-shape=0&shadow-spread=30": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=100&corner-top-right-shape=0&shadow-spread=50&clip-path=margin-box&margin-top=-10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=100&corner-top-right-shape=0&shadow-spread=50&clip-path=margin-box&margin-top=30": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=100&shadow-spread=50&clip-path=margin-box&margin-top=-10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=30,15&corner-top-right-shape=-0.7&shadow-spread=60&clip-path=margin-box&margin-top=15&margin-right=45": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=30,60&corner-top-right-shape=-0.7&shadow-spread=60&clip-path=margin-box&margin-top=-10&margin-right=45": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=80,40&corner-shape=0.7&shadow-spread=90&clip-path=margin-box&margin-top=-10&margin-right=65&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=80,40&corner-shape=0.7&shadow-spread=90&clip-path=margin-box&margin-top=0&margin-right=65&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=80,40&corner-shape=0.7&shadow-spread=90&clip-path=margin-box&margin-top=20&margin-right=65&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=80,40&corner-top-right-shape=-1.5&shadow-spread=60&clip-path=margin-box&margin-top=-10&margin-right=45": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=80,40&corner-top-right-shape=-1.5&shadow-spread=60&clip-path=margin-box&margin-top=15&margin-right=45": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=80,40&shadow-spread=60&clip-path=margin-box&margin-top=-10&margin-right=45": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-bottom-left-shape=bevel&border-bottom-left-radius=30": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-bottom-left-shape=bevel&border-width=10&border-radius=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-bottom-right-shape=0.8&border-bottom-right-radius=50%": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-bottom-right-shape=bevel&border-width=10&border-radius=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-bottom-right-shape=bevel&corner-bottom-left-shape=bevel": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-0.5&border-top-right-radius=100%,50&border-width=10&border-top-width=40": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-2&border-radius=20%&border-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-2&border-top-left-radius=40%&border-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-3&border-top-right-radius=100%,50&border-width=10&border-top-width=40": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-7&border-radius=20%&border-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0.1&border-top-right-radius=40,60&shadow-spread=90&clip-path=margin-box&margin-top=30&margin-right=-20&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0.4&border-top-right-radius=40,60&shadow-spread=90&clip-path=margin-box&margin-top=30&margin-right=-20&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0.5&border-top-right-radius=100%,50&border-width=10&border-top-width=40": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0.7&border-top-right-radius=40,60&shadow-spread=90&clip-path=margin-box&margin-top=30&margin-right=-20&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0.8&border-radius=40&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=1&border-top-right-radius=40,60&shadow-spread=90&clip-path=margin-box&margin-top=30&margin-right=-20&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=2.3&border-radius=40%": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=3&border-top-right-radius=33": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=5&border-radius=20%&border-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=bevel&border-radius=40&border-width=20&border-left-width=10&border-right-width=40": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=bevel&border-top-right-radius=100%,50&border-width=10&border-top-width=40": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=notch&border-radius=30&border-width=30": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=notch&border-radius=30&border-width=5&border-top-width=20&border-bottom-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=scoop&border-radius=20%&border-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=square&border-bottom-left-radius=5": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=squircle&border-radius=25%&border-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=squircle&border-radius=50%": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=squircle&border-top-left-radius=25%&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=squircle&border-top-left-radius=30%": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=squircle&border-top-right-radius=30": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-left-shape=-0.5&border-radius=40": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-left-shape=-4&border-radius=40": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-left-shape=-4&border-radius=40%": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-left-shape=0&corner-top-right-shape=notch&corner-bottom-right-shape=2&corner-bottom-left-shape=-1&border-top-width=5&border-right-width=20&border-left-width=20&border-radius=50": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-left-shape=0&corner-top-right-shape=notch&corner-bottom-right-shape=2&corner-bottom-left-shape=-1&border-width=20&shadow-spread=20&border-radius=50": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-left-shape=0&corner-top-right-shape=notch&corner-bottom-right-shape=2&corner-bottom-left-shape=-1&shadow-spread=30&border-radius=50&clip-path=margin-box&margin=5&margin-top=20&margin-bottom=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-left-shape=0.5&border-radius=40": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-left-shape=2.5&border-radius=20%&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-left-shape=bevel&border-radius=40": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-left-shape=bevel&border-radius=40&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-left-shape=bevel&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-left-shape=bevel&corner-bottom-right-shape=bevel&border-radius=40&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-left-shape=scoop&border-radius=40": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-left-shape=scoop&corner-top-right-shape=scoop&border-radius=50%": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-right-shape=-4&border-top-right-radius=50": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-right-shape=bevel&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-top-right-shape=scoop&border-radius=20%&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?width=50&height=30&border-radius=5&corner-shape=1&shadow-spread=50": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?width=50&height=30&border-radius=5&corner-shape=2&shadow-spread=50": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?width=50&height=30&corner-top-left-shape=0&corner-top-right-shape=notch&corner-bottom-right-shape=2&corner-bottom-left-shape=-1&shadow-spread=50&border-radius=5": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/outline-offset-rounding.tentative.html": {
+    "total": 30,
+    "failures": {
+      "-0.1px": "FAIL",
+      "-0.25px": "FAIL",
+      "-0.5px": "FAIL",
+      "-0.9px": "FAIL",
+      "-1.25px": "FAIL",
+      "-1.5px": "FAIL",
+      "-2.75px": "FAIL",
+      "0.1px": "FAIL",
+      "0.1px snaps the same way as outline-width": "FAIL",
+      "0.25px": "FAIL",
+      "0.25px snaps the same way as outline-width": "FAIL",
+      "0.5px": "FAIL",
+      "0.5px snaps the same way as outline-width": "FAIL",
+      "0.9px": "FAIL",
+      "0.9px snaps the same way as outline-width": "FAIL",
+      "1.25px": "FAIL",
+      "1.25px snaps the same way as outline-width": "FAIL",
+      "1.5px": "FAIL",
+      "1.5px snaps the same way as outline-width": "FAIL",
+      "2.75px": "FAIL",
+      "2.75px snaps the same way as outline-width": "FAIL"
+    }
+  },
+  "css/css-borders/subpixel-border-width.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/subpixel-borders-with-child-border-box-sizing.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/subpixel-borders-with-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/tentative/border-radius-side-shorthands/border-radius-side-shorthands-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/tentative/border-radius-side-shorthands/border-radius-side-shorthands-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/tentative/parsing/border-block-end-radius-computed.html": {
+    "total": 6
+  },
+  "css/css-borders/tentative/parsing/border-block-end-radius-invalid.html": {
+    "total": 10
+  },
+  "css/css-borders/tentative/parsing/border-block-end-radius-valid.html": {
+    "total": 8
+  },
+  "css/css-borders/tentative/parsing/border-block-start-radius-computed.html": {
+    "total": 6
+  },
+  "css/css-borders/tentative/parsing/border-block-start-radius-invalid.html": {
+    "total": 10
+  },
+  "css/css-borders/tentative/parsing/border-block-start-radius-valid.html": {
+    "total": 8
+  },
+  "css/css-borders/tentative/parsing/border-bottom-radius-computed.html": {
+    "total": 6
+  },
+  "css/css-borders/tentative/parsing/border-bottom-radius-invalid.html": {
+    "total": 10
+  },
+  "css/css-borders/tentative/parsing/border-bottom-radius-valid.html": {
+    "total": 8
+  },
+  "css/css-borders/tentative/parsing/border-clip-computed.html": {
+    "total": 7,
+    "failures": {
+      "Property border-clip value '0'": "FAIL",
+      "Property border-clip value 'normal'": "FAIL"
+    }
+  },
+  "css/css-borders/tentative/parsing/border-clip-invalid.html": {
+    "total": 4,
+    "failures": {
+      "e.style['border-clip'] = \"none\" should not set the property value": "FAIL"
+    }
+  },
+  "css/css-borders/tentative/parsing/border-clip-valid.html": {
+    "total": 7,
+    "failures": {
+      "e.style['border-clip'] = \"0\" should set the property value": "FAIL",
+      "e.style['border-clip'] = \"normal\" should set the property value": "FAIL"
+    }
+  },
+  "css/css-borders/tentative/parsing/border-inline-end-radius-computed.html": {
+    "total": 6
+  },
+  "css/css-borders/tentative/parsing/border-inline-end-radius-invalid.html": {
+    "total": 10
+  },
+  "css/css-borders/tentative/parsing/border-inline-end-radius-valid.html": {
+    "total": 8
+  },
+  "css/css-borders/tentative/parsing/border-inline-start-radius-computed.html": {
+    "total": 6
+  },
+  "css/css-borders/tentative/parsing/border-inline-start-radius-invalid.html": {
+    "total": 10
+  },
+  "css/css-borders/tentative/parsing/border-inline-start-radius-valid.html": {
+    "total": 8
+  },
+  "css/css-borders/tentative/parsing/border-left-radius-computed.html": {
+    "total": 6
+  },
+  "css/css-borders/tentative/parsing/border-left-radius-invalid.html": {
+    "total": 10
+  },
+  "css/css-borders/tentative/parsing/border-left-radius-valid.html": {
+    "total": 8
+  },
+  "css/css-borders/tentative/parsing/border-right-radius-computed.html": {
+    "total": 6
+  },
+  "css/css-borders/tentative/parsing/border-right-radius-invalid.html": {
+    "total": 10
+  },
+  "css/css-borders/tentative/parsing/border-right-radius-valid.html": {
+    "total": 8
+  },
+  "css/css-borders/tentative/parsing/border-shape-computed.html": {
+    "total": 22
+  },
+  "css/css-borders/tentative/parsing/border-shape-invalid.html": {
+    "total": 12
+  },
+  "css/css-borders/tentative/parsing/border-shape-valid.html": {
+    "total": 12
+  },
+  "css/css-borders/tentative/parsing/border-top-radius-computed.html": {
+    "total": 6
+  },
+  "css/css-borders/tentative/parsing/border-top-radius-invalid.html": {
+    "total": 10
+  },
+  "css/css-borders/tentative/parsing/border-top-radius-valid.html": {
+    "total": 8
+  },
+  "css/css-borders/tentative/parsing/box-shadow-blur-computed.html": {
+    "total": 4
+  },
+  "css/css-borders/tentative/parsing/box-shadow-blur-invalid.html": {
+    "total": 6
+  },
+  "css/css-borders/tentative/parsing/box-shadow-blur-valid.html": {
+    "total": 5,
+    "failures": {
+      "e.style['box-shadow-blur'] = \"0\" should set the property value": "FAIL"
+    }
+  },
+  "css/css-borders/tentative/parsing/box-shadow-color-computed.html": {
+    "total": 17
+  },
+  "css/css-borders/tentative/parsing/box-shadow-color-invalid.html": {
+    "total": 10
+  },
+  "css/css-borders/tentative/parsing/box-shadow-color-valid.html": {
+    "total": 17,
+    "failures": {
+      "e.style['box-shadow-color'] = \"red, blue\" should set the property value": "FAIL"
+    }
+  },
+  "css/css-borders/tentative/parsing/box-shadow-offset-computed.html": {
+    "total": 6,
+    "failures": {
+      "Property box-shadow-offset value '0 10px'": "FAIL",
+      "Property box-shadow-offset value '10px 0'": "FAIL"
+    }
+  },
+  "css/css-borders/tentative/parsing/box-shadow-offset-invalid.html": {
+    "total": 4
+  },
+  "css/css-borders/tentative/parsing/box-shadow-offset-valid.html": {
+    "total": 7,
+    "failures": {
+      "e.style['box-shadow-offset'] = \"0 0\" should set the property value": "FAIL",
+      "e.style['box-shadow-offset'] = \"0\" should set the property value": "FAIL"
+    }
+  },
+  "css/css-borders/tentative/parsing/box-shadow-position-computed.html": {
+    "total": 4
+  },
+  "css/css-borders/tentative/parsing/box-shadow-position-invalid.html": {
+    "total": 5
+  },
+  "css/css-borders/tentative/parsing/box-shadow-position-valid.html": {
+    "total": 4
+  },
+  "css/css-borders/tentative/parsing/box-shadow-spread-computed.html": {
+    "total": 5
+  },
+  "css/css-borders/tentative/parsing/box-shadow-spread-invalid.html": {
+    "total": 5
+  },
+  "css/css-borders/tentative/parsing/box-shadow-spread-valid.html": {
+    "total": 5,
+    "failures": {
+      "e.style['box-shadow-spread'] = \"0\" should set the property value": "FAIL"
+    }
+  }
+}

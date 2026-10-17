@@ -1,0 +1,1131 @@
+{
+  "spec": {
+    "title": "Media Capabilities",
+    "url": "https://w3c.github.io/media-capabilities/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Navigator",
+          "MediaCapabilities"
+        ],
+        "Worker": [
+          "WorkerNavigator",
+          "MediaCapabilities"
+        ]
+      }
+    },
+    "idlNames": {
+      "MediaConfiguration": {
+        "fragment": "dictionary MediaConfiguration {\n  VideoConfiguration video;\n  AudioConfiguration audio;\n};",
+        "type": "dictionary",
+        "name": "MediaConfiguration",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "video",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "VideoConfiguration"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediaconfiguration-video"
+          },
+          {
+            "type": "field",
+            "name": "audio",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AudioConfiguration"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediaconfiguration-audio"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/media-capabilities/#dictdef-mediaconfiguration"
+      },
+      "MediaDecodingConfiguration": {
+        "fragment": "dictionary MediaDecodingConfiguration : MediaConfiguration {\n  required MediaDecodingType type;\n  MediaCapabilitiesKeySystemConfiguration keySystemConfiguration;\n};",
+        "type": "dictionary",
+        "name": "MediaDecodingConfiguration",
+        "inheritance": "MediaConfiguration",
+        "members": [
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaDecodingType"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediadecodingconfiguration-type"
+          },
+          {
+            "type": "field",
+            "name": "keySystemConfiguration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaCapabilitiesKeySystemConfiguration"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediadecodingconfiguration-keysystemconfiguration"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/media-capabilities/#dictdef-mediadecodingconfiguration"
+      },
+      "MediaEncodingConfiguration": {
+        "fragment": "dictionary MediaEncodingConfiguration : MediaConfiguration {\n  required MediaEncodingType type;\n};",
+        "type": "dictionary",
+        "name": "MediaEncodingConfiguration",
+        "inheritance": "MediaConfiguration",
+        "members": [
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaEncodingType"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediaencodingconfiguration-type"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/media-capabilities/#dictdef-mediaencodingconfiguration"
+      },
+      "MediaDecodingType": {
+        "fragment": "enum MediaDecodingType {\n  \"file\",\n  \"media-source\",\n  \"webrtc\"\n};",
+        "type": "enum",
+        "name": "MediaDecodingType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "file",
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediadecodingtype-file"
+          },
+          {
+            "type": "enum-value",
+            "value": "media-source",
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediadecodingtype-media-source"
+          },
+          {
+            "type": "enum-value",
+            "value": "webrtc",
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediadecodingtype-webrtc"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/media-capabilities/#enumdef-mediadecodingtype"
+      },
+      "MediaEncodingType": {
+        "fragment": "enum MediaEncodingType {\n  \"record\",\n  \"webrtc\"\n};",
+        "type": "enum",
+        "name": "MediaEncodingType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "record",
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediaencodingtype-record"
+          },
+          {
+            "type": "enum-value",
+            "value": "webrtc",
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediaencodingtype-webrtc"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/media-capabilities/#enumdef-mediaencodingtype"
+      },
+      "VideoConfiguration": {
+        "fragment": "dictionary VideoConfiguration {\n  required DOMString contentType;\n  required unsigned long width;\n  required unsigned long height;\n  required unsigned long long bitrate;\n  required double framerate;\n  boolean hasAlphaChannel;\n  HdrMetadataType hdrMetadataType;\n  ColorGamut colorGamut;\n  TransferFunction transferFunction;\n  DOMString scalabilityMode;\n  boolean spatialScalability;\n};",
+        "type": "dictionary",
+        "name": "VideoConfiguration",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "contentType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-videoconfiguration-contenttype"
+          },
+          {
+            "type": "field",
+            "name": "width",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-videoconfiguration-width"
+          },
+          {
+            "type": "field",
+            "name": "height",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-videoconfiguration-height"
+          },
+          {
+            "type": "field",
+            "name": "bitrate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-videoconfiguration-bitrate"
+          },
+          {
+            "type": "field",
+            "name": "framerate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-videoconfiguration-framerate"
+          },
+          {
+            "type": "field",
+            "name": "hasAlphaChannel",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-videoconfiguration-hasalphachannel"
+          },
+          {
+            "type": "field",
+            "name": "hdrMetadataType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HdrMetadataType"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-videoconfiguration-hdrmetadatatype"
+          },
+          {
+            "type": "field",
+            "name": "colorGamut",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ColorGamut"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-videoconfiguration-colorgamut"
+          },
+          {
+            "type": "field",
+            "name": "transferFunction",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TransferFunction"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-videoconfiguration-transferfunction"
+          },
+          {
+            "type": "field",
+            "name": "scalabilityMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-videoconfiguration-scalabilitymode"
+          },
+          {
+            "type": "field",
+            "name": "spatialScalability",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-videoconfiguration-spatialscalability"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/media-capabilities/#dictdef-videoconfiguration"
+      },
+      "HdrMetadataType": {
+        "fragment": "enum HdrMetadataType {\n  \"smpteSt2086\",\n  \"smpteSt2094-10\",\n  \"smpteSt2094-40\"\n};",
+        "type": "enum",
+        "name": "HdrMetadataType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "smpteSt2086",
+            "href": "https://w3c.github.io/media-capabilities/#dom-hdrmetadatatype-smptest2086"
+          },
+          {
+            "type": "enum-value",
+            "value": "smpteSt2094-10",
+            "href": "https://w3c.github.io/media-capabilities/#dom-hdrmetadatatype-smptest2094-10"
+          },
+          {
+            "type": "enum-value",
+            "value": "smpteSt2094-40",
+            "href": "https://w3c.github.io/media-capabilities/#dom-hdrmetadatatype-smptest2094-40"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/media-capabilities/#enumdef-hdrmetadatatype"
+      },
+      "ColorGamut": {
+        "fragment": "enum ColorGamut {\n  \"srgb\",\n  \"p3\",\n  \"rec2020\"\n};",
+        "type": "enum",
+        "name": "ColorGamut",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "srgb",
+            "href": "https://w3c.github.io/media-capabilities/#dom-colorgamut-srgb"
+          },
+          {
+            "type": "enum-value",
+            "value": "p3",
+            "href": "https://w3c.github.io/media-capabilities/#dom-colorgamut-p3"
+          },
+          {
+            "type": "enum-value",
+            "value": "rec2020",
+            "href": "https://w3c.github.io/media-capabilities/#dom-colorgamut-rec2020"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/media-capabilities/#enumdef-colorgamut"
+      },
+      "TransferFunction": {
+        "fragment": "enum TransferFunction {\n  \"srgb\",\n  \"pq\",\n  \"hlg\"\n};",
+        "type": "enum",
+        "name": "TransferFunction",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "srgb",
+            "href": "https://w3c.github.io/media-capabilities/#dom-transferfunction-srgb"
+          },
+          {
+            "type": "enum-value",
+            "value": "pq",
+            "href": "https://w3c.github.io/media-capabilities/#dom-transferfunction-pq"
+          },
+          {
+            "type": "enum-value",
+            "value": "hlg",
+            "href": "https://w3c.github.io/media-capabilities/#dom-transferfunction-hlg"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/media-capabilities/#enumdef-transferfunction"
+      },
+      "AudioConfiguration": {
+        "fragment": "dictionary AudioConfiguration {\n  required DOMString contentType;\n  DOMString channels;\n  unsigned long long bitrate;\n  unsigned long samplerate;\n  boolean spatialRendering;\n};",
+        "type": "dictionary",
+        "name": "AudioConfiguration",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "contentType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-audioconfiguration-contenttype"
+          },
+          {
+            "type": "field",
+            "name": "channels",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-audioconfiguration-channels"
+          },
+          {
+            "type": "field",
+            "name": "bitrate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-audioconfiguration-bitrate"
+          },
+          {
+            "type": "field",
+            "name": "samplerate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-audioconfiguration-samplerate"
+          },
+          {
+            "type": "field",
+            "name": "spatialRendering",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-audioconfiguration-spatialrendering"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/media-capabilities/#dictdef-audioconfiguration"
+      },
+      "MediaCapabilitiesKeySystemConfiguration": {
+        "fragment": "dictionary MediaCapabilitiesKeySystemConfiguration {\n  required DOMString keySystem;\n  DOMString initDataType = \"\";\n  MediaKeysRequirement distinctiveIdentifier = \"optional\";\n  MediaKeysRequirement persistentState = \"optional\";\n  sequence<DOMString> sessionTypes;\n  KeySystemTrackConfiguration audio;\n  KeySystemTrackConfiguration video;\n};",
+        "type": "dictionary",
+        "name": "MediaCapabilitiesKeySystemConfiguration",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "keySystem",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilitieskeysystemconfiguration-keysystem"
+          },
+          {
+            "type": "field",
+            "name": "initDataType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilitieskeysystemconfiguration-initdatatype"
+          },
+          {
+            "type": "field",
+            "name": "distinctiveIdentifier",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaKeysRequirement"
+            },
+            "default": {
+              "type": "string",
+              "value": "optional"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilitieskeysystemconfiguration-distinctiveidentifier"
+          },
+          {
+            "type": "field",
+            "name": "persistentState",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaKeysRequirement"
+            },
+            "default": {
+              "type": "string",
+              "value": "optional"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilitieskeysystemconfiguration-persistentstate"
+          },
+          {
+            "type": "field",
+            "name": "sessionTypes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilitieskeysystemconfiguration-sessiontypes"
+          },
+          {
+            "type": "field",
+            "name": "audio",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "KeySystemTrackConfiguration"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilitieskeysystemconfiguration-audio"
+          },
+          {
+            "type": "field",
+            "name": "video",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "KeySystemTrackConfiguration"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilitieskeysystemconfiguration-video"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/media-capabilities/#dictdef-mediacapabilitieskeysystemconfiguration"
+      },
+      "KeySystemTrackConfiguration": {
+        "fragment": "dictionary KeySystemTrackConfiguration {\n  DOMString robustness = \"\";\n  DOMString? encryptionScheme = null;\n};",
+        "type": "dictionary",
+        "name": "KeySystemTrackConfiguration",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "robustness",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-keysystemtrackconfiguration-robustness"
+          },
+          {
+            "type": "field",
+            "name": "encryptionScheme",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/media-capabilities/#dom-keysystemtrackconfiguration-encryptionscheme"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/media-capabilities/#dictdef-keysystemtrackconfiguration"
+      },
+      "MediaCapabilitiesInfo": {
+        "fragment": "dictionary MediaCapabilitiesInfo {\n  required boolean supported;\n  required boolean smooth;\n  required boolean powerEfficient;\n};",
+        "type": "dictionary",
+        "name": "MediaCapabilitiesInfo",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "supported",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilitiesinfo-supported"
+          },
+          {
+            "type": "field",
+            "name": "smooth",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilitiesinfo-smooth"
+          },
+          {
+            "type": "field",
+            "name": "powerEfficient",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilitiesinfo-powerefficient"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/media-capabilities/#dictdef-mediacapabilitiesinfo"
+      },
+      "MediaCapabilitiesDecodingInfo": {
+        "fragment": "dictionary MediaCapabilitiesDecodingInfo : MediaCapabilitiesInfo {\n  required MediaKeySystemAccess? keySystemAccess;\n  required MediaDecodingConfiguration configuration;\n};",
+        "type": "dictionary",
+        "name": "MediaCapabilitiesDecodingInfo",
+        "inheritance": "MediaCapabilitiesInfo",
+        "members": [
+          {
+            "type": "field",
+            "name": "keySystemAccess",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "MediaKeySystemAccess"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilitiesdecodinginfo-keysystemaccess"
+          },
+          {
+            "type": "field",
+            "name": "configuration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaDecodingConfiguration"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilitiesdecodinginfo-configuration"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/media-capabilities/#dictdef-mediacapabilitiesdecodinginfo"
+      },
+      "MediaCapabilitiesEncodingInfo": {
+        "fragment": "dictionary MediaCapabilitiesEncodingInfo : MediaCapabilitiesInfo {\n  required MediaEncodingConfiguration configuration;\n};",
+        "type": "dictionary",
+        "name": "MediaCapabilitiesEncodingInfo",
+        "inheritance": "MediaCapabilitiesInfo",
+        "members": [
+          {
+            "type": "field",
+            "name": "configuration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaEncodingConfiguration"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilitiesencodinginfo-configuration"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/media-capabilities/#dictdef-mediacapabilitiesencodinginfo"
+      },
+      "MediaCapabilities": {
+        "fragment": "[Exposed=(Window, Worker)]\ninterface MediaCapabilities {\n  [NewObject] Promise<MediaCapabilitiesDecodingInfo> decodingInfo(\n      MediaDecodingConfiguration configuration);\n  [NewObject] Promise<MediaCapabilitiesEncodingInfo> encodingInfo(\n      MediaEncodingConfiguration configuration);\n};",
+        "type": "interface",
+        "name": "MediaCapabilities",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "decodingInfo",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaCapabilitiesDecodingInfo"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "configuration",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaDecodingConfiguration"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilities-decodinginfo"
+          },
+          {
+            "type": "operation",
+            "name": "encodingInfo",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaCapabilitiesEncodingInfo"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "configuration",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaEncodingConfiguration"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/media-capabilities/#dom-mediacapabilities-encodinginfo"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/media-capabilities/#mediacapabilities"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface Navigator {\n  [SameObject] readonly attribute MediaCapabilities mediaCapabilities;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "mediaCapabilities",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaCapabilities"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/media-capabilities/#dom-navigator-mediacapabilities"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "WorkerNavigator": [
+        {
+          "fragment": "[Exposed=Worker]\npartial interface WorkerNavigator {\n  [SameObject] readonly attribute MediaCapabilities mediaCapabilities;\n};",
+          "type": "interface",
+          "name": "WorkerNavigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "mediaCapabilities",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaCapabilities"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/media-capabilities/#dom-workernavigator-mediacapabilities"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Worker"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Navigator",
+        "MediaCapabilities"
+      ],
+      "Worker": [
+        "WorkerNavigator",
+        "MediaCapabilities"
+      ]
+    },
+    "dependencies": {
+      "MediaConfiguration": [
+        "VideoConfiguration",
+        "AudioConfiguration"
+      ],
+      "MediaDecodingConfiguration": [
+        "MediaConfiguration",
+        "MediaDecodingType",
+        "MediaCapabilitiesKeySystemConfiguration"
+      ],
+      "MediaEncodingConfiguration": [
+        "MediaConfiguration",
+        "MediaEncodingType"
+      ],
+      "VideoConfiguration": [
+        "HdrMetadataType",
+        "ColorGamut",
+        "TransferFunction"
+      ],
+      "AudioConfiguration": [],
+      "MediaCapabilitiesKeySystemConfiguration": [
+        "MediaKeysRequirement",
+        "KeySystemTrackConfiguration"
+      ],
+      "KeySystemTrackConfiguration": [],
+      "MediaCapabilitiesInfo": [],
+      "MediaCapabilitiesDecodingInfo": [
+        "MediaCapabilitiesInfo",
+        "MediaKeySystemAccess",
+        "MediaDecodingConfiguration"
+      ],
+      "MediaCapabilitiesEncodingInfo": [
+        "MediaCapabilitiesInfo",
+        "MediaEncodingConfiguration"
+      ],
+      "Navigator": [
+        "MediaCapabilities"
+      ],
+      "WorkerNavigator": [
+        "MediaCapabilities"
+      ],
+      "MediaCapabilities": [
+        "MediaCapabilitiesDecodingInfo",
+        "MediaDecodingConfiguration",
+        "MediaCapabilitiesEncodingInfo",
+        "MediaEncodingConfiguration"
+      ]
+    },
+    "externalDependencies": [
+      "MediaKeysRequirement",
+      "MediaKeySystemAccess",
+      "Navigator",
+      "WorkerNavigator"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

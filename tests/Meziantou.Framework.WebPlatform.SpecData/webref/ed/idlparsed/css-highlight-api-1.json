@@ -1,0 +1,428 @@
+{
+  "spec": {
+    "title": "CSS Custom Highlight API Module Level 1",
+    "url": "https://drafts.csswg.org/css-highlight-api-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "Highlight"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "HighlightRegistry"
+        ]
+      }
+    },
+    "idlNames": {
+      "HighlightType": {
+        "fragment": "enum HighlightType {\n  \"highlight\",\n  \"spelling-error\",\n  \"grammar-error\"\n};",
+        "type": "enum",
+        "name": "HighlightType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "highlight",
+            "href": "https://drafts.csswg.org/css-highlight-api-1/#dom-highlighttype-highlight"
+          },
+          {
+            "type": "enum-value",
+            "value": "spelling-error",
+            "href": "https://drafts.csswg.org/css-highlight-api-1/#dom-highlighttype-spelling-error"
+          },
+          {
+            "type": "enum-value",
+            "value": "grammar-error",
+            "href": "https://drafts.csswg.org/css-highlight-api-1/#dom-highlighttype-grammar-error"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/css-highlight-api-1/#enumdef-highlighttype"
+      },
+      "Highlight": {
+        "fragment": "[Exposed=Window]\ninterface Highlight {\n  constructor(AbstractRange... initialRanges);\n  setlike<AbstractRange>;\n  attribute long priority;\n  attribute HighlightType type;\n};",
+        "type": "interface",
+        "name": "Highlight",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "initialRanges",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AbstractRange"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": true
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/css-highlight-api-1/#dom-highlight-highlight"
+          },
+          {
+            "type": "setlike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "AbstractRange"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          },
+          {
+            "type": "attribute",
+            "name": "priority",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-highlight-api-1/#dom-highlight-priority"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HighlightType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-highlight-api-1/#dom-highlight-type"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-highlight-api-1/#highlight"
+      },
+      "HighlightRegistry": {
+        "fragment": "[Exposed=Window]\ninterface HighlightRegistry {\n  maplike<DOMString, Highlight>;\n};",
+        "type": "interface",
+        "name": "HighlightRegistry",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "maplike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Highlight"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-highlight-api-1/#highlightregistry"
+      },
+      "HighlightHitResult": {
+        "fragment": "dictionary HighlightHitResult {\n  Highlight highlight;\n  sequence<AbstractRange> ranges;\n};",
+        "type": "dictionary",
+        "name": "HighlightHitResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "highlight",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Highlight"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/css-highlight-api-1/#dom-highlighthitresult-highlight"
+          },
+          {
+            "type": "field",
+            "name": "ranges",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AbstractRange"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/css-highlight-api-1/#dom-highlighthitresult-ranges"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-highlight-api-1/#dictdef-highlighthitresult"
+      },
+      "HighlightsFromPointOptions": {
+        "fragment": "dictionary HighlightsFromPointOptions {\n  sequence<ShadowRoot> shadowRoots = [];\n};",
+        "type": "dictionary",
+        "name": "HighlightsFromPointOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "shadowRoots",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ShadowRoot"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-highlight-api-1/#dom-highlightsfrompointoptions-shadowroots"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-highlight-api-1/#dictdef-highlightsfrompointoptions"
+      }
+    },
+    "idlExtendedNames": {
+      "CSS": [
+        {
+          "fragment": "partial namespace CSS {\n  readonly attribute HighlightRegistry highlights;\n};",
+          "type": "namespace",
+          "name": "CSS",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "highlights",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "HighlightRegistry"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.csswg.org/css-highlight-api-1/#dom-css-highlights"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "HighlightRegistry": [
+        {
+          "fragment": "partial interface HighlightRegistry {\n  sequence<HighlightHitResult> highlightsFromPoint(float x, float y, optional HighlightsFromPointOptions options = {});\n};",
+          "type": "interface",
+          "name": "HighlightRegistry",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "highlightsFromPoint",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "HighlightHitResult"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "x",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "float"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "y",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "float"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "HighlightsFromPointOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://drafts.csswg.org/css-highlight-api-1/#dom-highlightregistry-highlightsfrompoint"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Highlight",
+        "HighlightRegistry"
+      ]
+    },
+    "dependencies": {
+      "Highlight": [
+        "AbstractRange",
+        "HighlightType"
+      ],
+      "CSS": [
+        "HighlightRegistry"
+      ],
+      "HighlightRegistry": [
+        "Highlight",
+        "HighlightHitResult",
+        "HighlightsFromPointOptions"
+      ],
+      "HighlightHitResult": [
+        "Highlight",
+        "AbstractRange"
+      ],
+      "HighlightsFromPointOptions": [
+        "ShadowRoot"
+      ]
+    },
+    "externalDependencies": [
+      "AbstractRange",
+      "CSS",
+      "ShadowRoot"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

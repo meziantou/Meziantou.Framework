@@ -1,0 +1,1263 @@
+{
+  "css/css-conditional/at-media-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-media-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-media-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-media-content-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-media-content-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-media-content-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-media-content-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-media-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-media-matches-001.html": {
+    "total": 2
+  },
+  "css/css-conditional/at-media-matches-002.html": {
+    "total": 2
+  },
+  "css/css-conditional/at-media-whitespace-optional-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-media-whitespace-optional-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-028.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-030.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-031.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-032.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-033.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-034.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-035.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-036.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-037.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-038.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-039.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-043.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-044.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-045.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-046.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-048.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-at-rule-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-at-rule-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-at-rule-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-at-rule-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-at-rule-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-at-rule-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-at-rule-serialization.html": {
+    "total": 26
+  },
+  "css/css-conditional/at-supports-content-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-content-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-content-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-content-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-font-format-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-font-tech-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-matches.html": {
+    "total": 2
+  },
+  "css/css-conditional/at-supports-named-feature-001.html": {
+    "total": 9
+  },
+  "css/css-conditional/at-supports-namespace-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-conditional/at-supports-namespace-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-selector-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-selector-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-selector-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-selector-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-selector-details-content-before.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-selector-details-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-selector-detecting-invalid-in-logical-combinations.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-selector-file-selector-button.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-selector-picker-icon.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-selector-picker.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-selector-placeholder.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/at-supports-selector-webkit-slider-thumb.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-conditional/at-supports-whitespace.html": {
+    "total": 16
+  },
+  "css/css-conditional/container-queries-basic.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/animation-container-size.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/animation-container-type-dynamic.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/animation-nested-animation.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/animation-nested-transition.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/aspect-ratio-feature-evaluation.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/at-container-parsing.html": {
+    "total": 117
+  },
+  "css/css-conditional/container-queries/at-container-serialization.html": {
+    "total": 19
+  },
+  "css/css-conditional/container-queries/at-container-style-parsing.html": {
+    "total": 41
+  },
+  "css/css-conditional/container-queries/at-container-style-serialization.html": {
+    "total": 17
+  },
+  "css/css-conditional/container-queries/auto-scrollbars.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/backdrop-invalidation.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/calc-evaluation.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/canvas-as-container-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/canvas-as-container-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/canvas-as-container-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/canvas-as-container-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/canvas-as-container-005.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/canvas-as-container-006.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/change-display-in-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/chrome-legacy-skip-recalc.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/column-spanner-in-container.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/comma-separated-invalidation.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/comma-separated-skip-invalid.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/conditional-container-status.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/container-computed.html": {
+    "total": 14
+  },
+  "css/css-conditional/container-queries/container-for-cue.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/container-for-shadow-dom.html": {
+    "total": 21
+  },
+  "css/css-conditional/container-queries/container-ident-function.html": {
+    "total": 4
+  },
+  "css/css-conditional/container-queries/container-inheritance.html": {
+    "total": 4
+  },
+  "css/css-conditional/container-queries/container-inner-at-rules.html": {
+    "total": 6
+  },
+  "css/css-conditional/container-queries/container-inside-multicol-with-table.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/container-longhand-animation-type.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/container-name-computed.html": {
+    "total": 10
+  },
+  "css/css-conditional/container-queries/container-name-invalidation.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/container-name-parsing.html": {
+    "total": 29
+  },
+  "css/css-conditional/container-queries/container-name-tree-scoped.html": {
+    "total": 4
+  },
+  "css/css-conditional/container-queries/container-nested.html": {
+    "total": 14
+  },
+  "css/css-conditional/container-queries/container-parsing.html": {
+    "total": 48
+  },
+  "css/css-conditional/container-queries/container-rule-cssom.html": {
+    "total": 8
+  },
+  "css/css-conditional/container-queries/container-selection-unknown-features.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/container-selection.html": {
+    "total": 21
+  },
+  "css/css-conditional/container-queries/container-size-invalidation-after-load.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/container-size-invalidation.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/container-size-nested-invalidation.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/container-size-rem-change.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/container-size-shadow-invalidation.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/container-type-computed.html": {
+    "total": 5
+  },
+  "css/css-conditional/container-queries/container-type-containment.html": {
+    "total": 4
+  },
+  "css/css-conditional/container-queries/container-type-invalidation.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/container-type-layout-invalidation.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/container-type-parsing.html": {
+    "total": 30
+  },
+  "css/css-conditional/container-queries/container-units-animation.html": {
+    "total": 24
+  },
+  "css/css-conditional/container-queries/container-units-auto.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/container-units-basic.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/container-units-computational-independence.html": {
+    "total": 6,
+    "failures": {
+      "Container relative unit cqb is not computationally independent": "FAIL",
+      "Container relative unit cqh is not computationally independent": "FAIL",
+      "Container relative unit cqi is not computationally independent": "FAIL",
+      "Container relative unit cqmax is not computationally independent": "FAIL",
+      "Container relative unit cqmin is not computationally independent": "FAIL",
+      "Container relative unit cqw is not computationally independent": "FAIL"
+    }
+  },
+  "css/css-conditional/container-queries/container-units-content-box.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/container-units-gradient-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/container-units-gradient.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/container-units-in-at-container-dynamic.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/container-units-in-at-container-fallback.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/container-units-in-at-container.html": {
+    "total": 18
+  },
+  "css/css-conditional/container-queries/container-units-ineligible-container.html": {
+    "total": 9
+  },
+  "css/css-conditional/container-queries/container-units-invalidation.html": {
+    "total": 5
+  },
+  "css/css-conditional/container-queries/container-units-media-queries.html": {
+    "total": 8
+  },
+  "css/css-conditional/container-queries/container-units-rule-cache.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/container-units-selection-pseudo.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/container-units-selection.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/container-units-shadow.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/container-units-sharing-via-rule-node.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/container-units-small-viewport-fallback.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/container-units-svglength.html": {
+    "total": 7,
+    "failures": {
+      "Can modify value with container-relative units": "FAIL",
+      "calc() with container-relative units can be resolved": "FAIL"
+    }
+  },
+  "css/css-conditional/container-queries/container-units-typed-om.html": {
+    "total": 24
+  },
+  "css/css-conditional/container-queries/counters-flex-circular.html": {
+    "total": 4
+  },
+  "css/css-conditional/container-queries/counters-in-container-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/counters-in-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/custom-layout-container-001.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/custom-property-style-queries.html": {
+    "total": 78
+  },
+  "css/css-conditional/container-queries/custom-property-style-query-change.html": {
+    "total": 6
+  },
+  "css/css-conditional/container-queries/custom-property-style-query-multiline-var.html": {
+    "total": 5
+  },
+  "css/css-conditional/container-queries/deep-nested-inline-size-containers.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/dialog-backdrop-create.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/dialog-backdrop-remove.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/display-contents-dynamic-style-queries.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/display-contents-style-query-descendant-restyle.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/display-contents.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/display-in-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/display-none.html": {
+    "total": 19
+  },
+  "css/css-conditional/container-queries/fieldset-legend-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/first-letter-outside-size-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/flex-basis-with-container-type.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/font-relative-calc-dynamic.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/font-relative-units-dynamic.html": {
+    "total": 12
+  },
+  "css/css-conditional/container-queries/font-relative-units.html": {
+    "total": 12
+  },
+  "css/css-conditional/container-queries/fragmented-container-001.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/get-animations.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/grid-container.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/grid-item-container.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/idlharness.html": {
+    "total": 28,
+    "failures": {
+      "CSSSupportsConditionRule interface object length": "FAIL",
+      "CSSSupportsConditionRule interface object name": "FAIL",
+      "CSSSupportsConditionRule interface: attribute name": "FAIL",
+      "CSSSupportsConditionRule interface: existence and properties of interface object": "FAIL",
+      "CSSSupportsConditionRule interface: existence and properties of interface prototype object": "FAIL",
+      "CSSSupportsConditionRule interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "CSSSupportsConditionRule interface: existence and properties of interface prototype object's @@unscopables property": "FAIL"
+    }
+  },
+  "css/css-conditional/container-queries/iframe-in-container-invalidation.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/iframe-invalidation.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/ineligible-containment.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/inheritance-from-container.html": {
+    "total": 4
+  },
+  "css/css-conditional/container-queries/inline-size-and-min-width.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/inline-size-bfc-floats.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/inline-size-containment-vertical-rl.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/inline-size-containment.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/inner-first-line-non-matching.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/layout-dependent-focus.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/multicol-container-001.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/multicol-inside-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/multiple-conditions-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/multiple-size-containers-comma-separated-queries.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/multiple-style-containers-comma-separated-queries.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/nested-query-containers.html": {
+    "total": 32
+  },
+  "css/css-conditional/container-queries/nested-size-style-container-invalidation.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/nested-style-size-container.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/never-match-container.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/no-layout-containment-abspos-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/no-layout-containment-abspos.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/no-layout-containment-baseline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/no-layout-containment-fixedpos-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/no-layout-containment-fixedpos.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/no-layout-containment-scroll.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/orthogonal-wm-container-query.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/percentage-padding-orthogonal.html": {
+    "total": 6
+  },
+  "css/css-conditional/container-queries/pseudo-elements-001.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/pseudo-elements-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/pseudo-elements-002b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/pseudo-elements-003.html": {
+    "total": 8
+  },
+  "css/css-conditional/container-queries/pseudo-elements-004.html": {
+    "total": 12
+  },
+  "css/css-conditional/container-queries/pseudo-elements-005.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/pseudo-elements-006.html": {
+    "total": 8
+  },
+  "css/css-conditional/container-queries/pseudo-elements-007.html": {
+    "total": 12
+  },
+  "css/css-conditional/container-queries/pseudo-elements-008.html": {
+    "total": 9
+  },
+  "css/css-conditional/container-queries/pseudo-elements-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/pseudo-elements-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/pseudo-elements-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/pseudo-elements-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/pseudo-elements-013.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/query-container-name-dynamic.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/query-container-name.html": {
+    "total": 5
+  },
+  "css/css-conditional/container-queries/query-content-box.html": {
+    "total": 6
+  },
+  "css/css-conditional/container-queries/query-evaluation-style.html": {
+    "total": 91
+  },
+  "css/css-conditional/container-queries/query-evaluation.html": {
+    "total": 38
+  },
+  "css/css-conditional/container-queries/query-style-color-powerless.html": {
+    "total": 9
+  },
+  "css/css-conditional/container-queries/query-style-color.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-conditional/container-queries/reattach-container-with-dirty-child.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/registered-color-style-queries.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/resize-while-content-visibility-hidden.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/scroll-state/at-container-scrollable-parsing.html": {
+    "total": 23
+  },
+  "css/css-conditional/container-queries/scroll-state/at-container-scrollable-serialization.html": {
+    "total": 5
+  },
+  "css/css-conditional/container-queries/scroll-state/at-container-scrolled-parsing.html": {
+    "total": 23
+  },
+  "css/css-conditional/container-queries/scroll-state/at-container-scrolled-serialization.html": {
+    "total": 5
+  },
+  "css/css-conditional/container-queries/scroll-state/at-container-snapped-parsing.html": {
+    "total": 16
+  },
+  "css/css-conditional/container-queries/scroll-state/at-container-snapped-serialization.html": {
+    "total": 5
+  },
+  "css/css-conditional/container-queries/scroll-state/at-container-stuck-parsing.html": {
+    "total": 20
+  },
+  "css/css-conditional/container-queries/scroll-state/at-container-stuck-serialization.html": {
+    "total": 5
+  },
+  "css/css-conditional/container-queries/scroll-state/container-type-scroll-state-computed.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/scroll-state/container-type-scroll-state-containment.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/container-type-scroll-state-parsing.html": {
+    "total": 6
+  },
+  "css/css-conditional/container-queries/scroll-state/multiple-scroll-state-containers-comma-separated-queries.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-initially-scrollable.html": {
+    "total": 8
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-initially-snapped.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-initially-stuck.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-query-with-var.html": {
+    "total": 6,
+    "failures": {
+      "Matching --match-registered": "FAIL",
+      "Matching --match-unknown-fallback": "FAIL",
+      "Matching --match-unregistered": "FAIL"
+    }
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-axis.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-body-001.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-body-002.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-change.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-container-type-change.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-layout-change-002.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-layout-change.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-pseudo.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-root.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-wm.html": {
+    "total": 12
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-arrow-key-scroll.html": {
+    "total": 1,
+    "failures": {
+      "Arrow key press scroll": "FAIL"
+    }
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-home-end-scroll.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-hv.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-keyboard-scroll-on-body.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-keyboard-scroll-on-root.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-mouse-drag-scroll.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-multiple-scrollers.html": {
+    "total": 1,
+    "failures": {
+      "User scroll caused programmatic relative scroll": "FAIL"
+    }
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-programmatic-absolute-scrolls.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-programmatic-relative-scrolls.html": {
+    "total": 7
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-pu-pd-scroll.html": {
+    "total": 2,
+    "failures": {
+      "PageUp key scroll": "FAIL"
+    }
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-scrollbar-button-clicks.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-scrollbar-track-clicks.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-spacebar-scroll.html": {
+    "total": 1,
+    "failures": {
+      "Spacebar scroll": "FAIL"
+    }
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-user-touch-scroll.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-wheel-scroll.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-wm.html": {
+    "total": 12
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-snapped-both.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-snapped-change.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-snapped-container-type-change.html": {
+    "total": 4
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-snapped-layout-change.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-snapped-none.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-snapped-pseudo.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-snapped-snap-changing.html": {
+    "total": 2,
+    "failures": {
+      "Initially snapped to #snapped1, scroll-state() styling #target1": "FAIL",
+      "scroll-state(snapped) matching #snapped2 while scrolling": "FAIL"
+    }
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-snapped-wm.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-stuck-container-type-change.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-stuck-layout-change.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-stuck-pseudo.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-stuck-snapshot-after-scroll.tentative.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-stuck-snapshot.tentative.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-stuck-writing-direction.html": {
+    "total": 6
+  },
+  "css/css-conditional/container-queries/scroll-state/scroll-state-target-query-change.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/scrollbar-container-units-block.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-conditional/container-queries/scrollbar-container-units-inline.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-conditional/container-queries/sibling-layout-dependency.html": {
+    "total": 4
+  },
+  "css/css-conditional/container-queries/size-container-auto-height.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/size-container-no-principal-box.html": {
+    "total": 6
+  },
+  "css/css-conditional/container-queries/size-container-popover-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/size-container-with-quotes.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/size-container-writing-mode-change.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/size-feature-evaluation.html": {
+    "total": 56
+  },
+  "css/css-conditional/container-queries/size-query-with-var.html": {
+    "total": 11
+  },
+  "css/css-conditional/container-queries/style-change-in-container.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/style-container-for-shadow-dom.html": {
+    "total": 12
+  },
+  "css/css-conditional/container-queries/style-container-invalidation-inheritance.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/style-negation-with-container-name.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/style-not-sharing-float.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/style-query-attr-change-svg.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/style-query-attr-tainted.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/style-query-change-with-ancestor-zoom.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/style-query-container-name-change.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/style-query-custom-attr-change-named-container.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/style-query-custom-attr-change.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/style-query-document-element.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/style-query-guaranteed-invalid.tentative.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/style-query-no-cycle.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/style-query-registered-custom-em-change.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/style-query-registered-custom-invalid.tentative.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/style-query-registered-custom-rem-change.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/style-query-registered-custom-removed-initial.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/style-query-registered-custom-root-relative-units-change.html": {
+    "total": 4
+  },
+  "css/css-conditional/container-queries/style-query-unset-on-root.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/style-query-with-container-name-custom-change.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/style-query-with-unknown-width.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/style-range-dynamic.html": {
+    "total": 7
+  },
+  "css/css-conditional/container-queries/style-range-var-in-function-change.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/svg-foreignobject-child-container.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/svg-foreignobject-no-size-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/svg-g-no-size-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/svg-root-size-container.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/table-inside-container-changing-display.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/top-layer-dialog-backdrop.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-queries/top-layer-dialog-container.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/top-layer-dialog.html": {
+    "total": 4
+  },
+  "css/css-conditional/container-queries/top-layer-nested-dialog.html": {
+    "total": 3
+  },
+  "css/css-conditional/container-queries/transition-scrollbars.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/transition-style-change-event-002.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/transition-style-change-event.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/unsupported-axis.html": {
+    "total": 16
+  },
+  "css/css-conditional/container-queries/var-evaluation.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/viewport-units-dynamic.html": {
+    "total": 1
+  },
+  "css/css-conditional/container-queries/viewport-units.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/whitespace-update-after-removal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/container-rule-malformed-prelude.html": {
+    "total": 1
+  },
+  "css/css-conditional/css-supports-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-006.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-007.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-008.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-009.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-010.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-012.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-013.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-014.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-015.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-016.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-017.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-018.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-019.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-020.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-021.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-022.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-023.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-024.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-025.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-026.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-029.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-030.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-031.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-032.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-033.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-034.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-035.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-036.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-037.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-038.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-039.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-040.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-041.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-042.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-043.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-044.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-045.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/css-supports-046.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-conditional/idlharness.html": {
+    "total": 45
+  },
+  "css/css-conditional/js/001.html": {
+    "total": 10
+  },
+  "css/css-conditional/js/CSS-supports-CSSStyleDeclaration.html": {
+    "total": 1495
+  },
+  "css/css-conditional/js/CSS-supports-L3.html": {
+    "total": 17
+  },
+  "css/css-conditional/js/CSS-supports-L4.html": {
+    "total": 18
+  },
+  "css/css-conditional/js/CSS-supports-L5.html": {
+    "total": 9
+  },
+  "css/css-conditional/js/CSS-supports-details-content-pseudo-parsing.html": {
+    "total": 8,
+    "failures": {
+      "selector() function accepts ::details-content followed by :lang()": "FAIL"
+    }
+  },
+  "css/css-conditional/js/CSS-supports-selector-detecting-invalid-in-logical-combinations.html": {
+    "total": 5
+  },
+  "css/css-conditional/js/CSS-supports-selector-picker.html": {
+    "total": 6
+  },
+  "css/css-conditional/js/conditional-CSSGroupingRule.html": {
+    "total": 34
+  },
+  "css/css-conditional/js/supports-at-rule.html": {
+    "total": 25
+  },
+  "css/css-conditional/js/supports-conditionText.html": {
+    "total": 15
+  },
+  "css/css-conditional/match-container-change-event.tentative.html": {
+    "total": 17,
+    "failures": {
+      "change event fires for a container change made inside a hidden subtree once revealed.": "FAIL",
+      "change event fires when a hidden ancestor container becomes rendered.": "FAIL"
+    }
+  },
+  "css/css-conditional/match-container.tentative.html": {
+    "total": 30
+  },
+  "css/css-conditional/supports-basic.html": {
+    "total": 1
+  }
+}

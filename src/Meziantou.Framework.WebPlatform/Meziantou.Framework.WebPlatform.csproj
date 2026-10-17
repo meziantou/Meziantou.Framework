@@ -1,0 +1,56 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.WebPlatform</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Every public member is documented (CS1591). The parameters do not have to be documented (CS1573). -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
+    <Description>Spec-compliant HTML, XML, SVG and CSS parser exposing the browser DOM API (WHATWG DOM, HTML, URL, Encoding, Selectors, CSSOM, DOM XPath).</Description>
+    <PackageTags>html;xml;svg;mathml;css;dom;parser;selectors;xpath;cssom;layout;web-platform</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="Meziantou.Framework.WebPlatform.Html" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Benchmarks" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Wpt" />
+    <!-- The fuzzing targets of the internal readers (e.g. the font reader) -->
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Fuzz" />
+    <!-- The script engine packages of this repository use the internal hosting primitives, and depend on the exact version of the core -->
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Jint" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Wasmtime" />
+    <!-- The rendering backend packages implement the internal rasterization services (the display list, the surfaces, the images) -->
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Scripting\WebIdl\Streams.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.Streams.js" />
+    <EmbeddedResource Include="Scripting\WebIdl\Fetch.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.Fetch.js" />
+    <EmbeddedResource Include="Scripting\WebIdl\WebCrypto.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.WebCrypto.js" />
+    <EmbeddedResource Include="Scripting\WebIdl\CacheStorage.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.CacheStorage.js" />
+    <!-- The bundled fonts (see Css/Fonts/Bundled/README.md); their licenses are distributed with the package -->
+    <EmbeddedResource Include="Css\Fonts\Bundled\*.ttf;Css\Fonts\Bundled\*.woff2" LogicalName="Meziantou.Framework.WebPlatform.Css.Fonts.Bundled.%(Filename)%(Extension)" />
+    <None Include="Css\Fonts\Bundled\*.txt;Css\Fonts\Bundled\README.md" Pack="true" PackagePath="fonts/%(Filename)%(Extension)" />
+    <!-- The shaping engine ports algorithms and data of HarfBuzz (Old MIT license): its notice is distributed with the package -->
+    <None Include="Css\Fonts\Shaping\HarfBuzz-COPYING.txt;Css\Fonts\Shaping\MicrosoftUSE-COPYING.txt" Pack="true" PackagePath="licenses/%(Filename)%(Extension)" />
+    <!-- The encoding detector is a port of chardetng (Apache-2.0 or MIT license): its notice is distributed with the package -->
+    <None Include="Encodings\chardetng-COPYRIGHT.txt" Pack="true" PackagePath="licenses/%(Filename)%(Extension)" />
+    <!-- The hyphenation dictionaries (see Unicode/Hyphenation/README.md); their licenses are distributed with the package -->
+    <EmbeddedResource Include="Unicode\Hyphenation\*.hyph" LogicalName="Meziantou.Framework.WebPlatform.Unicode.Hyphenation.%(Filename)%(Extension)" />
+    <None Include="Unicode\Hyphenation\LICENSES.txt;Unicode\Hyphenation\README.md" Pack="true" PackagePath="hyphenation/%(Filename)%(Extension)" />
+    <!-- The word lists of the Southeast Asian scripts and the model of the Japanese phrases (data of ICU, see Unicode/Segmentation/README.md); their licenses are distributed with the package -->
+    <EmbeddedResource Include="Unicode\Segmentation\*.dict" LogicalName="Meziantou.Framework.WebPlatform.Unicode.Segmentation.%(Filename)%(Extension)" />
+    <None Include="Unicode\Segmentation\LICENSES.txt;Unicode\Segmentation\README.md" Pack="true" PackagePath="segmentation/%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Adler32 is only available from 11.0 -->
+    <PackageReference Include="System.IO.Hashing" Version="11.0.0-rc.1.26425.128" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\tools\Meziantou.Framework.WebPlatform.Analyzers\Meziantou.Framework.WebPlatform.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+</Project>

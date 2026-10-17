@@ -1,0 +1,388 @@
+{
+  "spec": {
+    "title": "Private State Token API",
+    "url": "https://wicg.github.io/trust-token-api/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "RefreshPolicy": {
+        "fragment": "enum RefreshPolicy { \"none\", \"refresh\" };",
+        "type": "enum",
+        "name": "RefreshPolicy",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://wicg.github.io/trust-token-api/#dom-refreshpolicy-none"
+          },
+          {
+            "type": "enum-value",
+            "value": "refresh",
+            "href": "https://wicg.github.io/trust-token-api/#dom-refreshpolicy-refresh"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/trust-token-api/#enumdef-refreshpolicy"
+      },
+      "TokenVersion": {
+        "fragment": "enum TokenVersion { \"1\" };",
+        "type": "enum",
+        "name": "TokenVersion",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "1",
+            "href": "https://wicg.github.io/trust-token-api/#dom-tokenversion-1"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/trust-token-api/#enumdef-tokenversion"
+      },
+      "OperationType": {
+        "fragment": "enum OperationType { \"token-request\", \"send-redemption-record\", \"token-redemption\" };",
+        "type": "enum",
+        "name": "OperationType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "token-request",
+            "href": "https://wicg.github.io/trust-token-api/#dom-operationtype-token-request"
+          },
+          {
+            "type": "enum-value",
+            "value": "send-redemption-record",
+            "href": "https://wicg.github.io/trust-token-api/#dom-operationtype-send-redemption-record"
+          },
+          {
+            "type": "enum-value",
+            "value": "token-redemption",
+            "href": "https://wicg.github.io/trust-token-api/#dom-operationtype-token-redemption"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/trust-token-api/#enumdef-operationtype"
+      },
+      "PrivateToken": {
+        "fragment": "dictionary PrivateToken {\n  required TokenVersion version;\n  required OperationType operation;\n  RefreshPolicy refreshPolicy = \"none\";\n  sequence<USVString> issuers;\n};",
+        "type": "dictionary",
+        "name": "PrivateToken",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "version",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TokenVersion"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/trust-token-api/#dom-privatetoken-version"
+          },
+          {
+            "type": "field",
+            "name": "operation",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "OperationType"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/trust-token-api/#dom-privatetoken-operation"
+          },
+          {
+            "type": "field",
+            "name": "refreshPolicy",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RefreshPolicy"
+            },
+            "default": {
+              "type": "string",
+              "value": "none"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/trust-token-api/#dom-privatetoken-refreshpolicy"
+          },
+          {
+            "type": "field",
+            "name": "issuers",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/trust-token-api/#dom-privatetoken-issuers"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/trust-token-api/#dictdef-privatetoken"
+      }
+    },
+    "idlExtendedNames": {
+      "RequestInit": [
+        {
+          "fragment": "partial dictionary RequestInit {\n  PrivateToken privateToken;\n};",
+          "type": "dictionary",
+          "name": "RequestInit",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "privateToken",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "PrivateToken"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://wicg.github.io/trust-token-api/#dom-requestinit-privatetoken"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "HTMLIFrameElement": [
+        {
+          "fragment": "partial interface HTMLIFrameElement {\n  [SecureContext] attribute DOMString privateToken;\n};",
+          "type": "interface",
+          "name": "HTMLIFrameElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "privateToken",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/trust-token-api/#dom-htmliframeelement-privatetoken"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "XMLHttpRequest": [
+        {
+          "fragment": "partial interface XMLHttpRequest {\n  undefined setPrivateToken(PrivateToken privateToken);\n};",
+          "type": "interface",
+          "name": "XMLHttpRequest",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "setPrivateToken",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "privateToken",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "PrivateToken"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/trust-token-api/#dom-xmlhttprequest-setprivatetoken"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Document": [
+        {
+          "fragment": "partial interface Document {\n  Promise<boolean> hasPrivateToken(USVString issuer);\n  Promise<boolean> hasRedemptionRecord(USVString issuer);\n};",
+          "type": "interface",
+          "name": "Document",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "hasPrivateToken",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "issuer",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "USVString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/trust-token-api/#dom-document-hasprivatetoken"
+            },
+            {
+              "type": "operation",
+              "name": "hasRedemptionRecord",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "issuer",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "USVString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/trust-token-api/#dom-document-hasredemptionrecord"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "PrivateToken": [
+        "TokenVersion",
+        "OperationType",
+        "RefreshPolicy"
+      ],
+      "RequestInit": [
+        "PrivateToken"
+      ],
+      "HTMLIFrameElement": [],
+      "XMLHttpRequest": [
+        "PrivateToken"
+      ],
+      "Document": []
+    },
+    "externalDependencies": [
+      "RequestInit",
+      "HTMLIFrameElement",
+      "XMLHttpRequest",
+      "Document"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

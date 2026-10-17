@@ -1,0 +1,36 @@
+{
+  "spec": {
+    "title": "CSS Extensions Module Level 1",
+    "url": "https://drafts.csswg.org/css-extensions-1/"
+  },
+  "properties": [],
+  "atrules": [
+    {
+      "name": "@custom-selector",
+      "href": "https://drafts.csswg.org/css-extensions-1/#at-ruledef-custom-selector",
+      "descriptors": [],
+      "value": "@custom-selector <custom-selector> <selector-list> ;"
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<extension-name>",
+      "prose": "All extensions defined in this specification use a common syntax for defining their ”names”: the <extension-name> production. An <extension-name> is any identifier that starts with two dashes (U+002D HYPHEN-MINUS), like --foo, or even exotic names like -- or ------. The CSS language will never use identifiers of this form for any language-defined purpose, so it’s safe to use them for author-defined purposes without ever having to worry about colliding with CSS-defined names.",
+      "href": "https://drafts.csswg.org/css-extensions-1/#typedef-extension-name",
+      "type": "type"
+    },
+    {
+      "name": "<custom-selector>",
+      "href": "https://drafts.csswg.org/css-extensions-1/#typedef-custom-selector",
+      "type": "type",
+      "value": "<custom-arg>? : <extension-name> [ ( <custom-arg>+#? ) ]?"
+    },
+    {
+      "name": "<custom-arg>",
+      "href": "https://drafts.csswg.org/css-extensions-1/#typedef-custom-arg",
+      "type": "type",
+      "value": "'$' <ident-token>"
+    }
+  ]
+}

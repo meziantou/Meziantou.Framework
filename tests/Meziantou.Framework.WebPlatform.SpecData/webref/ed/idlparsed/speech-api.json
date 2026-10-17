@@ -1,0 +1,2668 @@
+{
+  "spec": {
+    "title": "Web Speech API",
+    "url": "https://webaudio.github.io/web-speech-api/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "SpeechRecognition",
+          "SpeechRecognitionErrorEvent",
+          "SpeechRecognitionEvent",
+          "SpeechGrammarList",
+          "SpeechRecognitionPhrase",
+          "SpeechSynthesisUtterance",
+          "SpeechSynthesisEvent",
+          "SpeechSynthesisErrorEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "SpeechRecognitionAlternative",
+          "SpeechRecognitionResult",
+          "SpeechRecognitionResultList",
+          "SpeechGrammar",
+          "SpeechSynthesis",
+          "SpeechSynthesisVoice"
+        ]
+      }
+    },
+    "idlNames": {
+      "SpeechRecognition": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface SpeechRecognition : EventTarget {\n    constructor();\n\n    // recognition parameters\n    attribute SpeechGrammarList grammars;\n    attribute DOMString lang;\n    attribute boolean continuous;\n    attribute boolean interimResults;\n    attribute boolean unspokenPunctuation;\n    attribute unsigned long maxAlternatives;\n    attribute boolean processLocally;\n    attribute ObservableArray<SpeechRecognitionPhrase> phrases;\n\n    // methods to drive the speech interaction\n    undefined start();\n    undefined start(MediaStreamTrack audioTrack);\n    undefined stop();\n    undefined abort();\n    static Promise<AvailabilityStatus> available(SpeechRecognitionOptions options);\n    static Promise<boolean> install(SpeechRecognitionOptions options);\n\n    // event methods\n    attribute EventHandler onaudiostart;\n    attribute EventHandler onsoundstart;\n    attribute EventHandler onspeechstart;\n    attribute EventHandler onspeechend;\n    attribute EventHandler onsoundend;\n    attribute EventHandler onaudioend;\n    attribute EventHandler onresult;\n    attribute EventHandler onnomatch;\n    attribute EventHandler onerror;\n    attribute EventHandler onstart;\n    attribute EventHandler onend;\n};",
+        "type": "interface",
+        "name": "SpeechRecognition",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-speechrecognition"
+          },
+          {
+            "type": "attribute",
+            "name": "grammars",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SpeechGrammarList"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-grammars"
+          },
+          {
+            "type": "attribute",
+            "name": "lang",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-lang"
+          },
+          {
+            "type": "attribute",
+            "name": "continuous",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-continuous"
+          },
+          {
+            "type": "attribute",
+            "name": "interimResults",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-interimresults"
+          },
+          {
+            "type": "attribute",
+            "name": "unspokenPunctuation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-unspokenpunctuation"
+          },
+          {
+            "type": "attribute",
+            "name": "maxAlternatives",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-maxalternatives"
+          },
+          {
+            "type": "attribute",
+            "name": "processLocally",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-processlocally"
+          },
+          {
+            "type": "attribute",
+            "name": "phrases",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "ObservableArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SpeechRecognitionPhrase"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-phrases"
+          },
+          {
+            "type": "operation",
+            "name": "start",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-start"
+          },
+          {
+            "type": "operation",
+            "name": "start",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "audioTrack",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaStreamTrack"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-start-audiotrack"
+          },
+          {
+            "type": "operation",
+            "name": "stop",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-stop"
+          },
+          {
+            "type": "operation",
+            "name": "abort",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-abort"
+          },
+          {
+            "type": "operation",
+            "name": "available",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AvailabilityStatus"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SpeechRecognitionOptions"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-available"
+          },
+          {
+            "type": "operation",
+            "name": "install",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SpeechRecognitionOptions"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-install"
+          },
+          {
+            "type": "attribute",
+            "name": "onaudiostart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-onaudiostart"
+          },
+          {
+            "type": "attribute",
+            "name": "onsoundstart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-onsoundstart"
+          },
+          {
+            "type": "attribute",
+            "name": "onspeechstart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-onspeechstart"
+          },
+          {
+            "type": "attribute",
+            "name": "onspeechend",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-onspeechend"
+          },
+          {
+            "type": "attribute",
+            "name": "onsoundend",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-onsoundend"
+          },
+          {
+            "type": "attribute",
+            "name": "onaudioend",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-onaudioend"
+          },
+          {
+            "type": "attribute",
+            "name": "onresult",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-onresult"
+          },
+          {
+            "type": "attribute",
+            "name": "onnomatch",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-onnomatch"
+          },
+          {
+            "type": "attribute",
+            "name": "onerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-onerror"
+          },
+          {
+            "type": "attribute",
+            "name": "onstart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-onstart"
+          },
+          {
+            "type": "attribute",
+            "name": "onend",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognition-onend"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#speechrecognition"
+      },
+      "SpeechRecognitionQuality": {
+        "fragment": "enum SpeechRecognitionQuality {\n  \"command\",\n  \"dictation\",\n  \"conversation\"\n};",
+        "type": "enum",
+        "name": "SpeechRecognitionQuality",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "command",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionquality-command"
+          },
+          {
+            "type": "enum-value",
+            "value": "dictation",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionquality-dictation"
+          },
+          {
+            "type": "enum-value",
+            "value": "conversation",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionquality-conversation"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webaudio.github.io/web-speech-api/#enumdef-speechrecognitionquality"
+      },
+      "SpeechRecognitionOptions": {
+        "fragment": "dictionary SpeechRecognitionOptions {\n  required sequence<DOMString> langs;\n  boolean processLocally = false;\n  SpeechRecognitionQuality quality = \"command\";\n};",
+        "type": "dictionary",
+        "name": "SpeechRecognitionOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "langs",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionoptions-langs"
+          },
+          {
+            "type": "field",
+            "name": "processLocally",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionoptions-processlocally"
+          },
+          {
+            "type": "field",
+            "name": "quality",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SpeechRecognitionQuality"
+            },
+            "default": {
+              "type": "string",
+              "value": "command"
+            },
+            "required": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionoptions-quality"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#dictdef-speechrecognitionoptions"
+      },
+      "SpeechRecognitionErrorCode": {
+        "fragment": "enum SpeechRecognitionErrorCode {\n    \"no-speech\",\n    \"aborted\",\n    \"audio-capture\",\n    \"network\",\n    \"not-allowed\",\n    \"service-not-allowed\",\n    \"language-not-supported\",\n    \"phrases-not-supported\"\n};",
+        "type": "enum",
+        "name": "SpeechRecognitionErrorCode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "no-speech",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionerrorcode-no-speech"
+          },
+          {
+            "type": "enum-value",
+            "value": "aborted",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionerrorcode-aborted"
+          },
+          {
+            "type": "enum-value",
+            "value": "audio-capture",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionerrorcode-audio-capture"
+          },
+          {
+            "type": "enum-value",
+            "value": "network",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionerrorcode-network"
+          },
+          {
+            "type": "enum-value",
+            "value": "not-allowed",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionerrorcode-not-allowed"
+          },
+          {
+            "type": "enum-value",
+            "value": "service-not-allowed",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionerrorcode-service-not-allowed"
+          },
+          {
+            "type": "enum-value",
+            "value": "language-not-supported",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionerrorcode-language-not-supported"
+          },
+          {
+            "type": "enum-value",
+            "value": "phrases-not-supported",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionerrorcode-phrases-not-supported"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webaudio.github.io/web-speech-api/#enumdef-speechrecognitionerrorcode"
+      },
+      "AvailabilityStatus": {
+        "fragment": "enum AvailabilityStatus {\n    \"unavailable\",\n    \"downloadable\",\n    \"downloading\",\n    \"available\"\n};",
+        "type": "enum",
+        "name": "AvailabilityStatus",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "unavailable",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-availabilitystatus-unavailable"
+          },
+          {
+            "type": "enum-value",
+            "value": "downloadable",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-availabilitystatus-downloadable"
+          },
+          {
+            "type": "enum-value",
+            "value": "downloading",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-availabilitystatus-downloading"
+          },
+          {
+            "type": "enum-value",
+            "value": "available",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-availabilitystatus-available"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webaudio.github.io/web-speech-api/#enumdef-availabilitystatus"
+      },
+      "SpeechRecognitionErrorEvent": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface SpeechRecognitionErrorEvent : Event {\n    constructor(DOMString type, SpeechRecognitionErrorEventInit eventInitDict);\n    readonly attribute SpeechRecognitionErrorCode error;\n    readonly attribute DOMString message;\n};",
+        "type": "interface",
+        "name": "SpeechRecognitionErrorEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SpeechRecognitionErrorEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionerrorevent-speechrecognitionerrorevent"
+          },
+          {
+            "type": "attribute",
+            "name": "error",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SpeechRecognitionErrorCode"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionerrorevent-error"
+          },
+          {
+            "type": "attribute",
+            "name": "message",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionerrorevent-message"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#speechrecognitionerrorevent"
+      },
+      "SpeechRecognitionErrorEventInit": {
+        "fragment": "dictionary SpeechRecognitionErrorEventInit : EventInit {\n    required SpeechRecognitionErrorCode error;\n    DOMString message = \"\";\n};",
+        "type": "dictionary",
+        "name": "SpeechRecognitionErrorEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "error",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SpeechRecognitionErrorCode"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionerroreventinit-error"
+          },
+          {
+            "type": "field",
+            "name": "message",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionerroreventinit-message"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#dictdef-speechrecognitionerroreventinit"
+      },
+      "SpeechRecognitionAlternative": {
+        "fragment": "// Item in N-best list\n[SecureContext, Exposed=Window]\ninterface SpeechRecognitionAlternative {\n    readonly attribute DOMString transcript;\n    readonly attribute float confidence;\n};",
+        "type": "interface",
+        "name": "SpeechRecognitionAlternative",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "transcript",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionalternative-transcript"
+          },
+          {
+            "type": "attribute",
+            "name": "confidence",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionalternative-confidence"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#speechrecognitionalternative"
+      },
+      "SpeechRecognitionResult": {
+        "fragment": "// A complete one-shot simple response\n[SecureContext, Exposed=Window]\ninterface SpeechRecognitionResult {\n    readonly attribute unsigned long length;\n    getter SpeechRecognitionAlternative? item(unsigned long index);\n    readonly attribute boolean isFinal;\n};",
+        "type": "interface",
+        "name": "SpeechRecognitionResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionresult-length"
+          },
+          {
+            "type": "operation",
+            "name": "item",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "SpeechRecognitionAlternative"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "getter"
+          },
+          {
+            "type": "attribute",
+            "name": "isFinal",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionresult-isfinal"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#speechrecognitionresult"
+      },
+      "SpeechRecognitionResultList": {
+        "fragment": "// A collection of responses (used in continuous mode)\n[SecureContext, Exposed=Window]\ninterface SpeechRecognitionResultList {\n    readonly attribute unsigned long length;\n    getter SpeechRecognitionResult? item(unsigned long index);\n};",
+        "type": "interface",
+        "name": "SpeechRecognitionResultList",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionresultlist-length"
+          },
+          {
+            "type": "operation",
+            "name": "item",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "SpeechRecognitionResult"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "getter"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#speechrecognitionresultlist"
+      },
+      "SpeechRecognitionEvent": {
+        "fragment": "// A full response, which could be interim or final, part of a continuous response or not\n[SecureContext, Exposed=Window]\ninterface SpeechRecognitionEvent : Event {\n    constructor(DOMString type, SpeechRecognitionEventInit eventInitDict);\n    readonly attribute unsigned long resultIndex;\n    readonly attribute SpeechRecognitionResultList results;\n};",
+        "type": "interface",
+        "name": "SpeechRecognitionEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SpeechRecognitionEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionevent-speechrecognitionevent"
+          },
+          {
+            "type": "attribute",
+            "name": "resultIndex",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionevent-resultindex"
+          },
+          {
+            "type": "attribute",
+            "name": "results",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SpeechRecognitionResultList"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionevent-results"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#speechrecognitionevent"
+      },
+      "SpeechRecognitionEventInit": {
+        "fragment": "dictionary SpeechRecognitionEventInit : EventInit {\n    unsigned long resultIndex = 0;\n    required SpeechRecognitionResultList results;\n};",
+        "type": "dictionary",
+        "name": "SpeechRecognitionEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "resultIndex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitioneventinit-resultindex"
+          },
+          {
+            "type": "field",
+            "name": "results",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SpeechRecognitionResultList"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitioneventinit-results"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#dictdef-speechrecognitioneventinit"
+      },
+      "SpeechGrammar": {
+        "fragment": "// The object representing a speech grammar. This interface has been deprecated and exists in this spec for the sole purpose of maintaining backwards compatibility.\n[Exposed=Window]\ninterface SpeechGrammar {\n    attribute DOMString src;\n    attribute float weight;\n};",
+        "type": "interface",
+        "name": "SpeechGrammar",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "src",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechgrammar-src"
+          },
+          {
+            "type": "attribute",
+            "name": "weight",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechgrammar-weight"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#speechgrammar"
+      },
+      "SpeechGrammarList": {
+        "fragment": "// The object representing a speech grammar collection. This interface has been deprecated and exists in this spec for the sole purpose of maintaining backwards compatibility.\n[Exposed=Window]\ninterface SpeechGrammarList {\n    constructor();\n    readonly attribute unsigned long length;\n    getter SpeechGrammar? item(unsigned long index);\n    undefined addFromUri(DOMString src,\n                    optional float weight = 1.0);\n    undefined addFromString(DOMString string,\n                    optional float weight = 1.0);\n};",
+        "type": "interface",
+        "name": "SpeechGrammarList",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechgrammarlist-speechgrammarlist"
+          },
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechgrammarlist-length"
+          },
+          {
+            "type": "operation",
+            "name": "item",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "SpeechGrammar"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "getter"
+          },
+          {
+            "type": "operation",
+            "name": "addFromUri",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "src",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "weight",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "1.0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechgrammarlist-addfromuri"
+          },
+          {
+            "type": "operation",
+            "name": "addFromString",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "string",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "weight",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "1.0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechgrammarlist-addfromstring"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#speechgrammarlist"
+      },
+      "SpeechRecognitionPhrase": {
+        "fragment": "// The object representing a phrase for contextual biasing.\n[SecureContext, Exposed=Window]\ninterface SpeechRecognitionPhrase {\n    constructor(DOMString phrase, optional float boost = 1.0);\n    readonly attribute DOMString phrase;\n    readonly attribute float boost;\n};",
+        "type": "interface",
+        "name": "SpeechRecognitionPhrase",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "phrase",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "boost",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "1.0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionphrase-speechrecognitionphrase"
+          },
+          {
+            "type": "attribute",
+            "name": "phrase",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionphrase-phrase"
+          },
+          {
+            "type": "attribute",
+            "name": "boost",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionphrase-boost"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#speechrecognitionphrase"
+      },
+      "SpeechSynthesis": {
+        "fragment": "[Exposed=Window]\ninterface SpeechSynthesis : EventTarget {\n    readonly attribute boolean pending;\n    readonly attribute boolean speaking;\n    readonly attribute boolean paused;\n\n    attribute EventHandler onvoiceschanged;\n\n    undefined speak(SpeechSynthesisUtterance utterance);\n    undefined cancel();\n    undefined pause();\n    undefined resume();\n    sequence<SpeechSynthesisVoice> getVoices();\n};",
+        "type": "interface",
+        "name": "SpeechSynthesis",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "pending",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesis-pending"
+          },
+          {
+            "type": "attribute",
+            "name": "speaking",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesis-speaking"
+          },
+          {
+            "type": "attribute",
+            "name": "paused",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesis-paused"
+          },
+          {
+            "type": "attribute",
+            "name": "onvoiceschanged",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesis-onvoiceschanged"
+          },
+          {
+            "type": "operation",
+            "name": "speak",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "utterance",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SpeechSynthesisUtterance"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesis-speak"
+          },
+          {
+            "type": "operation",
+            "name": "cancel",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesis-cancel"
+          },
+          {
+            "type": "operation",
+            "name": "pause",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesis-pause"
+          },
+          {
+            "type": "operation",
+            "name": "resume",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesis-resume"
+          },
+          {
+            "type": "operation",
+            "name": "getVoices",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SpeechSynthesisVoice"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesis-getvoices"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#speechsynthesis"
+      },
+      "SpeechSynthesisUtterance": {
+        "fragment": "[Exposed=Window]\ninterface SpeechSynthesisUtterance : EventTarget {\n    constructor(optional DOMString text);\n\n    attribute DOMString text;\n    attribute DOMString lang;\n    attribute SpeechSynthesisVoice? voice;\n    attribute float volume;\n    attribute float rate;\n    attribute float pitch;\n\n    attribute EventHandler onstart;\n    attribute EventHandler onend;\n    attribute EventHandler onerror;\n    attribute EventHandler onpause;\n    attribute EventHandler onresume;\n    attribute EventHandler onmark;\n    attribute EventHandler onboundary;\n};",
+        "type": "interface",
+        "name": "SpeechSynthesisUtterance",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "text",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisutterance-speechsynthesisutterance"
+          },
+          {
+            "type": "attribute",
+            "name": "text",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisutterance-text"
+          },
+          {
+            "type": "attribute",
+            "name": "lang",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisutterance-lang"
+          },
+          {
+            "type": "attribute",
+            "name": "voice",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "SpeechSynthesisVoice"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisutterance-voice"
+          },
+          {
+            "type": "attribute",
+            "name": "volume",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisutterance-volume"
+          },
+          {
+            "type": "attribute",
+            "name": "rate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisutterance-rate"
+          },
+          {
+            "type": "attribute",
+            "name": "pitch",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisutterance-pitch"
+          },
+          {
+            "type": "attribute",
+            "name": "onstart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisutterance-onstart"
+          },
+          {
+            "type": "attribute",
+            "name": "onend",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisutterance-onend"
+          },
+          {
+            "type": "attribute",
+            "name": "onerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisutterance-onerror"
+          },
+          {
+            "type": "attribute",
+            "name": "onpause",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisutterance-onpause"
+          },
+          {
+            "type": "attribute",
+            "name": "onresume",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisutterance-onresume"
+          },
+          {
+            "type": "attribute",
+            "name": "onmark",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisutterance-onmark"
+          },
+          {
+            "type": "attribute",
+            "name": "onboundary",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisutterance-onboundary"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#speechsynthesisutterance"
+      },
+      "SpeechSynthesisEvent": {
+        "fragment": "[Exposed=Window]\ninterface SpeechSynthesisEvent : Event {\n    constructor(DOMString type, SpeechSynthesisEventInit eventInitDict);\n    readonly attribute SpeechSynthesisUtterance utterance;\n    readonly attribute unsigned long charIndex;\n    readonly attribute unsigned long charLength;\n    readonly attribute float elapsedTime;\n    readonly attribute DOMString name;\n};",
+        "type": "interface",
+        "name": "SpeechSynthesisEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SpeechSynthesisEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisevent-speechsynthesisevent"
+          },
+          {
+            "type": "attribute",
+            "name": "utterance",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SpeechSynthesisUtterance"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisevent-utterance"
+          },
+          {
+            "type": "attribute",
+            "name": "charIndex",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisevent-charindex"
+          },
+          {
+            "type": "attribute",
+            "name": "charLength",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisevent-charlength"
+          },
+          {
+            "type": "attribute",
+            "name": "elapsedTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisevent-elapsedtime"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisevent-name"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#speechsynthesisevent"
+      },
+      "SpeechSynthesisEventInit": {
+        "fragment": "dictionary SpeechSynthesisEventInit : EventInit {\n    required SpeechSynthesisUtterance utterance;\n    unsigned long charIndex = 0;\n    unsigned long charLength = 0;\n    float elapsedTime = 0;\n    DOMString name = \"\";\n};",
+        "type": "dictionary",
+        "name": "SpeechSynthesisEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "utterance",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SpeechSynthesisUtterance"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiseventinit-utterance"
+          },
+          {
+            "type": "field",
+            "name": "charIndex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiseventinit-charindex"
+          },
+          {
+            "type": "field",
+            "name": "charLength",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiseventinit-charlength"
+          },
+          {
+            "type": "field",
+            "name": "elapsedTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiseventinit-elapsedtime"
+          },
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiseventinit-name"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#dictdef-speechsynthesiseventinit"
+      },
+      "SpeechSynthesisErrorCode": {
+        "fragment": "enum SpeechSynthesisErrorCode {\n    \"canceled\",\n    \"interrupted\",\n    \"audio-busy\",\n    \"audio-hardware\",\n    \"network\",\n    \"synthesis-unavailable\",\n    \"synthesis-failed\",\n    \"language-unavailable\",\n    \"voice-unavailable\",\n    \"text-too-long\",\n    \"invalid-argument\",\n    \"not-allowed\",\n};",
+        "type": "enum",
+        "name": "SpeechSynthesisErrorCode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "canceled",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserrorcode-canceled"
+          },
+          {
+            "type": "enum-value",
+            "value": "interrupted",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserrorcode-interrupted"
+          },
+          {
+            "type": "enum-value",
+            "value": "audio-busy",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserrorcode-audio-busy"
+          },
+          {
+            "type": "enum-value",
+            "value": "audio-hardware",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserrorcode-audio-hardware"
+          },
+          {
+            "type": "enum-value",
+            "value": "network",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserrorcode-network"
+          },
+          {
+            "type": "enum-value",
+            "value": "synthesis-unavailable",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserrorcode-synthesis-unavailable"
+          },
+          {
+            "type": "enum-value",
+            "value": "synthesis-failed",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserrorcode-synthesis-failed"
+          },
+          {
+            "type": "enum-value",
+            "value": "language-unavailable",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserrorcode-language-unavailable"
+          },
+          {
+            "type": "enum-value",
+            "value": "voice-unavailable",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserrorcode-voice-unavailable"
+          },
+          {
+            "type": "enum-value",
+            "value": "text-too-long",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserrorcode-text-too-long"
+          },
+          {
+            "type": "enum-value",
+            "value": "invalid-argument",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserrorcode-invalid-argument"
+          },
+          {
+            "type": "enum-value",
+            "value": "not-allowed",
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserrorcode-not-allowed"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webaudio.github.io/web-speech-api/#enumdef-speechsynthesiserrorcode"
+      },
+      "SpeechSynthesisErrorEvent": {
+        "fragment": "[Exposed=Window]\ninterface SpeechSynthesisErrorEvent : SpeechSynthesisEvent {\n    constructor(DOMString type, SpeechSynthesisErrorEventInit eventInitDict);\n    readonly attribute SpeechSynthesisErrorCode error;\n};",
+        "type": "interface",
+        "name": "SpeechSynthesisErrorEvent",
+        "inheritance": "SpeechSynthesisEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SpeechSynthesisErrorEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserrorevent-speechsynthesiserrorevent"
+          },
+          {
+            "type": "attribute",
+            "name": "error",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SpeechSynthesisErrorCode"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserrorevent-error"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#speechsynthesiserrorevent"
+      },
+      "SpeechSynthesisErrorEventInit": {
+        "fragment": "dictionary SpeechSynthesisErrorEventInit : SpeechSynthesisEventInit {\n    required SpeechSynthesisErrorCode error;\n};",
+        "type": "dictionary",
+        "name": "SpeechSynthesisErrorEventInit",
+        "inheritance": "SpeechSynthesisEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "error",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SpeechSynthesisErrorCode"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesiserroreventinit-error"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#dictdef-speechsynthesiserroreventinit"
+      },
+      "SpeechSynthesisVoice": {
+        "fragment": "[Exposed=Window]\ninterface SpeechSynthesisVoice {\n    readonly attribute DOMString voiceURI;\n    readonly attribute DOMString name;\n    readonly attribute DOMString lang;\n    readonly attribute boolean localService;\n    readonly attribute boolean default;\n};",
+        "type": "interface",
+        "name": "SpeechSynthesisVoice",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "voiceURI",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisvoice-voiceuri"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisvoice-name"
+          },
+          {
+            "type": "attribute",
+            "name": "lang",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisvoice-lang"
+          },
+          {
+            "type": "attribute",
+            "name": "localService",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisvoice-localservice"
+          },
+          {
+            "type": "attribute",
+            "name": "default",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechsynthesisvoice-default"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-speech-api/#speechsynthesisvoice"
+      }
+    },
+    "idlExtendedNames": {
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n    [SameObject] readonly attribute SpeechSynthesis speechSynthesis;\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "speechSynthesis",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "SpeechSynthesis"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://webaudio.github.io/web-speech-api/#dom-window-speechsynthesis"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "SpeechRecognition",
+        "SpeechRecognitionErrorEvent",
+        "SpeechRecognitionAlternative",
+        "SpeechRecognitionResult",
+        "SpeechRecognitionResultList",
+        "SpeechRecognitionEvent",
+        "SpeechGrammar",
+        "SpeechGrammarList",
+        "SpeechRecognitionPhrase",
+        "SpeechSynthesis",
+        "SpeechSynthesisUtterance",
+        "SpeechSynthesisEvent",
+        "SpeechSynthesisErrorEvent",
+        "SpeechSynthesisVoice"
+      ]
+    },
+    "dependencies": {
+      "SpeechRecognition": [
+        "EventTarget",
+        "SpeechGrammarList",
+        "SpeechRecognitionPhrase",
+        "MediaStreamTrack",
+        "AvailabilityStatus",
+        "SpeechRecognitionOptions",
+        "EventHandler"
+      ],
+      "SpeechRecognitionOptions": [
+        "SpeechRecognitionQuality"
+      ],
+      "SpeechRecognitionErrorEvent": [
+        "Event",
+        "SpeechRecognitionErrorEventInit",
+        "SpeechRecognitionErrorCode"
+      ],
+      "SpeechRecognitionErrorEventInit": [
+        "EventInit",
+        "SpeechRecognitionErrorCode"
+      ],
+      "SpeechRecognitionAlternative": [],
+      "SpeechRecognitionResult": [
+        "SpeechRecognitionAlternative"
+      ],
+      "SpeechRecognitionResultList": [
+        "SpeechRecognitionResult"
+      ],
+      "SpeechRecognitionEvent": [
+        "Event",
+        "SpeechRecognitionEventInit",
+        "SpeechRecognitionResultList"
+      ],
+      "SpeechRecognitionEventInit": [
+        "EventInit",
+        "SpeechRecognitionResultList"
+      ],
+      "SpeechGrammar": [],
+      "SpeechGrammarList": [
+        "SpeechGrammar"
+      ],
+      "SpeechRecognitionPhrase": [],
+      "SpeechSynthesis": [
+        "EventTarget",
+        "EventHandler",
+        "SpeechSynthesisUtterance",
+        "SpeechSynthesisVoice"
+      ],
+      "Window": [
+        "SpeechSynthesis"
+      ],
+      "SpeechSynthesisUtterance": [
+        "EventTarget",
+        "SpeechSynthesisVoice",
+        "EventHandler"
+      ],
+      "SpeechSynthesisEvent": [
+        "Event",
+        "SpeechSynthesisEventInit",
+        "SpeechSynthesisUtterance"
+      ],
+      "SpeechSynthesisEventInit": [
+        "EventInit",
+        "SpeechSynthesisUtterance"
+      ],
+      "SpeechSynthesisErrorEvent": [
+        "SpeechSynthesisEvent",
+        "SpeechSynthesisErrorEventInit",
+        "SpeechSynthesisErrorCode"
+      ],
+      "SpeechSynthesisErrorEventInit": [
+        "SpeechSynthesisEventInit",
+        "SpeechSynthesisErrorCode"
+      ],
+      "SpeechSynthesisVoice": []
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "MediaStreamTrack",
+      "EventHandler",
+      "Event",
+      "EventInit",
+      "Window"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

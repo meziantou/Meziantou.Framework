@@ -1,0 +1,49 @@
+{
+  "spec": {
+    "title": "CSS Positioned Layout Module Level 4",
+    "url": "https://drafts.csswg.org/css-position-4/"
+  },
+  "properties": [
+    {
+      "name": "overlay",
+      "href": "https://drafts.csswg.org/css-position-4/#propdef-overlay",
+      "value": "none | auto",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "see prose",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The element isn’t rendered in the top layer.",
+          "href": "https://drafts.csswg.org/css-position-4/#valdef-overlay-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "auto",
+          "prose": "The element is rendered in the top layer if it is in the top layer. Rather than generating boxes as part of its normal position in the document, it generates boxes as a sibling of the root element, rendered \"above\" it.",
+          "href": "https://drafts.csswg.org/css-position-4/#valdef-overlay-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "overlay"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [
+    {
+      "name": "::backdrop",
+      "prose": "Each element rendered in the top layer has a ::backdrop pseudo-element, for which it is the originating element.",
+      "href": "https://drafts.csswg.org/css-position-4/#selectordef-backdrop",
+      "value": "::backdrop"
+    }
+  ],
+  "values": []
+}

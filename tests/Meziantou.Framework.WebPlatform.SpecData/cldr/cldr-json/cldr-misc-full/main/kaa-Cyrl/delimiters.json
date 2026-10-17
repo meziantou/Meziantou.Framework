@@ -1,0 +1,16 @@
+{
+  "main": {
+    "kaa-Cyrl": {
+      "identity": {
+        "language": "kaa",
+        "script": "Cyrl"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "gl": {
+      "identity": {
+        "language": "gl"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-PM": {
+      "identity": {
+        "language": "fr",
+        "territory": "PM"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

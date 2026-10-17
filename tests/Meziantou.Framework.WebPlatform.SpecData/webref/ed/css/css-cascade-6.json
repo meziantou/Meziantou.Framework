@@ -1,0 +1,58 @@
+{
+  "spec": {
+    "title": "CSS Cascading and Inheritance Module Level 6",
+    "url": "https://drafts.csswg.org/css-cascade-6/"
+  },
+  "properties": [],
+  "atrules": [
+    {
+      "name": "@import",
+      "prose": "The @import rule allows users to import style rules from other style sheets. If an @import rule refers to a valid stylesheet, user agents must treat the contents of the stylesheet as if they were written in place of the @import rule, with two exceptions:",
+      "href": "https://drafts.csswg.org/css-cascade-6/#at-ruledef-import",
+      "descriptors": [],
+      "value": "@import [ <url> | <string> ] [[ layer | layer( <layer-name> ) ] || [ scope | scope( <scope-start> | <scope-boundaries> ) ] || <supports-import-condition>]? <media-import-condition> ;"
+    },
+    {
+      "name": "@scope",
+      "prose": "Scoped styles are described in CSS using the @scope block at-rule, which declares a scoping root and optional scoping limits associated with a set of style rules.",
+      "href": "https://drafts.csswg.org/css-cascade-6/#at-ruledef-scope",
+      "descriptors": [],
+      "value": "@scope <scope-boundaries>? { <block-contents> }"
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<supports-import-condition>",
+      "href": "https://drafts.csswg.org/css-cascade-6/#typedef-supports-import-condition",
+      "type": "type",
+      "value": "supports( [ <supports-condition> | <declaration> ] )"
+    },
+    {
+      "name": "<media-import-condition>",
+      "href": "https://drafts.csswg.org/css-cascade-6/#typedef-media-import-condition",
+      "type": "type",
+      "value": "<media-query-list>"
+    },
+    {
+      "name": "<scope-boundaries>",
+      "href": "https://drafts.csswg.org/css-cascade-6/#typedef-scope-boundaries",
+      "type": "type",
+      "value": "[ [ ( <scope-start> ) ]? [ to ( <scope-end> ) ]? ]!"
+    },
+    {
+      "name": "<scope-start>",
+      "prose": "<scope-start> is a <selector-list> selector used to identify the scoping root(s).",
+      "href": "https://drafts.csswg.org/css-cascade-6/#typedef-scope-start",
+      "type": "type",
+      "value": "<selector-list>"
+    },
+    {
+      "name": "<scope-end>",
+      "prose": "<scope-end> is a <selector-list> selector used to identify any scoping limits.",
+      "href": "https://drafts.csswg.org/css-cascade-6/#typedef-scope-end",
+      "type": "type",
+      "value": "<selector-list>"
+    }
+  ]
+}

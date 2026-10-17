@@ -1,0 +1,15 @@
+{
+  "main": {
+    "osa": {
+      "identity": {
+        "language": "osa"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

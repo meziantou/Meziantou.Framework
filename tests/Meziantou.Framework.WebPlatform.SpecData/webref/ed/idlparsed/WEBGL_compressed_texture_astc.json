@@ -1,0 +1,569 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_compressed_texture_astc Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_compressed_texture_astc/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_compressed_texture_astc"
+        ],
+        "Worker": [
+          "WEBGL_compressed_texture_astc"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_compressed_texture_astc": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_compressed_texture_astc {\n    /* Compressed Texture Format */\n    const GLenum COMPRESSED_RGBA_ASTC_4x4_KHR = 0x93B0;\n    const GLenum COMPRESSED_RGBA_ASTC_5x4_KHR = 0x93B1;\n    const GLenum COMPRESSED_RGBA_ASTC_5x5_KHR = 0x93B2;\n    const GLenum COMPRESSED_RGBA_ASTC_6x5_KHR = 0x93B3;\n    const GLenum COMPRESSED_RGBA_ASTC_6x6_KHR = 0x93B4;\n    const GLenum COMPRESSED_RGBA_ASTC_8x5_KHR = 0x93B5;\n    const GLenum COMPRESSED_RGBA_ASTC_8x6_KHR = 0x93B6;\n    const GLenum COMPRESSED_RGBA_ASTC_8x8_KHR = 0x93B7;\n    const GLenum COMPRESSED_RGBA_ASTC_10x5_KHR = 0x93B8;\n    const GLenum COMPRESSED_RGBA_ASTC_10x6_KHR = 0x93B9;\n    const GLenum COMPRESSED_RGBA_ASTC_10x8_KHR = 0x93BA;\n    const GLenum COMPRESSED_RGBA_ASTC_10x10_KHR = 0x93BB;\n    const GLenum COMPRESSED_RGBA_ASTC_12x10_KHR = 0x93BC;\n    const GLenum COMPRESSED_RGBA_ASTC_12x12_KHR = 0x93BD;\n\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR = 0x93D0;\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR = 0x93D1;\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR = 0x93D2;\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR = 0x93D3;\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR = 0x93D4;\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR = 0x93D5;\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR = 0x93D6;\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR = 0x93D7;\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR = 0x93D8;\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR = 0x93D9;\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR = 0x93DA;\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR = 0x93DB;\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR = 0x93DC;\n    const GLenum COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR = 0x93DD;\n\n    // Profile query support.\n    sequence<DOMString> getSupportedProfiles();\n};",
+        "type": "interface",
+        "name": "WEBGL_compressed_texture_astc",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_ASTC_4x4_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93B0"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_ASTC_5x4_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93B1"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_ASTC_5x5_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93B2"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_ASTC_6x5_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93B3"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_ASTC_6x6_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93B4"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_ASTC_8x5_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93B5"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_ASTC_8x6_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93B6"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_ASTC_8x8_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93B7"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_ASTC_10x5_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93B8"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_ASTC_10x6_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93B9"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_ASTC_10x8_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93BA"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_ASTC_10x10_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93BB"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_ASTC_12x10_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93BC"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_RGBA_ASTC_12x12_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93BD"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93D0"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93D1"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93D2"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93D3"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93D4"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93D5"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93D6"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93D7"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93D8"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93D9"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93DA"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93DB"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93DC"
+            }
+          },
+          {
+            "type": "const",
+            "name": "COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x93DD"
+            }
+          },
+          {
+            "type": "operation",
+            "name": "getSupportedProfiles",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": ""
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_compressed_texture_astc"
+      ],
+      "Worker": [
+        "WEBGL_compressed_texture_astc"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_compressed_texture_astc": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

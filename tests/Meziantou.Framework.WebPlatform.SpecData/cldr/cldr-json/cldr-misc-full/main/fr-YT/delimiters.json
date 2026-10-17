@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-YT": {
+      "identity": {
+        "language": "fr",
+        "territory": "YT"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

@@ -1,0 +1,1647 @@
+{
+  "css/css-values/absolute-length-units-001.html": {
+    "total": 7
+  },
+  "css/css-values/acos-asin-atan-atan2-computed.html": {
+    "total": 52
+  },
+  "css/css-values/acos-asin-atan-atan2-invalid.html": {
+    "total": 63
+  },
+  "css/css-values/acos-asin-atan-atan2-serialize.html": {
+    "total": 62
+  },
+  "css/css-values/angle-units-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/angle-units-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/angle-units-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/angle-units-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/angle-units-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/animations/calc-interpolation.html": {
+    "total": 140,
+    "failures": {
+      "CSS Animations: property <left> from [0px] to [calc(infinity * 1px)] at (-0.25) should be [-3.4028234663852886e+38px]": "FAIL",
+      "CSS Animations: property <left> from [0px] to [calc(infinity * 1px)] at (0.25) should be [3.4028234663852886e+38px]": "FAIL",
+      "CSS Animations: property <left> from [0px] to [calc(infinity * 1px)] at (0.5) should be [3.4028234663852886e+38px]": "FAIL",
+      "CSS Animations: property <left> from [0px] to [calc(infinity * 1px)] at (0.75) should be [3.4028234663852886e+38px]": "FAIL",
+      "CSS Animations: property <left> from [0px] to [calc(infinity * 1px)] at (1.25) should be [3.4028234663852886e+38px]": "FAIL",
+      "Web Animations: property <left> from [0px] to [calc(infinity * 1px)] at (-0.25) should be [-3.4028234663852886e+38px]": "FAIL",
+      "Web Animations: property <left> from [0px] to [calc(infinity * 1px)] at (0.25) should be [3.4028234663852886e+38px]": "FAIL",
+      "Web Animations: property <left> from [0px] to [calc(infinity * 1px)] at (0.5) should be [3.4028234663852886e+38px]": "FAIL",
+      "Web Animations: property <left> from [0px] to [calc(infinity * 1px)] at (0.75) should be [3.4028234663852886e+38px]": "FAIL",
+      "Web Animations: property <left> from [0px] to [calc(infinity * 1px)] at (1.25) should be [3.4028234663852886e+38px]": "FAIL"
+    }
+  },
+  "css/css-values/animations/line-height-lh-transition.html": {
+    "total": 1
+  },
+  "css/css-values/attr-IACVT.html": {
+    "total": 1
+  },
+  "css/css-values/attr-all-types.html": {
+    "total": 178
+  },
+  "css/css-values/attr-argument-grammar.html": {
+    "total": 15
+  },
+  "css/css-values/attr-color-invalid-cast.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-color-valid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-container-style-query.html": {
+    "total": 1
+  },
+  "css/css-values/attr-css-wide-keywords.html": {
+    "total": 21
+  },
+  "css/css-values/attr-cycle.html": {
+    "total": 37
+  },
+  "css/css-values/attr-dynamic-marker-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-in-max.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-in-slotted.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-invalidation-after-stylesheet-change.html": {
+    "total": 1
+  },
+  "css/css-values/attr-invalidation-after-view-transition.html": {
+    "total": 1
+  },
+  "css/css-values/attr-invalidation.html": {
+    "total": 1
+  },
+  "css/css-values/attr-length-invalid-cast.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-length-specified.html": {
+    "total": 3
+  },
+  "css/css-values/attr-length-valid-zero-nofallback.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-length-valid-zero.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-length-valid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-namespace-case-sensitivity.xhtml": {
+    "reftest": "FAIL"
+  },
+  "css/css-values/attr-namespace-non-existing.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-values/attr-namespace-valid.xhtml": {
+    "reftest": "FAIL"
+  },
+  "css/css-values/attr-namespace-wildcard.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-notype-fallback.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-null-namespace.xhtml": {
+    "total": 5
+  },
+  "css/css-values/attr-number-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-parse-url.html": {
+    "total": 1
+  },
+  "css/css-values/attr-percent-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-pseudo-elem-invalidation-2.html": {
+    "total": 9
+  },
+  "css/css-values/attr-pseudo-elem-invalidation.html": {
+    "total": 6
+  },
+  "css/css-values/attr-pseudo-element-marker.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-pseudo-element-originating.html": {
+    "total": 6
+  },
+  "css/css-values/attr-pseudo-element-placeholder.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-revert-rule.html": {
+    "total": 1
+  },
+  "css/css-values/attr-security-animation.html": {
+    "total": 6
+  },
+  "css/css-values/attr-security-if.html": {
+    "total": 14
+  },
+  "css/css-values/attr-security-transition-2.html": {
+    "total": 1,
+    "failures": {
+      "CSS Values and Units Test: attr() tainted value from a transition": "FAIL"
+    }
+  },
+  "css/css-values/attr-security-transition-interpolated.html": {
+    "total": 3
+  },
+  "css/css-values/attr-security-transition.html": {
+    "total": 1
+  },
+  "css/css-values/attr-security.html": {
+    "total": 32,
+    "failures": {
+      "'background-image: src(\"https://does-not-exist.test/404.png\")' with data-foo=\"https://does-not-exist.test/404.png\"": "FAIL"
+    }
+  },
+  "css/css-values/attr-serialization.html": {
+    "total": 1
+  },
+  "css/css-values/attr-style-sharing-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-style-sharing-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-style-sharing-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-style-sharing-4.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-style-sharing-5.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/attr-universal-selector.html": {
+    "total": 1
+  },
+  "css/css-values/calc-angle-values.html": {
+    "total": 27
+  },
+  "css/css-values/calc-background-image-gradient-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-background-linear-gradient-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-background-position-002.html": {
+    "total": 6
+  },
+  "css/css-values/calc-background-position-003.html": {
+    "total": 6
+  },
+  "css/css-values/calc-background-position-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-background-size-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-border-radius-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-catch-divide-by-0.html": {
+    "total": 21
+  },
+  "css/css-values/calc-ch-ex-lang.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-complex-unresolved-serialize.html": {
+    "total": 12
+  },
+  "css/css-values/calc-dimension-serialization-order.html": {
+    "total": 44
+  },
+  "css/css-values/calc-height-block-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-height-table-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-in-calc.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-in-color-001.html": {
+    "total": 1
+  },
+  "css/css-values/calc-in-counter-001.xhtml": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-in-font-feature-settings.html": {
+    "total": 1
+  },
+  "css/css-values/calc-in-max.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-in-media-queries-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-in-media-queries-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-in-media-queries-with-mixed-units.html": {
+    "total": 12
+  },
+  "css/css-values/calc-infinity-nan-computed.html": {
+    "total": 65,
+    "failures": {
+      "Property width value 'calc(infinity * 1px + infinity * 1%)'": "FAIL"
+    }
+  },
+  "css/css-values/calc-infinity-nan-serialize-angle.html": {
+    "total": 30
+  },
+  "css/css-values/calc-infinity-nan-serialize-length.html": {
+    "total": 41
+  },
+  "css/css-values/calc-infinity-nan-serialize-number.html": {
+    "total": 31
+  },
+  "css/css-values/calc-infinity-nan-serialize-resolution.html": {
+    "total": 29
+  },
+  "css/css-values/calc-infinity-nan-serialize-time.html": {
+    "total": 29
+  },
+  "css/css-values/calc-integer.html": {
+    "total": 7
+  },
+  "css/css-values/calc-invalid-parsing.html": {
+    "total": 6
+  },
+  "css/css-values/calc-invalid-range-clamping.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-letter-spacing.html": {
+    "total": 6
+  },
+  "css/css-values/calc-linear-radial-conic-gradient-001.html": {
+    "total": 8
+  },
+  "css/css-values/calc-margin-block-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-max-height-block-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-max-width-block-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-max-width-block-intrinsic-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-min-height-block-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-min-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-min-width-block-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-min-width-block-intrinsic-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-mix-computed.tentative.html": {
+    "total": 53,
+    "failures": {
+      "calc(10px + calc-mix(10% 50%, 30% 50%)) should be used-value-equivalent to calc(10px + 20%)": "FAIL",
+      "calc-mix(1 calc(-50%), 3 100%) should be used-value-equivalent to 3": "FAIL",
+      "calc-mix(1 calc(150%), 3 100%) should be used-value-equivalent to 2": "FAIL",
+      "calc-mix(1 calc(50% * sibling-index()), 3 50%) should be used-value-equivalent to 2": "FAIL",
+      "calc-mix(1% * sibling-index() 0%, 3px 0%) should be used-value-equivalent to 0%": "FAIL"
+    }
+  },
+  "css/css-values/calc-mix-invalid.tentative.html": {
+    "total": 18
+  },
+  "css/css-values/calc-mix-serialize.tentative.html": {
+    "total": 128,
+    "failures": {
+      "'calc(10px + calc-mix(10% * sibling-index() 50%, 30% 50%))' as a computed value should serialize as 'calc(20% + 10px)'.": "FAIL",
+      "'calc(10px + calc-mix(10% 50%, 30% 50%)) ' as a specified value should serialize as 'calc(20% + 10px)'.": "FAIL",
+      "'calc(10px + calc-mix(10% 50%, 30% 50%))' as a computed value should serialize as 'calc(20% + 10px)'.": "FAIL",
+      "'calc(10px + calc-mix(10% 50%, 30% 50%))' as a specified value should serialize as 'calc(20% + 10px)'.": "FAIL",
+      "'calc-mix(1 calc(-50%), 3 100%)' as a computed value should serialize as '3'.": "FAIL",
+      "'calc-mix(1 calc(-50%), 3 100%)' as a specified value should serialize as 'calc-mix(1 calc(-50%), 3 100%)'.": "FAIL",
+      "'calc-mix(1 calc(150%), 3 100%)' as a computed value should serialize as '2'.": "FAIL",
+      "'calc-mix(1 calc(150%), 3 100%)' as a specified value should serialize as 'calc-mix(1 calc(150%), 3 100%)'.": "FAIL",
+      "'calc-mix(1 calc(50% * sibling-index()), 3 50%)' as a computed value should serialize as '2'.": "FAIL",
+      "'calc-mix(1 calc(50% * sibling-index()), 3 50%)' as a specified value should serialize as 'calc-mix(1 calc(50% * sibling-index()), 3 50%)'.": "FAIL",
+      "'calc-mix(1 calc(50% * sibling-index()), 3 50%, 5, 7)' as a computed value should serialize as '2'.": "FAIL",
+      "'calc-mix(1 calc(50% * sibling-index()), 3 50%, 5, 7)' as a specified value should serialize as 'calc-mix(1 calc(50% * sibling-index()), 3 50%, 5, 7)'.": "FAIL",
+      "'calc-mix(1 calc(50% * sibling-index()), 3)' as a computed value should serialize as '2'.": "FAIL",
+      "'calc-mix(1 calc(50% * sibling-index()), 3)' as a specified value should serialize as 'calc-mix(1 calc(50% * sibling-index()), 3)'.": "FAIL",
+      "'calc-mix(1% * sibling-index() 0%, 3px 0%) ' as a specified value should serialize as 'calc(0%)'.": "FAIL",
+      "'calc-mix(1% * sibling-index() 0%, 3px 0%)' as a computed value should serialize as '0%'.": "FAIL",
+      "'calc-mix(1% * sibling-index() 0%, 3px 0%)' as a specified value should serialize as 'calc(0%)'.": "FAIL"
+    }
+  },
+  "css/css-values/calc-nesting-002.html": {
+    "total": 12
+  },
+  "css/css-values/calc-nesting.html": {
+    "total": 8
+  },
+  "css/css-values/calc-numbers.html": {
+    "total": 12
+  },
+  "css/css-values/calc-offsets-absolute-bottom-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-offsets-absolute-left-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-offsets-absolute-right-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-offsets-absolute-top-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-offsets-relative-bottom-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-offsets-relative-left-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-offsets-relative-right-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-offsets-relative-top-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-padding-block-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-parentheses.html": {
+    "total": 6
+  },
+  "css/css-values/calc-parenthesis-stack.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-percentage-position.html": {
+    "total": 8
+  },
+  "css/css-values/calc-positive-fraction-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-rem-lang.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-rgb-percent-001.html": {
+    "total": 1
+  },
+  "css/css-values/calc-rounding-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-rounding-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-rounding-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-rounds-to-integer.html": {
+    "total": 136
+  },
+  "css/css-values/calc-serialization-002.html": {
+    "total": 24
+  },
+  "css/css-values/calc-serialization.html": {
+    "total": 1
+  },
+  "css/css-values/calc-serialize.html": {
+    "total": 4
+  },
+  "css/css-values/calc-size/animation/calc-size-height-interpolation.html": {
+    "total": 1156,
+    "failures": {
+      "CSS Animations: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0.5) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Animations: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0.6) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Animations: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (1) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Animations: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (1.5) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition-behavior:allow-discrete: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0.5) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition-behavior:allow-discrete: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0.6) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition-behavior:allow-discrete: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (1) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition-behavior:allow-discrete: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (1.5) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition-property:all and transition-behavor:allow-discrete: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0.5) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition-property:all and transition-behavor:allow-discrete: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0.6) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition-property:all and transition-behavor:allow-discrete: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (1) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition-property:all and transition-behavor:allow-discrete: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (1.5) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition: all: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (-0.3) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition: all: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition: all: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0.3) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition: all: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0.5) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition: all: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0.6) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition: all: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (1) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions with transition: all: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (1.5) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (-0.3) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0.3) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0.5) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0.6) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (1) should be [calc-size(auto, size * 3)]": "FAIL",
+      "CSS Transitions: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (1.5) should be [calc-size(auto, size * 3)]": "FAIL",
+      "Web Animations: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0.5) should be [calc-size(auto, size * 3)]": "FAIL",
+      "Web Animations: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (0.6) should be [calc-size(auto, size * 3)]": "FAIL",
+      "Web Animations: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (1) should be [calc-size(auto, size * 3)]": "FAIL",
+      "Web Animations: property <height> from [calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(calc-size(auto, size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2), size / 2 + size / 2)] to [calc-size(auto, size * 3)] at (1.5) should be [calc-size(auto, size * 3)]": "FAIL"
+    }
+  },
+  "css/css-values/calc-size/animation/calc-size-interpolation-expansion.html": {
+    "total": 11,
+    "failures": {
+      "value at progress 0.75 in animation of \"height\" from \"0px\" to \"calc-size(calc-size(min-content, size + 20px), 2 * size)\"": "FAIL",
+      "value at progress 0.75 in animation of \"height\" from \"calc-size(min-content, size * 4)\" to \"calc-size(calc-size(min-content, size + 20px), 2 * size)\"": "FAIL"
+    }
+  },
+  "css/css-values/calc-size/animation/calc-size-width-interpolation.html": {
+    "total": 732
+  },
+  "css/css-values/calc-size/animation/interpolate-size-height-composition.html": {
+    "total": 20
+  },
+  "css/css-values/calc-size/animation/interpolate-size-height-interpolation.html": {
+    "total": 318
+  },
+  "css/css-values/calc-size/animation/interpolate-size-interpolation.html": {
+    "total": 84
+  },
+  "css/css-values/calc-size/animation/interpolate-size-logical-properties-interpolation.html": {
+    "total": 144
+  },
+  "css/css-values/calc-size/animation/interpolate-size-max-height-composition.html": {
+    "total": 20
+  },
+  "css/css-values/calc-size/animation/interpolate-size-max-height-interpolation.html": {
+    "total": 282
+  },
+  "css/css-values/calc-size/animation/interpolate-size-max-width-composition.html": {
+    "total": 30
+  },
+  "css/css-values/calc-size/animation/interpolate-size-max-width-interpolation.html": {
+    "total": 282
+  },
+  "css/css-values/calc-size/animation/interpolate-size-min-height-composition.html": {
+    "total": 20
+  },
+  "css/css-values/calc-size/animation/interpolate-size-min-height-interpolation.html": {
+    "total": 228
+  },
+  "css/css-values/calc-size/animation/interpolate-size-min-width-composition.html": {
+    "total": 30
+  },
+  "css/css-values/calc-size/animation/interpolate-size-min-width-interpolation.html": {
+    "total": 228
+  },
+  "css/css-values/calc-size/animation/interpolate-size-which-value.html": {
+    "total": 8
+  },
+  "css/css-values/calc-size/animation/interpolate-size-width-composition.html": {
+    "total": 30
+  },
+  "css/css-values/calc-size/animation/interpolate-size-width-interpolation.html": {
+    "total": 270
+  },
+  "css/css-values/calc-size/calc-size-aspect-ratio-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-aspect-ratio-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-values/calc-size/calc-size-aspect-ratio-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-aspect-ratio-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-aspect-ratio-005.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-values/calc-size/calc-size-flex-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-flex-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-flex-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-flex-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-flex-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-flex-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-flex-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-flex-008.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-values/calc-size/calc-size-flex-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-flex-basis-on-column.html": {
+    "total": 33
+  },
+  "css/css-values/calc-size/calc-size-flex-basis-on-row.html": {
+    "total": 33
+  },
+  "css/css-values/calc-size/calc-size-grid-repeat.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-height-box-sizing.html": {
+    "total": 15
+  },
+  "css/css-values/calc-size/calc-size-height.html": {
+    "total": 37
+  },
+  "css/css-values/calc-size/calc-size-list-box.html": {
+    "total": 10
+  },
+  "css/css-values/calc-size/calc-size-min-max-sizes-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-min-max-sizes-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-min-max-sizes-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-min-max-sizes-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-min-max-sizes-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-min-max-sizes-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-no-body-height-quirk-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-out-of-flow.html": {
+    "total": 12
+  },
+  "css/css-values/calc-size/calc-size-parsing.html": {
+    "total": 94
+  },
+  "css/css-values/calc-size/calc-size-replaced-element.html": {
+    "total": 33
+  },
+  "css/css-values/calc-size/calc-size-table.html": {
+    "total": 6
+  },
+  "css/css-values/calc-size/calc-size-typed-om.html": {
+    "total": 19,
+    "failures": {
+      "computedStyleMap serialization of max-width: calc-size(max-content, size / 2)": "FAIL"
+    }
+  },
+  "css/css-values/calc-size/calc-size-width-box-sizing.html": {
+    "total": 15
+  },
+  "css/css-values/calc-size/calc-size-width.html": {
+    "total": 20
+  },
+  "css/css-values/calc-size/interpolate-size-computed.html": {
+    "total": 2
+  },
+  "css/css-values/calc-size/interpolate-size-parsing.html": {
+    "total": 5
+  },
+  "css/css-values/calc-text-indent-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-text-indent-intrinsic-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-time-values.html": {
+    "total": 10
+  },
+  "css/css-values/calc-transform-origin-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-unit-analysis.html": {
+    "total": 10
+  },
+  "css/css-values/calc-vertical-align-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-width-block-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-width-block-intrinsic-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-width-table-auto-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-width-table-fixed-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/calc-z-index-fractions-001.html": {
+    "total": 6
+  },
+  "css/css-values/calc-zero-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/cap-invalidation.html": {
+    "total": 1
+  },
+  "css/css-values/cap-unit-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ch-empty-pseudo-recalc-on-font-load.html": {
+    "total": 3
+  },
+  "css/css-values/ch-pseudo-recalc-on-font-load.html": {
+    "total": 5
+  },
+  "css/css-values/ch-recalc-on-font-load.html": {
+    "total": 3
+  },
+  "css/css-values/ch-unit-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ch-unit-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ch-unit-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ch-unit-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ch-unit-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ch-unit-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ch-unit-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ch-unit-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ch-unit-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ch-unit-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ch-unit-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ch-unit-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ch-unit-019.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-values/clamp-color-computed.html": {
+    "total": 15
+  },
+  "css/css-values/clamp-color-invalid.html": {
+    "total": 14
+  },
+  "css/css-values/clamp-integer-computed.html": {
+    "total": 6
+  },
+  "css/css-values/clamp-integer-invalid.html": {
+    "total": 14
+  },
+  "css/css-values/clamp-length-computed.html": {
+    "total": 24
+  },
+  "css/css-values/clamp-length-invalid.html": {
+    "total": 23
+  },
+  "css/css-values/clamp-length-serialize.html": {
+    "total": 50
+  },
+  "css/css-values/clamp-none-whitespace.html": {
+    "total": 3
+  },
+  "css/css-values/clamp-partial-serialize.tentative.html": {
+    "total": 16
+  },
+  "css/css-values/dynamic-viewport-units-rule-cache.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "dynamic-viewport-units-rule-cache": "TIMEOUT"
+    }
+  },
+  "css/css-values/ex-calc-expression-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ex-unit-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ex-unit-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ex-unit-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ex-unit-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/exp-log-compute.html": {
+    "total": 59
+  },
+  "css/css-values/exp-log-invalid.html": {
+    "total": 48
+  },
+  "css/css-values/exp-log-serialize.html": {
+    "total": 19
+  },
+  "css/css-values/font-relative-length.html": {
+    "total": 5
+  },
+  "css/css-values/getComputedStyle-border-radius-001.html": {
+    "total": 5
+  },
+  "css/css-values/getComputedStyle-border-radius-002.html": {
+    "total": 8
+  },
+  "css/css-values/getComputedStyle-border-radius-003.html": {
+    "total": 1
+  },
+  "css/css-values/getComputedStyle-calc-mixed-units-001.html": {
+    "total": 3
+  },
+  "css/css-values/getComputedStyle-calc-mixed-units-002.html": {
+    "total": 8,
+    "failures": {
+      "testing height: calc(5em + 26.458333mm)": "FAIL",
+      "testing width: calc(4em + 2.6458333cm)": "FAIL"
+    }
+  },
+  "css/css-values/getComputedStyle-calc-mixed-units-003.html": {
+    "total": 7,
+    "failures": {
+      "testing width: calc(52px * 1px / 10%)": "FAIL"
+    }
+  },
+  "css/css-values/html-attr-case-insensitivity.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/hypot-pow-sqrt-computed.html": {
+    "total": 123
+  },
+  "css/css-values/hypot-pow-sqrt-invalid.html": {
+    "total": 49
+  },
+  "css/css-values/hypot-pow-sqrt-serialize.html": {
+    "total": 25
+  },
+  "css/css-values/ic-unit-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ic-unit-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ic-unit-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ic-unit-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ic-unit-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ic-unit-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ic-unit-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ic-unit-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ic-unit-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ic-unit-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ic-unit-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ic-unit-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ic-unit-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/ident-function-computed.html": {
+    "total": 14
+  },
+  "css/css-values/ident-function-parsing.html": {
+    "total": 19
+  },
+  "css/css-values/ident-function-substitution.html": {
+    "total": 13
+  },
+  "css/css-values/if-conditionals.html": {
+    "total": 203,
+    "failures": {
+      "CSS Values and Units Test: CSS inline if() function 1": "FAIL"
+    }
+  },
+  "css/css-values/if-cycle.html": {
+    "total": 46
+  },
+  "css/css-values/if-function-revert-rule.html": {
+    "total": 2
+  },
+  "css/css-values/if-initial-unregistered.html": {
+    "total": 1
+  },
+  "css/css-values/if-invalidation.html": {
+    "total": 1
+  },
+  "css/css-values/if-media-invalidation.html": {
+    "total": 1
+  },
+  "css/css-values/if-style-invalidation.html": {
+    "total": 1
+  },
+  "css/css-values/if-supports-quirks.html": {
+    "total": 1
+  },
+  "css/css-values/inherit-function-basic.html": {
+    "total": 6
+  },
+  "css/css-values/inherit-function-invalidation.html": {
+    "total": 3
+  },
+  "css/css-values/inherit-function-parsing.html": {
+    "total": 8
+  },
+  "css/css-values/inline-cache-base-uri-cssom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/inline-cache-base-uri.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/integer_interpolation_round_half_001.html": {
+    "total": 1
+  },
+  "css/css-values/integer_interpolation_round_half_002.html": {
+    "total": 1
+  },
+  "css/css-values/integer_interpolation_round_half_towards_positive_infinity_order.html": {
+    "total": 1
+  },
+  "css/css-values/integer_interpolation_round_half_towards_positive_infinity_z_index.html": {
+    "total": 1
+  },
+  "css/css-values/lh-rlh-on-root-001.html": {
+    "total": 8,
+    "failures": {
+      "2rlh in font-size on root": "FAIL",
+      "rlh in font-size on root": "FAIL"
+    }
+  },
+  "css/css-values/lh-rlh-percentage-line-height-with-zoom.html": {
+    "total": 6
+  },
+  "css/css-values/lh-unit-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/lh-unit-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/lh-unit-003.html": {
+    "total": 2
+  },
+  "css/css-values/lh-unit-004.html": {
+    "total": 1
+  },
+  "css/css-values/lh-unit-005.html": {
+    "total": 1
+  },
+  "css/css-values/lh-unit-same-element-font-size-dependency.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/lh-unit-same-element-line-height-dependency.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/line-break-ch-unit.html": {
+    "total": 194
+  },
+  "css/css-values/max-20-arguments.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/max-length-percent-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/max-unitless-zero-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/min-length-percent-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/min-max-percentage-length-interpolation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/minmax-angle-computed.html": {
+    "total": 32
+  },
+  "css/css-values/minmax-angle-invalid.html": {
+    "total": 52
+  },
+  "css/css-values/minmax-angle-serialize.html": {
+    "total": 38
+  },
+  "css/css-values/minmax-integer-computed.html": {
+    "total": 10
+  },
+  "css/css-values/minmax-length-computed.html": {
+    "total": 80
+  },
+  "css/css-values/minmax-length-invalid.html": {
+    "total": 48
+  },
+  "css/css-values/minmax-length-percent-computed.html": {
+    "total": 50
+  },
+  "css/css-values/minmax-length-percent-invalid.html": {
+    "total": 20
+  },
+  "css/css-values/minmax-length-percent-serialize.html": {
+    "total": 57
+  },
+  "css/css-values/minmax-length-serialize.html": {
+    "total": 24
+  },
+  "css/css-values/minmax-number-computed.html": {
+    "total": 14
+  },
+  "css/css-values/minmax-number-invalid.html": {
+    "total": 48
+  },
+  "css/css-values/minmax-number-serialize.html": {
+    "total": 40
+  },
+  "css/css-values/minmax-percentage-computed.html": {
+    "total": 14
+  },
+  "css/css-values/minmax-percentage-invalid.html": {
+    "total": 48
+  },
+  "css/css-values/minmax-percentage-serialize.html": {
+    "total": 35
+  },
+  "css/css-values/minmax-time-computed.html": {
+    "total": 24
+  },
+  "css/css-values/minmax-time-invalid.html": {
+    "total": 52
+  },
+  "css/css-values/minmax-time-serialize.html": {
+    "total": 22
+  },
+  "css/css-values/negative-calc-to-non-negative-integer.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/percentage-rem-low.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/percentage-without-context.html": {
+    "total": 12
+  },
+  "css/css-values/position/position-computed.tentative.html": {
+    "total": 68
+  },
+  "css/css-values/position/position-invalid.tentative.html": {
+    "total": 21
+  },
+  "css/css-values/position/position-valid.tentative.html": {
+    "total": 34
+  },
+  "css/css-values/progress-computed.html": {
+    "total": 36
+  },
+  "css/css-values/progress-invalid.html": {
+    "total": 35
+  },
+  "css/css-values/progress-serialize.html": {
+    "total": 68
+  },
+  "css/css-values/q-unit-case-insensitivity-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/q-unit-case-insensitivity-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/random-alias-property.tentative.html": {
+    "total": 1
+  },
+  "css/css-values/random-computed.tentative.html": {
+    "total": 172,
+    "failures": {
+      "Property border-image-slice value 'random(10%, 30%)'": "FAIL",
+      "Property color value 'rgb(from blue random(51, 10) random(g + 51, g) random(b, b))'": "FAIL",
+      "Property translate value 'random(fixed random(-2, -1), 10%, 100%)'": "FAIL",
+      "Property width value 'random(fixed random(1, 2), 10px, 100px)'": "FAIL",
+      "Shared by property 'color' with values 'color-mix(in srgb, rgb(from blue random(10, 30) random(g, g + 30) random(b, b)), rgb(random(10, 90) 0 0))', 'color-mix(in srgb, rgb(from blue random(property-index-scoped, 10, 30) random(property-index-scoped, g, g + 30) random(property-index-scoped, b, b)), rgb(random(property-index-scoped, 10, 90) 0 0))'": "FAIL",
+      "Shared by property 'view-transition-name' with values 'ident(\"myident\" random(1, 300000))', 'ident(\"myident\" random(property-index-scoped, 1, 300000))'": "FAIL",
+      "random() values should not be allowed as initial values in @property": "FAIL",
+      "random() with percentages inside multiple nested functions should have 'fixed'": "FAIL"
+    }
+  },
+  "css/css-values/random-in-animations.tentative.html": {
+    "total": 37
+  },
+  "css/css-values/random-in-container-query.tentative.html": {
+    "total": 9
+  },
+  "css/css-values/random-in-custom-function.tentative.html": {
+    "total": 63
+  },
+  "css/css-values/random-in-descriptors.tentative.html": {
+    "total": 4
+  },
+  "css/css-values/random-in-if.tentative.html": {
+    "total": 14
+  },
+  "css/css-values/random-in-keyframe.html": {
+    "total": 1
+  },
+  "css/css-values/random-in-media.tentative.html": {
+    "total": 4
+  },
+  "css/css-values/random-invalid.tentative.html": {
+    "total": 39
+  },
+  "css/css-values/random-item-computed.html": {
+    "total": 37
+  },
+  "css/css-values/random-item-in-container-query.tentative.html": {
+    "total": 4
+  },
+  "css/css-values/random-item-in-keyframe.html": {
+    "total": 1
+  },
+  "css/css-values/random-item-invalid.html": {
+    "total": 14
+  },
+  "css/css-values/random-item-nested.html": {
+    "total": 4
+  },
+  "css/css-values/random-item-serialize.html": {
+    "total": 15
+  },
+  "css/css-values/random-item-unresolvable-argument.html": {
+    "total": 3
+  },
+  "css/css-values/random-item-valid.html": {
+    "total": 21
+  },
+  "css/css-values/random-serialize.tentative.html": {
+    "total": 71
+  },
+  "css/css-values/random-unresolvable-argument.tentative.html": {
+    "total": 3
+  },
+  "css/css-values/rcap-invalidation.html": {
+    "total": 1
+  },
+  "css/css-values/rch-invalidation.html": {
+    "total": 1
+  },
+  "css/css-values/rem-root-font-size-restyle-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/rem-unit-root-element.html": {
+    "total": 4
+  },
+  "css/css-values/resolution-with-percentage-without-context.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/rex-invalidation.html": {
+    "total": 1
+  },
+  "css/css-values/rgba-011.html": {
+    "total": 1
+  },
+  "css/css-values/ric-invalidation.html": {
+    "total": 1
+  },
+  "css/css-values/rlh-invalidation.html": {
+    "total": 1
+  },
+  "css/css-values/rlh-on-root-lengths.html": {
+    "total": 1
+  },
+  "css/css-values/rlh-unit-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/round-function.html": {
+    "total": 219
+  },
+  "css/css-values/round-mod-rem-computed.html": {
+    "total": 243
+  },
+  "css/css-values/round-mod-rem-invalid.html": {
+    "total": 108
+  },
+  "css/css-values/round-mod-rem-serialize.html": {
+    "total": 24
+  },
+  "css/css-values/sign-in-keyframes-with-relative-units.html": {
+    "total": 2,
+    "failures": {
+      "Changing the font-size of #target changes the start point, so the result should be 1.75": "FAIL",
+      "Initially, the font-size is 8px for #target, so the result is 0.75": "FAIL"
+    }
+  },
+  "css/css-values/signed-zero.html": {
+    "total": 162
+  },
+  "css/css-values/signs-abs-computed.html": {
+    "total": 233
+  },
+  "css/css-values/signs-abs-invalid.html": {
+    "total": 53
+  },
+  "css/css-values/signs-abs-serialize.html": {
+    "total": 16
+  },
+  "css/css-values/sin-cos-tan-computed.html": {
+    "total": 32
+  },
+  "css/css-values/sin-cos-tan-invalid.html": {
+    "total": 42
+  },
+  "css/css-values/sin-cos-tan-serialize.html": {
+    "total": 270
+  },
+  "css/css-values/svg-attr-case-sensitivity.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/tree-counting/calc-sibling-function-in-shadow-dom.html": {
+    "total": 3
+  },
+  "css/css-values/tree-counting/calc-sibling-function-parsing.html": {
+    "total": 47
+  },
+  "css/css-values/tree-counting/calc-sibling-function.html": {
+    "total": 7,
+    "failures": {
+      "sibling-index() and sibling-count() on nested pseudo-element": "FAIL"
+    }
+  },
+  "css/css-values/tree-counting/sibling-function-container-query-invalidation.html": {
+    "total": 8
+  },
+  "css/css-values/tree-counting/sibling-function-container-query.html": {
+    "total": 6
+  },
+  "css/css-values/tree-counting/sibling-function-descriptors.tentative.html": {
+    "total": 10,
+    "failures": {
+      "sibling-count() should not be allowed in @counter-style descriptors": "FAIL"
+    }
+  },
+  "css/css-values/tree-counting/sibling-function-if-style-query.html": {
+    "total": 4
+  },
+  "css/css-values/tree-counting/sibling-function-invalidation.html": {
+    "total": 12
+  },
+  "css/css-values/tree-counting/sibling-function-media-query.tentative.html": {
+    "total": 4
+  },
+  "css/css-values/tree-counting/sibling-index-keyframe-font-style-dynamic.html": {
+    "total": 2
+  },
+  "css/css-values/tree-counting/sibling-index-keyframe-font-variation-settings-dynamic.html": {
+    "total": 2
+  },
+  "css/css-values/tree-counting/sibling-index-keyframe-font-weight-dynamic.html": {
+    "total": 2
+  },
+  "css/css-values/tree-counting/sibling-index-keyframe-length-value-dynamic.html": {
+    "total": 2
+  },
+  "css/css-values/tree-counting/sibling-index-keyframe-palette-mix-dynamic.html": {
+    "total": 2
+  },
+  "css/css-values/tree-counting/sibling-index-keyframe-percent-dynamic.html": {
+    "total": 2
+  },
+  "css/css-values/tree-counting/sibling-index-keyframe-registered-properties-dynamic.html": {
+    "total": 20,
+    "failures": {
+      "Initially, the sibling-index() is 3 for --color": "FAIL",
+      "Removing a preceding sibling of #target reduces the sibling-index() for --color": "FAIL"
+    }
+  },
+  "css/css-values/tree-counting/sibling-index-keyframe-rotate-dynamic.html": {
+    "total": 2
+  },
+  "css/css-values/tree-counting/sibling-index-keyframe-scale-dynamic.html": {
+    "total": 2
+  },
+  "css/css-values/tree-counting/sibling-index-keyframe-transform-dynamic.html": {
+    "total": 2
+  },
+  "css/css-values/tree-counting/sibling-index-keyframe-value-dynamic.html": {
+    "total": 2
+  },
+  "css/css-values/tree-counting/sibling-index-linear-gradient-gcs.html": {
+    "total": 3
+  },
+  "css/css-values/tree-counting/tree-scoped-sibling-function.html": {
+    "total": 2,
+    "failures": {
+      "sibling-index() and sibling-count() evaluates to 1 from outer tree with ::part": "FAIL"
+    }
+  },
+  "css/css-values/tree-counting/trig-functions-in-gradient-position.html": {
+    "total": 1
+  },
+  "css/css-values/tree-counting/trig-functions-with-runtime-angle-arguments.html": {
+    "total": 4
+  },
+  "css/css-values/typed_arithmetic.html": {
+    "total": 41,
+    "failures": {
+      "calc((10% * 1%) / 1px) should be used-value-equivalent to 10px": "FAIL",
+      "calc(0.25px * round(100% / 25px)) should be used-value-equivalent to 1px": "FAIL",
+      "calc(10% * 10% / 1px * 10deg / 1deg / 10px) should be used-value-equivalent to 1": "FAIL",
+      "calc(10% * 10% / 1px * 1deg / 1deg) should be used-value-equivalent to 1px": "FAIL",
+      "calc(10% / 1px) should be used-value-equivalent to 1": "FAIL",
+      "calc(1px * pow(50% / 1px, 1)) should be used-value-equivalent to 50px": "FAIL",
+      "calc(4px / round(100% / 25px)) should be used-value-equivalent to 1px": "FAIL"
+    }
+  },
+  "css/css-values/typed_arithmetic_cycle.html": {
+    "total": 1
+  },
+  "css/css-values/update-subpixel-rem-unit.html": {
+    "total": 1
+  },
+  "css/css-values/urls/cross-origin/url-font-cross-origin-anonymous-negative.sub.html": {
+    "total": 1
+  },
+  "css/css-values/urls/cross-origin/url-font-cross-origin-anonymous.sub.html": {
+    "total": 1
+  },
+  "css/css-values/urls/cross-origin/url-font-cross-origin-use-credentials-negative.sub.html": {
+    "total": 1
+  },
+  "css/css-values/urls/cross-origin/url-font-cross-origin-use-credentials.sub.html": {
+    "total": 1
+  },
+  "css/css-values/urls/cross-origin/url-image-cross-origin-anonymous-negative.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/cross-origin/url-image-cross-origin-anonymous.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/cross-origin/url-image-cross-origin-use-credentials-negative.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/cross-origin/url-image-cross-origin-use-credentials.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/cross-origin/url-image-set-cross-origin-anonymous-negative.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/cross-origin/url-image-set-cross-origin-anonymous.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/cross-origin/url-import-cross-origin-anonymous-negative.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/cross-origin/url-import-cross-origin-anonymous.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/cross-origin/url-import-cross-origin-use-credentials-negative.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/cross-origin/url-import-cross-origin-use-credentials.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/cross-origin/url-svg-filter-cross-origin-anonymous-negative.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/cross-origin/url-svg-filter-cross-origin-anonymous.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/cross-origin/url-svg-filter-cross-origin-use-credentials-negative.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/cross-origin/url-svg-filter-cross-origin-use-credentials.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/empty.html": {
+    "total": 4
+  },
+  "css/css-values/urls/fragment-only.html": {
+    "total": 5
+  },
+  "css/css-values/urls/integrity/url-font-integrity-negative.sub.html": {
+    "total": 1
+  },
+  "css/css-values/urls/integrity/url-font-integrity.sub.html": {
+    "total": 1
+  },
+  "css/css-values/urls/integrity/url-image-integrity-negative.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/integrity/url-image-integrity.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/integrity/url-import-integrity-negative.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/integrity/url-import-integrity.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/integrity/url-svg-filter-integrity-negative.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/integrity/url-svg-filter-integrity.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/no-referrer-when-downgrade/url-image-referrer-policy-cross-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/no-referrer-when-downgrade/url-image-referrer-policy-same-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/no-referrer/url-font-referrer-policy.sub.html": {
+    "total": 1
+  },
+  "css/css-values/urls/referrer-policy/no-referrer/url-image-referrer-policy-cross-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/no-referrer/url-image-referrer-policy-external-stylesheet.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/no-referrer/url-image-referrer-policy-same-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/no-referrer/url-image-set-referrer-policy.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/no-referrer/url-import-referrer-policy.html": {
+    "total": 1
+  },
+  "css/css-values/urls/referrer-policy/no-referrer/url-svg-filter-referrer-policy.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/origin-when-cross-origin/url-image-referrer-policy-cross-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/origin-when-cross-origin/url-image-referrer-policy-same-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/origin/url-image-referrer-policy-cross-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/origin/url-image-referrer-policy-external-stylesheet.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/origin/url-image-referrer-policy-same-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/same-origin/url-image-referrer-policy-cross-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/same-origin/url-image-referrer-policy-same-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/strict-origin-when-cross-origin/url-image-referrer-policy-cross-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/strict-origin-when-cross-origin/url-image-referrer-policy-same-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/strict-origin/url-image-referrer-policy-cross-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/strict-origin/url-image-referrer-policy-same-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/unsafe-url/url-image-referrer-policy-cross-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/referrer-policy/unsafe-url/url-image-referrer-policy-external-stylesheet.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-values/urls/referrer-policy/unsafe-url/url-image-referrer-policy-same-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/urls/resolve-relative-to-base.sub.html": {
+    "total": 2
+  },
+  "css/css-values/urls/resolve-relative-to-stylesheet.html": {
+    "total": 3
+  },
+  "css/css-values/urls/url-request-modifiers-computed.sub.html": {
+    "total": 23
+  },
+  "css/css-values/urls/url-request-modifiers-font-face-parsing.html": {
+    "total": 7
+  },
+  "css/css-values/urls/url-request-modifiers-import-parsing.sub.html": {
+    "total": 10
+  },
+  "css/css-values/urls/url-request-modifiers-invalid.sub.html": {
+    "total": 34
+  },
+  "css/css-values/urls/url-request-modifiers-serialize.sub.html": {
+    "total": 23
+  },
+  "css/css-values/using-font-relative-units-in-font-properties.html": {
+    "total": 9,
+    "failures": {
+      "Property font-palette value 'ident(\"--test-\" calc(1em / 1px))'": "FAIL",
+      "Property font-variant-alternates value 'stylistic(ident(\"test-\" calc(1em / 1px)))'": "FAIL"
+    }
+  },
+  "css/css-values/various-values-important.html": {
+    "total": 4
+  },
+  "css/css-values/vh-calc-support-pct.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/vh-calc-support.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/vh-em-inherit.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/vh-inherit.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/vh-interpolate-pct.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/vh-interpolate-px.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/vh-interpolate-vh.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/vh-support-margin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/vh-support-transform-origin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/vh-support-transform-translate.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/vh-support.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/vh-update-and-transition-in-subframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/vh-zero-support.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/viewport-page-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/viewport-relative-lengths-scaled-viewport.html": {
+    "total": 1
+  },
+  "css/css-values/viewport-unit-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/viewport-units-001-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/viewport-units-after-font-load.html": {
+    "total": 1
+  },
+  "css/css-values/viewport-units-compute.html": {
+    "total": 34
+  },
+  "css/css-values/viewport-units-css2-001.html": {
+    "total": 160
+  },
+  "css/css-values/viewport-units-extreme-scale.html": {
+    "total": 4
+  },
+  "css/css-values/viewport-units-gutter-001.html": {
+    "total": 1
+  },
+  "css/css-values/viewport-units-gutter-002.html": {
+    "total": 1
+  },
+  "css/css-values/viewport-units-gutter-003.html": {
+    "total": 1
+  },
+  "css/css-values/viewport-units-gutter-004.html": {
+    "total": 1
+  },
+  "css/css-values/viewport-units-gutter-005.html": {
+    "total": 1
+  },
+  "css/css-values/viewport-units-gutter-006.html": {
+    "total": 1
+  },
+  "css/css-values/viewport-units-gutter-007.html": {
+    "total": 1
+  },
+  "css/css-values/viewport-units-gutter-008.html": {
+    "total": 1
+  },
+  "css/css-values/viewport-units-invalidation.html": {
+    "total": 24
+  },
+  "css/css-values/viewport-units-keyframes.html": {
+    "total": 24
+  },
+  "css/css-values/viewport-units-media-queries.html": {
+    "total": 26
+  },
+  "css/css-values/viewport-units-modify.html": {
+    "total": 1
+  },
+  "css/css-values/viewport-units-parsing.html": {
+    "total": 24
+  },
+  "css/css-values/viewport-units-scroll-no-cycles-001.tentative.html": {
+    "total": 1,
+    "failures": {
+      "CSS Values and Units Test: Viewport units and scrollbars": "FAIL"
+    }
+  },
+  "css/css-values/viewport-units-scrollbars-auto-vhw-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-values/viewport-units-scrollbars-compute.html": {
+    "total": 34,
+    "failures": {
+      "1dvh computes to 0.84375px": "FAIL",
+      "1dvw computes to 1.84375px": "FAIL",
+      "calc(1dvw + 10%) computes to 10.3438px": "FAIL",
+      "calc(1dvw + 100px) computes to 101.844px": "FAIL",
+      "calc(1dvw + 1dvh) computes to 2.6875px": "FAIL",
+      "calc(1dvw + 1dvw) computes to 3.6875px": "FAIL",
+      "max(1svw, 1svh) computes to 1.84375px": "FAIL",
+      "min(1lvw, 1lvh) computes to 0.84375px": "FAIL"
+    }
+  },
+  "css/css-values/viewport-units-scrollbars-custom-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-values/viewport-units-scrollbars-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/viewport-units-scrollbars-mq-001.html": {
+    "total": 1
+  },
+  "css/css-values/viewport-units-scrollbars-root-properties-001.html": {
+    "total": 1
+  },
+  "css/css-values/viewport-units-scrollbars-scroll-vhw-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/viewport-units-scrollbars-scroll-vw-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/viewport-units-scrollbars-scroll-vw-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/viewport-units-scrollbars-scroll-vw-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/viewport-units-writing-mode-font-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-values/viewport-units-writing-mode.html": {
+    "total": 8
+  }
+}

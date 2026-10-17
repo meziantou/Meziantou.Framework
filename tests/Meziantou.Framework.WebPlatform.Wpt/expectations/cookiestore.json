@@ -1,0 +1,199 @@
+{
+  "cookiestore/change_eventhandler_for_already_expired.https.window.js": {
+    "total": 2
+  },
+  "cookiestore/change_eventhandler_for_attribute_change.https.window.js": {
+    "total": 5
+  },
+  "cookiestore/change_eventhandler_for_document_cookie.https.window.js": {
+    "total": 6
+  },
+  "cookiestore/change_eventhandler_for_http_cookie_and_set_cookie_headers.https.window.js": {
+    "total": 7
+  },
+  "cookiestore/change_eventhandler_for_no_change.https.window.js": {
+    "total": 2
+  },
+  "cookiestore/change_eventhandler_for_no_name_and_no_value.https.window.js": {
+    "total": 1
+  },
+  "cookiestore/change_eventhandler_for_no_name_equals_in_value.https.window.js": {
+    "total": 1
+  },
+  "cookiestore/change_eventhandler_for_no_name_multiple_values.https.window.js": {
+    "total": 1
+  },
+  "cookiestore/cookieListItem_attributes.https.window.js": {
+    "total": 11
+  },
+  "cookiestore/cookieStoreManager_getSubscriptions_empty.https.any.js": {
+    "total": 1,
+    "failures": {
+      "getSubscriptions returns an empty array when there are no subscriptions": "FAIL"
+    }
+  },
+  "cookiestore/cookieStoreManager_getSubscriptions_multiple.https.any.js": {
+    "total": 1,
+    "failures": {
+      "getSubscriptions returns a subscription passed to subscribe": "FAIL"
+    }
+  },
+  "cookiestore/cookieStoreManager_getSubscriptions_single.https.any.js": {
+    "total": 1,
+    "failures": {
+      "getSubscriptions returns a subscription passed to subscribe": "FAIL"
+    }
+  },
+  "cookiestore/cookieStore_delete.sub.https.html": {
+    "total": 1
+  },
+  "cookiestore/cookieStore_delete_arguments.https.any.js": {
+    "total": 18
+  },
+  "cookiestore/cookieStore_delete_basic.https.any.js": {
+    "total": 1
+  },
+  "cookiestore/cookieStore_delete_domain.sub.https.html": {
+    "total": 2
+  },
+  "cookiestore/cookieStore_event_arguments.https.window.js": {
+    "total": 4
+  },
+  "cookiestore/cookieStore_event_basic.https.window.js": {
+    "total": 1
+  },
+  "cookiestore/cookieStore_event_delete.https.window.js": {
+    "total": 2
+  },
+  "cookiestore/cookieStore_event_overwrite.https.window.js": {
+    "total": 1
+  },
+  "cookiestore/cookieStore_getAll_arguments.https.any.js": {
+    "total": 12
+  },
+  "cookiestore/cookieStore_getAll_multiple.https.any.js": {
+    "total": 1
+  },
+  "cookiestore/cookieStore_getAll_set_basic.https.any.js": {
+    "total": 1
+  },
+  "cookiestore/cookieStore_getAll_set_creation_url.https.any.js": {
+    "total": 1
+  },
+  "cookiestore/cookieStore_get_arguments.https.any.js": {
+    "total": 12
+  },
+  "cookiestore/cookieStore_get_delete_basic.https.any.js": {
+    "total": 1
+  },
+  "cookiestore/cookieStore_get_set_across_frames.https.html": {
+    "total": 2
+  },
+  "cookiestore/cookieStore_get_set_across_origins.sub.https.html": {
+    "total": 4
+  },
+  "cookiestore/cookieStore_get_set_basic.https.any.js": {
+    "total": 1
+  },
+  "cookiestore/cookieStore_get_set_creation_url.https.any.js": {
+    "total": 1
+  },
+  "cookiestore/cookieStore_get_set_creation_url.sub.https.html": {
+    "total": 2
+  },
+  "cookiestore/cookieStore_get_set_ordering.https.any.js": {
+    "total": 2
+  },
+  "cookiestore/cookieStore_in_detached_frame.https.html": {
+    "total": 1
+  },
+  "cookiestore/cookieStore_opaque_origin.https.html": {
+    "total": 3
+  },
+  "cookiestore/cookieStore_set_arguments.https.any.js": {
+    "total": 54
+  },
+  "cookiestore/cookieStore_set_domain_parsing.sub.https.html": {
+    "total": 5
+  },
+  "cookiestore/cookieStore_set_domain_parsing.tentative.sub.https.html": {
+    "total": 2
+  },
+  "cookiestore/cookieStore_set_limit.https.any.js": {
+    "total": 10
+  },
+  "cookiestore/cookieStore_set_maxAge.https.window.js": {
+    "total": 4
+  },
+  "cookiestore/cookieStore_set_path.https.window.js": {
+    "total": 3
+  },
+  "cookiestore/cookieStore_special_names.https.any.js": {
+    "total": 37
+  },
+  "cookiestore/cookieStore_subscribe_arguments.https.any.js": {
+    "total": 5,
+    "failures": {
+      "CookieStore.unsubscribe is idempotent": "FAIL",
+      "cookieStore.subscribe is idempotent": "FAIL",
+      "cookieStore.subscribe with empty option": "FAIL",
+      "cookieStore.subscribe with invalid url path in option": "FAIL",
+      "cookieStore.subscribe without name or url in options": "FAIL"
+    }
+  },
+  "cookiestore/cookieStore_subscriptions_empty.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Newly registered and activated service worker has no subscriptions": "FAIL"
+    }
+  },
+  "cookiestore/encoding.https.any.js": {
+    "total": 2
+  },
+  "cookiestore/httponly_cookies.https.window.js": {
+    "total": 4
+  },
+  "cookiestore/idlharness.https.any.js": {
+    "total": 84,
+    "failures": {
+      "CookieStoreManager interface object length": "FAIL",
+      "CookieStoreManager interface object name": "FAIL",
+      "CookieStoreManager interface: calling subscribe(sequence<CookieStoreGetOptions>) on self.registration.cookies with too few arguments must throw TypeError": "FAIL",
+      "CookieStoreManager interface: calling unsubscribe(sequence<CookieStoreGetOptions>) on self.registration.cookies with too few arguments must throw TypeError": "FAIL",
+      "CookieStoreManager interface: existence and properties of interface object": "FAIL",
+      "CookieStoreManager interface: existence and properties of interface prototype object": "FAIL",
+      "CookieStoreManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "CookieStoreManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "CookieStoreManager interface: operation getSubscriptions()": "FAIL",
+      "CookieStoreManager interface: operation subscribe(sequence<CookieStoreGetOptions>)": "FAIL",
+      "CookieStoreManager interface: operation unsubscribe(sequence<CookieStoreGetOptions>)": "FAIL",
+      "CookieStoreManager interface: self.registration.cookies must inherit property \"getSubscriptions()\" with the proper type": "FAIL",
+      "CookieStoreManager interface: self.registration.cookies must inherit property \"subscribe(sequence<CookieStoreGetOptions>)\" with the proper type": "FAIL",
+      "CookieStoreManager interface: self.registration.cookies must inherit property \"unsubscribe(sequence<CookieStoreGetOptions>)\" with the proper type": "FAIL",
+      "CookieStoreManager must be primary interface of self.registration.cookies": "FAIL",
+      "ServiceWorkerRegistration interface: attribute cookies": "FAIL",
+      "ServiceWorkerRegistration interface: self.registration must inherit property \"cookies\" with the proper type": "FAIL",
+      "Stringification of self.registration.cookies": "FAIL"
+    }
+  },
+  "cookiestore/idlharness.https.any.js#dedicatedworker": {
+    "total": 22
+  },
+  "cookiestore/idlharness.https.any.js#sharedworker": {
+    "total": 22
+  },
+  "cookiestore/serviceworker_cookieStore_cross_origin.https.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "cookieStore.get() in ServiceWorker reads cookie set in cross-origin frame": "TIMEOUT"
+    }
+  },
+  "cookiestore/serviceworker_cookieStore_subscriptions_reset.https.html": {
+    "total": 2,
+    "failures": {
+      "cookiechange subscriptions persist across service worker updates": "FAIL",
+      "cookiechange subscriptions reset across service worker unregistrations": "FAIL"
+    }
+  }
+}

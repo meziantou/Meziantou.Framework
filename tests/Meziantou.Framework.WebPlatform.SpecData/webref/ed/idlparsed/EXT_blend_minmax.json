@@ -1,0 +1,103 @@
+{
+  "spec": {
+    "title": "WebGL EXT_blend_minmax Khronos Ratified Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/EXT_blend_minmax/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "EXT_blend_minmax"
+        ],
+        "Worker": [
+          "EXT_blend_minmax"
+        ]
+      }
+    },
+    "idlNames": {
+      "EXT_blend_minmax": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface EXT_blend_minmax {\n  const GLenum MIN_EXT = 0x8007;\n  const GLenum MAX_EXT = 0x8008;\n};",
+        "type": "interface",
+        "name": "EXT_blend_minmax",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "MIN_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8007"
+            }
+          },
+          {
+            "type": "const",
+            "name": "MAX_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8008"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EXT_blend_minmax"
+      ],
+      "Worker": [
+        "EXT_blend_minmax"
+      ]
+    },
+    "dependencies": {
+      "EXT_blend_minmax": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

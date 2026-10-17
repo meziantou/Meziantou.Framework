@@ -1,0 +1,866 @@
+{
+  "spec": {
+    "title": "WebXR Depth Sensing Module",
+    "url": "https://immersive-web.github.io/depth-sensing/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "XRDepthInformation",
+          "XRCPUDepthInformation",
+          "XRWebGLDepthInformation",
+          "XRGPUDepthInformation"
+        ]
+      }
+    },
+    "idlNames": {
+      "XRDepthType": {
+        "fragment": "enum XRDepthType {\n  \"raw\",\n  \"smooth\",\n};",
+        "type": "enum",
+        "name": "XRDepthType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "raw",
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthtype-raw"
+          },
+          {
+            "type": "enum-value",
+            "value": "smooth",
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthtype-smooth"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/depth-sensing/#enumdef-xrdepthtype"
+      },
+      "XRDepthUsage": {
+        "fragment": "enum XRDepthUsage {\n  \"cpu-optimized\",\n  \"gpu-optimized\",\n};",
+        "type": "enum",
+        "name": "XRDepthUsage",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "cpu-optimized",
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthusage-cpu-optimized"
+          },
+          {
+            "type": "enum-value",
+            "value": "gpu-optimized",
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthusage-gpu-optimized"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/depth-sensing/#enumdef-xrdepthusage"
+      },
+      "XRDepthDataFormat": {
+        "fragment": "enum XRDepthDataFormat {\n  \"luminance-alpha\",\n  \"float32\",\n  \"unsigned-short\",\n};",
+        "type": "enum",
+        "name": "XRDepthDataFormat",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "luminance-alpha",
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthdataformat-luminance-alpha"
+          },
+          {
+            "type": "enum-value",
+            "value": "float32",
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthdataformat-float32"
+          },
+          {
+            "type": "enum-value",
+            "value": "unsigned-short",
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthdataformat-unsigned-short"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/depth-sensing/#enumdef-xrdepthdataformat"
+      },
+      "XRDepthStateInit": {
+        "fragment": "dictionary XRDepthStateInit {\n  required sequence<XRDepthUsage> usagePreference;\n  required sequence<XRDepthDataFormat> dataFormatPreference;\n  sequence<XRDepthType> depthTypeRequest;\n  boolean matchDepthView = true;\n};",
+        "type": "dictionary",
+        "name": "XRDepthStateInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "usagePreference",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRDepthUsage"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthstateinit-usagepreference"
+          },
+          {
+            "type": "field",
+            "name": "dataFormatPreference",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRDepthDataFormat"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthstateinit-dataformatpreference"
+          },
+          {
+            "type": "field",
+            "name": "depthTypeRequest",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRDepthType"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthstateinit-depthtyperequest"
+          },
+          {
+            "type": "field",
+            "name": "matchDepthView",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthstateinit-matchdepthview"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/depth-sensing/#dictdef-xrdepthstateinit"
+      },
+      "XRDepthInformation": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface XRDepthInformation {\n  readonly attribute unsigned long width;\n  readonly attribute unsigned long height;\n\n  [SameObject] readonly attribute XRRigidTransform normDepthBufferFromNormView;\n  readonly attribute float rawValueToMeters;\n};",
+        "type": "interface",
+        "name": "XRDepthInformation",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthinformation-width"
+          },
+          {
+            "type": "attribute",
+            "name": "height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthinformation-height"
+          },
+          {
+            "type": "attribute",
+            "name": "normDepthBufferFromNormView",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRRigidTransform"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthinformation-normdepthbufferfromnormview"
+          },
+          {
+            "type": "attribute",
+            "name": "rawValueToMeters",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrdepthinformation-rawvaluetometers"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/depth-sensing/#xrdepthinformation"
+      },
+      "XRCPUDepthInformation": {
+        "fragment": "[Exposed=Window]\ninterface XRCPUDepthInformation : XRDepthInformation {\n  [SameObject] readonly attribute ArrayBuffer data;\n\n  float getDepthInMeters(float x, float y);\n};",
+        "type": "interface",
+        "name": "XRCPUDepthInformation",
+        "inheritance": "XRDepthInformation",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrcpudepthinformation-data"
+          },
+          {
+            "type": "operation",
+            "name": "getDepthInMeters",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "x",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "y",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrcpudepthinformation-getdepthinmeters"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/depth-sensing/#xrcpudepthinformation"
+      },
+      "XRWebGLDepthInformation": {
+        "fragment": "[Exposed=Window]\ninterface XRWebGLDepthInformation : XRDepthInformation {\n  [SameObject] readonly attribute WebGLTexture texture;\n\n  readonly attribute XRTextureType textureType;\n  readonly attribute unsigned long? imageIndex;\n};",
+        "type": "interface",
+        "name": "XRWebGLDepthInformation",
+        "inheritance": "XRDepthInformation",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "texture",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WebGLTexture"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrwebgldepthinformation-texture"
+          },
+          {
+            "type": "attribute",
+            "name": "textureType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRTextureType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrwebgldepthinformation-texturetype"
+          },
+          {
+            "type": "attribute",
+            "name": "imageIndex",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrwebgldepthinformation-imageindex"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/depth-sensing/#xrwebgldepthinformation"
+      },
+      "XRGPUDepthInformation": {
+        "fragment": "[Exposed=Window]\ninterface XRGPUDepthInformation : XRDepthInformation {\n  [SameObject] readonly attribute GPUTexture texture;\n\n  GPUTextureViewDescriptor getViewDescriptor();\n};",
+        "type": "interface",
+        "name": "XRGPUDepthInformation",
+        "inheritance": "XRDepthInformation",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "texture",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GPUTexture"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrgpudepthinformation-texture"
+          },
+          {
+            "type": "operation",
+            "name": "getViewDescriptor",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GPUTextureViewDescriptor"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/depth-sensing/#dom-xrgpudepthinformation-getviewdescriptor"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/depth-sensing/#xrgpudepthinformation"
+      }
+    },
+    "idlExtendedNames": {
+      "XRSessionInit": [
+        {
+          "fragment": "partial dictionary XRSessionInit {\n  XRDepthStateInit depthSensing;\n};",
+          "type": "dictionary",
+          "name": "XRSessionInit",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "depthSensing",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XRDepthStateInit"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://immersive-web.github.io/depth-sensing/#dom-xrsessioninit-depthsensing"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "XRSession": [
+        {
+          "fragment": "partial interface XRSession {\n  readonly attribute XRDepthUsage depthUsage;\n  readonly attribute XRDepthDataFormat depthDataFormat;\n  readonly attribute XRDepthType? depthType;\n  readonly attribute boolean? depthActive;\n\n  undefined pauseDepthSensing();\n  undefined resumeDepthSensing();\n};",
+          "type": "interface",
+          "name": "XRSession",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "depthUsage",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XRDepthUsage"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/depth-sensing/#dom-xrsession-depthusage"
+            },
+            {
+              "type": "attribute",
+              "name": "depthDataFormat",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XRDepthDataFormat"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/depth-sensing/#dom-xrsession-depthdataformat"
+            },
+            {
+              "type": "attribute",
+              "name": "depthType",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "XRDepthType"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/depth-sensing/#dom-xrsession-depthtype"
+            },
+            {
+              "type": "attribute",
+              "name": "depthActive",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/depth-sensing/#dom-xrsession-depthactive"
+            },
+            {
+              "type": "operation",
+              "name": "pauseDepthSensing",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/depth-sensing/#dom-xrsession-pausedepthsensing"
+            },
+            {
+              "type": "operation",
+              "name": "resumeDepthSensing",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/depth-sensing/#dom-xrsession-resumedepthsensing"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "XRDepthInformation": [
+        {
+          "fragment": "XRDepthInformation includes XRViewGeometry;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "XRDepthInformation",
+          "includes": "XRViewGeometry"
+        }
+      ],
+      "XRFrame": [
+        {
+          "fragment": "partial interface XRFrame {\n  XRCPUDepthInformation? getDepthInformation(XRView view);\n};",
+          "type": "interface",
+          "name": "XRFrame",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getDepthInformation",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "XRCPUDepthInformation"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "view",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRView"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/depth-sensing/#dom-xrframe-getdepthinformation"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "XRWebGLBinding": [
+        {
+          "fragment": "partial interface XRWebGLBinding {\n  XRWebGLDepthInformation? getDepthInformation(XRView view);\n};",
+          "type": "interface",
+          "name": "XRWebGLBinding",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getDepthInformation",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "XRWebGLDepthInformation"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "view",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRView"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/depth-sensing/#dom-xrwebglbinding-getdepthinformation"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "XRGPUBinding": [
+        {
+          "fragment": "partial interface XRGPUBinding {\n  XRGPUDepthInformation? getDepthInformation(XRView view);\n};",
+          "type": "interface",
+          "name": "XRGPUBinding",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getDepthInformation",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "XRGPUDepthInformation"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "view",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRView"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/depth-sensing/#dom-xrgpubinding-getdepthinformation"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "XRDepthInformation",
+        "XRCPUDepthInformation",
+        "XRWebGLDepthInformation",
+        "XRGPUDepthInformation"
+      ]
+    },
+    "dependencies": {
+      "XRDepthStateInit": [
+        "XRDepthUsage",
+        "XRDepthDataFormat",
+        "XRDepthType"
+      ],
+      "XRSessionInit": [
+        "XRDepthStateInit"
+      ],
+      "XRSession": [
+        "XRDepthUsage",
+        "XRDepthDataFormat",
+        "XRDepthType"
+      ],
+      "XRDepthInformation": [
+        "XRRigidTransform",
+        "XRViewGeometry"
+      ],
+      "XRCPUDepthInformation": [
+        "XRDepthInformation",
+        "ArrayBuffer"
+      ],
+      "XRFrame": [
+        "XRCPUDepthInformation",
+        "XRView"
+      ],
+      "XRWebGLDepthInformation": [
+        "XRDepthInformation",
+        "WebGLTexture",
+        "XRTextureType"
+      ],
+      "XRWebGLBinding": [
+        "XRWebGLDepthInformation",
+        "XRView"
+      ],
+      "XRGPUDepthInformation": [
+        "XRDepthInformation",
+        "GPUTexture",
+        "GPUTextureViewDescriptor"
+      ],
+      "XRGPUBinding": [
+        "XRGPUDepthInformation",
+        "XRView"
+      ]
+    },
+    "externalDependencies": [
+      "XRSessionInit",
+      "XRSession",
+      "XRRigidTransform",
+      "ArrayBuffer",
+      "XRFrame",
+      "XRView",
+      "WebGLTexture",
+      "XRTextureType",
+      "XRWebGLBinding",
+      "GPUTexture",
+      "GPUTextureViewDescriptor",
+      "XRGPUBinding"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

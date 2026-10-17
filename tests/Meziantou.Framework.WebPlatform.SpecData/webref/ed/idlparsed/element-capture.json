@@ -1,0 +1,204 @@
+{
+  "spec": {
+    "title": "Element Capture",
+    "url": "https://screen-share.github.io/element-capture/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "RestrictionTarget",
+          "BrowserCaptureMediaStreamTrack"
+        ],
+        "Worker": [
+          "RestrictionTarget"
+        ]
+      }
+    },
+    "idlNames": {
+      "RestrictionTarget": {
+        "fragment": "[Exposed=(Window,Worker), Serializable]\ninterface RestrictionTarget {\n  [Exposed=Window, SecureContext] static Promise<RestrictionTarget> fromElement(Element element);\n};",
+        "type": "interface",
+        "name": "RestrictionTarget",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "fromElement",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RestrictionTarget"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "element",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "SecureContext",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://screen-share.github.io/element-capture/#dom-restrictiontarget-fromelement"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://screen-share.github.io/element-capture/#dom-restrictiontarget"
+      }
+    },
+    "idlExtendedNames": {
+      "BrowserCaptureMediaStreamTrack": [
+        {
+          "fragment": "[Exposed = Window]\npartial interface BrowserCaptureMediaStreamTrack {\n  Promise<undefined> restrictTo(RestrictionTarget? RestrictionTarget);\n};",
+          "type": "interface",
+          "name": "BrowserCaptureMediaStreamTrack",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "restrictTo",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "RestrictionTarget",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": true,
+                    "union": false,
+                    "idlType": "RestrictionTarget"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://screen-share.github.io/element-capture/#dom-browsercapturemediastreamtrack-restrictto"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "RestrictionTarget",
+        "BrowserCaptureMediaStreamTrack"
+      ],
+      "Worker": [
+        "RestrictionTarget"
+      ]
+    },
+    "dependencies": {
+      "RestrictionTarget": [
+        "RestrictionTarget",
+        "Element"
+      ],
+      "BrowserCaptureMediaStreamTrack": [
+        "RestrictionTarget"
+      ]
+    },
+    "externalDependencies": [
+      "Element",
+      "BrowserCaptureMediaStreamTrack"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

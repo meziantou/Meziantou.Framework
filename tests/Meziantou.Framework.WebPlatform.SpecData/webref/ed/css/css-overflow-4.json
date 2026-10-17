@@ -1,0 +1,452 @@
+{
+  "spec": {
+    "title": "CSS Overflow Module Level 4",
+    "url": "https://drafts.csswg.org/css-overflow-4/"
+  },
+  "properties": [
+    {
+      "name": "overflow-clip-margin-top",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-overflow-clip-margin-top",
+      "value": "<visual-box> || <length>",
+      "initial": "0px",
+      "appliesTo": "boxes to which overflow applies",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "the computed <length> and a <visual-box> keyword",
+      "animationType": "per computed value if the <visual-box> values match; otherwise discrete",
+      "canonicalOrder": "per grammar",
+      "logicalPropertyGroup": "overflow-clip-margin",
+      "styleDeclaration": [
+        "overflow-clip-margin-top",
+        "overflowClipMarginTop"
+      ]
+    },
+    {
+      "name": "overflow-clip-margin-right",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-overflow-clip-margin-right",
+      "value": "<visual-box> || <length>",
+      "initial": "0px",
+      "appliesTo": "boxes to which overflow applies",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "the computed <length> and a <visual-box> keyword",
+      "animationType": "per computed value if the <visual-box> values match; otherwise discrete",
+      "canonicalOrder": "per grammar",
+      "logicalPropertyGroup": "overflow-clip-margin",
+      "styleDeclaration": [
+        "overflow-clip-margin-right",
+        "overflowClipMarginRight"
+      ]
+    },
+    {
+      "name": "overflow-clip-margin-bottom",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-overflow-clip-margin-bottom",
+      "value": "<visual-box> || <length>",
+      "initial": "0px",
+      "appliesTo": "boxes to which overflow applies",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "the computed <length> and a <visual-box> keyword",
+      "animationType": "per computed value if the <visual-box> values match; otherwise discrete",
+      "canonicalOrder": "per grammar",
+      "logicalPropertyGroup": "overflow-clip-margin",
+      "styleDeclaration": [
+        "overflow-clip-margin-bottom",
+        "overflowClipMarginBottom"
+      ]
+    },
+    {
+      "name": "overflow-clip-margin-left",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-overflow-clip-margin-left",
+      "value": "<visual-box> || <length>",
+      "initial": "0px",
+      "appliesTo": "boxes to which overflow applies",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "the computed <length> and a <visual-box> keyword",
+      "animationType": "per computed value if the <visual-box> values match; otherwise discrete",
+      "canonicalOrder": "per grammar",
+      "logicalPropertyGroup": "overflow-clip-margin",
+      "styleDeclaration": [
+        "overflow-clip-margin-left",
+        "overflowClipMarginLeft"
+      ]
+    },
+    {
+      "name": "overflow-clip-margin-block-start",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-overflow-clip-margin-block-start",
+      "value": "<visual-box> || <length>",
+      "initial": "0px",
+      "appliesTo": "boxes to which overflow applies",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "the computed <length> and a <visual-box> keyword",
+      "animationType": "per computed value if the <visual-box> values match; otherwise discrete",
+      "canonicalOrder": "per grammar",
+      "logicalPropertyGroup": "overflow-clip-margin",
+      "styleDeclaration": [
+        "overflow-clip-margin-block-start",
+        "overflowClipMarginBlockStart"
+      ]
+    },
+    {
+      "name": "overflow-clip-margin-inline-start",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-overflow-clip-margin-inline-start",
+      "value": "<visual-box> || <length>",
+      "initial": "0px",
+      "appliesTo": "boxes to which overflow applies",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "the computed <length> and a <visual-box> keyword",
+      "animationType": "per computed value if the <visual-box> values match; otherwise discrete",
+      "canonicalOrder": "per grammar",
+      "logicalPropertyGroup": "overflow-clip-margin",
+      "styleDeclaration": [
+        "overflow-clip-margin-inline-start",
+        "overflowClipMarginInlineStart"
+      ]
+    },
+    {
+      "name": "overflow-clip-margin-block-end",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-overflow-clip-margin-block-end",
+      "value": "<visual-box> || <length>",
+      "initial": "0px",
+      "appliesTo": "boxes to which overflow applies",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "the computed <length> and a <visual-box> keyword",
+      "animationType": "per computed value if the <visual-box> values match; otherwise discrete",
+      "canonicalOrder": "per grammar",
+      "logicalPropertyGroup": "overflow-clip-margin",
+      "styleDeclaration": [
+        "overflow-clip-margin-block-end",
+        "overflowClipMarginBlockEnd"
+      ]
+    },
+    {
+      "name": "overflow-clip-margin-inline-end",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-overflow-clip-margin-inline-end",
+      "value": "<visual-box> || <length>",
+      "initial": "0px",
+      "appliesTo": "boxes to which overflow applies",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "the computed <length> and a <visual-box> keyword",
+      "animationType": "per computed value if the <visual-box> values match; otherwise discrete",
+      "canonicalOrder": "per grammar",
+      "logicalPropertyGroup": "overflow-clip-margin",
+      "styleDeclaration": [
+        "overflow-clip-margin-inline-end",
+        "overflowClipMarginInlineEnd"
+      ]
+    },
+    {
+      "name": "overflow-clip-margin",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-overflow-clip-margin",
+      "value": "<visual-box> || <length>",
+      "initial": "0px",
+      "appliesTo": "boxes to which overflow applies",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "<visual-box>",
+          "prose": "Specifies the box edge to use as the overflow clip edge origin, i.e. when the specified offset is zero. If omitted, defaults to padding-box on non-replaced elements, or content-box on replaced elements. Application of overflow-clip-margin to replaced elements is still being worked out. [Issue #7144]",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-overflow-clip-margin-visual-box",
+          "type": "value",
+          "value": "<visual-box>"
+        },
+        {
+          "name": "<length>",
+          "prose": "The specified offset dictates how much the overflow clip edge is expanded from the specified box edge. Negative values shrink the box, instead. Defaults to zero if omitted.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-overflow-clip-margin-length",
+          "type": "value",
+          "value": "<length>"
+        }
+      ],
+      "styleDeclaration": [
+        "overflow-clip-margin",
+        "overflowClipMargin"
+      ],
+      "longhands": [
+        "overflow-clip-margin-top",
+        "overflow-clip-margin-right",
+        "overflow-clip-margin-bottom",
+        "overflow-clip-margin-left"
+      ]
+    },
+    {
+      "name": "overflow-clip-margin-inline",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-overflow-clip-margin-inline",
+      "value": "<visual-box> || <length>",
+      "initial": "0px",
+      "appliesTo": "boxes to which overflow applies",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "overflow-clip-margin-inline",
+        "overflowClipMarginInline"
+      ],
+      "longhands": [
+        "overflow-clip-margin-inline-start",
+        "overflow-clip-margin-inline-end"
+      ]
+    },
+    {
+      "name": "overflow-clip-margin-block",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-overflow-clip-margin-block",
+      "value": "<visual-box> || <length>",
+      "initial": "0px",
+      "appliesTo": "boxes to which overflow applies",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "overflow-clip-margin-block",
+        "overflowClipMarginBlock"
+      ],
+      "longhands": [
+        "overflow-clip-margin-block-start",
+        "overflow-clip-margin-block-end"
+      ]
+    },
+    {
+      "name": "text-overflow",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-text-overflow",
+      "value": "[ clip | ellipsis | <string> | fade | <fade()> ]{1,2}",
+      "initial": "clip",
+      "appliesTo": "block containers",
+      "inherited": "no",
+      "percentages": "refer to the width of the line box",
+      "computedValue": "as specified, with lengths made absolute",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "clip",
+          "prose": "Clip inline content that overflows its block container element. Characters may be only partially rendered.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#overflow-clip",
+          "type": "value",
+          "value": "clip"
+        },
+        {
+          "name": "ellipsis",
+          "prose": "Render an ellipsis character (U+2026) to represent clipped inline content. Implementations may substitute a more language, script, or writing-mode appropriate ellipsis character, or three dots \"...\" if the ellipsis character is unavailable.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#overflow-ellipsis",
+          "type": "value",
+          "value": "ellipsis"
+        },
+        {
+          "name": "fade()",
+          "value": "fade( [ <length-percentage> ] )",
+          "href": "https://drafts.csswg.org/css-overflow-4/#funcdef-text-overflow-fade",
+          "type": "function"
+        },
+        {
+          "name": "fade",
+          "prose": "Same as fade(), but the distance over which the fading effect is applied is determined by the UA. 1em is suggested as a reasonable value.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-text-overflow-fade",
+          "type": "value",
+          "value": "fade"
+        }
+      ],
+      "styleDeclaration": [
+        "text-overflow",
+        "textOverflow"
+      ]
+    },
+    {
+      "name": "block-ellipsis",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-block-ellipsis",
+      "value": "no-ellipsis | auto | <string>",
+      "initial": "no-ellipsis",
+      "appliesTo": "block containers",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "no-ellipsis",
+          "prose": "The rendering is unaffected.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-block-ellipsis-no-ellipsis",
+          "type": "value",
+          "value": "no-ellipsis"
+        },
+        {
+          "name": "auto",
+          "prose": "Render an ellipsis character (U+2026)—​or a more typographically-appropriate equivalent—​as the block overflow ellipsis at the end of the affected line box. UAs should use the conventions of the content language, writing system, and writing mode to determine the most appropriate ellipsis string.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-block-ellipsis-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "<string>",
+          "prose": "Render the specified string as the block overflow ellipsis at the end of the affected line box. The UA may truncate this string if it is absurdly long. When set to the empty string, the behavior is identical to the no-ellipsis value. All forced line breaks inside the specified string (regardless of white-space value) must be collapsed, as defined for collapsible segment breaks in CSS Text 3 § 4.1.3 Segment Break Transformation Rules.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-block-ellipsis-string",
+          "type": "value",
+          "value": "<string>"
+        }
+      ],
+      "styleDeclaration": [
+        "block-ellipsis",
+        "blockEllipsis"
+      ]
+    },
+    {
+      "name": "line-clamp",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-line-clamp",
+      "value": "none | [<integer [1,∞]> || <'block-ellipsis'>] -webkit-legacy?",
+      "initial": "none",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Sets max-lines to none, continue to auto, and block-ellipsis to no-ellipsis.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-line-clamp-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<integer [1,∞]>",
+          "prose": "Sets continue to collapse if either or both values are specified, unless the -webkit-legacy keyword is also specified. Sets max-lines to the specified <integer> or to none if omitted, and block-ellipsis to other component of the value if specified or to auto if omitted.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-line-clamp-integer-1",
+          "type": "value",
+          "value": "<integer [1,∞]>"
+        },
+        {
+          "name": "<block-ellipsis>",
+          "prose": "Sets continue to collapse if either or both values are specified, unless the -webkit-legacy keyword is also specified. Sets max-lines to the specified <integer> or to none if omitted, and block-ellipsis to other component of the value if specified or to auto if omitted.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-line-clamp-block-ellipsis",
+          "type": "value",
+          "value": "<block-ellipsis>"
+        },
+        {
+          "name": "-webkit-legacy",
+          "prose": "Sets continue to -webkit-legacy.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-line-clamp--webkit-legacy",
+          "type": "value",
+          "value": "-webkit-legacy"
+        }
+      ],
+      "styleDeclaration": [
+        "line-clamp",
+        "lineClamp"
+      ],
+      "longhands": [
+        "max-lines",
+        "block-ellipsis",
+        "continue"
+      ]
+    },
+    {
+      "name": "-webkit-line-clamp",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef--webkit-line-clamp",
+      "value": "none | <integer [1,∞]>",
+      "initial": "none",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "-webkit-line-clamp",
+        "WebkitLineClamp",
+        "webkitLineClamp"
+      ],
+      "longhands": [
+        "max-lines",
+        "block-ellipsis",
+        "continue"
+      ]
+    },
+    {
+      "name": "continue",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-continue",
+      "value": "auto | discard | collapse | -webkit-legacy",
+      "initial": "auto",
+      "appliesTo": "block containers and multicol containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "-webkit-legacy",
+          "prose": "The -webkit-legacy value behaves identically to collapse, except that it only takes effect if the specified value of the display property is -webkit-box or -webkit-inline-box and the value of the -webkit-box-orient property is vertical.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-continue--webkit-legacy",
+          "type": "value",
+          "value": "-webkit-legacy"
+        },
+        {
+          "name": "auto",
+          "prose": "If the box has more content than can fit, the excess content is handled according to the usual rules.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-continue-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "collapse",
+          "prose": "If the box is a block container, then it must establish an independent formatting context that also becomes a line-clamp container. This causes all content after the clamp point to be visually hidden, and to not be taken into account for the box’s automatic block size. If the box is a multicol container, the behavior is the same as auto.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-continue-collapse",
+          "type": "value",
+          "value": "collapse"
+        },
+        {
+          "name": "discard",
+          "prose": "The box must establish an independent formatting context and becomes a fragmentation container that captures region breaks, if it is not already. [CSS-BREAK-3] Content after the first region break is not rendered. See § 5.3.2 Discarding Content for further details. continue: discard is meant to generalize and replace the region-fragment property from [CSS-REGIONS-1]. Once it is sufficiently stable in this specification, region-fragment should be removed from the regions specification in favor of this.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-continue-discard",
+          "type": "value",
+          "value": "discard"
+        }
+      ],
+      "styleDeclaration": [
+        "continue"
+      ]
+    },
+    {
+      "name": "max-lines",
+      "href": "https://drafts.csswg.org/css-overflow-4/#propdef-max-lines",
+      "value": "none | <integer [1,∞]>",
+      "initial": "none",
+      "appliesTo": "block containers which are also either line-clamp containers or fragmentation containers that capture region breaks",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the keyword none or an integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "none",
+          "prose": "If the value of max-lines is not none, then, given a computed value of N:",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-max-lines-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "max-lines",
+        "maxLines"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

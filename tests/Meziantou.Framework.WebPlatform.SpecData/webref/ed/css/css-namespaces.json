@@ -1,0 +1,25 @@
+{
+  "spec": {
+    "title": "CSS Namespaces Module Level 3",
+    "url": "https://drafts.csswg.org/css-namespaces-3/"
+  },
+  "properties": [],
+  "atrules": [
+    {
+      "name": "@namespace",
+      "prose": "The @namespace at-rule declares a namespace prefix and associates it with a given namespace name (a string). This namespace prefix can then be used in namespace-qualified names such as the CSS qualified names defined below.",
+      "href": "https://drafts.csswg.org/css-namespaces-3/#at-ruledef-namespace",
+      "descriptors": [],
+      "value": "@namespace <namespace-prefix>? [ <string> | <url> ] ;"
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<namespace-prefix>",
+      "href": "https://drafts.csswg.org/css-namespaces-3/#typedef-namespace-prefix",
+      "type": "type",
+      "value": "<ident>"
+    }
+  ]
+}

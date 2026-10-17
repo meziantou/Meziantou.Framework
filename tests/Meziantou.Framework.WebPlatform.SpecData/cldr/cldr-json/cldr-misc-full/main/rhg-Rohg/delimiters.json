@@ -1,0 +1,16 @@
+{
+  "main": {
+    "rhg-Rohg": {
+      "identity": {
+        "language": "rhg",
+        "script": "Rohg"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

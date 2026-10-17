@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ga-GB": {
+      "identity": {
+        "language": "ga",
+        "territory": "GB"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,154 @@
+{
+  "spec": {
+    "title": "CSS Color Adjustment Module Level 1",
+    "url": "https://drafts.csswg.org/css-color-adjust-1/"
+  },
+  "properties": [
+    {
+      "name": "color-scheme",
+      "href": "https://drafts.csswg.org/css-color-adjust-1/#propdef-color-scheme",
+      "value": "normal | [ light | dark | <custom-ident> ]+ && only?",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "the keyword normal, or a color scheme support",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "The element color scheme is the same as the page color scheme. (This includes noting whether the color scheme was defaulted.)",
+          "href": "https://drafts.csswg.org/css-color-adjust-1/#valdef-color-scheme-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "light",
+          "prose": "Indicates that the element supports a light and/or dark color scheme, as appropriate. The element’s color scheme support will include the keywords, in the order they’re specified.",
+          "href": "https://drafts.csswg.org/css-color-adjust-1/#valdef-color-scheme-light",
+          "type": "value",
+          "value": "light"
+        },
+        {
+          "name": "dark",
+          "prose": "Indicates that the element supports a light and/or dark color scheme, as appropriate. The element’s color scheme support will include the keywords, in the order they’re specified.",
+          "href": "https://drafts.csswg.org/css-color-adjust-1/#valdef-color-scheme-dark",
+          "type": "value",
+          "value": "dark"
+        },
+        {
+          "name": "only",
+          "prose": "Forbids the user agent from overriding the color scheme for the element. The element’s color scheme support will have a flag indicating sole support.",
+          "href": "https://drafts.csswg.org/css-color-adjust-1/#valdef-color-scheme-only",
+          "type": "value",
+          "value": "only"
+        },
+        {
+          "name": "<custom-ident>",
+          "prose": "<custom-ident> values are meaningless, and exist only for future compatibility, so that future added color schemes do not invalidate the color-scheme declaration in legacy user agents. User agents must not interpret any <custom-ident> values as having a meaning; any additional recognized color schemes must be explicitly added to this property’s grammar. The normal, light, dark, and only keywords are not valid <custom-ident>s in this property.",
+          "href": "https://drafts.csswg.org/css-color-adjust-1/#valdef-color-scheme-custom-ident",
+          "type": "value",
+          "value": "<custom-ident>"
+        }
+      ],
+      "styleDeclaration": [
+        "color-scheme",
+        "colorScheme"
+      ]
+    },
+    {
+      "name": "forced-color-adjust",
+      "href": "https://drafts.csswg.org/css-color-adjust-1/#propdef-forced-color-adjust",
+      "value": "auto | none | preserve-parent-color",
+      "initial": "auto",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The element’s colors are automatically adjusted by the UA in forced colors mode.",
+          "href": "https://drafts.csswg.org/css-color-adjust-1/#valdef-forced-color-adjust-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "none",
+          "prose": "The element’s colors are not automatically adjusted by the UA in forced colors mode. Authors should only use this value when they are themselves adjusting the colors to support the user’s color and contrast needs and need to make changes to the UA’s default adjustments to provide a more appropriate user experience for those elements.",
+          "href": "https://drafts.csswg.org/css-color-adjust-1/#valdef-forced-color-adjust-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "preserve-parent-color",
+          "prose": "In forced colors mode, if the color property inherits from its parent (i.e. there is no cascaded value or the cascaded value is currentColor, inherit, or another keyword that inherits from the parent), then it computes to the used color of its parent’s color value. In all other respects, behaves the same as none.",
+          "href": "https://drafts.csswg.org/css-color-adjust-1/#valdef-forced-color-adjust-preserve-parent-color",
+          "type": "value",
+          "value": "preserve-parent-color"
+        }
+      ],
+      "styleDeclaration": [
+        "forced-color-adjust",
+        "forcedColorAdjust"
+      ]
+    },
+    {
+      "name": "print-color-adjust",
+      "href": "https://drafts.csswg.org/css-color-adjust-1/#propdef-print-color-adjust",
+      "value": "economy | exact",
+      "initial": "economy",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "economy",
+          "prose": "The user agent should make adjustments to the page’s styling as it deems necessary and prudent for the output device. For example, if the document is being printed, a user agent might ignore any backgrounds and adjust text color to be sufficiently dark, to minimize ink usage.",
+          "href": "https://drafts.csswg.org/css-color-adjust-1/#valdef-print-color-adjust-economy",
+          "type": "value",
+          "value": "economy"
+        },
+        {
+          "name": "exact",
+          "prose": "This value indicates that the page is using color and styling on the specified element in a way which is important and significant, and which should not be tweaked or changed except at the user’s request. For example, a mapping website offering printed directions might \"zebra-stripe\" the steps in the directions, alternating between white and light gray backgrounds. Losing this zebra-striping and having a pure-white background would make the directions harder to read with a quick glance when distracted in a car.",
+          "href": "https://drafts.csswg.org/css-color-adjust-1/#valdef-print-color-adjust-exact",
+          "type": "value",
+          "value": "exact"
+        }
+      ],
+      "styleDeclaration": [
+        "print-color-adjust",
+        "printColorAdjust"
+      ]
+    },
+    {
+      "name": "color-adjust",
+      "href": "https://drafts.csswg.org/css-color-adjust-1/#propdef-color-adjust",
+      "value": "<'print-color-adjust'>",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "color-adjust",
+        "colorAdjust"
+      ],
+      "longhands": [
+        "print-color-adjust"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

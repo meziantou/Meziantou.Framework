@@ -1,0 +1,17 @@
+{
+  "main": {
+    "az-Arab-TR": {
+      "identity": {
+        "language": "az",
+        "script": "Arab",
+        "territory": "TR"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "‹",
+        "alternateQuotationEnd": "›"
+      }
+    }
+  }
+}

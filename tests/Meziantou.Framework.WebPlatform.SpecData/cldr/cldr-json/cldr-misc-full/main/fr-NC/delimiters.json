@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-NC": {
+      "identity": {
+        "language": "fr",
+        "territory": "NC"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

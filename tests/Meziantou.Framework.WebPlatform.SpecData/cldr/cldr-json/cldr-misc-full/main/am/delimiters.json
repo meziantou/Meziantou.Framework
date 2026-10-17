@@ -1,0 +1,15 @@
+{
+  "main": {
+    "am": {
+      "identity": {
+        "language": "am"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "‹",
+        "alternateQuotationEnd": "›"
+      }
+    }
+  }
+}

@@ -1,0 +1,778 @@
+{
+  "spec": {
+    "title": "Attribution Level 1",
+    "url": "https://w3c.github.io/attribution/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "AttributionAggregationServices",
+          "Attribution",
+          "Attribution",
+          "Attribution"
+        ]
+      }
+    },
+    "idlNames": {
+      "AttributionAggregationProtocol": {
+        "fragment": "enum AttributionAggregationProtocol { \"dap-18-histogram\" };",
+        "type": "enum",
+        "name": "AttributionAggregationProtocol",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "dap-18-histogram",
+            "href": "https://w3c.github.io/attribution/#dom-attributionaggregationprotocol-dap-18-histogram"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/attribution/#enumdef-attributionaggregationprotocol"
+      },
+      "AttributionAggregationService": {
+        "fragment": "dictionary AttributionAggregationService {\n  required AttributionAggregationProtocol protocol;\n};",
+        "type": "dictionary",
+        "name": "AttributionAggregationService",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "protocol",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AttributionAggregationProtocol"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/attribution/#dom-attributionaggregationservice-protocol"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/attribution/#dictdef-attributionaggregationservice"
+      },
+      "AttributionAggregationServices": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface AttributionAggregationServices {\n  readonly maplike<USVString, AttributionAggregationService>;\n};",
+        "type": "interface",
+        "name": "AttributionAggregationServices",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "maplike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "USVString"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "AttributionAggregationService"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": true,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/attribution/#attributionaggregationservices"
+      },
+      "Attribution": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface Attribution {\n  readonly attribute AttributionAggregationServices aggregationServices;\n};",
+        "type": "interface",
+        "name": "Attribution",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "aggregationServices",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AttributionAggregationServices"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/attribution/#dom-attribution-aggregationservices"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/attribution/#attribution"
+      },
+      "AttributionImpressionOptions": {
+        "fragment": "dictionary AttributionImpressionOptions {\n  required unsigned long histogramIndex;\n  unsigned long matchValue = 0;\n  sequence<USVString> conversionSites = [];\n  sequence<USVString> conversionCallers = [];\n  unsigned long lifetimeDays = 30;\n  long priority = 0;\n};",
+        "type": "dictionary",
+        "name": "AttributionImpressionOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "histogramIndex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/attribution/#dom-attributionimpressionoptions-histogramindex"
+          },
+          {
+            "type": "field",
+            "name": "matchValue",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/attribution/#dom-attributionimpressionoptions-matchvalue"
+          },
+          {
+            "type": "field",
+            "name": "conversionSites",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/attribution/#dom-attributionimpressionoptions-conversionsites"
+          },
+          {
+            "type": "field",
+            "name": "conversionCallers",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/attribution/#dom-attributionimpressionoptions-conversioncallers"
+          },
+          {
+            "type": "field",
+            "name": "lifetimeDays",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "30"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/attribution/#dom-attributionimpressionoptions-lifetimedays"
+          },
+          {
+            "type": "field",
+            "name": "priority",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/attribution/#dom-attributionimpressionoptions-priority"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/attribution/#dictdef-attributionimpressionoptions"
+      },
+      "AttributionImpressionResult": {
+        "fragment": "dictionary AttributionImpressionResult {\n};",
+        "type": "dictionary",
+        "name": "AttributionImpressionResult",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/attribution/#dictdef-attributionimpressionresult"
+      },
+      "AttributionConversionOptions": {
+        "fragment": "dictionary AttributionConversionOptions {\n  required USVString aggregationService;\n  double epsilon = 1.0;\n\n  required unsigned long histogramSize;\n\n  unsigned long lookbackDays;\n  sequence<unsigned long> matchValues = [];\n  sequence<USVString> impressionSites = [];\n  sequence<USVString> impressionCallers = [];\n\n  sequence<double> credit;\n  unsigned long value = 1;\n  unsigned long maxValue = 1;\n};",
+        "type": "dictionary",
+        "name": "AttributionConversionOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "aggregationService",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/attribution/#dom-attributionconversionoptions-aggregationservice"
+          },
+          {
+            "type": "field",
+            "name": "epsilon",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "1.0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/attribution/#dom-attributionconversionoptions-epsilon"
+          },
+          {
+            "type": "field",
+            "name": "histogramSize",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/attribution/#dom-attributionconversionoptions-histogramsize"
+          },
+          {
+            "type": "field",
+            "name": "lookbackDays",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/attribution/#dom-attributionconversionoptions-lookbackdays"
+          },
+          {
+            "type": "field",
+            "name": "matchValues",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/attribution/#dom-attributionconversionoptions-matchvalues"
+          },
+          {
+            "type": "field",
+            "name": "impressionSites",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/attribution/#dom-attributionconversionoptions-impressionsites"
+          },
+          {
+            "type": "field",
+            "name": "impressionCallers",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/attribution/#dom-attributionconversionoptions-impressioncallers"
+          },
+          {
+            "type": "field",
+            "name": "credit",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/attribution/#dom-attributionconversionoptions-credit"
+          },
+          {
+            "type": "field",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "1"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/attribution/#dom-attributionconversionoptions-value"
+          },
+          {
+            "type": "field",
+            "name": "maxValue",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "1"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/attribution/#dom-attributionconversionoptions-maxvalue"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/attribution/#dictdef-attributionconversionoptions"
+      },
+      "AttributionConversionResult": {
+        "fragment": "dictionary AttributionConversionResult {\n  required Uint8Array report;\n};",
+        "type": "dictionary",
+        "name": "AttributionConversionResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "report",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Uint8Array"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/attribution/#dom-attributionconversionresult-report"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/attribution/#dictdef-attributionconversionresult"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n  [SecureContext, SameObject] readonly attribute Attribution attribution;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "attribution",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Attribution"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/attribution/#dom-navigator-attribution"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Attribution": [
+        {
+          "fragment": "[SecureContext, Exposed=Window]\npartial interface Attribution {\n  Promise<AttributionImpressionResult> saveImpression(AttributionImpressionOptions options);\n};",
+          "type": "interface",
+          "name": "Attribution",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "saveImpression",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AttributionImpressionResult"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AttributionImpressionOptions"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/attribution/#dom-attribution-saveimpression"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        },
+        {
+          "fragment": "[SecureContext, Exposed=Window]\npartial interface Attribution {\n  Promise<AttributionConversionResult> measureConversion(AttributionConversionOptions options);\n};",
+          "type": "interface",
+          "name": "Attribution",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "measureConversion",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AttributionConversionResult"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "AttributionConversionOptions"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/attribution/#dom-attribution-measureconversion"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "AttributionAggregationServices",
+        "Attribution",
+        "Attribution",
+        "Attribution"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "Attribution"
+      ],
+      "AttributionAggregationService": [
+        "AttributionAggregationProtocol"
+      ],
+      "AttributionAggregationServices": [
+        "AttributionAggregationService"
+      ],
+      "Attribution": [
+        "AttributionAggregationServices",
+        "AttributionImpressionResult",
+        "AttributionImpressionOptions",
+        "AttributionConversionResult",
+        "AttributionConversionOptions"
+      ],
+      "AttributionImpressionOptions": [],
+      "AttributionImpressionResult": [],
+      "AttributionConversionOptions": [],
+      "AttributionConversionResult": [
+        "Uint8Array"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator",
+      "Uint8Array"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "spec": {
+    "title": "Ambient Light Sensor",
+    "url": "https://w3c.github.io/ambient-light/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "AmbientLightSensor"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "AmbientLightSensor": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface AmbientLightSensor : Sensor {\n  constructor(optional SensorOptions sensorOptions = {});\n  readonly attribute double? illuminance;\n};",
+        "type": "interface",
+        "name": "AmbientLightSensor",
+        "inheritance": "Sensor",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "sensorOptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SensorOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/ambient-light/#dom-ambientlightsensor-ambientlightsensor"
+          },
+          {
+            "type": "attribute",
+            "name": "illuminance",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ambient-light/#dom-ambientlightsensor-illuminance"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ambient-light/#ambientlightsensor"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "AmbientLightSensor"
+      ]
+    },
+    "dependencies": {
+      "AmbientLightSensor": [
+        "Sensor",
+        "SensorOptions"
+      ]
+    },
+    "externalDependencies": [
+      "Sensor",
+      "SensorOptions"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

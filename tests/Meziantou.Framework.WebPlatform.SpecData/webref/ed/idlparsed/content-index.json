@@ -1,0 +1,538 @@
+{
+  "spec": {
+    "title": "Content Index",
+    "url": "https://wicg.github.io/content-index/spec/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "ServiceWorker": [
+          "ContentIndexEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "ContentIndex"
+        ],
+        "Worker": [
+          "ContentIndex"
+        ]
+      }
+    },
+    "idlNames": {
+      "ContentCategory": {
+        "fragment": "enum ContentCategory {\n  \"\",\n  \"homepage\",\n  \"article\",\n  \"video\",\n  \"audio\",\n};",
+        "type": "enum",
+        "name": "ContentCategory",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "",
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentcategory"
+          },
+          {
+            "type": "enum-value",
+            "value": "homepage",
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentcategory-homepage"
+          },
+          {
+            "type": "enum-value",
+            "value": "article",
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentcategory-article"
+          },
+          {
+            "type": "enum-value",
+            "value": "video",
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentcategory-video"
+          },
+          {
+            "type": "enum-value",
+            "value": "audio",
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentcategory-audio"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/content-index/spec/#enumdef-contentcategory"
+      },
+      "ContentDescription": {
+        "fragment": "dictionary ContentDescription {\n  required DOMString id;\n  required DOMString title;\n  required DOMString description;\n  ContentCategory category = \"\";\n  sequence<ImageResource> icons = [];\n  required USVString url;\n};",
+        "type": "dictionary",
+        "name": "ContentDescription",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "id",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentdescription-id"
+          },
+          {
+            "type": "field",
+            "name": "title",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentdescription-title"
+          },
+          {
+            "type": "field",
+            "name": "description",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentdescription-description"
+          },
+          {
+            "type": "field",
+            "name": "category",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ContentCategory"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentdescription-category"
+          },
+          {
+            "type": "field",
+            "name": "icons",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ImageResource"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentdescription-icons"
+          },
+          {
+            "type": "field",
+            "name": "url",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentdescription-url"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/content-index/spec/#dictdef-contentdescription"
+      },
+      "ContentIndex": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface ContentIndex {\n  Promise<undefined> add(ContentDescription description);\n  Promise<undefined> delete(DOMString id);\n  Promise<sequence<ContentDescription>> getAll();\n};",
+        "type": "interface",
+        "name": "ContentIndex",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "add",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "description",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ContentDescription"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentindex-add"
+          },
+          {
+            "type": "operation",
+            "name": "delete",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "id",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentindex-delete"
+          },
+          {
+            "type": "operation",
+            "name": "getAll",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "ContentDescription"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentindex-getall"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/content-index/spec/#contentindex"
+      },
+      "ContentIndexEventInit": {
+        "fragment": "dictionary ContentIndexEventInit : ExtendableEventInit {\n  required DOMString id;\n};",
+        "type": "dictionary",
+        "name": "ContentIndexEventInit",
+        "inheritance": "ExtendableEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "id",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentindexeventinit-id"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/content-index/spec/#dictdef-contentindexeventinit"
+      },
+      "ContentIndexEvent": {
+        "fragment": "[Exposed=ServiceWorker]\ninterface ContentIndexEvent : ExtendableEvent {\n  constructor(DOMString type, ContentIndexEventInit init);\n  readonly attribute DOMString id;\n};",
+        "type": "interface",
+        "name": "ContentIndexEvent",
+        "inheritance": "ExtendableEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ContentIndexEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentindexevent-contentindexevent"
+          },
+          {
+            "type": "attribute",
+            "name": "id",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/content-index/spec/#dom-contentindexevent-id"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/content-index/spec/#contentindexevent"
+      }
+    },
+    "idlExtendedNames": {
+      "ServiceWorkerGlobalScope": [
+        {
+          "fragment": "partial interface ServiceWorkerGlobalScope {\n  attribute EventHandler oncontentdelete;\n};",
+          "type": "interface",
+          "name": "ServiceWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "oncontentdelete",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/content-index/spec/#dom-serviceworkerglobalscope-oncontentdelete"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "ServiceWorkerRegistration": [
+        {
+          "fragment": "partial interface ServiceWorkerRegistration {\n  [SameObject] readonly attribute ContentIndex index;\n};",
+          "type": "interface",
+          "name": "ServiceWorkerRegistration",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "index",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ContentIndex"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/content-index/spec/#dom-serviceworkerregistration-index"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "ContentIndex"
+      ],
+      "Worker": [
+        "ContentIndex"
+      ],
+      "ServiceWorker": [
+        "ContentIndexEvent"
+      ]
+    },
+    "dependencies": {
+      "ServiceWorkerGlobalScope": [
+        "EventHandler"
+      ],
+      "ServiceWorkerRegistration": [
+        "ContentIndex"
+      ],
+      "ContentDescription": [
+        "ContentCategory",
+        "ImageResource"
+      ],
+      "ContentIndex": [
+        "ContentDescription"
+      ],
+      "ContentIndexEventInit": [
+        "ExtendableEventInit"
+      ],
+      "ContentIndexEvent": [
+        "ExtendableEvent",
+        "ContentIndexEventInit"
+      ]
+    },
+    "externalDependencies": [
+      "ServiceWorkerGlobalScope",
+      "EventHandler",
+      "ServiceWorkerRegistration",
+      "ImageResource",
+      "ExtendableEventInit",
+      "ExtendableEvent"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

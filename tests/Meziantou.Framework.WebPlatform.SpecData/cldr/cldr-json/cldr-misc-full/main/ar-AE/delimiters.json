@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ar-AE": {
+      "identity": {
+        "language": "ar",
+        "territory": "AE"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

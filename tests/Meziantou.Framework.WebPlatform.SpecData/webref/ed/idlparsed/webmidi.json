@@ -1,0 +1,1161 @@
+{
+  "spec": {
+    "title": "Web MIDI API",
+    "url": "https://webaudio.github.io/web-midi-api/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "MIDIMessageEvent",
+          "MIDIConnectionEvent"
+        ],
+        "Worker": [
+          "MIDIMessageEvent",
+          "MIDIConnectionEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "MIDIInputMap",
+          "MIDIOutputMap",
+          "MIDIAccess",
+          "MIDIPort",
+          "MIDIInput",
+          "MIDIOutput"
+        ],
+        "Worker": [
+          "MIDIInputMap",
+          "MIDIOutputMap",
+          "MIDIAccess",
+          "MIDIPort",
+          "MIDIInput",
+          "MIDIOutput"
+        ]
+      }
+    },
+    "idlNames": {
+      "MidiPermissionDescriptor": {
+        "fragment": "dictionary MidiPermissionDescriptor : PermissionDescriptor {\n  boolean sysex = false;\n};",
+        "type": "dictionary",
+        "name": "MidiPermissionDescriptor",
+        "inheritance": "PermissionDescriptor",
+        "members": [
+          {
+            "type": "field",
+            "name": "sysex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midipermissiondescriptor-sysex"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midipermissiondescriptor"
+      },
+      "MIDIOptions": {
+        "fragment": "dictionary MIDIOptions {\n  boolean sysex;\n  boolean software;\n};",
+        "type": "dictionary",
+        "name": "MIDIOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "sysex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midioptions-sysex"
+          },
+          {
+            "type": "field",
+            "name": "software",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midioptions-software"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midioptions"
+      },
+      "MIDIInputMap": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)] interface MIDIInputMap {\n  readonly maplike <DOMString, MIDIInput>;\n};",
+        "type": "interface",
+        "name": "MIDIInputMap",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "maplike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MIDIInput"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": true,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midiinputmap"
+      },
+      "MIDIOutputMap": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)] interface MIDIOutputMap {\n  readonly maplike <DOMString, MIDIOutput>;\n};",
+        "type": "interface",
+        "name": "MIDIOutputMap",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "maplike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MIDIOutput"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": true,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midioutputmap"
+      },
+      "MIDIAccess": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker), Transferable] interface MIDIAccess: EventTarget {\n  readonly attribute MIDIInputMap inputs;\n  readonly attribute MIDIOutputMap outputs;\n  attribute EventHandler onstatechange;\n  readonly attribute boolean sysexEnabled;\n};",
+        "type": "interface",
+        "name": "MIDIAccess",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "inputs",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MIDIInputMap"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiaccess-inputs"
+          },
+          {
+            "type": "attribute",
+            "name": "outputs",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MIDIOutputMap"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiaccess-outputs"
+          },
+          {
+            "type": "attribute",
+            "name": "onstatechange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiaccess-onstatechange"
+          },
+          {
+            "type": "attribute",
+            "name": "sysexEnabled",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiaccess-sysexenabled"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Transferable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midiaccess"
+      },
+      "MIDIPort": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)] interface MIDIPort: EventTarget {\n  readonly attribute DOMString id;\n  readonly attribute DOMString? manufacturer;\n  readonly attribute DOMString? name;\n  readonly attribute MIDIPortType type;\n  readonly attribute DOMString? version;\n  readonly attribute MIDIPortDeviceState state;\n  readonly attribute MIDIPortConnectionState connection;\n  attribute EventHandler onstatechange;\n  Promise <MIDIPort> open();\n  Promise <MIDIPort> close();\n};",
+        "type": "interface",
+        "name": "MIDIPort",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "id",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiport-id"
+          },
+          {
+            "type": "attribute",
+            "name": "manufacturer",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiport-manufacturer"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiport-name"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MIDIPortType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiport-type"
+          },
+          {
+            "type": "attribute",
+            "name": "version",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiport-version"
+          },
+          {
+            "type": "attribute",
+            "name": "state",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MIDIPortDeviceState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiport-state"
+          },
+          {
+            "type": "attribute",
+            "name": "connection",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MIDIPortConnectionState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiport-connection"
+          },
+          {
+            "type": "attribute",
+            "name": "onstatechange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiport-onstatechange"
+          },
+          {
+            "type": "operation",
+            "name": "open",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MIDIPort"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiport-open"
+          },
+          {
+            "type": "operation",
+            "name": "close",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MIDIPort"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiport-close"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midiport"
+      },
+      "MIDIInput": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)] interface MIDIInput: MIDIPort {\n  attribute EventHandler onmidimessage;\n};",
+        "type": "interface",
+        "name": "MIDIInput",
+        "inheritance": "MIDIPort",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "onmidimessage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiinput-onmidimessage"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midiinput"
+      },
+      "MIDIOutput": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)] interface MIDIOutput : MIDIPort {\n  undefined send(sequence<octet> data, optional DOMHighResTimeStamp timestamp = 0);\n  undefined clear();\n};",
+        "type": "interface",
+        "name": "MIDIOutput",
+        "inheritance": "MIDIPort",
+        "members": [
+          {
+            "type": "operation",
+            "name": "send",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "octet"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "timestamp",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMHighResTimeStamp"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midioutput-send"
+          },
+          {
+            "type": "operation",
+            "name": "clear",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midioutput-clear"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midioutput"
+      },
+      "MIDIPortType": {
+        "fragment": "enum MIDIPortType {\n  \"input\",\n  \"output\",\n};",
+        "type": "enum",
+        "name": "MIDIPortType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "input",
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiporttype-input"
+          },
+          {
+            "type": "enum-value",
+            "value": "output",
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiporttype-output"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midiporttype"
+      },
+      "MIDIPortDeviceState": {
+        "fragment": "enum MIDIPortDeviceState {\n  \"disconnected\",\n  \"connected\",\n};",
+        "type": "enum",
+        "name": "MIDIPortDeviceState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "disconnected",
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiportdevicestate-disconnected"
+          },
+          {
+            "type": "enum-value",
+            "value": "connected",
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiportdevicestate-connected"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midiportdevicestate"
+      },
+      "MIDIPortConnectionState": {
+        "fragment": "enum MIDIPortConnectionState {\n  \"open\",\n  \"closed\",\n  \"pending\",\n};",
+        "type": "enum",
+        "name": "MIDIPortConnectionState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "open",
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiportconnectionstate-open"
+          },
+          {
+            "type": "enum-value",
+            "value": "closed",
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiportconnectionstate-closed"
+          },
+          {
+            "type": "enum-value",
+            "value": "pending",
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiportconnectionstate-pending"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midiportconnectionstate"
+      },
+      "MIDIMessageEvent": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)]\ninterface MIDIMessageEvent : Event {\n  constructor(DOMString type, optional MIDIMessageEventInit eventInitDict = {});\n  readonly attribute Uint8Array? data;\n};",
+        "type": "interface",
+        "name": "MIDIMessageEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MIDIMessageEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midimessageevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Uint8Array"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midimessageevent-data"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midimessageevent"
+      },
+      "MIDIMessageEventInit": {
+        "fragment": "dictionary MIDIMessageEventInit: EventInit {\n  Uint8Array data;\n};",
+        "type": "dictionary",
+        "name": "MIDIMessageEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "data",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Uint8Array"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midimessageeventinit-data"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midimessageeventinit"
+      },
+      "MIDIConnectionEvent": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)]\ninterface MIDIConnectionEvent : Event {\n  constructor(DOMString type, optional MIDIConnectionEventInit eventInitDict = {});\n  readonly attribute MIDIPort? port;\n};",
+        "type": "interface",
+        "name": "MIDIConnectionEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MIDIConnectionEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiconnectionevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "port",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "MIDIPort"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiconnectionevent-port"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midiconnectionevent"
+      },
+      "MIDIConnectionEventInit": {
+        "fragment": "dictionary MIDIConnectionEventInit: EventInit {\n  MIDIPort port;\n};",
+        "type": "dictionary",
+        "name": "MIDIConnectionEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "port",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MIDIPort"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webaudio.github.io/web-midi-api/#dom-midiconnectioneventinit-port"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webaudio.github.io/web-midi-api/#dom-midiconnectioneventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n  [SecureContext]\n  Promise <MIDIAccess> requestMIDIAccess(optional MIDIOptions options = {});\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "requestMIDIAccess",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "MIDIAccess"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "MIDIOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://webaudio.github.io/web-midi-api/#dom-navigator-requestmidiaccess"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "MIDIInputMap",
+        "MIDIOutputMap",
+        "MIDIAccess",
+        "MIDIPort",
+        "MIDIInput",
+        "MIDIOutput",
+        "MIDIMessageEvent",
+        "MIDIConnectionEvent"
+      ],
+      "Worker": [
+        "MIDIInputMap",
+        "MIDIOutputMap",
+        "MIDIAccess",
+        "MIDIPort",
+        "MIDIInput",
+        "MIDIOutput",
+        "MIDIMessageEvent",
+        "MIDIConnectionEvent"
+      ]
+    },
+    "dependencies": {
+      "MidiPermissionDescriptor": [
+        "PermissionDescriptor"
+      ],
+      "Navigator": [
+        "MIDIAccess",
+        "MIDIOptions"
+      ],
+      "MIDIOptions": [],
+      "MIDIInputMap": [
+        "MIDIInput"
+      ],
+      "MIDIOutputMap": [
+        "MIDIOutput"
+      ],
+      "MIDIAccess": [
+        "EventTarget",
+        "MIDIInputMap",
+        "MIDIOutputMap",
+        "EventHandler"
+      ],
+      "MIDIPort": [
+        "EventTarget",
+        "MIDIPortType",
+        "MIDIPortDeviceState",
+        "MIDIPortConnectionState",
+        "EventHandler",
+        "MIDIPort"
+      ],
+      "MIDIInput": [
+        "MIDIPort",
+        "EventHandler"
+      ],
+      "MIDIOutput": [
+        "MIDIPort",
+        "DOMHighResTimeStamp"
+      ],
+      "MIDIMessageEvent": [
+        "Event",
+        "MIDIMessageEventInit",
+        "Uint8Array"
+      ],
+      "MIDIMessageEventInit": [
+        "EventInit",
+        "Uint8Array"
+      ],
+      "MIDIConnectionEvent": [
+        "Event",
+        "MIDIConnectionEventInit",
+        "MIDIPort"
+      ],
+      "MIDIConnectionEventInit": [
+        "EventInit",
+        "MIDIPort"
+      ]
+    },
+    "externalDependencies": [
+      "PermissionDescriptor",
+      "Navigator",
+      "EventTarget",
+      "EventHandler",
+      "DOMHighResTimeStamp",
+      "Event",
+      "Uint8Array",
+      "EventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

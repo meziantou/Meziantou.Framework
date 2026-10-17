@@ -1,0 +1,41 @@
+{
+  "css/css-easing/cubic-bezier-timing-functions-output.html": {
+    "total": 4
+  },
+  "css/css-easing/linear-timing-functions-output.html": {
+    "total": 5
+  },
+  "css/css-easing/linear-timing-functions-syntax.html": {
+    "total": 35,
+    "failures": {
+      "e.style['animation-timing-function'] = \"linear(calc(0/0), 1)\" should set the property value": "FAIL"
+    }
+  },
+  "css/css-easing/step-jump-both.html": {
+    "total": 7
+  },
+  "css/css-easing/step-jump-end.html": {
+    "total": 7
+  },
+  "css/css-easing/step-jump-none.html": {
+    "total": 7
+  },
+  "css/css-easing/step-jump-start.html": {
+    "total": 7
+  },
+  "css/css-easing/step-timing-functions-output.html": {
+    "total": 13
+  },
+  "css/css-easing/step-timing-functions-syntax.html": {
+    "total": 15
+  },
+  "css/css-easing/timing-functions-syntax-computed.html": {
+    "total": 21
+  },
+  "css/css-easing/timing-functions-syntax-invalid.html": {
+    "total": 13
+  },
+  "css/css-easing/timing-functions-syntax-valid.html": {
+    "total": 22
+  }
+}

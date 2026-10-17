@@ -1,0 +1,15 @@
+{
+  "main": {
+    "dz": {
+      "identity": {
+        "language": "dz"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

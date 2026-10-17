@@ -1,0 +1,30 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.WebPlatform.Imaging</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+    <Description>Rasterizes the documents of Meziantou.Framework.WebPlatform with the fully managed drawing API of Meziantou.Framework.Imaging (a RenderingBackend): screenshots of the pages and of the elements, 2D canvases, image decoding and encoding.</Description>
+    <PackageTags>html;dom;css;rendering;screenshot;rasterizer;imaging</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The drawing API, the fonts, the image codecs and the color profiles -->
+    <ProjectReference Include="..\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Wpt" />
+  </ItemGroup>
+
+  <!-- The package implements the internal rendering services of the core: it depends on the exact version of the core package -->
+  <Target Name="UseExactProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions">
+    <!-- Meziantou.Framework.Imaging is a public dependency: it keeps the default version range -->
+    <ItemGroup>
+      <_ExactProjectReferencesWithVersions Include="@(_ProjectReferencesWithVersions)" Condition="'%(Filename)' == 'Meziantou.Framework.WebPlatform'" ProjectVersion="[%(_ProjectReferencesWithVersions.ProjectVersion)]" />
+      <_ProjectReferencesWithVersions Remove="@(_ExactProjectReferencesWithVersions)" />
+      <_ProjectReferencesWithVersions Include="@(_ExactProjectReferencesWithVersions)" />
+    </ItemGroup>
+  </Target>
+</Project>

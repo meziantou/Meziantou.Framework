@@ -1,0 +1,394 @@
+{
+  "spec": {
+    "title": "CSS Fonts Module Level 5",
+    "url": "https://drafts.csswg.org/css-fonts-5/"
+  },
+  "properties": [
+    {
+      "name": "font-size-adjust",
+      "href": "https://drafts.csswg.org/css-fonts-5/#propdef-font-size-adjust",
+      "value": "none | [ ex-height | cap-height | ch-width | ic-width | ic-height ]? [ from-font | <number [0,∞]> ]",
+      "initial": "none",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "the keyword none, or a pair of a metric keyword and a <number>",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete if the keywords differ, otherwise by computed value type",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No special font-size adjustment is applied.",
+          "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-size-adjust-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "ex-height | cap-height | ch-width | ic-width | ic-height",
+          "prose": "Specifies the font metric to normalize, defaulting to ex-height: w3c/csswg-drafts/6384[css-fonts-5] font-size-adjust with missing metrics",
+          "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-size-adjust-ex-height--cap-height--ch-width--ic-width--ic-height",
+          "type": "value",
+          "value": "ex-height | cap-height | ch-width | ic-width | ic-height"
+        },
+        {
+          "name": "ex-height",
+          "prose": "Normalize the aspect value of the fonts, using the x-height divided by the font size.",
+          "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-size-adjust-ex-height",
+          "type": "value",
+          "value": "ex-height"
+        },
+        {
+          "name": "cap-height",
+          "prose": "Normalize the cap-height of the fonts, using the cap-height by the font size.",
+          "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-size-adjust-cap-height",
+          "type": "value",
+          "value": "cap-height"
+        },
+        {
+          "name": "ch-width",
+          "prose": "Normalize the horizontal narrow pitch of the fonts, using the advance width of “0” (ZERO, U+0030) divided by the font size.",
+          "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-size-adjust-ch-width",
+          "type": "value",
+          "value": "ch-width"
+        },
+        {
+          "name": "ic-width",
+          "prose": "Normalize the horizontal wide pitch of the font, using the advance width of “水” (CJK water ideograph, U+6C34) divided by the font size.",
+          "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-size-adjust-ic-width",
+          "type": "value",
+          "value": "ic-width"
+        },
+        {
+          "name": "ic-height",
+          "prose": "Normalize the vertical wide pitch of the font, using the advance height of “水” (CJK water ideograph, U+6C34) divided by the font size.",
+          "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-size-adjust-ic-height",
+          "type": "value",
+          "value": "ic-height"
+        },
+        {
+          "name": "<number [0,∞]>",
+          "prose": "Each font’s used size is normalized to match the chosen font metric to this specified proportion of the computed font-size. In other words, for each glyph, the adjusted font size to use u is calculated as: u = ( m / m′ ) s where: s = computed 'font-size!!property' value m = metric as specified by the 'font-size-adjust' property m′ = metric as specified in the actual font u = adjusted font-size to use Negative values are invalid.",
+          "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-size-adjust-number-0",
+          "type": "value",
+          "value": "<number [0,∞]>"
+        },
+        {
+          "name": "from-font",
+          "prose": "Computes to the <number> corresponding to the specified metric of the first available font, if it exists. Otherwise, the same as none.",
+          "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-size-adjust-from-font",
+          "type": "value",
+          "value": "from-font"
+        }
+      ],
+      "styleDeclaration": [
+        "font-size-adjust",
+        "fontSizeAdjust"
+      ]
+    }
+  ],
+  "atrules": [
+    {
+      "name": "@font-face",
+      "href": "https://drafts.csswg.org/css-fonts-5/#at-font-face-rule",
+      "descriptors": [
+        {
+          "name": "font-size",
+          "href": "https://drafts.csswg.org/css-fonts-5/#descdef-font-face-font-size",
+          "for": "@font-face",
+          "value": "auto | [<number>]{1,2}",
+          "initial": "auto",
+          "values": [
+            {
+              "name": "auto",
+              "prose": "The font matches any font size",
+              "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-face-font-size-auto",
+              "type": "value",
+              "value": "auto"
+            },
+            {
+              "name": "<number>",
+              "prose": "If a single <number> is given the font matches that specific font size, only. If two <number>s are given, they specify a range of font sizes which will match.",
+              "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-face-font-size-number",
+              "type": "value",
+              "value": "<number>"
+            }
+          ]
+        },
+        {
+          "name": "size-adjust",
+          "href": "https://drafts.csswg.org/css-fonts-5/#descdef-font-face-size-adjust",
+          "for": "@font-face",
+          "value": "<percentage [0,∞]>",
+          "initial": "100%"
+        },
+        {
+          "name": "ascent-override",
+          "href": "https://drafts.csswg.org/css-fonts-5/#descdef-font-face-ascent-override",
+          "for": "@font-face",
+          "value": "[ normal | <percentage [0,∞]> ]{1,2}",
+          "initial": "normal"
+        },
+        {
+          "name": "descent-override",
+          "href": "https://drafts.csswg.org/css-fonts-5/#descdef-font-face-descent-override",
+          "for": "@font-face",
+          "value": "[ normal | <percentage [0,∞]> ]{1,2}",
+          "initial": "normal"
+        },
+        {
+          "name": "line-gap-override",
+          "href": "https://drafts.csswg.org/css-fonts-5/#descdef-font-face-line-gap-override",
+          "for": "@font-face",
+          "value": "[ normal | <percentage [0,∞]> ]{1,2}",
+          "initial": "normal"
+        },
+        {
+          "name": "superscript-position-override",
+          "href": "https://drafts.csswg.org/css-fonts-5/#descdef-font-face-superscript-position-override",
+          "for": "@font-face",
+          "value": "[ normal | from-font | <percentage> ]{1,2}",
+          "initial": "normal"
+        },
+        {
+          "name": "subscript-position-override",
+          "href": "https://drafts.csswg.org/css-fonts-5/#descdef-font-face-subscript-position-override",
+          "for": "@font-face",
+          "value": "[ normal | from-font | <percentage> ]{1,2}",
+          "initial": "normal"
+        },
+        {
+          "name": "superscript-size-override",
+          "href": "https://drafts.csswg.org/css-fonts-5/#descdef-font-face-superscript-size-override",
+          "for": "@font-face",
+          "value": "[ normal | from-font | <percentage [0,∞]> ]{1,2}",
+          "initial": "normal"
+        },
+        {
+          "name": "subscript-size-override",
+          "href": "https://drafts.csswg.org/css-fonts-5/#descdef-font-face-subscript-size-override",
+          "for": "@font-face",
+          "value": "[ normal | from-font | <percentage [0,∞]> ]{1,2}",
+          "initial": "normal"
+        }
+      ]
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<font-format>",
+      "href": "https://drafts.csswg.org/css-fonts-5/#font-format-values",
+      "type": "type",
+      "value": "[<string> | collection | embedded-opentype | opentype | svg | truetype | woff | woff2 ]"
+    },
+    {
+      "name": "<font-tech>",
+      "href": "https://drafts.csswg.org/css-fonts-5/#font-tech-values",
+      "type": "type",
+      "value": "[<font-features-tech> | <color-font-tech> | variations | palettes | incremental ]"
+    },
+    {
+      "name": "<font-features-tech>",
+      "href": "https://drafts.csswg.org/css-fonts-5/#font-features-tech-values",
+      "type": "type",
+      "value": "[features-opentype | features-aat | features-graphite]",
+      "values": [
+        {
+          "name": "avar2",
+          "prose": "The avar2 tech refers to support for version 2 of OpenType axis variations [avar2], for flexible variation axis remapping.",
+          "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-features-tech-avar2",
+          "type": "value",
+          "value": "avar2"
+        }
+      ]
+    },
+    {
+      "name": "<color-font-tech>",
+      "href": "https://drafts.csswg.org/css-fonts-5/#color-font-tech-values",
+      "type": "type",
+      "value": "[color-COLRv0 | color-COLRv1 | color-SVG | color-sbix | color-CBDT ]"
+    }
+  ],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "xxx",
+      "prose": "Placeholder text for the xxx generic font family.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-family-xxx",
+      "type": "value",
+      "value": "xxx",
+      "for": "font-family"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "xxx",
+      "prose": "Placeholder text for the xxx generic font family.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-family-xxx",
+      "type": "value",
+      "value": "xxx",
+      "for": "<generic-font-family>"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "normal",
+      "prose": "The corresponding metric value is obtained from the font as usual, as if this descriptor were absent from the @font-face block.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-ascent-overridedescriptor-normal",
+      "type": "value",
+      "value": "normal",
+      "for": "ascent-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "normal",
+      "prose": "The corresponding metric value is obtained from the font as usual, as if this descriptor were absent from the @font-face block.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-ascent-overridedescriptor-normal",
+      "type": "value",
+      "value": "normal",
+      "for": "descent-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "normal",
+      "prose": "The corresponding metric value is obtained from the font as usual, as if this descriptor were absent from the @font-face block.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-ascent-overridedescriptor-normal",
+      "type": "value",
+      "value": "normal",
+      "for": "line-gap-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "<percentage>",
+      "prose": "The corresponding metric is replaced by the given percentage multiplied by the effective font size after adjustment.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-ascent-overridedescriptor-percentage",
+      "type": "value",
+      "value": "<percentage>",
+      "for": "ascent-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "<percentage>",
+      "prose": "The corresponding metric is replaced by the given percentage multiplied by the effective font size after adjustment.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-ascent-overridedescriptor-percentage",
+      "type": "value",
+      "value": "<percentage>",
+      "for": "descent-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "<percentage>",
+      "prose": "The corresponding metric is replaced by the given percentage multiplied by the effective font size after adjustment.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-ascent-overridedescriptor-percentage",
+      "type": "value",
+      "value": "<percentage>",
+      "for": "line-gap-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "normal",
+      "prose": "The UA determines what metrics value to use, whether derived from the font or from some heuristic.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-superscript-position-overridedescriptor-normal",
+      "type": "value",
+      "value": "normal",
+      "for": "superscript-position-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "normal",
+      "prose": "The UA determines what metrics value to use, whether derived from the font or from some heuristic.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-superscript-position-overridedescriptor-normal",
+      "type": "value",
+      "value": "normal",
+      "for": "subscript-position-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "normal",
+      "prose": "The UA determines what metrics value to use, whether derived from the font or from some heuristic.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-superscript-position-overridedescriptor-normal",
+      "type": "value",
+      "value": "normal",
+      "for": "superscript-size-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "normal",
+      "prose": "The UA determines what metrics value to use, whether derived from the font or from some heuristic.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-superscript-position-overridedescriptor-normal",
+      "type": "value",
+      "value": "normal",
+      "for": "subscript-size-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "from-font",
+      "prose": "The corresponding metric in the font data is used, if any. (If the metric is missing, same as normal.)",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-superscript-position-overridedescriptor-from-font",
+      "type": "value",
+      "value": "from-font",
+      "for": "superscript-position-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "from-font",
+      "prose": "The corresponding metric in the font data is used, if any. (If the metric is missing, same as normal.)",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-superscript-position-overridedescriptor-from-font",
+      "type": "value",
+      "value": "from-font",
+      "for": "subscript-position-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "from-font",
+      "prose": "The corresponding metric in the font data is used, if any. (If the metric is missing, same as normal.)",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-superscript-position-overridedescriptor-from-font",
+      "type": "value",
+      "value": "from-font",
+      "for": "superscript-size-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "from-font",
+      "prose": "The corresponding metric in the font data is used, if any. (If the metric is missing, same as normal.)",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-superscript-position-overridedescriptor-from-font",
+      "type": "value",
+      "value": "from-font",
+      "for": "subscript-size-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "<percentage>",
+      "prose": "The corresponding metric is replaced by the given percentage multiplied by the used font size.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-superscript-position-overridedescriptor-percentage",
+      "type": "value",
+      "value": "<percentage>",
+      "for": "superscript-position-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "<percentage>",
+      "prose": "The corresponding metric is replaced by the given percentage multiplied by the used font size.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-superscript-position-overridedescriptor-percentage",
+      "type": "value",
+      "value": "<percentage>",
+      "for": "subscript-position-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "<percentage>",
+      "prose": "The corresponding metric is replaced by the given percentage multiplied by the used font size.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-superscript-position-overridedescriptor-percentage",
+      "type": "value",
+      "value": "<percentage>",
+      "for": "superscript-size-override!!descriptor"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "<percentage>",
+      "prose": "The corresponding metric is replaced by the given percentage multiplied by the used font size.",
+      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-superscript-position-overridedescriptor-percentage",
+      "type": "value",
+      "value": "<percentage>",
+      "for": "subscript-size-override!!descriptor"
+    }
+  ]
+}

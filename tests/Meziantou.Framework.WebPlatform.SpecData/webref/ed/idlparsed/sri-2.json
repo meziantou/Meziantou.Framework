@@ -1,0 +1,101 @@
+{
+  "spec": {
+    "title": "Subresource Integrity",
+    "url": "https://w3c.github.io/webappsec-subresource-integrity/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "IntegrityViolationReportBody": {
+        "fragment": "dictionary IntegrityViolationReportBody : ReportBody {\n  USVString documentURL;\n  USVString blockedURL;\n  USVString destination;\n  boolean   reportOnly;\n};",
+        "type": "dictionary",
+        "name": "IntegrityViolationReportBody",
+        "inheritance": "ReportBody",
+        "members": [
+          {
+            "type": "field",
+            "name": "documentURL",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-subresource-integrity/#dom-integrityviolationreportbody-documenturl"
+          },
+          {
+            "type": "field",
+            "name": "blockedURL",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-subresource-integrity/#dom-integrityviolationreportbody-blockedurl"
+          },
+          {
+            "type": "field",
+            "name": "destination",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-subresource-integrity/#dom-integrityviolationreportbody-destination"
+          },
+          {
+            "type": "field",
+            "name": "reportOnly",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webappsec-subresource-integrity/#dom-integrityviolationreportbody-reportonly"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webappsec-subresource-integrity/#dictdef-integrityviolationreportbody"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "IntegrityViolationReportBody": [
+        "ReportBody"
+      ]
+    },
+    "externalDependencies": [
+      "ReportBody"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

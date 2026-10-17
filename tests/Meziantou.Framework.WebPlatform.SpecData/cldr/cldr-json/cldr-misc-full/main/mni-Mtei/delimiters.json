@@ -1,0 +1,16 @@
+{
+  "main": {
+    "mni-Mtei": {
+      "identity": {
+        "language": "mni",
+        "script": "Mtei"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

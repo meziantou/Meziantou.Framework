@@ -1,0 +1,98 @@
+{
+  "spec": {
+    "title": "CSS Cascading and Inheritance Module Level 5",
+    "url": "https://drafts.csswg.org/css-cascade-5/"
+  },
+  "properties": [
+    {
+      "name": "all",
+      "href": "https://drafts.csswg.org/css-cascade-5/#propdef-all",
+      "value": "initial | inherit | unset | revert | revert-layer | revert-rule",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "initial",
+          "prose": "The initial CSS-wide keyword represents the value defined as the property’s initial value.",
+          "href": "https://drafts.csswg.org/css-cascade-5/#valdef-all-initial",
+          "type": "value",
+          "value": "initial"
+        },
+        {
+          "name": "inherit",
+          "prose": "The inherit CSS-wide keyword represents the property’s computed value on the parent element.",
+          "href": "https://drafts.csswg.org/css-cascade-5/#valdef-all-inherit",
+          "type": "value",
+          "value": "inherit"
+        },
+        {
+          "name": "unset",
+          "prose": "The unset CSS-wide keyword acts as either inherit or initial, depending on whether the property is inherited or not.",
+          "href": "https://drafts.csswg.org/css-cascade-5/#valdef-all-unset",
+          "type": "value",
+          "value": "unset"
+        },
+        {
+          "name": "revert",
+          "prose": "The revert CSS-wide keyword rolls back the cascade to the cascaded value of the earlier origin.",
+          "href": "https://drafts.csswg.org/css-cascade-5/#valdef-all-revert",
+          "type": "value",
+          "value": "revert"
+        },
+        {
+          "name": "revert-layer",
+          "prose": "The revert-layer CSS-wide keyword rolls back the cascade similar to revert, except it works by cascade layer rather than by cascade origin.",
+          "href": "https://drafts.csswg.org/css-cascade-5/#valdef-all-revert-layer",
+          "type": "value",
+          "value": "revert-layer"
+        },
+        {
+          "name": "revert-rule",
+          "prose": "The revert-rule CSS-wide keyword rolls back the cascade similar to revert and revert-layer, except it works by style rule rather than cascade origin or cascade layer.",
+          "href": "https://drafts.csswg.org/css-cascade-5/#valdef-all-revert-rule",
+          "type": "value",
+          "value": "revert-rule"
+        }
+      ],
+      "styleDeclaration": [
+        "all"
+      ]
+    }
+  ],
+  "atrules": [
+    {
+      "name": "@import",
+      "prose": "The @import rule allows users to import style rules from other style sheets. If an @import rule refers to a valid stylesheet, user agents must treat the contents of the stylesheet as if they were written in place of the @import rule, with two exceptions:",
+      "href": "https://drafts.csswg.org/css-cascade-5/#at-ruledef-import",
+      "descriptors": [],
+      "value": "@import [ <url> | <string> ] [ layer | layer(<layer-name>) ]? <import-conditions> ;"
+    },
+    {
+      "name": "@layer",
+      "prose": "The @layer rule declares a cascade layer, with the option to assign style rules.",
+      "href": "https://drafts.csswg.org/css-cascade-5/#at-ruledef-layer",
+      "descriptors": [],
+      "value": "@layer <layer-name>? { <rule-list> } | @layer <layer-name>#;"
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<import-conditions>",
+      "href": "https://drafts.csswg.org/css-cascade-5/#typedef-import-conditions",
+      "type": "type",
+      "value": "[ supports( [ <supports-condition> | <declaration> ] ) ]? <media-query-list>?"
+    },
+    {
+      "name": "<layer-name>",
+      "href": "https://drafts.csswg.org/css-cascade-5/#typedef-layer-name",
+      "type": "type",
+      "value": "<ident> [ '.' <ident> ]*"
+    }
+  ]
+}

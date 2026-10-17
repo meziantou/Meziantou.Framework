@@ -1,0 +1,250 @@
+{
+  "spec": {
+    "title": "requestIdleCallback()",
+    "url": "https://w3c.github.io/requestidlecallback/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "IdleDeadline"
+        ]
+      }
+    },
+    "idlNames": {
+      "IdleRequestOptions": {
+        "fragment": "dictionary IdleRequestOptions {\n  unsigned long timeout;\n};",
+        "type": "dictionary",
+        "name": "IdleRequestOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "timeout",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/requestidlecallback/#dom-idlerequestoptions-timeout"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/requestidlecallback/#dom-idlerequestoptions"
+      },
+      "IdleDeadline": {
+        "fragment": "[Exposed=Window] interface IdleDeadline {\n  DOMHighResTimeStamp timeRemaining();\n  readonly attribute boolean didTimeout;\n};",
+        "type": "interface",
+        "name": "IdleDeadline",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "timeRemaining",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/requestidlecallback/#dom-idledeadline-timeremaining"
+          },
+          {
+            "type": "attribute",
+            "name": "didTimeout",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/requestidlecallback/#dom-idledeadline-didtimeout"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/requestidlecallback/#dom-idledeadline"
+      },
+      "IdleRequestCallback": {
+        "fragment": "callback IdleRequestCallback = undefined (IdleDeadline deadline);",
+        "type": "callback",
+        "name": "IdleRequestCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "deadline",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IdleDeadline"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/requestidlecallback/#dom-idlerequestcallback"
+      }
+    },
+    "idlExtendedNames": {
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n  unsigned long requestIdleCallback(IdleRequestCallback callback, optional IdleRequestOptions options = {});\n  undefined cancelIdleCallback(unsigned long handle);\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "requestIdleCallback",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "callback",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "IdleRequestCallback"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "IdleRequestOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/requestidlecallback/#dom-window-requestidlecallback"
+            },
+            {
+              "type": "operation",
+              "name": "cancelIdleCallback",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "handle",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "unsigned long"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/requestidlecallback/#dom-window-cancelidlecallback"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "IdleDeadline"
+      ]
+    },
+    "dependencies": {
+      "Window": [
+        "IdleRequestCallback",
+        "IdleRequestOptions"
+      ],
+      "IdleRequestOptions": [],
+      "IdleDeadline": [
+        "DOMHighResTimeStamp"
+      ]
+    },
+    "externalDependencies": [
+      "Window",
+      "DOMHighResTimeStamp"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

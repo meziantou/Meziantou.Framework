@@ -1,0 +1,672 @@
+{
+  "web-animations/animation-model/animation-types/accumulation-per-property-001.html": {
+    "total": 404,
+    "failures": {
+      "align-content: \"flex-end\" onto \"flex-start\"": "FAIL",
+      "align-content: \"flex-start\" onto \"flex-end\"": "FAIL",
+      "align-items: \"flex-end\" onto \"flex-start\"": "FAIL",
+      "align-items: \"flex-start\" onto \"flex-end\"": "FAIL",
+      "align-self: \"flex-end\" onto \"flex-start\"": "FAIL",
+      "align-self: \"flex-start\" onto \"flex-end\"": "FAIL"
+    }
+  },
+  "web-animations/animation-model/animation-types/accumulation-per-property-002.html": {
+    "total": 413,
+    "failures": {
+      "list-style: \"outside url(\"http://localhost/test-2\") square\" onto \"inside url(\"http://localhost/test-1\") circle\"": "FAIL"
+    }
+  },
+  "web-animations/animation-model/animation-types/addition-per-property-001.html": {
+    "total": 404,
+    "failures": {
+      "align-content: \"flex-end\" onto \"flex-start\"": "FAIL",
+      "align-content: \"flex-start\" onto \"flex-end\"": "FAIL",
+      "align-items: \"flex-end\" onto \"flex-start\"": "FAIL",
+      "align-items: \"flex-start\" onto \"flex-end\"": "FAIL",
+      "align-self: \"flex-end\" onto \"flex-start\"": "FAIL",
+      "align-self: \"flex-start\" onto \"flex-end\"": "FAIL"
+    }
+  },
+  "web-animations/animation-model/animation-types/addition-per-property-002.html": {
+    "total": 409,
+    "failures": {
+      "list-style: \"outside url(\"http://localhost/test-2\") square\" onto \"inside url(\"http://localhost/test-1\") circle\"": "FAIL"
+    }
+  },
+  "web-animations/animation-model/animation-types/clamping-001.tentative.html": {
+    "total": 2,
+    "failures": {
+      "opacity should not clamp number keyframe values": "FAIL",
+      "opacity should not clamp percentage keyframe values": "FAIL"
+    }
+  },
+  "web-animations/animation-model/animation-types/discrete.html": {
+    "total": 5
+  },
+  "web-animations/animation-model/animation-types/display.tentative.html": {
+    "total": 1
+  },
+  "web-animations/animation-model/animation-types/interpolation-per-property-001.html": {
+    "total": 507,
+    "failures": {
+      "align-content uses discrete animation when animating between \"flex-start\" and \"flex-end\" with effect easing": "FAIL",
+      "align-content uses discrete animation when animating between \"flex-start\" and \"flex-end\" with keyframe easing": "FAIL",
+      "align-content uses discrete animation when animating between \"flex-start\" and \"flex-end\" with linear easing": "FAIL",
+      "align-items uses discrete animation when animating between \"flex-start\" and \"flex-end\" with effect easing": "FAIL",
+      "align-items uses discrete animation when animating between \"flex-start\" and \"flex-end\" with keyframe easing": "FAIL",
+      "align-items uses discrete animation when animating between \"flex-start\" and \"flex-end\" with linear easing": "FAIL",
+      "align-self uses discrete animation when animating between \"flex-start\" and \"flex-end\" with effect easing": "FAIL",
+      "align-self uses discrete animation when animating between \"flex-start\" and \"flex-end\" with keyframe easing": "FAIL",
+      "align-self uses discrete animation when animating between \"flex-start\" and \"flex-end\" with linear easing": "FAIL",
+      "filter: hue-rotate function with different unit(deg -> rad)": "FAIL"
+    }
+  },
+  "web-animations/animation-model/animation-types/interpolation-per-property-002.html": {
+    "total": 505,
+    "failures": {
+      "list-style uses discrete animation when animating between \"inside url(\"http://localhost/test-1\") circle\" and \"outside url(\"http://localhost/test-2\") square\" with effect easing": "FAIL",
+      "list-style uses discrete animation when animating between \"inside url(\"http://localhost/test-1\") circle\" and \"outside url(\"http://localhost/test-2\") square\" with keyframe easing": "FAIL",
+      "list-style uses discrete animation when animating between \"inside url(\"http://localhost/test-1\") circle\" and \"outside url(\"http://localhost/test-2\") square\" with linear easing": "FAIL"
+    }
+  },
+  "web-animations/animation-model/animation-types/scrollbar-interpolation.html": {
+    "total": 1
+  },
+  "web-animations/animation-model/animation-types/visibility.html": {
+    "total": 2
+  },
+  "web-animations/animation-model/combining-effects/applying-interpolated-transform.html": {
+    "total": 1
+  },
+  "web-animations/animation-model/combining-effects/applying-the-composited-result.html": {
+    "total": 1
+  },
+  "web-animations/animation-model/combining-effects/clamping-001.tentative.html": {
+    "total": 12,
+    "failures": {
+      "1. opacity keyframes should not clamp before compositing, replace -1 + add 1 = 0": "FAIL",
+      "10. opacity keyframes should not clamp before compositing, replace 200% + add -200% = 0": "FAIL",
+      "2. opacity keyframes should not clamp before compositing, replace 1 + add -1 = 0": "FAIL",
+      "3. opacity keyframes should not clamp before compositing, replace -2 + add 2 = 0": "FAIL",
+      "4. opacity keyframes should not clamp before compositing, replace 2 + add -2 = 0": "FAIL",
+      "7. opacity keyframes should not clamp before compositing, replace -100% + add 100% = 0": "FAIL",
+      "8. opacity keyframes should not clamp before compositing, replace 100% + add -100% = 0": "FAIL",
+      "9. opacity keyframes should not clamp before compositing, replace -200% + add 200% = 0": "FAIL"
+    }
+  },
+  "web-animations/animation-model/combining-effects/effect-composition.html": {
+    "total": 17
+  },
+  "web-animations/animation-model/keyframe-effects/background-shorthand.html": {
+    "total": 1
+  },
+  "web-animations/animation-model/keyframe-effects/computed-keyframes-shorthands.html": {
+    "total": 1
+  },
+  "web-animations/animation-model/keyframe-effects/effect-value-context-filling.html": {
+    "total": 14
+  },
+  "web-animations/animation-model/keyframe-effects/effect-value-context.html": {
+    "total": 5
+  },
+  "web-animations/animation-model/keyframe-effects/effect-value-easing-on-keyframe-without-property.html": {
+    "total": 2
+  },
+  "web-animations/animation-model/keyframe-effects/effect-value-interval-distance.html": {
+    "total": 1
+  },
+  "web-animations/animation-model/keyframe-effects/effect-value-iteration-composite-operation.html": {
+    "total": 38,
+    "failures": {
+      "iteration composition of animation non-additive units": "FAIL",
+      "iteration composition of complex math functions preserves AST left-to-right operand order": "FAIL",
+      "iteration composition of discrete filter list because of mismatch of the order": "FAIL",
+      "iteration composition of discrete type animation (align-content)": "FAIL",
+      "iteration composition of incompatible calc-size() bases (accumulation skipped at 0%, allowed at 50%)": "FAIL",
+      "iteration composition of incompatible clip rects (accumulation skipped at 0%, allowed at 50%)": "FAIL",
+      "iteration composition of incompatible intrinsic size keywords (accumulation is skipped)": "FAIL",
+      "iteration composition of transform list animation whose order is mismatched": "FAIL",
+      "iteration composition of transform list animation whose order is mismatched because of missing functions": "FAIL"
+    }
+  },
+  "web-animations/animation-model/keyframe-effects/effect-value-opacity-replaced-effect-in-shadow-root.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/animation-model/keyframe-effects/effect-value-opacity-replaced-effect.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/animation-model/keyframe-effects/effect-value-overlapping-keyframes.html": {
+    "total": 2
+  },
+  "web-animations/animation-model/keyframe-effects/effect-value-replaced-animations.html": {
+    "total": 5
+  },
+  "web-animations/animation-model/keyframe-effects/effect-value-step-easing-reversed-direction.html": {
+    "total": 2
+  },
+  "web-animations/animation-model/keyframe-effects/effect-value-transformed-distance.html": {
+    "total": 28
+  },
+  "web-animations/animation-model/keyframe-effects/keyframe-exceptions.html": {
+    "total": 3
+  },
+  "web-animations/animation-model/keyframe-effects/transform-and-opacity-on-inline-001.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/animation-model/side-effects-of-animations-current.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/animation-model/side-effects-of-animations-in-effect.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/animation-model/side-effects-of-animations-none.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/animation-trigger/event-trigger-before-handlers.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Animation triggers are handled before registered event listeners": "FAIL"
+    }
+  },
+  "web-animations/animation-trigger/event-trigger-once.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Basic event-based animation-trigger with 'once' behavior": "FAIL"
+    }
+  },
+  "web-animations/animation-trigger/event-trigger-repeat.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Basic event-based animation-trigger with 'repeat' behavior": "FAIL"
+    }
+  },
+  "web-animations/idlharness.window.js": {
+    "total": 218,
+    "failures": {
+      "Animation interface: attribute trigger": "FAIL",
+      "Animation interface: new Animation() must inherit property \"trigger\" with the proper type": "FAIL",
+      "AnimationEffect interface: attribute nextSibling": "FAIL",
+      "AnimationEffect interface: attribute parent": "FAIL",
+      "AnimationEffect interface: attribute previousSibling": "FAIL",
+      "AnimationEffect interface: calling after(AnimationEffect...) on new KeyframeEffect(null, null) with too few arguments must throw TypeError": "FAIL",
+      "AnimationEffect interface: calling before(AnimationEffect...) on new KeyframeEffect(null, null) with too few arguments must throw TypeError": "FAIL",
+      "AnimationEffect interface: calling replace(AnimationEffect...) on new KeyframeEffect(null, null) with too few arguments must throw TypeError": "FAIL",
+      "AnimationEffect interface: new KeyframeEffect(null, null) must inherit property \"after(AnimationEffect...)\" with the proper type": "FAIL",
+      "AnimationEffect interface: new KeyframeEffect(null, null) must inherit property \"before(AnimationEffect...)\" with the proper type": "FAIL",
+      "AnimationEffect interface: new KeyframeEffect(null, null) must inherit property \"nextSibling\" with the proper type": "FAIL",
+      "AnimationEffect interface: new KeyframeEffect(null, null) must inherit property \"parent\" with the proper type": "FAIL",
+      "AnimationEffect interface: new KeyframeEffect(null, null) must inherit property \"previousSibling\" with the proper type": "FAIL",
+      "AnimationEffect interface: new KeyframeEffect(null, null) must inherit property \"remove()\" with the proper type": "FAIL",
+      "AnimationEffect interface: new KeyframeEffect(null, null) must inherit property \"replace(AnimationEffect...)\" with the proper type": "FAIL",
+      "AnimationEffect interface: operation after(AnimationEffect...)": "FAIL",
+      "AnimationEffect interface: operation before(AnimationEffect...)": "FAIL",
+      "AnimationEffect interface: operation remove()": "FAIL",
+      "AnimationEffect interface: operation replace(AnimationEffect...)": "FAIL",
+      "AnimationNodeList interface object length": "FAIL",
+      "AnimationNodeList interface object name": "FAIL",
+      "AnimationNodeList interface: attribute length": "FAIL",
+      "AnimationNodeList interface: existence and properties of interface object": "FAIL",
+      "AnimationNodeList interface: existence and properties of interface prototype object": "FAIL",
+      "AnimationNodeList interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "AnimationNodeList interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "AnimationNodeList interface: operation item(unsigned long)": "FAIL",
+      "AnimationTimeline interface: document.timeline must inherit property \"currentTime\" with the proper type": "FAIL",
+      "GroupEffect interface object length": "FAIL",
+      "GroupEffect interface object name": "FAIL",
+      "GroupEffect interface: attribute children": "FAIL",
+      "GroupEffect interface: attribute firstChild": "FAIL",
+      "GroupEffect interface: attribute lastChild": "FAIL",
+      "GroupEffect interface: existence and properties of interface object": "FAIL",
+      "GroupEffect interface: existence and properties of interface prototype object": "FAIL",
+      "GroupEffect interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "GroupEffect interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "GroupEffect interface: operation append(AnimationEffect...)": "FAIL",
+      "GroupEffect interface: operation clone()": "FAIL",
+      "GroupEffect interface: operation prepend(AnimationEffect...)": "FAIL",
+      "SequenceEffect interface object length": "FAIL",
+      "SequenceEffect interface object name": "FAIL",
+      "SequenceEffect interface: existence and properties of interface object": "FAIL",
+      "SequenceEffect interface: existence and properties of interface prototype object": "FAIL",
+      "SequenceEffect interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "SequenceEffect interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "SequenceEffect interface: operation clone()": "FAIL"
+    }
+  },
+  "web-animations/interfaces/Animatable/animate-no-browsing-context.html": {
+    "total": 4,
+    "failures": {
+      "Element.animate() creates an animation with the correct timeline when called on an element in a document without a browsing context": "FAIL",
+      "Replacing the timeline of an animation targetting an element in a document without a browsing context and then adopting that element causes it to start updating style": "FAIL",
+      "Replacing the timeline of an animation targetting an element in a document without a browsing context leaves it in the pending state": "FAIL",
+      "The timeline associated with an animation trigger on an element in a document without a browsing context is inactive": "FAIL"
+    }
+  },
+  "web-animations/interfaces/Animatable/animate.html": {
+    "total": 153
+  },
+  "web-animations/interfaces/Animatable/getAnimations-iframe.html": {
+    "total": 2
+  },
+  "web-animations/interfaces/Animatable/getAnimations-pseudoElement-option-on-view-transition.html": {
+    "total": 1
+  },
+  "web-animations/interfaces/Animatable/getAnimations.html": {
+    "total": 34,
+    "failures": {
+      "Does NOT cross shadow-tree boundaries when subtree: true is specified": "FAIL",
+      "Does not return an animation that has been removed": "FAIL",
+      "Returns animations on functional pseudo-element when it is specified": "FAIL"
+    }
+  },
+  "web-animations/interfaces/Animation/animation-range-invalid.html": {
+    "total": 11,
+    "failures": {
+      "Range with invalid range name with offset": "FAIL"
+    }
+  },
+  "web-animations/interfaces/Animation/cancel-event-on-element-removal.html": {
+    "total": 1
+  },
+  "web-animations/interfaces/Animation/cancel.html": {
+    "total": 4
+  },
+  "web-animations/interfaces/Animation/commitStyles.html": {
+    "total": 32
+  },
+  "web-animations/interfaces/Animation/constructor.html": {
+    "total": 9,
+    "failures": {
+      "Animation created with an affect associated with another animation.": "FAIL"
+    }
+  },
+  "web-animations/interfaces/Animation/effect.html": {
+    "total": 2
+  },
+  "web-animations/interfaces/Animation/finished.html": {
+    "total": 22
+  },
+  "web-animations/interfaces/Animation/id.html": {
+    "total": 2
+  },
+  "web-animations/interfaces/Animation/oncancel.html": {
+    "total": 1
+  },
+  "web-animations/interfaces/Animation/onfinish.html": {
+    "total": 7
+  },
+  "web-animations/interfaces/Animation/onremove.html": {
+    "total": 2
+  },
+  "web-animations/interfaces/Animation/overallProgress.html": {
+    "total": 6
+  },
+  "web-animations/interfaces/Animation/pause.html": {
+    "total": 5
+  },
+  "web-animations/interfaces/Animation/pending.html": {
+    "total": 4
+  },
+  "web-animations/interfaces/Animation/persist.html": {
+    "total": 2
+  },
+  "web-animations/interfaces/Animation/play.html": {
+    "total": 1
+  },
+  "web-animations/interfaces/Animation/ready.html": {
+    "total": 4
+  },
+  "web-animations/interfaces/Animation/scroll-timeline-overallProgress.tentative.html": {
+    "total": 4
+  },
+  "web-animations/interfaces/Animation/startTime.html": {
+    "total": 6
+  },
+  "web-animations/interfaces/Animation/style-change-events.html": {
+    "total": 27,
+    "failures": {
+      "Animation.commitStyles produces expected style change events": "FAIL"
+    }
+  },
+  "web-animations/interfaces/AnimationEffect/getComputedTiming.html": {
+    "total": 41
+  },
+  "web-animations/interfaces/AnimationEffect/updateTiming.html": {
+    "total": 68
+  },
+  "web-animations/interfaces/AnimationPlaybackEvent/constructor.html": {
+    "total": 2
+  },
+  "web-animations/interfaces/Document/timeline.html": {
+    "total": 1
+  },
+  "web-animations/interfaces/DocumentOrShadowRoot/getAnimations.html": {
+    "total": 11
+  },
+  "web-animations/interfaces/DocumentTimeline/constructor.html": {
+    "total": 4
+  },
+  "web-animations/interfaces/DocumentTimeline/duration.tentative.html": {
+    "total": 1
+  },
+  "web-animations/interfaces/DocumentTimeline/style-change-events.html": {
+    "total": 2
+  },
+  "web-animations/interfaces/KeyframeEffect/composite.html": {
+    "total": 4
+  },
+  "web-animations/interfaces/KeyframeEffect/constructor.html": {
+    "total": 175
+  },
+  "web-animations/interfaces/KeyframeEffect/copy-constructor-revert-layer.html": {
+    "total": 2
+  },
+  "web-animations/interfaces/KeyframeEffect/copy-constructor.html": {
+    "total": 5
+  },
+  "web-animations/interfaces/KeyframeEffect/getKeyframes.html": {
+    "total": 1,
+    "failures": {
+      "getKeyframes() should serialize its css values with a on keyframe sequence which requires value serilaization of its values": "FAIL"
+    }
+  },
+  "web-animations/interfaces/KeyframeEffect/iterationComposite.html": {
+    "total": 1
+  },
+  "web-animations/interfaces/KeyframeEffect/processing-a-keyframes-argument-001.html": {
+    "total": 73
+  },
+  "web-animations/interfaces/KeyframeEffect/processing-a-keyframes-argument-002.html": {
+    "total": 7
+  },
+  "web-animations/interfaces/KeyframeEffect/setKeyframes.html": {
+    "total": 80
+  },
+  "web-animations/interfaces/KeyframeEffect/style-change-events.html": {
+    "total": 12
+  },
+  "web-animations/interfaces/KeyframeEffect/target.html": {
+    "total": 24
+  },
+  "web-animations/interfaces/TimelineTrigger/constructor.html": {
+    "total": 9,
+    "failures": {
+      "Active range supplied; entry copied from active": "FAIL",
+      "All values supplied (scroll timeline).": "FAIL",
+      "All values supplied (view timeline).": "FAIL",
+      "Default values when an empty property bag is supplied.": "FAIL",
+      "Empty ranges when empty list is supplied.": "FAIL",
+      "Empty ranges when no list is supplied.": "FAIL",
+      "Entry range supplied; active copied from entry": "FAIL",
+      "Multiple (empty) timelines not supported": "FAIL",
+      "Multiple timelines not supported": "FAIL"
+    }
+  },
+  "web-animations/responsive/animation-on-pseudo-to-display-none.html": {
+    "total": 1
+  },
+  "web-animations/responsive/assorted-lengths.html": {
+    "total": 10
+  },
+  "web-animations/responsive/background-color-animation-plus-opacity.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/responsive/background-position-responsive.html": {
+    "total": 2
+  },
+  "web-animations/responsive/backgroundPosition.html": {
+    "total": 1
+  },
+  "web-animations/responsive/backgroundSize.html": {
+    "total": 1
+  },
+  "web-animations/responsive/baselineShift.html": {
+    "total": 2
+  },
+  "web-animations/responsive/borderImageWidth.html": {
+    "total": 1
+  },
+  "web-animations/responsive/borderRadius.html": {
+    "total": 2
+  },
+  "web-animations/responsive/borderWidth.html": {
+    "total": 2
+  },
+  "web-animations/responsive/box-shadow-responsive.html": {
+    "total": 2
+  },
+  "web-animations/responsive/boxShadow.html": {
+    "total": 1
+  },
+  "web-animations/responsive/clip.html": {
+    "total": 2
+  },
+  "web-animations/responsive/columnCount.html": {
+    "total": 1
+  },
+  "web-animations/responsive/columnGap.html": {
+    "total": 3
+  },
+  "web-animations/responsive/d.html": {
+    "total": 1
+  },
+  "web-animations/responsive/fill-forwards-viewport-units.html": {
+    "total": 1
+  },
+  "web-animations/responsive/font-size-adjust.html": {
+    "total": 1
+  },
+  "web-animations/responsive/fontSize.html": {
+    "total": 4,
+    "failures": {
+      "Font size initial responsive to style changes": "FAIL",
+      "Font size medium responsive to style changes": "FAIL"
+    }
+  },
+  "web-animations/responsive/fontWeight.html": {
+    "total": 2
+  },
+  "web-animations/responsive/lineHeight.html": {
+    "total": 5
+  },
+  "web-animations/responsive/minHeight.html": {
+    "total": 2
+  },
+  "web-animations/responsive/multiple-properties-delayed-important.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/responsive/neutral-keyframe.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/responsive/offset-path.html": {
+    "total": 1
+  },
+  "web-animations/responsive/offsetDistance.html": {
+    "total": 3
+  },
+  "web-animations/responsive/offsetRotate.html": {
+    "total": 1
+  },
+  "web-animations/responsive/opacity-with-delayed-important.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/responsive/opacity.html": {
+    "total": 6
+  },
+  "web-animations/responsive/perspective.html": {
+    "total": 3
+  },
+  "web-animations/responsive/rotate.html": {
+    "total": 1
+  },
+  "web-animations/responsive/rowGap.html": {
+    "total": 3
+  },
+  "web-animations/responsive/shapeMargin.html": {
+    "total": 1
+  },
+  "web-animations/responsive/shapeOutside.html": {
+    "total": 3
+  },
+  "web-animations/responsive/strokeDasharray.html": {
+    "total": 1
+  },
+  "web-animations/responsive/text-size-adjust.html": {
+    "total": 1
+  },
+  "web-animations/responsive/textIndent.html": {
+    "total": 2
+  },
+  "web-animations/responsive/to-color-change.html": {
+    "total": 13,
+    "failures": {
+      "Color interpolation uses pre-multiplied colors": "FAIL"
+    }
+  },
+  "web-animations/responsive/to-inherited-change.html": {
+    "total": 3
+  },
+  "web-animations/responsive/to-style-change.html": {
+    "total": 3
+  },
+  "web-animations/responsive/toggle-animated-iframe-visibility.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/responsive/tramsform-with-delayed-important.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/responsive/transform.html": {
+    "total": 1
+  },
+  "web-animations/responsive/translate.html": {
+    "total": 1
+  },
+  "web-animations/responsive/verticalAlign.html": {
+    "total": 1
+  },
+  "web-animations/responsive/width.html": {
+    "total": 4
+  },
+  "web-animations/timing-model/animation-effects/active-time.html": {
+    "total": 14
+  },
+  "web-animations/timing-model/animation-effects/current-iteration.html": {
+    "total": 51
+  },
+  "web-animations/timing-model/animation-effects/local-time.html": {
+    "total": 2
+  },
+  "web-animations/timing-model/animation-effects/phases-and-states.html": {
+    "total": 11
+  },
+  "web-animations/timing-model/animation-effects/simple-iteration-progress.html": {
+    "total": 49
+  },
+  "web-animations/timing-model/animations/canceling-an-animation.html": {
+    "total": 8
+  },
+  "web-animations/timing-model/animations/document-timeline-animation.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/timing-model/animations/finish-promise-after-reverse-delay.html": {
+    "total": 1
+  },
+  "web-animations/timing-model/animations/finishing-an-animation.html": {
+    "total": 21
+  },
+  "web-animations/timing-model/animations/infinite-duration-animation.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/timing-model/animations/invalidating-animation-before-start-time-synced.html": {
+    "total": 1
+  },
+  "web-animations/timing-model/animations/pausing-an-animation.html": {
+    "total": 6
+  },
+  "web-animations/timing-model/animations/play-states.html": {
+    "total": 16
+  },
+  "web-animations/timing-model/animations/playing-an-animation.html": {
+    "total": 13
+  },
+  "web-animations/timing-model/animations/reverse-running-animation.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/timing-model/animations/reversing-an-animation.html": {
+    "total": 18
+  },
+  "web-animations/timing-model/animations/seamlessly-updating-the-playback-rate-of-an-animation.html": {
+    "total": 10
+  },
+  "web-animations/timing-model/animations/setting-the-current-time-of-an-animation.html": {
+    "total": 10
+  },
+  "web-animations/timing-model/animations/setting-the-playback-rate-of-an-animation.html": {
+    "total": 8
+  },
+  "web-animations/timing-model/animations/setting-the-start-time-of-an-animation.html": {
+    "total": 13
+  },
+  "web-animations/timing-model/animations/setting-the-target-effect-of-an-animation.html": {
+    "harness": "ERROR",
+    "total": 7,
+    "failures": {
+      "If new effect is null and old effect is not null the animation becomes finish-pending": "FAIL",
+      "The pending play task should be rescheduled even after temporarily setting the effect to null": "FAIL"
+    }
+  },
+  "web-animations/timing-model/animations/setting-the-timeline-of-an-animation.html": {
+    "total": 16
+  },
+  "web-animations/timing-model/animations/start-time-compat.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "Checking the start time of animations started at various times between two page rendering updates": "TIMEOUT"
+    }
+  },
+  "web-animations/timing-model/animations/sync-start-times.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/timing-model/animations/the-current-time-of-an-animation.html": {
+    "total": 5
+  },
+  "web-animations/timing-model/animations/update-playback-rate-fast.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/timing-model/animations/update-playback-rate-zero.html": {
+    "reftest": "PASS"
+  },
+  "web-animations/timing-model/animations/updating-the-finished-state.html": {
+    "total": 27
+  },
+  "web-animations/timing-model/time-transformations/transformed-progress.html": {
+    "total": 33
+  },
+  "web-animations/timing-model/timelines/document-timelines.html": {
+    "total": 2
+  },
+  "web-animations/timing-model/timelines/sibling-iframe-timeline.html": {
+    "total": 1
+  },
+  "web-animations/timing-model/timelines/timelines.html": {
+    "total": 5
+  },
+  "web-animations/timing-model/timelines/update-and-send-events-replacement.html": {
+    "total": 42,
+    "failures": {
+      "Does NOT remove an animation after making a redundant change to another animation's current time": "FAIL",
+      "Does NOT remove an animation after making a redundant change to another animation's timeline": "FAIL",
+      "Removes an animation after seeking another animation": "FAIL",
+      "Removes an animation after updating another animation's timeline": "FAIL",
+      "Removes an animation by another animation using logical properties": "FAIL",
+      "Removes an animation by another animation using logical properties after updating the context": "FAIL",
+      "Removes an animation using logical properties": "FAIL"
+    }
+  },
+  "web-animations/timing-model/timelines/update-and-send-events.html": {
+    "total": 9,
+    "failures": {
+      "Sorts cancel events by composite order": "FAIL"
+    }
+  }
+}

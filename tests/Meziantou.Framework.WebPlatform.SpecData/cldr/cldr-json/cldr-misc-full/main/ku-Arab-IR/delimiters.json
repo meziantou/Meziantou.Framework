@@ -1,0 +1,17 @@
+{
+  "main": {
+    "ku-Arab-IR": {
+      "identity": {
+        "language": "ku",
+        "script": "Arab",
+        "territory": "IR"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

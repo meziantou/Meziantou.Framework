@@ -1,0 +1,14 @@
+[
+  {
+    "selector": "input, button, select, textarea",
+    "reason": "form controls: the user agent style sheet of the library is the one of HTML, which gives the controls no font, paddings, borders nor margins; the browsers give them a font of 13.333px (11px in Safari), and Chromium and Firefox a padding of 1px 2px and a border of 2px inset to the text fields, a padding of 2px to the textarea elements, margins to the checkboxes and the radio buttons (the native frame of the library takes no space)"
+  },
+  {
+    "selector": "summary",
+    "reason": "font fallback: the disclosure triangles of the markers of the summary elements (U+25B8, U+25BE) are not in the injected font"
+  },
+  {
+    "selector": "wbr",
+    "reason": "Chromium and WebKit give the wbr elements no box (getBoundingClientRect() returns an empty rectangle at the origin); Firefox and the library give them a box of zero width on the line"
+  }
+]

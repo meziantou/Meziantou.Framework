@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-SY": {
+      "identity": {
+        "language": "fr",
+        "territory": "SY"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

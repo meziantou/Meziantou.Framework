@@ -1,0 +1,601 @@
+{
+  "spec": {
+    "title": "Cascading Style Sheets (CSS) Level 2",
+    "url": "https://drafts.csswg.org/css2/"
+  },
+  "properties": [
+    {
+      "name": "z-index",
+      "href": "https://drafts.csswg.org/css2/#propdef-z-index",
+      "value": "auto | <integer> | inherit",
+      "initial": "auto",
+      "appliesTo": "positioned elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "media": "visual",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The stack level of the generated box in the current stacking context is 0. The box does not establish a new stacking context unless it is the root element.",
+          "href": "https://drafts.csswg.org/css2/#valdef-z-index-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "z-index",
+        "zIndex"
+      ]
+    },
+    {
+      "name": "page-break-before",
+      "href": "https://drafts.csswg.org/css2/#propdef-page-break-before",
+      "value": "auto | always | avoid | left | right | inherit",
+      "initial": "auto",
+      "appliesTo": "block-level elements (but see text)",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual, paged",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Neither force nor forbid a page break before (after, inside) the generated box.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "always",
+          "prose": "Always force a page break before (after) the generated box.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-always",
+          "type": "value",
+          "value": "always"
+        },
+        {
+          "name": "avoid",
+          "prose": "Avoid a page break before (after, inside) the generated box.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-avoid",
+          "type": "value",
+          "value": "avoid"
+        },
+        {
+          "name": "left",
+          "prose": "Force one or two page breaks before (after) the generated box so that the next page is formatted as a left page.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "Force one or two page breaks before (after) the generated box so that the next page is formatted as a right page.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-right",
+          "type": "value",
+          "value": "right"
+        }
+      ],
+      "styleDeclaration": [
+        "page-break-before",
+        "pageBreakBefore"
+      ]
+    },
+    {
+      "name": "page-break-after",
+      "href": "https://drafts.csswg.org/css2/#propdef-page-break-after",
+      "value": "auto | always | avoid | left | right | inherit",
+      "initial": "auto",
+      "appliesTo": "block-level elements (but see text)",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual, paged",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Neither force nor forbid a page break before (after, inside) the generated box.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "always",
+          "prose": "Always force a page break before (after) the generated box.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-always",
+          "type": "value",
+          "value": "always"
+        },
+        {
+          "name": "avoid",
+          "prose": "Avoid a page break before (after, inside) the generated box.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-avoid",
+          "type": "value",
+          "value": "avoid"
+        },
+        {
+          "name": "left",
+          "prose": "Force one or two page breaks before (after) the generated box so that the next page is formatted as a left page.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "Force one or two page breaks before (after) the generated box so that the next page is formatted as a right page.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-right",
+          "type": "value",
+          "value": "right"
+        }
+      ],
+      "styleDeclaration": [
+        "page-break-after",
+        "pageBreakAfter"
+      ]
+    },
+    {
+      "name": "page-break-inside",
+      "href": "https://drafts.csswg.org/css2/#propdef-page-break-inside",
+      "value": "avoid | auto | inherit",
+      "initial": "auto",
+      "appliesTo": "block-level elements (but see text)",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual, paged",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Neither force nor forbid a page break before (after, inside) the generated box.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "always",
+          "prose": "Always force a page break before (after) the generated box.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-always",
+          "type": "value",
+          "value": "always"
+        },
+        {
+          "name": "avoid",
+          "prose": "Avoid a page break before (after, inside) the generated box.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-avoid",
+          "type": "value",
+          "value": "avoid"
+        },
+        {
+          "name": "left",
+          "prose": "Force one or two page breaks before (after) the generated box so that the next page is formatted as a left page.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "Force one or two page breaks before (after) the generated box so that the next page is formatted as a right page.",
+          "href": "https://drafts.csswg.org/css2/#valdef-page-break-right",
+          "type": "value",
+          "value": "right"
+        }
+      ],
+      "styleDeclaration": [
+        "page-break-inside",
+        "pageBreakInside"
+      ]
+    }
+  ],
+  "atrules": [
+    {
+      "name": "@import",
+      "prose": "The @import rule allows users to import style rules from other style sheets. In CSS 2, any @import rules must precede all other rules (except the @charset rule, if present). See the section on parsing for when user agents must ignore @import rules. The @import keyword must be followed by the URI of the style sheet to include. A string is also allowed; it will be interpreted as if it had url(...) around it.",
+      "href": "https://drafts.csswg.org/css2/#at-ruledef-import",
+      "descriptors": []
+    },
+    {
+      "name": "@media",
+      "href": "https://drafts.csswg.org/css2/#at-ruledef-media",
+      "descriptors": [],
+      "values": [
+        {
+          "name": "all",
+          "prose": "Suitable for all devices.",
+          "href": "https://drafts.csswg.org/css2/#valdef-media-all",
+          "type": "value",
+          "value": "all",
+          "values": [
+            {
+              "name": "inherit",
+              "href": "https://drafts.csswg.org/css2/#valdef-all-inherit",
+              "type": "value",
+              "value": "inherit"
+            }
+          ]
+        },
+        {
+          "name": "braille",
+          "prose": "Intended for braille tactile feedback devices.",
+          "href": "https://drafts.csswg.org/css2/#valdef-media-braille",
+          "type": "value",
+          "value": "braille"
+        },
+        {
+          "name": "embossed",
+          "prose": "Intended for paged braille printers.",
+          "href": "https://drafts.csswg.org/css2/#valdef-media-embossed",
+          "type": "value",
+          "value": "embossed"
+        },
+        {
+          "name": "handheld",
+          "prose": "Intended for handheld devices (typically small screen, limited bandwidth).",
+          "href": "https://drafts.csswg.org/css2/#valdef-media-handheld",
+          "type": "value",
+          "value": "handheld"
+        },
+        {
+          "name": "print",
+          "prose": "Intended for paged material and for documents viewed on screen in print preview mode. Please consult the section on paged media for information about formatting issues that are specific to paged media.",
+          "href": "https://drafts.csswg.org/css2/#valdef-media-print",
+          "type": "value",
+          "value": "print"
+        },
+        {
+          "name": "projection",
+          "prose": "Intended for projected presentations, for example projectors. Please consult the section on paged media for information about formatting issues that are specific to paged media.",
+          "href": "https://drafts.csswg.org/css2/#valdef-media-projection",
+          "type": "value",
+          "value": "projection"
+        },
+        {
+          "name": "screen",
+          "prose": "Intended primarily for color computer screens.",
+          "href": "https://drafts.csswg.org/css2/#valdef-media-screen",
+          "type": "value",
+          "value": "screen"
+        },
+        {
+          "name": "speech",
+          "prose": "Intended for speech synthesizers. Note: CSS2 (1998) had a similar media type called aural for this purpose.",
+          "href": "https://drafts.csswg.org/css2/#valdef-media-speech",
+          "type": "value",
+          "value": "speech"
+        },
+        {
+          "name": "tty",
+          "prose": "Intended for media using a fixed-pitch character grid (such as teletypes, terminals, or portable devices with limited display capabilities). Authors should not use pixel units with the \"tty\" media type.",
+          "href": "https://drafts.csswg.org/css2/#valdef-media-tty",
+          "type": "value",
+          "value": "tty"
+        },
+        {
+          "name": "tv",
+          "prose": "Intended for television-type devices (low resolution, color, limited-scrollability screens, sound available).",
+          "href": "https://drafts.csswg.org/css2/#valdef-media-tv",
+          "type": "value",
+          "value": "tv"
+        }
+      ]
+    },
+    {
+      "name": "@page",
+      "prose": "Authors can specify the margins of a page box inside an @page rule. An @page rule consists of the keyword \"@page\", followed by an optional page selector, followed by a block containing declarations and at-rules. Comments and white space are allowed, but optional, between the @page token and the page selector and between the page selector and the block. The declarations in an @page rule are said to be in the page context.",
+      "href": "https://drafts.csswg.org/css2/#at-ruledef-page",
+      "descriptors": []
+    }
+  ],
+  "selectors": [
+    {
+      "name": ":first-line",
+      "href": "https://drafts.csswg.org/css2/#selectordef-first-line",
+      "value": ":first-line"
+    },
+    {
+      "name": ":first-letter",
+      "href": "https://drafts.csswg.org/css2/#selectordef-first-letter",
+      "value": ":first-letter"
+    },
+    {
+      "name": ":before",
+      "href": "https://drafts.csswg.org/css2/#selectordef-before",
+      "value": ":before"
+    },
+    {
+      "name": ":after",
+      "href": "https://drafts.csswg.org/css2/#selectordef-after",
+      "value": ":after"
+    },
+    {
+      "name": ":left",
+      "prose": "All pages are automatically classified by user agents into either the :left or :right pseudo-class. Whether the first page of a document is :left or :right depends on the major writing direction of the root element. For example, the first page of a document with a left-to-right major writing direction would be a :right page, and the first page of a document with a right-to-left major writing direction would be a :left page. To explicitly force a document to begin printing on a left or right page, authors can insert a page break before the first generated box.",
+      "href": "https://drafts.csswg.org/css2/#selectordef-left",
+      "value": ":left"
+    },
+    {
+      "name": ":right",
+      "prose": "All pages are automatically classified by user agents into either the :left or :right pseudo-class. Whether the first page of a document is :left or :right depends on the major writing direction of the root element. For example, the first page of a document with a left-to-right major writing direction would be a :right page, and the first page of a document with a right-to-left major writing direction would be a :left page. To explicitly force a document to begin printing on a left or right page, authors can insert a page break before the first generated box.",
+      "href": "https://drafts.csswg.org/css2/#selectordef-right",
+      "value": ":right"
+    },
+    {
+      "name": ":first",
+      "prose": "Authors may also specify style for the first page of a document with the :first pseudo-class:",
+      "href": "https://drafts.csswg.org/css2/#selectordef-first",
+      "value": ":first"
+    }
+  ],
+  "values": [
+    {
+      "name": "<identifier>",
+      "href": "https://drafts.csswg.org/css2/#value-def-identifier",
+      "type": "type"
+    },
+    {
+      "name": "<uri>",
+      "prose": "URI values (Uniform Resource Identifiers, see [RFC3986], which includes URLs, URNs, etc) in this specification are denoted by <uri>. The functional notation used to designate URIs in property values is \"url()\", as in:",
+      "href": "https://drafts.csswg.org/css2/#value-def-uri",
+      "type": "type"
+    },
+    {
+      "name": "<margin-width>",
+      "prose": "The properties defined in this section refer to the <margin-width> value type, which may take one of the following values:",
+      "href": "https://drafts.csswg.org/css2/#value-def-margin-width",
+      "type": "type"
+    },
+    {
+      "name": "<padding-width>",
+      "prose": "The properties defined in this section refer to the <padding-width> value type, which may take one of the following values:",
+      "href": "https://drafts.csswg.org/css2/#value-def-padding-width",
+      "type": "type",
+      "values": [
+        {
+          "name": "<length>",
+          "prose": "Specifies a fixed width.",
+          "href": "https://drafts.csswg.org/css2/#valdef-padding-width-length",
+          "type": "value",
+          "value": "<length>"
+        },
+        {
+          "name": "<percentage>",
+          "prose": "The percentage is calculated with respect to the width of the generated box’s containing block, even for padding-top and padding-bottom. If the containing block’s width depends on this element, then the resulting layout is undefined in CSS 2.",
+          "href": "https://drafts.csswg.org/css2/#valdef-padding-width-percentage",
+          "type": "value",
+          "value": "<percentage>"
+        }
+      ]
+    },
+    {
+      "name": "<border-width>",
+      "prose": "The border width properties specify the width of the border area. The properties defined in this section refer to the <border-width> value type, which may take one of the following values:",
+      "href": "https://drafts.csswg.org/css2/#value-def-border-width",
+      "type": "type",
+      "values": [
+        {
+          "name": "thin",
+          "prose": "A thin border.",
+          "href": "https://drafts.csswg.org/css2/#valdef-border-width-thin",
+          "type": "value",
+          "value": "thin"
+        },
+        {
+          "name": "medium",
+          "prose": "A medium border.",
+          "href": "https://drafts.csswg.org/css2/#valdef-border-width-medium",
+          "type": "value",
+          "value": "medium"
+        },
+        {
+          "name": "thick",
+          "prose": "A thick border.",
+          "href": "https://drafts.csswg.org/css2/#valdef-border-width-thick",
+          "type": "value",
+          "value": "thick"
+        },
+        {
+          "name": "<length>",
+          "prose": "The border’s thickness has an explicit value. Explicit border widths cannot be negative.",
+          "href": "https://drafts.csswg.org/css2/#valdef-border-width-length",
+          "type": "value",
+          "value": "<length>"
+        }
+      ]
+    },
+    {
+      "name": "<border-style>",
+      "prose": "The border style properties specify the line style of a box’s border (solid, double, dashed, etc.). The properties defined in this section refer to the <border-style> value type, which may take one of the following values:",
+      "href": "https://drafts.csswg.org/css2/#value-def-border-style",
+      "type": "type",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No border; the computed border width is zero.",
+          "href": "https://drafts.csswg.org/css2/#value-def-bo-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "hidden",
+          "prose": "Same as none, except in terms of border conflict resolution for table elements.",
+          "href": "https://drafts.csswg.org/css2/#value-def-hidden",
+          "type": "value",
+          "value": "hidden"
+        },
+        {
+          "name": "dotted",
+          "prose": "The border is a series of dots.",
+          "href": "https://drafts.csswg.org/css2/#value-def-dotted",
+          "type": "value",
+          "value": "dotted"
+        },
+        {
+          "name": "dashed",
+          "prose": "The border is a series of short line segments.",
+          "href": "https://drafts.csswg.org/css2/#value-def-dashed",
+          "type": "value",
+          "value": "dashed"
+        },
+        {
+          "name": "solid",
+          "prose": "The border is a single line segment.",
+          "href": "https://drafts.csswg.org/css2/#value-def-solid",
+          "type": "value",
+          "value": "solid"
+        },
+        {
+          "name": "double",
+          "prose": "The border is two solid lines. The sum of the two lines and the space between them equals the value of border-width.",
+          "href": "https://drafts.csswg.org/css2/#value-def-double",
+          "type": "value",
+          "value": "double"
+        },
+        {
+          "name": "groove",
+          "prose": "The border looks as though it were carved into the canvas.",
+          "href": "https://drafts.csswg.org/css2/#value-def-groove",
+          "type": "value",
+          "value": "groove"
+        },
+        {
+          "name": "ridge",
+          "prose": "The opposite of groove: the border looks as though it were coming out of the canvas.",
+          "href": "https://drafts.csswg.org/css2/#value-def-ridge",
+          "type": "value",
+          "value": "ridge"
+        },
+        {
+          "name": "inset",
+          "prose": "The border makes the box look as though it were embedded in the canvas.",
+          "href": "https://drafts.csswg.org/css2/#value-def-inset",
+          "type": "value",
+          "value": "inset"
+        },
+        {
+          "name": "outset",
+          "prose": "The opposite of inset: the border makes the box look as though it were coming out of the canvas.",
+          "href": "https://drafts.csswg.org/css2/#value-def-outset",
+          "type": "value",
+          "value": "outset"
+        }
+      ]
+    },
+    {
+      "name": "<shape>",
+      "prose": "In CSS 2, the only valid <shape> value is: rect(<top>, <right>, <bottom>, <left>) where <top> and <bottom> specify offsets from the top border edge of the box, and <right>, and <left> specify offsets from the left border edge of the box. Authors should separate offset values with commas. User agents must support separation with commas, but may also support separation without commas (but not a combination), because a previous revision of this specification was ambiguous in this respect. <top>, <right>, <bottom>, and <left> may either have a <length> value or auto. Negative lengths are permitted. The value auto means that a given edge of the clipping region will be the same as the edge of the element’s generated border box (i.e., auto means the same as 0 for <top> and <left>, the same as the used value of the height plus the sum of vertical padding and border widths for <bottom>, and the same as the used value of the width plus the sum of the horizontal padding and border widths for <right>, such that four auto values result in the clipping region being the same as the element’s border box). When coordinates are rounded to pixel coordinates, care should be taken that no pixels remain visible when <left> and <right> have the same value (or <top> and <bottom> have the same value), and conversely that no pixels within the element’s border box remain hidden when these values are auto.",
+      "href": "https://drafts.csswg.org/css2/#value-def-shape",
+      "type": "type",
+      "value": "rect(<top>, <right>, <bottom>, <left>)"
+    },
+    {
+      "name": "<top>",
+      "prose": "<top>, <right>, <bottom>, and <left> may either have a <length> value or auto. Negative lengths are permitted. The value auto means that a given edge of the clipping region will be the same as the edge of the element’s generated border box (i.e., auto means the same as 0 for <top> and <left>, the same as the used value of the height plus the sum of vertical padding and border widths for <bottom>, and the same as the used value of the width plus the sum of the horizontal padding and border widths for <right>, such that four auto values result in the clipping region being the same as the element’s border box).",
+      "href": "https://drafts.csswg.org/css2/#value-def-top",
+      "type": "type",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "<top>, <right>, <bottom>, and <left> may either have a <length> value or auto. Negative lengths are permitted. The value auto means that a given edge of the clipping region will be the same as the edge of the element’s generated border box (i.e., auto means the same as 0 for <top> and <left>, the same as the used value of the height plus the sum of vertical padding and border widths for <bottom>, and the same as the used value of the width plus the sum of the horizontal padding and border widths for <right>, such that four auto values result in the clipping region being the same as the element’s border box).",
+          "href": "https://drafts.csswg.org/css2/#valdef-top-auto%E2%91%A0",
+          "type": "value",
+          "value": "auto"
+        }
+      ]
+    },
+    {
+      "name": "<right>",
+      "prose": "<top>, <right>, <bottom>, and <left> may either have a <length> value or auto. Negative lengths are permitted. The value auto means that a given edge of the clipping region will be the same as the edge of the element’s generated border box (i.e., auto means the same as 0 for <top> and <left>, the same as the used value of the height plus the sum of vertical padding and border widths for <bottom>, and the same as the used value of the width plus the sum of the horizontal padding and border widths for <right>, such that four auto values result in the clipping region being the same as the element’s border box).",
+      "href": "https://drafts.csswg.org/css2/#value-def-right",
+      "type": "type",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "<top>, <right>, <bottom>, and <left> may either have a <length> value or auto. Negative lengths are permitted. The value auto means that a given edge of the clipping region will be the same as the edge of the element’s generated border box (i.e., auto means the same as 0 for <top> and <left>, the same as the used value of the height plus the sum of vertical padding and border widths for <bottom>, and the same as the used value of the width plus the sum of the horizontal padding and border widths for <right>, such that four auto values result in the clipping region being the same as the element’s border box).",
+          "href": "https://drafts.csswg.org/css2/#valdef-top-auto%E2%91%A0",
+          "type": "value",
+          "value": "auto"
+        }
+      ]
+    },
+    {
+      "name": "<bottom>",
+      "prose": "<top>, <right>, <bottom>, and <left> may either have a <length> value or auto. Negative lengths are permitted. The value auto means that a given edge of the clipping region will be the same as the edge of the element’s generated border box (i.e., auto means the same as 0 for <top> and <left>, the same as the used value of the height plus the sum of vertical padding and border widths for <bottom>, and the same as the used value of the width plus the sum of the horizontal padding and border widths for <right>, such that four auto values result in the clipping region being the same as the element’s border box).",
+      "href": "https://drafts.csswg.org/css2/#value-def-bottom",
+      "type": "type",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "<top>, <right>, <bottom>, and <left> may either have a <length> value or auto. Negative lengths are permitted. The value auto means that a given edge of the clipping region will be the same as the edge of the element’s generated border box (i.e., auto means the same as 0 for <top> and <left>, the same as the used value of the height plus the sum of vertical padding and border widths for <bottom>, and the same as the used value of the width plus the sum of the horizontal padding and border widths for <right>, such that four auto values result in the clipping region being the same as the element’s border box).",
+          "href": "https://drafts.csswg.org/css2/#valdef-top-auto%E2%91%A0",
+          "type": "value",
+          "value": "auto"
+        }
+      ]
+    },
+    {
+      "name": "<left>",
+      "prose": "<top>, <right>, <bottom>, and <left> may either have a <length> value or auto. Negative lengths are permitted. The value auto means that a given edge of the clipping region will be the same as the edge of the element’s generated border box (i.e., auto means the same as 0 for <top> and <left>, the same as the used value of the height plus the sum of vertical padding and border widths for <bottom>, and the same as the used value of the width plus the sum of the horizontal padding and border widths for <right>, such that four auto values result in the clipping region being the same as the element’s border box).",
+      "href": "https://drafts.csswg.org/css2/#value-def-left",
+      "type": "type",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "<top>, <right>, <bottom>, and <left> may either have a <length> value or auto. Negative lengths are permitted. The value auto means that a given edge of the clipping region will be the same as the edge of the element’s generated border box (i.e., auto means the same as 0 for <top> and <left>, the same as the used value of the height plus the sum of vertical padding and border widths for <bottom>, and the same as the used value of the width plus the sum of the horizontal padding and border widths for <right>, such that four auto values result in the clipping region being the same as the element’s border box).",
+          "href": "https://drafts.csswg.org/css2/#valdef-top-auto%E2%91%A0",
+          "type": "value",
+          "value": "auto"
+        }
+      ]
+    },
+    {
+      "name": "<family-name>",
+      "prose": "The name of a font family of choice. In the last example, \"Gill\" and \"Helvetica\" are font families.",
+      "href": "https://drafts.csswg.org/css2/#value-def-family-name",
+      "type": "type"
+    },
+    {
+      "name": "<generic-family>",
+      "prose": "In the example above, the last value is a generic family name. The following generic families are defined: serif (e.g., Times) sans-serif (e.g., Helvetica) cursive (e.g., Zapf-Chancery) fantasy (e.g., Western) monospace (e.g., Courier) Style sheet designers are encouraged to offer a generic font family as a last alternative. Generic font family names are keywords and must NOT be quoted.",
+      "href": "https://drafts.csswg.org/css2/#value-def-generic-family",
+      "type": "type",
+      "values": [
+        {
+          "name": "serif",
+          "href": "https://drafts.csswg.org/css2/#valdef-generic-family-serif",
+          "type": "value",
+          "value": "serif"
+        },
+        {
+          "name": "sans-serif",
+          "href": "https://drafts.csswg.org/css2/#valdef-generic-family-sans-serif",
+          "type": "value",
+          "value": "sans-serif"
+        },
+        {
+          "name": "cursive",
+          "href": "https://drafts.csswg.org/css2/#valdef-generic-family-cursive",
+          "type": "value",
+          "value": "cursive"
+        },
+        {
+          "name": "fantasy",
+          "href": "https://drafts.csswg.org/css2/#valdef-generic-family-fantasy",
+          "type": "value",
+          "value": "fantasy"
+        },
+        {
+          "name": "monospace",
+          "href": "https://drafts.csswg.org/css2/#valdef-generic-family-monospace",
+          "type": "value",
+          "value": "monospace"
+        }
+      ]
+    }
+  ]
+}

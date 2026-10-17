@@ -1,0 +1,220 @@
+{
+  "spec": {
+    "title": "Region Capture",
+    "url": "https://w3c.github.io/mediacapture-region/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "CropTarget",
+          "BrowserCaptureMediaStreamTrack"
+        ],
+        "Worker": [
+          "CropTarget"
+        ]
+      }
+    },
+    "idlNames": {
+      "CropTarget": {
+        "fragment": "[Exposed=(Window,Worker), Serializable]\ninterface CropTarget {\n  [Exposed=Window, SecureContext] static Promise<CropTarget> fromElement(Element element);\n};",
+        "type": "interface",
+        "name": "CropTarget",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "fromElement",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CropTarget"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "element",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "SecureContext",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://w3c.github.io/mediacapture-region/#dom-croptarget-fromelement"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-region/#dom-croptarget"
+      },
+      "BrowserCaptureMediaStreamTrack": {
+        "fragment": "[Exposed = Window]\ninterface BrowserCaptureMediaStreamTrack : MediaStreamTrack {\n  Promise<undefined> cropTo(CropTarget? cropTarget);\n  BrowserCaptureMediaStreamTrack clone();\n};",
+        "type": "interface",
+        "name": "BrowserCaptureMediaStreamTrack",
+        "inheritance": "MediaStreamTrack",
+        "members": [
+          {
+            "type": "operation",
+            "name": "cropTo",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "cropTarget",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "CropTarget"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-region/#dom-browsercapturemediastreamtrack-cropto"
+          },
+          {
+            "type": "operation",
+            "name": "clone",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BrowserCaptureMediaStreamTrack"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-region/#dom-browsercapturemediastreamtrack-clone"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-region/#dom-browsercapturemediastreamtrack"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CropTarget",
+        "BrowserCaptureMediaStreamTrack"
+      ],
+      "Worker": [
+        "CropTarget"
+      ]
+    },
+    "dependencies": {
+      "CropTarget": [
+        "CropTarget",
+        "Element"
+      ],
+      "BrowserCaptureMediaStreamTrack": [
+        "MediaStreamTrack",
+        "CropTarget",
+        "BrowserCaptureMediaStreamTrack"
+      ]
+    },
+    "externalDependencies": [
+      "Element",
+      "MediaStreamTrack"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

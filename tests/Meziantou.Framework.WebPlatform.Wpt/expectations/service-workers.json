@@ -1,0 +1,1306 @@
+{
+  "service-workers/cache-storage/cache-abort.https.any.js": {
+    "total": 9
+  },
+  "service-workers/cache-storage/cache-abort.https.any.js#dedicatedworker": {
+    "total": 9
+  },
+  "service-workers/cache-storage/cache-abort.https.any.js#serviceworker": {
+    "total": 9
+  },
+  "service-workers/cache-storage/cache-abort.https.any.js#sharedworker": {
+    "total": 9
+  },
+  "service-workers/cache-storage/cache-add.https.any.js": {
+    "total": 23
+  },
+  "service-workers/cache-storage/cache-add.https.any.js#dedicatedworker": {
+    "total": 23
+  },
+  "service-workers/cache-storage/cache-add.https.any.js#serviceworker": {
+    "total": 23
+  },
+  "service-workers/cache-storage/cache-add.https.any.js#sharedworker": {
+    "total": 23
+  },
+  "service-workers/cache-storage/cache-api-nested-worker.https.html": {
+    "total": 1
+  },
+  "service-workers/cache-storage/cache-delete.https.any.js": {
+    "total": 9
+  },
+  "service-workers/cache-storage/cache-delete.https.any.js#dedicatedworker": {
+    "total": 9
+  },
+  "service-workers/cache-storage/cache-delete.https.any.js#serviceworker": {
+    "total": 9
+  },
+  "service-workers/cache-storage/cache-delete.https.any.js#sharedworker": {
+    "total": 9
+  },
+  "service-workers/cache-storage/cache-keys-attributes-for-service-worker.https.html": {
+    "total": 2,
+    "failures": {
+      "Request.IsHistoryNavigation should persist.": "FAIL",
+      "Request.IsReloadNavigation should persist.": "FAIL"
+    }
+  },
+  "service-workers/cache-storage/cache-keys.https.any.js": {
+    "total": 17
+  },
+  "service-workers/cache-storage/cache-keys.https.any.js#dedicatedworker": {
+    "total": 17
+  },
+  "service-workers/cache-storage/cache-keys.https.any.js#serviceworker": {
+    "total": 17
+  },
+  "service-workers/cache-storage/cache-keys.https.any.js#sharedworker": {
+    "total": 17
+  },
+  "service-workers/cache-storage/cache-match.https.any.js": {
+    "total": 25
+  },
+  "service-workers/cache-storage/cache-match.https.any.js#dedicatedworker": {
+    "total": 25
+  },
+  "service-workers/cache-storage/cache-match.https.any.js#serviceworker": {
+    "total": 25
+  },
+  "service-workers/cache-storage/cache-match.https.any.js#sharedworker": {
+    "total": 25
+  },
+  "service-workers/cache-storage/cache-matchAll.https.any.js": {
+    "total": 16
+  },
+  "service-workers/cache-storage/cache-matchAll.https.any.js#dedicatedworker": {
+    "total": 16
+  },
+  "service-workers/cache-storage/cache-matchAll.https.any.js#serviceworker": {
+    "total": 16
+  },
+  "service-workers/cache-storage/cache-matchAll.https.any.js#sharedworker": {
+    "total": 16
+  },
+  "service-workers/cache-storage/cache-put.https.any.js": {
+    "total": 27
+  },
+  "service-workers/cache-storage/cache-put.https.any.js#dedicatedworker": {
+    "total": 27
+  },
+  "service-workers/cache-storage/cache-put.https.any.js#serviceworker": {
+    "total": 27
+  },
+  "service-workers/cache-storage/cache-put.https.any.js#sharedworker": {
+    "total": 27
+  },
+  "service-workers/cache-storage/cache-storage-buckets.https.any.js": {
+    "total": 2,
+    "failures": {
+      "cache.open promise is rejected when bucket is gone": "FAIL",
+      "caches from different buckets have different contents": "FAIL"
+    }
+  },
+  "service-workers/cache-storage/cache-storage-buckets.https.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "cache.open promise is rejected when bucket is gone": "FAIL",
+      "caches from different buckets have different contents": "FAIL"
+    }
+  },
+  "service-workers/cache-storage/cache-storage-buckets.https.any.js#serviceworker": {
+    "total": 2,
+    "failures": {
+      "cache.open promise is rejected when bucket is gone": "FAIL",
+      "caches from different buckets have different contents": "FAIL"
+    }
+  },
+  "service-workers/cache-storage/cache-storage-buckets.https.any.js#sharedworker": {
+    "total": 2,
+    "failures": {
+      "cache.open promise is rejected when bucket is gone": "FAIL",
+      "caches from different buckets have different contents": "FAIL"
+    }
+  },
+  "service-workers/cache-storage/cache-storage-keys.https.any.js": {
+    "total": 1
+  },
+  "service-workers/cache-storage/cache-storage-keys.https.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "service-workers/cache-storage/cache-storage-keys.https.any.js#serviceworker": {
+    "total": 1
+  },
+  "service-workers/cache-storage/cache-storage-keys.https.any.js#sharedworker": {
+    "total": 1
+  },
+  "service-workers/cache-storage/cache-storage-match.https.any.js": {
+    "total": 11
+  },
+  "service-workers/cache-storage/cache-storage-match.https.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "service-workers/cache-storage/cache-storage-match.https.any.js#serviceworker": {
+    "total": 11
+  },
+  "service-workers/cache-storage/cache-storage-match.https.any.js#sharedworker": {
+    "total": 11
+  },
+  "service-workers/cache-storage/cache-storage.https.any.js": {
+    "total": 10
+  },
+  "service-workers/cache-storage/cache-storage.https.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "service-workers/cache-storage/cache-storage.https.any.js#serviceworker": {
+    "total": 10
+  },
+  "service-workers/cache-storage/cache-storage.https.any.js#sharedworker": {
+    "total": 10
+  },
+  "service-workers/cache-storage/common.https.window.js": {
+    "total": 1
+  },
+  "service-workers/cache-storage/credentials.https.html": {
+    "total": 1
+  },
+  "service-workers/cache-storage/cross-partition.https.tentative.html": {
+    "total": 4,
+    "failures": {
+      "CacheStorage caches shouldn't be shared with a cross-partition dedicated worker": "FAIL",
+      "CacheStorage caches shouldn't be shared with a cross-partition iframe": "FAIL",
+      "CacheStorage caches shouldn't be shared with a cross-partition service worker": "FAIL",
+      "CacheStorage caches shouldn't be shared with a cross-partition shared worker": "FAIL"
+    }
+  },
+  "service-workers/cache-storage/sandboxed-iframes.https.html": {
+    "total": 2
+  },
+  "service-workers/idlharness.https.any.js": {
+    "total": 175
+  },
+  "service-workers/idlharness.https.any.js#dedicatedworker": {
+    "total": 155
+  },
+  "service-workers/idlharness.https.any.js#serviceworker": {
+    "total": 302,
+    "failures": {
+      "InstallEvent interface: operation addRoutes((RouterRule or sequence<RouterRule>))": "FAIL"
+    }
+  },
+  "service-workers/idlharness.https.any.js#sharedworker": {
+    "total": 155
+  },
+  "service-workers/service-worker/Service-Worker-Allowed-header.https.html": {
+    "total": 8
+  },
+  "service-workers/service-worker/ServiceWorkerGlobalScope/close.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/ServiceWorkerGlobalScope/error-message-event.https.html": {
+    "total": 1,
+    "failures": {
+      "Verify error event is received": "FAIL"
+    }
+  },
+  "service-workers/service-worker/ServiceWorkerGlobalScope/extendable-message-event-constructor.https.html": {
+    "total": 10
+  },
+  "service-workers/service-worker/ServiceWorkerGlobalScope/extendable-message-event.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/ServiceWorkerGlobalScope/fetch-on-the-right-interface.https.any.js#serviceworker": {
+    "total": 1
+  },
+  "service-workers/service-worker/ServiceWorkerGlobalScope/isSecureContext.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/ServiceWorkerGlobalScope/message-event-ports.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/ServiceWorkerGlobalScope/postmessage.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/ServiceWorkerGlobalScope/registration-attribute.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/ServiceWorkerGlobalScope/service-worker-error-event.https.html": {
+    "total": 1,
+    "failures": {
+      "Error handlers inside serviceworker should see the attributes of ErrorEvent": "FAIL"
+    }
+  },
+  "service-workers/service-worker/ServiceWorkerGlobalScope/unregister.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/ServiceWorkerGlobalScope/update.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/about-blank-replacement.https.html": {
+    "total": 7,
+    "failures": {
+      "Initial about:blank is controlled, exposed to clients.matchAll(), and matches final Client.": "FAIL",
+      "Initial about:blank modified by parent is controlled, exposed to clients.matchAll(), and matches final Client.": "FAIL",
+      "Popup initial about:blank is controlled, exposed to clients.matchAll(), and matches final Client.": "FAIL"
+    }
+  },
+  "service-workers/service-worker/activate-event-after-install-state-change.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/activation-after-registration.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/activation.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/active.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/add-routes.https.html": {
+    "total": 1,
+    "failures": {
+      "addRoutes() will not be executed outside of installing": "FAIL"
+    }
+  },
+  "service-workers/service-worker/claim-affect-other-registration.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/claim-fetch.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/claim-not-using-registration.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/claim-shared-worker-fetch.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/claim-using-registration.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/claim-with-redirect.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/claim-worker-fetch.https.html": {
+    "total": 6,
+    "failures": {
+      "fetch() in blob URL Worker should be intercepted after the client is claimed.": "FAIL",
+      "fetch() in nested blob URL Worker created from a Worker should be intercepted after the client is claimed.": "FAIL",
+      "fetch() in nested blob URL Worker created from a blob URL Worker should be intercepted after the client is claimed.": "FAIL"
+    }
+  },
+  "service-workers/service-worker/client-id.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/client-navigate.https.html": {
+    "total": 10,
+    "failures": {
+      "Frame location should not update on failed mixed-content navigation": "FAIL"
+    }
+  },
+  "service-workers/service-worker/client-url-creation-url.https.html": {
+    "harness": "TIMEOUT",
+    "total": 10,
+    "failures": {
+      "Fragment only navigation doesn't change creation URL": "NOTRUN",
+      "Going back over pushstate to creation URL": "NOTRUN",
+      "Going back over pushstate to other pushstate via back": "NOTRUN",
+      "Going back to new document changes creation URL": "NOTRUN",
+      "No navigation creation URL is same as window URL": "TIMEOUT",
+      "Pushstate doesn't change creation URL": "NOTRUN",
+      "Query navigation changes creation URL": "NOTRUN",
+      "Reloading doesn't change creation URL": "NOTRUN",
+      "Reloading pushstate URL changes creation URL": "NOTRUN",
+      "Replacestate doesn't change creation URL": "NOTRUN"
+    }
+  },
+  "service-workers/service-worker/client-url-of-blob-url-worker.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/clients-get-client-types.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/clients-get-cross-origin.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/clients-get-resultingClientId.https.html": {
+    "total": 6
+  },
+  "service-workers/service-worker/clients-get.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/clients-matchall-blob-url-worker.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/clients-matchall-client-types.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/clients-matchall-exact-controller.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/clients-matchall-frozen.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Test Clients.matchAll()": "TIMEOUT"
+    }
+  },
+  "service-workers/service-worker/clients-matchall-include-uncontrolled.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/clients-matchall-on-evaluation.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/clients-matchall-order.https.html": {
+    "total": 7,
+    "failures": {
+      "Clients.matchAll() returns non-focused uncontrolled windows in creation order.": "FAIL",
+      "Clients.matchAll() returns uncontrolled windows in focus order.  Case 1.": "FAIL",
+      "Clients.matchAll() returns uncontrolled windows in focus order.  Case 2.": "FAIL"
+    }
+  },
+  "service-workers/service-worker/clients-matchall.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/controlled-dedicatedworker-postMessage.https.html": {
+    "total": 4,
+    "failures": {
+      "Verify dedicated worker does not get all messages if not setting event listener early": "FAIL",
+      "Verify dedicated worker gets messages if setting event listener early": "FAIL"
+    }
+  },
+  "service-workers/service-worker/controlled-iframe-postMessage.https.html": {
+    "total": 5,
+    "failures": {
+      "Verify frame does get messages in order": "FAIL",
+      "Verify frame gets early messages if setting synchronously message event listener": "FAIL"
+    }
+  },
+  "service-workers/service-worker/controller-on-disconnect.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/controller-on-load.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/controller-on-reload.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/controller-with-no-fetch-event-handler.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/credentials.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/css-sw-same-origin-substitution.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/data-iframe.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/data-transfer-files.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/dedicated-worker-service-worker-interception.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/detached-context.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/embed-and-object-are-not-intercepted.https.html": {
+    "total": 8
+  },
+  "service-workers/service-worker/extendable-event-async-waituntil.https.html": {
+    "total": 14
+  },
+  "service-workers/service-worker/extendable-event-waituntil.https.html": {
+    "total": 6
+  },
+  "service-workers/service-worker/fetch-audio-tainting.https.html": {
+    "total": 1,
+    "failures": {
+      "Verify CORS XHR of fetch() in a Service Worker": "FAIL"
+    }
+  },
+  "service-workers/service-worker/fetch-canvas-tainting-double-write.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-canvas-tainting-image-cache.https.html": {
+    "total": 40
+  },
+  "service-workers/service-worker/fetch-canvas-tainting-image.https.html": {
+    "total": 40
+  },
+  "service-workers/service-worker/fetch-canvas-tainting-video-cache.https.html": {
+    "total": 40
+  },
+  "service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https.html": {
+    "total": 5,
+    "failures": {
+      "synth and same-origin fallback range responses": "FAIL"
+    }
+  },
+  "service-workers/service-worker/fetch-canvas-tainting-video.https.html": {
+    "total": 40
+  },
+  "service-workers/service-worker/fetch-cors-exposed-header-names.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-cors-xhr.https.html": {
+    "total": 41
+  },
+  "service-workers/service-worker/fetch-csp.https.html": {
+    "total": 1,
+    "failures": {
+      "Verify CSP control of fetch() in a Service Worker": "FAIL"
+    }
+  },
+  "service-workers/service-worker/fetch-error.https.html": {
+    "total": 3,
+    "failures": {
+      "Make sure a load that makes progress does not time out": "FAIL"
+    }
+  },
+  "service-workers/service-worker/fetch-event-add-async.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/fetch-event-after-navigation-within-page.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/fetch-event-async-respond-with.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/fetch-event-handled.https.html": {
+    "total": 8
+  },
+  "service-workers/service-worker/fetch-event-network-error.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-event-redirect.https.html": {
+    "total": 56
+  },
+  "service-workers/service-worker/fetch-event-referrer-policy.https.html": {
+    "total": 3,
+    "failures": {
+      "Service Worker responds to fetch event with the referrer policy": "FAIL"
+    }
+  },
+  "service-workers/service-worker/fetch-event-respond-with-argument.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-event-respond-with-body-loaded-in-chunk.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-event-respond-with-custom-response.https.html": {
+    "total": 11
+  },
+  "service-workers/service-worker/fetch-event-respond-with-partial-stream.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "respondWith() streams data to an intercepted fetch()": "TIMEOUT"
+    }
+  },
+  "service-workers/service-worker/fetch-event-respond-with-readable-stream-chunk.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-event-respond-with-readable-stream.https.html": {
+    "harness": "TIMEOUT",
+    "total": 10,
+    "failures": {
+      "Abort in the page should be observable in the service worker with empty stream": "NOTRUN",
+      "Abort in the page should be observable in the service worker with nonempty stream": "NOTRUN",
+      "Cancellation in the page should be observable in the service worker with empty stream": "NOTRUN",
+      "Cancellation in the page should be observable in the service worker with nonempty stream": "TIMEOUT"
+    }
+  },
+  "service-workers/service-worker/fetch-event-respond-with-response-body-with-invalid-chunk.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "Response with a ReadableStream having non-Uint8Array chunks should be transferred as errored": "TIMEOUT"
+    }
+  },
+  "service-workers/service-worker/fetch-event-respond-with-stops-propagation.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-event-throws-after-respond-with.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-event-within-sw.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/fetch-event.https.h2.html": {
+    "total": 7,
+    "failures": {
+      "Cloning the request after leaving the fetch event unhandled throws because the request body was canceled.": "FAIL",
+      "When the streaming request body is used, network fallback fails.": "FAIL"
+    }
+  },
+  "service-workers/service-worker/fetch-event.https.html": {
+    "total": 43,
+    "failures": {
+      "FetchEvent#request.isHistoryNavigation is true (POST + history.go(-1))": "FAIL",
+      "FetchEvent#request.isReloadNavigation is true (POST + location.reload())": "FAIL",
+      "Service Worker responds to fetch event with an existing client id": "FAIL"
+    }
+  },
+  "service-workers/service-worker/fetch-frame-resource.https.html": {
+    "total": 6
+  },
+  "service-workers/service-worker/fetch-header-visibility.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-mixed-content-to-inscope.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-mixed-content-to-outscope.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-request-body-cancel.https.html": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "Service worker cancelling event.request.body should cancel the page's upload stream": "TIMEOUT"
+    }
+  },
+  "service-workers/service-worker/fetch-request-css-base-url.https.html": {
+    "total": 4,
+    "failures": {
+      "base URL when service worker does respondWith(fetch(responseUrl)).": "FAIL",
+      "base URL when service worker does respondWith(new Response()).": "FAIL"
+    }
+  },
+  "service-workers/service-worker/fetch-request-css-cross-origin.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/fetch-request-css-images.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/fetch-request-fallback.https.html": {
+    "total": 17
+  },
+  "service-workers/service-worker/fetch-request-no-freshness-headers.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-request-redirect.https.html": {
+    "total": 35
+  },
+  "service-workers/service-worker/fetch-request-resources.https.html": {
+    "total": 67
+  },
+  "service-workers/service-worker/fetch-request-xhr-sync-error.https.window.js": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-request-xhr-sync-on-worker.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-request-xhr-sync.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-request-xhr.https.html": {
+    "total": 13
+  },
+  "service-workers/service-worker/fetch-response-taint.https.html": {
+    "total": 132
+  },
+  "service-workers/service-worker/fetch-response-xhr.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/fetch-waits-for-activate.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/fetch-with-body.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/getregistration.https.html": {
+    "total": 6
+  },
+  "service-workers/service-worker/getregistrations.https.html": {
+    "total": 6
+  },
+  "service-workers/service-worker/global-serviceworker.https.any.js#serviceworker": {
+    "total": 4
+  },
+  "service-workers/service-worker/historical.https.any.js#serviceworker": {
+    "total": 1
+  },
+  "service-workers/service-worker/http-to-https-redirect-and-register.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/immutable-prototype-serviceworker.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/import-scripts-cross-origin.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/import-scripts-data-url.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/import-scripts-mime-types.https.html": {
+    "total": 23
+  },
+  "service-workers/service-worker/import-scripts-redirect.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/import-scripts-resource-map.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/import-scripts-updated-flag.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/indexeddb.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/install-event-type.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/installing.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/intercepted-referrer.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/interface-requirements-sw.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/invalid-blobtype.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/invalid-header.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/iso-latin1-header.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/local-url-inherit-controller.https.html": {
+    "total": 9
+  },
+  "service-workers/service-worker/mime-sniffing.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/multi-globals/url-parsing.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/multipart-image.https.html": {
+    "total": 6,
+    "failures": {
+      "cross-origin multipart image via SW with approved CORS should be readable": "FAIL",
+      "cross-origin multipart image with no-cors via SW should not be readable": "FAIL",
+      "same-origin multipart image via SW should be readable": "FAIL"
+    }
+  },
+  "service-workers/service-worker/multiple-register.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/multiple-update.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/navigate-window.https.html": {
+    "total": 2,
+    "failures": {
+      "Clients.matchAll() should not show an old window after it navigates.": "FAIL"
+    }
+  },
+  "service-workers/service-worker/navigation-headers.https.html": {
+    "total": 83
+  },
+  "service-workers/service-worker/navigation-preload/broken-chunked-encoding.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/navigation-preload/chunked-encoding.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/navigation-preload/content-encoding.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/navigation-preload/empty-preload-response-body.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/navigation-preload/get-state.https.html": {
+    "total": 3,
+    "failures": {
+      "getState": "FAIL"
+    }
+  },
+  "service-workers/service-worker/navigation-preload/navigationPreload.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/navigation-preload/redirect.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/navigation-preload/request-headers.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/navigation-preload/resource-timing.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Navigation Preload Resource Timing.": "TIMEOUT"
+    }
+  },
+  "service-workers/service-worker/navigation-preload/samesite-cookies.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/navigation-preload/samesite-iframe.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/navigation-redirect-body.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/navigation-redirect-resolution.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/navigation-redirect-to-http.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/navigation-redirect.https.html?client": {
+    "total": 39
+  },
+  "service-workers/service-worker/navigation-redirect.https.html?default": {
+    "total": 39
+  },
+  "service-workers/service-worker/navigation-sets-cookie.https.html": {
+    "total": 16
+  },
+  "service-workers/service-worker/navigation-timing-extended.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/navigation-timing-sizes.https.html": {
+    "total": 3,
+    "failures": {
+      "Body sizes in a regular pass-through with gzip": "FAIL"
+    }
+  },
+  "service-workers/service-worker/navigation-timing.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/nested-blob-url-workers.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/next-hop-protocol.https.html": {
+    "total": 2,
+    "failures": {
+      "nextHopProtocol reports H2 correctly when routed via a service worker.": "FAIL"
+    }
+  },
+  "service-workers/service-worker/no-dynamic-import-in-module.any.js#serviceworker-module": {
+    "total": 3
+  },
+  "service-workers/service-worker/no-dynamic-import.any.js#serviceworker": {
+    "total": 3
+  },
+  "service-workers/service-worker/onactivate-script-error.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/oninstall-script-error.https.html": {
+    "total": 6
+  },
+  "service-workers/service-worker/opaque-response-preloaded.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/opaque-script.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/partitioned-claim.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "ServiceWorker's clients.claim() is partitioned": "FAIL"
+    }
+  },
+  "service-workers/service-worker/partitioned-cookies.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "Service Worker: Partitioned Cookies": "FAIL"
+    }
+  },
+  "service-workers/service-worker/partitioned-getRegistrations.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "ServiceWorker's getRegistrations() is partitioned": "FAIL"
+    }
+  },
+  "service-workers/service-worker/partitioned-matchAll.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "ServiceWorker's matchAll() is partitioned": "FAIL"
+    }
+  },
+  "service-workers/service-worker/partitioned.tentative.https.html": {
+    "total": 2,
+    "failures": {
+      "Services workers under different top-level sites are partitioned.": "FAIL",
+      "Services workers with cross-site ancestors are partitioned.": "FAIL"
+    }
+  },
+  "service-workers/service-worker/performance-timeline.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/postmessage-blob-url.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/postmessage-from-waiting-serviceworker.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/postmessage-msgport-to-client.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/postmessage-to-client-message-queue.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/postmessage-to-client.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/postmessage.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/ready.https.window.js": {
+    "total": 9
+  },
+  "service-workers/service-worker/redirected-response.https.html": {
+    "total": 26
+  },
+  "service-workers/service-worker/referer.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/referrer-policy-header.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/referrer-toplevel-script-fetch.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/register-closed-window.https.html": {
+    "harness": "ERROR",
+    "total": 1
+  },
+  "service-workers/service-worker/register-default-scope.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/register-same-scope-different-script-url.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/register-wait-forever-in-install-worker.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/registration-basic.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/registration-end-to-end.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/registration-events.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/registration-iframe.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/registration-mime-types.https.html": {
+    "total": 39
+  },
+  "service-workers/service-worker/registration-schedule-job.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/registration-scope-module-static-import.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/registration-scope.https.html": {
+    "total": 10
+  },
+  "service-workers/service-worker/registration-script-module.https.html": {
+    "total": 10
+  },
+  "service-workers/service-worker/registration-script-url.https.html": {
+    "total": 8
+  },
+  "service-workers/service-worker/registration-script.https.html": {
+    "total": 9
+  },
+  "service-workers/service-worker/registration-security-error.https.html": {
+    "total": 8
+  },
+  "service-workers/service-worker/registration-service-worker-attributes.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/registration-updateviacache.https.html": {
+    "total": 25,
+    "failures": {
+      "register-with-updateViaCache-all": "FAIL",
+      "register-with-updateViaCache-all-then-imports": "FAIL",
+      "register-with-updateViaCache-all-then-undefined": "FAIL",
+      "register-with-updateViaCache-imports": "FAIL",
+      "register-with-updateViaCache-imports-then-all": "FAIL",
+      "register-with-updateViaCache-none-then-all": "FAIL",
+      "register-with-updateViaCache-none-then-imports": "FAIL",
+      "register-with-updateViaCache-none-then-undefined": "FAIL",
+      "register-with-updateViaCache-undefined": "FAIL",
+      "register-with-updateViaCache-undefined-then-all": "FAIL"
+    }
+  },
+  "service-workers/service-worker/rejections.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/request-end-to-end.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/resource-timing-bodySize.https.html": {
+    "total": 24
+  },
+  "service-workers/service-worker/resource-timing-cross-origin-server-timing.https.html": {
+    "total": 1,
+    "failures": {
+      "Timing allow check for subresource responses handled by Service Worker": "FAIL"
+    }
+  },
+  "service-workers/service-worker/resource-timing-cross-origin.https.html": {
+    "total": 2,
+    "failures": {
+      "Test that timing allow check fails when service worker changes origin from same to cross origin (cors).": "FAIL",
+      "Test that timing allow check fails when service worker changes origin from same to cross origin (no-cors).": "FAIL"
+    }
+  },
+  "service-workers/service-worker/resource-timing-fetch-variants.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/resource-timing.sub.https.html": {
+    "total": 2,
+    "failures": {
+      "Controlled resource loads": "FAIL"
+    }
+  },
+  "service-workers/service-worker/respond-with-body-accessed-response.https.html": {
+    "total": 20
+  },
+  "service-workers/service-worker/same-site-cookies.https.html": {
+    "total": 66,
+    "failures": {
+      "same-origin, nested set location with cross-site middle frame and change-request service worker": "FAIL"
+    }
+  },
+  "service-workers/service-worker/sandboxed-iframe-fetch-event.https.html": {
+    "total": 29
+  },
+  "service-workers/service-worker/sandboxed-iframe-navigator-serviceworker.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/secure-context.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/service-worker-csp-connect.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/service-worker-csp-default.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/service-worker-csp-script.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/service-worker-header.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/serviceworker-message-event-historical.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/serviceworkerobject-scripturl.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/skip-waiting-installed.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/skip-waiting-using-registration.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/skip-waiting-without-client.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/skip-waiting-without-using-registration.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/skip-waiting.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/soft-update-fetch-metadata.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/srcdoc-iframe.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/state.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/static-router-cross-origin-navigation.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Cross-origin navigation with static router cache rule": "TIMEOUT"
+    }
+  },
+  "service-workers/service-worker/static-router-fetch-event.https.html": {
+    "total": 2,
+    "failures": {
+      "Main resource matched the rule with fetch-event source": "FAIL"
+    }
+  },
+  "service-workers/service-worker/static-router-invalid-rules.https.html": {
+    "total": 8
+  },
+  "service-workers/service-worker/static-router-main-resource.https.html": {
+    "total": 9,
+    "failures": {
+      "Main resource fallback to the network when there is no cache entry": "FAIL",
+      "Main resource load matched with the cache source": "FAIL",
+      "Main resource load matched with the cache source, with specifying the cache name": "FAIL",
+      "Main resource load matched with the condition": "FAIL",
+      "Main resource load matched with the ignore case condition": "FAIL",
+      "Main resource load should match the condition without not": "FAIL"
+    }
+  },
+  "service-workers/service-worker/static-router-multiple-router-registrations.https.html": {
+    "total": 2,
+    "failures": {
+      "Main reosurce load matched with the service worker having multiple rules": "FAIL",
+      "Resource load matched with the rule registered in the imported service worker": "FAIL"
+    }
+  },
+  "service-workers/service-worker/static-router-mutiple-conditions.https.html": {
+    "total": 2,
+    "failures": {
+      "Multiple conditions including requestDestination work with `and` operation": "FAIL",
+      "Multiple conditions work with `and` operation": "FAIL"
+    }
+  },
+  "service-workers/service-worker/static-router-no-fetch-handler.https.html": {
+    "total": 3,
+    "failures": {
+      "The router rule is evaluated without fetch handlers in service worker": "FAIL"
+    }
+  },
+  "service-workers/service-worker/static-router-race-network-and-fetch-handler.https.html": {
+    "total": 8,
+    "failures": {
+      "Main resource load matched the rule with race-network-and-fetch-handler source, and the fetch handler response is faster than the server response": "FAIL",
+      "Main resource load matched the rule with race-network-and-fetch-handler source, and the fetch handler response is faster than the server response while fetch() is triggered inside the fetch handler": "FAIL",
+      "Main resource load matched the rule with race-network-and-fetch-handler source, and the server reseponse is faster than the fetch handler": "FAIL",
+      "Main resource load matched the rule with race-network-and-fetch-handler source, and the server reseponse is faster than the fetch handler while fetch() is triggered inside the fetch handler": "FAIL",
+      "Subresource load matched the rule with race-network-and-fetch-handler source, and the server reseponse is faster than the fetch handler": "FAIL",
+      "Subresource load matched the rule with race-network-and-fetch-handler source, and the server reseponse with 204 response is faster than the fetch handler": "FAIL"
+    }
+  },
+  "service-workers/service-worker/static-router-request-destination.https.html": {
+    "total": 2,
+    "failures": {
+      "Subreosurce load matched with the requestMethod script condition": "FAIL"
+    }
+  },
+  "service-workers/service-worker/static-router-request-method.https.html": {
+    "total": 4,
+    "failures": {
+      "Subresource load matched with the requestMethod DELETE condition": "FAIL",
+      "Subresource load matched with the requestMethod GET condition": "FAIL",
+      "Subresource load matched with the requestMethod POST condition": "FAIL",
+      "Subresource load matched with the requestMethod PUT condition": "FAIL"
+    }
+  },
+  "service-workers/service-worker/static-router-subresource.https.html": {
+    "total": 18,
+    "failures": {
+      "Subresource cross origin load matched with URLPattern condition via constructed object": "FAIL",
+      "Subresource cross origin load not matched with URLPattern condition via URLPatternCompatible": "FAIL",
+      "Subresource cross origin load not matched with URLPattern condition via string": "FAIL",
+      "Subresource load did not match with the cache and fallback to the network": "FAIL",
+      "Subresource load matched with RequestMode condition": "FAIL",
+      "Subresource load matched with URLPattern condition": "FAIL",
+      "Subresource load matched with URLPattern condition via URLPatternCompatible": "FAIL",
+      "Subresource load matched with URLPattern condition via string": "FAIL",
+      "Subresource load matched with ignoreCase URLPattern condition": "FAIL",
+      "Subresource load matched with the cache source rule": "FAIL",
+      "Subresource load matched with the cache source, with specifying the cache name": "FAIL",
+      "Subresource load matched with the nested `or` condition": "FAIL",
+      "Subresource load matched with the next `or` condition": "FAIL",
+      "Subresource load should match with a file other than not": "FAIL"
+    }
+  },
+  "service-workers/service-worker/svg-target-reftest.https.html": {
+    "reftest": "PASS"
+  },
+  "service-workers/service-worker/synced-state.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/tentative/fetch-event-download-fallback.https.html": {
+    "total": 1,
+    "failures": {
+      "Download FetchEvent without respondWith() falls back without navigating the page.": "FAIL"
+    }
+  },
+  "service-workers/service-worker/tentative/fetch-event-download-out-of-scope.https.html": {
+    "total": 1,
+    "failures": {
+      "Download FetchEvent fires only for URLs within the SW registration scope.": "FAIL"
+    }
+  },
+  "service-workers/service-worker/tentative/fetch-event-download-respond-with.https.html": {
+    "total": 1,
+    "failures": {
+      "event.respondWith() is accepted for a download FetchEvent.": "FAIL"
+    }
+  },
+  "service-workers/service-worker/tentative/fetch-event-download.https.html": {
+    "total": 1,
+    "failures": {
+      "FetchEvent fires for <a download> with destination \"\".": "FAIL"
+    }
+  },
+  "service-workers/service-worker/tentative/static-router/static-router-resource-timing.https.html": {
+    "total": 14,
+    "failures": {
+      "Main resource fallback to the network when there is no cache entry and resource timing": "FAIL",
+      "Main resource load matched the rule with race-network-and-fetch-handler source, and the fetch handler response is faster than the server response": "FAIL",
+      "Main resource load matched the rule with race-network-and-fetch-handler source, and the server reseponse is faster than the fetch handler": "FAIL",
+      "Main resource load matched with the cache source and resource timing": "FAIL",
+      "Main resource load matched with the condition and resource timing": "FAIL",
+      "Main resource load not matched with the condition and resource timing": "FAIL",
+      "Main resource matched the rule with fetch-event source": "FAIL",
+      "Subresource load did not match with the cache and fallback to the network": "FAIL",
+      "Subresource load matched the rule fetch-event source": "FAIL",
+      "Subresource load matched the rule with race-network-and-fetch-handler source, and the fetch handler response is faster than the server response": "FAIL",
+      "Subresource load matched the rule with race-network-and-fetch-handler source, and the server reseponse is faster than the fetch handler": "FAIL",
+      "Subresource load matched with URLPattern condition": "FAIL",
+      "Subresource load matched with the cache source rule": "FAIL",
+      "Subresource load not matched with URLPattern condition": "FAIL"
+    }
+  },
+  "service-workers/service-worker/uncontrolled-page.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/unregister-controller.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/unregister-immediately-during-extendable-events.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Clear-Site-Data must fail pending subresource fetch events.": "TIMEOUT"
+    }
+  },
+  "service-workers/service-worker/unregister-immediately.https.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "Clear-Site-Data must clear an unregistered registration waiting for  controlled clients to unload.": "NOTRUN",
+      "Clear-Site-Data must unregister a registration with a worker in the \"activating\" state.": "TIMEOUT",
+      "Clear-Site-Data must unregister an activated registration with an update waiting.": "NOTRUN",
+      "Clear-Site-Data must unregister an activated registration with controlled clients.": "NOTRUN"
+    }
+  },
+  "service-workers/service-worker/unregister-then-register-new-script.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/unregister-then-register.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/unregister.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/update-after-navigation-fetch-event.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/update-after-navigation-redirect.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/update-after-oneday.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Update should be triggered after a functional event when last update time is over 24 hours": "TIMEOUT"
+    }
+  },
+  "service-workers/service-worker/update-bytecheck-cors-import.https.html": {
+    "total": 8
+  },
+  "service-workers/service-worker/update-bytecheck.https.html": {
+    "total": 8
+  },
+  "service-workers/service-worker/update-import-scripts.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/update-missing-import-scripts.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/update-module-request-mode.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/update-no-cache-request-headers.https.html": {
+    "total": 1,
+    "failures": {
+      "headers in no-cache mode": "FAIL"
+    }
+  },
+  "service-workers/service-worker/update-not-allowed.https.html": {
+    "total": 3
+  },
+  "service-workers/service-worker/update-on-navigation.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/update-recovery.https.html": {
+    "total": 1,
+    "failures": {
+      "Recover from a bad service worker by updating after a failed navigation.": "FAIL"
+    }
+  },
+  "service-workers/service-worker/update-registration-with-type.https.html": {
+    "total": 7
+  },
+  "service-workers/service-worker/update-result.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/update.https.html": {
+    "total": 7
+  },
+  "service-workers/service-worker/waiting.https.html": {
+    "total": 2
+  },
+  "service-workers/service-worker/websocket-in-service-worker.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/websocket.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/webvtt-cross-origin.https.html": {
+    "total": 10
+  },
+  "service-workers/service-worker/windowclient-ancestorOrigins.sub.https.html": {
+    "total": 4
+  },
+  "service-workers/service-worker/windowclient-navigate.https.html": {
+    "total": 22,
+    "failures": {
+      "navigate on a top-level window client worker side": "FAIL"
+    }
+  },
+  "service-workers/service-worker/worker-client-id.https.html": {
+    "total": 1
+  },
+  "service-workers/service-worker/worker-in-sandboxed-iframe-by-csp-fetch-event.https.html": {
+    "total": 5
+  },
+  "service-workers/service-worker/worker-interception-redirect.https.html": {
+    "total": 54,
+    "failures": {
+      "Case #1: network scope1->scope2 (module SharedWorker)": "FAIL",
+      "Case #2: network scope1->out-scope (module SharedWorker)": "FAIL",
+      "Case #3: sw scope1->scope2 (module SharedWorker)": "FAIL",
+      "Case #4: sw scope1->out-scope (module SharedWorker)": "FAIL"
+    }
+  },
+  "service-workers/service-worker/worker-interception.https.html": {
+    "total": 16
+  },
+  "service-workers/service-worker/xhr-content-length.https.window.js": {
+    "total": 5
+  },
+  "service-workers/service-worker/xhr-response-url.https.html": {
+    "total": 6
+  },
+  "service-workers/service-worker/xsl-base-url.https.html": {
+    "total": 1,
+    "failures": {
+      "base URL when service worker does respondWith(fetch(responseUrl))": "FAIL"
+    }
+  }
+}

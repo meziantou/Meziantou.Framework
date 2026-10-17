@@ -1,0 +1,1112 @@
+{
+  "css/filter-effects/animation/backdrop-filter-composition-001.html": {
+    "total": 364
+  },
+  "css/filter-effects/animation/backdrop-filter-interpolation-001.html": {
+    "total": 274
+  },
+  "css/filter-effects/animation/backdrop-filter-interpolation-002.html": {
+    "total": 82
+  },
+  "css/filter-effects/animation/backdrop-filter-interpolation-003.html": {
+    "total": 202
+  },
+  "css/filter-effects/animation/backdrop-filter-interpolation-004.html": {
+    "total": 200
+  },
+  "css/filter-effects/animation/color-interpolation-filters-no-interpolation.html": {
+    "total": 42
+  },
+  "css/filter-effects/animation/filter-composition-001.html": {
+    "total": 30
+  },
+  "css/filter-effects/animation/filter-interpolation-001.html": {
+    "total": 144
+  },
+  "css/filter-effects/animation/filter-interpolation-002.html": {
+    "total": 162
+  },
+  "css/filter-effects/animation/filter-interpolation-003.html": {
+    "total": 304
+  },
+  "css/filter-effects/animation/filter-interpolation-004.html": {
+    "total": 200
+  },
+  "css/filter-effects/animation/filter-interpolation-sign-function.html": {
+    "total": 72
+  },
+  "css/filter-effects/azimuth-and-elevation.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-3d-transform-perspective.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-backdrop-root-animation-in-effect.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-backdrop-root-backdrop-filter.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-backdrop-root-clip-path-2.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-backdrop-root-clip-path.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-backdrop-root-filter.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-backdrop-root-mask.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-backdrop-root-mix-blend-mode.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-backdrop-root-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-basic-blur.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-basic-opacity-2.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-basic-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-basic.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-blur-large-value.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-border-radius-change.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-boundary.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-box-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-clip-radius-zoom.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-clip-rect-2.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-clip-rect-zoom.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-clip-rect.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-clip-rounded-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-clipped.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-containing-block.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-corner-shape-change.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-edge-behavior.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-edge-clipping-2.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-edge-clipping.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-edge-mirror.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-edge-pixels-2.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-edge-pixels.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-fixed-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-image-size-filter-size-mismatch.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-important.html": {
+    "total": 1
+  },
+  "css/filter-effects/backdrop-filter-in-transform-clip-surface.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-inline-positioning.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-isolation-fixed.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-isolation-isolate.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-nested-3d-transform-perspective.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-nested-border-radius-clip-2.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-nested-border-radius-clip-3.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-nested-border-radius-clip-4.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-nested-border-radius-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-opacity-rounded-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-paint-order.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-plus-filter-2.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-plus-filter.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-plus-mask-large.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-plus-mask.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-plus-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-plus-will-change-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-reference-filter-mutated.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-reference-filter.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/backdrop-filter-root-element.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-scale-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-svg-background-image-blur.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-svg-blur.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/backdrop-filter-svg-foreignObject.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-update.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-with-background-clip-content-box.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-with-background-clip-padding-box.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-with-mix-blend-mode-same-element.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-zero-size.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filters-blur-large.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filters-brightness.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filters-contrast.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filters-grayscale-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filters-grayscale-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filters-grayscale-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filters-hue-rotate.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filters-invert.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filters-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filters-saturate.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filters-sepia.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/background-image-blur-repaint.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/blur-clip-stacking-context-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/blur-clip-stacking-context-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/blur-text.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/clip-under-filter-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/clip-under-filter-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/clip-under-filter-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-backdrop-filter-transform-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-backdrop-filters-animation-blur.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-backdrop-filters-animation-brightness.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-backdrop-filters-animation-combined.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-backdrop-filters-animation-contrast.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-backdrop-filters-animation-drop-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-backdrop-filters-animation-grayscale.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-backdrop-filters-animation-hue-rotate.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-backdrop-filters-animation-invert.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-backdrop-filters-animation-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-backdrop-filters-animation-saturate.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-backdrop-filters-animation-sepia.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-filters-animation-blur.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-filters-animation-brightness.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-filters-animation-combined-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-filters-animation-contrast.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-filters-animation-drop-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-filters-animation-grayscale.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-filters-animation-hue-rotate.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-filters-animation-invert.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-filters-animation-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-filters-animation-saturate.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-filters-animation-sepia.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/css-filters-opacity-hit-testing.html": {
+    "total": 1
+  },
+  "css/filter-effects/css-reference-large-svg-filter.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/drop-shadow-clipped-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/drop-shadow-currentcolor-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/drop-shadow-currentcolor-dynamic-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/drop-shadow-currentcolor-dynamic-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/drop-shadow-currentcolor-inheritance.html": {
+    "total": 2
+  },
+  "css/filter-effects/drop-shadow-with-3d-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/dynamic-filter-changes-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-add-hw-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-after-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-delete.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-displacement-negative-scale-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-feimage-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-feimage-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-feimage-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-feimage-004.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-lighting-no-light.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-local-url-with-base-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-merge-no-inputs.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-obb-dimensions.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-on-span.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-on-transparent-element.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-rename-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-rename-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-source-alpha-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/effect-reference-source-alpha-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/empty-element-with-filter-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/empty-element-with-filter-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/empty-element-with-filter-004.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/empty-element-with-filter.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feComposite-intersection-feTile-input-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feComposite-intersection-feTile-input.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feDropShadow-negative-deviation.svg": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feGaussianBlur-negative-deviation.svg": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feGaussianBlur-stdDeviation-axis-zero.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feImage-orientation.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feImage-with-hidden-container-defs.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feImage-with-hidden-container-filter.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feImage-with-hidden-container-linearGradient.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feImage-with-hidden-container-mask.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feImage-with-hidden-container-pattern.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feImage-with-hidden-container-radialGradient.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feImage-with-text-viewport-dependence.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/fecolormatrix-display-p3.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/fecolormatrix-negative.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/fecolormatrix-special-value.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/fecolormatrix-type.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/fecomponenttransfer-display-p3.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/fecomposite-non-zero-inoffset-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feconvolve-divisor.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feconvolve-region-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feconvolve-region-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feflood-with-filter-reference.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feimage-element-ref-geometry.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-cb-abspos-inline-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-cb-abspos-inline-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-cb-abspos-inline-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-cb-dynamic-1a.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-cb-dynamic-1b.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-chained-url-url-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-contrast-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-contrast-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-contrast-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-effect-remove-unattached.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-external-001-test.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-external-002-test.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-function/filter-function-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-function/filter-function-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-function/filter-function-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-function/filter-function-004.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-function/filter-function-005.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-function/filter-function-006.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/filter-function/filter-function-007.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-function/filter-function-008.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/filter-function/filter-function-conic-gradient.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-function/filter-function-linear-gradient.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-function/filter-function-radial-gradient.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-function/filter-function-repeating-conic-gradient.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-function/filter-function-repeating-linear-gradient.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-function/filter-function-repeating-radial-gradient.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-grayscale-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-grayscale-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-grayscale-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-grayscale-004.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-grayscale-005.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-hue_rotate-001-test.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-hue_rotate-002-test.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-invert-001-test.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-invert-002-test.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-overflow-transformed-child-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-region-calc-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-region-html-content-viewport.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-region-negative-positioned-child-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-region-transformed-child-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-region-transformed-composited-child-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-region-units-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-saturate-001-test.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-scale-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-scaling-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-sign-function.html": {
+    "total": 3
+  },
+  "css/filter-effects/filter-subregion-01.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-svg-background-image-blur.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-target-offscreen-below-viewport-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-target-offscreen-below-viewport-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-target-offscreen-below-viewport-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-turbulence-invalid-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-url-to-non-existent-filter-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-with-mix-blend-mode.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filtered-block-is-container.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filtered-html-is-not-container.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filtered-inline-applies-to-float.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filtered-inline-is-container.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filters-drop-shadow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filters-drop-shadow-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filters-drop-shadow-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filters-grayscale-001-test.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filters-opacity-001-test.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filters-opacity-002-test.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filters-sepia-001-test.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filters-test-brightness-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filters-test-brightness-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filters-test-brightness-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/fixed-pos-filter-clip-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/fixed-pos-filter-clip-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/hidpi-invert-filter-background.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/idlharness.any.js": {
+    "total": 484
+  },
+  "css/filter-effects/idlharness.any.js#dedicatedworker": {
+    "total": 54
+  },
+  "css/filter-effects/inheritance.html": {
+    "total": 12
+  },
+  "css/filter-effects/invalidation-css-dropshadow-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/kernel-unit-length-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/kernel-unit-length-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/lighting-region.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/limiting-cone-angle.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/morphology-mirrored.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/parsing/backdrop-filter-computed.html": {
+    "total": 28
+  },
+  "css/filter-effects/parsing/backdrop-filter-parsing-invalid.html": {
+    "total": 25
+  },
+  "css/filter-effects/parsing/backdrop-filter-parsing-valid.html": {
+    "total": 37
+  },
+  "css/filter-effects/parsing/color-interpolation-filters-computed.html": {
+    "total": 3
+  },
+  "css/filter-effects/parsing/color-interpolation-filters-parsing-invalid.html": {
+    "total": 3
+  },
+  "css/filter-effects/parsing/color-interpolation-filters-parsing-valid.html": {
+    "total": 4
+  },
+  "css/filter-effects/parsing/filter-computed.html": {
+    "total": 83
+  },
+  "css/filter-effects/parsing/filter-parsing-invalid.html": {
+    "total": 25
+  },
+  "css/filter-effects/parsing/filter-parsing-valid.html": {
+    "total": 87
+  },
+  "css/filter-effects/parsing/flood-color-computed.html": {
+    "total": 8
+  },
+  "css/filter-effects/parsing/flood-color-invalid.html": {
+    "total": 2
+  },
+  "css/filter-effects/parsing/flood-color-valid.html": {
+    "total": 8
+  },
+  "css/filter-effects/parsing/flood-opacity-computed.svg": {
+    "total": 8
+  },
+  "css/filter-effects/parsing/flood-opacity-invalid.svg": {
+    "total": 2
+  },
+  "css/filter-effects/parsing/flood-opacity-valid.svg": {
+    "total": 7
+  },
+  "css/filter-effects/parsing/lighting-color-computed.html": {
+    "total": 1
+  },
+  "css/filter-effects/parsing/lighting-color-parsing-invalid.html": {
+    "total": 3
+  },
+  "css/filter-effects/parsing/lighting-color-parsing-valid.html": {
+    "total": 5
+  },
+  "css/filter-effects/reference-filter-update-on-attribute-change-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/remove-filter-repaint.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/repaint-added-backdrop-filter.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/root-element-with-opacity-filter-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-empty-container-with-filter-content-added.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-empty-element-with-filter-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-empty-hidden-foreignobject-with-filter-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/svg-external-filter-resource.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-feflood-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-feimage-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-feimage-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-feimage-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-feimage-004.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-feimage-005.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-feoffset-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-filter-filter-units-user-space.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-filter-gradient-interpolation.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-filter-primitive-units-user-space.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-filter-user-space-viewport-change.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-filter-vs-clip-path.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-filter-vs-mask.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-image-root-filter.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-multiple-filter-functions.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-mutation-drop-shadow-color.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-mutation-drop-shadow-offset.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-mutation-fedropshadow-stddeviation.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-mutation-filter-used-by-mask.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-mutation-function-to-url.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-mutation-group-position-changed.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-mutation-group-size-changed.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-mutation-group-transform-changed.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-mutation-object-position-changed.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-mutation-object-size-changed.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-mutation-object-transform-changed.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-mutation-single-to-multiple-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-mutation-single-to-multiple-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-mutation-url-to-function.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-relative-urls-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-relative-urls-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-shorthand-drop-shadow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-shorthand-hue-rotate-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-sourcegraphic-currentcolor-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-sourcegraphic-invalidation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-unknown-input-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-unknown-input-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-visibility-hidden-element-with-filter-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-visibility-hidden-element-with-filter-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-visibility-hidden-element-with-filter-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svgfeblendelement-mode-001.html": {
+    "total": 35
+  },
+  "css/filter-effects/tainting-css-dropshadow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-css-dropshadow-currentcolor.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feblend-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feblend-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fecomponenttransfer-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fecomponenttransfer-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fecomposite-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fecomposite-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feconvolvematrix-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feconvolvematrix-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fediffuselighting-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fediffuselighting-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fediffuselighting-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fediffuselighting-004.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fediffuselighting-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fediffuselighting-dynamic-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fedisplacementmap-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fedisplacementmap-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fedropshadow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fedropshadow-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fedropshadow-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fedropshadow-004.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feflood-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feflood-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feflood-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feflood-004.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feflood-005.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feflood-006.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feflood-007.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feflood-008.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feflood-009.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feflood-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feflood-dynamic-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fegaussianblur-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fegaussianblur-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-femorphology-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-femorphology-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feoffset-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-feoffset-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fespecularlighting-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fespecularlighting-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fespecularlighting-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fespecularlighting-004.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fetile-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/tainting-fetile-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/visibility-hidden-element-with-filter-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/will-change-blur-filter-under-clip.html": {
+    "reftest": "PASS"
+  }
+}

@@ -1,0 +1,281 @@
+{
+  "performance-timeline/back-forward-cache-restoration.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Performance API for the back forward cache restoration entry.": "TIMEOUT"
+    }
+  },
+  "performance-timeline/buffered-does-not-sync-invoke.html": {
+    "total": 1
+  },
+  "performance-timeline/buffered-flag-after-timeout.any.js": {
+    "total": 1
+  },
+  "performance-timeline/buffered-flag-after-timeout.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "performance-timeline/buffered-flag-observer.any.js": {
+    "total": 1
+  },
+  "performance-timeline/buffered-flag-observer.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "performance-timeline/buffered-flag-with-entryTypes-observer.tentative.any.js": {
+    "total": 1,
+    "failures": {
+      "PerformanceObserver without buffered flag set to false cannot see past entries.": "FAIL"
+    }
+  },
+  "performance-timeline/buffered-flag-with-entryTypes-observer.tentative.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "PerformanceObserver without buffered flag set to false cannot see past entries.": "FAIL"
+    }
+  },
+  "performance-timeline/case-sensitivity.any.js": {
+    "total": 3
+  },
+  "performance-timeline/case-sensitivity.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "performance-timeline/droppedentriescount.any.js": {
+    "total": 5
+  },
+  "performance-timeline/droppedentriescount.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "performance-timeline/get-invalid-entries.html": {
+    "total": 1
+  },
+  "performance-timeline/idlharness.any.js": {
+    "total": 58
+  },
+  "performance-timeline/idlharness.any.js#dedicatedworker": {
+    "total": 58
+  },
+  "performance-timeline/idlharness.any.js#sharedworker": {
+    "total": 58
+  },
+  "performance-timeline/multiple-buffered-flag-observers.any.js": {
+    "total": 1
+  },
+  "performance-timeline/multiple-buffered-flag-observers.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "performance-timeline/navigation-id-detached-frame.tentative.html": {
+    "total": 1
+  },
+  "performance-timeline/navigation-id-element-timing.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Element Timing navigation id test": "FAIL"
+    }
+  },
+  "performance-timeline/navigation-id-initial-load.tentative.html": {
+    "total": 1
+  },
+  "performance-timeline/navigation-id-long-task-task-attribution.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Long Task/Task Attribution navigation id test": "TIMEOUT"
+    }
+  },
+  "performance-timeline/navigation-id-mark-measure.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Mark/Measure navigation id test": "FAIL"
+    }
+  },
+  "performance-timeline/navigation-id-reset.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Navigation Id should be re-generated after reload.": "FAIL"
+    }
+  },
+  "performance-timeline/navigation-id-resource-timing.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Resource Timing navigation id test": "FAIL"
+    }
+  },
+  "performance-timeline/navigation-id-worker-created-entries.html": {
+    "total": 1
+  },
+  "performance-timeline/not-clonable.html": {
+    "total": 1
+  },
+  "performance-timeline/not-restored-reasons/abort-block-bfcache.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "performance-timeline/not-restored-reasons/performance-navigation-timing-attributes.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "RemoteContextHelper navigation using BFCache": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/performance-navigation-timing-bfcache-reasons-stay.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "RemoteContextHelper navigation using BFCache": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/performance-navigation-timing-bfcache.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "RemoteContextHelper navigation using BFCache": "PRECONDITION_FAILED"
+    }
+  },
+  "performance-timeline/not-restored-reasons/performance-navigation-timing-cross-origin-bfcache.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "RemoteContextHelper navigation using BFCache": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/performance-navigation-timing-fetch.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "Ensure that ongoing fetch upon entering bfcache blocks bfcache and recorded.": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/performance-navigation-timing-iframes-without-attributes.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "RemoteContextHelper navigation using BFCache": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/performance-navigation-timing-navigation-failure.tentative.window.js": {
+    "total": 1
+  },
+  "performance-timeline/not-restored-reasons/performance-navigation-timing-not-bfcached.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "RemoteContextHelper navigation using BFCache": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/performance-navigation-timing-redirect-on-history.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "RemoteContextHelper navigation using BFCache": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/performance-navigation-timing-reload.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "RemoteContextHelper navigation using BFCache": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/performance-navigation-timing-same-origin-bfcache.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "RemoteContextHelper navigation using BFCache": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/performance-navigation-timing-same-origin-replace.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "RemoteContextHelper navigation using BFCache": "FAIL"
+    }
+  },
+  "performance-timeline/observer-buffered-false.any.js": {
+    "total": 1
+  },
+  "performance-timeline/observer-buffered-false.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "performance-timeline/performanceentry-tojson.any.js": {
+    "total": 1
+  },
+  "performance-timeline/performanceentry-tojson.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "performance-timeline/po-callback-mutate.any.js": {
+    "total": 1
+  },
+  "performance-timeline/po-callback-mutate.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "performance-timeline/po-disconnect-removes-observed-types.any.js": {
+    "total": 1
+  },
+  "performance-timeline/po-disconnect-removes-observed-types.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "performance-timeline/po-disconnect.any.js": {
+    "total": 3
+  },
+  "performance-timeline/po-disconnect.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "performance-timeline/po-entries-sort.any.js": {
+    "total": 1
+  },
+  "performance-timeline/po-entries-sort.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "performance-timeline/po-getentries.any.js": {
+    "total": 1
+  },
+  "performance-timeline/po-getentries.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "performance-timeline/po-mark-measure.any.js": {
+    "total": 3
+  },
+  "performance-timeline/po-mark-measure.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "performance-timeline/po-observe-repeated-type.any.js": {
+    "total": 1
+  },
+  "performance-timeline/po-observe-repeated-type.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "performance-timeline/po-observe-type.any.js": {
+    "total": 6
+  },
+  "performance-timeline/po-observe-type.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "performance-timeline/po-observe.any.js": {
+    "total": 6
+  },
+  "performance-timeline/po-observe.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "performance-timeline/po-observe.html": {
+    "total": 1
+  },
+  "performance-timeline/po-resource.html": {
+    "total": 1
+  },
+  "performance-timeline/po-takeRecords.any.js": {
+    "total": 1
+  },
+  "performance-timeline/po-takeRecords.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "performance-timeline/supportedEntryTypes-cross-realm-access.html": {
+    "total": 1
+  },
+  "performance-timeline/supportedEntryTypes.any.js": {
+    "total": 2
+  },
+  "performance-timeline/supportedEntryTypes.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "performance-timeline/timing-removed-iframe.html": {
+    "total": 1
+  },
+  "performance-timeline/webtiming-resolution.any.js": {
+    "total": 2
+  },
+  "performance-timeline/webtiming-resolution.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "performance-timeline/worker-with-performance-observer.html": {
+    "total": 1
+  }
+}

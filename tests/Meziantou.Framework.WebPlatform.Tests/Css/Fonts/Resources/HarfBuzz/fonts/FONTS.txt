@@ -1,0 +1,68 @@
+The fonts of the shaping tests of HarfBuzz (test/shape/data/in-house/fonts, subsets of the fonts below).
+The Noto and Lohit fonts are licensed under the SIL Open Font License 1.1 (OFL.txt), the Droid fonts under
+the Apache License 2.0 (LICENSE-Apache-2.0.txt).
+
+03e3f463c3a985bc42096620cc415342818454fb.ttf: Noto Sans Telugu
+065b01e54f35f0d849fd43bd5b936212739a50cb.ttf: Noto Sans Myanmar
+165281ca0c268390f24200a0e73d399ae750c735.ttf: Noto Sans Bengali
+1735326da89f0818cd8c51a0600e9789812c0f94.ttf: Noto Sans Gurmukhi
+1a5face3fcbd929d228235c2f72bbd6f8eb37424.ttf: Noto Sans Devanagari
+1c2fb74c1b2aa173262734c1f616148f1648cfd6.ttf: Lohit Bengali
+1ed7e9064f008f62de6ff0207bb4dd29409597a5.ttf: Noto Sans Brahmi
+226bc2deab3846f1a682085f70c67d0421014144.ttf: Noto Sans Malayalam
+270b89df543a7e48e206a2d830c0e10e5265c630.ttf: Lohit Malayalam
+28f497629c04ceb15546c9a70e0730125ed6698d.ttf: Noto Sans Brahmi
+2c25beb56d9c556622d56b0b5d02b4670c034f89.ttf: Noto Sans Oriya
+341421e629668b1a1242245d39238ca48432d35d.ttf: Noto Sans Kannada
+3998336402905b8be8301ef7f47cf7e050cbb1bd.ttf: Noto Sans Khmer
+3c96e7a303c58475a8c750bf4289bbe73784f37d.ttf: Noto Sans Kannada UI
+3cae6bfe5b57c07ba81ddbd54c02fe4f3a1e3bf6.ttf: Noto Sans Kannada
+3d0b77a2360aa6faa1385aaa510509ab70dfbeff.ttf: Noto Sans Kannada
+41071178fbce4956d151f50967af458dbf555f7b.ttf: Lohit Devanagari
+45855bc8d46332b39c4ab9e2ee1a26b1f896da6b.ttf: Noto Sans Thai
+49bd922bd447fb15bb05abab5c7ceac8d547a3a2.ttf: Noto Sans Bengali
+5028afb650b1bb718ed2131e872fbcce57828fff.ttf: Noto Sans Oriya
+54674a3111d209fb6be0ed31745314b7a8d2c244.ttf: Noto Sans Tamil
+55c88ebbe938680b08f92c3de20713183e0c7481.ttf: Noto Sans Kannada
+55e2910dbc9ef5dd89f4e146e7e0152169545b6a.ttf: Noto Sans Malayalam
+56cfd0e18d07f41c38e9598545a6d369127fc6f9.ttf: Noto Sans
+573d3a3177c9a8646e94c8a0d7b224334340946a.ttf: Noto Sans Newa
+57a9d9f83020155cbb1d2be1f43d82388cbecc88.ttf: Lohit Kannada
+5dfad7735c6a67085f1b90d4d497e32907db4c78.ttf: Noto Sans Adlam
+604026ae5aaca83c49cd8416909d71ba3e1c1194.ttf: Noto Sans Gurmukhi
+63e224dcb3d559d590f80c83b832cfca789e5dcc.ttf: Noto Serif Gujarati
+663aef6b019dbf45ffd74089e2b5f2496ceceb18.ttf: Noto Sans Kannada
+738d9f3b8c2dfd03875bf35a61d28fd78faf17c8.ttf: Noto Sans Gujarati
+757ebd573617a24aa9dfbf0b885c54875c6fe06b.ttf: Noto Sans CJK Regular
+7a37dc4d5bf018456aea291cee06daf004c0221c.ttf: Noto Sans Thai
+7c24183f26d60df414578a0a9f5e79ab9d32a22b.ttf: Noto Sans Newa
+7d18685e1529e4ceaad5b6095dfab2f9789e5bce.ttf: Noto Sans Kannada
+7e14e7883ed152baa158b80e207b66114c823a8b.ttf: Noto Sans CJK Regular
+8099955657a54e9ee38a6ba1d6f950ce58e3cc25.ttf: Noto Sans Thai
+85fe0be440c64ac77699e21c2f1bd933a919167e.ttf: Noto Sans Gurmukhi
+87f85d17d26f1fe9ad28d7365101958edaefb967.ttf: Lohit Assamese
+881642af1667ae30a54e58de8be904566d00508f.ttf: Noto Sans Bengali
+96490dd2ff81233b335a650e7eb660e0e7b2eeea.ttf: Noto Sans Cham
+9d8c53cb64b8747abdd2b70755cce2ee0eb42ef7.ttf: Noto Sans Devanagari
+a014549f766436cf55b2ceb40e462038938ee899.ttf: Noto Sans Kannada
+a232bb734d4c6c898a44506547d19768f0eba6a6.ttf: Noto Sans Myanmar
+ad01ab2ea1cb1a4d3a2783e2675112ef11ae6404.ttf: Noto Sans Khmer
+af85624080af5627fb050f570d148a62f04fda74.ttf: Noto Sans Malayalam
+b6031119874ae9ff1dd65383a335e361c0962220.ttf: Noto Sans Khmer
+bb0c53752e85c3d28973ebc913287b8987d3dfe8.ttf: Noto Sans Thai
+c2d320136762887c43d245ecd2ffc2c0d57cfcb3.ttf: Noto Serif Sinhala
+c825900b8a5b6571f0eb6c8c25c6512880bc42e9.ttf: Noto Sans Malayalam
+cc5f3d2d717fb6bd4dfae1c16d48a2cb8e12233b.ttf: Noto Sans
+d629e7fedc0b350222d7987345fe61613fa3929a.ttf: Noto Sans Devanagari
+dcf774ca21062e7439f98658b18974ea8b956d0c.ttf: Noto Sans Grantha
+df768b9c257e0c9c35786c47cae15c46571d56be.ttf: Droid Arabic Naskh
+e207635780b42f898d58654b65098763e340f5c7.ttf: Noto Sans Malayalam
+e68a88939e0f06e34d2bc911f09b70890289c8fd.ttf: Noto Sans Cham
+e716f6bd00a108d186b7e9f47b4515565f784f36.ttf: Noto Sans Telugu
+ec404b8524cd56efa5d25524cc8541a0b6604b4f.ttf: Noto Sans PhagsPa
+f499fbc23865022234775c43503bba2e63978fe1.ttf: Noto Sans Bengali
+f4ba5a767ef56a40133844507efb98fee5635e71.ttf: Noto Sans Myanmar
+f75c4b05a0a4d67c1a808081ae3d74a9c66509e8.ttf: Noto Sans Gurmukhi
+fbb6c84c9e1fe0c39e152fbe845e51fd81f6748e.ttf: Noto Sans Balinese
+fcdcffbdf1c4c97c05308d7600e4c283eb47dbca.ttf: Noto Sans
+ffa0f5d2d9025486d8469d8b1fdd983e7632499b.ttf: Noto Sans

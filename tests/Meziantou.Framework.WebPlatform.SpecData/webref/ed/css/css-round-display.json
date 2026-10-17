@@ -1,0 +1,85 @@
+{
+  "spec": {
+    "title": "CSS Round Display Module Level 1",
+    "url": "https://drafts.csswg.org/css-round-display-1/"
+  },
+  "properties": [
+    {
+      "name": "border-boundary",
+      "href": "https://drafts.csswg.org/css-round-display-1/#propdef-border-boundary",
+      "value": "none | parent | display",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "border-boundary",
+        "borderBoundary"
+      ]
+    }
+  ],
+  "atrules": [
+    {
+      "name": "@media",
+      "descriptors": [
+        {
+          "name": "shape",
+          "href": "https://drafts.csswg.org/css-round-display-1/#descdef-media-shape",
+          "for": "@media",
+          "value": "rect | round",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "rect",
+              "prose": "The shape is an axis aligned rectangle or square, or a similar shape such as rounded rectangle for which the traditional designs are appropriate.",
+              "href": "https://drafts.csswg.org/css-round-display-1/#valdef-media-shape-rect",
+              "type": "value",
+              "value": "rect"
+            },
+            {
+              "name": "round",
+              "prose": "The shape is rounded or a similar shape to the circle such as an oval, an ellipse for which distinctively rounded designs are appropriate.",
+              "href": "https://drafts.csswg.org/css-round-display-1/#valdef-media-shape-round",
+              "type": "value",
+              "value": "round"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "selectors": [],
+  "values": [],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "auto",
+      "prose": "This value doesn’t affect the initial layout viewport, and the whole web page is viewable. What the UA paints outside of the viewport is undefined. It may be the background color of the canvas, or anything else that the UA deems appropriate.",
+      "href": "https://drafts.csswg.org/css-round-display-1/#valdef-viewport-fit-auto",
+      "type": "value",
+      "value": "auto",
+      "for": "viewport-fit"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "The initial layout viewport and the visual viewport are set to the largest rectangle which is inscribed in the display of the device. What the UA paints outside of the viewport is undefined. It may be the background color of the canvas, or anything else that the UA deems appropriate.",
+      "href": "https://drafts.csswg.org/css-round-display-1/#valdef-viewport-fit-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "viewport-fit"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "cover",
+      "prose": "The initial layout viewport and the visual viewport are set to the circumscribed rectangle of the physical screen of the device.",
+      "href": "https://drafts.csswg.org/css-round-display-1/#valdef-viewport-fit-cover",
+      "type": "value",
+      "value": "cover",
+      "for": "viewport-fit"
+    }
+  ]
+}

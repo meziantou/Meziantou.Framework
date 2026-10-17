@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ar-IL": {
+      "identity": {
+        "language": "ar",
+        "territory": "IL"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

@@ -1,0 +1,1921 @@
+{
+  "IndexedDB/abort-in-initial-upgradeneeded.any.js": {
+    "total": 1
+  },
+  "IndexedDB/abort-in-initial-upgradeneeded.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/abort-in-initial-upgradeneeded.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/back-forward-cache-open-connection.window.js": {
+    "total": 1,
+    "failures": {
+      "Testing BFCache support for page with open IndexedDB connection, and eviction behavior when receiving versionchange event.": "PRECONDITION_FAILED"
+    }
+  },
+  "IndexedDB/back-forward-cache-open-transaction.window.js": {
+    "total": 1,
+    "failures": {
+      "BFCache support test for page with open IndexedDB transaction": "PRECONDITION_FAILED"
+    }
+  },
+  "IndexedDB/bindings-inject-keys-bypass.any.js": {
+    "total": 1
+  },
+  "IndexedDB/bindings-inject-keys-bypass.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/bindings-inject-keys-bypass.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/bindings-inject-values-bypass.any.js": {
+    "total": 2
+  },
+  "IndexedDB/bindings-inject-values-bypass.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/bindings-inject-values-bypass.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/blob-composite-blob-reads.any.js": {
+    "total": 2
+  },
+  "IndexedDB/blob-composite-blob-reads.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/blob-contenttype.any.js": {
+    "total": 1
+  },
+  "IndexedDB/blob-contenttype.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/blob-delete-objectstore-db.any.js": {
+    "total": 1
+  },
+  "IndexedDB/blob-delete-objectstore-db.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/blob-valid-after-abort.any.js": {
+    "total": 1
+  },
+  "IndexedDB/blob-valid-after-abort.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/blob-valid-after-abort.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/blob-valid-after-deletion.any.js": {
+    "total": 1
+  },
+  "IndexedDB/blob-valid-after-deletion.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/blob-valid-before-commit.any.js": {
+    "total": 1
+  },
+  "IndexedDB/blob-valid-before-commit.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/clone-before-keypath-eval.any.js": {
+    "total": 6
+  },
+  "IndexedDB/clone-before-keypath-eval.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "IndexedDB/clone-before-keypath-eval.any.js#sharedworker": {
+    "total": 6
+  },
+  "IndexedDB/close-in-upgradeneeded.any.js": {
+    "total": 1
+  },
+  "IndexedDB/close-in-upgradeneeded.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/close-in-upgradeneeded.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/cursor-overloads.any.js": {
+    "total": 1
+  },
+  "IndexedDB/cursor-overloads.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/cursor-overloads.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/database-names-by-origin.html": {
+    "total": 4
+  },
+  "IndexedDB/delete-range.any.js": {
+    "total": 4
+  },
+  "IndexedDB/delete-range.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/delete-request-queue.any.js": {
+    "total": 1
+  },
+  "IndexedDB/delete-request-queue.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/delete-request-queue.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/error-attributes.any.js": {
+    "total": 1
+  },
+  "IndexedDB/error-attributes.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/error-attributes.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/event-dispatch-active-flag.any.js": {
+    "total": 4
+  },
+  "IndexedDB/event-dispatch-active-flag.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/event-dispatch-active-flag.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/file_support.sub.html": {
+    "total": 3,
+    "failures": {
+      "Composed slices of a file can be stored and retrieved from IndexedDB": "FAIL",
+      "Saves and loads back File objects from IndexedDB": "FAIL",
+      "Sliced file can be stored and retrieved from IndexedDB": "FAIL"
+    }
+  },
+  "IndexedDB/fire-error-event-exception.any.js": {
+    "total": 17
+  },
+  "IndexedDB/fire-error-event-exception.any.js#dedicatedworker": {
+    "total": 17
+  },
+  "IndexedDB/fire-error-event-exception.any.js#sharedworker": {
+    "total": 17
+  },
+  "IndexedDB/fire-success-event-exception.any.js": {
+    "total": 6
+  },
+  "IndexedDB/fire-success-event-exception.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "IndexedDB/fire-success-event-exception.any.js#sharedworker": {
+    "total": 6
+  },
+  "IndexedDB/fire-upgradeneeded-event-exception.any.js": {
+    "total": 6
+  },
+  "IndexedDB/fire-upgradeneeded-event-exception.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "IndexedDB/fire-upgradeneeded-event-exception.any.js#sharedworker": {
+    "total": 6
+  },
+  "IndexedDB/get-databases.any.js": {
+    "total": 5
+  },
+  "IndexedDB/get-databases.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "IndexedDB/globalscope-indexedDB-SameObject.any.js": {
+    "total": 1
+  },
+  "IndexedDB/globalscope-indexedDB-SameObject.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/globalscope-indexedDB-SameObject.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/historical.any.js": {
+    "total": 15
+  },
+  "IndexedDB/historical.any.js#dedicatedworker": {
+    "total": 15
+  },
+  "IndexedDB/historical.any.js#sharedworker": {
+    "total": 15
+  },
+  "IndexedDB/idb-binary-key-detached.any.js": {
+    "total": 2
+  },
+  "IndexedDB/idb-binary-key-detached.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/idb-binary-key-detached.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/idb-binary-key-roundtrip.any.js": {
+    "total": 16
+  },
+  "IndexedDB/idb-binary-key-roundtrip.any.js#dedicatedworker": {
+    "total": 16
+  },
+  "IndexedDB/idb-binary-key-roundtrip.any.js#sharedworker": {
+    "total": 16
+  },
+  "IndexedDB/idb-explicit-commit-throw.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idb-explicit-commit-throw.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idb-explicit-commit.any.js": {
+    "total": 12
+  },
+  "IndexedDB/idb-explicit-commit.any.js#dedicatedworker": {
+    "total": 12
+  },
+  "IndexedDB/idb-partitioned-basic.sub.html": {
+    "total": 1,
+    "failures": {
+      "Simple test for partitioned IndexedDB": "FAIL"
+    }
+  },
+  "IndexedDB/idb-partitioned-coverage.sub.html": {
+    "total": 31
+  },
+  "IndexedDB/idb-partitioned-persistence.sub.html": {
+    "total": 1
+  },
+  "IndexedDB/idb_binary_key_conversion.any.js": {
+    "total": 5
+  },
+  "IndexedDB/idb_binary_key_conversion.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "IndexedDB/idb_binary_key_conversion.any.js#sharedworker": {
+    "total": 5
+  },
+  "IndexedDB/idb_webworkers.htm": {
+    "total": 1
+  },
+  "IndexedDB/idbcursor-advance-continue-async.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-advance-continue-async.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-advance-continue-async.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-advance-exception-order.any.js": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-advance-exception-order.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-advance-exception-order.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-advance-invalid.any.js": {
+    "total": 6
+  },
+  "IndexedDB/idbcursor-advance-invalid.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "IndexedDB/idbcursor-advance-invalid.any.js#sharedworker": {
+    "total": 6
+  },
+  "IndexedDB/idbcursor-advance.any.js": {
+    "total": 6
+  },
+  "IndexedDB/idbcursor-advance.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "IndexedDB/idbcursor-advance.any.js#sharedworker": {
+    "total": 6
+  },
+  "IndexedDB/idbcursor-continue-exception-order.any.js": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-continue-exception-order.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-continue-exception-order.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-continue.any.js": {
+    "total": 8
+  },
+  "IndexedDB/idbcursor-continue.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "IndexedDB/idbcursor-continue.any.js#sharedworker": {
+    "total": 8
+  },
+  "IndexedDB/idbcursor-continuePrimaryKey-exception-order.any.js": {
+    "total": 13
+  },
+  "IndexedDB/idbcursor-continuePrimaryKey-exception-order.any.js#dedicatedworker": {
+    "total": 13
+  },
+  "IndexedDB/idbcursor-continuePrimaryKey-exception-order.any.js#sharedworker": {
+    "total": 13
+  },
+  "IndexedDB/idbcursor-continuePrimaryKey-exceptions.any.js": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-continuePrimaryKey-exceptions.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-continuePrimaryKey-exceptions.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-continuePrimaryKey.any.js": {
+    "total": 2
+  },
+  "IndexedDB/idbcursor-continuePrimaryKey.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbcursor-continuePrimaryKey.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbcursor-delete-exception-order.any.js": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-delete-exception-order.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-delete-exception-order.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-direction-index-keyrange.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-direction-index-keyrange.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-direction-index-keyrange.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-direction-index.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-direction-index.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-direction-index.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-direction-objectstore-keyrange.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-direction-objectstore-keyrange.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-direction-objectstore-keyrange.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-direction-objectstore.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-direction-objectstore.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-direction-objectstore.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-direction.any.js": {
+    "total": 5
+  },
+  "IndexedDB/idbcursor-direction.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "IndexedDB/idbcursor-direction.any.js#sharedworker": {
+    "total": 5
+  },
+  "IndexedDB/idbcursor-iterating-update.any.js": {
+    "total": 2
+  },
+  "IndexedDB/idbcursor-iterating-update.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbcursor-iterating-update.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbcursor-key.any.js": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-key.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-key.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-primarykey.any.js": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-primarykey.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-primarykey.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbcursor-request-source.any.js": {
+    "total": 8
+  },
+  "IndexedDB/idbcursor-request-source.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "IndexedDB/idbcursor-request-source.any.js#sharedworker": {
+    "total": 8
+  },
+  "IndexedDB/idbcursor-request.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-request.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-reused.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbcursor-reused.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbcursor-reused.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbcursor-source.any.js": {
+    "total": 2
+  },
+  "IndexedDB/idbcursor-source.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbcursor-source.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbcursor-update-exception-order.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-update-exception-order.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor-update-exception-order.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbcursor_advance_index.any.js": {
+    "total": 8
+  },
+  "IndexedDB/idbcursor_advance_index.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "IndexedDB/idbcursor_advance_index.any.js#sharedworker": {
+    "total": 8
+  },
+  "IndexedDB/idbcursor_advance_objectstore.any.js": {
+    "total": 5
+  },
+  "IndexedDB/idbcursor_advance_objectstore.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "IndexedDB/idbcursor_advance_objectstore.any.js#sharedworker": {
+    "total": 5
+  },
+  "IndexedDB/idbcursor_continue_delete_objectstore.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbcursor_continue_delete_objectstore.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbcursor_continue_delete_objectstore.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbcursor_continue_index.any.js": {
+    "total": 10
+  },
+  "IndexedDB/idbcursor_continue_index.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "IndexedDB/idbcursor_continue_index.any.js#sharedworker": {
+    "total": 10
+  },
+  "IndexedDB/idbcursor_continue_invalid.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbcursor_continue_invalid.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbcursor_continue_invalid.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbcursor_continue_objectstore.any.js": {
+    "total": 8
+  },
+  "IndexedDB/idbcursor_continue_objectstore.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "IndexedDB/idbcursor_continue_objectstore.any.js#sharedworker": {
+    "total": 8
+  },
+  "IndexedDB/idbcursor_delete_index.any.js": {
+    "total": 5
+  },
+  "IndexedDB/idbcursor_delete_index.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "IndexedDB/idbcursor_delete_index.any.js#sharedworker": {
+    "total": 5
+  },
+  "IndexedDB/idbcursor_delete_objectstore.any.js": {
+    "total": 5
+  },
+  "IndexedDB/idbcursor_delete_objectstore.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "IndexedDB/idbcursor_delete_objectstore.any.js#sharedworker": {
+    "total": 5
+  },
+  "IndexedDB/idbcursor_iterating.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbcursor_iterating.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbcursor_iterating.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbcursor_update_index.any.js": {
+    "total": 9
+  },
+  "IndexedDB/idbcursor_update_index.any.js#dedicatedworker": {
+    "total": 9
+  },
+  "IndexedDB/idbcursor_update_index.any.js#sharedworker": {
+    "total": 9
+  },
+  "IndexedDB/idbcursor_update_objectstore.any.js": {
+    "total": 9
+  },
+  "IndexedDB/idbcursor_update_objectstore.any.js#dedicatedworker": {
+    "total": 9
+  },
+  "IndexedDB/idbcursor_update_objectstore.any.js#sharedworker": {
+    "total": 9
+  },
+  "IndexedDB/idbdatabase-createObjectStore-exception-order.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbdatabase-createObjectStore-exception-order.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbdatabase-createObjectStore-exception-order.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbdatabase-deleteObjectStore-exception-order.any.js": {
+    "total": 2
+  },
+  "IndexedDB/idbdatabase-deleteObjectStore-exception-order.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbdatabase-deleteObjectStore-exception-order.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbdatabase-transaction-exception-order.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbdatabase-transaction-exception-order.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbdatabase-transaction-exception-order.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbdatabase_close.any.js": {
+    "total": 2
+  },
+  "IndexedDB/idbdatabase_close.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbdatabase_close.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbdatabase_createObjectStore.any.js": {
+    "total": 27
+  },
+  "IndexedDB/idbdatabase_createObjectStore.any.js#dedicatedworker": {
+    "total": 27
+  },
+  "IndexedDB/idbdatabase_createObjectStore.any.js#sharedworker": {
+    "total": 27
+  },
+  "IndexedDB/idbdatabase_deleteObjectStore.any.js": {
+    "total": 3
+  },
+  "IndexedDB/idbdatabase_deleteObjectStore.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbdatabase_deleteObjectStore.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbdatabase_transaction.any.js": {
+    "total": 5
+  },
+  "IndexedDB/idbdatabase_transaction.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "IndexedDB/idbdatabase_transaction.any.js#sharedworker": {
+    "total": 5
+  },
+  "IndexedDB/idbfactory-databases-opaque-origin.html": {
+    "total": 4
+  },
+  "IndexedDB/idbfactory-deleteDatabase-opaque-origin.html": {
+    "total": 4
+  },
+  "IndexedDB/idbfactory-deleteDatabase-request-success.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbfactory-deleteDatabase-request-success.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbfactory-deleteDatabase-request-success.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbfactory-open-error-properties.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbfactory-open-error-properties.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbfactory-open-error-properties.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbfactory-open-opaque-origin.html": {
+    "total": 4
+  },
+  "IndexedDB/idbfactory-open-request-error.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbfactory-open-request-error.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbfactory-open-request-error.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbfactory-open-request-success.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbfactory-open-request-success.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbfactory-open-request-success.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbfactory-origin-isolation.html": {
+    "total": 1
+  },
+  "IndexedDB/idbfactory_cmp.any.js": {
+    "total": 12
+  },
+  "IndexedDB/idbfactory_cmp.any.js#dedicatedworker": {
+    "total": 12
+  },
+  "IndexedDB/idbfactory_cmp.any.js#sharedworker": {
+    "total": 12
+  },
+  "IndexedDB/idbfactory_deleteDatabase.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbfactory_deleteDatabase.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbfactory_deleteDatabase.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbfactory_open.any.js": {
+    "total": 29
+  },
+  "IndexedDB/idbfactory_open.any.js#dedicatedworker": {
+    "total": 29
+  },
+  "IndexedDB/idbfactory_open.any.js#sharedworker": {
+    "total": 29
+  },
+  "IndexedDB/idbindex-cross-realm-methods.html": {
+    "total": 7
+  },
+  "IndexedDB/idbindex-getAll-enforcerange.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbindex-getAll-enforcerange.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbindex-getAll-enforcerange.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbindex-getAllKeys-enforcerange.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbindex-getAllKeys-enforcerange.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbindex-getAllKeys-enforcerange.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbindex-multientry.any.js": {
+    "total": 3
+  },
+  "IndexedDB/idbindex-multientry.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbindex-multientry.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbindex-objectStore-SameObject.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbindex-objectStore-SameObject.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbindex-objectStore-SameObject.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbindex-query-exception-order.any.js": {
+    "total": 12
+  },
+  "IndexedDB/idbindex-query-exception-order.any.js#dedicatedworker": {
+    "total": 12
+  },
+  "IndexedDB/idbindex-query-exception-order.any.js#sharedworker": {
+    "total": 12
+  },
+  "IndexedDB/idbindex-rename-abort.any.js": {
+    "total": 2
+  },
+  "IndexedDB/idbindex-rename-abort.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbindex-rename-abort.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbindex-rename-errors.any.js": {
+    "total": 6
+  },
+  "IndexedDB/idbindex-rename-errors.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "IndexedDB/idbindex-rename-errors.any.js#sharedworker": {
+    "total": 6
+  },
+  "IndexedDB/idbindex-rename.any.js": {
+    "total": 9
+  },
+  "IndexedDB/idbindex-rename.any.js#dedicatedworker": {
+    "total": 9
+  },
+  "IndexedDB/idbindex-rename.any.js#sharedworker": {
+    "total": 9
+  },
+  "IndexedDB/idbindex-request-source.any.js": {
+    "total": 7
+  },
+  "IndexedDB/idbindex-request-source.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "IndexedDB/idbindex-request-source.any.js#sharedworker": {
+    "total": 7
+  },
+  "IndexedDB/idbindex_count.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbindex_count.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbindex_count.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbindex_get.any.js": {
+    "total": 8
+  },
+  "IndexedDB/idbindex_get.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "IndexedDB/idbindex_get.any.js#sharedworker": {
+    "total": 8
+  },
+  "IndexedDB/idbindex_getAll-options.any.js": {
+    "total": 30
+  },
+  "IndexedDB/idbindex_getAll-options.any.js#dedicatedworker": {
+    "total": 30
+  },
+  "IndexedDB/idbindex_getAll-options.any.js#sharedworker": {
+    "total": 30
+  },
+  "IndexedDB/idbindex_getAll.any.js": {
+    "total": 19
+  },
+  "IndexedDB/idbindex_getAll.any.js#dedicatedworker": {
+    "total": 19
+  },
+  "IndexedDB/idbindex_getAll.any.js#sharedworker": {
+    "total": 19
+  },
+  "IndexedDB/idbindex_getAllKeys-options.any.js": {
+    "total": 29
+  },
+  "IndexedDB/idbindex_getAllKeys-options.any.js#dedicatedworker": {
+    "total": 29
+  },
+  "IndexedDB/idbindex_getAllKeys-options.any.js#sharedworker": {
+    "total": 29
+  },
+  "IndexedDB/idbindex_getAllKeys.any.js": {
+    "total": 18
+  },
+  "IndexedDB/idbindex_getAllKeys.any.js#dedicatedworker": {
+    "total": 18
+  },
+  "IndexedDB/idbindex_getAllKeys.any.js#sharedworker": {
+    "total": 18
+  },
+  "IndexedDB/idbindex_getAllRecords.any.js": {
+    "total": 29
+  },
+  "IndexedDB/idbindex_getAllRecords.any.js#dedicatedworker": {
+    "total": 29
+  },
+  "IndexedDB/idbindex_getAllRecords.any.js#sharedworker": {
+    "total": 29
+  },
+  "IndexedDB/idbindex_getKey.any.js": {
+    "total": 8
+  },
+  "IndexedDB/idbindex_getKey.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "IndexedDB/idbindex_getKey.any.js#sharedworker": {
+    "total": 8
+  },
+  "IndexedDB/idbindex_indexNames.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbindex_indexNames.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbindex_indexNames.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbindex_keyPath.any.js": {
+    "total": 3
+  },
+  "IndexedDB/idbindex_keyPath.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbindex_openCursor.any.js": {
+    "total": 3
+  },
+  "IndexedDB/idbindex_openCursor.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbindex_openCursor.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbindex_openKeyCursor.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbindex_openKeyCursor.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbindex_openKeyCursor.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbindex_reverse_cursor.any.js": {
+    "total": 2
+  },
+  "IndexedDB/idbindex_reverse_cursor.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbindex_tombstones.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbindex_tombstones.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbkeyrange-includes.any.js": {
+    "total": 11
+  },
+  "IndexedDB/idbkeyrange-includes.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "IndexedDB/idbkeyrange-includes.any.js#sharedworker": {
+    "total": 11
+  },
+  "IndexedDB/idbkeyrange.any.js": {
+    "total": 10
+  },
+  "IndexedDB/idbkeyrange.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "IndexedDB/idbkeyrange.any.js#sharedworker": {
+    "total": 10
+  },
+  "IndexedDB/idbkeyrange_incorrect.any.js": {
+    "total": 7
+  },
+  "IndexedDB/idbkeyrange_incorrect.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "IndexedDB/idbkeyrange_incorrect.any.js#sharedworker": {
+    "total": 7
+  },
+  "IndexedDB/idbobjectstore-add-put-exception-order.any.js": {
+    "total": 6
+  },
+  "IndexedDB/idbobjectstore-add-put-exception-order.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "IndexedDB/idbobjectstore-add-put-exception-order.any.js#sharedworker": {
+    "total": 6
+  },
+  "IndexedDB/idbobjectstore-clear-exception-order.any.js": {
+    "total": 2
+  },
+  "IndexedDB/idbobjectstore-clear-exception-order.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbobjectstore-clear-exception-order.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbobjectstore-cross-realm-methods.html": {
+    "total": 11
+  },
+  "IndexedDB/idbobjectstore-delete-exception-order.any.js": {
+    "total": 3
+  },
+  "IndexedDB/idbobjectstore-delete-exception-order.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbobjectstore-delete-exception-order.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbobjectstore-deleteIndex-exception-order.any.js": {
+    "total": 3
+  },
+  "IndexedDB/idbobjectstore-deleteIndex-exception-order.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbobjectstore-deleteIndex-exception-order.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbobjectstore-getAll-enforcerange.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore-getAll-enforcerange.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore-getAll-enforcerange.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore-getAllKeys-enforcerange.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore-getAllKeys-enforcerange.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore-getAllKeys-enforcerange.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore-index-finished.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore-index-finished.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore-index-finished.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore-put-unique-index-constraint-is-atomic.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore-put-unique-index-constraint-is-atomic.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore-put-unique-index-constraint-is-atomic.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore-query-exception-order.any.js": {
+    "total": 12
+  },
+  "IndexedDB/idbobjectstore-query-exception-order.any.js#dedicatedworker": {
+    "total": 12
+  },
+  "IndexedDB/idbobjectstore-query-exception-order.any.js#sharedworker": {
+    "total": 12
+  },
+  "IndexedDB/idbobjectstore-rename-abort.any.js": {
+    "total": 2
+  },
+  "IndexedDB/idbobjectstore-rename-abort.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbobjectstore-rename-abort.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbobjectstore-rename-errors.any.js": {
+    "total": 6
+  },
+  "IndexedDB/idbobjectstore-rename-errors.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "IndexedDB/idbobjectstore-rename-errors.any.js#sharedworker": {
+    "total": 6
+  },
+  "IndexedDB/idbobjectstore-rename-store.any.js": {
+    "total": 11
+  },
+  "IndexedDB/idbobjectstore-rename-store.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "IndexedDB/idbobjectstore-rename-store.any.js#sharedworker": {
+    "total": 11
+  },
+  "IndexedDB/idbobjectstore-request-source.any.js": {
+    "total": 11
+  },
+  "IndexedDB/idbobjectstore-request-source.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "IndexedDB/idbobjectstore-request-source.any.js#sharedworker": {
+    "total": 11
+  },
+  "IndexedDB/idbobjectstore-transaction-SameObject.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore-transaction-SameObject.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore-transaction-SameObject.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_add.any.js": {
+    "total": 16
+  },
+  "IndexedDB/idbobjectstore_add.any.js#dedicatedworker": {
+    "total": 16
+  },
+  "IndexedDB/idbobjectstore_add.any.js#sharedworker": {
+    "total": 16
+  },
+  "IndexedDB/idbobjectstore_clear.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbobjectstore_clear.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbobjectstore_clear.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbobjectstore_count.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbobjectstore_count.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbobjectstore_count.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbobjectstore_createIndex.any.js": {
+    "total": 22
+  },
+  "IndexedDB/idbobjectstore_createIndex.any.js#dedicatedworker": {
+    "total": 22
+  },
+  "IndexedDB/idbobjectstore_createIndex.any.js#sharedworker": {
+    "total": 22
+  },
+  "IndexedDB/idbobjectstore_delete.any.js": {
+    "total": 7
+  },
+  "IndexedDB/idbobjectstore_delete.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "IndexedDB/idbobjectstore_delete.any.js#sharedworker": {
+    "total": 7
+  },
+  "IndexedDB/idbobjectstore_deleteIndex.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_deleteIndex.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_deleteIndex.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_get.any.js": {
+    "total": 7
+  },
+  "IndexedDB/idbobjectstore_get.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "IndexedDB/idbobjectstore_get.any.js#sharedworker": {
+    "total": 7
+  },
+  "IndexedDB/idbobjectstore_getAll-options.any.js": {
+    "total": 24
+  },
+  "IndexedDB/idbobjectstore_getAll-options.any.js#dedicatedworker": {
+    "total": 24
+  },
+  "IndexedDB/idbobjectstore_getAll-options.any.js#sharedworker": {
+    "total": 24
+  },
+  "IndexedDB/idbobjectstore_getAll.any.js": {
+    "total": 18
+  },
+  "IndexedDB/idbobjectstore_getAll.any.js#dedicatedworker": {
+    "total": 18
+  },
+  "IndexedDB/idbobjectstore_getAll.any.js#sharedworker": {
+    "total": 18
+  },
+  "IndexedDB/idbobjectstore_getAllKeys-options.any.js": {
+    "total": 23
+  },
+  "IndexedDB/idbobjectstore_getAllKeys-options.any.js#dedicatedworker": {
+    "total": 23
+  },
+  "IndexedDB/idbobjectstore_getAllKeys-options.any.js#sharedworker": {
+    "total": 23
+  },
+  "IndexedDB/idbobjectstore_getAllKeys.any.js": {
+    "total": 16
+  },
+  "IndexedDB/idbobjectstore_getAllKeys.any.js#dedicatedworker": {
+    "total": 16
+  },
+  "IndexedDB/idbobjectstore_getAllKeys.any.js#sharedworker": {
+    "total": 16
+  },
+  "IndexedDB/idbobjectstore_getAllRecords.any.js": {
+    "total": 25
+  },
+  "IndexedDB/idbobjectstore_getAllRecords.any.js#dedicatedworker": {
+    "total": 25
+  },
+  "IndexedDB/idbobjectstore_getAllRecords.any.js#sharedworker": {
+    "total": 25
+  },
+  "IndexedDB/idbobjectstore_getKey.any.js": {
+    "total": 17
+  },
+  "IndexedDB/idbobjectstore_getKey.any.js#dedicatedworker": {
+    "total": 17
+  },
+  "IndexedDB/idbobjectstore_index.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_index.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_index.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_keyPath.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_keyPath.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_openCursor.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_openCursor.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_openCursor.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_openCursor_invalid.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_openCursor_invalid.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_openCursor_invalid.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbobjectstore_openKeyCursor.any.js": {
+    "total": 5
+  },
+  "IndexedDB/idbobjectstore_openKeyCursor.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "IndexedDB/idbobjectstore_openKeyCursor.any.js#sharedworker": {
+    "total": 5
+  },
+  "IndexedDB/idbobjectstore_put.any.js": {
+    "total": 16
+  },
+  "IndexedDB/idbobjectstore_put.any.js#dedicatedworker": {
+    "total": 16
+  },
+  "IndexedDB/idbobjectstore_put.any.js#sharedworker": {
+    "total": 16
+  },
+  "IndexedDB/idbrequest-onupgradeneeded.any.js": {
+    "total": 4
+  },
+  "IndexedDB/idbrequest-onupgradeneeded.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbrequest-onupgradeneeded.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/idbrequest_error.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbrequest_error.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbrequest_error.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbrequest_result.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbrequest_result.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbrequest_result.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbtransaction-db-SameObject.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbtransaction-db-SameObject.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbtransaction-db-SameObject.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbtransaction-objectStore-exception-order.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbtransaction-objectStore-exception-order.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbtransaction-objectStore-exception-order.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbtransaction-objectStore-finished.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbtransaction-objectStore-finished.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbtransaction-objectStore-finished.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbtransaction-oncomplete.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbtransaction-oncomplete.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbtransaction-oncomplete.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbtransaction.any.js": {
+    "total": 2
+  },
+  "IndexedDB/idbtransaction.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbtransaction.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/idbtransaction_abort.any.js": {
+    "total": 3
+  },
+  "IndexedDB/idbtransaction_abort.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbtransaction_abort.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/idbtransaction_objectStoreNames.any.js": {
+    "total": 8
+  },
+  "IndexedDB/idbtransaction_objectStoreNames.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "IndexedDB/idbtransaction_objectStoreNames.any.js#sharedworker": {
+    "total": 8
+  },
+  "IndexedDB/idbversionchangeevent.any.js": {
+    "total": 1
+  },
+  "IndexedDB/idbversionchangeevent.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/idbversionchangeevent.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/idlharness.any.js": {
+    "total": 207
+  },
+  "IndexedDB/idlharness.any.js#dedicatedworker": {
+    "total": 207
+  },
+  "IndexedDB/idlharness.any.js#sharedworker": {
+    "total": 207
+  },
+  "IndexedDB/index_sort_order.any.js": {
+    "total": 1
+  },
+  "IndexedDB/index_sort_order.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/index_sort_order.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/interleaved-cursors-large.any.js": {
+    "total": 1
+  },
+  "IndexedDB/interleaved-cursors-large.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/interleaved-cursors-large.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/interleaved-cursors-small.any.js": {
+    "total": 3
+  },
+  "IndexedDB/interleaved-cursors-small.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/interleaved-cursors-small.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/key-conversion-exceptions.any.js": {
+    "total": 27
+  },
+  "IndexedDB/key-conversion-exceptions.any.js#dedicatedworker": {
+    "total": 27
+  },
+  "IndexedDB/key-conversion-exceptions.any.js#sharedworker": {
+    "total": 27
+  },
+  "IndexedDB/key_invalid.any.js": {
+    "total": 35
+  },
+  "IndexedDB/key_invalid.any.js#dedicatedworker": {
+    "total": 34
+  },
+  "IndexedDB/key_invalid.any.js#sharedworker": {
+    "total": 34
+  },
+  "IndexedDB/key_valid.any.js": {
+    "total": 18
+  },
+  "IndexedDB/key_valid.any.js#dedicatedworker": {
+    "total": 18
+  },
+  "IndexedDB/key_valid.any.js#sharedworker": {
+    "total": 18
+  },
+  "IndexedDB/keygenerator.any.js": {
+    "total": 21
+  },
+  "IndexedDB/keygenerator.any.js#dedicatedworker": {
+    "total": 21
+  },
+  "IndexedDB/keygenerator.any.js#sharedworker": {
+    "total": 21
+  },
+  "IndexedDB/keyorder.any.js": {
+    "total": 24
+  },
+  "IndexedDB/keyorder.any.js#dedicatedworker": {
+    "total": 24
+  },
+  "IndexedDB/keyorder.any.js#sharedworker": {
+    "total": 24
+  },
+  "IndexedDB/keypath-exceptions.any.js": {
+    "total": 6
+  },
+  "IndexedDB/keypath-exceptions.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "IndexedDB/keypath-exceptions.any.js#sharedworker": {
+    "total": 6
+  },
+  "IndexedDB/keypath-special-identifiers.any.js": {
+    "total": 6
+  },
+  "IndexedDB/keypath-special-identifiers.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "IndexedDB/keypath-special-identifiers.any.js#sharedworker": {
+    "total": 6
+  },
+  "IndexedDB/keypath.any.js": {
+    "total": 20
+  },
+  "IndexedDB/keypath.any.js#dedicatedworker": {
+    "total": 20
+  },
+  "IndexedDB/keypath.any.js#sharedworker": {
+    "total": 20
+  },
+  "IndexedDB/keypath_invalid.any.js": {
+    "total": 24
+  },
+  "IndexedDB/keypath_invalid.any.js#dedicatedworker": {
+    "total": 24
+  },
+  "IndexedDB/keypath_invalid.any.js#sharedworker": {
+    "total": 24
+  },
+  "IndexedDB/keypath_maxsize.any.js": {
+    "total": 3
+  },
+  "IndexedDB/keypath_maxsize.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/keypath_maxsize.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/large-requests-abort.any.js": {
+    "total": 4
+  },
+  "IndexedDB/large-requests-abort.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/large-requests-abort.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/list_ordering.any.js": {
+    "total": 3
+  },
+  "IndexedDB/list_ordering.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/list_ordering.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/name-scopes.any.js": {
+    "total": 2
+  },
+  "IndexedDB/name-scopes.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/name-scopes.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/nested-cloning-basic.any.js": {
+    "total": 2
+  },
+  "IndexedDB/nested-cloning-basic.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/nested-cloning-basic.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/nested-cloning-large-multiple.any.js": {
+    "total": 2
+  },
+  "IndexedDB/nested-cloning-large-multiple.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/nested-cloning-large-multiple.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/nested-cloning-large.any.js": {
+    "total": 7
+  },
+  "IndexedDB/nested-cloning-large.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "IndexedDB/nested-cloning-large.any.js#sharedworker": {
+    "total": 7
+  },
+  "IndexedDB/nested-cloning-small.any.js": {
+    "total": 6
+  },
+  "IndexedDB/nested-cloning-small.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "IndexedDB/nested-cloning-small.any.js#sharedworker": {
+    "total": 6
+  },
+  "IndexedDB/objectstore_keyorder.any.js": {
+    "total": 1
+  },
+  "IndexedDB/objectstore_keyorder.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/objectstore_keyorder.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/open-request-queue.any.js": {
+    "total": 1
+  },
+  "IndexedDB/open-request-queue.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/open-request-queue.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/parallel-cursors-upgrade.any.js": {
+    "total": 4
+  },
+  "IndexedDB/parallel-cursors-upgrade.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/parallel-cursors-upgrade.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/reading-autoincrement-indexes-cursors.any.js": {
+    "total": 4
+  },
+  "IndexedDB/reading-autoincrement-indexes-cursors.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/reading-autoincrement-indexes-cursors.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/reading-autoincrement-indexes.any.js": {
+    "total": 6
+  },
+  "IndexedDB/reading-autoincrement-indexes.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "IndexedDB/reading-autoincrement-indexes.any.js#sharedworker": {
+    "total": 6
+  },
+  "IndexedDB/reading-autoincrement-store-cursors.any.js": {
+    "total": 2
+  },
+  "IndexedDB/reading-autoincrement-store-cursors.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/reading-autoincrement-store-cursors.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/reading-autoincrement-store.any.js": {
+    "total": 3
+  },
+  "IndexedDB/reading-autoincrement-store.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/reading-autoincrement-store.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/ready-state-destroyed-execution-context.html": {
+    "total": 1
+  },
+  "IndexedDB/request-abort-ordering.any.js": {
+    "total": 1
+  },
+  "IndexedDB/request-abort-ordering.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/request-abort-ordering.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/request-event-ordering-large-mixed-with-small-values.any.js": {
+    "total": 1
+  },
+  "IndexedDB/request-event-ordering-large-mixed-with-small-values.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/request-event-ordering-large-mixed-with-small-values.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/request-event-ordering-large-then-small-values.any.js": {
+    "total": 1
+  },
+  "IndexedDB/request-event-ordering-large-then-small-values.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/request-event-ordering-large-then-small-values.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/request-event-ordering-large-values.any.js": {
+    "total": 1
+  },
+  "IndexedDB/request-event-ordering-large-values.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/request-event-ordering-large-values.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/request-event-ordering-small-values.any.js": {
+    "total": 1
+  },
+  "IndexedDB/request-event-ordering-small-values.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/request-event-ordering-small-values.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/request_bubble-and-capture.any.js": {
+    "total": 1
+  },
+  "IndexedDB/request_bubble-and-capture.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/request_bubble-and-capture.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/serialize-sharedarraybuffer-throws.https.html": {
+    "total": 1
+  },
+  "IndexedDB/sharedarraybuffer-key.https.html": {
+    "total": 3
+  },
+  "IndexedDB/storage-buckets.https.any.js": {
+    "total": 2,
+    "failures": {
+      "Basic test that buckets create independent databases.": "FAIL",
+      "Tests trying to use indexedDB in a deleted bucket.": "FAIL"
+    }
+  },
+  "IndexedDB/storage-buckets.https.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "Basic test that buckets create independent databases.": "FAIL",
+      "Tests trying to use indexedDB in a deleted bucket.": "FAIL"
+    }
+  },
+  "IndexedDB/storage-buckets.https.any.js#sharedworker": {
+    "total": 2,
+    "failures": {
+      "Basic test that buckets create independent databases.": "FAIL",
+      "Tests trying to use indexedDB in a deleted bucket.": "FAIL"
+    }
+  },
+  "IndexedDB/string-list-ordering.any.js": {
+    "total": 1
+  },
+  "IndexedDB/string-list-ordering.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/string-list-ordering.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/structured-clone-transaction-state.any.js": {
+    "total": 3
+  },
+  "IndexedDB/structured-clone-transaction-state.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/structured-clone.any.js#dedicatedworker?1-20": {
+    "total": 20
+  },
+  "IndexedDB/structured-clone.any.js#dedicatedworker?101-last": {
+    "total": 24
+  },
+  "IndexedDB/structured-clone.any.js#dedicatedworker?21-40": {
+    "total": 20
+  },
+  "IndexedDB/structured-clone.any.js#dedicatedworker?41-60": {
+    "total": 20
+  },
+  "IndexedDB/structured-clone.any.js#dedicatedworker?61-80": {
+    "total": 20
+  },
+  "IndexedDB/structured-clone.any.js#dedicatedworker?81-100": {
+    "total": 20
+  },
+  "IndexedDB/structured-clone.any.js?1-20": {
+    "total": 20
+  },
+  "IndexedDB/structured-clone.any.js?101-last": {
+    "total": 25
+  },
+  "IndexedDB/structured-clone.any.js?21-40": {
+    "total": 20
+  },
+  "IndexedDB/structured-clone.any.js?41-60": {
+    "total": 20
+  },
+  "IndexedDB/structured-clone.any.js?61-80": {
+    "total": 20
+  },
+  "IndexedDB/structured-clone.any.js?81-100": {
+    "total": 20
+  },
+  "IndexedDB/transaction-abort-generator-revert.any.js": {
+    "total": 2
+  },
+  "IndexedDB/transaction-abort-generator-revert.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/transaction-abort-generator-revert.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/transaction-abort-index-metadata-revert.any.js": {
+    "total": 6
+  },
+  "IndexedDB/transaction-abort-index-metadata-revert.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "IndexedDB/transaction-abort-index-metadata-revert.any.js#sharedworker": {
+    "total": 6
+  },
+  "IndexedDB/transaction-abort-multiple-metadata-revert.any.js": {
+    "total": 3
+  },
+  "IndexedDB/transaction-abort-multiple-metadata-revert.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/transaction-abort-multiple-metadata-revert.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/transaction-abort-object-store-metadata-revert.any.js": {
+    "total": 4
+  },
+  "IndexedDB/transaction-abort-object-store-metadata-revert.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/transaction-abort-object-store-metadata-revert.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/transaction-abort-request-error.any.js": {
+    "total": 1
+  },
+  "IndexedDB/transaction-abort-request-error.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/transaction-abort-request-error.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/transaction-create_in_versionchange.any.js": {
+    "total": 1
+  },
+  "IndexedDB/transaction-create_in_versionchange.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/transaction-create_in_versionchange.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/transaction-deactivation-timing.any.js": {
+    "total": 5
+  },
+  "IndexedDB/transaction-deactivation-timing.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "IndexedDB/transaction-deactivation-timing.any.js#sharedworker": {
+    "total": 5
+  },
+  "IndexedDB/transaction-inflight-worker-terminate.window.js": {
+    "total": 1
+  },
+  "IndexedDB/transaction-lifetime-empty.any.js": {
+    "total": 2
+  },
+  "IndexedDB/transaction-lifetime-empty.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/transaction-lifetime-empty.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/transaction-lifetime.any.js": {
+    "total": 2
+  },
+  "IndexedDB/transaction-lifetime.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/transaction-lifetime.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/transaction-relaxed-durability.any.js": {
+    "total": 6
+  },
+  "IndexedDB/transaction-relaxed-durability.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "IndexedDB/transaction-requestqueue.any.js": {
+    "total": 1
+  },
+  "IndexedDB/transaction-requestqueue.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/transaction-requestqueue.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/transaction-scheduling-across-connections.any.js": {
+    "total": 1
+  },
+  "IndexedDB/transaction-scheduling-across-connections.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/transaction-scheduling-across-databases.any.js": {
+    "total": 1
+  },
+  "IndexedDB/transaction-scheduling-across-databases.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/transaction-scheduling-mixed-scopes.any.js": {
+    "total": 1
+  },
+  "IndexedDB/transaction-scheduling-mixed-scopes.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/transaction-scheduling-ordering.any.js": {
+    "total": 1
+  },
+  "IndexedDB/transaction-scheduling-ordering.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/transaction-scheduling-ro-waits-for-rw.any.js": {
+    "total": 1
+  },
+  "IndexedDB/transaction-scheduling-ro-waits-for-rw.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/transaction-scheduling-rw-scopes.any.js": {
+    "total": 1
+  },
+  "IndexedDB/transaction-scheduling-rw-scopes.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/transaction-scheduling-within-database.any.js": {
+    "total": 1
+  },
+  "IndexedDB/transaction-scheduling-within-database.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/transaction_bubble-and-capture.any.js": {
+    "total": 1
+  },
+  "IndexedDB/transaction_bubble-and-capture.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/transaction_bubble-and-capture.any.js#sharedworker": {
+    "total": 1
+  },
+  "IndexedDB/upgrade-transaction-deactivation-timing.any.js": {
+    "total": 3
+  },
+  "IndexedDB/upgrade-transaction-deactivation-timing.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/upgrade-transaction-deactivation-timing.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/upgrade-transaction-lifecycle-backend-aborted.any.js": {
+    "total": 2
+  },
+  "IndexedDB/upgrade-transaction-lifecycle-backend-aborted.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/upgrade-transaction-lifecycle-backend-aborted.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/upgrade-transaction-lifecycle-committed.any.js": {
+    "total": 2
+  },
+  "IndexedDB/upgrade-transaction-lifecycle-committed.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "IndexedDB/upgrade-transaction-lifecycle-committed.any.js#sharedworker": {
+    "total": 2
+  },
+  "IndexedDB/upgrade-transaction-lifecycle-user-aborted.any.js": {
+    "total": 4
+  },
+  "IndexedDB/upgrade-transaction-lifecycle-user-aborted.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "IndexedDB/upgrade-transaction-lifecycle-user-aborted.any.js#sharedworker": {
+    "total": 4
+  },
+  "IndexedDB/value.any.js": {
+    "total": 8
+  },
+  "IndexedDB/value.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "IndexedDB/value.any.js#sharedworker": {
+    "total": 8
+  },
+  "IndexedDB/value_recursive.any.js": {
+    "total": 3
+  },
+  "IndexedDB/value_recursive.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "IndexedDB/value_recursive.any.js#sharedworker": {
+    "total": 3
+  },
+  "IndexedDB/worker-termination-aborts-upgrade.window.js": {
+    "total": 1
+  },
+  "IndexedDB/writer-starvation.any.js": {
+    "total": 1
+  },
+  "IndexedDB/writer-starvation.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "IndexedDB/writer-starvation.any.js#sharedworker": {
+    "total": 1
+  }
+}

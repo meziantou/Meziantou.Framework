@@ -1,0 +1,181 @@
+{
+  "spec": {
+    "title": "Device Posture API",
+    "url": "https://w3c.github.io/device-posture/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Navigator",
+          "DevicePosture"
+        ]
+      }
+    },
+    "idlNames": {
+      "DevicePosture": {
+        "fragment": "[SecureContext, Exposed=(Window)]\ninterface DevicePosture : EventTarget {\n  readonly attribute DevicePostureType type;\n  attribute EventHandler onchange;\n};",
+        "type": "interface",
+        "name": "DevicePosture",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DevicePostureType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/device-posture/#dom-deviceposture-type"
+          },
+          {
+            "type": "attribute",
+            "name": "onchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/device-posture/#dom-deviceposture-onchange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/device-posture/#dom-deviceposture"
+      },
+      "DevicePostureType": {
+        "fragment": "enum DevicePostureType {\n  \"continuous\",\n  \"folded\"\n};",
+        "type": "enum",
+        "name": "DevicePostureType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "continuous",
+            "href": "https://w3c.github.io/device-posture/#dom-deviceposturetype-continuous"
+          },
+          {
+            "type": "enum-value",
+            "value": "folded",
+            "href": "https://w3c.github.io/device-posture/#dom-deviceposturetype-folded"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/device-posture/#dom-deviceposturetype"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[SecureContext, Exposed=(Window)]\npartial interface Navigator {\n  [SameObject] readonly attribute DevicePosture devicePosture;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "devicePosture",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DevicePosture"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/device-posture/#dom-navigator-deviceposture"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "Window"
+                  }
+                ]
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Navigator",
+        "DevicePosture"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "DevicePosture"
+      ],
+      "DevicePosture": [
+        "EventTarget",
+        "DevicePostureType",
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator",
+      "EventTarget",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

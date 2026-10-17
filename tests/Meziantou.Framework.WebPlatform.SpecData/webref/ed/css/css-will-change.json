@@ -1,0 +1,64 @@
+{
+  "spec": {
+    "title": "CSS Will Change Module Level 1",
+    "url": "https://drafts.csswg.org/css-will-change-1/"
+  },
+  "properties": [
+    {
+      "name": "will-change",
+      "href": "https://drafts.csswg.org/css-will-change-1/#propdef-will-change",
+      "value": "auto | <animateable-feature>#",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Expresses no particular intent; the user agent should apply whatever heuristics and optimizations it normally does.",
+          "href": "https://drafts.csswg.org/css-will-change-1/#valdef-will-change-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "scroll-position",
+          "prose": "Indicates that the author expects to animate or change the scroll position of the element in the near future. For example, browsers often only render the content in the \"scroll window\" on a scrollable element, and some of the content past that window, balancing memory and time savings from the skipped rendering against making scrolling look nice. A browser might take this value as a signal to expand the range of content around the scroll window that is rendered, so that longer/faster scrolls can be done smoothly.",
+          "href": "https://drafts.csswg.org/css-will-change-1/#valdef-will-change-scroll-position",
+          "type": "value",
+          "value": "scroll-position"
+        },
+        {
+          "name": "contents",
+          "prose": "Indicates that the author expects to animate or change something about the element’s contents in the near future. For example, browsers often “cache” rendering of elements over time, because most things don’t change very often, or only change their position. However, if an element does change its contents continually, producing and maintaining this cache is a waste of time. A browser might take this value as a signal to cache less aggressively on the element, or avoid caching at all and just continually re-render the element from scratch. This value is mostly intended to help browsers optimize JS-based animations of content, which change aspects of an element’s contents many times per second. This kind of optimization, when possible, is already done automatically by browsers when declarative animations are used.",
+          "href": "https://drafts.csswg.org/css-will-change-1/#valdef-will-change-contents",
+          "type": "value",
+          "value": "contents"
+        },
+        {
+          "name": "<custom-ident>",
+          "prose": "If the <custom-ident> is an ASCII case-insensitive match for the name of a built-in CSS property, it indicates that the author expects to animate or change the property with the given name on the element in the near future. If the property given is a shorthand, it indicates the expectation for all the longhands the shorthand expands to. For example, setting will-change: background; is identical to setting will-change: background-image, background-position, ... for all the properties that background expands into. The <custom-ident> production used here excludes the keywords will-change, none, all, auto, scroll-position, and contents, in addition to the keywords normally excluded from <custom-ident>. Specifying a custom property must have no effect, which means that effects that happen through custom properties do not count for the rules below that are conditioned on any non-initial value of a property causing something. For example, browsers often handle elements with transform set to a non-initial value very differently from normal elements, perhaps rendering them to their own “GPU layer” or using other mechanisms to make it easier to quickly make the sort of transformations that transform can produce. A browser might take a value of transform as a signal that it should go ahead and promote the element to its own layer immediately, before the element starts to be transformed, to avoid any delay involved in rerendering the old and new layers. If any non-initial value of a property would create a stacking context on the element, specifying that property in will-change must create a stacking context on the element. If any non-initial value of a property would cause the element to generate a containing block for absolutely positioned elements, specifying that property in will-change must cause the element to generate a containing block for absolutely positioned elements. If any non-initial value of a property would cause the element to generate a containing block for fixed positioned elements, specifying that property in will-change must cause the element to generate a containing block for fixed positioned elements. If any non-initial value of a property would cause rendering differences on the element (such as using a different anti-aliasing strategy for text), the user agent should use that alternate rendering when the property is specified in will-change, to avoid sudden rendering differences when the property is eventually changed. For example, setting opacity to any value other than 1 creates a stacking context on the element. Thus, setting will-change: opacity also creates a stacking context, even if opacity is currently still equal to 1.",
+          "href": "https://drafts.csswg.org/css-will-change-1/#valdef-will-change-custom-ident",
+          "type": "value",
+          "value": "<custom-ident>"
+        }
+      ],
+      "styleDeclaration": [
+        "will-change",
+        "willChange"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<animateable-feature>",
+      "href": "https://drafts.csswg.org/css-will-change-1/#typedef-animateable-feature",
+      "type": "type",
+      "value": "scroll-position | contents | <custom-ident>"
+    }
+  ]
+}

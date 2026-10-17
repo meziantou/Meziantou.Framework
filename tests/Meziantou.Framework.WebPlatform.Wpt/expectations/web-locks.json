@@ -1,0 +1,258 @@
+{
+  "web-locks/acquire.https.any.js": {
+    "total": 11
+  },
+  "web-locks/acquire.https.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "web-locks/acquire.https.any.js#sharedworker": {
+    "total": 11
+  },
+  "web-locks/bfcache/abort.tentative.https.html": {
+    "total": 4,
+    "failures": {
+      "An immediately aborted lock on a nested worker should not prevent bfcache": "PRECONDITION_FAILED",
+      "An immediately aborted lock on a shared worker should not prevent bfcache": "PRECONDITION_FAILED",
+      "An immediately aborted lock on a worker should not prevent bfcache": "PRECONDITION_FAILED",
+      "An immediately aborted lock on main thread should not prevent bfcache": "PRECONDITION_FAILED"
+    }
+  },
+  "web-locks/bfcache/contention.https.window.js?context=document&contention=query": {
+    "total": 1
+  },
+  "web-locks/bfcache/contention.https.window.js?context=document&contention=request": {
+    "total": 1
+  },
+  "web-locks/bfcache/contention.https.window.js?context=document&contention=request-if-available": {
+    "total": 1
+  },
+  "web-locks/bfcache/contention.https.window.js?context=nested-worker&contention=query": {
+    "total": 1
+  },
+  "web-locks/bfcache/contention.https.window.js?context=nested-worker&contention=request": {
+    "total": 1
+  },
+  "web-locks/bfcache/contention.https.window.js?context=nested-worker&contention=request-if-available": {
+    "total": 1
+  },
+  "web-locks/bfcache/contention.https.window.js?context=shared-worker&contention=query": {
+    "total": 1
+  },
+  "web-locks/bfcache/contention.https.window.js?context=shared-worker&contention=request": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "A held lock on a shared worker should cause eviction on navigator.locks.request()": "TIMEOUT"
+    }
+  },
+  "web-locks/bfcache/contention.https.window.js?context=shared-worker&contention=request-if-available": {
+    "total": 1
+  },
+  "web-locks/bfcache/contention.https.window.js?context=worker&contention=query": {
+    "total": 1
+  },
+  "web-locks/bfcache/contention.https.window.js?context=worker&contention=request": {
+    "total": 1
+  },
+  "web-locks/bfcache/contention.https.window.js?context=worker&contention=request-if-available": {
+    "total": 1
+  },
+  "web-locks/bfcache/held.tentative.https.html": {
+    "total": 4,
+    "failures": {
+      "A held lock on a nested worker should not prevent bfcache": "PRECONDITION_FAILED",
+      "A held lock on a shared worker should not prevent bfcache": "PRECONDITION_FAILED",
+      "A held lock on a worker should not prevent bfcache": "PRECONDITION_FAILED",
+      "A held lock on the main thread should not prevent bfcache": "PRECONDITION_FAILED"
+    }
+  },
+  "web-locks/bfcache/release-across-thread.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "A held lock on main thread should not prevent bfcache even after worker releases locks": "PRECONDITION_FAILED",
+      "A held lock on shared worker should not prevent bfcache even after main thread releases locks": "PRECONDITION_FAILED",
+      "A held lock on worker should not prevent bfcache even after main thread releases locks": "PRECONDITION_FAILED"
+    }
+  },
+  "web-locks/bfcache/release.tentative.https.html": {
+    "total": 4,
+    "failures": {
+      "A released lock on a nested worker should not prevent bfcache": "PRECONDITION_FAILED",
+      "A released lock on a shared worker should not prevent bfcache": "PRECONDITION_FAILED",
+      "A released lock on a worker should not prevent bfcache": "PRECONDITION_FAILED",
+      "A released lock on the main thread should not prevent bfcache": "PRECONDITION_FAILED"
+    }
+  },
+  "web-locks/bfcache/sharedworker-multiple.tentative.https.html": {
+    "total": 2,
+    "failures": {
+      "A new held lock does not prevent bfcache on all connected documents": "PRECONDITION_FAILED",
+      "An existing held lock does not prevent bfcache on all connected documents": "PRECONDITION_FAILED"
+    }
+  },
+  "web-locks/clientids.https.html": {
+    "total": 1
+  },
+  "web-locks/frames.https.html": {
+    "total": 8
+  },
+  "web-locks/held.https.any.js": {
+    "total": 4
+  },
+  "web-locks/held.https.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "web-locks/held.https.any.js#sharedworker": {
+    "total": 4
+  },
+  "web-locks/idlharness.https.any.js": {
+    "total": 47
+  },
+  "web-locks/idlharness.https.any.js#dedicatedworker": {
+    "total": 47
+  },
+  "web-locks/idlharness.https.any.js#sharedworker": {
+    "total": 47
+  },
+  "web-locks/ifAvailable.https.any.js": {
+    "total": 10
+  },
+  "web-locks/ifAvailable.https.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "web-locks/ifAvailable.https.any.js#sharedworker": {
+    "total": 10
+  },
+  "web-locks/lock-attributes.https.any.js": {
+    "total": 2
+  },
+  "web-locks/lock-attributes.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "web-locks/lock-attributes.https.any.js#sharedworker": {
+    "total": 2
+  },
+  "web-locks/mode-exclusive.https.any.js": {
+    "total": 2
+  },
+  "web-locks/mode-exclusive.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "web-locks/mode-exclusive.https.any.js#sharedworker": {
+    "total": 2
+  },
+  "web-locks/mode-mixed.https.any.js": {
+    "total": 3
+  },
+  "web-locks/mode-mixed.https.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "web-locks/mode-mixed.https.any.js#sharedworker": {
+    "total": 3
+  },
+  "web-locks/mode-shared.https.any.js": {
+    "total": 2
+  },
+  "web-locks/mode-shared.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "web-locks/mode-shared.https.any.js#sharedworker": {
+    "total": 2
+  },
+  "web-locks/non-fully-active.https.html": {
+    "total": 5
+  },
+  "web-locks/non-secure-context.any.js": {
+    "total": 1
+  },
+  "web-locks/non-secure-context.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "web-locks/non-secure-context.any.js#sharedworker": {
+    "total": 1
+  },
+  "web-locks/opaque-origin.https.html": {
+    "total": 4
+  },
+  "web-locks/partitioned-web-locks.tentative.https.html": {
+    "total": 2
+  },
+  "web-locks/query-empty.https.any.js": {
+    "total": 1
+  },
+  "web-locks/query-empty.https.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "web-locks/query-empty.https.any.js#sharedworker": {
+    "total": 1
+  },
+  "web-locks/query-ordering.https.html": {
+    "total": 1
+  },
+  "web-locks/query.https.any.js": {
+    "total": 9
+  },
+  "web-locks/query.https.any.js#dedicatedworker": {
+    "total": 9
+  },
+  "web-locks/resource-names.https.any.js": {
+    "total": 8
+  },
+  "web-locks/resource-names.https.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "web-locks/resource-names.https.any.js#sharedworker": {
+    "total": 8
+  },
+  "web-locks/secure-context.https.any.js": {
+    "total": 1
+  },
+  "web-locks/secure-context.https.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "web-locks/secure-context.https.any.js#sharedworker": {
+    "total": 1
+  },
+  "web-locks/signal.https.any.js": {
+    "total": 13
+  },
+  "web-locks/signal.https.any.js#dedicatedworker": {
+    "total": 13
+  },
+  "web-locks/signal.https.any.js#sharedworker": {
+    "total": 13
+  },
+  "web-locks/steal.https.any.js": {
+    "total": 5
+  },
+  "web-locks/steal.https.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "web-locks/steal.https.any.js#sharedworker": {
+    "total": 5
+  },
+  "web-locks/storage-buckets.tentative.https.any.js": {
+    "total": 1,
+    "failures": {
+      "Storage buckets have independent locks": "FAIL"
+    }
+  },
+  "web-locks/storage-buckets.tentative.https.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "Storage buckets have independent locks": "FAIL"
+    }
+  },
+  "web-locks/storage-buckets.tentative.https.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "Storage buckets have independent locks": "FAIL"
+    }
+  },
+  "web-locks/windows.https.window.js": {
+    "total": 2
+  },
+  "web-locks/workers.https.html": {
+    "total": 4
+  }
+}

@@ -1,0 +1,1267 @@
+{
+  "css/css-inline/alignment-baseline/alignment-baseline-flex-item-export-001.html?class=alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-flex-item-export-001.html?class=baseline": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-flex-item-export-001.html?class=central": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-flex-item-export-001.html?class=hanging": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-flex-item-export-001.html?class=ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-flex-item-export-001.html?class=mathematical": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-flex-item-export-001.html?class=middle": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-flex-item-export-001.html?class=text-bottom": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-flex-item-export-001.html?class=text-top": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-001.html?class=alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-001.html?class=baseline": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-001.html?class=central": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-001.html?class=hanging": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-001.html?class=ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-001.html?class=mathematical": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-001.html?class=middle": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-001.html?class=text-bottom": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-001.html?class=text-top": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-002.html?class=alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-002.html?class=baseline": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-002.html?class=central": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-002.html?class=hanging": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-002.html?class=ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-002.html?class=mathematical": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-002.html?class=middle": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-002.html?class=text-bottom": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-002.html?class=text-top": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-003.html?class=alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-003.html?class=baseline": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-003.html?class=central": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-003.html?class=hanging": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-003.html?class=ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-003.html?class=mathematical": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-003.html?class=middle": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-003.html?class=text-bottom": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-horizontal-003.html?class=text-top": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-nested-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-nested-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-001.html?class=alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-001.html?class=baseline": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-001.html?class=central": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-001.html?class=hanging": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-001.html?class=ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-001.html?class=mathematical": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-001.html?class=middle": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-001.html?class=text-bottom": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-001.html?class=text-top": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-002.html?class=alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-002.html?class=baseline": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-002.html?class=central": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-002.html?class=hanging": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-002.html?class=ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-002.html?class=mathematical": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-002.html?class=middle": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-002.html?class=text-bottom": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-002.html?class=text-top": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-003.html?class=alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-003.html?class=baseline": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-003.html?class=central": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-003.html?class=hanging": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-003.html?class=ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-003.html?class=mathematical": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-003.html?class=middle": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-003.html?class=text-bottom": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/alignment-baseline/alignment-baseline-vertical-rl-003.html?class=text-top": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/animation/alignment-baseline-no-interpolation.html": {
+    "total": 42
+  },
+  "css/css-inline/animation/baseline-shift-composition.html": {
+    "total": 30
+  },
+  "css/css-inline/animation/dominant-baseline-no-interpolation.html": {
+    "total": 42
+  },
+  "css/css-inline/animation/initial-letter-no-interpolation.html": {
+    "total": 42
+  },
+  "css/css-inline/baseline-shift/baseline-shift-bottom-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/baseline-shift/baseline-shift-bottom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/baseline-shift/baseline-shift-center-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/baseline-shift/baseline-shift-center.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/baseline-shift/baseline-shift-length-percentage-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/baseline-shift/baseline-shift-length-percentage.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/baseline-shift/baseline-shift-sub-super-svg.html": {
+    "total": 2
+  },
+  "css/css-inline/baseline-shift/baseline-shift-sub-super.html": {
+    "total": 2
+  },
+  "css/css-inline/baseline-shift/baseline-shift-top-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/baseline-shift/baseline-shift-top.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/baseline-source/baseline-source-computed.html": {
+    "total": 3
+  },
+  "css/css-inline/baseline-source/baseline-source-first-001.html": {
+    "total": 22
+  },
+  "css/css-inline/baseline-source/baseline-source-first-002.html": {
+    "total": 22
+  },
+  "css/css-inline/baseline-source/baseline-source-first-003.html": {
+    "total": 22
+  },
+  "css/css-inline/baseline-source/baseline-source-first-textarea-001.tentative.html": {
+    "total": 12
+  },
+  "css/css-inline/baseline-source/baseline-source-first-textarea-002.tentative.html": {
+    "total": 12,
+    "failures": {
+      ".target > * 11": "FAIL",
+      ".target > * 9": "FAIL"
+    }
+  },
+  "css/css-inline/baseline-source/baseline-source-first-textarea-003.tentative.html": {
+    "total": 12
+  },
+  "css/css-inline/baseline-source/baseline-source-inline-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/baseline-source/baseline-source-invalid.html": {
+    "total": 6
+  },
+  "css/css-inline/baseline-source/baseline-source-last-001.html": {
+    "total": 22
+  },
+  "css/css-inline/baseline-source/baseline-source-last-002.html": {
+    "total": 22
+  },
+  "css/css-inline/baseline-source/baseline-source-last-003.html": {
+    "total": 22
+  },
+  "css/css-inline/baseline-source/baseline-source-last-textarea-001.tentative.html": {
+    "total": 12
+  },
+  "css/css-inline/baseline-source/baseline-source-last-textarea-002.tentative.html": {
+    "total": 12
+  },
+  "css/css-inline/baseline-source/baseline-source-last-textarea-003.tentative.html": {
+    "total": 12
+  },
+  "css/css-inline/baseline-source/baseline-source-no-interpolation.html": {
+    "total": 42
+  },
+  "css/css-inline/baseline-source/baseline-source-valid.html": {
+    "total": 3
+  },
+  "css/css-inline/baseline-source/baseline-source-vertical-align.html": {
+    "total": 1
+  },
+  "css/css-inline/br-font-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/br-line-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-alignment-baseline.html?class=alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-alignment-baseline.html?class=auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-alignment-baseline.html?class=central": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-alignment-baseline.html?class=hanging": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-alignment-baseline.html?class=ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-alignment-baseline.html?class=mathematical": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-alignment-baseline.html?class=middle": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-alignment-baseline.html?class=text-bottom": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-alignment-baseline.html?class=text-top": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-auto.html?class=horizontal-tb,expect-alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-auto.html?class=vertical-rl,text-mixed,expect-central": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-auto.html?class=vertical-rl,text-sideways,expect-alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-auto.html?class=vertical-rl,text-upright,expect-central": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-mixed-writing-modes-001.html?class=alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-mixed-writing-modes-001.html?class=auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-mixed-writing-modes-001.html?class=central": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-mixed-writing-modes-001.html?class=hanging": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-mixed-writing-modes-001.html?class=ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-mixed-writing-modes-001.html?class=mathematical": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-mixed-writing-modes-001.html?class=middle": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-mixed-writing-modes-001.html?class=text-bottom": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-mixed-writing-modes-001.html?class=text-top": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/dominant-baseline/dominant-baseline-mixed-writing-modes-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/empty-span-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/empty-span-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/empty-span-size-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/empty-span-size-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/empty-text-node-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/firefox-bug-2073465.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/inheritance.html": {
+    "total": 18,
+    "failures": {
+      "Property initial-letters does not inherit": "FAIL",
+      "Property initial-letters has initial value normal": "FAIL",
+      "Property initial-letters-align has initial value alphabetic": "FAIL",
+      "Property initial-letters-align inherits": "FAIL",
+      "Property initial-letters-wrap has initial value none": "FAIL",
+      "Property initial-letters-wrap inherits": "FAIL",
+      "Property initial-sizing does not inherit": "FAIL",
+      "Property initial-sizing has initial value normal": "FAIL"
+    }
+  },
+  "css/css-inline/initial-letter/Initial-letter-breaking-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/Initial-letter-breaking-vlr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/Initial-letter-breaking-vrl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/Initial-letter-breaking.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-drop-over-ruby-tall.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-drop-over-ruby.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-drop-under-ruby-tall.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-drop-under-ruby.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-margins-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-margins-slr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-margins-srl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-margins-vlr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-margins-vrl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-margins.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-raise-over-ruby-tall.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-raise-over-ruby.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-raise-under-ruby-tall.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-raise-under-ruby.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-breaking-slr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-breaking-srl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-computed.html": {
+    "total": 8
+  },
+  "css/css-inline/initial-letter/initial-letter-drop-initial-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-drop-initial-slr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-drop-initial-srl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-drop-initial-vlr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-drop-initial-vrl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-drop-initial.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-float-001-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-float-001-slr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-float-001-srl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-float-001-vlr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-float-001-vrl.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/initial-letter/initial-letter-float-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-float-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-float-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-float-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-float-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-indentation-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-indentation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-invalid.html": {
+    "total": 16
+  },
+  "css/css-inline/initial-letter/initial-letter-layout-text-decoration-underline.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/initial-letter/initial-letter-popover.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-raise-initial-slr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-raise-initial-srl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-raise-initial-vlr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-raise-initial-vrl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-raise-initial.html?class=": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-raise-initial.html?class=no-ascent": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-raise-initial.html?class=no-descent": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-raise-initial.html?class=rtl": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-raised-sunken-caps-raise.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-raised-sunken-caps-sunken.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-short-para-initial-letter-clears.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-short-para-initial-letter-wraps.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-sign-function.html": {
+    "total": 1
+  },
+  "css/css-inline/initial-letter/initial-letter-sunk-initial-slr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-sunk-initial-srl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-sunk-initial-vlr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-sunk-initial-vrl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-sunk-initial.html?class=": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-sunk-initial.html?class=no-ascent": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-sunk-initial.html?class=no-descent": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-sunk-initial.html?class=rtl": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-valid.html": {
+    "total": 8
+  },
+  "css/css-inline/initial-letter/initial-letter-with-first-line.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-with-tab-rtl.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/initial-letter/initial-letter-with-tab.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/inline-crash-chrome-001.html": {
+    "total": 1
+  },
+  "css/css-inline/model/phantom-line-boxes-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/model/phantom-line-boxes-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/model/phantom-line-boxes-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/model/phantom-line-boxes-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/model/phantom-line-boxes-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/model/phantom-line-boxes-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/parsing/alignment-baseline-computed.html": {
+    "total": 9
+  },
+  "css/css-inline/parsing/alignment-baseline-invalid.html": {
+    "total": 6
+  },
+  "css/css-inline/parsing/alignment-baseline-valid.html": {
+    "total": 9
+  },
+  "css/css-inline/parsing/baseline-shift-computed.html": {
+    "total": 8
+  },
+  "css/css-inline/parsing/baseline-shift-invalid.html": {
+    "total": 5
+  },
+  "css/css-inline/parsing/baseline-shift-valid.html": {
+    "total": 9
+  },
+  "css/css-inline/parsing/dominant-baseline-computed.html": {
+    "total": 9
+  },
+  "css/css-inline/parsing/dominant-baseline-invalid.html": {
+    "total": 4
+  },
+  "css/css-inline/parsing/dominant-baseline-valid.html": {
+    "total": 9
+  },
+  "css/css-inline/parsing/line-height-computed.html": {
+    "total": 13
+  },
+  "css/css-inline/parsing/line-height-invalid.html": {
+    "total": 8
+  },
+  "css/css-inline/parsing/line-height-valid.html": {
+    "total": 8
+  },
+  "css/css-inline/parsing/vertical-align-computed.html": {
+    "total": 23
+  },
+  "css/css-inline/parsing/vertical-align-invalid.html": {
+    "total": 9
+  },
+  "css/css-inline/parsing/vertical-align-valid.html": {
+    "total": 30
+  },
+  "css/css-inline/text-box-trim/border-padding-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/border-padding-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/border-padding-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/border-padding-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/new-fc-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/not-at-page-edges-001-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/not-at-page-edges-002-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/not-at-page-edges-003-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/out-of-flow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/out-of-flow-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/parsing/inheritance.html": {
+    "total": 4
+  },
+  "css/css-inline/text-box-trim/parsing/text-box-computed.html": {
+    "total": 38
+  },
+  "css/css-inline/text-box-trim/parsing/text-box-edge-computed.html": {
+    "total": 27
+  },
+  "css/css-inline/text-box-trim/parsing/text-box-edge-invalid.html": {
+    "total": 25
+  },
+  "css/css-inline/text-box-trim/parsing/text-box-edge-valid.html": {
+    "total": 27
+  },
+  "css/css-inline/text-box-trim/parsing/text-box-invalid.html": {
+    "total": 18
+  },
+  "css/css-inline/text-box-trim/parsing/text-box-shorthand.html": {
+    "total": 18
+  },
+  "css/css-inline/text-box-trim/parsing/text-box-trim-computed.html": {
+    "total": 4
+  },
+  "css/css-inline/text-box-trim/parsing/text-box-trim-invalid.html": {
+    "total": 6
+  },
+  "css/css-inline/text-box-trim/parsing/text-box-trim-valid.html": {
+    "total": 4
+  },
+  "css/css-inline/text-box-trim/parsing/text-box-valid.html": {
+    "total": 38
+  },
+  "css/css-inline/text-box-trim/text-box-on-non-root-inline-box.html": {
+    "total": 4
+  },
+  "css/css-inline/text-box-trim/text-box-trim-accumulation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-accumulation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-accumulation-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-accumulation-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-atomic-inline-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-block-in-inline-end-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-block-in-inline-end-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-block-in-inline-end-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-block-in-inline-end-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-block-in-inline-start-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-block-in-inline-start-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-block-in-inline-start-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-dynamic-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=ideographic-ink": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=vlr,auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=vlr,cap": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=vlr,ex": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=vlr,ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=vlr,ideographic-ink": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=vlr,text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=vrl,alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=vrl,auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=vrl,ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=vrl,ideographic-ink": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-001.html?class=vrl,text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-end-empty-line-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-fieldset-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-first-line-pseudo-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-first-line-pseudo-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-first-line-pseudo-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-first-line-pseudo-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-first-line-pseudo-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-float-clear-br-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-float-clear-br-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-float-clear-br-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-float-start-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-fragmented-last-inline-box-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-fragmented-last-inline-box-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-half-leading-block-box-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-half-leading-block-box-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-half-leading-block-box-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-half-leading-block-box-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-half-leading-block-box-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-half-leading-block-box-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-height-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-height-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-initial-letter-end-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-initial-letter-start-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-001.html?class=auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-001.html?class=cap": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-001.html?class=ex": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-001.html?class=text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-001.html?class=vlr,alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-001.html?class=vlr,auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-001.html?class=vlr,text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-001.html?class=vrl,auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-001.html?class=vrl,cap": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-001.html?class=vrl,ex": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-001.html?class=vrl,text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-002.html?class=alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-002.html?class=auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-002.html?class=text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-002.html?class=vlr,auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-002.html?class=vlr,cap": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-002.html?class=vlr,ex": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-002.html?class=vlr,text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-002.html?class=vrl,alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-002.html?class=vrl,auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-002.html?class=vrl,text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-004.html?class=auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-004.html?class=cap": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-004.html?class=ex": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-004.html?class=text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-004.html?class=vlr,alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-004.html?class=vlr,auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-004.html?class=vlr,text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-004.html?class=vrl,auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-004.html?class=vrl,cap": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-004.html?class=vrl,ex": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-004.html?class=vrl,text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-005.html?class=alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-005.html?class=auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-005.html?class=text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-005.html?class=vlr,auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-005.html?class=vlr,cap": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-005.html?class=vlr,ex": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-005.html?class=vlr,text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-005.html?class=vrl,alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-005.html?class=vrl,auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-005.html?class=vrl,text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-001.html?class=cap": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-001.html?class=ex": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-001.html?class=ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-001.html?class=ideographic-ink": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-001.html?class=text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-001.html?class=vlr,alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-001.html?class=vlr,ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-001.html?class=vlr,ideographic-ink": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-001.html?class=vlr,text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-001.html?class=vrl,cap": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-001.html?class=vrl,ex": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-001.html?class=vrl,ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-001.html?class=vrl,ideographic-ink": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-001.html?class=vrl,text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-002.html?class=cap": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-002.html?class=ex": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-002.html?class=ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-002.html?class=ideographic-ink": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-002.html?class=text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-002.html?class=vlr,alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-002.html?class=vlr,ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-002.html?class=vlr,ideographic-ink": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-002.html?class=vrl,cap": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-inline-box-text-decoration-002.html?class=vrl,ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-line-clamp-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-line-clamp-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-line-clamp-auto-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-line-clamp-auto-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-line-clamp-auto-block-in-inline-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-line-clamp-auto-block-in-inline-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-list-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-multicol-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-multicol-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-multicol-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-multicol-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-multicol-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-multicol-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-multicol-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-multicol-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-multicol-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-multicol-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-multicol-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-multicol-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-multicol-013.html": {
+    "total": 5
+  },
+  "css/css-inline/text-box-trim/text-box-trim-multicol-014.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-not-ignore-nested-text-box-edge.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-om-001.html": {
+    "total": 4
+  },
+  "css/css-inline/text-box-trim/text-box-trim-on-button.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-pseudo-before-after-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-pseudo-before-after-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-ruby-end-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-ruby-start-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-ruby-start-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-scroll-container-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-scroll-container-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-scroll-container-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-scroll-container-004.html": {
+    "total": 3
+  },
+  "css/css-inline/text-box-trim/text-box-trim-set-dynamically.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=cap": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=ex": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=ideographic-ink": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=vlr,alphabetic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=vlr,auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=vlr,ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=vlr,ideographic-ink": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=vlr,text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=vrl,auto": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=vrl,cap": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=vrl,ex": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=vrl,ideographic": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=vrl,ideographic-ink": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-001.html?class=vrl,text": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-start-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-tall-line-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-text-emphasis-001.html": {
+    "reftest": "PASS"
+  }
+}

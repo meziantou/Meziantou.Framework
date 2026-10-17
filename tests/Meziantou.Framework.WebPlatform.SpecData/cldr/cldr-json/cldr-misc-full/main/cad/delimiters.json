@@ -1,0 +1,15 @@
+{
+  "main": {
+    "cad": {
+      "identity": {
+        "language": "cad"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "sk": {
+      "identity": {
+        "language": "sk"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "‚",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

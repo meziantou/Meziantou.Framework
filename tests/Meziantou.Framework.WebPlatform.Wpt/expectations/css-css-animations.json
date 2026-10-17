@@ -1,0 +1,534 @@
+{
+  "css/css-animations/AnimationEffect-getComputedTiming.tentative.html": {
+    "total": 43
+  },
+  "css/css-animations/AnimationEffect-updateTiming.tentative.html": {
+    "total": 5
+  },
+  "css/css-animations/CSSAnimation-animationName.tentative.html": {
+    "total": 3
+  },
+  "css/css-animations/CSSAnimation-canceling.tentative.html": {
+    "total": 9,
+    "failures": {
+      "After canceling an animation, updating animation-play-state doesn't make it live again": "FAIL"
+    }
+  },
+  "css/css-animations/CSSAnimation-compositeOrder.tentative.html": {
+    "total": 2
+  },
+  "css/css-animations/CSSAnimation-effect.tentative.html": {
+    "total": 8,
+    "failures": {
+      "Replacing the effect of a CSSAnimation causes subsequent changes to corresponding animation-* properties to be ignored": "FAIL",
+      "Setting a null effect on a running animation fires an animationend event": "FAIL"
+    }
+  },
+  "css/css-animations/CSSAnimation-finished.tentative.html": {
+    "total": 3
+  },
+  "css/css-animations/CSSAnimation-getCurrentTime.tentative.html": {
+    "total": 2
+  },
+  "css/css-animations/CSSAnimation-id.tentative.html": {
+    "total": 1
+  },
+  "css/css-animations/CSSAnimation-pausing.tentative.html": {
+    "total": 9,
+    "failures": {
+      "Setting the startTime to non-null does NOT override the animation-play-state if the animation is already running": "FAIL"
+    }
+  },
+  "css/css-animations/CSSAnimation-playState.tentative.html": {
+    "total": 5
+  },
+  "css/css-animations/CSSAnimation-ready.tentative.html": {
+    "total": 5
+  },
+  "css/css-animations/CSSAnimation-startTime.tentative.html": {
+    "total": 3
+  },
+  "css/css-animations/Document-getAnimations.tentative.html": {
+    "total": 18,
+    "failures": {
+      "Order of CSS Animations - free animations": "FAIL"
+    }
+  },
+  "css/css-animations/Element-getAnimations-dynamic-changes.tentative.html": {
+    "total": 5
+  },
+  "css/css-animations/Element-getAnimations.tentative.html": {
+    "total": 22
+  },
+  "css/css-animations/KeyframeEffect-getKeyframes.tentative.html": {
+    "total": 32,
+    "failures": {
+      "KeyframeEffect.getKeyframes() returns expected values for animations with CSS variables as keyframe values": "FAIL",
+      "KeyframeEffect.getKeyframes() returns expected values for animations with CSS variables as keyframe values in a shorthand property": "FAIL",
+      "KeyframeEffect.getKeyframes() returns expected values for animations with a CSS variable which is overriden by the value in keyframe": "FAIL",
+      "KeyframeEffect.getKeyframes() returns expected values for animations with implicit values and a non-default timingfunction specified for 0% and 100%": "FAIL",
+      "KeyframeEffect.getKeyframes() returns expected values for animations with only custom property in a keyframe": "FAIL"
+    }
+  },
+  "css/css-animations/KeyframeEffect-setKeyframes.tentative.html": {
+    "total": 3
+  },
+  "css/css-animations/KeyframeEffect-target.tentative.html": {
+    "total": 3
+  },
+  "css/css-animations/animate-bg-color-with-change-during-delay.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animate-font-size-with-margin-override.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animate-with-background-color-hsla-to-legacy-rgb.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animate-with-background-color-oklch-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animate-with-background-color-oklch-002.html": {
+    "total": 2
+  },
+  "css/css-animations/animate-with-color-mix-2.html": {
+    "total": 1
+  },
+  "css/css-animations/animate-with-color-mix.html": {
+    "total": 6
+  },
+  "css/css-animations/animate-with-relative-color.html": {
+    "total": 2
+  },
+  "css/css-animations/animation-append-stylesheet-reverse.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-base-response-001.html": {
+    "total": 3
+  },
+  "css/css-animations/animation-base-response-002.html": {
+    "total": 1
+  },
+  "css/css-animations/animation-base-response-003.html": {
+    "total": 1
+  },
+  "css/css-animations/animation-base-response-004.html": {
+    "total": 1
+  },
+  "css/css-animations/animation-before-initial-box-construction-001.html": {
+    "total": 1
+  },
+  "css/css-animations/animation-change-underlying-value-changed-in-flight.html": {
+    "total": 2
+  },
+  "css/css-animations/animation-composition-keyframes.html": {
+    "total": 6
+  },
+  "css/css-animations/animation-composition.html": {
+    "total": 6
+  },
+  "css/css-animations/animation-css-variable-dependent-property.html": {
+    "total": 1
+  },
+  "css/css-animations/animation-css-variable-in-keyframe-adjusted.html": {
+    "total": 2
+  },
+  "css/css-animations/animation-delay-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-delay-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-delay-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-delay-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-delay-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-duration-infinite.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-important-001.html": {
+    "total": 7
+  },
+  "css/css-animations/animation-important-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-important-with-transition.html": {
+    "total": 5
+  },
+  "css/css-animations/animation-iteration-count-009.html": {
+    "total": 4
+  },
+  "css/css-animations/animation-iteration-count-010.html": {
+    "total": 6
+  },
+  "css/css-animations/animation-iteration-count-calc.html": {
+    "total": 1
+  },
+  "css/css-animations/animation-iteration-event-001.html": {
+    "total": 1
+  },
+  "css/css-animations/animation-iteration-event-002.html": {
+    "total": 1
+  },
+  "css/css-animations/animation-multiple-from-to-keyframes-with-only-timing-function.html": {
+    "total": 1
+  },
+  "css/css-animations/animation-name-case-sensitive.html": {
+    "total": 1
+  },
+  "css/css-animations/animation-name-in-nested-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-name-in-shadow-part-inner-match.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-name-in-shadow-part-outer-match.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-name-in-shadow-part.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-name-inline-style.html": {
+    "total": 1
+  },
+  "css/css-animations/animation-offscreen-to-onscreen.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-opacity-pause-and-set-time.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-play-state-005.tentative.html": {
+    "total": 1
+  },
+  "css/css-animations/animation-pseudo-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animation-restarted-after-changing-iteration-count-after-completion.html": {
+    "total": 1
+  },
+  "css/css-animations/animation-style-element-replaced-with-keyframes-rule-of-same-name.html": {
+    "total": 1
+  },
+  "css/css-animations/animation-transform-pause-and-set-time.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/animationevent-interface.html": {
+    "total": 42
+  },
+  "css/css-animations/animationevent-marker-pseudoelement.html": {
+    "total": 1
+  },
+  "css/css-animations/animationevent-pseudoelement.html": {
+    "total": 1
+  },
+  "css/css-animations/animationevent-types.html": {
+    "total": 3
+  },
+  "css/css-animations/cancel-animation-shadow-slot-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/cancel-events-on-remove.html": {
+    "harness": "TIMEOUT",
+    "total": 5,
+    "failures": {
+      "Re-parenting: animationcancel is fired asynchronously": "TIMEOUT",
+      "Web Animations: cancel event on Animation object is fired asynchronously on element remove": "NOTRUN"
+    }
+  },
+  "css/css-animations/computed-style-animation-parsing.html": {
+    "total": 7
+  },
+  "css/css-animations/dialog-animation.html": {
+    "total": 1
+  },
+  "css/css-animations/dialog-backdrop-animation.html": {
+    "total": 1,
+    "failures": {
+      "CSS Animations on a <dialog> ::backdrop are canceled and restarted as the dialog is hidden and shown": "FAIL"
+    }
+  },
+  "css/css-animations/display-contents-animates.html": {
+    "total": 1
+  },
+  "css/css-animations/display-interpolation.html": {
+    "total": 138
+  },
+  "css/css-animations/display-none-dont-cancel-pseudo.tentative.html": {
+    "total": 1
+  },
+  "css/css-animations/display-none-dont-cancel.tentative.html": {
+    "total": 5,
+    "failures": {
+      "Animating a variable of \"none\" which gets set to display elsewhere should not cancel the animation.": "FAIL"
+    }
+  },
+  "css/css-animations/display-none-prevents-starting-in-subtree.html": {
+    "total": 1
+  },
+  "css/css-animations/display-none-to-display-block-dont-cancel.tentative.html": {
+    "total": 1
+  },
+  "css/css-animations/display-none-to-display-block-while-running.tentative.html": {
+    "total": 1
+  },
+  "css/css-animations/display-none-to-display-block.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/empty-pseudo-class-with-animation.html": {
+    "total": 1
+  },
+  "css/css-animations/event-dispatch.tentative.html": {
+    "total": 32,
+    "failures": {
+      "Active -> Idle, calling Animation.cancel()": "FAIL",
+      "Active -> Idle, setting Animation.timeline = null": "FAIL",
+      "After -> Before": "FAIL",
+      "Cancel the animation after clearing the target effect.": "FAIL",
+      "Restart animation after canceling animation immediately.": "FAIL"
+    }
+  },
+  "css/css-animations/event-order.tentative.html": {
+    "total": 6
+  },
+  "css/css-animations/flip-running-animation-via-variable.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/historical.html": {
+    "total": 1
+  },
+  "css/css-animations/idlharness.html": {
+    "total": 98
+  },
+  "css/css-animations/inheritance-pseudo-element.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/inheritance.html": {
+    "total": 16
+  },
+  "css/css-animations/jump-start-animation-before-phase.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/keyframes-rule-caching.html": {
+    "total": 1
+  },
+  "css/css-animations/keyframes-tree-scoped-property-with-var.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/keyframes-unrelated-custom-property.html": {
+    "total": 1
+  },
+  "css/css-animations/missing-values-first-keyframe.html": {
+    "total": 1
+  },
+  "css/css-animations/missing-values-last-keyframe.html": {
+    "total": 1
+  },
+  "css/css-animations/missing-values-middle-keyframe.html": {
+    "total": 1
+  },
+  "css/css-animations/nested-scale-animations.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/parent-after-change-style-pseudo-element-flicker.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/parsing/animation-composition-computed.tentative.html": {
+    "total": 1
+  },
+  "css/css-animations/parsing/animation-composition-invalid.tentative.html": {
+    "total": 4
+  },
+  "css/css-animations/parsing/animation-composition-valid.tentative.html": {
+    "total": 4
+  },
+  "css/css-animations/parsing/animation-computed.html": {
+    "total": 15
+  },
+  "css/css-animations/parsing/animation-delay-computed.html": {
+    "total": 4
+  },
+  "css/css-animations/parsing/animation-delay-invalid.html": {
+    "total": 5
+  },
+  "css/css-animations/parsing/animation-delay-valid.html": {
+    "total": 4
+  },
+  "css/css-animations/parsing/animation-direction-computed.html": {
+    "total": 1
+  },
+  "css/css-animations/parsing/animation-direction-invalid.html": {
+    "total": 4
+  },
+  "css/css-animations/parsing/animation-direction-valid.html": {
+    "total": 5
+  },
+  "css/css-animations/parsing/animation-duration-computed.html": {
+    "total": 15
+  },
+  "css/css-animations/parsing/animation-duration-invalid.html": {
+    "total": 6
+  },
+  "css/css-animations/parsing/animation-duration-valid.html": {
+    "total": 3
+  },
+  "css/css-animations/parsing/animation-fill-mode-computed.html": {
+    "total": 1
+  },
+  "css/css-animations/parsing/animation-fill-mode-invalid.html": {
+    "total": 4
+  },
+  "css/css-animations/parsing/animation-fill-mode-valid.html": {
+    "total": 5
+  },
+  "css/css-animations/parsing/animation-invalid.html": {
+    "total": 8
+  },
+  "css/css-animations/parsing/animation-iteration-count-computed.html": {
+    "total": 2
+  },
+  "css/css-animations/parsing/animation-iteration-count-invalid.html": {
+    "total": 5
+  },
+  "css/css-animations/parsing/animation-iteration-count-valid.html": {
+    "total": 5
+  },
+  "css/css-animations/parsing/animation-name-computed.html": {
+    "total": 27
+  },
+  "css/css-animations/parsing/animation-name-edge-cases.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/parsing/animation-name-invalid.html": {
+    "total": 9
+  },
+  "css/css-animations/parsing/animation-name-valid.html": {
+    "total": 27
+  },
+  "css/css-animations/parsing/animation-play-state-computed.html": {
+    "total": 1
+  },
+  "css/css-animations/parsing/animation-play-state-invalid.html": {
+    "total": 4
+  },
+  "css/css-animations/parsing/animation-play-state-valid.html": {
+    "total": 3
+  },
+  "css/css-animations/parsing/animation-range-end-computed.html": {
+    "total": 29
+  },
+  "css/css-animations/parsing/animation-range-end-invalid.html": {
+    "total": 14
+  },
+  "css/css-animations/parsing/animation-range-end-valid.html": {
+    "total": 24
+  },
+  "css/css-animations/parsing/animation-range-shorthand-end-zero-offset.html": {
+    "total": 6
+  },
+  "css/css-animations/parsing/animation-range-shorthand.html": {
+    "total": 133
+  },
+  "css/css-animations/parsing/animation-range-start-computed.html": {
+    "total": 30
+  },
+  "css/css-animations/parsing/animation-range-start-invalid.html": {
+    "total": 11
+  },
+  "css/css-animations/parsing/animation-range-start-valid.html": {
+    "total": 26
+  },
+  "css/css-animations/parsing/animation-shorthand.html": {
+    "total": 36
+  },
+  "css/css-animations/parsing/animation-timing-function-invalid.html": {
+    "total": 7
+  },
+  "css/css-animations/parsing/animation-valid.html": {
+    "total": 12
+  },
+  "css/css-animations/parsing/keyframe-selectors.html": {
+    "total": 14
+  },
+  "css/css-animations/parsing/keyframes-allowed-properties.html": {
+    "total": 1
+  },
+  "css/css-animations/parsing/keyframes-name-invalid.html": {
+    "total": 20
+  },
+  "css/css-animations/parsing/keyframes-name-valid.html": {
+    "total": 39
+  },
+  "css/css-animations/pending-style-changes-001.html": {
+    "total": 2
+  },
+  "css/css-animations/responsive/column-rule-color-001.html": {
+    "total": 2
+  },
+  "css/css-animations/responsive/column-width-001.html": {
+    "total": 3
+  },
+  "css/css-animations/responsive/fill-forwards-viewport-units.html": {
+    "total": 1
+  },
+  "css/css-animations/responsive/line-height.html": {
+    "total": 1
+  },
+  "css/css-animations/revert-rule-keyframes-dynamic.html": {
+    "total": 2,
+    "failures": {
+      "revert-rule in keyframes, reverted-to value changing (custom property)": "FAIL",
+      "revert-rule in keyframes, reverted-to value changing (standard property)": "FAIL"
+    }
+  },
+  "css/css-animations/revert-rule-keyframes.html": {
+    "total": 2,
+    "failures": {
+      "revert-rule in keyframes (--x)": "FAIL",
+      "revert-rule in keyframes (width)": "FAIL"
+    }
+  },
+  "css/css-animations/sample-on-last-keyframe.html": {
+    "total": 1
+  },
+  "css/css-animations/stability/animation-event-destroy-renderer.html?animationiteration": {
+    "total": 1
+  },
+  "css/css-animations/stability/animation-event-destroy-renderer.html?animationstart": {
+    "total": 1
+  },
+  "css/css-animations/style-animation-parsing.html": {
+    "total": 5
+  },
+  "css/css-animations/svg-color-visited-currentcolor.html": {
+    "total": 3
+  },
+  "css/css-animations/svg-transform-animation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/svg-use-transform-keyframes-custom-property-override.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/text-decoration-inset-auto.html": {
+    "total": 90
+  },
+  "css/css-animations/transform-animation-under-large-scale.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/transition-properties-not-animatable.html": {
+    "total": 126
+  },
+  "css/css-animations/transition-ready-time-offscreen.html": {
+    "total": 1
+  },
+  "css/css-animations/translation-animation-on-important-property.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/translation-animation-subpixel-offset.html": {
+    "reftest": "PASS"
+  }
+}

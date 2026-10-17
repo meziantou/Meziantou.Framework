@@ -1,0 +1,153 @@
+{
+  "spec": {
+    "title": "Early detection of input events",
+    "url": "https://wicg.github.io/is-input-pending/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Scheduling"
+        ]
+      }
+    },
+    "idlNames": {
+      "IsInputPendingOptions": {
+        "fragment": "dictionary IsInputPendingOptions {\n  boolean includeContinuous = false;\n};",
+        "type": "dictionary",
+        "name": "IsInputPendingOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "includeContinuous",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/is-input-pending/#dom-isinputpendingoptions-includecontinuous"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/is-input-pending/#dom-isinputpendingoptions"
+      },
+      "Scheduling": {
+        "fragment": "[Exposed=Window] interface Scheduling {\n   boolean isInputPending(optional IsInputPendingOptions isInputPendingOptions = {});\n};",
+        "type": "interface",
+        "name": "Scheduling",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "isInputPending",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "isInputPendingOptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IsInputPendingOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/is-input-pending/#dom-scheduling-isinputpending"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/is-input-pending/#dom-scheduling"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n  readonly attribute Scheduling scheduling;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "scheduling",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Scheduling"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/is-input-pending/#dom-navigator-scheduling"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Scheduling"
+      ]
+    },
+    "dependencies": {
+      "IsInputPendingOptions": [],
+      "Scheduling": [
+        "IsInputPendingOptions"
+      ],
+      "Navigator": [
+        "Scheduling"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

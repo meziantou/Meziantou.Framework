@@ -1,0 +1,296 @@
+{
+  "domparsing/Comment-serialization-double-hyphen.html": {
+    "total": 3
+  },
+  "domparsing/DOMParser-parseFromString-encoding.html": {
+    "total": 4
+  },
+  "domparsing/DOMParser-parseFromString-html.html": {
+    "total": 10
+  },
+  "domparsing/DOMParser-parseFromString-stylesheets.html": {
+    "total": 6
+  },
+  "domparsing/DOMParser-parseFromString-url-base-pushstate.html": {
+    "total": 45
+  },
+  "domparsing/DOMParser-parseFromString-url-base.html": {
+    "total": 45
+  },
+  "domparsing/DOMParser-parseFromString-url-moretests.html": {
+    "total": 31
+  },
+  "domparsing/DOMParser-parseFromString-url-pushstate.html": {
+    "total": 45
+  },
+  "domparsing/DOMParser-parseFromString-url.html": {
+    "total": 45
+  },
+  "domparsing/DOMParser-parseFromString-xml-CDATA.html": {
+    "total": 8
+  },
+  "domparsing/DOMParser-parseFromString-xml-doctype.html": {
+    "total": 3
+  },
+  "domparsing/DOMParser-parseFromString-xml-empty-nodes.html": {
+    "total": 8
+  },
+  "domparsing/DOMParser-parseFromString-xml-internal-subset.html": {
+    "total": 1
+  },
+  "domparsing/DOMParser-parseFromString-xml-parsererror.html": {
+    "total": 23
+  },
+  "domparsing/DOMParser-parseFromString-xml-scripting-support-disabled.html": {
+    "total": 13
+  },
+  "domparsing/DOMParser-parseFromString-xml.html": {
+    "total": 20
+  },
+  "domparsing/DOMParser-xml-character-entities.html": {
+    "total": 8
+  },
+  "domparsing/XMLSerializer-serializeToString.html": {
+    "total": 33,
+    "failures": {
+      "Check if a prefix bound to an empty namespace URI (\"no namespace\") serialize": "FAIL",
+      "Check if attribute serialization takes into account of the same prefix declared in an ancestor element": "FAIL",
+      "Check if the prefix of an attribute is NOT preserved in a case where neither its prefix nor its namespace URI is not already used.": "FAIL"
+    }
+  },
+  "domparsing/createContextualFragment-xhtml.xhtml": {
+    "total": 4
+  },
+  "domparsing/createContextualFragment.html": {
+    "total": 35
+  },
+  "domparsing/domparser-spurious-attributes.html": {
+    "total": 2
+  },
+  "domparsing/innerhtml-01.xhtml": {
+    "total": 2
+  },
+  "domparsing/innerhtml-03.xhtml": {
+    "total": 8
+  },
+  "domparsing/innerhtml-04.html": {
+    "total": 1
+  },
+  "domparsing/innerhtml-05.xhtml": {
+    "total": 1,
+    "failures": {
+      "innerHTML in XHTML": "FAIL"
+    }
+  },
+  "domparsing/innerhtml-06.html": {
+    "total": 1
+  },
+  "domparsing/innerhtml-07.html": {
+    "total": 5
+  },
+  "domparsing/innerhtml-08.html": {
+    "total": 2
+  },
+  "domparsing/innerhtml-empty-document-element.html": {
+    "total": 1
+  },
+  "domparsing/innerhtml-li-autoclosing.html": {
+    "total": 7
+  },
+  "domparsing/innerhtml-mxss.sub.html": {
+    "total": 60
+  },
+  "domparsing/insert-adjacent-parent-errors.html": {
+    "total": 7
+  },
+  "domparsing/insert-adjacent.html": {
+    "total": 4
+  },
+  "domparsing/insert_adjacent_html-xhtml.xhtml": {
+    "total": 30
+  },
+  "domparsing/insert_adjacent_html.html": {
+    "total": 31
+  },
+  "domparsing/outerhtml-01.html": {
+    "total": 1
+  },
+  "domparsing/outerhtml-02.html": {
+    "total": 5
+  },
+  "domparsing/outerhtml-03.html": {
+    "total": 4
+  },
+  "domparsing/parsed-document-origin.window.js": {
+    "total": 7
+  },
+  "domparsing/style_attribute_html.html": {
+    "total": 4
+  },
+  "domparsing/svg-template.html": {
+    "total": 2
+  },
+  "domparsing/tentative/all-stream-methods-with-trusted-types-no-policy.html": {
+    "total": 12
+  },
+  "domparsing/tentative/positional-methods-with-parser-options.html": {
+    "total": 160,
+    "failures": {
+      "Policies can disable scripts but not enable them: Element.afterHTMLUnsafe (runScripts=false => true)": "FAIL",
+      "Policies can disable scripts but not enable them: Element.appendHTMLUnsafe (runScripts=false => true)": "FAIL",
+      "Policies can disable scripts but not enable them: Element.beforeHTMLUnsafe (runScripts=false => true)": "FAIL",
+      "Policies can disable scripts but not enable them: Element.prependHTMLUnsafe (runScripts=false => true)": "FAIL",
+      "Policies can disable scripts but not enable them: Element.replaceWithHTMLUnsafe (runScripts=false => true)": "FAIL",
+      "Policies can disable scripts but not enable them: ShadowRoot.afterHTMLUnsafe (runScripts=false => true)": "FAIL",
+      "Policies can disable scripts but not enable them: ShadowRoot.appendHTMLUnsafe (runScripts=false => true)": "FAIL",
+      "Policies can disable scripts but not enable them: ShadowRoot.beforeHTMLUnsafe (runScripts=false => true)": "FAIL",
+      "Policies can disable scripts but not enable them: ShadowRoot.prependHTMLUnsafe (runScripts=false => true)": "FAIL",
+      "Policies can disable scripts but not enable them: ShadowRoot.replaceWithHTMLUnsafe (runScripts=false => true)": "FAIL"
+    }
+  },
+  "domparsing/tentative/positional-methods-with-trusted-types.html": {
+    "total": 91
+  },
+  "domparsing/tentative/positional-methods.html": {
+    "total": 378
+  },
+  "domparsing/tentative/positional-template-child.html": {
+    "total": 12
+  },
+  "domparsing/tentative/stream-append-html-unsafe.html": {
+    "total": 14,
+    "failures": {
+      "Aborting streamAppendHTMLUnsafe()": "FAIL"
+    }
+  },
+  "domparsing/tentative/stream-append-html.html": {
+    "total": 17,
+    "failures": {
+      "Aborting streamAppendHTML()": "FAIL"
+    }
+  },
+  "domparsing/tentative/stream-fragment-context.html": {
+    "total": 54
+  },
+  "domparsing/tentative/stream-html-custom-element-sanitizer.html": {
+    "total": 80
+  },
+  "domparsing/tentative/stream-html-custom-element.html": {
+    "total": 24
+  },
+  "domparsing/tentative/stream-html-defer-async-script.html": {
+    "total": 6,
+    "failures": {
+      "element.streamAppendHTMLUnsafe with defer/async scripts": "FAIL",
+      "element.streamAppendHTMLUnsafe with defer/module scripts should not execute on abort": "FAIL",
+      "element.streamHTMLUnsafe with defer/async scripts": "FAIL",
+      "element.streamHTMLUnsafe with defer/module scripts should not execute on abort": "FAIL"
+    }
+  },
+  "domparsing/tentative/stream-html-parser-blocking-script.html": {
+    "total": 8,
+    "failures": {
+      "DOM mutations inside streamed parser-blocking script maintain correct insertion order": "FAIL",
+      "External script tag split across chunk boundaries parses and executes correctly": "FAIL",
+      "Multiple parser-blocking scripts with out-of-order fetch times execute in document order": "FAIL",
+      "streamHTMLUnsafe with parser blocking script should process in order": "FAIL",
+      "streamHTMLUnsafe with parser-blocking script should not execute after abort": "FAIL"
+    }
+  },
+  "domparsing/tentative/stream-html-run-scripts-option.html": {
+    "total": 8
+  },
+  "domparsing/tentative/stream-html-sanitizer-safe.html": {
+    "total": 30
+  },
+  "domparsing/tentative/stream-html-sanitizer.html": {
+    "total": 204
+  },
+  "domparsing/tentative/stream-html-script-safe.html": {
+    "total": 12
+  },
+  "domparsing/tentative/stream-html-unsafe.html": {
+    "total": 15,
+    "failures": {
+      "Aborting streamHTMLUnsafe()": "FAIL"
+    }
+  },
+  "domparsing/tentative/stream-html-with-declarative-shadow-root.html": {
+    "total": 36
+  },
+  "domparsing/tentative/stream-html-with-trusted-types-adopt.html": {
+    "total": 24
+  },
+  "domparsing/tentative/stream-html-with-trusted-types-error-in-policy.html": {
+    "total": 6
+  },
+  "domparsing/tentative/stream-html-with-trusted-types-from-non-tt.html": {
+    "total": 12
+  },
+  "domparsing/tentative/stream-html-with-trusted-types-no-createParserOptions.html": {
+    "total": 10
+  },
+  "domparsing/tentative/stream-html-with-trusted-types-no-policy.html": {
+    "total": 10
+  },
+  "domparsing/tentative/stream-html-with-trusted-types-pass-trusted.html": {
+    "total": 10
+  },
+  "domparsing/tentative/stream-html-with-trusted-types-runScripts-cannot-be-turned-on.html": {
+    "total": 10,
+    "failures": {
+      "The default TT policy cannot turn runScripts on if they are off in the options for streamAfterHTMLUnsafe": "FAIL",
+      "The default TT policy cannot turn runScripts on if they are off in the options for streamAppendHTMLUnsafe": "FAIL",
+      "The default TT policy cannot turn runScripts on if they are off in the options for streamBeforeHTMLUnsafe": "FAIL",
+      "The default TT policy cannot turn runScripts on if they are off in the options for streamHTMLUnsafe": "FAIL",
+      "The default TT policy cannot turn runScripts on if they are off in the options for streamPrependHTMLUnsafe": "FAIL"
+    }
+  },
+  "domparsing/tentative/stream-html-with-trusted-types-runScripts-off.html": {
+    "total": 10
+  },
+  "domparsing/tentative/stream-html-with-trusted-types-sanitizer.html": {
+    "total": 20
+  },
+  "domparsing/tentative/stream-html.html": {
+    "total": 15,
+    "failures": {
+      "Aborting streamHTML()": "FAIL"
+    }
+  },
+  "domparsing/tentative/stream-insertion-logic.html": {
+    "total": 52
+  },
+  "domparsing/tentative/stream-positional-template-child.html": {
+    "total": 6
+  },
+  "domparsing/tentative/stream-positional.html": {
+    "total": 88
+  },
+  "domparsing/tentative/stream-sanitizer-customized-builtins.html": {
+    "total": 30
+  },
+  "domparsing/tentative/stream-sanitizer-img-ctor.html": {
+    "total": 65
+  },
+  "domparsing/tentative/stream-sanitizer-resource-fetch.html": {
+    "total": 18
+  },
+  "domparsing/tentative/stream-tokenizer-context.html": {
+    "total": 32,
+    "failures": {
+      "streamAppendHTMLUnsafe on <script> initializes tokenizer in Script data state": "FAIL",
+      "streamHTMLUnsafe on <script> initializes tokenizer in Script data state": "FAIL",
+      "streamPrependHTMLUnsafe on <script> initializes tokenizer in Script data state": "FAIL"
+    }
+  },
+  "domparsing/xml-parse-serialize-roundtrip.html": {
+    "total": 2
+  },
+  "domparsing/xml-serialization.xhtml": {
+    "total": 17
+  },
+  "domparsing/xmldomparser.html": {
+    "total": 1
+  }
+}

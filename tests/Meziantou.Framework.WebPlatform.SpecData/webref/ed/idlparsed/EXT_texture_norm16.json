@@ -1,0 +1,205 @@
+{
+  "spec": {
+    "title": "WebGL EXT_texture_norm16 Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/EXT_texture_norm16/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "EXT_texture_norm16"
+        ],
+        "Worker": [
+          "EXT_texture_norm16"
+        ]
+      }
+    },
+    "idlNames": {
+      "EXT_texture_norm16": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface EXT_texture_norm16 {\n  const GLenum R16_EXT = 0x822A;\n  const GLenum RG16_EXT = 0x822C;\n  const GLenum RGB16_EXT = 0x8054;\n  const GLenum RGBA16_EXT = 0x805B;\n  const GLenum R16_SNORM_EXT = 0x8F98;\n  const GLenum RG16_SNORM_EXT = 0x8F99;\n  const GLenum RGB16_SNORM_EXT = 0x8F9A;\n  const GLenum RGBA16_SNORM_EXT = 0x8F9B;\n};",
+        "type": "interface",
+        "name": "EXT_texture_norm16",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "R16_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x822A"
+            }
+          },
+          {
+            "type": "const",
+            "name": "RG16_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x822C"
+            }
+          },
+          {
+            "type": "const",
+            "name": "RGB16_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8054"
+            }
+          },
+          {
+            "type": "const",
+            "name": "RGBA16_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x805B"
+            }
+          },
+          {
+            "type": "const",
+            "name": "R16_SNORM_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8F98"
+            }
+          },
+          {
+            "type": "const",
+            "name": "RG16_SNORM_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8F99"
+            }
+          },
+          {
+            "type": "const",
+            "name": "RGB16_SNORM_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8F9A"
+            }
+          },
+          {
+            "type": "const",
+            "name": "RGBA16_SNORM_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8F9B"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EXT_texture_norm16"
+      ],
+      "Worker": [
+        "EXT_texture_norm16"
+      ]
+    },
+    "dependencies": {
+      "EXT_texture_norm16": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

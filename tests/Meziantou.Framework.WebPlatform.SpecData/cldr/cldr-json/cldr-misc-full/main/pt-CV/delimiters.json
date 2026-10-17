@@ -1,0 +1,16 @@
+{
+  "main": {
+    "pt-CV": {
+      "identity": {
+        "language": "pt",
+        "territory": "CV"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

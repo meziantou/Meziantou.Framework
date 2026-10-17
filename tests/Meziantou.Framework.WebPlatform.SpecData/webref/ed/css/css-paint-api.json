@@ -1,0 +1,17 @@
+{
+  "spec": {
+    "title": "CSS Painting API Level 1",
+    "url": "https://drafts.css-houdini.org/css-paint-api-1/"
+  },
+  "properties": [],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "paint()",
+      "value": "paint( <ident>, <declaration-value>? )",
+      "href": "https://drafts.css-houdini.org/css-paint-api-1/#funcdef-paint",
+      "type": "function"
+    }
+  ]
+}

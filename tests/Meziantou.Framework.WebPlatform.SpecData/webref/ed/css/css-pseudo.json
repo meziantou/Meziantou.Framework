@@ -1,0 +1,98 @@
+{
+  "spec": {
+    "title": "CSS Pseudo-Elements Module Level 4",
+    "url": "https://drafts.csswg.org/css-pseudo-4/"
+  },
+  "properties": [],
+  "atrules": [],
+  "selectors": [
+    {
+      "name": "::first-line",
+      "prose": "The ::first-line pseudo-element represents the contents of the first formatted line of its originating element.",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-first-line",
+      "value": "::first-line"
+    },
+    {
+      "name": "::first-letter",
+      "prose": "The ::first-letter pseudo-element represents the first Letter, Number, or Symbol (Unicode category L*, N*, or S*) typographic character unit on the first formatted line of its originating element (the first letter) as well as its associated punctuation. Collectively, this text is the first-letter text. The ::first-letter pseudo-element can be used to create “initial caps” and “drop caps”, which are common typographic effects.",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-first-letter",
+      "values": [
+        {
+          "name": "::prefix",
+          "prose": "To allow independent styling of the first letter itself and its adjacent punctuation, associated preceding punctuation is represented by the ::prefix sub-pseudo-element of the ::first-letter pseudo-element (::first-letter::prefix); and associated following punctuation is represented by the ::suffix sub-pseudo-element of the ::first-letter pseudo-element (::first-letter::suffix). See § 2.2.1 First Letters and Associated Punctuation, below.",
+          "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-first-letter-prefix",
+          "type": "selector",
+          "value": "::prefix"
+        },
+        {
+          "name": "::suffix",
+          "prose": "To allow independent styling of the first letter itself and its adjacent punctuation, associated preceding punctuation is represented by the ::prefix sub-pseudo-element of the ::first-letter pseudo-element (::first-letter::prefix); and associated following punctuation is represented by the ::suffix sub-pseudo-element of the ::first-letter pseudo-element (::first-letter::suffix). See § 2.2.1 First Letters and Associated Punctuation, below.",
+          "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-first-letter-suffix",
+          "type": "selector",
+          "value": "::suffix"
+        }
+      ],
+      "value": "::first-letter"
+    },
+    {
+      "name": "::selection",
+      "prose": "The ::selection pseudo-element represents the portion of a document that has been selected as the target or object of some possible future user-agent operation(s). It applies, for example, to selected text within an editable text field, which would be copied by a copy operation or replaced by a paste operation.",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-selection",
+      "value": "::selection"
+    },
+    {
+      "name": "::search-text",
+      "prose": "The ::search-text pseudo-element represents text identified by the user agent’s find-in-page feature. Since not all UAs style matched text in ways expressible with the highlight pseudo-elements, this pseudo-element is optional to implement. The :current pseudo-class (but not ::current()) may be combined with ::search-text to represent the currently focused match instance. The :past and :future pseudo-classes are reserved for analogous use in the future. Any unsupported combination of these pseudo-classes with ::search-text must be treated as invalid.",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-search-text",
+      "value": "::search-text"
+    },
+    {
+      "name": "::target-text",
+      "prose": "The ::target-text pseudo-element represents text directly targeted by the document URL’s fragment, if any.",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-target-text",
+      "value": "::target-text"
+    },
+    {
+      "name": "::spelling-error",
+      "prose": "The ::spelling-error pseudo-element represents a portion of text that has been flagged by the user agent as misspelled.",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-spelling-error",
+      "value": "::spelling-error"
+    },
+    {
+      "name": "::grammar-error",
+      "prose": "The ::grammar-error pseudo-element represents a portion of text that has been flagged by the user agent as grammatically incorrect.",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-grammar-error",
+      "value": "::grammar-error"
+    },
+    {
+      "name": "::highlight()",
+      "value": "::highlight(<custom-ident>)",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-highlight-custom-ident"
+    },
+    {
+      "name": "::before",
+      "prose": "Represents a styleable child pseudo-element immediately before the originating element’s actual content.",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-before",
+      "value": "::before"
+    },
+    {
+      "name": "::after",
+      "prose": "Represents a styleable child pseudo-element immediately after the originating element’s actual content.",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-after",
+      "value": "::after"
+    },
+    {
+      "name": "::marker",
+      "prose": "The ::marker pseudo-element represents the automatically generated marker box of a list item. (See [CSS-DISPLAY-3] and [CSS-LISTS-3].)",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-marker",
+      "value": "::marker"
+    },
+    {
+      "name": "::details-content",
+      "prose": "The ::details-content pseudo-element targets the additional information in a details element that can be expanded or collapsed. It is an element-backed pseudo-element.",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-details-content",
+      "value": "::details-content"
+    }
+  ],
+  "values": []
+}

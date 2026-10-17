@@ -1,0 +1,68 @@
+{
+  "spec": {
+    "title": "WebGL OES_fbo_render_mipmap Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/OES_fbo_render_mipmap/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "OES_fbo_render_mipmap"
+        ],
+        "Worker": [
+          "OES_fbo_render_mipmap"
+        ]
+      }
+    },
+    "idlNames": {
+      "OES_fbo_render_mipmap": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface OES_fbo_render_mipmap {\n};",
+        "type": "interface",
+        "name": "OES_fbo_render_mipmap",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "OES_fbo_render_mipmap"
+      ],
+      "Worker": [
+        "OES_fbo_render_mipmap"
+      ]
+    },
+    "dependencies": {
+      "OES_fbo_render_mipmap": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

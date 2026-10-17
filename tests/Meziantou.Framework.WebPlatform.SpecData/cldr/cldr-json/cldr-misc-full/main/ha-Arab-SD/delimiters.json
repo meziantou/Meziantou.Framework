@@ -1,0 +1,17 @@
+{
+  "main": {
+    "ha-Arab-SD": {
+      "identity": {
+        "language": "ha",
+        "script": "Arab",
+        "territory": "SD"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

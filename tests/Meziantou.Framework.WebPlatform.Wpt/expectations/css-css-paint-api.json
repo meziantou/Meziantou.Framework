@@ -1,0 +1,356 @@
+{
+  "css/css-paint-api/background-image-alpha.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/background-image-multiple.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/background-image-tiled.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/background-repeat-x.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/color-custom-property-animation.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/dynamic-import.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/geometry-background-image-001.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/geometry-background-image-002.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/geometry-background-image-tiled-001.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/geometry-background-image-tiled-002.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/geometry-background-image-tiled-003.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/geometry-border-image-001.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/geometry-border-image-002.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/geometry-border-image-003.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/geometry-border-image-004.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/geometry-border-image-005.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/geometry-with-float-size.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/hidpi/canvas-reset.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/hidpi/canvas-transform.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/hidpi/device-pixel-ratio.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/idlharness.html": {
+    "total": 20,
+    "failures": {
+      "CSS namespace: attribute paintWorklet": "FAIL"
+    }
+  },
+  "css/css-paint-api/invalid-image-constructor-error.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/invalid-image-paint-error.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/invalid-image-pending-script.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/no-op-animation.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/non-registered-property-value.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/one-custom-property-animation-half-opaque.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/one-custom-property-animation.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/overdraw.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint-arguments.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint-function-arguments-var.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint-function-arguments.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint-function-this-value.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint2d-canvasFilter.tentative.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint2d-composite.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint2d-conicGradient.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint2d-filter.https.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-paint-api/paint2d-gradient.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint2d-image.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint2d-imageSmoothingQuality.high.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint2d-imageSmoothingQuality.low.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint2d-imageSmoothingQuality.med.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint2d-paths.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint2d-rects.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint2d-reset.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint2d-roundRect.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint2d-shadows.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/paint2d-transform.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-001.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-002.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-003.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-004.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-005.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-006.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-007.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-008.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-009.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-010.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-011.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-012.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-013.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-014.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-015.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-016.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-017.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-018.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-019.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-020.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-021.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parse-input-arguments-022.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/parsing/paint-function-valid.https.html": {
+    "total": 8
+  },
+  "css/css-paint-api/registered-property-interpolation-001.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-interpolation-002.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-interpolation-003.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-interpolation-004.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-interpolation-005.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-interpolation-006.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-interpolation-007.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-interpolation-008.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-interpolation-009.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-interpolation-010.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-invalidation-001.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-invalidation-002.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-stylemap.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-utf8-animation.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-001.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-002.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-003.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-004.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-005.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-006.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-007.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-008.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-009.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-010.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-011.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-012.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-013.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-014.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-015.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-016.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-017.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/registered-property-value-018.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/roundrect.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/setTransform-001.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/setTransform-002.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/setTransform-003.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/setTransform-004.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/style-background-image.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/style-before-pseudo.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/style-first-letter-pseudo.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/top-level-await.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/two-custom-property-animation.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/two-element-custom-property-animation.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/two-element-one-custom-property-animation.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/valid-image-after-load.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-paint-api/valid-image-before-load.https.html": {
+    "reftest": "PASS"
+  }
+}

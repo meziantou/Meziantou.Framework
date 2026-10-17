@@ -1,0 +1,237 @@
+{
+  "css/css-scroll-anchoring/abspos-containing-block-outside-scroller.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/abspos-contributes-to-static-parent-bounds.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/abspos-in-multicol-001.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/abspos-in-multicol-002.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/abspos-in-multicol-003.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/adjustment-followed-by-scrollBy.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/adjustments-in-scroll-event-handler.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/after-scrollable-range-shrinkage-001.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/after-scrollable-range-shrinkage-002.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/after-scrollable-range-shrinkage-003.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/after-scrollable-range-shrinkage-004.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/ancestor-change-heuristic.html": {
+    "total": 2
+  },
+  "css/css-scroll-anchoring/anchor-inside-iframe.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/anchor-inside-textarea.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/anchor-updates-after-explicit-scroll.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/anchoring-with-bounds-clamping-div.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/anchoring-with-bounds-clamping.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/anonymous-block-box.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/basic.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/clamp-negative-overflow.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/clipped-scrollers-skipped.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/contain-paint-offscreen-container.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/contenteditable-insert-line-at-top.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "The scroll position is unchanged when inserting a new line at the top of contenteditable": "TIMEOUT"
+    }
+  },
+  "css/css-scroll-anchoring/contenteditable-near-cursor.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Ensure scroll is adjusted to keep element next to the cursor stable": "FAIL"
+    }
+  },
+  "css/css-scroll-anchoring/descend-into-container-with-float.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/descend-into-container-with-overflow.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/device-pixel-adjustment.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/dirty-contents-reselect-anchor.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/editable-scroll-anchor.html": {
+    "total": 2
+  },
+  "css/css-scroll-anchoring/exclude-fixed-position.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/exclude-inline.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/exclude-sticky.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/focus-prioritized.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/focused-element-in-excluded-subtree.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/focused-element-nested-anchor.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/focused-element-outside-scroller.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/fragment-scrolling-anchors.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/heuristic-with-offset-update-from-scroll-event-listener.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/heuristic-with-offset-update.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/history-restore-anchors.html": {
+    "total": 1,
+    "failures": {
+      "Verify scroll anchoring interaction with history restoration": "FAIL"
+    }
+  },
+  "css/css-scroll-anchoring/ignore-adjustments-while-scrolling-to-anchor.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/image-001.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/infinite-scroll-event.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/inheritance.html": {
+    "total": 2
+  },
+  "css/css-scroll-anchoring/inline-block-002.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/inline-block.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/multicol-fragmented-anchor.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/negative-layout-overflow.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/nested-overflow-subtree-layout-vertical.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-anchoring/nested-overflow-subtree-layout.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-anchoring/opt-out-dynamic-scroller.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/opt-out-dynamic.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/opt-out-inner-table.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/opt-out-table.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/opt-out.html": {
+    "total": 2
+  },
+  "css/css-scroll-anchoring/parsing/overflow-anchor-computed.html": {
+    "total": 2
+  },
+  "css/css-scroll-anchoring/parsing/overflow-anchor-invalid.html": {
+    "total": 2
+  },
+  "css/css-scroll-anchoring/parsing/overflow-anchor-valid.html": {
+    "total": 2
+  },
+  "css/css-scroll-anchoring/position-change-heuristic-display-none-change.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/position-change-heuristic-display-none-to-abspos-change.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/position-change-heuristic-ib-split.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/position-change-heuristic-in-nested-scroll-box.html": {
+    "total": 2
+  },
+  "css/css-scroll-anchoring/position-change-heuristic.html": {
+    "total": 2
+  },
+  "css/css-scroll-anchoring/reading-scroll-forces-anchoring.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/scroll-anchoring-editing-content-change.html": {
+    "total": 3
+  },
+  "css/css-scroll-anchoring/scroll-padding-affects-anchoring.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/shadow-dom-subscroller.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/start-edge-in-block-layout-direction.html": {
+    "total": 10
+  },
+  "css/css-scroll-anchoring/subtree-exclusion.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/text-anchor-in-vertical-rl.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/vertical-rl-viewport-size-change-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-anchoring/vertical-rl-viewport-size-change-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-anchoring/wrapped-text.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/zero-scroll-offset-001.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/zero-scroll-offset-002.html": {
+    "total": 1
+  }
+}

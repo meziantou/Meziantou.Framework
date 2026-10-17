@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ksh": {
+      "identity": {
+        "language": "ksh"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "‚",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

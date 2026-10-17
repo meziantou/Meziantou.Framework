@@ -1,0 +1,16 @@
+{
+  "main": {
+    "pi-Latn": {
+      "identity": {
+        "language": "pi",
+        "script": "Latn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

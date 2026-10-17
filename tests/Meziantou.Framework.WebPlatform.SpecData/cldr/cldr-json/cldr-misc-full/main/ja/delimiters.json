@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ja": {
+      "identity": {
+        "language": "ja"
+      },
+      "delimiters": {
+        "quotationStart": "「",
+        "quotationEnd": "」",
+        "alternateQuotationStart": "『",
+        "alternateQuotationEnd": "』"
+      }
+    }
+  }
+}

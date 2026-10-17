@@ -1,0 +1,1972 @@
+{
+  "spec": {
+    "title": "MediaStream Image Capture",
+    "url": "https://w3c.github.io/mediacapture-image/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "ImageCapture"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "ImageCapture": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface ImageCapture {\n   constructor(MediaStreamTrack videoTrack);\n   Promise<Blob>              takePhoto(optional PhotoSettings photoSettings = {});\n   Promise<PhotoCapabilities> getPhotoCapabilities();\n   Promise<PhotoSettings>     getPhotoSettings();\n\n   Promise<ImageBitmap>       grabFrame();\n\n   readonly attribute MediaStreamTrack track;\n};",
+        "type": "interface",
+        "name": "ImageCapture",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "videoTrack",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaStreamTrack"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/mediacapture-image/#dom-imagecapture-imagecapture"
+          },
+          {
+            "type": "operation",
+            "name": "takePhoto",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "photoSettings",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PhotoSettings"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-image/#dom-imagecapture-takephoto"
+          },
+          {
+            "type": "operation",
+            "name": "getPhotoCapabilities",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PhotoCapabilities"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-image/#dom-imagecapture-getphotocapabilities"
+          },
+          {
+            "type": "operation",
+            "name": "getPhotoSettings",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PhotoSettings"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-image/#dom-imagecapture-getphotosettings"
+          },
+          {
+            "type": "operation",
+            "name": "grabFrame",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ImageBitmap"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-image/#dom-imagecapture-grabframe"
+          },
+          {
+            "type": "attribute",
+            "name": "track",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaStreamTrack"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-imagecapture-track"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-image/#imagecapture"
+      },
+      "PhotoCapabilities": {
+        "fragment": "dictionary PhotoCapabilities {\n  RedEyeReduction         redEyeReduction;\n  MediaSettingsRange      imageHeight;\n  MediaSettingsRange      imageWidth;\n  sequence<FillLightMode> fillLightMode;\n};",
+        "type": "dictionary",
+        "name": "PhotoCapabilities",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "redEyeReduction",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RedEyeReduction"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-photocapabilities-redeyereduction"
+          },
+          {
+            "type": "field",
+            "name": "imageHeight",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaSettingsRange"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-photocapabilities-imageheight"
+          },
+          {
+            "type": "field",
+            "name": "imageWidth",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaSettingsRange"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-photocapabilities-imagewidth"
+          },
+          {
+            "type": "field",
+            "name": "fillLightMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FillLightMode"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-photocapabilities-filllightmode"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-image/#dictdef-photocapabilities"
+      },
+      "PhotoSettings": {
+        "fragment": "dictionary PhotoSettings {\n  FillLightMode   fillLightMode;\n  double          imageHeight;\n  double          imageWidth;\n  boolean         redEyeReduction;\n};",
+        "type": "dictionary",
+        "name": "PhotoSettings",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "fillLightMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FillLightMode"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-photosettings-filllightmode"
+          },
+          {
+            "type": "field",
+            "name": "imageHeight",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-photosettings-imageheight"
+          },
+          {
+            "type": "field",
+            "name": "imageWidth",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-photosettings-imagewidth"
+          },
+          {
+            "type": "field",
+            "name": "redEyeReduction",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-photosettings-redeyereduction"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-image/#dictdef-photosettings"
+      },
+      "MediaSettingsRange": {
+        "fragment": "dictionary MediaSettingsRange {\n    double max;\n    double min;\n    double step;\n};",
+        "type": "dictionary",
+        "name": "MediaSettingsRange",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "max",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-mediasettingsrange-max"
+          },
+          {
+            "type": "field",
+            "name": "min",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-mediasettingsrange-min"
+          },
+          {
+            "type": "field",
+            "name": "step",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-mediasettingsrange-step"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-image/#dictdef-mediasettingsrange"
+      },
+      "RedEyeReduction": {
+        "fragment": "enum RedEyeReduction {\n  \"never\",\n  \"always\",\n  \"controllable\"\n};",
+        "type": "enum",
+        "name": "RedEyeReduction",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "never",
+            "href": "https://w3c.github.io/mediacapture-image/#dom-redeyereduction-never"
+          },
+          {
+            "type": "enum-value",
+            "value": "always",
+            "href": "https://w3c.github.io/mediacapture-image/#dom-redeyereduction-always"
+          },
+          {
+            "type": "enum-value",
+            "value": "controllable",
+            "href": "https://w3c.github.io/mediacapture-image/#dom-redeyereduction-controllable"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-image/#enumdef-redeyereduction"
+      },
+      "FillLightMode": {
+        "fragment": "enum FillLightMode {\n  \"auto\",\n  \"off\",\n  \"flash\"\n};",
+        "type": "enum",
+        "name": "FillLightMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "auto",
+            "href": "https://w3c.github.io/mediacapture-image/#dom-filllightmode-auto"
+          },
+          {
+            "type": "enum-value",
+            "value": "off",
+            "href": "https://w3c.github.io/mediacapture-image/#dom-filllightmode-off"
+          },
+          {
+            "type": "enum-value",
+            "value": "flash",
+            "href": "https://w3c.github.io/mediacapture-image/#dom-filllightmode-flash"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-image/#enumdef-filllightmode"
+      },
+      "ConstrainPoint2DParameters": {
+        "fragment": "dictionary ConstrainPoint2DParameters {\n  sequence<Point2D> exact;\n  sequence<Point2D> ideal;\n};",
+        "type": "dictionary",
+        "name": "ConstrainPoint2DParameters",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "exact",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Point2D"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-constrainpoint2dparameters-exact"
+          },
+          {
+            "type": "field",
+            "name": "ideal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Point2D"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-constrainpoint2dparameters-ideal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-image/#dictdef-constrainpoint2dparameters"
+      },
+      "ConstrainPoint2D": {
+        "fragment": "typedef (sequence<Point2D> or ConstrainPoint2DParameters) ConstrainPoint2D;",
+        "type": "typedef",
+        "name": "ConstrainPoint2D",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "typedef-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Point2D"
+                }
+              ]
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainPoint2DParameters"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-image/#typedefdef-constrainpoint2d"
+      },
+      "MeteringMode": {
+        "fragment": "enum MeteringMode {\n  \"none\",\n  \"manual\",\n  \"single-shot\",\n  \"continuous\"\n};",
+        "type": "enum",
+        "name": "MeteringMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://w3c.github.io/mediacapture-image/#dom-meteringmode-none"
+          },
+          {
+            "type": "enum-value",
+            "value": "manual",
+            "href": "https://w3c.github.io/mediacapture-image/#dom-meteringmode-manual"
+          },
+          {
+            "type": "enum-value",
+            "value": "single-shot",
+            "href": "https://w3c.github.io/mediacapture-image/#dom-meteringmode-single-shot"
+          },
+          {
+            "type": "enum-value",
+            "value": "continuous",
+            "href": "https://w3c.github.io/mediacapture-image/#dom-meteringmode-continuous"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-image/#enumdef-meteringmode"
+      },
+      "Point2D": {
+        "fragment": "dictionary Point2D {\n  double x = 0.0;\n  double y = 0.0;\n};",
+        "type": "dictionary",
+        "name": "Point2D",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "x",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0.0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-point2d-x"
+          },
+          {
+            "type": "field",
+            "name": "y",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0.0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-image/#dom-point2d-y"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-image/#dictdef-point2d"
+      }
+    },
+    "idlExtendedNames": {
+      "MediaTrackSupportedConstraints": [
+        {
+          "fragment": "partial dictionary MediaTrackSupportedConstraints {\n  boolean whiteBalanceMode = true;\n  boolean exposureMode = true;\n  boolean focusMode = true;\n  boolean pointsOfInterest = true;\n\n  boolean exposureCompensation = true;\n  boolean exposureTime = true;\n  boolean colorTemperature = true;\n  boolean iso = true;\n\n  boolean brightness = true;\n  boolean contrast = true;\n  boolean pan = true;\n  boolean saturation = true;\n  boolean sharpness = true;\n  boolean focusDistance = true;\n  boolean tilt = true;\n  boolean zoom = true;\n  boolean torch = true;\n};",
+          "type": "dictionary",
+          "name": "MediaTrackSupportedConstraints",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "whiteBalanceMode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-whitebalancemode"
+            },
+            {
+              "type": "field",
+              "name": "exposureMode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-exposuremode"
+            },
+            {
+              "type": "field",
+              "name": "focusMode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-focusmode"
+            },
+            {
+              "type": "field",
+              "name": "pointsOfInterest",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-pointsofinterest"
+            },
+            {
+              "type": "field",
+              "name": "exposureCompensation",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-exposurecompensation"
+            },
+            {
+              "type": "field",
+              "name": "exposureTime",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-exposuretime"
+            },
+            {
+              "type": "field",
+              "name": "colorTemperature",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-colortemperature"
+            },
+            {
+              "type": "field",
+              "name": "iso",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-iso"
+            },
+            {
+              "type": "field",
+              "name": "brightness",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-brightness"
+            },
+            {
+              "type": "field",
+              "name": "contrast",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-contrast"
+            },
+            {
+              "type": "field",
+              "name": "pan",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-pan"
+            },
+            {
+              "type": "field",
+              "name": "saturation",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-saturation"
+            },
+            {
+              "type": "field",
+              "name": "sharpness",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-sharpness"
+            },
+            {
+              "type": "field",
+              "name": "focusDistance",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-focusdistance"
+            },
+            {
+              "type": "field",
+              "name": "tilt",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-tilt"
+            },
+            {
+              "type": "field",
+              "name": "zoom",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-zoom"
+            },
+            {
+              "type": "field",
+              "name": "torch",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": {
+                "type": "boolean",
+                "value": true
+              },
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksupportedconstraints-torch"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "MediaTrackCapabilities": [
+        {
+          "fragment": "partial dictionary MediaTrackCapabilities {\n  sequence<DOMString>  whiteBalanceMode;\n  sequence<DOMString>  exposureMode;\n  sequence<DOMString>  focusMode;\n\n  MediaSettingsRange   exposureCompensation;\n  MediaSettingsRange   exposureTime;\n  MediaSettingsRange   colorTemperature;\n  MediaSettingsRange   iso;\n\n  MediaSettingsRange   brightness;\n  MediaSettingsRange   contrast;\n  MediaSettingsRange   saturation;\n  MediaSettingsRange   sharpness;\n\n  MediaSettingsRange   focusDistance;\n  MediaSettingsRange   pan;\n  MediaSettingsRange   tilt;\n  MediaSettingsRange   zoom;\n\n  sequence<boolean> torch;\n};",
+          "type": "dictionary",
+          "name": "MediaTrackCapabilities",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "whiteBalanceMode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  }
+                ]
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-whitebalancemode"
+            },
+            {
+              "type": "field",
+              "name": "exposureMode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  }
+                ]
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-exposuremode"
+            },
+            {
+              "type": "field",
+              "name": "focusMode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  }
+                ]
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-focusmode"
+            },
+            {
+              "type": "field",
+              "name": "exposureCompensation",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaSettingsRange"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-exposurecompensation"
+            },
+            {
+              "type": "field",
+              "name": "exposureTime",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaSettingsRange"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-exposuretime"
+            },
+            {
+              "type": "field",
+              "name": "colorTemperature",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaSettingsRange"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-colortemperature"
+            },
+            {
+              "type": "field",
+              "name": "iso",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaSettingsRange"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-iso"
+            },
+            {
+              "type": "field",
+              "name": "brightness",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaSettingsRange"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-brightness"
+            },
+            {
+              "type": "field",
+              "name": "contrast",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaSettingsRange"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-contrast"
+            },
+            {
+              "type": "field",
+              "name": "saturation",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaSettingsRange"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-saturation"
+            },
+            {
+              "type": "field",
+              "name": "sharpness",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaSettingsRange"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-sharpness"
+            },
+            {
+              "type": "field",
+              "name": "focusDistance",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaSettingsRange"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-focusdistance"
+            },
+            {
+              "type": "field",
+              "name": "pan",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaSettingsRange"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-pan"
+            },
+            {
+              "type": "field",
+              "name": "tilt",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaSettingsRange"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-tilt"
+            },
+            {
+              "type": "field",
+              "name": "zoom",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaSettingsRange"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-zoom"
+            },
+            {
+              "type": "field",
+              "name": "torch",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  }
+                ]
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackcapabilities-torch"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "MediaTrackConstraintSet": [
+        {
+          "fragment": "partial dictionary MediaTrackConstraintSet {\n  ConstrainDOMString           whiteBalanceMode;\n  ConstrainDOMString           exposureMode;\n  ConstrainDOMString           focusMode;\n  ConstrainPoint2D             pointsOfInterest;\n\n  ConstrainDouble              exposureCompensation;\n  ConstrainDouble              exposureTime;\n  ConstrainDouble              colorTemperature;\n  ConstrainDouble              iso;\n\n  ConstrainDouble              brightness;\n  ConstrainDouble              contrast;\n  ConstrainDouble              saturation;\n  ConstrainDouble              sharpness;\n\n  ConstrainDouble              focusDistance;\n  (boolean or ConstrainDouble) pan;\n  (boolean or ConstrainDouble) tilt;\n  (boolean or ConstrainDouble) zoom;\n\n  ConstrainBoolean             torch;\n};",
+          "type": "dictionary",
+          "name": "MediaTrackConstraintSet",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "whiteBalanceMode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ConstrainDOMString"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-whitebalancemode"
+            },
+            {
+              "type": "field",
+              "name": "exposureMode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ConstrainDOMString"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-exposuremode"
+            },
+            {
+              "type": "field",
+              "name": "focusMode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ConstrainDOMString"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-focusmode"
+            },
+            {
+              "type": "field",
+              "name": "pointsOfInterest",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ConstrainPoint2D"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-pointsofinterest"
+            },
+            {
+              "type": "field",
+              "name": "exposureCompensation",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ConstrainDouble"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-exposurecompensation"
+            },
+            {
+              "type": "field",
+              "name": "exposureTime",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ConstrainDouble"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-exposuretime"
+            },
+            {
+              "type": "field",
+              "name": "colorTemperature",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ConstrainDouble"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-colortemperature"
+            },
+            {
+              "type": "field",
+              "name": "iso",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ConstrainDouble"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-iso"
+            },
+            {
+              "type": "field",
+              "name": "brightness",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ConstrainDouble"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-brightness"
+            },
+            {
+              "type": "field",
+              "name": "contrast",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ConstrainDouble"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-contrast"
+            },
+            {
+              "type": "field",
+              "name": "saturation",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ConstrainDouble"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-saturation"
+            },
+            {
+              "type": "field",
+              "name": "sharpness",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ConstrainDouble"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-sharpness"
+            },
+            {
+              "type": "field",
+              "name": "focusDistance",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ConstrainDouble"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-focusdistance"
+            },
+            {
+              "type": "field",
+              "name": "pan",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": true,
+                "idlType": [
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "ConstrainDouble"
+                  }
+                ]
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-pan"
+            },
+            {
+              "type": "field",
+              "name": "tilt",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": true,
+                "idlType": [
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "ConstrainDouble"
+                  }
+                ]
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-tilt"
+            },
+            {
+              "type": "field",
+              "name": "zoom",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": true,
+                "idlType": [
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "ConstrainDouble"
+                  }
+                ]
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-zoom"
+            },
+            {
+              "type": "field",
+              "name": "torch",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ConstrainBoolean"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatrackconstraintset-torch"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "MediaTrackSettings": [
+        {
+          "fragment": "partial dictionary MediaTrackSettings {\n  DOMString         whiteBalanceMode;\n  DOMString         exposureMode;\n  DOMString         focusMode;\n  sequence<Point2D> pointsOfInterest;\n\n  double            exposureCompensation;\n  double            exposureTime;\n  double            colorTemperature;\n  double            iso;\n\n  double            brightness;\n  double            contrast;\n  double            saturation;\n  double            sharpness;\n\n  double            focusDistance;\n  double            pan;\n  double            tilt;\n  double            zoom;\n\n  boolean           torch;\n};",
+          "type": "dictionary",
+          "name": "MediaTrackSettings",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "whiteBalanceMode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-whitebalancemode"
+            },
+            {
+              "type": "field",
+              "name": "exposureMode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-exposuremode"
+            },
+            {
+              "type": "field",
+              "name": "focusMode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-focusmode"
+            },
+            {
+              "type": "field",
+              "name": "pointsOfInterest",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "Point2D"
+                  }
+                ]
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-pointsofinterest"
+            },
+            {
+              "type": "field",
+              "name": "exposureCompensation",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-exposurecompensation"
+            },
+            {
+              "type": "field",
+              "name": "exposureTime",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-exposuretime"
+            },
+            {
+              "type": "field",
+              "name": "colorTemperature",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-colortemperature"
+            },
+            {
+              "type": "field",
+              "name": "iso",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-iso"
+            },
+            {
+              "type": "field",
+              "name": "brightness",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-brightness"
+            },
+            {
+              "type": "field",
+              "name": "contrast",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-contrast"
+            },
+            {
+              "type": "field",
+              "name": "saturation",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-saturation"
+            },
+            {
+              "type": "field",
+              "name": "sharpness",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-sharpness"
+            },
+            {
+              "type": "field",
+              "name": "focusDistance",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-focusdistance"
+            },
+            {
+              "type": "field",
+              "name": "pan",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-pan"
+            },
+            {
+              "type": "field",
+              "name": "tilt",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-tilt"
+            },
+            {
+              "type": "field",
+              "name": "zoom",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "double"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-zoom"
+            },
+            {
+              "type": "field",
+              "name": "torch",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/mediacapture-image/#dom-mediatracksettings-torch"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "ImageCapture"
+      ]
+    },
+    "dependencies": {
+      "ImageCapture": [
+        "MediaStreamTrack",
+        "Blob",
+        "PhotoSettings",
+        "PhotoCapabilities",
+        "ImageBitmap"
+      ],
+      "PhotoCapabilities": [
+        "RedEyeReduction",
+        "MediaSettingsRange",
+        "FillLightMode"
+      ],
+      "PhotoSettings": [
+        "FillLightMode"
+      ],
+      "MediaSettingsRange": [],
+      "MediaTrackSupportedConstraints": [],
+      "MediaTrackCapabilities": [
+        "MediaSettingsRange"
+      ],
+      "MediaTrackConstraintSet": [
+        "ConstrainDOMString",
+        "ConstrainPoint2D",
+        "ConstrainDouble",
+        "ConstrainBoolean"
+      ],
+      "MediaTrackSettings": [
+        "Point2D"
+      ],
+      "ConstrainPoint2DParameters": [
+        "Point2D"
+      ],
+      "Point2D": []
+    },
+    "externalDependencies": [
+      "MediaStreamTrack",
+      "Blob",
+      "ImageBitmap",
+      "MediaTrackSupportedConstraints",
+      "MediaTrackCapabilities",
+      "MediaTrackConstraintSet",
+      "ConstrainDOMString",
+      "ConstrainDouble",
+      "ConstrainBoolean",
+      "MediaTrackSettings"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,335 @@
+{
+  "fullscreen/api/document-exit-fullscreen-active-document.html": {
+    "total": 1
+  },
+  "fullscreen/api/document-exit-fullscreen-nested-in-direct-fullscreen-iframe.html": {
+    "total": 1
+  },
+  "fullscreen/api/document-exit-fullscreen-nested-in-iframe.html": {
+    "total": 1
+  },
+  "fullscreen/api/document-exit-fullscreen-nested-shadow-dom.html": {
+    "total": 1
+  },
+  "fullscreen/api/document-exit-fullscreen-nested.html": {
+    "total": 1
+  },
+  "fullscreen/api/document-exit-fullscreen-timing.html": {
+    "total": 1
+  },
+  "fullscreen/api/document-exit-fullscreen-twice.html": {
+    "total": 1
+  },
+  "fullscreen/api/document-exit-fullscreen.html": {
+    "total": 1
+  },
+  "fullscreen/api/document-fullscreen-element.html": {
+    "total": 1,
+    "failures": {
+      "Document#fullscreenElement": "FAIL"
+    }
+  },
+  "fullscreen/api/document-fullscreen-enabled-active-document.html": {
+    "total": 1
+  },
+  "fullscreen/api/document-fullscreen-enabled-cross-origin.sub.html": {
+    "total": 4
+  },
+  "fullscreen/api/document-fullscreen-enabled-removing-allowfullscreen.sub.html": {
+    "total": 1,
+    "failures": {
+      "\n    Document#fullscreenEnabled removing allowfullscreen after load and then\n    navigating\n": "FAIL"
+    }
+  },
+  "fullscreen/api/document-fullscreen-enabled-setting-allowfullscreen-timing.sub.html": {
+    "total": 1,
+    "failures": {
+      "Document#fullscreenEnabled setting allowfullscreen after document creation, before response": "FAIL"
+    }
+  },
+  "fullscreen/api/document-fullscreen-enabled-setting-allowfullscreen.sub.html": {
+    "total": 1,
+    "failures": {
+      "Document#fullscreenEnabled setting allowfullscreen after load and then navigating": "FAIL"
+    }
+  },
+  "fullscreen/api/document-fullscreen-enabled.html": {
+    "total": 1
+  },
+  "fullscreen/api/document-fullscreen-keyboard-lock-change.window.js": {
+    "total": 1
+  },
+  "fullscreen/api/document-fullscreen-keyboard-lock-escape.window.js": {
+    "total": 4
+  },
+  "fullscreen/api/document-fullscreen-keyboard-lock-multiple-elements.window.js": {
+    "total": 1
+  },
+  "fullscreen/api/document-fullscreen-keyboard-lock-shadowdom.window.js": {
+    "total": 1
+  },
+  "fullscreen/api/document-onfullscreenchange.html": {
+    "total": 1
+  },
+  "fullscreen/api/document-onfullscreenerror.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-ready-allowed.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-ready-check-allowed-cross-origin.sub.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-ready-check-containing-iframe.html": {
+    "total": 1,
+    "failures": {
+      "Element ready check for containing iframe": "FAIL"
+    }
+  },
+  "fullscreen/api/element-ready-check-fullscreen-element-sibling.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-ready-check-fullscreen-iframe-child.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-ready-check-iframe-child.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-ready-check-not-allowed-cross-origin.sub.html": {
+    "total": 1,
+    "failures": {
+      "Cross-origin element ready check with no allowfullscreen or allow attribute": "FAIL"
+    }
+  },
+  "fullscreen/api/element-ready-check-not-in-document.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-active-document.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-after-error.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-and-exit-iframe.html": {
+    "total": 2
+  },
+  "fullscreen/api/element-request-fullscreen-and-move-to-iframe.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-and-move.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-and-remove-iframe.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-and-remove.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-consume-user-activation.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-cross-origin.sub.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-dialog.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-namespaces.html": {
+    "total": 6
+  },
+  "fullscreen/api/element-request-fullscreen-non-top.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-not-allowed.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-options.html": {
+    "total": 2
+  },
+  "fullscreen/api/element-request-fullscreen-options.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "fullscreenOptions.screen getter is invoked on requestFullscreen": "FAIL"
+    }
+  },
+  "fullscreen/api/element-request-fullscreen-same-element.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-screen-size.https.html": {
+    "total": 2,
+    "failures": {
+      "Screen size is unchanged during tab-capture element fullscreen": "FAIL"
+    }
+  },
+  "fullscreen/api/element-request-fullscreen-svg-rect.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-svg-svg.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-svg-text.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-timing.html": {
+    "total": 2
+  },
+  "fullscreen/api/element-request-fullscreen-top.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-twice.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-two-elements.html": {
+    "total": 1
+  },
+  "fullscreen/api/element-request-fullscreen-without-user-activation.tentative.https.html": {
+    "total": 2,
+    "failures": {
+      "Element#requestFullscreen() resolves without user activation with permission": "FAIL"
+    }
+  },
+  "fullscreen/api/element-request-fullscreen.html": {
+    "total": 1
+  },
+  "fullscreen/api/fullscreen-change-event-shape.html": {
+    "total": 3
+  },
+  "fullscreen/api/fullscreen-display-contents.html": {
+    "total": 1
+  },
+  "fullscreen/api/fullscreen-exit-errors-and-async.html": {
+    "total": 2
+  },
+  "fullscreen/api/fullscreen-hides-popovers.html": {
+    "total": 2
+  },
+  "fullscreen/api/fullscreen-idl-getters.html": {
+    "total": 3
+  },
+  "fullscreen/api/fullscreen-reordering.html": {
+    "total": 1
+  },
+  "fullscreen/api/fullscreen-request-preconditions.html": {
+    "total": 3
+  },
+  "fullscreen/api/historical.html": {
+    "total": 85
+  },
+  "fullscreen/api/keyboard-lock-cross-origin-iframe.sub.html": {
+    "total": 2,
+    "failures": {
+      "Cross-origin iframe fullscreen with keyboardLock:browser — hold Escape exits": "FAIL",
+      "Nested fullscreen: top-level keyboardLock:none then cross-origin iframe keyboardLock:browser — hold Escape exits iframe fullscreen": "FAIL"
+    }
+  },
+  "fullscreen/api/navigate-iframe.sub.html": {
+    "total": 5,
+    "failures": {
+      "cross_to_same": "FAIL"
+    }
+  },
+  "fullscreen/api/permission.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "Querying \"fullscreen\" permission checks \"allowWithoutGesture\" option": "FAIL",
+      "Querying \"fullscreen\" permission with \"allowWithoutGesture\" false is unsupported": "FAIL",
+      "Set and query \"fullscreen\" permission with \"allowWithoutGesture\" true": "FAIL"
+    }
+  },
+  "fullscreen/api/promises-reject.html": {
+    "total": 1
+  },
+  "fullscreen/api/promises-resolve.html": {
+    "total": 1
+  },
+  "fullscreen/api/shadowroot-fullscreen-element.html": {
+    "total": 1
+  },
+  "fullscreen/idlharness.window.js": {
+    "total": 42
+  },
+  "fullscreen/model/fullscreen-exit-edges.html": {
+    "total": 1
+  },
+  "fullscreen/model/move-fullscreen-element.html": {
+    "total": 1
+  },
+  "fullscreen/model/move-to-fullscreen-iframe.html": {
+    "total": 1
+  },
+  "fullscreen/model/move-to-iframe.html": {
+    "total": 1
+  },
+  "fullscreen/model/move-to-inactive-document.html": {
+    "total": 1
+  },
+  "fullscreen/model/remove-child.html": {
+    "total": 1
+  },
+  "fullscreen/model/remove-first-sibling.html": {
+    "total": 1
+  },
+  "fullscreen/model/remove-first.html": {
+    "total": 1
+  },
+  "fullscreen/model/remove-last-sibling.html": {
+    "total": 1
+  },
+  "fullscreen/model/remove-last.html": {
+    "total": 1
+  },
+  "fullscreen/model/remove-parent.html": {
+    "total": 1
+  },
+  "fullscreen/model/remove-single.html": {
+    "total": 1
+  },
+  "fullscreen/rendering/backdrop-iframe.html": {
+    "reftest": "PASS"
+  },
+  "fullscreen/rendering/backdrop-inherit.html": {
+    "reftest": "PASS"
+  },
+  "fullscreen/rendering/backdrop-object.html": {
+    "reftest": "PASS"
+  },
+  "fullscreen/rendering/exit-fullscreen-scroll-to-unscrollable-area-overflow-hidden.html": {
+    "reftest": "PASS"
+  },
+  "fullscreen/rendering/exit-fullscreen-scroll-to-unscrollable-area-overflow-x-hidden.html": {
+    "reftest": "PASS"
+  },
+  "fullscreen/rendering/fullscreen-css-invalidation.html": {
+    "total": 1
+  },
+  "fullscreen/rendering/fullscreen-css-transition.html": {
+    "total": 1
+  },
+  "fullscreen/rendering/fullscreen-pseudo-class-support.html": {
+    "total": 1
+  },
+  "fullscreen/rendering/fullscreen-pseudo-class.html": {
+    "total": 1
+  },
+  "fullscreen/rendering/fullscreen-root-block-scroll.html": {
+    "total": 1,
+    "failures": {
+      "fullscreen root block scrolling": "FAIL"
+    }
+  },
+  "fullscreen/rendering/fullscreen-root-block-size.html": {
+    "total": 1,
+    "failures": {
+      "fullscreen root block sizing": "FAIL"
+    }
+  },
+  "fullscreen/rendering/fullscreen-root-fills-page.html": {
+    "reftest": "PASS"
+  },
+  "fullscreen/rendering/fullscreen-ua-stylesheet.html": {
+    "total": 3
+  },
+  "fullscreen/rendering/ua-style-iframe.html": {
+    "total": 1
+  }
+}

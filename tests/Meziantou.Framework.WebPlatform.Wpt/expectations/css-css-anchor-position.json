@@ -1,0 +1,1487 @@
+{
+  "css/css-anchor-position/anchor-abspos-to-fixedpos-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-abspos-to-fixedpos-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-abspos-to-fixedpos-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-animation-dynamic-default.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-animation-dynamic-name.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-animation-iacvt.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-animation.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-center-001.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/anchor-center-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-003.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-center-004.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-center-fallback-transition-behavior.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-center-htb-htb.html": {
+    "total": 10
+  },
+  "css/css-anchor-position/anchor-center-htb-vrl.html": {
+    "total": 10
+  },
+  "css/css-anchor-position/anchor-center-no-default.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-offset-change.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-center-overflow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-overflow-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-overflow-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-overflow-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-overflow-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-safe-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-safe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-scroll-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-scroll-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-scroll-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-scroll-horizontal-wm-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-scroll-vertical-wm-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-visibility-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-center-vrl-htb.html": {
+    "total": 10
+  },
+  "css/css-anchor-position/anchor-center-vrl-vrl.html": {
+    "total": 10
+  },
+  "css/css-anchor-position/anchor-css-zoom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-fallback-invalidation.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-fallback-scroll-axis.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-fieldset-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-fixed-pos-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-function-chain-pseudo-elements.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-function-chain.html": {
+    "total": 5
+  },
+  "css/css-anchor-position/anchor-function-pseudo-element-basic.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-function-pseudo-element-implicit-anchor.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-function-zero-fallback.html": {
+    "total": 6
+  },
+  "css/css-anchor-position/anchor-getComputedStyle-001.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/anchor-getComputedStyle-002.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-getComputedStyle-003.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-getComputedStyle-004.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-ident-function.html": {
+    "total": 13
+  },
+  "css/css-anchor-position/anchor-in-anchor-positioned.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-in-css-min-max-function.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-in-popover.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-in-scroller-with-left-side-scrollbar.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/anchor-inherited.html": {
+    "total": 1,
+    "failures": {
+      ".child 1": "FAIL"
+    }
+  },
+  "css/css-anchor-position/anchor-inside-outside.html": {
+    "total": 16
+  },
+  "css/css-anchor-position/anchor-invalid-fallback.html": {
+    "total": 39
+  },
+  "css/css-anchor-position/anchor-name-001.html": {
+    "total": 3,
+    "failures": {
+      ".target 2": "FAIL"
+    }
+  },
+  "css/css-anchor-position/anchor-name-002.html": {
+    "total": 6
+  },
+  "css/css-anchor-position/anchor-name-003.html": {
+    "total": 39
+  },
+  "css/css-anchor-position/anchor-name-004.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/anchor-name-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-name-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-name-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-name-008.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-name-basics.html": {
+    "total": 54
+  },
+  "css/css-anchor-position/anchor-name-cross-shadow.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-name-dynamic-reflow-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-name-in-shadow-002.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-name-in-shadow.html": {
+    "total": 2,
+    "failures": {
+      "anchor() in shadow tree should not match host anchor-name": "FAIL"
+    }
+  },
+  "css/css-anchor-position/anchor-name-inline-001.html": {
+    "total": 7
+  },
+  "css/css-anchor-position/anchor-name-multicol-001.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-name-multicol-002.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-name-multicol-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-name-multicol-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-name-mutation.html": {
+    "total": 15
+  },
+  "css/css-anchor-position/anchor-name-shadow-higher-tree.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-name-shadow-lower-tree.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-parse-invalid.html": {
+    "total": 25
+  },
+  "css/css-anchor-position/anchor-parse-valid.html": {
+    "total": 2359
+  },
+  "css/css-anchor-position/anchor-position-001.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-position-002.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/anchor-position-003.html": {
+    "total": 5,
+    "failures": {
+      ".target 2": "FAIL"
+    }
+  },
+  "css/css-anchor-position/anchor-position-004.html": {
+    "total": 32
+  },
+  "css/css-anchor-position/anchor-position-005-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-area-block-center-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-borders-001.html": {
+    "total": 12
+  },
+  "css/css-anchor-position/anchor-position-borders-002.html": {
+    "total": 5
+  },
+  "css/css-anchor-position/anchor-position-circular.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-dynamic-001.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-position-dynamic-002.html": {
+    "total": 8
+  },
+  "css/css-anchor-position/anchor-position-dynamic-003.html": {
+    "total": 10
+  },
+  "css/css-anchor-position/anchor-position-dynamic-004.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-position-dynamic-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-dynamic-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-flip-sibling-index.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-position-grid-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-grid-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-001.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/anchor-position-multicol-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-005.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-position-multicol-006.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/anchor-position-multicol-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-colspan-001.html": {
+    "total": 5,
+    "failures": {
+      ".target 2": "FAIL",
+      ".target 3": "FAIL"
+    }
+  },
+  "css/css-anchor-position/anchor-position-multicol-colspan-002.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-position-multicol-colspan-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-fixed-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-multicol-nested-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/anchor-position-non-anchored-fallback.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-principal-box.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-position-sibling-index.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-position-top-layer-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-top-layer-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-top-layer-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-top-layer-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-top-layer-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-top-layer-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-top-layer-007.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-position-writing-modes-001.html": {
+    "total": 1296
+  },
+  "css/css-anchor-position/anchor-position-writing-modes-002.html": {
+    "total": 48
+  },
+  "css/css-anchor-position/anchor-positioned-containing-block-resize.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-query-custom-property-registration.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/anchor-query-fallback.html": {
+    "total": 16
+  },
+  "css/css-anchor-position/anchor-scope-basic.html": {
+    "total": 12
+  },
+  "css/css-anchor-position/anchor-scope-display-contents.tentative.html": {
+    "total": 12
+  },
+  "css/css-anchor-position/anchor-scope-dynamic.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/anchor-scope-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scope-shadow-all.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-scope-shadow-flat-tree.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-scope-shadow-names.html": {
+    "total": 5
+  },
+  "css/css-anchor-position/anchor-scroll-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-002.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/anchor-scroll-003.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-scroll-004.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/anchor-scroll-005.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-scroll-006.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/anchor-scroll-007.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-scroll-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-chained-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-chained-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/anchor-scroll-chained-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-chained-004.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/anchor-scroll-chained-fallback.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-cleanup.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/anchor-scroll-composited-scrolling-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-composited-scrolling-paint-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-fixedpos-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-fixedpos-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-fixedpos-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-fixedpos-nested-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-fixedpos-nested-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-fixedpos.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-implicit-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-implicit-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-js-expose.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/anchor-scroll-nested.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-overflow-hidden.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-001.html": {
+    "total": 6
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-002.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-003.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-004.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-005.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-006.html": {
+    "total": 6
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-007.html": {
+    "total": 5
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-008.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-009.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-010.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-011.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-013.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-014.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-015.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-position-try-016.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/anchor-scroll-scrollable-anchor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-single-axis-default-anchor.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/anchor-scroll-single-axis-mixed-anchor.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/anchor-scroll-single-axis.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/anchor-scroll-to-sticky-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-to-sticky-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-to-sticky-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-to-sticky-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-to-sticky-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-to-sticky-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-to-sticky-multiple.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-update-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-update-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-update-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-update-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-update-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-update-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-update-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-update-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-update-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-update-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-vlr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-vrl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-size-001.html": {
+    "total": 28
+  },
+  "css/css-anchor-position/anchor-size-animation.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-size-css-zoom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-size-function-chain-pseudo-elements.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-size-function-chain.html": {
+    "total": 5
+  },
+  "css/css-anchor-position/anchor-size-minmax-001.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/anchor-size-parse-invalid.html": {
+    "total": 22
+  },
+  "css/css-anchor-position/anchor-size-parse-valid.html": {
+    "total": 4305
+  },
+  "css/css-anchor-position/anchor-size-replaced-001.html": {
+    "total": 12
+  },
+  "css/css-anchor-position/anchor-size-writing-modes-001.html": {
+    "total": 24
+  },
+  "css/css-anchor-position/anchor-sticky-fixed-drift.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-transition-001.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchor-transition-002.html": {
+    "total": 1,
+    "failures": {
+      "Transition with anchor names defined in different tree scopes": "FAIL"
+    }
+  },
+  "css/css-anchor-position/anchor-transition-003.html": {
+    "total": 1,
+    "failures": {
+      "Transition with anchor names defined in three different tree scopes": "FAIL"
+    }
+  },
+  "css/css-anchor-position/anchor-transition-004.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-transition-default.html": {
+    "total": 1,
+    "failures": {
+      "Transition when position-anchor changes": "FAIL"
+    }
+  },
+  "css/css-anchor-position/anchor-transition-eval.html": {
+    "total": 2,
+    "failures": {
+      "Transition when the result of anchor() changes": "FAIL",
+      "Transition when the result of anchor-size() changes": "FAIL"
+    }
+  },
+  "css/css-anchor-position/anchor-transition-focus.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-transition-name.html": {
+    "total": 1,
+    "failures": {
+      "Transition when the dereferenced anchor name changes": "FAIL"
+    }
+  },
+  "css/css-anchor-position/anchor-typed-om.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/anchored-c-v-hidden.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchored-child-transition-with-selection.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchored-transition-display-none-001.html": {
+    "reftest": "TIMEOUT"
+  },
+  "css/css-anchor-position/anchored-transition-display-none-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/at-position-try-allowed-declarations.html": {
+    "total": 56
+  },
+  "css/css-anchor-position/at-position-try-cssom.html": {
+    "total": 265
+  },
+  "css/css-anchor-position/at-position-try-invalidation-shadow-dom.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/at-position-try-invalidation.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/at-position-try-parse.html": {
+    "total": 12
+  },
+  "css/css-anchor-position/auto-inset-margin-getComputedStyle.html": {
+    "total": 12
+  },
+  "css/css-anchor-position/auto-margins-position-area.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/base-style-invalidation.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/chained-anchor-scrolled.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/chrome-443261872.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/container-queries/anchored-child-transition.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/container-queries/anchored-fallback-basic.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/container-queries/anchored-fallback-color-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/container-queries/anchored-fallback-display-change.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/container-queries/anchored-fallback-implicit-any.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/container-queries/anchored-fallback-name.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/container-queries/anchored-fallback-position-area-any.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/container-queries/anchored-fallback-position-area-wm.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/container-queries/anchored-fallback-position-area.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/container-queries/anchored-fallback-scroll.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/container-queries/anchored-fallback-style-containment.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/container-queries/anchored-fallback-tree-scope.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/container-queries/anchored-fallback-try-tactic.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/container-queries/at-container-anchored-parsing-any.html": {
+    "total": 7
+  },
+  "css/css-anchor-position/container-queries/at-container-anchored-parsing.html": {
+    "total": 13
+  },
+  "css/css-anchor-position/container-queries/at-container-anchored-serialization.html": {
+    "total": 5
+  },
+  "css/css-anchor-position/container-queries/container-type-anchored-computed.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/container-queries/container-type-anchored-parsing.html": {
+    "total": 5
+  },
+  "css/css-anchor-position/grid-lanes-position-area-basic.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/grid-position-area-basic.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/idlharness.html": {
+    "total": 86
+  },
+  "css/css-anchor-position/inherit-height-from-fallback.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/last-successful-animation.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/last-successful-basic.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/last-successful-change-fallbacks-position-area.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/last-successful-change-fallbacks.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/last-successful-change-try-rule.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/last-successful-fallback-to-base-style.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/last-successful-iframe.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/last-successful-intermediate-ignored.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/last-successful-pseudo-element-basic.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/last-successful-pseudo-element-fallbacks.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/mixed-dependency-chain.html": {
+    "total": 10
+  },
+  "css/css-anchor-position/no-anchor-anchor-center.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/parsing/anchor-scope-computed.html": {
+    "total": 10
+  },
+  "css/css-anchor-position/parsing/anchor-scope-parsing.html": {
+    "total": 17
+  },
+  "css/css-anchor-position/parsing/position-try-computed.html": {
+    "total": 9
+  },
+  "css/css-anchor-position/parsing/position-try-fallbacks-computed.html": {
+    "total": 24
+  },
+  "css/css-anchor-position/parsing/position-try-fallbacks-parsing.html": {
+    "total": 57
+  },
+  "css/css-anchor-position/parsing/position-try-order-computed.html": {
+    "total": 7
+  },
+  "css/css-anchor-position/parsing/position-try-order-parsing.html": {
+    "total": 12
+  },
+  "css/css-anchor-position/parsing/position-try-parsing.html": {
+    "total": 35
+  },
+  "css/css-anchor-position/parsing/position-visibility-computed.html": {
+    "total": 19
+  },
+  "css/css-anchor-position/parsing/position-visibility-parsing.html": {
+    "total": 30
+  },
+  "css/css-anchor-position/popover-anchor-backdrop-transition.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/popover-implicit-anchor.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/position-anchor-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-003.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/position-anchor-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-auto-pseudo-element-implicit-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-auto-pseudo-element-implicit-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-basics.html": {
+    "total": 58
+  },
+  "css/css-anchor-position/position-anchor-dynamic-unset-raf-visibility-hidden.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-dynamic-unset-visibility-hidden.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-match-parent-dynamic.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/position-anchor-match-parent-rendering.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/position-anchor-match-parent-shadow.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/position-anchor-match-parent.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/position-anchor-none-pseudo-element-implicit-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-none-pseudo-element-implicit-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-none-pseudo-element-named.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-normal-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-normal-pseudo-element-implicit-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-normal-pseudo-element-implicit-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-normal-pseudo-element-implicit-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-anchor-target-with-children.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-abs-inline-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-align-justify-wm-dir.html": {
+    "total": 56
+  },
+  "css/css-anchor-position/position-area-align-justify.html": {
+    "total": 14
+  },
+  "css/css-anchor-position/position-area-alignment-inset-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-ambiguous-self.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/position-area-anchor-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-anchor-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-anchor-getComputedStyle.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/position-area-anchor-outside.html": {
+    "total": 11
+  },
+  "css/css-anchor-position/position-area-anchor-partially-outside.html": {
+    "total": 11
+  },
+  "css/css-anchor-position/position-area-basic.html": {
+    "total": 47
+  },
+  "css/css-anchor-position/position-area-chain-pseudo-elements.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-chain.html": {
+    "total": 5
+  },
+  "css/css-anchor-position/position-area-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-computed-insets.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/position-area-computed.html": {
+    "total": 633
+  },
+  "css/css-anchor-position/position-area-fixed.html": {
+    "total": 7
+  },
+  "css/css-anchor-position/position-area-in-grid.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/position-area-in-position-try.html": {
+    "total": 64
+  },
+  "css/css-anchor-position/position-area-inline-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-inset-one-side-auto.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-interpolation.html": {
+    "total": 42
+  },
+  "css/css-anchor-position/position-area-justify-self-safe-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-no-default-anchor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-overflow-icb-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-overflow-icb-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-overflow-icb-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-overflow-icb-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-parsing.html": {
+    "total": 2125
+  },
+  "css/css-anchor-position/position-area-percents-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-pseudo-element-implicit-anchor-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-pseudo-element-implicit-anchor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-scroll-adjust.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-scrolling-001.tentative.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/position-area-scrolling-002.tentative.html": {
+    "total": 6,
+    "failures": {
+      "Reattach at 40,60": "FAIL"
+    }
+  },
+  "css/css-anchor-position/position-area-scrolling-003.tentative.html": {
+    "total": 3,
+    "failures": {
+      "Initial scroll position": "FAIL",
+      "Redisplay at 40,60": "FAIL",
+      "Scroll to 40,60": "FAIL"
+    }
+  },
+  "css/css-anchor-position/position-area-scrolling-004.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-scrolling-005.html": {
+    "total": 7
+  },
+  "css/css-anchor-position/position-area-scrolling-006.html": {
+    "total": 5
+  },
+  "css/css-anchor-position/position-area-scrolling-007.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/position-area-value.html": {
+    "total": 7
+  },
+  "css/css-anchor-position/position-area-visibility-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-with-insets.html": {
+    "total": 5
+  },
+  "css/css-anchor-position/position-area-wm-dir.html": {
+    "total": 44
+  },
+  "css/css-anchor-position/position-try-001.html": {
+    "total": 6
+  },
+  "css/css-anchor-position/position-try-002.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/position-try-003.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/position-try-004.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/position-try-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-try-backdrop.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/position-try-cascade-layer-reorder.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/position-try-cascade.html": {
+    "total": 6
+  },
+  "css/css-anchor-position/position-try-container-query.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/position-try-custom-property.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/position-try-dynamic.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/position-try-fallbacks-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-try-fallbacks-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-try-fallbacks-003.html": {
+    "total": 8
+  },
+  "css/css-anchor-position/position-try-fallbacks-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-try-fallbacks-limit.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/position-try-fallbacks-multicol-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-try-fallbacks-multicol-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-try-fallbacks-no-fit-after-fit.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/position-try-grid-001.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/position-try-ident-function.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/position-try-initial-transition.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/position-try-order-basic.html": {
+    "total": 27
+  },
+  "css/css-anchor-position/position-try-order-include-base.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-try-order-inset-modified-containing-block.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/position-try-order-logical.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-try-order-position-area.html": {
+    "total": 27
+  },
+  "css/css-anchor-position/position-try-position-anchor.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/position-try-pseudo-element.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/position-try-rule-caching-001.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/position-try-rule-caching-002.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/position-try-switch-from-fixed-anchor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-try-switch-to-fixed-anchor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-try-transition-basic.html": {
+    "total": 2,
+    "failures": {
+      "Transition when @position-try is applied": "FAIL",
+      "Transition when @position-try is unapplied": "FAIL"
+    }
+  },
+  "css/css-anchor-position/position-try-transition-flip.html": {
+    "total": 2,
+    "failures": {
+      "Transition to a flipped state": "FAIL",
+      "Transition to an unflipped state": "FAIL"
+    }
+  },
+  "css/css-anchor-position/position-try-tree-scoped-pseudo.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-try-tree-scoped.html": {
+    "total": 12
+  },
+  "css/css-anchor-position/position-try-typed-om.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/position-visibility-add-no-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-valid-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-valid-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-valid.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchor-visible.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-after-scroll-in-document.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-after-scroll-in.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-after-scroll-out.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-both-position-fixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-chained-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-chained-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-chained-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-chained-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-change-anchor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-change-css-visibility.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-css-visibility.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-dynamic-anchor-toggle.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-in-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-inline-cb.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-non-intervening-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-position-fixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-stacked-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-stacked-child.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-anchors-visible-with-position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-initial.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-no-overflow-nested.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-no-overflow-scroll-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-no-overflow-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-no-overflow-stacked-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-no-overflow-without-anchor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-no-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-remove-anchors-visible.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-visibility-remove-no-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/property-interpolations.html": {
+    "total": 546
+  },
+  "css/css-anchor-position/pseudo-element-anchor-dynamic.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/pseudo-element-anchor-tree-order.html": {
+    "total": 5
+  },
+  "css/css-anchor-position/pseudo-element-anchor.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/pseudo-element-implicit-anchor-center.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/pseudo-element-implicit-anchor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/pseudo-element-with-slotted-anchor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/registered-custom-property-anchor.html": {
+    "total": 2
+  },
+  "css/css-anchor-position/remove-anchor-dirty-layout.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/remove-position-try-rules-001.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/scroll-to-anchored-fixed-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/scroll-to-anchored-fixed-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/scroll-to-anchored-fixed-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/scroll-to-anchored-fixed-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/scroll-to-anchored-fixed-004.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/scroll-to-anchored-fixed-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/scroll-to-anchored-fixed-006.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/scrollable-containing-block-position-area.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/scrollable-containing-block-size.html": {
+    "total": 13
+  },
+  "css/css-anchor-position/scrollable-containing-block-validity.html": {
+    "total": 4
+  },
+  "css/css-anchor-position/sticky-anchor-position-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/transform-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/transform-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/transform-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/transform-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/transform-005.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/transform-006.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/transform-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/transform-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/transform-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/transform-010.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/transform-011.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/transform-012.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/transform-013.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/transform-014.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/transform-015.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/transform-016.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/transform-017.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/transform-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/transform-019.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/transform-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/transform-021.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/transform-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/transform-023.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/try-tactic-alignment.html": {
+    "total": 60
+  },
+  "css/css-anchor-position/try-tactic-anchor.html": {
+    "total": 46
+  },
+  "css/css-anchor-position/try-tactic-back-to-base.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/try-tactic-base.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/try-tactic-basic-anchor.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/try-tactic-basic.html": {
+    "total": 30
+  },
+  "css/css-anchor-position/try-tactic-margin.html": {
+    "total": 8
+  },
+  "css/css-anchor-position/try-tactic-percentage.html": {
+    "total": 36
+  },
+  "css/css-anchor-position/try-tactic-position-area.html": {
+    "total": 131
+  },
+  "css/css-anchor-position/try-tactic-sizing.html": {
+    "total": 3
+  },
+  "css/css-anchor-position/try-tactic-wm.html": {
+    "total": 11
+  },
+  "css/css-anchor-position/under-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/vertical-aligned-table-cell.html": {
+    "reftest": "PASS"
+  }
+}

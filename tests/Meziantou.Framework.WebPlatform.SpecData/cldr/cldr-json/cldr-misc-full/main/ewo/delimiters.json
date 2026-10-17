@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ewo": {
+      "identity": {
+        "language": "ewo"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

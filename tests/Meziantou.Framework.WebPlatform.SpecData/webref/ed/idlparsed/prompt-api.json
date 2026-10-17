@@ -1,0 +1,1621 @@
+{
+  "spec": {
+    "title": "Prompt API",
+    "url": "https://webmachinelearning.github.io/prompt-api/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "LanguageModel",
+          "LanguageModelParams"
+        ]
+      }
+    },
+    "idlNames": {
+      "LanguageModel": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface LanguageModel : EventTarget {\n  static Promise<LanguageModel> create(optional LanguageModelCreateOptions options = {});\n  static Promise<Availability> availability(optional LanguageModelCreateCoreOptions options = {});\n  // **EXPERIMENTAL**: Only available in extension and experimental contexts.\n  static Promise<LanguageModelParams?> params();\n\n  // These will throw \"NotSupportedError\" DOMExceptions if role = \"system\"\n  Promise<DOMString> prompt(\n    LanguageModelPrompt input,\n    optional LanguageModelPromptOptions options = {}\n  );\n  ReadableStream promptStreaming(\n    LanguageModelPrompt input,\n    optional LanguageModelPromptOptions options = {}\n  );\n  Promise<undefined> append(\n    LanguageModelPrompt input,\n    optional LanguageModelAppendOptions options = {}\n  );\n\n  Promise<double> measureContextUsage(\n    LanguageModelPrompt input,\n    optional LanguageModelPromptOptions options = {}\n  );\n  readonly attribute double contextUsage;\n  readonly attribute unrestricted double contextWindow;\n  attribute EventHandler oncontextoverflow;\n\n  // **DEPRECATED**: This method is only available in extension contexts.\n  Promise<double> measureInputUsage(\n    LanguageModelPrompt input,\n    optional LanguageModelPromptOptions options = {}\n  );\n  // **DEPRECATED**: This attribute is only available in extension contexts.\n  readonly attribute double inputUsage;\n  // **DEPRECATED**: This attribute is only available in extension contexts.\n  readonly attribute unrestricted double inputQuota;\n  // **DEPRECATED**: This attribute is only available in extension contexts.\n  attribute EventHandler onquotaoverflow;\n\n  // **DEPRECATED**: This attribute is only available in extension contexts.\n  readonly attribute unsigned long topK;\n  // **DEPRECATED**: This attribute is only available in extension contexts.\n  readonly attribute float temperature;\n\n  // **EXPERIMENTAL**: Only available in experimental contexts.\n  readonly attribute LanguageModelSamplingMode? samplingMode;\n\n  Promise<LanguageModel> clone(optional LanguageModelCloneOptions options = {});\n};",
+        "type": "interface",
+        "name": "LanguageModel",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "operation",
+            "name": "create",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModel"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelCreateOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-create"
+          },
+          {
+            "type": "operation",
+            "name": "availability",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Availability"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelCreateCoreOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-availability"
+          },
+          {
+            "type": "operation",
+            "name": "params",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "LanguageModelParams"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-params"
+          },
+          {
+            "type": "operation",
+            "name": "prompt",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelPrompt"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelPromptOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-prompt"
+          },
+          {
+            "type": "operation",
+            "name": "promptStreaming",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelPrompt"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelPromptOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-promptstreaming"
+          },
+          {
+            "type": "operation",
+            "name": "append",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelPrompt"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelAppendOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-append"
+          },
+          {
+            "type": "operation",
+            "name": "measureContextUsage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelPrompt"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelPromptOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-measurecontextusage"
+          },
+          {
+            "type": "attribute",
+            "name": "contextUsage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-contextusage"
+          },
+          {
+            "type": "attribute",
+            "name": "contextWindow",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-contextwindow"
+          },
+          {
+            "type": "attribute",
+            "name": "oncontextoverflow",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-oncontextoverflow"
+          },
+          {
+            "type": "operation",
+            "name": "measureInputUsage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelPrompt"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelPromptOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-measureinputusage"
+          },
+          {
+            "type": "attribute",
+            "name": "inputUsage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-inputusage"
+          },
+          {
+            "type": "attribute",
+            "name": "inputQuota",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-inputquota"
+          },
+          {
+            "type": "attribute",
+            "name": "onquotaoverflow",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-onquotaoverflow"
+          },
+          {
+            "type": "attribute",
+            "name": "topK",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-topk"
+          },
+          {
+            "type": "attribute",
+            "name": "temperature",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-temperature"
+          },
+          {
+            "type": "attribute",
+            "name": "samplingMode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "LanguageModelSamplingMode"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-samplingmode"
+          },
+          {
+            "type": "operation",
+            "name": "clone",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModel"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelCloneOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodel-clone"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/prompt-api/#languagemodel"
+      },
+      "LanguageModelParams": {
+        "fragment": "// **DEPRECATED**: Only available in extension contexts.\n[Exposed=Window, SecureContext]\ninterface LanguageModelParams {\n  readonly attribute unsigned long defaultTopK;\n  readonly attribute unsigned long maxTopK;\n  readonly attribute float defaultTemperature;\n  readonly attribute float maxTemperature;\n};",
+        "type": "interface",
+        "name": "LanguageModelParams",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "defaultTopK",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelparams-defaulttopk"
+          },
+          {
+            "type": "attribute",
+            "name": "maxTopK",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelparams-maxtopk"
+          },
+          {
+            "type": "attribute",
+            "name": "defaultTemperature",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelparams-defaulttemperature"
+          },
+          {
+            "type": "attribute",
+            "name": "maxTemperature",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelparams-maxtemperature"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/prompt-api/#languagemodelparams"
+      },
+      "LanguageModelToolFunction": {
+        "fragment": "callback LanguageModelToolFunction = Promise<DOMString> (any... arguments);",
+        "type": "callback",
+        "name": "LanguageModelToolFunction",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            }
+          ]
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "arguments",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": true
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/prompt-api/#callbackdef-languagemodeltoolfunction"
+      },
+      "LanguageModelTool": {
+        "fragment": "// A description of a tool call that a language model can invoke.\ndictionary LanguageModelTool {\n  required DOMString name;\n  required DOMString description;\n  // JSON schema for the input parameters.\n  required object inputSchema;\n  // The function to be invoked by user agent on behalf of language model.\n  required LanguageModelToolFunction execute;\n};",
+        "type": "dictionary",
+        "name": "LanguageModelTool",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodeltool-name"
+          },
+          {
+            "type": "field",
+            "name": "description",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodeltool-description"
+          },
+          {
+            "type": "field",
+            "name": "inputSchema",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodeltool-inputschema"
+          },
+          {
+            "type": "field",
+            "name": "execute",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LanguageModelToolFunction"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodeltool-execute"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/prompt-api/#dictdef-languagemodeltool"
+      },
+      "LanguageModelCreateCoreOptions": {
+        "fragment": "dictionary LanguageModelCreateCoreOptions {\n  // Note: these two have custom out-of-range handling behavior, not in the IDL layer.\n  // They are unrestricted double so as to allow +Infinity without failing.\n  // **DEPRECATED**: Only available in extension contexts.\n  unrestricted double topK;\n  // **DEPRECATED**: Only available in extension contexts.\n  unrestricted double temperature;\n\n  // **EXPERIMENTAL**: Only available in experimental contexts.\n  LanguageModelSamplingMode samplingMode;\n\n  // The expected types and languages for the session.\n  sequence<LanguageModelExpected> expectedInputs;\n  sequence<LanguageModelExpected> expectedOutputs;\n\n  // Tools that the language model can use.\n  // **EXPERIMENTAL**: Only available in experimental contexts.\n  sequence<LanguageModelTool> tools;\n};",
+        "type": "dictionary",
+        "name": "LanguageModelCreateCoreOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "topK",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelcreatecoreoptions-topk"
+          },
+          {
+            "type": "field",
+            "name": "temperature",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelcreatecoreoptions-temperature"
+          },
+          {
+            "type": "field",
+            "name": "samplingMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LanguageModelSamplingMode"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelcreatecoreoptions-samplingmode"
+          },
+          {
+            "type": "field",
+            "name": "expectedInputs",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelExpected"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelcreatecoreoptions-expectedinputs"
+          },
+          {
+            "type": "field",
+            "name": "expectedOutputs",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelExpected"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelcreatecoreoptions-expectedoutputs"
+          },
+          {
+            "type": "field",
+            "name": "tools",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelTool"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelcreatecoreoptions-tools"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/prompt-api/#dictdef-languagemodelcreatecoreoptions"
+      },
+      "LanguageModelCreateOptions": {
+        "fragment": "dictionary LanguageModelCreateOptions : LanguageModelCreateCoreOptions {\n  AbortSignal signal;\n  CreateMonitorCallback monitor;\n\n  sequence<LanguageModelMessage> initialPrompts;\n};",
+        "type": "dictionary",
+        "name": "LanguageModelCreateOptions",
+        "inheritance": "LanguageModelCreateCoreOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelcreateoptions-signal"
+          },
+          {
+            "type": "field",
+            "name": "monitor",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CreateMonitorCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelcreateoptions-monitor"
+          },
+          {
+            "type": "field",
+            "name": "initialPrompts",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelMessage"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelcreateoptions-initialprompts"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/prompt-api/#dictdef-languagemodelcreateoptions"
+      },
+      "LanguageModelPromptOptions": {
+        "fragment": "dictionary LanguageModelPromptOptions {\n  object responseConstraint;\n  boolean omitResponseConstraintInput = false;\n  AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "LanguageModelPromptOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "responseConstraint",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelpromptoptions-responseconstraint"
+          },
+          {
+            "type": "field",
+            "name": "omitResponseConstraintInput",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelpromptoptions-omitresponseconstraintinput"
+          },
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelpromptoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/prompt-api/#dictdef-languagemodelpromptoptions"
+      },
+      "LanguageModelAppendOptions": {
+        "fragment": "dictionary LanguageModelAppendOptions {\n  AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "LanguageModelAppendOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelappendoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/prompt-api/#dictdef-languagemodelappendoptions"
+      },
+      "LanguageModelCloneOptions": {
+        "fragment": "dictionary LanguageModelCloneOptions {\n  AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "LanguageModelCloneOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelcloneoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/prompt-api/#dictdef-languagemodelcloneoptions"
+      },
+      "LanguageModelExpected": {
+        "fragment": "dictionary LanguageModelExpected {\n  required LanguageModelMessageType type;\n  sequence<DOMString> languages;\n};",
+        "type": "dictionary",
+        "name": "LanguageModelExpected",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LanguageModelMessageType"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelexpected-type"
+          },
+          {
+            "type": "field",
+            "name": "languages",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelexpected-languages"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/prompt-api/#dictdef-languagemodelexpected"
+      },
+      "LanguageModelPrompt": {
+        "fragment": "// The argument to the prompt() method and others like it\n\ntypedef (\n  sequence<LanguageModelMessage>\n  // Shorthand for `[{ role: \"user\", content: [{ type: \"text\", value: providedValue }] }]`\n  or DOMString\n) LanguageModelPrompt;",
+        "type": "typedef",
+        "name": "LanguageModelPrompt",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "typedef-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LanguageModelMessage"
+                }
+              ]
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/prompt-api/#typedefdef-languagemodelprompt"
+      },
+      "LanguageModelMessage": {
+        "fragment": "dictionary LanguageModelMessage {\n  required LanguageModelMessageRole role;\n\n  // The DOMString branch is shorthand for `[{ type: \"text\", value: providedValue }]`\n  required (DOMString or sequence<LanguageModelMessageContent>) content;\n\n  boolean prefix = false;\n};",
+        "type": "dictionary",
+        "name": "LanguageModelMessage",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "role",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LanguageModelMessageRole"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelmessage-role"
+          },
+          {
+            "type": "field",
+            "name": "content",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "LanguageModelMessageContent"
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelmessage-content"
+          },
+          {
+            "type": "field",
+            "name": "prefix",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelmessage-prefix"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/prompt-api/#dictdef-languagemodelmessage"
+      },
+      "LanguageModelMessageContent": {
+        "fragment": "dictionary LanguageModelMessageContent {\n  required LanguageModelMessageType type;\n  required LanguageModelMessageValue value;\n};",
+        "type": "dictionary",
+        "name": "LanguageModelMessageContent",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LanguageModelMessageType"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelmessagecontent-type"
+          },
+          {
+            "type": "field",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LanguageModelMessageValue"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelmessagecontent-value"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://webmachinelearning.github.io/prompt-api/#dictdef-languagemodelmessagecontent"
+      },
+      "LanguageModelSamplingMode": {
+        "fragment": "enum LanguageModelSamplingMode { \"most-predictable\", \"predictable\", \"slightly-predictable\", \"balanced\", \"slightly-creative\", \"creative\", \"most-creative\" };",
+        "type": "enum",
+        "name": "LanguageModelSamplingMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "most-predictable",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelsamplingmode-most-predictable"
+          },
+          {
+            "type": "enum-value",
+            "value": "predictable",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelsamplingmode-predictable"
+          },
+          {
+            "type": "enum-value",
+            "value": "slightly-predictable",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelsamplingmode-slightly-predictable"
+          },
+          {
+            "type": "enum-value",
+            "value": "balanced",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelsamplingmode-balanced"
+          },
+          {
+            "type": "enum-value",
+            "value": "slightly-creative",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelsamplingmode-slightly-creative"
+          },
+          {
+            "type": "enum-value",
+            "value": "creative",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelsamplingmode-creative"
+          },
+          {
+            "type": "enum-value",
+            "value": "most-creative",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelsamplingmode-most-creative"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/prompt-api/#enumdef-languagemodelsamplingmode"
+      },
+      "LanguageModelMessageRole": {
+        "fragment": "enum LanguageModelMessageRole { \"system\", \"user\", \"assistant\" };",
+        "type": "enum",
+        "name": "LanguageModelMessageRole",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "system",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelmessagerole-system"
+          },
+          {
+            "type": "enum-value",
+            "value": "user",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelmessagerole-user"
+          },
+          {
+            "type": "enum-value",
+            "value": "assistant",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelmessagerole-assistant"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/prompt-api/#enumdef-languagemodelmessagerole"
+      },
+      "LanguageModelMessageType": {
+        "fragment": "enum LanguageModelMessageType { \"text\", \"image\", \"audio\", \"tool-call\", \"tool-response\" };",
+        "type": "enum",
+        "name": "LanguageModelMessageType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "text",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelmessagetype-text"
+          },
+          {
+            "type": "enum-value",
+            "value": "image",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelmessagetype-image"
+          },
+          {
+            "type": "enum-value",
+            "value": "audio",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelmessagetype-audio"
+          },
+          {
+            "type": "enum-value",
+            "value": "tool-call",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelmessagetype-tool-call"
+          },
+          {
+            "type": "enum-value",
+            "value": "tool-response",
+            "href": "https://webmachinelearning.github.io/prompt-api/#dom-languagemodelmessagetype-tool-response"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/prompt-api/#enumdef-languagemodelmessagetype"
+      },
+      "LanguageModelMessageValue": {
+        "fragment": "typedef (\n  ImageBitmapSource\n  or AudioBuffer\n  or BufferSource\n  or DOMString\n) LanguageModelMessageValue;",
+        "type": "typedef",
+        "name": "LanguageModelMessageValue",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ImageBitmapSource"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AudioBuffer"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://webmachinelearning.github.io/prompt-api/#typedefdef-languagemodelmessagevalue"
+      }
+    },
+    "idlExtendedNames": {
+      "LanguageModel": [
+        {
+          "fragment": "LanguageModel includes DestroyableModel;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "LanguageModel",
+          "includes": "DestroyableModel"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "LanguageModel",
+        "LanguageModelParams"
+      ]
+    },
+    "dependencies": {
+      "LanguageModel": [
+        "EventTarget",
+        "LanguageModel",
+        "LanguageModelCreateOptions",
+        "Availability",
+        "LanguageModelCreateCoreOptions",
+        "LanguageModelParams",
+        "LanguageModelPrompt",
+        "LanguageModelPromptOptions",
+        "ReadableStream",
+        "LanguageModelAppendOptions",
+        "EventHandler",
+        "LanguageModelSamplingMode",
+        "LanguageModelCloneOptions",
+        "DestroyableModel"
+      ],
+      "LanguageModelParams": [],
+      "LanguageModelTool": [
+        "LanguageModelToolFunction"
+      ],
+      "LanguageModelCreateCoreOptions": [
+        "LanguageModelSamplingMode",
+        "LanguageModelExpected",
+        "LanguageModelTool"
+      ],
+      "LanguageModelCreateOptions": [
+        "LanguageModelCreateCoreOptions",
+        "AbortSignal",
+        "CreateMonitorCallback",
+        "LanguageModelMessage"
+      ],
+      "LanguageModelPromptOptions": [
+        "AbortSignal"
+      ],
+      "LanguageModelAppendOptions": [
+        "AbortSignal"
+      ],
+      "LanguageModelCloneOptions": [
+        "AbortSignal"
+      ],
+      "LanguageModelExpected": [
+        "LanguageModelMessageType"
+      ],
+      "LanguageModelMessage": [
+        "LanguageModelMessageRole",
+        "LanguageModelMessageContent"
+      ],
+      "LanguageModelMessageContent": [
+        "LanguageModelMessageType",
+        "LanguageModelMessageValue"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "Availability",
+      "ReadableStream",
+      "EventHandler",
+      "AbortSignal",
+      "CreateMonitorCallback",
+      "ImageBitmapSource",
+      "AudioBuffer",
+      "BufferSource"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

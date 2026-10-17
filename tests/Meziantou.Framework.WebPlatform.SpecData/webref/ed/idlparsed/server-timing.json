@@ -1,0 +1,202 @@
+{
+  "spec": {
+    "title": "Server Timing",
+    "url": "https://w3c.github.io/server-timing/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "PerformanceServerTiming",
+          "PerformanceResourceTiming"
+        ],
+        "Worker": [
+          "PerformanceServerTiming",
+          "PerformanceResourceTiming"
+        ]
+      }
+    },
+    "idlNames": {
+      "PerformanceServerTiming": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface PerformanceServerTiming {\n  readonly attribute DOMString name;\n  readonly attribute DOMHighResTimeStamp duration;\n  readonly attribute DOMString description;\n  [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "PerformanceServerTiming",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/server-timing/#dom-performanceservertiming-name"
+          },
+          {
+            "type": "attribute",
+            "name": "duration",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/server-timing/#dom-performanceservertiming-duration"
+          },
+          {
+            "type": "attribute",
+            "name": "description",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/server-timing/#dom-performanceservertiming-description"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/server-timing/#dom-performanceservertiming-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/server-timing/#performanceservertiming"
+      }
+    },
+    "idlExtendedNames": {
+      "PerformanceResourceTiming": [
+        {
+          "fragment": "[Exposed=(Window,Worker)]\npartial interface PerformanceResourceTiming {\n  readonly attribute FrozenArray<PerformanceServerTiming> serverTiming;\n};",
+          "type": "interface",
+          "name": "PerformanceResourceTiming",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "serverTiming",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "FrozenArray",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "attribute-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "PerformanceServerTiming"
+                  }
+                ]
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/server-timing/#dom-performanceresourcetiming-servertiming"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "Window"
+                  },
+                  {
+                    "value": "Worker"
+                  }
+                ]
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "PerformanceServerTiming",
+        "PerformanceResourceTiming"
+      ],
+      "Worker": [
+        "PerformanceServerTiming",
+        "PerformanceResourceTiming"
+      ]
+    },
+    "dependencies": {
+      "PerformanceServerTiming": [
+        "DOMHighResTimeStamp"
+      ],
+      "PerformanceResourceTiming": [
+        "PerformanceServerTiming"
+      ]
+    },
+    "externalDependencies": [
+      "DOMHighResTimeStamp",
+      "PerformanceResourceTiming"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

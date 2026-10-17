@@ -1,0 +1,15 @@
+{
+  "main": {
+    "fi": {
+      "identity": {
+        "language": "fi"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

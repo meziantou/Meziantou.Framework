@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-NE": {
+      "identity": {
+        "language": "fr",
+        "territory": "NE"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

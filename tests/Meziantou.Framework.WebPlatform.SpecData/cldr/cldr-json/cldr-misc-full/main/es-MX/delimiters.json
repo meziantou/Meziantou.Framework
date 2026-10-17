@@ -1,0 +1,16 @@
+{
+  "main": {
+    "es-MX": {
+      "identity": {
+        "language": "es",
+        "territory": "MX"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

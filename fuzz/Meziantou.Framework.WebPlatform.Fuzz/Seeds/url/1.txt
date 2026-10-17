@@ -1,0 +1,1 @@
+https://user:pa%73s@xn--nxasmq6b.example.com:443/a/./b/../c%2F?q=a b&r=ü#frag ment

@@ -1,0 +1,1977 @@
+{
+  "spec": {
+    "title": "WebHID API",
+    "url": "https://hid.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "DedicatedWorker": [
+          "HIDConnectionEvent",
+          "HIDInputReportEvent"
+        ],
+        "ServiceWorker": [
+          "HIDConnectionEvent",
+          "HIDInputReportEvent"
+        ],
+        "Window": [
+          "HIDConnectionEvent",
+          "HIDInputReportEvent"
+        ]
+      },
+      "functions": {
+        "DedicatedWorker": [
+          "WorkerNavigator",
+          "HID",
+          "HIDDevice"
+        ],
+        "ServiceWorker": [
+          "WorkerNavigator",
+          "HID",
+          "HIDDevice"
+        ],
+        "Window": [
+          "HID",
+          "HIDDevice"
+        ]
+      }
+    },
+    "idlNames": {
+      "HID": {
+        "fragment": "[Exposed=(DedicatedWorker,ServiceWorker,Window), SecureContext]\ninterface HID : EventTarget {\n    attribute EventHandler onconnect;\n    attribute EventHandler ondisconnect;\n    Promise<sequence<HIDDevice>> getDevices();\n    [Exposed=Window] Promise<sequence<HIDDevice>> requestDevice(\n        HIDDeviceRequestOptions options);\n};",
+        "type": "interface",
+        "name": "HID",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "onconnect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hid-onconnect"
+          },
+          {
+            "type": "attribute",
+            "name": "ondisconnect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hid-ondisconnect"
+          },
+          {
+            "type": "operation",
+            "name": "getDevices",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "HIDDevice"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://hid.spec.whatwg.org/#dom-hid-getdevices"
+          },
+          {
+            "type": "operation",
+            "name": "requestDevice",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "HIDDevice"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HIDDeviceRequestOptions"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://hid.spec.whatwg.org/#dom-hid-requestdevice"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "ServiceWorker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://hid.spec.whatwg.org/#dom-hid"
+      },
+      "HIDDeviceRequestOptions": {
+        "fragment": "dictionary HIDDeviceRequestOptions {\n    required sequence<HIDDeviceFilter> filters;\n    sequence<HIDDeviceFilter> exclusionFilters;\n};",
+        "type": "dictionary",
+        "name": "HIDDeviceRequestOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "filters",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HIDDeviceFilter"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevicerequestoptions-filters"
+          },
+          {
+            "type": "field",
+            "name": "exclusionFilters",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HIDDeviceFilter"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevicerequestoptions-exclusionfilters"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://hid.spec.whatwg.org/#dom-hiddevicerequestoptions"
+      },
+      "HIDDeviceFilter": {
+        "fragment": "dictionary HIDDeviceFilter {\n    unsigned long vendorId;\n    unsigned short productId;\n    unsigned short usagePage;\n    unsigned short usage;\n};",
+        "type": "dictionary",
+        "name": "HIDDeviceFilter",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "vendorId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevicefilter-vendorid"
+          },
+          {
+            "type": "field",
+            "name": "productId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevicefilter-productid"
+          },
+          {
+            "type": "field",
+            "name": "usagePage",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevicefilter-usagepage"
+          },
+          {
+            "type": "field",
+            "name": "usage",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevicefilter-usage"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://hid.spec.whatwg.org/#dom-hiddevicefilter"
+      },
+      "HIDDevice": {
+        "fragment": "[Exposed=(DedicatedWorker,ServiceWorker,Window), SecureContext]\ninterface HIDDevice : EventTarget {\n    attribute EventHandler oninputreport;\n    readonly attribute boolean opened;\n    readonly attribute unsigned short vendorId;\n    readonly attribute unsigned short productId;\n    readonly attribute DOMString productName;\n    readonly attribute FrozenArray<HIDCollectionInfo> collections;\n    Promise<undefined> open();\n    Promise<undefined> close();\n    Promise<undefined> forget();\n    Promise<undefined> sendReport([EnforceRange] octet reportId, BufferSource data);\n    Promise<undefined> sendFeatureReport(\n        [EnforceRange] octet reportId,\n        BufferSource data);\n    Promise<DataView> receiveFeatureReport([EnforceRange] octet reportId);\n};",
+        "type": "interface",
+        "name": "HIDDevice",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "oninputreport",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevice-oninputreport"
+          },
+          {
+            "type": "attribute",
+            "name": "opened",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevice-opened"
+          },
+          {
+            "type": "attribute",
+            "name": "vendorId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevice-vendorid"
+          },
+          {
+            "type": "attribute",
+            "name": "productId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevice-productid"
+          },
+          {
+            "type": "attribute",
+            "name": "productName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevice-productname"
+          },
+          {
+            "type": "attribute",
+            "name": "collections",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HIDCollectionInfo"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevice-collections"
+          },
+          {
+            "type": "operation",
+            "name": "open",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevice-open"
+          },
+          {
+            "type": "operation",
+            "name": "close",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevice-close"
+          },
+          {
+            "type": "operation",
+            "name": "forget",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevice-forget"
+          },
+          {
+            "type": "operation",
+            "name": "sendReport",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "reportId",
+                "extAttrs": [
+                  {
+                    "type": "extended-attribute",
+                    "name": "EnforceRange",
+                    "rhs": null,
+                    "arguments": []
+                  }
+                ],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevice-sendreport"
+          },
+          {
+            "type": "operation",
+            "name": "sendFeatureReport",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "reportId",
+                "extAttrs": [
+                  {
+                    "type": "extended-attribute",
+                    "name": "EnforceRange",
+                    "rhs": null,
+                    "arguments": []
+                  }
+                ],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevice-sendfeaturereport"
+          },
+          {
+            "type": "operation",
+            "name": "receiveFeatureReport",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DataView"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "reportId",
+                "extAttrs": [
+                  {
+                    "type": "extended-attribute",
+                    "name": "EnforceRange",
+                    "rhs": null,
+                    "arguments": []
+                  }
+                ],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "octet"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://hid.spec.whatwg.org/#dom-hiddevice-receivefeaturereport"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "ServiceWorker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://hid.spec.whatwg.org/#dom-hiddevice"
+      },
+      "HIDConnectionEvent": {
+        "fragment": "[Exposed=(DedicatedWorker,ServiceWorker,Window), SecureContext]\ninterface HIDConnectionEvent : Event {\n    constructor(DOMString type, HIDConnectionEventInit eventInitDict);\n    [SameObject] readonly attribute HIDDevice device;\n};",
+        "type": "interface",
+        "name": "HIDConnectionEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HIDConnectionEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://hid.spec.whatwg.org/#dom-hidconnectionevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "device",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HIDDevice"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://hid.spec.whatwg.org/#dom-hidconnectionevent-device"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "ServiceWorker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://hid.spec.whatwg.org/#dom-hidconnectionevent"
+      },
+      "HIDConnectionEventInit": {
+        "fragment": "dictionary HIDConnectionEventInit : EventInit {\n    required HIDDevice device;\n};",
+        "type": "dictionary",
+        "name": "HIDConnectionEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "device",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HIDDevice"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://hid.spec.whatwg.org/#dom-hidconnectioneventinit-device"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://hid.spec.whatwg.org/#dom-hidconnectioneventinit"
+      },
+      "HIDInputReportEvent": {
+        "fragment": "[Exposed=(DedicatedWorker,ServiceWorker,Window), SecureContext]\ninterface HIDInputReportEvent : Event {\n    constructor(DOMString type, HIDInputReportEventInit eventInitDict);\n    [SameObject] readonly attribute HIDDevice device;\n    readonly attribute octet reportId;\n    readonly attribute DataView data;\n};",
+        "type": "interface",
+        "name": "HIDInputReportEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HIDInputReportEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://hid.spec.whatwg.org/#dom-hidinputreportevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "device",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HIDDevice"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://hid.spec.whatwg.org/#dom-hidinputreportevent-device"
+          },
+          {
+            "type": "attribute",
+            "name": "reportId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://hid.spec.whatwg.org/#dom-hidinputreportevent-reportid"
+          },
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DataView"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://hid.spec.whatwg.org/#dom-hidinputreportevent-data"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "ServiceWorker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://hid.spec.whatwg.org/#dom-hidinputreportevent"
+      },
+      "HIDInputReportEventInit": {
+        "fragment": "dictionary HIDInputReportEventInit : EventInit {\n    required HIDDevice device;\n    required octet reportId;\n    required DataView data;\n};",
+        "type": "dictionary",
+        "name": "HIDInputReportEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "device",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HIDDevice"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://hid.spec.whatwg.org/#dom-hidinputreporteventinit-device"
+          },
+          {
+            "type": "field",
+            "name": "reportId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://hid.spec.whatwg.org/#dom-hidinputreporteventinit-reportid"
+          },
+          {
+            "type": "field",
+            "name": "data",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DataView"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://hid.spec.whatwg.org/#dom-hidinputreporteventinit-data"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://hid.spec.whatwg.org/#dom-hidinputreporteventinit"
+      },
+      "HIDCollectionInfo": {
+        "fragment": "dictionary HIDCollectionInfo {\n    unsigned short usagePage;\n    unsigned short usage;\n    octet type;\n    sequence<HIDCollectionInfo> children;\n    sequence<HIDReportInfo> inputReports;\n    sequence<HIDReportInfo> outputReports;\n    sequence<HIDReportInfo> featureReports;\n};",
+        "type": "dictionary",
+        "name": "HIDCollectionInfo",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "usagePage",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidcollectioninfo-usagepage"
+          },
+          {
+            "type": "field",
+            "name": "usage",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidcollectioninfo-usage"
+          },
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidcollectioninfo-type"
+          },
+          {
+            "type": "field",
+            "name": "children",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HIDCollectionInfo"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidcollectioninfo-children"
+          },
+          {
+            "type": "field",
+            "name": "inputReports",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HIDReportInfo"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidcollectioninfo-inputreports"
+          },
+          {
+            "type": "field",
+            "name": "outputReports",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HIDReportInfo"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidcollectioninfo-outputreports"
+          },
+          {
+            "type": "field",
+            "name": "featureReports",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HIDReportInfo"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidcollectioninfo-featurereports"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://hid.spec.whatwg.org/#dom-hidcollectioninfo"
+      },
+      "HIDReportInfo": {
+        "fragment": "dictionary HIDReportInfo {\n    octet reportId;\n    sequence<HIDReportItem> items;\n};",
+        "type": "dictionary",
+        "name": "HIDReportInfo",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "reportId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportinfo-reportid"
+          },
+          {
+            "type": "field",
+            "name": "items",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HIDReportItem"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportinfo-items"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://hid.spec.whatwg.org/#dom-hidreportinfo"
+      },
+      "HIDReportItem": {
+        "fragment": "dictionary HIDReportItem {\n    boolean isAbsolute;\n    boolean isArray;\n    boolean isBufferedBytes;\n    boolean isConstant;\n    boolean isLinear;\n    boolean isRange;\n    boolean isVolatile;\n    boolean hasNull;\n    boolean hasPreferredState;\n    boolean wrap;\n    sequence<unsigned long> usages;\n    unsigned long usageMinimum;\n    unsigned long usageMaximum;\n    unsigned short reportSize;\n    unsigned short reportCount;\n    byte unitExponent;\n    HIDUnitSystem unitSystem;\n    byte unitFactorLengthExponent;\n    byte unitFactorMassExponent;\n    byte unitFactorTimeExponent;\n    byte unitFactorTemperatureExponent;\n    byte unitFactorCurrentExponent;\n    byte unitFactorLuminousIntensityExponent;\n    long logicalMinimum;\n    long logicalMaximum;\n    long physicalMinimum;\n    long physicalMaximum;\n    sequence<DOMString> strings;\n};",
+        "type": "dictionary",
+        "name": "HIDReportItem",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "isAbsolute",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-isabsolute"
+          },
+          {
+            "type": "field",
+            "name": "isArray",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-isarray"
+          },
+          {
+            "type": "field",
+            "name": "isBufferedBytes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-isbufferedbytes"
+          },
+          {
+            "type": "field",
+            "name": "isConstant",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-isconstant"
+          },
+          {
+            "type": "field",
+            "name": "isLinear",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-islinear"
+          },
+          {
+            "type": "field",
+            "name": "isRange",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-isrange"
+          },
+          {
+            "type": "field",
+            "name": "isVolatile",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-isvolatile"
+          },
+          {
+            "type": "field",
+            "name": "hasNull",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-hasnull"
+          },
+          {
+            "type": "field",
+            "name": "hasPreferredState",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-haspreferredstate"
+          },
+          {
+            "type": "field",
+            "name": "wrap",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-wrap"
+          },
+          {
+            "type": "field",
+            "name": "usages",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-usages"
+          },
+          {
+            "type": "field",
+            "name": "usageMinimum",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-usageminimum"
+          },
+          {
+            "type": "field",
+            "name": "usageMaximum",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-usagemaximum"
+          },
+          {
+            "type": "field",
+            "name": "reportSize",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-reportsize"
+          },
+          {
+            "type": "field",
+            "name": "reportCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-reportcount"
+          },
+          {
+            "type": "field",
+            "name": "unitExponent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "byte"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-unitexponent"
+          },
+          {
+            "type": "field",
+            "name": "unitSystem",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HIDUnitSystem"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-unitsystem"
+          },
+          {
+            "type": "field",
+            "name": "unitFactorLengthExponent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "byte"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-unitfactorlengthexponent"
+          },
+          {
+            "type": "field",
+            "name": "unitFactorMassExponent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "byte"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-unitfactormassexponent"
+          },
+          {
+            "type": "field",
+            "name": "unitFactorTimeExponent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "byte"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-unitfactortimeexponent"
+          },
+          {
+            "type": "field",
+            "name": "unitFactorTemperatureExponent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "byte"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-unitfactortemperatureexponent"
+          },
+          {
+            "type": "field",
+            "name": "unitFactorCurrentExponent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "byte"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-unitfactorcurrentexponent"
+          },
+          {
+            "type": "field",
+            "name": "unitFactorLuminousIntensityExponent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "byte"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-unitfactorluminousintensityexponent"
+          },
+          {
+            "type": "field",
+            "name": "logicalMinimum",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-logicalminimum"
+          },
+          {
+            "type": "field",
+            "name": "logicalMaximum",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-logicalmaximum"
+          },
+          {
+            "type": "field",
+            "name": "physicalMinimum",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-physicalminimum"
+          },
+          {
+            "type": "field",
+            "name": "physicalMaximum",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-physicalmaximum"
+          },
+          {
+            "type": "field",
+            "name": "strings",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://hid.spec.whatwg.org/#dom-hidreportitem-strings"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://hid.spec.whatwg.org/#dom-hidreportitem"
+      },
+      "HIDUnitSystem": {
+        "fragment": "enum HIDUnitSystem {\n    \"none\", \"si-linear\", \"si-rotation\", \"english-linear\",\n    \"english-rotation\", \"vendor-defined\", \"reserved\"\n};",
+        "type": "enum",
+        "name": "HIDUnitSystem",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://hid.spec.whatwg.org/#dom-hidunitsystem-none"
+          },
+          {
+            "type": "enum-value",
+            "value": "si-linear",
+            "href": "https://hid.spec.whatwg.org/#dom-hidunitsystem-si-linear"
+          },
+          {
+            "type": "enum-value",
+            "value": "si-rotation",
+            "href": "https://hid.spec.whatwg.org/#dom-hidunitsystem-si-rotation"
+          },
+          {
+            "type": "enum-value",
+            "value": "english-linear",
+            "href": "https://hid.spec.whatwg.org/#dom-hidunitsystem-english-linear"
+          },
+          {
+            "type": "enum-value",
+            "value": "english-rotation",
+            "href": "https://hid.spec.whatwg.org/#dom-hidunitsystem-english-rotation"
+          },
+          {
+            "type": "enum-value",
+            "value": "vendor-defined",
+            "href": "https://hid.spec.whatwg.org/#dom-hidunitsystem-vendor-defined"
+          },
+          {
+            "type": "enum-value",
+            "value": "reserved",
+            "href": "https://hid.spec.whatwg.org/#dom-hidunitsystem-reserved"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://hid.spec.whatwg.org/#dom-hidunitsystem"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[SecureContext] partial interface Navigator {\n    [SameObject] readonly attribute HID hid;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "hid",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "HID"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://hid.spec.whatwg.org/#dom-navigator-hid"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "WorkerNavigator": [
+        {
+          "fragment": "[Exposed=(DedicatedWorker,ServiceWorker), SecureContext]\npartial interface WorkerNavigator {\n    [SameObject] readonly attribute HID hid;\n};",
+          "type": "interface",
+          "name": "WorkerNavigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "hid",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "HID"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://hid.spec.whatwg.org/#dom-workernavigator-hid"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "DedicatedWorker"
+                  },
+                  {
+                    "value": "ServiceWorker"
+                  }
+                ]
+              },
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "DedicatedWorker": [
+        "WorkerNavigator",
+        "HID",
+        "HIDDevice",
+        "HIDConnectionEvent",
+        "HIDInputReportEvent"
+      ],
+      "ServiceWorker": [
+        "WorkerNavigator",
+        "HID",
+        "HIDDevice",
+        "HIDConnectionEvent",
+        "HIDInputReportEvent"
+      ],
+      "Window": [
+        "HID",
+        "HIDDevice",
+        "HIDConnectionEvent",
+        "HIDInputReportEvent"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "HID"
+      ],
+      "WorkerNavigator": [
+        "HID"
+      ],
+      "HID": [
+        "EventTarget",
+        "EventHandler",
+        "HIDDevice",
+        "HIDDeviceRequestOptions"
+      ],
+      "HIDDeviceRequestOptions": [
+        "HIDDeviceFilter"
+      ],
+      "HIDDeviceFilter": [],
+      "HIDDevice": [
+        "EventTarget",
+        "EventHandler",
+        "HIDCollectionInfo",
+        "BufferSource",
+        "DataView"
+      ],
+      "HIDConnectionEvent": [
+        "Event",
+        "HIDConnectionEventInit",
+        "HIDDevice"
+      ],
+      "HIDConnectionEventInit": [
+        "EventInit",
+        "HIDDevice"
+      ],
+      "HIDInputReportEvent": [
+        "Event",
+        "HIDInputReportEventInit",
+        "HIDDevice",
+        "DataView"
+      ],
+      "HIDInputReportEventInit": [
+        "EventInit",
+        "HIDDevice",
+        "DataView"
+      ],
+      "HIDCollectionInfo": [
+        "HIDCollectionInfo",
+        "HIDReportInfo"
+      ],
+      "HIDReportInfo": [
+        "HIDReportItem"
+      ],
+      "HIDReportItem": [
+        "HIDUnitSystem"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator",
+      "WorkerNavigator",
+      "EventTarget",
+      "EventHandler",
+      "BufferSource",
+      "DataView",
+      "Event",
+      "EventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

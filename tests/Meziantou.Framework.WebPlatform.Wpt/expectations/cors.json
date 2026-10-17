@@ -1,0 +1,97 @@
+{
+  "cors/304.htm": {
+    "total": 4,
+    "failures": {
+      "A 304 can change Access-Control-Allow-Origin": "FAIL",
+      "A 304 can contract Access-Control-Expose-Headers": "FAIL",
+      "A 304 can expand Access-Control-Expose-Headers": "FAIL",
+      "A 304 response with no CORS headers inherits from the stored response": "FAIL"
+    }
+  },
+  "cors/access-control-expose-headers-parsing.window.js": {
+    "total": 16
+  },
+  "cors/basic.htm": {
+    "total": 12
+  },
+  "cors/client-hint-request-headers-2.tentative.htm": {
+    "total": 1,
+    "failures": {
+      "Client hint headers are simple headers": "FAIL"
+    }
+  },
+  "cors/client-hint-request-headers.htm": {
+    "total": 8
+  },
+  "cors/cors-safelisted-request-header.any.js": {
+    "total": 49
+  },
+  "cors/cors-safelisted-request-header.any.js#dedicatedworker": {
+    "total": 49
+  },
+  "cors/credentials-flag.htm": {
+    "total": 15
+  },
+  "cors/image-tainting-in-cross-origin-iframe.sub.html": {
+    "total": 1
+  },
+  "cors/late-upload-events.htm": {
+    "total": 2
+  },
+  "cors/origin.htm": {
+    "total": 64
+  },
+  "cors/preflight-cache-partitioning.sub.window.js": {
+    "total": 1
+  },
+  "cors/preflight-cache.htm": {
+    "total": 6
+  },
+  "cors/preflight-failure.htm": {
+    "total": 37
+  },
+  "cors/redirect-origin.htm": {
+    "total": 43
+  },
+  "cors/redirect-preflight-2.htm": {
+    "total": 2
+  },
+  "cors/redirect-preflight.htm": {
+    "total": 5
+  },
+  "cors/redirect-userinfo.htm": {
+    "total": 6
+  },
+  "cors/remote-origin.htm": {
+    "total": 45
+  },
+  "cors/request-headers.htm": {
+    "total": 6
+  },
+  "cors/response-headers.htm": {
+    "total": 17
+  },
+  "cors/script-304.html": {
+    "total": 2
+  },
+  "cors/simple-requests-ch.tentative.htm": {
+    "total": 3,
+    "failures": {
+      "No preflight GET and {\"save-data\":\"on\",\"device-memory\":\"2.0\",\"dpr\":\"3.0\",\"width\":\"1200\",\"viewport-width\":\"1300\",\"rtt\":\"1\",\"downlink\":\"1.0\",\"ect\":\"2g\"}": "FAIL",
+      "No preflight HEAD and {\"save-data\":\"on\",\"device-memory\":\"2.0\",\"dpr\":\"3.0\",\"width\":\"1200\",\"viewport-width\":\"1300\",\"rtt\":\"1\",\"downlink\":\"1.0\",\"ect\":\"2g\"}": "FAIL",
+      "No preflight POST and {\"save-data\":\"on\",\"device-memory\":\"2.0\",\"dpr\":\"3.0\",\"width\":\"1200\",\"viewport-width\":\"1300\",\"rtt\":\"1\",\"downlink\":\"1.0\",\"ect\":\"2g\"}": "FAIL"
+    }
+  },
+  "cors/simple-requests.htm": {
+    "total": 24
+  },
+  "cors/status-async.htm": {
+    "total": 24
+  },
+  "cors/status-preflight.htm": {
+    "total": 16
+  },
+  "cors/status.htm": {
+    "total": 5
+  }
+}

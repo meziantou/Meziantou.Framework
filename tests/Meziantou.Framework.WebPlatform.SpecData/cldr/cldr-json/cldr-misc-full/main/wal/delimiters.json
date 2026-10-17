@@ -1,0 +1,15 @@
+{
+  "main": {
+    "wal": {
+      "identity": {
+        "language": "wal"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

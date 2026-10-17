@@ -1,0 +1,229 @@
+{
+  "spec": {
+    "title": "CSS Scroll Snap Module Level 2",
+    "url": "https://drafts.csswg.org/css-scroll-snap-2/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "SnapEvent"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "SnapEventInit": {
+        "fragment": "dictionary SnapEventInit : EventInit {\n  Node? snapTargetBlock;\n  Node? snapTargetInline;\n};",
+        "type": "dictionary",
+        "name": "SnapEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "snapTargetBlock",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Node"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/css-scroll-snap-2/#dom-snapeventinit-snaptargetblock"
+          },
+          {
+            "type": "field",
+            "name": "snapTargetInline",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Node"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/css-scroll-snap-2/#dom-snapeventinit-snaptargetinline"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-scroll-snap-2/#dictdef-snapeventinit"
+      },
+      "SnapEvent": {
+        "fragment": "[Exposed=Window]\ninterface SnapEvent : Event {\n  constructor(DOMString type, optional SnapEventInit eventInitDict = {});\n  readonly attribute Node? snapTargetBlock;\n  readonly attribute Node? snapTargetInline;\n};",
+        "type": "interface",
+        "name": "SnapEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SnapEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/css-scroll-snap-2/#dom-snapevent-snapevent"
+          },
+          {
+            "type": "attribute",
+            "name": "snapTargetBlock",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Node"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-scroll-snap-2/#dom-snapevent-snaptargetblock"
+          },
+          {
+            "type": "attribute",
+            "name": "snapTargetInline",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Node"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-scroll-snap-2/#dom-snapevent-snaptargetinline"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-scroll-snap-2/#snapevent"
+      }
+    },
+    "idlExtendedNames": {
+      "GlobalEventHandlers": [
+        {
+          "fragment": "partial interface mixin GlobalEventHandlers {\n  attribute EventHandler onsnapchanged;\n  attribute EventHandler onsnapchanging;\n};",
+          "type": "interface mixin",
+          "name": "GlobalEventHandlers",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onsnapchanged",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://drafts.csswg.org/css-scroll-snap-2/#dom-globaleventhandlers-onsnapchanged"
+            },
+            {
+              "type": "attribute",
+              "name": "onsnapchanging",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://drafts.csswg.org/css-scroll-snap-2/#dom-globaleventhandlers-onsnapchanging"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "SnapEvent"
+      ]
+    },
+    "dependencies": {
+      "SnapEventInit": [
+        "EventInit",
+        "Node"
+      ],
+      "SnapEvent": [
+        "Event",
+        "SnapEventInit",
+        "Node"
+      ],
+      "GlobalEventHandlers": [
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "EventInit",
+      "Node",
+      "Event",
+      "GlobalEventHandlers",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

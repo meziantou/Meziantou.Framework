@@ -1,0 +1,17 @@
+{
+  "main": {
+    "rhg-Rohg-BD": {
+      "identity": {
+        "language": "rhg",
+        "script": "Rohg",
+        "territory": "BD"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

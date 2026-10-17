@@ -1,0 +1,50 @@
+{
+  "css/css-link-params/inheritance.html": {
+    "total": 2
+  },
+  "css/css-link-params/link-parameters-computed.html": {
+    "total": 12,
+    "failures": {
+      "Property link-parameters value 'param(--a, )'": "FAIL",
+      "Property link-parameters value 'param(--a, ), param(--b, )'": "FAIL"
+    }
+  },
+  "css/css-link-params/link-parameters-dynamic.html": {
+    "total": 1
+  },
+  "css/css-link-params/link-parameters-invalid.html": {
+    "total": 12,
+    "failures": {
+      "e.style['link-parameters'] = \"param(--)\" should not set the property value": "FAIL",
+      "e.style['link-parameters'] = \"param(--a red)\" should not set the property value": "FAIL",
+      "e.style['link-parameters'] = \"param(--a\" should not set the property value": "FAIL",
+      "e.style['link-parameters'] = \"param(--a)\" should not set the property value": "FAIL",
+      "e.style['link-parameters'] = \"param(--a), param(--b)\" should not set the property value": "FAIL"
+    }
+  },
+  "css/css-link-params/link-parameters-no-interpolation.html": {
+    "total": 42
+  },
+  "css/css-link-params/link-parameters-typed.html": {
+    "total": 15,
+    "failures": {
+      "Property link-parameters value 'param(--a <color>, currentcolor)'": "FAIL",
+      "e.style['link-parameters'] = \"param(--a type(<color> | <length>), orange)\" should set the property value": "FAIL",
+      "e.style['link-parameters'] = \"param(--a type(<color>), orange)\" should set the property value": "FAIL"
+    }
+  },
+  "css/css-link-params/link-parameters-valid.html": {
+    "total": 6,
+    "failures": {
+      "e.style['link-parameters'] = \"param(--a, )\" should set the property value": "FAIL",
+      "e.style['link-parameters'] = \"param(--a, ), param(--b, )\" should set the property value": "FAIL"
+    }
+  },
+  "css/css-link-params/url-modifier-param-typed.html": {
+    "total": 3,
+    "failures": {
+      "e.style['background-image'] = \"url(\\\"icon.svg\\\" param(--c <color>, green))\" should set the property value": "FAIL",
+      "e.style['background-image'] = \"url(\\\"icon.svg\\\" param(--c type(<color>), green))\" should set the property value": "FAIL"
+    }
+  }
+}

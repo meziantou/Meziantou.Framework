@@ -1,0 +1,466 @@
+{
+  "spec": {
+    "title": "Animation Triggers",
+    "url": "https://drafts.csswg.org/animation-triggers-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "AnimationTrigger"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "AnimationTrigger": {
+        "fragment": "[Exposed=Window]\ninterface AnimationTrigger {\n  constructor(optional AnimationTriggerOptions options = {});\n  attribute AnimationTimeline timeline;\n  attribute AnimationTriggerBehavior behavior;\n  attribute any activationRangeStart;\n  attribute any activationRangeEnd;\n  attribute any activeRangeStart;\n  attribute any activeRangeEnd;\n};",
+        "type": "interface",
+        "name": "AnimationTrigger",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AnimationTriggerOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/animation-triggers-1/#dom-animationtrigger-animationtrigger"
+          },
+          {
+            "type": "attribute",
+            "name": "timeline",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AnimationTimeline"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/animation-triggers-1/#dom-animationtrigger-timeline"
+          },
+          {
+            "type": "attribute",
+            "name": "behavior",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AnimationTriggerBehavior"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/animation-triggers-1/#dom-animationtrigger-behavior"
+          },
+          {
+            "type": "attribute",
+            "name": "activationRangeStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/animation-triggers-1/#dom-animationtrigger-activationrangestart"
+          },
+          {
+            "type": "attribute",
+            "name": "activationRangeEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/animation-triggers-1/#dom-animationtrigger-activationrangeend"
+          },
+          {
+            "type": "attribute",
+            "name": "activeRangeStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/animation-triggers-1/#dom-animationtrigger-activerangestart"
+          },
+          {
+            "type": "attribute",
+            "name": "activeRangeEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/animation-triggers-1/#dom-animationtrigger-activerangeend"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/animation-triggers-1/#animationtrigger"
+      },
+      "AnimationTriggerOptions": {
+        "fragment": "dictionary AnimationTriggerOptions {\n  AnimationTimeline? timeline;\n  AnimationTriggerBehavior? behavior = \"once\";\n  (TimelineRangeOffset or CSSNumericValue or CSSKeywordValue or DOMString) activationRangeStart = \"normal\";\n  (TimelineRangeOffset or CSSNumericValue or CSSKeywordValue or DOMString) activationRangeEnd = \"normal\";\n  (TimelineRangeOffset or CSSNumericValue or CSSKeywordValue or DOMString) activeRangeStart = \"auto\";\n  (TimelineRangeOffset or CSSNumericValue or CSSKeywordValue or DOMString) activeRangeEnd = \"auto\";\n};",
+        "type": "dictionary",
+        "name": "AnimationTriggerOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "timeline",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "AnimationTimeline"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/animation-triggers-1/#dom-animationtriggeroptions-timeline"
+          },
+          {
+            "type": "field",
+            "name": "behavior",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "AnimationTriggerBehavior"
+            },
+            "default": {
+              "type": "string",
+              "value": "once"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/animation-triggers-1/#dom-animationtriggeroptions-behavior"
+          },
+          {
+            "type": "field",
+            "name": "activationRangeStart",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TimelineRangeOffset"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSNumericValue"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSKeywordValue"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": {
+              "type": "string",
+              "value": "normal"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/animation-triggers-1/#dom-animationtriggeroptions-activationrangestart"
+          },
+          {
+            "type": "field",
+            "name": "activationRangeEnd",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TimelineRangeOffset"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSNumericValue"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSKeywordValue"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": {
+              "type": "string",
+              "value": "normal"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/animation-triggers-1/#dom-animationtriggeroptions-activationrangeend"
+          },
+          {
+            "type": "field",
+            "name": "activeRangeStart",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TimelineRangeOffset"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSNumericValue"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSKeywordValue"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": {
+              "type": "string",
+              "value": "auto"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/animation-triggers-1/#dom-animationtriggeroptions-activerangestart"
+          },
+          {
+            "type": "field",
+            "name": "activeRangeEnd",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TimelineRangeOffset"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSNumericValue"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSKeywordValue"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": {
+              "type": "string",
+              "value": "auto"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/animation-triggers-1/#dom-animationtriggeroptions-activerangeend"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/animation-triggers-1/#dictdef-animationtriggeroptions"
+      },
+      "AnimationTriggerBehavior": {
+        "fragment": "enum AnimationTriggerBehavior { \"once\", \"repeat\", \"alternate\", \"state\" };",
+        "type": "enum",
+        "name": "AnimationTriggerBehavior",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "once"
+          },
+          {
+            "type": "enum-value",
+            "value": "repeat"
+          },
+          {
+            "type": "enum-value",
+            "value": "alternate"
+          },
+          {
+            "type": "enum-value",
+            "value": "state"
+          }
+        ],
+        "extAttrs": []
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "AnimationTrigger"
+      ]
+    },
+    "dependencies": {
+      "AnimationTrigger": [
+        "AnimationTriggerOptions",
+        "AnimationTimeline",
+        "AnimationTriggerBehavior"
+      ],
+      "AnimationTriggerOptions": [
+        "AnimationTimeline",
+        "AnimationTriggerBehavior",
+        "TimelineRangeOffset",
+        "CSSNumericValue",
+        "CSSKeywordValue"
+      ]
+    },
+    "externalDependencies": [
+      "AnimationTimeline",
+      "TimelineRangeOffset",
+      "CSSNumericValue",
+      "CSSKeywordValue"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

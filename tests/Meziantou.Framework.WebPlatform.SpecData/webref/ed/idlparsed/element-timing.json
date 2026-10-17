@@ -1,0 +1,281 @@
+{
+  "spec": {
+    "title": "Element Timing API",
+    "url": "https://w3c.github.io/element-timing/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "PerformanceElementTiming"
+        ]
+      }
+    },
+    "idlNames": {
+      "PerformanceElementTiming": {
+        "fragment": "[Exposed=Window]\ninterface PerformanceElementTiming : PerformanceEntry {\n    readonly attribute DOMHighResTimeStamp renderTime;\n    readonly attribute DOMHighResTimeStamp loadTime;\n    readonly attribute DOMRectReadOnly intersectionRect;\n    readonly attribute DOMString identifier;\n    readonly attribute unsigned long naturalWidth;\n    readonly attribute unsigned long naturalHeight;\n    readonly attribute DOMString id;\n    readonly attribute Element? element;\n    readonly attribute USVString url;\n    [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "PerformanceElementTiming",
+        "inheritance": "PerformanceEntry",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "renderTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/element-timing/#dom-performanceelementtiming-rendertime"
+          },
+          {
+            "type": "attribute",
+            "name": "loadTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/element-timing/#dom-performanceelementtiming-loadtime"
+          },
+          {
+            "type": "attribute",
+            "name": "intersectionRect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRectReadOnly"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/element-timing/#dom-performanceelementtiming-intersectionrect"
+          },
+          {
+            "type": "attribute",
+            "name": "identifier",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/element-timing/#dom-performanceelementtiming-identifier"
+          },
+          {
+            "type": "attribute",
+            "name": "naturalWidth",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/element-timing/#dom-performanceelementtiming-naturalwidth"
+          },
+          {
+            "type": "attribute",
+            "name": "naturalHeight",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/element-timing/#dom-performanceelementtiming-naturalheight"
+          },
+          {
+            "type": "attribute",
+            "name": "id",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/element-timing/#dom-performanceelementtiming-id"
+          },
+          {
+            "type": "attribute",
+            "name": "element",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Element"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/element-timing/#dom-performanceelementtiming-element"
+          },
+          {
+            "type": "attribute",
+            "name": "url",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/element-timing/#dom-performanceelementtiming-url"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/element-timing/#dom-performanceelementtiming-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/element-timing/#performanceelementtiming"
+      }
+    },
+    "idlExtendedNames": {
+      "PerformanceElementTiming": [
+        {
+          "fragment": "PerformanceElementTiming includes PaintTimingMixin;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "PerformanceElementTiming",
+          "includes": "PaintTimingMixin"
+        }
+      ],
+      "Element": [
+        {
+          "fragment": "partial interface Element {\n    [CEReactions, Reflect] attribute DOMString elementTiming;\n};",
+          "type": "interface",
+          "name": "Element",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "elementTiming",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "Reflect",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/element-timing/#dom-element-elementtiming"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "PerformanceElementTiming"
+      ]
+    },
+    "dependencies": {
+      "PerformanceElementTiming": [
+        "PerformanceEntry",
+        "DOMHighResTimeStamp",
+        "DOMRectReadOnly",
+        "Element",
+        "PaintTimingMixin"
+      ],
+      "Element": []
+    },
+    "externalDependencies": [
+      "PerformanceEntry",
+      "DOMHighResTimeStamp",
+      "DOMRectReadOnly",
+      "Element"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

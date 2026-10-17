@@ -1,0 +1,2626 @@
+{
+  "css/css-overflow/abspos-relayout-with-scrollable-descendant-vertical-lr.html": {
+    "total": 2
+  },
+  "css/css-overflow/abspos-relayout-with-scrollable-descendant.html": {
+    "total": 2
+  },
+  "css/css-overflow/abspos-shrink-to-fit-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/add-scroller-then-scroll-content-into-view.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/auto-scrollbar-inline-children.html": {
+    "total": 1
+  },
+  "css/css-overflow/before-after-pseudo-element-scrolling.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/button-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/clip-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/clip-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/clip-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/clip-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/clip-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/clip-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/clip-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/clip-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/clipped-scroller-add-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/column-creates-computed-style.html": {
+    "total": 1
+  },
+  "css/css-overflow/column-style-change-triggers-relayout.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/column-updates-computed-style.html": {
+    "total": 1
+  },
+  "css/css-overflow/content-change-then-scroll-into-view.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/display-flex-svg-overflow-default.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/document-element-overflow-hidden-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/dynamic-visible-to-clip-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/dynamic-visible-to-clip-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/fit-content-textarea-with-scrollbar.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/flex-column-container-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/flex-container-multiple-items-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/flex-container-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/flex-nested-container-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/flex-orthogonal-writing-mode-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/float-with-relpos-and-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/float-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/grid-container-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/grid-nested-container-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/grid-orthogonal-writing-mode-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/hit-test-border-radius-and-perspective-projection.html": {
+    "total": 2
+  },
+  "css/css-overflow/hit-test-border-radius-and-perspective.html": {
+    "total": 1
+  },
+  "css/css-overflow/hit-test-stacking-context-parent-border-radius.html": {
+    "total": 13
+  },
+  "css/css-overflow/incremental-scroll-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/incremental-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/inheritance.html": {
+    "total": 18
+  },
+  "css/css-overflow/inline-block-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/input-scrollable-region-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/keyboard-scroll.html": {
+    "total": 3
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-015.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-028.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-030.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-031.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-032.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-033.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-034.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-035.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-036.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-037.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-038.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-039.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-040.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-041.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-bidi-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-bidi-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-bidi-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-bidi-004.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-quirk-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-quirk-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-repaint-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-repaint-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-repaint-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/block-ellipsis-repaint-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/continue-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/discard/discard-multicol-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/discard/discard-multicol-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/discard/discard-multicol-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/discard/discard-multicol-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-012.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-013.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-022.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-023.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-024.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-025.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-028.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-030.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-031.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-032.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-033.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-034.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-035.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-036.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-037.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-038.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-039.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-041.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-042.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-003.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-015.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-018.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-019.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-020.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-021.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-022.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-023.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-024.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-027.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-028.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-029.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-030.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-031.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-032.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-033.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-034.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-035.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-036.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-037.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-038.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-039.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-040.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-041.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-042.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-043.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-044.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-045.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-046.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-047.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-048.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-049.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-050.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-051.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-052.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-053.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-054.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-055.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-056.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-057.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-058.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-059.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-060.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-061.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-062.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-063.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-with-ruby-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-with-ruby-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-with-ruby-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-with-ruby-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-with-ruby-005.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-balance-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-balance-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-balance-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-balance-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-balance-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-balance-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-balance-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-balance-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-balance-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-balance-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-balance-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-balance-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-bfc.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-content-height-with-dynamic-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-preserves-dom-content.html": {
+    "total": 2
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-abspos-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-block-in-inline-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-fixed-pos-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-010.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-008.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-030.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-031.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-032.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-033.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-034.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-035.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-036.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-037.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-038.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-039.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-040.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-043.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-045.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-046.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-048.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-049.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-050.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-051.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-052.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-053.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-abspos-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-block-in-inline-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-with-line-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/webkit-line-clamp-with-max-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/logical-overflow-001.html": {
+    "total": 2
+  },
+  "css/css-overflow/margin-block-end-scroll-area-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/max-content-nested-textarea-with-scrollbar.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/max-content-textarea-with-scrollbar.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/max-content-with-float-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/max-content-with-multiple-scrollable-descendants.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/max-width-container-with-scrollable-descendant-vertical-rl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/max-width-container-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/min-content-textarea-with-scrollbar.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/no-scrollable-overflow-vertical-rl-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/no-scrollable-overflow-vertical-rl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/orthogonal-flow-with-inline-end-margin.html": {
+    "total": 1
+  },
+  "css/css-overflow/orthogonal-writing-mode-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-abpos-transform.html": {
+    "total": 1
+  },
+  "css/css-overflow/overflow-auto-scrollbar-gutter-intrinsic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-auto-scrollbar-gutter-intrinsic-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-auto-scrollbar-gutter-intrinsic-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-auto-scrolling-with-margin-and-transform.html": {
+    "total": 1
+  },
+  "css/css-overflow/overflow-body-propagation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-body-propagation-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-canvas.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-cant-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-clamps-and-ignores-scroll-offsets-vertical-rl.html": {
+    "total": 1
+  },
+  "css/css-overflow/overflow-clip-content-visual-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-hit-testing.html": {
+    "total": 1
+  },
+  "css/css-overflow/overflow-clip-margin-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-010.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/overflow-clip-margin-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-border-radius-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-border-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-content-box-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-hit-testing.html": {
+    "total": 1
+  },
+  "css/css-overflow/overflow-clip-margin-intersection-observer.html": {
+    "total": 1
+  },
+  "css/css-overflow/overflow-clip-margin-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-mul-column-border-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-mul-column-content-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-mul-column-padding-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-svg.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/overflow-clip-margin-visual-box-and-value-with-border-radius.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/overflow-clip-margin-visual-box-and-value.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-margin-visual-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-no-off-axis-scrollbar.html": {
+    "total": 1
+  },
+  "css/css-overflow/overflow-clip-preserves-dom-content.html": {
+    "total": 2
+  },
+  "css/css-overflow/overflow-clip-rounded-table.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-scroll-size.html": {
+    "total": 2
+  },
+  "css/css-overflow/overflow-clip-transform-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-x-visible-y-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clip-y-visible-x-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-clipped-transparent-border-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-codependent-scrollbars.html": {
+    "total": 1
+  },
+  "css/css-overflow/overflow-does-not-apply-to-inline-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-ellipsis-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-empty-child-box.html": {
+    "total": 4
+  },
+  "css/css-overflow/overflow-hidden-resize-with-stacking-context-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-img-border-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-img-display-table.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-img-object-position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-img-scroll-non-replaced.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/overflow-img-scroll-replaced.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-img-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-img.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-inline-block-with-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-inline-transform-relative.html": {
+    "total": 1
+  },
+  "css/css-overflow/overflow-negative-margin-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-negative-margin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-no-frameset-propagation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-no-interpolation.html": {
+    "total": 126
+  },
+  "css/css-overflow/overflow-outside-padding.html": {
+    "total": 1
+  },
+  "css/css-overflow/overflow-overlay.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-padding.html": {
+    "total": 1
+  },
+  "css/css-overflow/overflow-recalc-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-replaced-element-001.html": {
+    "total": 1
+  },
+  "css/css-overflow/overflow-replaced-element-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/overflow-rtl-scroll-left.html": {
+    "total": 1
+  },
+  "css/css-overflow/overflow-scroll-big-border-small-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-scroll-intrinsic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-scroll-resize-visibility-hidden.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-shorthand-001.html": {
+    "total": 16
+  },
+  "css/css-overflow/overflow-shorthand-002.html": {
+    "total": 2
+  },
+  "css/css-overflow/overflow-video-hidden.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/overflow-video.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/paint-containment-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/parsing/block-ellipsis-invalid.html": {
+    "total": 11
+  },
+  "css/css-overflow/parsing/block-ellipsis-valid.html": {
+    "total": 3
+  },
+  "css/css-overflow/parsing/continue-invalid.html": {
+    "total": 9
+  },
+  "css/css-overflow/parsing/continue-valid.html": {
+    "total": 4
+  },
+  "css/css-overflow/parsing/getComputedStyle-scroll-button.html": {
+    "total": 5
+  },
+  "css/css-overflow/parsing/line-clamp-invalid.html": {
+    "total": 8
+  },
+  "css/css-overflow/parsing/line-clamp-valid.html": {
+    "total": 18
+  },
+  "css/css-overflow/parsing/max-lines-invalid.html": {
+    "total": 8
+  },
+  "css/css-overflow/parsing/max-lines-valid.html": {
+    "total": 5
+  },
+  "css/css-overflow/parsing/overflow-clip-margin-computed.html": {
+    "total": 25
+  },
+  "css/css-overflow/parsing/overflow-clip-margin.html": {
+    "total": 29
+  },
+  "css/css-overflow/parsing/overflow-computed.html": {
+    "total": 34
+  },
+  "css/css-overflow/parsing/overflow-invalid.html": {
+    "total": 6
+  },
+  "css/css-overflow/parsing/overflow-valid.html": {
+    "total": 18
+  },
+  "css/css-overflow/parsing/scroll-axis-lock-computed.html": {
+    "total": 8
+  },
+  "css/css-overflow/parsing/scroll-axis-lock-invalid.html": {
+    "total": 8
+  },
+  "css/css-overflow/parsing/scroll-axis-lock-valid.html": {
+    "total": 6
+  },
+  "css/css-overflow/parsing/scroll-buttons-invalid.html": {
+    "total": 8
+  },
+  "css/css-overflow/parsing/scroll-buttons-valid.html": {
+    "total": 37
+  },
+  "css/css-overflow/parsing/scroll-markers-computed.html": {
+    "total": 9
+  },
+  "css/css-overflow/parsing/scroll-markers-computed.tentative.html": {
+    "total": 4
+  },
+  "css/css-overflow/parsing/scroll-markers-invalid.html": {
+    "total": 5
+  },
+  "css/css-overflow/parsing/scroll-markers-invalid.tentative.html": {
+    "total": 8
+  },
+  "css/css-overflow/parsing/scroll-markers-valid.html": {
+    "total": 7
+  },
+  "css/css-overflow/parsing/scroll-target-group-computed.html": {
+    "total": 8
+  },
+  "css/css-overflow/parsing/scroll-target-group-invalid.html": {
+    "total": 5
+  },
+  "css/css-overflow/parsing/scroll-target-group-valid.html": {
+    "total": 6
+  },
+  "css/css-overflow/parsing/scrollbar-gutter-invalid.html": {
+    "total": 26
+  },
+  "css/css-overflow/parsing/scrollbar-gutter-valid.html": {
+    "total": 4
+  },
+  "css/css-overflow/parsing/text-overflow-computed.html": {
+    "total": 5
+  },
+  "css/css-overflow/parsing/text-overflow-invalid.html": {
+    "total": 3
+  },
+  "css/css-overflow/parsing/text-overflow-valid.html": {
+    "total": 5
+  },
+  "css/css-overflow/parsing/webkit-box-computed.html": {
+    "total": 30
+  },
+  "css/css-overflow/parsing/webkit-line-clamp-computed.html": {
+    "total": 5
+  },
+  "css/css-overflow/parsing/webkit-line-clamp-invalid.html": {
+    "total": 7
+  },
+  "css/css-overflow/parsing/webkit-line-clamp-valid.html": {
+    "total": 3
+  },
+  "css/css-overflow/resizer-no-size-change.tentative.html": {
+    "total": 1
+  },
+  "css/css-overflow/resizer-transform.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Resizer should account for transforms to decide resize direction": "FAIL"
+    }
+  },
+  "css/css-overflow/rounded-overflow-clip-visible.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/rounded-overflow-visible-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-axis-lock-dynamic-change.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-axis-lock-inheritance.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-axis-lock-interpolation.html": {
+    "total": 42
+  },
+  "css/css-overflow/scroll-axis-lock-none-touch-viewport.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-axis-lock-none-touch.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-axis-lock-none-wheel-viewport.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-axis-lock-none-wheel.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-axis-lock-not-propagated-from-body-quirks.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-marker-group-display-none.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-marker-group-hover-from-marker.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-marker-group-hover.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-003.html": {
+    "total": 8
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-005.html": {
+    "total": 8,
+    "failures": {
+      "Scroll fifth column into view": "FAIL",
+      "Scroll fourth column into view": "FAIL",
+      "Scroll fourth column into view again": "FAIL",
+      "Scroll second column into view": "FAIL",
+      "Scroll second column into view again": "FAIL",
+      "Scroll third column into view": "FAIL",
+      "Scroll third column into view again": "FAIL"
+    }
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-010.html": {
+    "total": 9
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-counters.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-dynamic-style-update.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-focus-001.html": {
+    "total": 9
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-focus-002.html": {
+    "total": 5
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-focus-003.html": {
+    "total": 5
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-focus-004.html": {
+    "total": 11,
+    "failures": {
+      "Focus column #10": "FAIL",
+      "Focus column #9": "FAIL"
+    }
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-group-style-remove.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-reattach-target-current.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/html-scroll-marker-target-before-after.html": {
+    "total": 6
+  },
+  "css/css-overflow/scroll-markers/nested-scroll-markers-under-content-visibility-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/root-scroll-button-activation.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/root-scroll-button.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/root-scroll-marker-activation-and-scroll-tracking.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/root-scroll-marker-activation-in-iframe.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/root-scroll-marker.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-button-activation-content-hit-test.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-button-activation-without-scroller.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-button-and-scroll-marker-not-in-event-path.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-markers/scroll-button-argument-case-insensitive.html": {
+    "total": 3
+  },
+  "css/css-overflow/scroll-markers/scroll-button-disabled-no-focus.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-button-display-none.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-markers/scroll-button-disposed-event-target.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-button-elementFromPoint.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-button-event-target.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-button-focus-active-element.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-button-hover-remove.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-button-hover.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-button-on-object.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-button-reattachment-position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-button-universal-before.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-activation-with-columns.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-activation.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-appearance.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-contents-appearance.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-counter-appearance.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-disabled-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-disabled-snapping.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-disabled-vertical-ltr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-disabled.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-dynamic-create-remove.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-enabled-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-enabled-vertical-ltr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-enabled.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-layout-parent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-scroll-distance.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-markers/scroll-buttons-selection.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-013.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-15.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-activation-default-direction-position.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-activation-focus-behaviour-links-mode.tentative.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-activation-focus-behaviour-tabs-mode.tentative.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-activation-retains-focus.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-activation-scroll.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-activation-specified-direction-position.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-active-unreached-target.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-controls-scroll-tracking-001.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-controls-scroll-tracking-002.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-controls-scroll-tracking-003.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-counters.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-disposed-event-target.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-double-activation.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-elementFromPoint.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-event-target.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-focus-visible.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-focus-within.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-003.html": {
+    "total": 5
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-012.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-014.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-add-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-add-dynamic-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-add-dynamic-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-add-dynamic-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-keeps-active-in-view.html": {
+    "reftest": "TIMEOUT"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-layout-parent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-position-change-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-position-change-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-position-change-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-scroll-container-change-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-scroll-container-change-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-size-container-query-root.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-size-container-query.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-snap-aligns-to-active.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-style-and-scroll-container-query.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-style-remove.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-hover-logical.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-hover-remove.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-hover.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-inert-001.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-inert-002.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-inert-003.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-multiple-activation.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-navigation-cycles.html": {
+    "total": 4
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-next-focus.html": {
+    "total": 1,
+    "failures": {
+      "CSS Test: next focus search start after ::scroll-marker activation is from its ultimate originating element": "FAIL"
+    }
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-scroll-container.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-selection-in-2d.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-selection-in-padded-scroller.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-selection-picks-closest.html": {
+    "total": 7
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-target-before-after.html": {
+    "total": 6
+  },
+  "css/css-overflow/scroll-markers/scroll-markers-added-after-content-visibility-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-markers-added-before-content-visibility-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-markers-focus-active-element.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-markers-focus-on-scrolling.html": {
+    "total": 3
+  },
+  "css/css-overflow/scroll-markers/scroll-markers-nested-scrollers.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-markers-under-content-visibility-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-markers-updated-by-programmatic-scroll.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-pseudo-elements-gcs-cq.html": {
+    "total": 4
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-013.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-014.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-iframe.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/scroll-target-group-inline-targets.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/target-current-scroll-marker-update.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-markers/targeted-column-scroll-marker-selection-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/targeted-column-scroll-marker-selection-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/targeted-column-scroll-marker-selection-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/scroll-markers/targeted-column-scroll-marker-selection-004.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/scroll-markers/targeted-scroll-marker-selection-with-transition.tentative.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-markers/targeted-scroll-marker-selection.tentative.html": {
+    "total": 4
+  },
+  "css/css-overflow/scroll-overflow-padding-block-001.html": {
+    "total": 6
+  },
+  "css/css-overflow/scroll-with-ancestor-border-radius.html": {
+    "total": 1
+  },
+  "css/css-overflow/scroll-with-border-radius.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollable-overflow-empty-newline-span.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollable-overflow-fixed-positioned-initial-containing-block.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollable-overflow-float.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollable-overflow-from-grid-container-contents.html": {
+    "total": 6
+  },
+  "css/css-overflow/scrollable-overflow-height-with-flex-item-margin-inline-end-rtl.html": {
+    "total": 8
+  },
+  "css/css-overflow/scrollable-overflow-height-with-flex-item-margin-inline-end.html": {
+    "total": 8
+  },
+  "css/css-overflow/scrollable-overflow-input-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollable-overflow-input-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollable-overflow-padding-inline.html": {
+    "total": 6
+  },
+  "css/css-overflow/scrollable-overflow-padding-input.html": {
+    "total": 5
+  },
+  "css/css-overflow/scrollable-overflow-padding.html": {
+    "total": 30,
+    "failures": {
+      "scrollable-container 26": "FAIL",
+      "scrollable-container 28": "FAIL",
+      "scrollable-container 30": "FAIL"
+    }
+  },
+  "css/css-overflow/scrollable-overflow-relative-positioned-block-in-inline-002.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollable-overflow-relative-positioned-block-in-inline.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollable-overflow-self-collapsing.html": {
+    "total": 3
+  },
+  "css/css-overflow/scrollable-overflow-textarea.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollable-overflow-transform-001.html": {
+    "total": 3
+  },
+  "css/css-overflow/scrollable-overflow-transform-002.html": {
+    "total": 3
+  },
+  "css/css-overflow/scrollable-overflow-transform-003.html": {
+    "total": 3
+  },
+  "css/css-overflow/scrollable-overflow-transform-004.html": {
+    "total": 3
+  },
+  "css/css-overflow/scrollable-overflow-transform-005.tentative.html": {
+    "total": 6,
+    "failures": {
+      ".container 1": "FAIL",
+      ".container 2": "FAIL"
+    }
+  },
+  "css/css-overflow/scrollable-overflow-transform-006.html": {
+    "total": 2
+  },
+  "css/css-overflow/scrollable-overflow-transform-007.html": {
+    "total": 2
+  },
+  "css/css-overflow/scrollable-overflow-transform-008.html": {
+    "total": 2
+  },
+  "css/css-overflow/scrollable-overflow-transform-009.html": {
+    "total": 6
+  },
+  "css/css-overflow/scrollable-overflow-transform-010.tentative.html": {
+    "total": 2,
+    "failures": {
+      ".container 1": "FAIL",
+      ".container 2": "FAIL"
+    }
+  },
+  "css/css-overflow/scrollable-overflow-transform-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollable-overflow-transform-dynamic-001.html": {
+    "total": 3
+  },
+  "css/css-overflow/scrollable-overflow-transform-dynamic-002.html": {
+    "total": 3
+  },
+  "css/css-overflow/scrollable-overflow-transform-dynamic-003.html": {
+    "total": 3
+  },
+  "css/css-overflow/scrollable-overflow-transform-dynamic-004.html": {
+    "total": 3
+  },
+  "css/css-overflow/scrollable-overflow-transform-dynamic-005.html": {
+    "total": 3
+  },
+  "css/css-overflow/scrollable-overflow-transform-dynamic-006.html": {
+    "total": 3
+  },
+  "css/css-overflow/scrollable-overflow-transform-unreachable-region.html": {
+    "total": 120
+  },
+  "css/css-overflow/scrollable-overflow-vertical-rl-dynamic.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollable-overflow-with-flex-item-margin-inline-end.html": {
+    "total": 8
+  },
+  "css/css-overflow/scrollable-overflow-with-grid-item-margin-inline-end.html": {
+    "total": 8
+  },
+  "css/css-overflow/scrollable-overflow-with-nested-elements-001.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollable-overflow-with-nested-elements-002.html": {
+    "total": 2
+  },
+  "css/css-overflow/scrollable-overflow-with-nested-elements-003.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollable-overflow-with-nested-elements-004.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollable-overflow-with-nested-elements-005.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollable-overflow-zero-one-axis.html": {
+    "total": 6
+  },
+  "css/css-overflow/scrollbar-empty-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-empty-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-001.html": {
+    "total": 15
+  },
+  "css/css-overflow/scrollbar-gutter-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-abspos-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-dynamic-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-dynamic-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-dynamic-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-fixedpos-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-fixedpos-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-fixedpos-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-fixedpos-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-propagation-001.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollbar-gutter-propagation-002.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollbar-gutter-propagation-003.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollbar-gutter-propagation-004.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollbar-gutter-propagation-005.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollbar-gutter-propagation-006.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollbar-gutter-propagation-007.html": {
+    "total": 1
+  },
+  "css/css-overflow/scrollbar-gutter-root-both-edges.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-rtl-001.html": {
+    "total": 15
+  },
+  "css/css-overflow/scrollbar-gutter-rtl-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-scroll-into-view.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-vertical-lr-001.html": {
+    "total": 15
+  },
+  "css/css-overflow/scrollbar-gutter-vertical-lr-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-vertical-rl-001.html": {
+    "total": 15
+  },
+  "css/css-overflow/scrollbar-gutter-vertical-rl-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-with-background-gradient.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-large-scale-in-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbars-chrome-bug-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroller-covered-by-empty-svg.html": {
+    "total": 1
+  },
+  "css/css-overflow/select-size-overflow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/shrink-to-fit-overflow-auto-scrollbar-width.html": {
+    "total": 3
+  },
+  "css/css-overflow/single-axis-overflow-clip-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/single-axis-overflow-scroll-to-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/single-axis-scroll-apis-dynamic.html": {
+    "total": 1
+  },
+  "css/css-overflow/single-axis-scroll-apis-programmatic.html": {
+    "total": 4
+  },
+  "css/css-overflow/single-axis-scroll-into-view-rtl.html": {
+    "total": 1
+  },
+  "css/css-overflow/single-axis-scroll-into-view.html": {
+    "total": 1
+  },
+  "css/css-overflow/table-max-content-with-scrollable-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-017.html": {
+    "total": 1
+  },
+  "css/css-overflow/text-overflow-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-023.html": {
+    "total": 1
+  },
+  "css/css-overflow/text-overflow-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-028.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/text-overflow-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-030.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-change-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ellipsis-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ellipsis-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ellipsis-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ellipsis-abspos-in-inline-block-crash-001.html": {
+    "total": 1
+  },
+  "css/css-overflow/text-overflow-ellipsis-changing-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ellipsis-editable-div-with-caret.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ellipsis-editing-input.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ellipsis-hyphen.html": {
+    "total": 1
+  },
+  "css/css-overflow/text-overflow-ellipsis-indent-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ellipsis-multiline-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ellipsis-rtl-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ellipsis-self-painting.html": {
+    "total": 1
+  },
+  "css/css-overflow/text-overflow-ellipsis-textarea-with-caret.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ellipsis-vertical-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ellipsis-vertical-rtl-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ellipsis-width-001.html": {
+    "total": 1
+  },
+  "css/css-overflow/text-overflow-in-readonly-textarea-focused.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-in-textarea.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ruby.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-scroll-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-scroll-rtl-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-scroll-vertical-lr-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-scroll-vertical-lr-rtl-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-scroll-vertical-rl-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-scroll-vertical-rl-rtl-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-013.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/text-overflow-string-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-024.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/text-overflow-string-025.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/text-overflow-string-026.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-in-input.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-in-textarea-after-blur.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-in-textarea-dynamic-text-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-in-textarea-dynamic-value.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-in-textarea-dynamic-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-in-textarea-field-sizing-content-fits.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-in-textarea-field-sizing-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-in-textarea-focused.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-in-textarea-multiline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-in-textarea-not-inherited.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-in-textarea-scrolled-back.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-string-in-textarea-scrolled.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-with-selection.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/unicode-bidi-plaintext-scroll-direction.html": {
+    "total": 8
+  }
+}

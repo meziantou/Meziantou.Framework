@@ -1,0 +1,35 @@
+{
+  "page-visibility/iframe-session-history.html": {
+    "total": 1
+  },
+  "page-visibility/iframe-unload.html": {
+    "total": 1
+  },
+  "page-visibility/minimize.html": {
+    "total": 3
+  },
+  "page-visibility/onvisibilitychange.html": {
+    "total": 1
+  },
+  "page-visibility/test_attributes_exist.html": {
+    "total": 4
+  },
+  "page-visibility/test_child_document.html": {
+    "total": 14
+  },
+  "page-visibility/test_default_view.html": {
+    "total": 7
+  },
+  "page-visibility/test_read_only.html": {
+    "total": 4
+  },
+  "page-visibility/unload-bubbles.html": {
+    "total": 1
+  },
+  "page-visibility/unload.html": {
+    "total": 1
+  },
+  "page-visibility/visibility-state-entry.tentative.html": {
+    "total": 4
+  }
+}

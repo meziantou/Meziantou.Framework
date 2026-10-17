@@ -1,0 +1,1514 @@
+{
+  "mathml/idlharness.window.js": {
+    "total": 89
+  },
+  "mathml/presentation-markup/direction/direction-006.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/direction/direction-007.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/direction/direction-008.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/direction/direction-010.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/direction/direction-mpadded.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/direction/direction-overall-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/direction/direction-overall-003.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/direction/direction-overall.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/direction/direction-token.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/direction/direction.html": {
+    "total": 1
+  },
+  "mathml/presentation-markup/fractions/default-mfrac-padding-style.html": {
+    "total": 1
+  },
+  "mathml/presentation-markup/fractions/frac-1.html": {
+    "total": 5
+  },
+  "mathml/presentation-markup/fractions/frac-bar-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-bar-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-bar-003.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-color-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-color-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-created-dynamically-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-created-dynamically-3.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-created-dynamically-4.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-created-dynamically.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-default-padding.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-invalid-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-invalid-3.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-invalid.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-legacy-bevelled-attribute.tentative.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-linethickness-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-linethickness-002.html": {
+    "total": 6
+  },
+  "mathml/presentation-markup/fractions/frac-linethickness-003.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-linethickness-004.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-linethickness-005.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-linethickness-006.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-linethickness-007.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-linethickness-008.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-mrow-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-numalign-denomalign-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-parameters-1.html": {
+    "total": 20
+  },
+  "mathml/presentation-markup/fractions/frac-parameters-2.html": {
+    "total": 13
+  },
+  "mathml/presentation-markup/fractions/frac-parameters-3.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/fractions/frac-parameters-gap-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-parameters-gap-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-parameters-gap-003.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-parameters-gap-004.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-parameters-gap-005.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-parameters-gap-006.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-rendering-from-in-flow.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/fractions/frac-visibility-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/menclose/legacy-menclose-radical-notation.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/mpadded/legacy-orthogonal-pseudo-units.html": {
+    "total": 7
+  },
+  "mathml/presentation-markup/mpadded/mpadded-001.html": {
+    "total": 9
+  },
+  "mathml/presentation-markup/mpadded/mpadded-002.html": {
+    "total": 10
+  },
+  "mathml/presentation-markup/mpadded/mpadded-003.html": {
+    "total": 5
+  },
+  "mathml/presentation-markup/mpadded/mpadded-010.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/mpadded/mpadded-011.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/mpadded/mpadded-012.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/mpadded/mpadded-013.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/mpadded/mpadded-percentage-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/mpadded/mpadded-percentage-002.html": {
+    "total": 5
+  },
+  "mathml/presentation-markup/mpadded/mpadded-rendering-from-in-flow.html": {
+    "total": 1
+  },
+  "mathml/presentation-markup/mrow/dynamic-mrow-like-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/mrow/inferred-mrow-baseline.html": {
+    "total": 14
+  },
+  "mathml/presentation-markup/mrow/inferred-mrow-stretchy.html": {
+    "total": 14
+  },
+  "mathml/presentation-markup/mrow/legacy-mfenced-element-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/mrow/legacy-mrow-like-elements-001.html": {
+    "total": 16
+  },
+  "mathml/presentation-markup/mrow/legacy-mrow-like-elements-002.html": {
+    "reftest": "FAIL"
+  },
+  "mathml/presentation-markup/mrow/legacy-mstyle-attributes.html": {
+    "total": 9
+  },
+  "mathml/presentation-markup/mrow/merror-001.html": {
+    "total": 2
+  },
+  "mathml/presentation-markup/mrow/mphantom-001.html": {
+    "total": 2
+  },
+  "mathml/presentation-markup/mrow/mrow-fallback-001.html": {
+    "total": 47
+  },
+  "mathml/presentation-markup/mrow/mrow-fallback-002.html": {
+    "total": 47
+  },
+  "mathml/presentation-markup/mrow/mrow-painting-order.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/mrow/mrow-preferred-width.html": {
+    "total": 3
+  },
+  "mathml/presentation-markup/mrow/no-spacing.html": {
+    "total": 54
+  },
+  "mathml/presentation-markup/mrow/semantics-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/mrow/semantics-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/mrow/semantics-003.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/mrow/semantics-004.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/mrow/semantics-005.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/mrow/spacing-002.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/mrow/spacing.html": {
+    "total": 12
+  },
+  "mathml/presentation-markup/mrow/stretch-along-block-axis-001.html": {
+    "total": 5
+  },
+  "mathml/presentation-markup/operators/character-level-mirroring.html": {
+    "total": 3
+  },
+  "mathml/presentation-markup/operators/display-operator-min-height-default-font.html": {
+    "total": 1
+  },
+  "mathml/presentation-markup/operators/display-operator-min-height-no-workaround.html": {
+    "total": 1
+  },
+  "mathml/presentation-markup/operators/embellished-op-1-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-1-3.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-1-4.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-1-5.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-2-1.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-2-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-2-3.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-2-4.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-3-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-3-3.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-3-4.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-3-5.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-4-1.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-4-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-4-3.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-5-1.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-op-5-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-operator-001.html": {
+    "total": 40
+  },
+  "mathml/presentation-markup/operators/embellished-operator-002.html": {
+    "total": 32
+  },
+  "mathml/presentation-markup/operators/embellished-operator-003.html": {
+    "total": 14
+  },
+  "mathml/presentation-markup/operators/embellished-operator-004.html": {
+    "total": 10
+  },
+  "mathml/presentation-markup/operators/embellished-operator-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/embellished-operator-dynamic-002.html": {
+    "total": 8
+  },
+  "mathml/presentation-markup/operators/largeop-hit-testing.html": {
+    "total": 1
+  },
+  "mathml/presentation-markup/operators/mo-axis-height-1.html": {
+    "total": 9
+  },
+  "mathml/presentation-markup/operators/mo-boolean-attributes-case-insensitive.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-dynamic-mozilla-347348.xhtml": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-fallback-font.html": {
+    "reftest": "FAIL"
+  },
+  "mathml/presentation-markup/operators/mo-font-relative-lengths-001.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/mo-form-dynamic-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-form-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-form-fallback.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-form-minus-plus.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-form.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-invisibleoperators-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-invisibleoperators.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-lspace-rspace-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-lspace-rspace-3.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-lspace-rspace-4.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-lspace-rspace-5.html": {
+    "total": 48
+  },
+  "mathml/presentation-markup/operators/mo-lspace-rspace-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-lspace-rspace-with-positive-scriptlevel.html": {
+    "total": 1
+  },
+  "mathml/presentation-markup/operators/mo-lspace-rspace.html": {
+    "reftest": "FAIL"
+  },
+  "mathml/presentation-markup/operators/mo-minsize-maxsize-001.html": {
+    "total": 6
+  },
+  "mathml/presentation-markup/operators/mo-movablelimits-and-embellished-operator.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-movablelimits-default.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-movablelimits-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-movablelimits-from-in-flow.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-movablelimits.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-no-vertical-adjustment-for-basic-binary-operators.html": {
+    "total": 1
+  },
+  "mathml/presentation-markup/operators/mo-not-in-dictionary-lspace-rspace.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-not-in-dictionary-movablelimits.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-paint-lspace-rspace.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-single-char-and-children.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/mo-stretch-properties-001.html": {
+    "total": 1
+  },
+  "mathml/presentation-markup/operators/mo-stretch-properties-dynamic-001.html": {
+    "total": 5
+  },
+  "mathml/presentation-markup/operators/munderover-accent-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/munderover-accentunder-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/non-spacing-accent-1.xhtml": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/op-dict-1.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/op-dict-12.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/op-dict-13.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/op-dict-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/op-dict-3.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/op-dict-4.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/op-dict-5.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/op-dict-6.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/op-dict-7.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/op-dict-8.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/op-dict-9.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-arabic-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-arabic-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-combining-default.html": {
+    "total": 2
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-combining.html": {
+    "total": 8
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-empty-and-three-chars.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-largeop-001.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-largeop-002.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-largeop-003.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-largeop-004.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-largeop-005.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-largeop-006.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-movablelimits-001.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-movablelimits-002.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-movablelimits-003.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-movablelimits-004.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-movablelimits-005.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-movablelimits-006.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-multi-char.html": {
+    "total": 20
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-spacing-001.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-spacing-002.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-spacing-003.html": {
+    "total": 4,
+    "failures": {
+      "Operator dictionary chunk 1 - lspace/rspace": "FAIL"
+    }
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-spacing-004.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-spacing-005.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-spacing-006.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-stretchy-001.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-stretchy-002.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-stretchy-003.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-stretchy-004.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-stretchy-005.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-stretchy-006.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-symmetric-001.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-symmetric-002.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-symmetric-003.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-symmetric-004.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-symmetric-005.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/operator-dictionary-symmetric-006.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/operators/painting-stretchy-operator-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/painting-stretchy-operator-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/size-and-position-of-stretchy-fences-with-default-font-001.html": {
+    "total": 2,
+    "failures": {
+      "Inner binary operator should not affect position and size of outer fences.": "FAIL"
+    }
+  },
+  "mathml/presentation-markup/operators/stretchy-largeop-with-default-font-1.html": {
+    "total": 1
+  },
+  "mathml/presentation-markup/operators/stretchy-largeop-with-default-font-2.html": {
+    "total": 1,
+    "failures": {
+      "Test that non-stretchy largeops are bigger in display mode.": "FAIL"
+    }
+  },
+  "mathml/presentation-markup/operators/stretchy-largeop-with-default-font-3.html": {
+    "total": 1
+  },
+  "mathml/presentation-markup/operators/stretchy-underbar-1.xhtml": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/operators/symmetric-largeop.html": {
+    "total": 1
+  },
+  "mathml/presentation-markup/radicals/dynamic-radical-paint-invalidation-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/radicals/empty-msqrt.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/radicals/glyph-level-mirroring.html": {
+    "total": 2
+  },
+  "mathml/presentation-markup/radicals/radical-rendering-from-in-flow.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/radicals/root-parameters-1.html": {
+    "total": 7
+  },
+  "mathml/presentation-markup/radicals/root-parameters-2.html": {
+    "total": 2
+  },
+  "mathml/presentation-markup/scripts/cramped-001.html": {
+    "total": 15
+  },
+  "mathml/presentation-markup/scripts/empty-underover.html": {
+    "total": 1
+  },
+  "mathml/presentation-markup/scripts/mmultiscript-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/mmultiscript-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/mmultiscript-003.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/mover-accent-dynamic-change.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/mprescripts-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/munder-mover-align-accent-false.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/munder-mover-align-accent-true.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/munderover-align-accent-false.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/munderover-align-accent-true.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/none-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/none-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/scripts-rendering-from-in-flow.html": {
+    "total": 7
+  },
+  "mathml/presentation-markup/scripts/stretchy-mover-1a.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-mover-1b.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-mover-2a.html": {
+    "reftest": "FAIL"
+  },
+  "mathml/presentation-markup/scripts/stretchy-mover-2b.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-mover-3.html": {
+    "reftest": "FAIL"
+  },
+  "mathml/presentation-markup/scripts/stretchy-msup-1a.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-msup-1b.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-msup-1c.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-msup-1d.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-1a.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-1b.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-1c.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-1d.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-1e.html": {
+    "reftest": "FAIL"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-2a.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-2b.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-2c.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-2d.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-2e.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-2f.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-2g.html": {
+    "reftest": "FAIL"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-3a.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-3b.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-3c.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/stretchy-munderover-3d.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/sub-vs-sup-mozilla-345563.xhtml": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/subsup-1.html": {
+    "total": 5
+  },
+  "mathml/presentation-markup/scripts/subsup-2.html": {
+    "total": 6
+  },
+  "mathml/presentation-markup/scripts/subsup-3.html": {
+    "total": 5
+  },
+  "mathml/presentation-markup/scripts/subsup-4.html": {
+    "total": 2
+  },
+  "mathml/presentation-markup/scripts/subsup-5.html": {
+    "total": 3
+  },
+  "mathml/presentation-markup/scripts/subsup-6-rtl.html": {
+    "total": 5
+  },
+  "mathml/presentation-markup/scripts/subsup-6.html": {
+    "total": 5
+  },
+  "mathml/presentation-markup/scripts/subsup-legacy-scriptshift-attributes-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/subsup-parameters-1.html": {
+    "total": 10
+  },
+  "mathml/presentation-markup/scripts/subsup-parameters-2.html": {
+    "total": 3
+  },
+  "mathml/presentation-markup/scripts/underover-1.html": {
+    "total": 5
+  },
+  "mathml/presentation-markup/scripts/underover-legacy-align-attribute-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/underover-parameters-1.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/scripts/underover-parameters-2.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/scripts/underover-parameters-3.html": {
+    "total": 8
+  },
+  "mathml/presentation-markup/scripts/underover-parameters-4.tentative.html": {
+    "total": 6,
+    "failures": {
+      "AccentBaseHeight, OverbarExtraAscender": "FAIL",
+      "AccentBaseHeight, OverbarVerticalGap": "FAIL",
+      "AccentBaseHeight, UnderbarVerticalGap": "FAIL"
+    }
+  },
+  "mathml/presentation-markup/scripts/underover-parameters-and-embellished-operator-1.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/scripts/underover-parameters-and-embellished-operator-2.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/scripts/underover-stretchy-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/underover-stretchy-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/scripts/underover-stretchy-003.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/spaces/mspace-children.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/spaces/mspace-percentage-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/spaces/mspace-width-height-001.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/spaces/space-1.html": {
+    "total": 9
+  },
+  "mathml/presentation-markup/spaces/space-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/spaces/space-3.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/spaces/space-like-001.html": {
+    "total": 14
+  },
+  "mathml/presentation-markup/spaces/space-like-002.html": {
+    "total": 6
+  },
+  "mathml/presentation-markup/spaces/space-like-003.html": {
+    "total": 15
+  },
+  "mathml/presentation-markup/spaces/space-like-004.html": {
+    "total": 4
+  },
+  "mathml/presentation-markup/spaces/space-vertical-align.tentative.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tables/columnspan-rowspan-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tables/columnspan-rowspan-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tables/columnspan-rowspan-003.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tables/columnspan-rowspan-004.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tables/columnspan-rowspan-005.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tables/columnspan-rowspan-006.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tables/dynamic-columnspan-rowspan-001a.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tables/dynamic-columnspan-rowspan-001b.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tables/dynamic-columnspan-rowspan-001c.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tables/dynamic-columnspan-rowspan-002a.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tables/dynamic-columnspan-rowspan-002b.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tables/dynamic-columnspan-rowspan-002c.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tables/dynamic-rowspan-mozilla-370692.xhtml": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tables/dynamic-table-001.html": {
+    "total": 9
+  },
+  "mathml/presentation-markup/tables/table-001.html": {
+    "total": 6
+  },
+  "mathml/presentation-markup/tables/table-002.html": {
+    "total": 2
+  },
+  "mathml/presentation-markup/tables/table-003.html": {
+    "total": 2
+  },
+  "mathml/presentation-markup/tables/table-axis-height.html": {
+    "total": 1
+  },
+  "mathml/presentation-markup/tables/table-cell-mrow-layout.html": {
+    "total": 2
+  },
+  "mathml/presentation-markup/tables/table-default-styles-001.html": {
+    "total": 10
+  },
+  "mathml/presentation-markup/tokens/dynamic-mi-mozilla-409125.xhtml": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tokens/dynamic-mi-mozilla-414123.xhtml": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tokens/dynamic-mtext-like-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tokens/dynamic-mtext-like-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tokens/mi-mathvariant-1.xhtml": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tokens/mi-mathvariant-2.xhtml": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tokens/ms-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/presentation-markup/tokens/tokens-rendering-from-in-flow.html": {
+    "total": 5
+  },
+  "mathml/relations/css-styling/anchor-displaystyle-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/anchor-mathbackground-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/anchor-mathcolor-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/anchor-mathsize-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/attribute-mapping-001.html": {
+    "total": 165
+  },
+  "mathml/relations/css-styling/attribute-mapping-002.html": {
+    "total": 132
+  },
+  "mathml/relations/css-styling/blur-filter.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/clip-path.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/clip.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/color-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/color-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/color-003.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/color-004.tentative.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/color-005.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/default-font-family.html": {
+    "total": 2
+  },
+  "mathml/relations/css-styling/default-properties-on-semantics-and-maction.html": {
+    "total": 2
+  },
+  "mathml/relations/css-styling/default-properties-on-the-math-root.html": {
+    "total": 8
+  },
+  "mathml/relations/css-styling/display-1.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/display-2.html": {
+    "total": 17,
+    "failures": {
+      "block display with column width (math)": "FAIL",
+      "block display with column width (mrow)": "FAIL"
+    }
+  },
+  "mathml/relations/css-styling/display-contents.html": {
+    "total": 1
+  },
+  "mathml/relations/css-styling/display-with-overflow.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/displaystyle-011.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/displaystyle-012.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/displaystyle-013.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/displaystyle-014.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/displaystyle-015.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/displaystyle-1.html": {
+    "total": 36
+  },
+  "mathml/relations/css-styling/displaystyle-2.html": {
+    "total": 27
+  },
+  "mathml/relations/css-styling/displaystyle-3.html": {
+    "total": 6
+  },
+  "mathml/relations/css-styling/dynamic-dir-1.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/first-line-first-letter-pseudo-elements-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/first-line-first-letter-pseudo-elements-002.html": {
+    "reftest": "FAIL"
+  },
+  "mathml/relations/css-styling/first-line-first-letter-pseudo-elements-003.html": {
+    "reftest": "FAIL"
+  },
+  "mathml/relations/css-styling/first-line-first-letter-pseudo-elements-004.html": {
+    "reftest": "FAIL"
+  },
+  "mathml/relations/css-styling/floats/floating-inside-mathml-with-block-display.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/floats/floating-math.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/floats/not-floating-001.html": {
+    "total": 24
+  },
+  "mathml/relations/css-styling/ignored-properties-001.html": {
+    "total": 260
+  },
+  "mathml/relations/css-styling/legacy-scriptminsize-attribute.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/legacy-scriptsizemultiplier-attribute.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/lengths-1.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/lengths-2.html": {
+    "total": 6
+  },
+  "mathml/relations/css-styling/lengths-vi-vb-units.html": {
+    "total": 2,
+    "failures": {
+      "vi/vb in vertical-rl writing modes": "FAIL"
+    }
+  },
+  "mathml/relations/css-styling/mathbackground-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mathbackground-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mathbackground-003.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mathbackground-004.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mathcolor-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mathcolor-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mathcolor-003.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mathcolor-004.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mathcolor-mathbackground-css.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mathsize-attribute-css-keywords.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mathsize-attribute-legacy-values.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mathsize-attribute.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mathvariant-auto-selection.html": {
+    "total": 112
+  },
+  "mathml/relations/css-styling/mathvariant-auto.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mathvariant-font-style-font-weight.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mi-fontstyle-fontweight.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/mozilla-393760-1.xml": {
+    "reftest": "FAIL"
+  },
+  "mathml/relations/css-styling/multi-column-layout.html": {
+    "total": 2
+  },
+  "mathml/relations/css-styling/non-mathml-namespace-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/not-participating-to-parent-layout.html": {
+    "total": 166
+  },
+  "mathml/relations/css-styling/out-of-flow/absolutely-positioned-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/out-of-flow/absolutely-positioned-002.html": {
+    "total": 26
+  },
+  "mathml/relations/css-styling/out-of-flow/all-mathml-containers.html": {
+    "total": 50
+  },
+  "mathml/relations/css-styling/out-of-flow/fixed-positioned-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/overflow/computed-value-001.html": {
+    "total": 1
+  },
+  "mathml/relations/css-styling/padding-border-margin/border-001.html": {
+    "total": 6
+  },
+  "mathml/relations/css-styling/padding-border-margin/border-002.html": {
+    "total": 51
+  },
+  "mathml/relations/css-styling/padding-border-margin/margin-001.html": {
+    "total": 6
+  },
+  "mathml/relations/css-styling/padding-border-margin/margin-002.html": {
+    "total": 76
+  },
+  "mathml/relations/css-styling/padding-border-margin/margin-003.html": {
+    "total": 17
+  },
+  "mathml/relations/css-styling/padding-border-margin/padding-001.html": {
+    "total": 6
+  },
+  "mathml/relations/css-styling/padding-border-margin/padding-002.html": {
+    "total": 51
+  },
+  "mathml/relations/css-styling/padding-border-margin/padding-border-margin-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/padding-border-margin/padding-border-margin-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/padding-border-margin/padding-border-margin-003.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/padding-border-margin/padding-border-margin-004.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/padding-border-margin/padding-border-margin-005.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/padding-border-margin/padding-border-margin-006.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/padding-border-margin/padding-border-margin-007.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/parsing/math-depth-computed.html": {
+    "total": 5
+  },
+  "mathml/relations/css-styling/parsing/math-depth-invalid.html": {
+    "total": 10
+  },
+  "mathml/relations/css-styling/parsing/math-depth-valid.html": {
+    "total": 5
+  },
+  "mathml/relations/css-styling/parsing/math-shift-computed.html": {
+    "total": 2
+  },
+  "mathml/relations/css-styling/parsing/math-shift-invalid.html": {
+    "total": 3
+  },
+  "mathml/relations/css-styling/parsing/math-shift-valid.html": {
+    "total": 2
+  },
+  "mathml/relations/css-styling/parsing/math-style-computed.html": {
+    "total": 2
+  },
+  "mathml/relations/css-styling/parsing/math-style-invalid.html": {
+    "total": 3
+  },
+  "mathml/relations/css-styling/parsing/math-style-valid.html": {
+    "total": 2
+  },
+  "mathml/relations/css-styling/presentational-hints-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/presentational-hints-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/scriptlevel-001.html": {
+    "total": 16
+  },
+  "mathml/relations/css-styling/size-containment-001.tentative.html": {
+    "total": 44
+  },
+  "mathml/relations/css-styling/table-width-1.xhtml": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/table-width-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/table-width-3.html": {
+    "reftest": "FAIL"
+  },
+  "mathml/relations/css-styling/table-width-4.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/transform.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/visibility-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/visibility-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/visibility-003.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/visibility-004.tentative.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/visibility-005.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/width-height-001.html": {
+    "total": 103
+  },
+  "mathml/relations/css-styling/width-height-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/width-height-003.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/width-height-004.html": {
+    "total": 20
+  },
+  "mathml/relations/css-styling/width-height-005.html": {
+    "total": 40
+  },
+  "mathml/relations/css-styling/width-height-006.html": {
+    "total": 26
+  },
+  "mathml/relations/css-styling/writing-mode/force-horizontal-tb.html": {
+    "total": 68
+  },
+  "mathml/relations/css-styling/writing-mode/reset-and-logicial-property.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/css-styling/writing-mode/writing-mode-001.html": {
+    "total": 2
+  },
+  "mathml/relations/css-styling/writing-mode/writing-mode-002.html": {
+    "total": 30
+  },
+  "mathml/relations/html5-tree/a-hreflang-getter.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/a-hreflang-setter.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/a-keydown-enter.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/a-ping.html": {
+    "total": 3,
+    "failures": {
+      "MathML anchor ping attribute should be settable via ping IDL attribute": "FAIL"
+    }
+  },
+  "mathml/relations/html5-tree/a-rel-getter-setter.html": {
+    "total": 1,
+    "failures": {
+      "MathMLAnchorElement rel and relList should reflect each other and support standard tokens": "FAIL"
+    }
+  },
+  "mathml/relations/html5-tree/a-rel-policy.html": {
+    "total": 8
+  },
+  "mathml/relations/html5-tree/a-type-getter-001.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/a-type-getter-002.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/a-type-setter.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/anchor-hyperlinkutils-getter-setter.html": {
+    "total": 15
+  },
+  "mathml/relations/html5-tree/anchor-hyperlinkutils-getter.html": {
+    "total": 10
+  },
+  "mathml/relations/html5-tree/anchor-visited-privacy.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/attribute-overflow.html": {
+    "total": 3
+  },
+  "mathml/relations/html5-tree/attributeStyleMap-getter-setter.html": {
+    "total": 32
+  },
+  "mathml/relations/html5-tree/attributeStyleMap-getter.html": {
+    "total": 32
+  },
+  "mathml/relations/html5-tree/autofocus-001.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/autofocus-002.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/autofocus-003.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/autofocus-004.html": {
+    "total": 2
+  },
+  "mathml/relations/html5-tree/canvas-visited-privacy.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/class-1.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/class-2.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/clipboard-event-handlers.html": {
+    "total": 9
+  },
+  "mathml/relations/html5-tree/color-attributes-1.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/content-editable.html": {
+    "total": 2
+  },
+  "mathml/relations/html5-tree/css-inline-style-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/css-inline-style-interface.html": {
+    "total": 33
+  },
+  "mathml/relations/html5-tree/display-1.html": {
+    "total": 11
+  },
+  "mathml/relations/html5-tree/display-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/dynamic-1.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/dynamic-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/dynamic-childlist-001.html": {
+    "total": 44
+  },
+  "mathml/relations/html5-tree/dynamic-childlist-002.html": {
+    "total": 26
+  },
+  "mathml/relations/html5-tree/dynamic-href-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/dynamic-href-002.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/dynamic-mozilla-162063.xhtml": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/focus-blur-001.html": {
+    "total": 33
+  },
+  "mathml/relations/html5-tree/href-click-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/href-click-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/href-click-003.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/href-click-004.html": {
+    "total": 28
+  },
+  "mathml/relations/html5-tree/href-navigation.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/href-target-base.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/html-or-svg-or-mathml-element-interfaces.html": {
+    "total": 5
+  },
+  "mathml/relations/html5-tree/integration-point-1.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/integration-point-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/integration-point-3.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/integration-point-4.html": {
+    "total": 2
+  },
+  "mathml/relations/html5-tree/integration-point-5.html": {
+    "total": 2
+  },
+  "mathml/relations/html5-tree/link-color-001.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/link-color-002.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/maction-click.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/math-global-event-handlers.html": {
+    "total": 375
+  },
+  "mathml/relations/html5-tree/required-extensions-2.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/shadow-dom-mozilla-1066554.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/style-src-attr-meta.html?1-72": {
+    "total": 72
+  },
+  "mathml/relations/html5-tree/style-src-attr-meta.html?145-216": {
+    "total": 72
+  },
+  "mathml/relations/html5-tree/style-src-attr-meta.html?217-last": {
+    "total": 72
+  },
+  "mathml/relations/html5-tree/style-src-attr-meta.html?73-144": {
+    "total": 72
+  },
+  "mathml/relations/html5-tree/style-src-elem-meta.html?1-80": {
+    "total": 80
+  },
+  "mathml/relations/html5-tree/style-src-elem-meta.html?161-240": {
+    "total": 80
+  },
+  "mathml/relations/html5-tree/style-src-elem-meta.html?241-last": {
+    "total": 80
+  },
+  "mathml/relations/html5-tree/style-src-elem-meta.html?81-160": {
+    "total": 80
+  },
+  "mathml/relations/html5-tree/tabindex-001.html": {
+    "total": 64
+  },
+  "mathml/relations/html5-tree/tabindex-002.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/tabindex-003.html": {
+    "total": 224
+  },
+  "mathml/relations/html5-tree/tabindex-focus-001.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/unique-identifier-1.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/html5-tree/unique-identifier-2.html": {
+    "total": 1
+  },
+  "mathml/relations/html5-tree/unique-identifier-3.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/text-and-math/basic-mathematical-alphanumeric-symbols-with-default-font.html": {
+    "total": 3
+  },
+  "mathml/relations/text-and-math/mi-automatic-italic-with-default-font.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/text-and-math/mo-glyph-height-with-default-font.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/text-and-math/non-mathml-children-in-annotation.tentative.html": {
+    "reftest": "PASS"
+  },
+  "mathml/relations/text-and-math/use-typo-metrics-1.html": {
+    "reftest": "PASS"
+  }
+}

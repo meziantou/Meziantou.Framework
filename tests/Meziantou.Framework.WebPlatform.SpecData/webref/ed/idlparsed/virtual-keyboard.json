@@ -1,0 +1,228 @@
+{
+  "spec": {
+    "title": "VirtualKeyboard API",
+    "url": "https://w3c.github.io/virtual-keyboard/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "VirtualKeyboard"
+        ]
+      }
+    },
+    "idlNames": {
+      "VirtualKeyboard": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface VirtualKeyboard : EventTarget {\n    undefined show();\n    undefined hide();\n    readonly attribute DOMRect boundingRect;\n    attribute boolean overlaysContent;\n    attribute EventHandler ongeometrychange;\n};",
+        "type": "interface",
+        "name": "VirtualKeyboard",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "operation",
+            "name": "show",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/virtual-keyboard/#dom-virtualkeyboard-show"
+          },
+          {
+            "type": "operation",
+            "name": "hide",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/virtual-keyboard/#dom-virtualkeyboard-hide"
+          },
+          {
+            "type": "attribute",
+            "name": "boundingRect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRect"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/virtual-keyboard/#dom-virtualkeyboard-boundingrect"
+          },
+          {
+            "type": "attribute",
+            "name": "overlaysContent",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/virtual-keyboard/#dom-virtualkeyboard-overlayscontent"
+          },
+          {
+            "type": "attribute",
+            "name": "ongeometrychange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/virtual-keyboard/#dom-virtualkeyboard-ongeometrychange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/virtual-keyboard/#dom-virtualkeyboard"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n    [SecureContext, SameObject] readonly attribute VirtualKeyboard virtualKeyboard;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "virtualKeyboard",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "VirtualKeyboard"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/virtual-keyboard/#dom-navigator-virtualkeyboard"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "ElementContentEditable": [
+        {
+          "fragment": "partial interface mixin ElementContentEditable {\n     [CEReactions] attribute DOMString virtualKeyboardPolicy;\n};",
+          "type": "interface mixin",
+          "name": "ElementContentEditable",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "virtualKeyboardPolicy",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/virtual-keyboard/#dom-elementcontenteditable-virtualkeyboardpolicy"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "VirtualKeyboard"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "VirtualKeyboard"
+      ],
+      "VirtualKeyboard": [
+        "EventTarget",
+        "DOMRect",
+        "EventHandler"
+      ],
+      "ElementContentEditable": []
+    },
+    "externalDependencies": [
+      "Navigator",
+      "EventTarget",
+      "DOMRect",
+      "EventHandler",
+      "ElementContentEditable"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "jv": {
+      "identity": {
+        "language": "jv"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

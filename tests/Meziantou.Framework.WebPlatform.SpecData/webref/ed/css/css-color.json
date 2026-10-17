@@ -1,0 +1,1769 @@
+{
+  "spec": {
+    "title": "CSS Color Module Level 4",
+    "url": "https://drafts.csswg.org/css-color-4/"
+  },
+  "properties": [
+    {
+      "name": "color",
+      "href": "https://drafts.csswg.org/css-color-4/#propdef-color",
+      "value": "<color>",
+      "initial": "CanvasText",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "computed color, see resolving color values",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "color"
+      ]
+    },
+    {
+      "name": "opacity",
+      "href": "https://drafts.csswg.org/css-color-4/#propdef-opacity",
+      "value": "<opacity-value>",
+      "initial": "1",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "map to the range [0,1]",
+      "computedValue": "specified number, clamped to the range [0,1]",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<opacity-value>",
+          "prose": "The opacity to be applied to the element. The resulting opacity is applied to the entire element, rather than a particular color. Opacity values outside the range [0,1] are not invalid, and are preserved in specified values, but are clamped to the range [0, 1] in computed values.",
+          "href": "https://drafts.csswg.org/css-color-4/#typedef-opacity-opacity-value",
+          "type": "type",
+          "value": "<number> | <percentage>"
+        }
+      ],
+      "styleDeclaration": [
+        "opacity"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<color>",
+      "prose": "Colors in CSS are represented by the <color> type:",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-color",
+      "type": "type",
+      "value": "<color-base> | currentColor | <system-color>",
+      "values": [
+        {
+          "name": "<alpha-value>",
+          "href": "https://drafts.csswg.org/css-color-4/#typedef-color-alpha-value",
+          "type": "type",
+          "value": "<number> | <percentage>"
+        },
+        {
+          "name": "none",
+          "prose": "It can also be specified explicitly, by providing the keyword none for a component in a color function. All color functions (with the exception of those using the legacy color syntax) allow any of their components to be specified as none.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "transparent",
+          "prose": "The keyword transparent specifies a transparent black. It is a type of <named-color>.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-transparent",
+          "type": "value",
+          "value": "transparent"
+        },
+        {
+          "name": "currentcolor",
+          "prose": "The keyword currentcolor represents value of the color property on the same element. Unlike <named-color>s, it is not restricted to sRGB; the value can be any <color>. Its used values is determined by resolving color values.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-currentcolor",
+          "type": "value",
+          "value": "currentcolor"
+        },
+        {
+          "name": "ActiveBorder",
+          "prose": "Active window border. Computes to the color of ButtonBorder.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-activeborder",
+          "type": "value",
+          "value": "ActiveBorder"
+        },
+        {
+          "name": "ActiveCaption",
+          "prose": "Active window caption. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-activecaption",
+          "type": "value",
+          "value": "ActiveCaption"
+        },
+        {
+          "name": "AppWorkspace",
+          "prose": "Background color of multiple document interface. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-appworkspace",
+          "type": "value",
+          "value": "AppWorkspace"
+        },
+        {
+          "name": "Background",
+          "prose": "Desktop background. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-background",
+          "type": "value",
+          "value": "Background"
+        },
+        {
+          "name": "ButtonHighlight",
+          "prose": "The color of the border facing the light source for 3-D elements that appear 3-D due to one layer of surrounding border. Computes to the color of ButtonFace.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-buttonhighlight",
+          "type": "value",
+          "value": "ButtonHighlight"
+        },
+        {
+          "name": "ButtonShadow",
+          "prose": "The color of the border away from the light source for 3-D elements that appear 3-D due to one layer of surrounding border. Computes to the color of ButtonFace.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-buttonshadow",
+          "type": "value",
+          "value": "ButtonShadow"
+        },
+        {
+          "name": "CaptionText",
+          "prose": "Text in caption, size box, and scrollbar arrow box. Computes to the color of CanvasText.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-captiontext",
+          "type": "value",
+          "value": "CaptionText"
+        },
+        {
+          "name": "InactiveBorder",
+          "prose": "Inactive window border. Computes to the color of ButtonBorder.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-inactiveborder",
+          "type": "value",
+          "value": "InactiveBorder"
+        },
+        {
+          "name": "InactiveCaption",
+          "prose": "Inactive window caption. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-inactivecaption",
+          "type": "value",
+          "value": "InactiveCaption"
+        },
+        {
+          "name": "InactiveCaptionText",
+          "prose": "Color of text in an inactive caption. Computes to the color of GrayText.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-inactivecaptiontext",
+          "type": "value",
+          "value": "InactiveCaptionText"
+        },
+        {
+          "name": "InfoBackground",
+          "prose": "Background color for tooltip controls. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-infobackground",
+          "type": "value",
+          "value": "InfoBackground"
+        },
+        {
+          "name": "InfoText",
+          "prose": "Text color for tooltip controls. Computes to the color of CanvasText.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-infotext",
+          "type": "value",
+          "value": "InfoText"
+        },
+        {
+          "name": "Menu",
+          "prose": "Menu background. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-menu",
+          "type": "value",
+          "value": "Menu"
+        },
+        {
+          "name": "MenuText",
+          "prose": "Text in menus. Computes to the color of CanvasText.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-menutext",
+          "type": "value",
+          "value": "MenuText"
+        },
+        {
+          "name": "Scrollbar",
+          "prose": "Scroll bar gray area. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-scrollbar",
+          "type": "value",
+          "value": "Scrollbar"
+        },
+        {
+          "name": "ThreeDDarkShadow",
+          "prose": "The color of the darker (generally outer) of the two borders away from the light source for 3-D elements that appear 3-D due to two concentric layers of surrounding border. Computes to the color of ButtonBorder.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-threeddarkshadow",
+          "type": "value",
+          "value": "ThreeDDarkShadow"
+        },
+        {
+          "name": "ThreeDFace",
+          "prose": "The face background color for 3-D elements that appear 3-D due to two concentric layers of surrounding border. Computes to the color of ButtonFace.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-threedface",
+          "type": "value",
+          "value": "ThreeDFace"
+        },
+        {
+          "name": "ThreeDHighlight",
+          "prose": "The color of the lighter (generally outer) of the two borders facing the light source for 3-D elements that appear 3-D due to two concentric layers of surrounding border. Computes to the color of ButtonBorder.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-threedhighlight",
+          "type": "value",
+          "value": "ThreeDHighlight"
+        },
+        {
+          "name": "ThreeDLightShadow",
+          "prose": "The color of the darker (generally inner) of the two borders facing the light source for 3-D elements that appear 3-D due to two concentric layers of surrounding border. Computes to the color of ButtonBorder.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-threedlightshadow",
+          "type": "value",
+          "value": "ThreeDLightShadow"
+        },
+        {
+          "name": "ThreeDShadow",
+          "prose": "The color of the lighter (generally inner) of the two borders away from the light source for 3-D elements that appear 3-D due to two concentric layers of surrounding border. Computes to the color of ButtonBorder.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-threedshadow",
+          "type": "value",
+          "value": "ThreeDShadow"
+        },
+        {
+          "name": "Window",
+          "prose": "Window background. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-window",
+          "type": "value",
+          "value": "Window"
+        },
+        {
+          "name": "WindowFrame",
+          "prose": "Window frame. Computes to the color of ButtonBorder.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-windowframe",
+          "type": "value",
+          "value": "WindowFrame"
+        },
+        {
+          "name": "WindowText",
+          "prose": "Text in windows. Computes to the color of CanvasText.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-windowtext",
+          "type": "value",
+          "value": "WindowText"
+        }
+      ]
+    },
+    {
+      "name": "<color-base>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-color-base",
+      "type": "type",
+      "value": "<hex-color> | <color-function> | <named-color> | transparent"
+    },
+    {
+      "name": "<hue>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-hue",
+      "type": "type",
+      "value": "<number> | <angle>"
+    },
+    {
+      "name": "rgb()",
+      "value": "[ <legacy-rgb-syntax> | <modern-rgb-syntax> ]",
+      "href": "https://drafts.csswg.org/css-color-4/#funcdef-rgb",
+      "type": "function"
+    },
+    {
+      "name": "rgba()",
+      "value": "[ <legacy-rgba-syntax> | <modern-rgba-syntax> ]",
+      "href": "https://drafts.csswg.org/css-color-4/#funcdef-rgba",
+      "type": "function"
+    },
+    {
+      "name": "<legacy-rgb-syntax>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-legacy-rgb-syntax",
+      "type": "type",
+      "value": "rgb( <percentage>#{3} , <alpha-value>? ) | rgb( <number>#{3} , <alpha-value>? )"
+    },
+    {
+      "name": "<legacy-rgba-syntax>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-legacy-rgba-syntax",
+      "type": "type",
+      "value": "rgba( <percentage>#{3} , <alpha-value>? ) | rgba( <number>#{3} , <alpha-value>? )"
+    },
+    {
+      "name": "<modern-rgb-syntax>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-modern-rgb-syntax",
+      "type": "type",
+      "value": "rgb( [ <number> | <percentage> | none]{3} [ / [<alpha-value> | none] ]? )"
+    },
+    {
+      "name": "<modern-rgba-syntax>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-modern-rgba-syntax",
+      "type": "type",
+      "value": "rgba( [ <number> | <percentage> | none]{3} [ / [<alpha-value> | none] ]? )"
+    },
+    {
+      "name": "<hex-color>",
+      "prose": "The syntax of a <hex-color> is a <hash-token> token whose value consists of 3, 4, 6, or 8 hexadecimal digits. In other words, a hex color is written as a hash character, \"#\", followed by some number of digits 0-9 or letters a-f (the case of the letters doesn’t matter - #00ff00 is identical to #00FF00).",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-hex-color",
+      "type": "type"
+    },
+    {
+      "name": "<named-color>",
+      "prose": "CSS defines a large set of named colors, so that common colors can be written and read more easily. A <named-color> is written as an <ident>, accepted anywhere a <color> is. As usual for CSS-defined <ident>s, all of these keywords are ASCII case-insensitive.",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-named-color",
+      "type": "type",
+      "values": [
+        {
+          "name": "aliceblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-aliceblue",
+          "type": "value",
+          "value": "aliceblue"
+        },
+        {
+          "name": "antiquewhite",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-antiquewhite",
+          "type": "value",
+          "value": "antiquewhite"
+        },
+        {
+          "name": "aqua",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-aqua",
+          "type": "value",
+          "value": "aqua"
+        },
+        {
+          "name": "aquamarine",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-aquamarine",
+          "type": "value",
+          "value": "aquamarine"
+        },
+        {
+          "name": "azure",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-azure",
+          "type": "value",
+          "value": "azure"
+        },
+        {
+          "name": "beige",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-beige",
+          "type": "value",
+          "value": "beige"
+        },
+        {
+          "name": "bisque",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-bisque",
+          "type": "value",
+          "value": "bisque"
+        },
+        {
+          "name": "black",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-black",
+          "type": "value",
+          "value": "black"
+        },
+        {
+          "name": "blanchedalmond",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-blanchedalmond",
+          "type": "value",
+          "value": "blanchedalmond"
+        },
+        {
+          "name": "blue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-blue",
+          "type": "value",
+          "value": "blue"
+        },
+        {
+          "name": "blueviolet",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-blueviolet",
+          "type": "value",
+          "value": "blueviolet"
+        },
+        {
+          "name": "brown",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-brown",
+          "type": "value",
+          "value": "brown"
+        },
+        {
+          "name": "burlywood",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-burlywood",
+          "type": "value",
+          "value": "burlywood"
+        },
+        {
+          "name": "cadetblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-cadetblue",
+          "type": "value",
+          "value": "cadetblue"
+        },
+        {
+          "name": "chartreuse",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-chartreuse",
+          "type": "value",
+          "value": "chartreuse"
+        },
+        {
+          "name": "chocolate",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-chocolate",
+          "type": "value",
+          "value": "chocolate"
+        },
+        {
+          "name": "coral",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-coral",
+          "type": "value",
+          "value": "coral"
+        },
+        {
+          "name": "cornflowerblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-cornflowerblue",
+          "type": "value",
+          "value": "cornflowerblue"
+        },
+        {
+          "name": "cornsilk",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-cornsilk",
+          "type": "value",
+          "value": "cornsilk"
+        },
+        {
+          "name": "crimson",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-crimson",
+          "type": "value",
+          "value": "crimson"
+        },
+        {
+          "name": "cyan",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-cyan",
+          "type": "value",
+          "value": "cyan"
+        },
+        {
+          "name": "darkblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkblue",
+          "type": "value",
+          "value": "darkblue"
+        },
+        {
+          "name": "darkcyan",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkcyan",
+          "type": "value",
+          "value": "darkcyan"
+        },
+        {
+          "name": "darkgoldenrod",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkgoldenrod",
+          "type": "value",
+          "value": "darkgoldenrod"
+        },
+        {
+          "name": "darkgray",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkgray",
+          "type": "value",
+          "value": "darkgray"
+        },
+        {
+          "name": "darkgreen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkgreen",
+          "type": "value",
+          "value": "darkgreen"
+        },
+        {
+          "name": "darkgrey",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkgrey",
+          "type": "value",
+          "value": "darkgrey"
+        },
+        {
+          "name": "darkkhaki",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkkhaki",
+          "type": "value",
+          "value": "darkkhaki"
+        },
+        {
+          "name": "darkmagenta",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkmagenta",
+          "type": "value",
+          "value": "darkmagenta"
+        },
+        {
+          "name": "darkolivegreen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkolivegreen",
+          "type": "value",
+          "value": "darkolivegreen"
+        },
+        {
+          "name": "darkorange",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkorange",
+          "type": "value",
+          "value": "darkorange"
+        },
+        {
+          "name": "darkorchid",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkorchid",
+          "type": "value",
+          "value": "darkorchid"
+        },
+        {
+          "name": "darkred",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkred",
+          "type": "value",
+          "value": "darkred"
+        },
+        {
+          "name": "darksalmon",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darksalmon",
+          "type": "value",
+          "value": "darksalmon"
+        },
+        {
+          "name": "darkseagreen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkseagreen",
+          "type": "value",
+          "value": "darkseagreen"
+        },
+        {
+          "name": "darkslateblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkslateblue",
+          "type": "value",
+          "value": "darkslateblue"
+        },
+        {
+          "name": "darkslategray",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkslategray",
+          "type": "value",
+          "value": "darkslategray"
+        },
+        {
+          "name": "darkslategrey",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkslategrey",
+          "type": "value",
+          "value": "darkslategrey"
+        },
+        {
+          "name": "darkturquoise",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkturquoise",
+          "type": "value",
+          "value": "darkturquoise"
+        },
+        {
+          "name": "darkviolet",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-darkviolet",
+          "type": "value",
+          "value": "darkviolet"
+        },
+        {
+          "name": "deeppink",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-deeppink",
+          "type": "value",
+          "value": "deeppink"
+        },
+        {
+          "name": "deepskyblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-deepskyblue",
+          "type": "value",
+          "value": "deepskyblue"
+        },
+        {
+          "name": "dimgray",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-dimgray",
+          "type": "value",
+          "value": "dimgray"
+        },
+        {
+          "name": "dimgrey",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-dimgrey",
+          "type": "value",
+          "value": "dimgrey"
+        },
+        {
+          "name": "dodgerblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-dodgerblue",
+          "type": "value",
+          "value": "dodgerblue"
+        },
+        {
+          "name": "firebrick",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-firebrick",
+          "type": "value",
+          "value": "firebrick"
+        },
+        {
+          "name": "floralwhite",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-floralwhite",
+          "type": "value",
+          "value": "floralwhite"
+        },
+        {
+          "name": "forestgreen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-forestgreen",
+          "type": "value",
+          "value": "forestgreen"
+        },
+        {
+          "name": "fuchsia",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-fuchsia",
+          "type": "value",
+          "value": "fuchsia"
+        },
+        {
+          "name": "gainsboro",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-gainsboro",
+          "type": "value",
+          "value": "gainsboro"
+        },
+        {
+          "name": "ghostwhite",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-ghostwhite",
+          "type": "value",
+          "value": "ghostwhite"
+        },
+        {
+          "name": "gold",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-gold",
+          "type": "value",
+          "value": "gold"
+        },
+        {
+          "name": "goldenrod",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-goldenrod",
+          "type": "value",
+          "value": "goldenrod"
+        },
+        {
+          "name": "gray",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-gray",
+          "type": "value",
+          "value": "gray"
+        },
+        {
+          "name": "green",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-green",
+          "type": "value",
+          "value": "green"
+        },
+        {
+          "name": "greenyellow",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-greenyellow",
+          "type": "value",
+          "value": "greenyellow"
+        },
+        {
+          "name": "grey",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-grey",
+          "type": "value",
+          "value": "grey"
+        },
+        {
+          "name": "honeydew",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-honeydew",
+          "type": "value",
+          "value": "honeydew"
+        },
+        {
+          "name": "hotpink",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-hotpink",
+          "type": "value",
+          "value": "hotpink"
+        },
+        {
+          "name": "indianred",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-indianred",
+          "type": "value",
+          "value": "indianred"
+        },
+        {
+          "name": "indigo",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-indigo",
+          "type": "value",
+          "value": "indigo"
+        },
+        {
+          "name": "ivory",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-ivory",
+          "type": "value",
+          "value": "ivory"
+        },
+        {
+          "name": "khaki",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-khaki",
+          "type": "value",
+          "value": "khaki"
+        },
+        {
+          "name": "lavender",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lavender",
+          "type": "value",
+          "value": "lavender"
+        },
+        {
+          "name": "lavenderblush",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lavenderblush",
+          "type": "value",
+          "value": "lavenderblush"
+        },
+        {
+          "name": "lawngreen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lawngreen",
+          "type": "value",
+          "value": "lawngreen"
+        },
+        {
+          "name": "lemonchiffon",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lemonchiffon",
+          "type": "value",
+          "value": "lemonchiffon"
+        },
+        {
+          "name": "lightblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightblue",
+          "type": "value",
+          "value": "lightblue"
+        },
+        {
+          "name": "lightcoral",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightcoral",
+          "type": "value",
+          "value": "lightcoral"
+        },
+        {
+          "name": "lightcyan",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightcyan",
+          "type": "value",
+          "value": "lightcyan"
+        },
+        {
+          "name": "lightgoldenrodyellow",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightgoldenrodyellow",
+          "type": "value",
+          "value": "lightgoldenrodyellow"
+        },
+        {
+          "name": "lightgray",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightgray",
+          "type": "value",
+          "value": "lightgray"
+        },
+        {
+          "name": "lightgreen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightgreen",
+          "type": "value",
+          "value": "lightgreen"
+        },
+        {
+          "name": "lightgrey",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightgrey",
+          "type": "value",
+          "value": "lightgrey"
+        },
+        {
+          "name": "lightpink",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightpink",
+          "type": "value",
+          "value": "lightpink"
+        },
+        {
+          "name": "lightsalmon",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightsalmon",
+          "type": "value",
+          "value": "lightsalmon"
+        },
+        {
+          "name": "lightseagreen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightseagreen",
+          "type": "value",
+          "value": "lightseagreen"
+        },
+        {
+          "name": "lightskyblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightskyblue",
+          "type": "value",
+          "value": "lightskyblue"
+        },
+        {
+          "name": "lightslategray",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightslategray",
+          "type": "value",
+          "value": "lightslategray"
+        },
+        {
+          "name": "lightslategrey",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightslategrey",
+          "type": "value",
+          "value": "lightslategrey"
+        },
+        {
+          "name": "lightsteelblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightsteelblue",
+          "type": "value",
+          "value": "lightsteelblue"
+        },
+        {
+          "name": "lightyellow",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lightyellow",
+          "type": "value",
+          "value": "lightyellow"
+        },
+        {
+          "name": "lime",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-lime",
+          "type": "value",
+          "value": "lime"
+        },
+        {
+          "name": "limegreen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-limegreen",
+          "type": "value",
+          "value": "limegreen"
+        },
+        {
+          "name": "linen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-linen",
+          "type": "value",
+          "value": "linen"
+        },
+        {
+          "name": "magenta",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-magenta",
+          "type": "value",
+          "value": "magenta"
+        },
+        {
+          "name": "maroon",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-maroon",
+          "type": "value",
+          "value": "maroon"
+        },
+        {
+          "name": "mediumaquamarine",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-mediumaquamarine",
+          "type": "value",
+          "value": "mediumaquamarine"
+        },
+        {
+          "name": "mediumblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-mediumblue",
+          "type": "value",
+          "value": "mediumblue"
+        },
+        {
+          "name": "mediumorchid",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-mediumorchid",
+          "type": "value",
+          "value": "mediumorchid"
+        },
+        {
+          "name": "mediumpurple",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-mediumpurple",
+          "type": "value",
+          "value": "mediumpurple"
+        },
+        {
+          "name": "mediumseagreen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-mediumseagreen",
+          "type": "value",
+          "value": "mediumseagreen"
+        },
+        {
+          "name": "mediumslateblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-mediumslateblue",
+          "type": "value",
+          "value": "mediumslateblue"
+        },
+        {
+          "name": "mediumspringgreen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-mediumspringgreen",
+          "type": "value",
+          "value": "mediumspringgreen"
+        },
+        {
+          "name": "mediumturquoise",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-mediumturquoise",
+          "type": "value",
+          "value": "mediumturquoise"
+        },
+        {
+          "name": "mediumvioletred",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-mediumvioletred",
+          "type": "value",
+          "value": "mediumvioletred"
+        },
+        {
+          "name": "midnightblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-midnightblue",
+          "type": "value",
+          "value": "midnightblue"
+        },
+        {
+          "name": "mintcream",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-mintcream",
+          "type": "value",
+          "value": "mintcream"
+        },
+        {
+          "name": "mistyrose",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-mistyrose",
+          "type": "value",
+          "value": "mistyrose"
+        },
+        {
+          "name": "moccasin",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-moccasin",
+          "type": "value",
+          "value": "moccasin"
+        },
+        {
+          "name": "navajowhite",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-navajowhite",
+          "type": "value",
+          "value": "navajowhite"
+        },
+        {
+          "name": "navy",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-navy",
+          "type": "value",
+          "value": "navy"
+        },
+        {
+          "name": "oldlace",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-oldlace",
+          "type": "value",
+          "value": "oldlace"
+        },
+        {
+          "name": "olive",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-olive",
+          "type": "value",
+          "value": "olive"
+        },
+        {
+          "name": "olivedrab",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-olivedrab",
+          "type": "value",
+          "value": "olivedrab"
+        },
+        {
+          "name": "orange",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-orange",
+          "type": "value",
+          "value": "orange"
+        },
+        {
+          "name": "orangered",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-orangered",
+          "type": "value",
+          "value": "orangered"
+        },
+        {
+          "name": "orchid",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-orchid",
+          "type": "value",
+          "value": "orchid"
+        },
+        {
+          "name": "palegoldenrod",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-palegoldenrod",
+          "type": "value",
+          "value": "palegoldenrod"
+        },
+        {
+          "name": "palegreen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-palegreen",
+          "type": "value",
+          "value": "palegreen"
+        },
+        {
+          "name": "paleturquoise",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-paleturquoise",
+          "type": "value",
+          "value": "paleturquoise"
+        },
+        {
+          "name": "palevioletred",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-palevioletred",
+          "type": "value",
+          "value": "palevioletred"
+        },
+        {
+          "name": "papayawhip",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-papayawhip",
+          "type": "value",
+          "value": "papayawhip"
+        },
+        {
+          "name": "peachpuff",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-peachpuff",
+          "type": "value",
+          "value": "peachpuff"
+        },
+        {
+          "name": "peru",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-peru",
+          "type": "value",
+          "value": "peru"
+        },
+        {
+          "name": "pink",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-pink",
+          "type": "value",
+          "value": "pink"
+        },
+        {
+          "name": "plum",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-plum",
+          "type": "value",
+          "value": "plum"
+        },
+        {
+          "name": "powderblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-powderblue",
+          "type": "value",
+          "value": "powderblue"
+        },
+        {
+          "name": "purple",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-purple",
+          "type": "value",
+          "value": "purple"
+        },
+        {
+          "name": "rebeccapurple",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-rebeccapurple",
+          "type": "value",
+          "value": "rebeccapurple"
+        },
+        {
+          "name": "red",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-red",
+          "type": "value",
+          "value": "red"
+        },
+        {
+          "name": "rosybrown",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-rosybrown",
+          "type": "value",
+          "value": "rosybrown"
+        },
+        {
+          "name": "royalblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-royalblue",
+          "type": "value",
+          "value": "royalblue"
+        },
+        {
+          "name": "saddlebrown",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-saddlebrown",
+          "type": "value",
+          "value": "saddlebrown"
+        },
+        {
+          "name": "salmon",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-salmon",
+          "type": "value",
+          "value": "salmon"
+        },
+        {
+          "name": "sandybrown",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-sandybrown",
+          "type": "value",
+          "value": "sandybrown"
+        },
+        {
+          "name": "seagreen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-seagreen",
+          "type": "value",
+          "value": "seagreen"
+        },
+        {
+          "name": "seashell",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-seashell",
+          "type": "value",
+          "value": "seashell"
+        },
+        {
+          "name": "sienna",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-sienna",
+          "type": "value",
+          "value": "sienna"
+        },
+        {
+          "name": "silver",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-silver",
+          "type": "value",
+          "value": "silver"
+        },
+        {
+          "name": "skyblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-skyblue",
+          "type": "value",
+          "value": "skyblue"
+        },
+        {
+          "name": "slateblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-slateblue",
+          "type": "value",
+          "value": "slateblue"
+        },
+        {
+          "name": "slategray",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-slategray",
+          "type": "value",
+          "value": "slategray"
+        },
+        {
+          "name": "slategrey",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-slategrey",
+          "type": "value",
+          "value": "slategrey"
+        },
+        {
+          "name": "snow",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-snow",
+          "type": "value",
+          "value": "snow"
+        },
+        {
+          "name": "springgreen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-springgreen",
+          "type": "value",
+          "value": "springgreen"
+        },
+        {
+          "name": "steelblue",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-steelblue",
+          "type": "value",
+          "value": "steelblue"
+        },
+        {
+          "name": "tan",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-tan",
+          "type": "value",
+          "value": "tan"
+        },
+        {
+          "name": "teal",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-teal",
+          "type": "value",
+          "value": "teal"
+        },
+        {
+          "name": "thistle",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-thistle",
+          "type": "value",
+          "value": "thistle"
+        },
+        {
+          "name": "tomato",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-tomato",
+          "type": "value",
+          "value": "tomato"
+        },
+        {
+          "name": "turquoise",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-turquoise",
+          "type": "value",
+          "value": "turquoise"
+        },
+        {
+          "name": "violet",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-violet",
+          "type": "value",
+          "value": "violet"
+        },
+        {
+          "name": "wheat",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-wheat",
+          "type": "value",
+          "value": "wheat"
+        },
+        {
+          "name": "white",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-white",
+          "type": "value",
+          "value": "white"
+        },
+        {
+          "name": "whitesmoke",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-whitesmoke",
+          "type": "value",
+          "value": "whitesmoke"
+        },
+        {
+          "name": "yellow",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-yellow",
+          "type": "value",
+          "value": "yellow"
+        },
+        {
+          "name": "yellowgreen",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-yellowgreen",
+          "type": "value",
+          "value": "yellowgreen"
+        }
+      ],
+      "value": "aliceblue | antiquewhite | aqua | aquamarine | azure | beige | bisque | black | blanchedalmond | blue | blueviolet | brown | burlywood | cadetblue | chartreuse | chocolate | coral | cornflowerblue | cornsilk | crimson | cyan | darkblue | darkcyan | darkgoldenrod | darkgray | darkgreen | darkgrey | darkkhaki | darkmagenta | darkolivegreen | darkorange | darkorchid | darkred | darksalmon | darkseagreen | darkslateblue | darkslategray | darkslategrey | darkturquoise | darkviolet | deeppink | deepskyblue | dimgray | dimgrey | dodgerblue | firebrick | floralwhite | forestgreen | fuchsia | gainsboro | ghostwhite | gold | goldenrod | gray | green | greenyellow | grey | honeydew | hotpink | indianred | indigo | ivory | khaki | lavender | lavenderblush | lawngreen | lemonchiffon | lightblue | lightcoral | lightcyan | lightgoldenrodyellow | lightgray | lightgreen | lightgrey | lightpink | lightsalmon | lightseagreen | lightskyblue | lightslategray | lightslategrey | lightsteelblue | lightyellow | lime | limegreen | linen | magenta | maroon | mediumaquamarine | mediumblue | mediumorchid | mediumpurple | mediumseagreen | mediumslateblue | mediumspringgreen | mediumturquoise | mediumvioletred | midnightblue | mintcream | mistyrose | moccasin | navajowhite | navy | oldlace | olive | olivedrab | orange | orangered | orchid | palegoldenrod | palegreen | paleturquoise | palevioletred | papayawhip | peachpuff | peru | pink | plum | powderblue | purple | rebeccapurple | red | rosybrown | royalblue | saddlebrown | salmon | sandybrown | seagreen | seashell | sienna | silver | skyblue | slateblue | slategray | slategrey | snow | springgreen | steelblue | tan | teal | thistle | tomato | turquoise | violet | wheat | white | whitesmoke | yellow | yellowgreen | transparent"
+    },
+    {
+      "name": "<system-color>",
+      "prose": "However, in forced colors mode, most colors on the page are forced into a restricted, user-chosen palette, see CSS Color Adjustment 1 § 5.2 Forced Colors Mode Color Palettes. The <system-color> keywords expose these user-chosen colors so that the rest of the page can integrate with this restricted palette.",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-system-color",
+      "type": "type",
+      "values": [
+        {
+          "name": "AccentColor",
+          "prose": "Background of accented user interface controls.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-accentcolor",
+          "type": "value",
+          "value": "AccentColor"
+        },
+        {
+          "name": "AccentColorText",
+          "prose": "Text of accented user interface controls.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-accentcolortext",
+          "type": "value",
+          "value": "AccentColorText"
+        },
+        {
+          "name": "ActiveText",
+          "prose": "Text in active links. For light backgrounds, traditionally red.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-activetext",
+          "type": "value",
+          "value": "ActiveText"
+        },
+        {
+          "name": "ButtonBorder",
+          "prose": "The base border color for push buttons.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-buttonborder",
+          "type": "value",
+          "value": "ButtonBorder"
+        },
+        {
+          "name": "ButtonFace",
+          "prose": "The face background color for push buttons.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-buttonface",
+          "type": "value",
+          "value": "ButtonFace"
+        },
+        {
+          "name": "ButtonText",
+          "prose": "Text on push buttons.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-buttontext",
+          "type": "value",
+          "value": "ButtonText"
+        },
+        {
+          "name": "Canvas",
+          "prose": "Background of application content or documents.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-canvas",
+          "type": "value",
+          "value": "Canvas"
+        },
+        {
+          "name": "CanvasText",
+          "prose": "Text in application content or documents.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-canvastext",
+          "type": "value",
+          "value": "CanvasText"
+        },
+        {
+          "name": "Field",
+          "prose": "Background of input fields.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-field",
+          "type": "value",
+          "value": "Field"
+        },
+        {
+          "name": "FieldText",
+          "prose": "Text in input fields.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-fieldtext",
+          "type": "value",
+          "value": "FieldText"
+        },
+        {
+          "name": "GrayText",
+          "prose": "Disabled text. (Often, but not necessarily, gray.)",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-graytext",
+          "type": "value",
+          "value": "GrayText"
+        },
+        {
+          "name": "Highlight",
+          "prose": "Background of selected text, for example from ::selection.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-highlight",
+          "type": "value",
+          "value": "Highlight"
+        },
+        {
+          "name": "HighlightText",
+          "prose": "Text of selected text.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-highlighttext",
+          "type": "value",
+          "value": "HighlightText"
+        },
+        {
+          "name": "LinkText",
+          "prose": "Text in non-active, non-visited links. For light backgrounds, traditionally blue.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-linktext",
+          "type": "value",
+          "value": "LinkText"
+        },
+        {
+          "name": "Mark",
+          "prose": "Background of text that has been specially marked (such as by the HTML mark element).",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-mark",
+          "type": "value",
+          "value": "Mark"
+        },
+        {
+          "name": "MarkText",
+          "prose": "Text that has been specially marked (such as by the HTML mark element).",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-marktext",
+          "type": "value",
+          "value": "MarkText"
+        },
+        {
+          "name": "SelectedItem",
+          "prose": "Background of selected items, for example a selected checkbox.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-selecteditem",
+          "type": "value",
+          "value": "SelectedItem"
+        },
+        {
+          "name": "SelectedItemText",
+          "prose": "Text of selected items.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-selecteditemtext",
+          "type": "value",
+          "value": "SelectedItemText"
+        },
+        {
+          "name": "VisitedText",
+          "prose": "Text in visited links. For light backgrounds, traditionally purple.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-visitedtext",
+          "type": "value",
+          "value": "VisitedText"
+        }
+      ],
+      "value": "AccentColor | AccentColorText | ActiveText | ButtonBorder | ButtonFace | ButtonText | Canvas | CanvasText | Field | FieldText | GrayText | Highlight | HighlightText | LinkText | Mark | MarkText | SelectedItem | SelectedItemText | VisitedText | <deprecated-color>"
+    },
+    {
+      "name": "hsl()",
+      "value": "[ <legacy-hsl-syntax> | <modern-hsl-syntax> ]",
+      "href": "https://drafts.csswg.org/css-color-4/#funcdef-hsl",
+      "type": "function",
+      "values": [
+        {
+          "name": "HSL",
+          "prose": "HSL colors are specified as a triplet of hue, saturation, and lightness. The syntax of the hsl() and hsla() functions is:",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-hsl-hsl",
+          "type": "value",
+          "value": "HSL"
+        }
+      ]
+    },
+    {
+      "name": "hsla()",
+      "value": "[ <legacy-hsla-syntax> | <modern-hsla-syntax> ]",
+      "href": "https://drafts.csswg.org/css-color-4/#funcdef-hsla",
+      "type": "function"
+    },
+    {
+      "name": "<modern-hsl-syntax>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-modern-hsl-syntax",
+      "type": "type",
+      "value": "hsl( [<hue> | none] [<percentage> | <number> | none] [<percentage> | <number> | none] [ / [<alpha-value> | none] ]? )"
+    },
+    {
+      "name": "<modern-hsla-syntax>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-modern-hsla-syntax",
+      "type": "type",
+      "value": "hsla( [<hue> | none] [<percentage> | <number> | none] [<percentage> | <number> | none] [ / [<alpha-value> | none] ]? )"
+    },
+    {
+      "name": "<legacy-hsl-syntax>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-legacy-hsl-syntax",
+      "type": "type",
+      "value": "hsl( <hue>, <percentage>, <percentage>, <alpha-value>? )"
+    },
+    {
+      "name": "<legacy-hsla-syntax>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-legacy-hsla-syntax",
+      "type": "type",
+      "value": "hsla( <hue>, <percentage>, <percentage>, <alpha-value>? )"
+    },
+    {
+      "name": "hwb()",
+      "value": "hwb( [<hue> | none] [<percentage> | <number> | none] [<percentage> | <number> | none] [ / [<alpha-value> | none] ]? )",
+      "href": "https://drafts.csswg.org/css-color-4/#funcdef-hwb",
+      "type": "function",
+      "values": [
+        {
+          "name": "HWB",
+          "prose": "HWB (short for Hue-Whiteness-Blackness) [HWB] is another method of specifying sRGB colors, similar to HSL', but often even easier for humans to work with. It describes colors with a starting hue, then a degree of whiteness and blackness to mix into that base hue.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-hwb-hwb",
+          "type": "value",
+          "value": "HWB"
+        }
+      ]
+    },
+    {
+      "name": "lab()",
+      "value": "lab( [<percentage> | <number> | none] [ <percentage> | <number> | none] [ <percentage> | <number> | none] [ / [<alpha-value> | none] ]? )",
+      "href": "https://drafts.csswg.org/css-color-4/#funcdef-lab",
+      "type": "function",
+      "values": [
+        {
+          "name": "Lab",
+          "prose": "In Lab, the first argument specifies the CIE Lightness, L. This is a number between 0% or 0 and 100% or 100 Values less than 0% or 0 must be clamped to 0% at parsed-value time; values greater than 100% or 100 are clamped to 100% at parsed-value time.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-lab-lab",
+          "type": "value",
+          "value": "Lab"
+        }
+      ]
+    },
+    {
+      "name": "lch()",
+      "value": "lch( [<percentage> | <number> | none] [ <percentage> | <number> | none] [ <hue> | none] [ / [<alpha-value> | none] ]? )",
+      "href": "https://drafts.csswg.org/css-color-4/#funcdef-lch",
+      "type": "function",
+      "values": [
+        {
+          "name": "LCH",
+          "prose": "In CIE LCH the first argument specifies the CIE Lightness L, interpreted identically to the Lightness argument of lab().",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-lch-lch",
+          "type": "value",
+          "value": "LCH"
+        }
+      ]
+    },
+    {
+      "name": "oklab()",
+      "value": "oklab( [ <percentage> | <number> | none] [ <percentage> | <number> | none] [ <percentage> | <number> | none] [ / [<alpha-value> | none] ]? )",
+      "href": "https://drafts.csswg.org/css-color-4/#funcdef-oklab",
+      "type": "function",
+      "values": [
+        {
+          "name": "Oklab",
+          "prose": "In Oklab the first argument specifies the Oklab Lightness. This is a number between 0% or 0 and 100% or 1.0.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-oklab-oklab",
+          "type": "value",
+          "value": "Oklab"
+        }
+      ]
+    },
+    {
+      "name": "oklch()",
+      "value": "oklch( [ <percentage> | <number> | none] [ <percentage> | <number> | none] [ <hue> | none] [ / [<alpha-value> | none] ]? )",
+      "href": "https://drafts.csswg.org/css-color-4/#funcdef-oklch",
+      "type": "function",
+      "values": [
+        {
+          "name": "OkLCh",
+          "prose": "In OkLCh the first argument specifies the OkLCh Lightness L, interpreted identically to the Lightness argument of oklab().",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-oklch-oklch",
+          "type": "value",
+          "value": "OkLCh"
+        }
+      ]
+    },
+    {
+      "name": "color()",
+      "value": "color( <colorspace-params> [ / [ <alpha-value> | none ] ]? )",
+      "href": "https://drafts.csswg.org/css-color-4/#funcdef-color",
+      "type": "function",
+      "values": [
+        {
+          "name": "srgb",
+          "prose": "The srgb [SRGB] color space accepts three numeric parameters, representing the red, green, and blue components of the color. In-gamut colors have all three components in the range [0, 1]. The whitepoint is D65. [SRGB] specifies two viewing conditions, encoding and typical. The [ICC] recommends using the encoding conditions for color conversion and for optimal viewing, which are the values in the table below. sRGB is the default color space for CSS, used for all the legacy color functions. It has the following characteristics: x y Red chromaticity 0.640 0.330 Green chromaticity 0.300 0.600 Blue chromaticity 0.150 0.060 White chromaticity D65 Transfer function see below White luminance 80.0 cd/m Black luminance 0.20 cd/m Image state display-referred Percentages Allowed for R, G and B Percent reference range for R,G,B: 0% = 0.0, 100% = 1.0 let sign = c < 0? -1 : 1; let abs = Math.abs(c); if (abs <= 0.04045) { cl = c / 12.92; } else { cl = sign * (Math.pow((abs + 0.055) / 1.055, 2.4)); } c is the gamma-encoded red, green or blue component. cl is the corresponding linear-light component. Visualization of the sRGB color space in Oklch. The primaries and secondaries are shown.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-srgb",
+          "type": "value",
+          "value": "srgb"
+        },
+        {
+          "name": "srgb-linear",
+          "prose": "The srgb-linear [SRGB] color space accepts three numeric parameters, representing the red, green, and blue components of the color. In-gamut colors have all three components in the range [0, 1]. The whitepoint is D65. It has the following characteristics: x y Red chromaticity 0.640 0.330 Green chromaticity 0.300 0.600 Blue chromaticity 0.150 0.060 White chromaticity D65 Transfer function unity, see below White luminance 80.0 cd/m Black luminance 0.20 cd/m Image state display-referred Percentages Allowed for R, G and B Percent reference range for R,G,B: 0% = 0.0, 100% = 1.0 cl = c; c is the red, green or blue component. cl is the corresponding linear-light component, which is identical. To avoid banding artifacts, a higher precision is required for srgb-linear than for srgb. For example, these are the same color color(srgb 0.691 0.139 0.259) color(srgb-linear 0.435 0.017 0.055)",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-srgb-linear",
+          "type": "value",
+          "value": "srgb-linear"
+        },
+        {
+          "name": "display-p3",
+          "prose": "The display-p3 [Display-P3] color space accepts three numeric parameters, representing the red, green, and blue components of the color. In-gamut colors have all three components in the range [0, 1]. It uses the same primary chromaticities as [DCI-P3], but with a D65 whitepoint, and the same transfer curve as sRGB. Modern displays, TVs, laptop screens and phone screens are able to display all, or nearly all, of the display-p3 gamut. It has the following characteristics: x y Red chromaticity 0.680 0.320 Green chromaticity 0.265 0.690 Blue chromaticity 0.150 0.060 White chromaticity D65 Transfer function same as srgb White luminance 80.0 cd/m Black luminance 0.80 cd/m Image state display-referred Percentages Allowed for R, G and B Percent reference range for R,G,B: 0% = 0.0, 100% = 1.0 Visualization of the P3 color space in Oklch. The primaries and secondaries are shown (but in sRGB, not in the correct colors). For comparison, the sRGB primaries and secondaries are also shown, as dashed circles. P3 primaries have higher Chroma.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-display-p3",
+          "type": "value",
+          "value": "display-p3"
+        },
+        {
+          "name": "display-p3-linear",
+          "prose": "The display-p3-linear predefined color space is the same as display-p3 except that the transfer function is linear-light (there is no gamma-encoding). It has the following characteristics: x y Red chromaticity 0.680 0.320 Green chromaticity 0.265 0.690 Blue chromaticity 0.150 0.060 White chromaticity D65 Transfer function unity, see below White luminance 80.0 cd/m Black luminance 0.80 cd/m Image state display-referred Percentages Allowed for R, G and B Percent reference range for R,G,B: 0% = 0.0, 100% = 1.0 cl = c; c is the red, green or blue component. cl is the corresponding linear-light component, which is identical. To avoid banding artifacts, a higher precision is required for display-p3-linear than for display-p3. For example, these are the same color color(display-p3 0.591 0.123 0.264) color(display-p3-linear 0.3081 0.014 0.0567)",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-display-p3-linear",
+          "type": "value",
+          "value": "display-p3-linear"
+        },
+        {
+          "name": "a98-rgb",
+          "prose": "The a98-rgb color space accepts three numeric parameters, representing the red, green, and blue components of the color. In-gamut colors have all three components in the range [0, 1]. The transfer curve is a gamma function, close to but not exactly 1/2.2. It has the following characteristics: x y Red chromaticity 0.6400 0.3300 Green chromaticity 0.2100 0.7100 Blue chromaticity 0.1500 0.0600 White chromaticity D65 Transfer function 256/563 White luminance 160.0 cd/m Black luminance 0.5557 cd/m Image state display-referred Percentages Allowed for R, G and B Percent reference range for R,G,B: 0% = 0.0, 100% = 1.0 Visualization of the A98 color space in Oklch. The primaries and secondaries are shown (but in sRGB, not in the correct colors). For comparison, the sRGB primaries and secondaries are also shown, as dashed circles. a98 primaries have higher Chroma, especially the yellow, green and cyan.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-a98-rgb",
+          "type": "value",
+          "value": "a98-rgb"
+        },
+        {
+          "name": "prophoto-rgb",
+          "prose": "The prophoto-rgb color space accepts three numeric parameters, representing the red, green, and blue components of the color. In-gamut colors have all three components in the range [0, 1]. The transfer curve is a gamma function with a value of 1/1.8, and a small linear portion near black. The white point is D50, the same as is used by CIE Lab. Thus, conversion to CIE Lab does not require the chromatic adaptation step. The ProPhoto RGB space uses hyper-saturated, non physically realizable primaries. These were chosen to allow a wide color gamut and in particular, to minimize hue shifts under tonal manipulation. It is often used in digital photography as a wide gamut color space for the archival version of photographic images. The prophoto-rgb color space allows CSS to specify colors that will match colors in such images having the same RGB values. The ProPhoto RGB space was originally developed by Kodak and is described in [Wolfe]. It was standardized by ISO as [ROMM],[ROMM-RGB]. The white luminance is given as a range, and the viewing flare (and thus, the black luminance) is 0.5% to 1.0% of this. It has the following characteristics: x y Red chromaticity 0.734699 0.265301 Green chromaticity 0.159597 0.840403 Blue chromaticity 0.036598 0.000105 White chromaticity D50 Transfer function see below White luminance 160.0 to 640.0 cd/m Black luminance See text Image state display-referred Percentages Allowed for R, G and B Percent reference range for R,G,B: 0% = 0.0, 100% = 1.0 const E = 16/512; let sign = c < 0? -1 : 1; let abs = Math.abs(c); if (abs <= E) { cl = c / 16; } else { cl = sign * Math.pow(c, 1.8); } c is the gamma-encoded red, green or blue component. cl is the corresponding linear-light component. Visualization of the prophoto-rgb color space in Oklch. The primaries and secondaries are shown (but in sRGB, not in the correct colors). For comparison, the sRGB primaries and secondaries are also shown, as dashed circles. prophoto-rgb primaries and secondaries have much higher Chroma, but much of this ultrawide gamut does not correspond to physically realizable colors.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-prophoto-rgb",
+          "type": "value",
+          "value": "prophoto-rgb"
+        },
+        {
+          "name": "rec2020",
+          "prose": "The rec2020 [Rec.2020] color space accepts three numeric parameters, representing the red, green, and blue components of the color. In-gamut colors have all three components in the range [0, 1], (\"full-range\", in video terminology). ITU Reference 2020 is used for Ultra High Definition, 4k and 8k television. The primaries are physically realizable, but with difficulty as they lie very close to the spectral locus. Current displays are unable to reproduce the full gamut of rec2020. Coverage is expected to increase over time as displays improve. It has the following characteristics: x y Red chromaticity 0.708 0.292 Green chromaticity 0.170 0.797 Blue chromaticity 0.131 0.046 White chromaticity D65 Transfer function gamma 2.40, from [REC_BT.1886] Image state display-referred Percentages Allowed for R, G and B Percent reference range for R,G,B: 0% = 0.0, 100% = 1.0 Visualization of the rec2020 color space in Oklch. The primaries and secondaries are shown (but in sRGB, not in the correct colors). For comparison, the sRGB primaries and secondaries are also shown, as dashed circles. rec2020 primaries have much higher Chroma.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-rec2020",
+          "type": "value",
+          "value": "rec2020"
+        },
+        {
+          "name": "xyz-d50",
+          "prose": "The xyz color space accepts three numeric parameters, representing the X,Y and Z values. It represents the CIE XYZ [COLORIMETRY] color space, scaled such that diffuse white has a luminance (Y) of 1.0. and, if necessary, chromatically adapted to the reference white. The reference white for xyz-d50 is D50, while the reference white for xyz-d65 and xyz is D65. Values greater than 1.0/100% are allowed and must not be clamped; colors where Y is greater than 1.0 represent colors brighter than diffuse white. Values less than 0/0% are uncommon, but can occur as a result of chromatic adaptation, and likewise must not be clamped. It has the following characteristics: Percentages Allowed for X,Y,Z Percent reference range for X,Y,Z: 0% = 0.0, 100% = 1.0 These are exactly equivalent: #7654CD rgb(46.27% 32.94% 80.39%) lab(44.36% 36.05 -58.99) color(xyz-d50 0.2005 0.14089 0.4472) color(xyz-d65 0.21661 0.14602 0.59452) These colors are exactly equivalent, and represent white: #FFFFFF color(xyz-d50 0.9643 1 0.8251) color(xyz-d65 0.9505 1 1.089)",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-xyz-d50",
+          "type": "value",
+          "value": "xyz-d50"
+        },
+        {
+          "name": "xyz-d65",
+          "prose": "The xyz color space accepts three numeric parameters, representing the X,Y and Z values. It represents the CIE XYZ [COLORIMETRY] color space, scaled such that diffuse white has a luminance (Y) of 1.0. and, if necessary, chromatically adapted to the reference white. The reference white for xyz-d50 is D50, while the reference white for xyz-d65 and xyz is D65. Values greater than 1.0/100% are allowed and must not be clamped; colors where Y is greater than 1.0 represent colors brighter than diffuse white. Values less than 0/0% are uncommon, but can occur as a result of chromatic adaptation, and likewise must not be clamped. It has the following characteristics: Percentages Allowed for X,Y,Z Percent reference range for X,Y,Z: 0% = 0.0, 100% = 1.0 These are exactly equivalent: #7654CD rgb(46.27% 32.94% 80.39%) lab(44.36% 36.05 -58.99) color(xyz-d50 0.2005 0.14089 0.4472) color(xyz-d65 0.21661 0.14602 0.59452) These colors are exactly equivalent, and represent white: #FFFFFF color(xyz-d50 0.9643 1 0.8251) color(xyz-d65 0.9505 1 1.089)",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-xyz-d65",
+          "type": "value",
+          "value": "xyz-d65"
+        },
+        {
+          "name": "xyz",
+          "prose": "The xyz color space accepts three numeric parameters, representing the X,Y and Z values. It represents the CIE XYZ [COLORIMETRY] color space, scaled such that diffuse white has a luminance (Y) of 1.0. and, if necessary, chromatically adapted to the reference white. The reference white for xyz-d50 is D50, while the reference white for xyz-d65 and xyz is D65. Values greater than 1.0/100% are allowed and must not be clamped; colors where Y is greater than 1.0 represent colors brighter than diffuse white. Values less than 0/0% are uncommon, but can occur as a result of chromatic adaptation, and likewise must not be clamped. It has the following characteristics: Percentages Allowed for X,Y,Z Percent reference range for X,Y,Z: 0% = 0.0, 100% = 1.0 These are exactly equivalent: #7654CD rgb(46.27% 32.94% 80.39%) lab(44.36% 36.05 -58.99) color(xyz-d50 0.2005 0.14089 0.4472) color(xyz-d65 0.21661 0.14602 0.59452) These colors are exactly equivalent, and represent white: #FFFFFF color(xyz-d50 0.9643 1 0.8251) color(xyz-d65 0.9505 1 1.089)",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-xyz",
+          "type": "value",
+          "value": "xyz"
+        }
+      ]
+    },
+    {
+      "name": "<colorspace-params>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-colorspace-params",
+      "type": "type",
+      "value": "[ <predefined-rgb-params> | <xyz-params>]"
+    },
+    {
+      "name": "<predefined-rgb-params>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-predefined-rgb-params",
+      "type": "type",
+      "value": "<predefined-rgb> [ <number> | <percentage> | none ]{3}"
+    },
+    {
+      "name": "<xyz-params>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-xyz-params",
+      "type": "type",
+      "value": "<xyz-space> [ <number> | <percentage> | none ]{3}"
+    },
+    {
+      "name": "<xyz-space>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-xyz-space",
+      "type": "type",
+      "value": "xyz | xyz-d50 | xyz-d65"
+    },
+    {
+      "name": "<color-space>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-color-space",
+      "type": "type",
+      "value": "<rectangular-color-space> | <polar-color-space>"
+    },
+    {
+      "name": "<rectangular-color-space>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-rectangular-color-space",
+      "type": "type",
+      "value": "srgb | srgb-linear | display-p3 | display-p3-linear | a98-rgb | prophoto-rgb | rec2020 | lab | oklab | <xyz-space>"
+    },
+    {
+      "name": "<polar-color-space>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-polar-color-space",
+      "type": "type",
+      "value": "hsl | hwb | lch | oklch"
+    },
+    {
+      "name": "<hue-interpolation-method>",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-hue-interpolation-method",
+      "type": "type",
+      "value": "[ shorter | longer | increasing | decreasing ] hue"
+    },
+    {
+      "name": "<color-interpolation-method>",
+      "href": "https://drafts.csswg.org/css-color-4/#color-interpolation-method",
+      "type": "type",
+      "value": "in [ <rectangular-color-space> | <polar-color-space> <hue-interpolation-method>? ]"
+    },
+    {
+      "name": "<deprecated-color>",
+      "prose": "The deprecated system colors are represented as the <deprecated-color> sub-type, and are defined as:",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-deprecated-color",
+      "type": "type",
+      "values": [
+        {
+          "name": "ActiveBorder",
+          "prose": "Active window border. Computes to the color of ButtonBorder.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-activeborder",
+          "type": "value",
+          "value": "ActiveBorder"
+        },
+        {
+          "name": "ActiveCaption",
+          "prose": "Active window caption. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-activecaption",
+          "type": "value",
+          "value": "ActiveCaption"
+        },
+        {
+          "name": "AppWorkspace",
+          "prose": "Background color of multiple document interface. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-appworkspace",
+          "type": "value",
+          "value": "AppWorkspace"
+        },
+        {
+          "name": "Background",
+          "prose": "Desktop background. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-background",
+          "type": "value",
+          "value": "Background"
+        },
+        {
+          "name": "ButtonHighlight",
+          "prose": "The color of the border facing the light source for 3-D elements that appear 3-D due to one layer of surrounding border. Computes to the color of ButtonFace.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-buttonhighlight",
+          "type": "value",
+          "value": "ButtonHighlight"
+        },
+        {
+          "name": "ButtonShadow",
+          "prose": "The color of the border away from the light source for 3-D elements that appear 3-D due to one layer of surrounding border. Computes to the color of ButtonFace.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-buttonshadow",
+          "type": "value",
+          "value": "ButtonShadow"
+        },
+        {
+          "name": "CaptionText",
+          "prose": "Text in caption, size box, and scrollbar arrow box. Computes to the color of CanvasText.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-captiontext",
+          "type": "value",
+          "value": "CaptionText"
+        },
+        {
+          "name": "InactiveBorder",
+          "prose": "Inactive window border. Computes to the color of ButtonBorder.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-inactiveborder",
+          "type": "value",
+          "value": "InactiveBorder"
+        },
+        {
+          "name": "InactiveCaption",
+          "prose": "Inactive window caption. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-inactivecaption",
+          "type": "value",
+          "value": "InactiveCaption"
+        },
+        {
+          "name": "InactiveCaptionText",
+          "prose": "Color of text in an inactive caption. Computes to the color of GrayText.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-inactivecaptiontext",
+          "type": "value",
+          "value": "InactiveCaptionText"
+        },
+        {
+          "name": "InfoBackground",
+          "prose": "Background color for tooltip controls. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-infobackground",
+          "type": "value",
+          "value": "InfoBackground"
+        },
+        {
+          "name": "InfoText",
+          "prose": "Text color for tooltip controls. Computes to the color of CanvasText.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-infotext",
+          "type": "value",
+          "value": "InfoText"
+        },
+        {
+          "name": "Menu",
+          "prose": "Menu background. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-menu",
+          "type": "value",
+          "value": "Menu"
+        },
+        {
+          "name": "MenuText",
+          "prose": "Text in menus. Computes to the color of CanvasText.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-menutext",
+          "type": "value",
+          "value": "MenuText"
+        },
+        {
+          "name": "Scrollbar",
+          "prose": "Scroll bar gray area. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-scrollbar",
+          "type": "value",
+          "value": "Scrollbar"
+        },
+        {
+          "name": "ThreeDDarkShadow",
+          "prose": "The color of the darker (generally outer) of the two borders away from the light source for 3-D elements that appear 3-D due to two concentric layers of surrounding border. Computes to the color of ButtonBorder.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-threeddarkshadow",
+          "type": "value",
+          "value": "ThreeDDarkShadow"
+        },
+        {
+          "name": "ThreeDFace",
+          "prose": "The face background color for 3-D elements that appear 3-D due to two concentric layers of surrounding border. Computes to the color of ButtonFace.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-threedface",
+          "type": "value",
+          "value": "ThreeDFace"
+        },
+        {
+          "name": "ThreeDHighlight",
+          "prose": "The color of the lighter (generally outer) of the two borders facing the light source for 3-D elements that appear 3-D due to two concentric layers of surrounding border. Computes to the color of ButtonBorder.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-threedhighlight",
+          "type": "value",
+          "value": "ThreeDHighlight"
+        },
+        {
+          "name": "ThreeDLightShadow",
+          "prose": "The color of the darker (generally inner) of the two borders facing the light source for 3-D elements that appear 3-D due to two concentric layers of surrounding border. Computes to the color of ButtonBorder.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-threedlightshadow",
+          "type": "value",
+          "value": "ThreeDLightShadow"
+        },
+        {
+          "name": "ThreeDShadow",
+          "prose": "The color of the lighter (generally inner) of the two borders away from the light source for 3-D elements that appear 3-D due to two concentric layers of surrounding border. Computes to the color of ButtonBorder.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-threedshadow",
+          "type": "value",
+          "value": "ThreeDShadow"
+        },
+        {
+          "name": "Window",
+          "prose": "Window background. Computes to the color of Canvas.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-window",
+          "type": "value",
+          "value": "Window"
+        },
+        {
+          "name": "WindowFrame",
+          "prose": "Window frame. Computes to the color of ButtonBorder.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-windowframe",
+          "type": "value",
+          "value": "WindowFrame"
+        },
+        {
+          "name": "WindowText",
+          "prose": "Text in windows. Computes to the color of CanvasText.",
+          "href": "https://drafts.csswg.org/css-color-4/#valdef-color-windowtext",
+          "type": "value",
+          "value": "WindowText"
+        }
+      ],
+      "value": "ActiveBorder | ActiveCaption | AppWorkspace | Background | ButtonHighlight | ButtonShadow | CaptionText | InactiveBorder | InactiveCaption | InactiveCaptionText | InfoBackground | InfoText | Menu | MenuText | Scrollbar | ThreeDDarkShadow | ThreeDFace | ThreeDHighlight | ThreeDLightShadow | ThreeDShadow | Window | WindowFrame | WindowText"
+    },
+    {
+      "name": "<quirky-color>",
+      "prose": "When CSS is being parsed in quirks mode, <quirky-color> is a type of <color> that is only valid in certain properties:",
+      "href": "https://drafts.csswg.org/css-color-4/#typedef-quirky-color",
+      "type": "type"
+    }
+  ]
+}

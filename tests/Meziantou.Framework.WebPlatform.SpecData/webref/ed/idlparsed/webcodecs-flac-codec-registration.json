@@ -1,0 +1,119 @@
+{
+  "spec": {
+    "title": "FLAC WebCodecs Registration",
+    "url": "https://w3c.github.io/webcodecs/flac_codec_registration.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "FlacEncoderConfig": {
+        "fragment": "dictionary FlacEncoderConfig {\n  [EnforceRange] unsigned long blockSize = 0;\n  [EnforceRange] unsigned long compressLevel = 5;\n};",
+        "type": "dictionary",
+        "name": "FlacEncoderConfig",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "blockSize",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/flac_codec_registration.html#dom-flacencoderconfig-blocksize"
+          },
+          {
+            "type": "field",
+            "name": "compressLevel",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "5"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/flac_codec_registration.html#dom-flacencoderconfig-compresslevel"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcodecs/flac_codec_registration.html#dictdef-flacencoderconfig"
+      }
+    },
+    "idlExtendedNames": {
+      "AudioEncoderConfig": [
+        {
+          "fragment": "partial dictionary AudioEncoderConfig {\n  FlacEncoderConfig flac;\n};",
+          "type": "dictionary",
+          "name": "AudioEncoderConfig",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "flac",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "FlacEncoderConfig"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webcodecs/flac_codec_registration.html#dom-audioencoderconfig-flac"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "AudioEncoderConfig": [
+        "FlacEncoderConfig"
+      ],
+      "FlacEncoderConfig": []
+    },
+    "externalDependencies": [
+      "AudioEncoderConfig"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

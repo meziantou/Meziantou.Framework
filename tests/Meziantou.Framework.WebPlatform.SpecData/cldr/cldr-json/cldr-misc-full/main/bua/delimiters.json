@@ -1,0 +1,15 @@
+{
+  "main": {
+    "bua": {
+      "identity": {
+        "language": "bua"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

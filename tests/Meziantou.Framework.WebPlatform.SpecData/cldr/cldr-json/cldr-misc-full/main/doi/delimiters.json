@@ -1,0 +1,15 @@
+{
+  "main": {
+    "doi": {
+      "identity": {
+        "language": "doi"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

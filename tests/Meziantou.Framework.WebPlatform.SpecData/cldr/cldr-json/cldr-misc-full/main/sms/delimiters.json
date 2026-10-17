@@ -1,0 +1,15 @@
+{
+  "main": {
+    "sms": {
+      "identity": {
+        "language": "sms"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

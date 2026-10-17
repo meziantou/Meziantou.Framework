@@ -1,0 +1,16 @@
+{
+  "main": {
+    "gez-ER": {
+      "identity": {
+        "language": "gez",
+        "territory": "ER"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

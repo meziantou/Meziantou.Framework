@@ -1,0 +1,15 @@
+{
+  "main": {
+    "xh": {
+      "identity": {
+        "language": "xh"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

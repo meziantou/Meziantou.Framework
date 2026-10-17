@@ -1,0 +1,741 @@
+{
+  "spec": {
+    "title": "CSS Conditional Rules Module Level 5",
+    "url": "https://drafts.csswg.org/css-conditional-5/"
+  },
+  "properties": [
+    {
+      "name": "container-type",
+      "href": "https://drafts.csswg.org/css-conditional-5/#propdef-container-type",
+      "value": "normal | [ [ size | inline-size ] || scroll-state ]",
+      "initial": "normal",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "size",
+          "prose": "Establishes a query container for container size queries on both the inline and block axis. Applies style containment and size containment to the principal box, and establishes an independent formatting context.",
+          "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-type-size",
+          "type": "value",
+          "value": "size"
+        },
+        {
+          "name": "inline-size",
+          "prose": "Establishes a query container for container size queries on the container’s own inline axis. Applies style containment and inline-size containment to the principal box, and establishes an independent formatting context.",
+          "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-type-inline-size",
+          "type": "value",
+          "value": "inline-size"
+        },
+        {
+          "name": "scroll-state",
+          "prose": "Establishes a query container for container scroll-state queries. For queries that match the state of the scroller itself (such as scrollable), the element is only a query container on the element’s own scrollable axises.",
+          "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-type-scroll-state",
+          "type": "value",
+          "value": "scroll-state"
+        },
+        {
+          "name": "normal",
+          "prose": "The element is not a query container for any container size queries or container scroll-state queries, but remains a query container for container style queries.",
+          "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-type-normal",
+          "type": "value",
+          "value": "normal"
+        }
+      ],
+      "styleDeclaration": [
+        "container-type",
+        "containerType"
+      ]
+    },
+    {
+      "name": "container-name",
+      "href": "https://drafts.csswg.org/css-conditional-5/#propdef-container-name",
+      "value": "none | <custom-ident>+",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the keyword none, or an ordered list of identifiers",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The query container has no query container name.",
+          "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-name-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<custom-ident>",
+          "prose": "Specifies a query container name as an identifier. The keywords none, and, not, and or are excluded from this <custom-ident>.",
+          "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-name-custom-ident",
+          "type": "value",
+          "value": "<custom-ident>"
+        }
+      ],
+      "styleDeclaration": [
+        "container-name",
+        "containerName"
+      ]
+    },
+    {
+      "name": "container",
+      "href": "https://drafts.csswg.org/css-conditional-5/#propdef-container",
+      "value": "<'container-name'> [ / <'container-type'> ]?",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "container"
+      ],
+      "longhands": [
+        "container-name",
+        "container-type"
+      ]
+    }
+  ],
+  "atrules": [
+    {
+      "name": "@when",
+      "prose": "The @when at-rule is a conditional group rule that generalizes the individual conditional group rules such as @media and @supports. It is defined as:",
+      "href": "https://drafts.csswg.org/css-conditional-5/#at-ruledef-when",
+      "descriptors": [],
+      "value": "@when <boolean-condition> { <rule-list> }"
+    },
+    {
+      "name": "@else",
+      "prose": "The @else rule is a conditional group rule used to form conditional rule chains, which associate multiple conditional group rules and guarantee that only the first one that matches will evaluate its condition as true. It is defined as:",
+      "href": "https://drafts.csswg.org/css-conditional-5/#at-ruledef-else",
+      "descriptors": [],
+      "value": "@else <boolean-condition>? { <rule-list> }"
+    },
+    {
+      "name": "@container",
+      "prose": "The @container rule is a conditional group rule whose condition contains a container query, which is a boolean combination of container size queries and/or container style queries. Style declarations within the @container rule are filtered by its condition to only match when the container query is true for their element’s query container.",
+      "href": "https://drafts.csswg.org/css-conditional-5/#at-ruledef-container",
+      "descriptors": [
+        {
+          "name": "width",
+          "href": "https://drafts.csswg.org/css-conditional-5/#descdef-container-width",
+          "for": "@container",
+          "value": "<length>",
+          "type": "range"
+        },
+        {
+          "name": "height",
+          "href": "https://drafts.csswg.org/css-conditional-5/#descdef-container-height",
+          "for": "@container",
+          "value": "<length>",
+          "type": "range"
+        },
+        {
+          "name": "inline-size",
+          "href": "https://drafts.csswg.org/css-conditional-5/#descdef-container-inline-size",
+          "for": "@container",
+          "value": "<length>",
+          "type": "range"
+        },
+        {
+          "name": "block-size",
+          "href": "https://drafts.csswg.org/css-conditional-5/#descdef-container-block-size",
+          "for": "@container",
+          "value": "<length>",
+          "type": "range"
+        },
+        {
+          "name": "aspect-ratio",
+          "href": "https://drafts.csswg.org/css-conditional-5/#descdef-container-aspect-ratio",
+          "for": "@container",
+          "value": "<ratio>",
+          "type": "range"
+        },
+        {
+          "name": "orientation",
+          "href": "https://drafts.csswg.org/css-conditional-5/#descdef-container-orientation",
+          "for": "@container",
+          "value": "portrait | landscape",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "portrait",
+              "prose": "The orientation container feature is portrait when the value of the height container feature is greater than or equal to the value of the width container feature.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-orientation-portrait",
+              "type": "value",
+              "value": "portrait"
+            },
+            {
+              "name": "landscape",
+              "prose": "Otherwise orientation is landscape.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-orientation-landscape",
+              "type": "value",
+              "value": "landscape"
+            }
+          ]
+        },
+        {
+          "name": "stuck",
+          "href": "https://drafts.csswg.org/css-conditional-5/#descdef-container-stuck",
+          "for": "@container",
+          "value": "none | top | right | bottom | left | block-start | inline-start | block-end | inline-end",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "none",
+              "prose": "The sticky container is not shifted in any direction.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-stuck-none",
+              "type": "value",
+              "value": "none"
+            },
+            {
+              "name": "top",
+              "prose": "The sticky container is shifted to stay inside the top edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-stuck-top",
+              "type": "value",
+              "value": "top"
+            },
+            {
+              "name": "right",
+              "prose": "The sticky container is shifted to stay inside the right edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-stuck-right",
+              "type": "value",
+              "value": "right"
+            },
+            {
+              "name": "bottom",
+              "prose": "The sticky container is shifted to stay inside the bottom edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-stuck-bottom",
+              "type": "value",
+              "value": "bottom"
+            },
+            {
+              "name": "left",
+              "prose": "The sticky container is shifted to stay inside the left edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-stuck-left",
+              "type": "value",
+              "value": "left"
+            },
+            {
+              "name": "block-start",
+              "prose": "The sticky container is shifted to stay inside the block-start edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-stuck-block-start",
+              "type": "value",
+              "value": "block-start"
+            },
+            {
+              "name": "inline-start",
+              "prose": "The sticky container is shifted to stay inside the inline-start edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-stuck-inline-start",
+              "type": "value",
+              "value": "inline-start"
+            },
+            {
+              "name": "block-end",
+              "prose": "The sticky container is shifted to stay inside the block-end edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-stuck-block-end",
+              "type": "value",
+              "value": "block-end"
+            },
+            {
+              "name": "inline-end",
+              "prose": "The sticky container is shifted to stay inside the inline-end edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-stuck-inline-end",
+              "type": "value",
+              "value": "inline-end"
+            }
+          ]
+        },
+        {
+          "name": "snapped",
+          "href": "https://drafts.csswg.org/css-conditional-5/#descdef-container-snapped",
+          "for": "@container",
+          "value": "none | x | y | block | inline | both",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "none",
+              "prose": "The query container is not a snap target.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-snapped-none",
+              "type": "value",
+              "value": "none"
+            },
+            {
+              "name": "x",
+              "prose": "snapped container feature matches x if the query container is a horizontal snap target for its scroll container.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-snapped-x",
+              "type": "value",
+              "value": "x"
+            },
+            {
+              "name": "y",
+              "prose": "snapped container feature matches y if the query container is a vertical snap target for its scroll container.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-snapped-y",
+              "type": "value",
+              "value": "y"
+            },
+            {
+              "name": "block",
+              "prose": "snapped container feature matches block if the query container is a snap target for its scroll container. in the block direction of the scroll snap container.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-snapped-block",
+              "type": "value",
+              "value": "block"
+            },
+            {
+              "name": "inline",
+              "prose": "snapped container feature matches inline if the query container is a snap target for its scroll container in the inline direction of the scroll snap container.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-snapped-inline",
+              "type": "value",
+              "value": "inline"
+            },
+            {
+              "name": "both",
+              "prose": "snapped container feature matches both if the query container is a snap target for its scroll container in both directions of the scroll snap container.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-snapped-both",
+              "type": "value",
+              "value": "both"
+            }
+          ]
+        },
+        {
+          "name": "scrollable",
+          "href": "https://drafts.csswg.org/css-conditional-5/#descdef-container-scrollable",
+          "for": "@container",
+          "value": "none | top | right | bottom | left | block-start | inline-start | block-end | inline-end | x | y | block | inline",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "none",
+              "prose": "The scroll container does not have scrollable overflow in any direction.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrollable-none",
+              "type": "value",
+              "value": "none"
+            },
+            {
+              "name": "top",
+              "prose": "The scroll container has scrollable overflow past the top edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrollable-top",
+              "type": "value",
+              "value": "top"
+            },
+            {
+              "name": "right",
+              "prose": "The scroll container has scrollable overflow past the right edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrollable-right",
+              "type": "value",
+              "value": "right"
+            },
+            {
+              "name": "bottom",
+              "prose": "The scroll container has scrollable overflow past the bottom edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrollable-bottom",
+              "type": "value",
+              "value": "bottom"
+            },
+            {
+              "name": "left",
+              "prose": "The scroll container has scrollable overflow past the left edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrollable-left",
+              "type": "value",
+              "value": "left"
+            },
+            {
+              "name": "block-start",
+              "prose": "The scroll container has scrollable overflow past the block-start edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrollable-block-start",
+              "type": "value",
+              "value": "block-start"
+            },
+            {
+              "name": "inline-start",
+              "prose": "The scroll container has scrollable overflow past the inline-start edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrollable-inline-start",
+              "type": "value",
+              "value": "inline-start"
+            },
+            {
+              "name": "block-end",
+              "prose": "The scroll container has scrollable overflow past the block-end edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrollable-block-end",
+              "type": "value",
+              "value": "block-end"
+            },
+            {
+              "name": "inline-end",
+              "prose": "The scroll container has scrollable overflow past the inline-end edge.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrollable-inline-end",
+              "type": "value",
+              "value": "inline-end"
+            },
+            {
+              "name": "x",
+              "prose": "The scroll container has horizontally scrollable overflow.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrollable-x",
+              "type": "value",
+              "value": "x"
+            },
+            {
+              "name": "y",
+              "prose": "The scroll container has vertically scrollable overflow.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrollable-y",
+              "type": "value",
+              "value": "y"
+            },
+            {
+              "name": "block",
+              "prose": "The scroll container has scrollable overflow in its block direction.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrollable-block",
+              "type": "value",
+              "value": "block"
+            },
+            {
+              "name": "inline",
+              "prose": "The scroll container has scrollable overflow in its inline direction.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrollable-inline",
+              "type": "value",
+              "value": "inline"
+            }
+          ]
+        },
+        {
+          "name": "scrolled",
+          "href": "https://drafts.csswg.org/css-conditional-5/#descdef-container-scrolled",
+          "for": "@container",
+          "value": "none | top | right | bottom | left | block-start | inline-start | block-end | inline-end | x | y | block | inline",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "none",
+              "prose": "The query container has not had a relative scroll yet.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrolled-none",
+              "type": "value",
+              "value": "none"
+            },
+            {
+              "name": "top",
+              "prose": "The most recent relative scroll was upwards.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrolled-top",
+              "type": "value",
+              "value": "top"
+            },
+            {
+              "name": "right",
+              "prose": "The most recent relative scroll was to the right.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrolled-right",
+              "type": "value",
+              "value": "right"
+            },
+            {
+              "name": "bottom",
+              "prose": "The most recent relative scroll was downwards.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrolled-bottom",
+              "type": "value",
+              "value": "bottom"
+            },
+            {
+              "name": "left",
+              "prose": "The most recent relative scroll was to the left.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrolled-left",
+              "type": "value",
+              "value": "left"
+            },
+            {
+              "name": "block-start",
+              "prose": "The most recent relative scroll was towards the block-start direction.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrolled-block-start",
+              "type": "value",
+              "value": "block-start"
+            },
+            {
+              "name": "inline-start",
+              "prose": "The most recent relative scroll was towards the inline-start direction.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrolled-inline-start",
+              "type": "value",
+              "value": "inline-start"
+            },
+            {
+              "name": "block-end",
+              "prose": "The most recent relative scroll was towards the block-end direction.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrolled-block-end",
+              "type": "value",
+              "value": "block-end"
+            },
+            {
+              "name": "inline-end",
+              "prose": "The most recent relative scroll was towards the inline-end direction.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrolled-inline-end",
+              "type": "value",
+              "value": "inline-end"
+            },
+            {
+              "name": "x",
+              "prose": "The most recent relative scroll was in the horizontal direction.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrolled-x",
+              "type": "value",
+              "value": "x"
+            },
+            {
+              "name": "y",
+              "prose": "The most recent relative scroll was in the vertical direction.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrolled-y",
+              "type": "value",
+              "value": "y"
+            },
+            {
+              "name": "block",
+              "prose": "The most recent relative scroll was in the block direction.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrolled-block",
+              "type": "value",
+              "value": "block"
+            },
+            {
+              "name": "inline",
+              "prose": "The most recent relative scroll was in the inline direction.",
+              "href": "https://drafts.csswg.org/css-conditional-5/#valdef-container-scrolled-inline",
+              "type": "value",
+              "value": "inline"
+            }
+          ]
+        }
+      ],
+      "value": "@container <container-condition># { <rule-list> }"
+    },
+    {
+      "name": "@supports-condition",
+      "prose": "The @supports-condition at-rule is a conditional group rule that allows authors to define and name a supports query for later reuse, creating a named supports condition. This enables complex or frequently-used feature queries to be referenced by name, improving maintainability and readability.",
+      "href": "https://drafts.csswg.org/css-conditional-5/#at-ruledef-supports-condition",
+      "descriptors": [],
+      "value": "@supports-condition <supports-condition-name> { <block-contents> }"
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<supports-feature>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-supports-feature",
+      "type": "type",
+      "value": "<supports-selector-fn> | <supports-font-tech-fn> | <supports-font-format-fn> | <supports-at-rule-fn> | <supports-named-feature-fn> | <supports-env-fn> | <supports-decl>"
+    },
+    {
+      "name": "<supports-decl>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-supports-decl",
+      "type": "type",
+      "value": "( [ <declaration> | <supports-condition-name> ] )"
+    },
+    {
+      "name": "<supports-font-tech-fn>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-supports-font-tech-fn",
+      "type": "type",
+      "value": "font-tech( <font-tech> )"
+    },
+    {
+      "name": "<supports-font-format-fn>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-supports-font-format-fn",
+      "type": "type",
+      "value": "font-format( <font-format> )"
+    },
+    {
+      "name": "<supports-at-rule-fn>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-supports-at-rule-fn",
+      "type": "type",
+      "value": "at-rule( <at-keyword-token> )"
+    },
+    {
+      "name": "<supports-named-feature-fn>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-supports-named-feature-fn",
+      "type": "type",
+      "value": "named-feature( <ident> )"
+    },
+    {
+      "name": "<supports-env-fn>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-supports-env-fn",
+      "type": "type",
+      "value": "env( <ident> )"
+    },
+    {
+      "name": "<declaration>",
+      "prose": "<declaration> here matches anything that would be successfully parsed by consume a declaration, ignoring the context-validation check at the end of that algorithm. Notably, this includes a trailing !important, which is valid but ignored for the purpose of @supports.",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-declaration",
+      "type": "type"
+    },
+    {
+      "name": "<boolean-condition>",
+      "prose": "Where <boolean-condition> is a boolean algebra a la Media Queries 4 § 3 Syntax, but with media() and supports() functions as leaves.",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-boolean-condition",
+      "type": "type"
+    },
+    {
+      "name": "media()",
+      "value": "media( [ <mf-plain> | <mf-boolean> | <mf-range> ] )",
+      "href": "https://drafts.csswg.org/css-conditional-5/#funcdef-media",
+      "type": "function"
+    },
+    {
+      "name": "supports()",
+      "value": "supports( <declaration> )",
+      "href": "https://drafts.csswg.org/css-conditional-5/#funcdef-supports",
+      "type": "function"
+    },
+    {
+      "name": "<container-condition>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-container-condition",
+      "type": "type",
+      "value": "[ <container-name>? <container-query>? ]!"
+    },
+    {
+      "name": "<container-name>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-container-name",
+      "type": "type",
+      "value": "<custom-ident>"
+    },
+    {
+      "name": "<container-query>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-container-query",
+      "type": "type",
+      "value": "not <query-in-parens> | <query-in-parens> [ [ and <query-in-parens> ]* | [ or <query-in-parens> ]* ]"
+    },
+    {
+      "name": "<query-in-parens>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-query-in-parens",
+      "type": "type",
+      "value": "( <container-query> ) | ( <size-feature> ) | style( <style-query> ) | scroll-state( <scroll-state-query> ) | <general-enclosed>"
+    },
+    {
+      "name": "<style-query>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-style-query",
+      "type": "type",
+      "value": "not <style-in-parens> | <style-in-parens> [ [ and <style-in-parens> ]* | [ or <style-in-parens> ]* ] | <style-feature>"
+    },
+    {
+      "name": "<style-in-parens>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-style-in-parens",
+      "type": "type",
+      "value": "( <style-query> ) | ( <style-feature> ) | <general-enclosed>"
+    },
+    {
+      "name": "<style-feature>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-style-feature",
+      "type": "type",
+      "value": "<style-feature-plain> | <style-feature-boolean> | <style-range>"
+    },
+    {
+      "name": "<style-feature-plain>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-style-feature-plain",
+      "type": "type",
+      "value": "<style-feature-name> : <style-feature-value>"
+    },
+    {
+      "name": "<style-feature-boolean>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-style-feature-boolean",
+      "type": "type",
+      "value": "<style-feature-name>"
+    },
+    {
+      "name": "<style-range>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-style-range",
+      "type": "type",
+      "value": "<style-range-value> <mf-comparison> <style-range-value> | <style-range-value> <mf-lt> <style-range-value> <mf-lt> <style-range-value> | <style-range-value> <mf-gt> <style-range-value> <mf-gt> <style-range-value>"
+    },
+    {
+      "name": "<style-range-value>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-style-range-value",
+      "type": "type",
+      "value": "<custom-property-name> | <style-feature-value>"
+    },
+    {
+      "name": "<scroll-state-query>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-scroll-state-query",
+      "type": "type",
+      "value": "not <scroll-state-in-parens> | <scroll-state-in-parens> [ [ and <scroll-state-in-parens> ]* | [ or <scroll-state-in-parens> ]* ] | <scroll-state-feature>"
+    },
+    {
+      "name": "<scroll-state-in-parens>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-scroll-state-in-parens",
+      "type": "type",
+      "value": "( <scroll-state-query> ) | ( <scroll-state-feature> ) | <general-enclosed>"
+    },
+    {
+      "name": "<size-feature>",
+      "prose": "A container size query allows querying the size of the query container’s principal box. It is a boolean combination of individual size features (<size-feature>) that each query a single, specific dimensional feature of the query container. The syntax of a <size-feature> is the same as for a media feature: a feature name, a comparator, and a value. [mediaqueries-5] The boolean syntax and logic combining size features into a size query is the same as for CSS feature queries. (See @supports. [css-conditional-3])",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-size-feature",
+      "type": "type"
+    },
+    {
+      "name": "<style-feature-name>",
+      "prose": "A container style query allows querying the computed values of the query container. It is a boolean combination of individual style features (<style-feature>) that each query a single, specific property of the query container. The syntax of a <style-feature> is either the same as for a valid declaration[CSS-SYNTAX-3], a <style-feature-name> or a valid style range (<style-range>). The <style-feature-name> can be either a supported CSS property or a valid <custom-property-name>. The <style-feature-value> production matches any valid <declaration-value> as long as it doesn’t contain <mf-lt>, <mf-gt> and <mf-eq> tokens.",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-style-feature-name",
+      "type": "type"
+    },
+    {
+      "name": "<style-feature-value>",
+      "prose": "A container style query allows querying the computed values of the query container. It is a boolean combination of individual style features (<style-feature>) that each query a single, specific property of the query container. The syntax of a <style-feature> is either the same as for a valid declaration[CSS-SYNTAX-3], a <style-feature-name> or a valid style range (<style-range>). The <style-feature-name> can be either a supported CSS property or a valid <custom-property-name>. The <style-feature-value> production matches any valid <declaration-value> as long as it doesn’t contain <mf-lt>, <mf-gt> and <mf-eq> tokens.",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-style-feature-value",
+      "type": "type"
+    },
+    {
+      "name": "<scroll-state-feature>",
+      "prose": "A container scroll-state query allows querying a container for state that depends on scroll position. It is a boolean combination of individual scroll-state features (<scroll-state-feature>) that each query a single feature of the query container. The syntax of a <scroll-state-feature> is the same as for a media feature: a feature name, a comparator, and a value.",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-scroll-state-feature",
+      "type": "type"
+    },
+    {
+      "name": "<supports-condition-name>",
+      "prose": "Where <supports-condition-name> is an <extension-name> that defines the name of the supports query.",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-supports-condition-name",
+      "type": "type"
+    }
+  ],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "font-tech()",
+      "value": "font-tech( <font-tech> )",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-conditional-5/#funcdef-supports-font-tech",
+      "type": "function",
+      "for": "@supports"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "font-format()",
+      "value": "font-format( <font-format> )",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-conditional-5/#funcdef-supports-font-format",
+      "type": "function",
+      "for": "@supports"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "at-rule()",
+      "value": "at-rule( <at-keyword-token> )",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-conditional-5/#funcdef-supports-at-rule",
+      "type": "function",
+      "for": "@supports"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "named-feature()",
+      "value": "named-feature( <ident> )",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-conditional-5/#funcdef-supports-named-feature",
+      "type": "function",
+      "for": "@supports"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "env()",
+      "value": "env( <ident> )",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-conditional-5/#funcdef-supports-env",
+      "type": "function",
+      "for": "@supports"
+    }
+  ]
+}

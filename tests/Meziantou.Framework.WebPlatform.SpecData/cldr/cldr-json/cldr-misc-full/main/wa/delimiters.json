@@ -1,0 +1,15 @@
+{
+  "main": {
+    "wa": {
+      "identity": {
+        "language": "wa"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

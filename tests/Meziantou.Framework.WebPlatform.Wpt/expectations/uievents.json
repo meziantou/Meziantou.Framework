@@ -1,0 +1,254 @@
+{
+  "uievents/click/auxclick_event.html": {
+    "total": 3
+  },
+  "uievents/click/click_event_target_child_parent.html": {
+    "total": 1
+  },
+  "uievents/click/click_event_target_siblings.html": {
+    "total": 1
+  },
+  "uievents/click/click_events_on_input.html": {
+    "total": 1
+  },
+  "uievents/click/contextmenu_event.html": {
+    "total": 1
+  },
+  "uievents/click/dblclick_event_mouse.html": {
+    "total": 1
+  },
+  "uievents/click/dblclick_event_on_text_control_inputs.html": {
+    "total": 1
+  },
+  "uievents/constructors/event-getmodifierstate.html": {
+    "total": 16
+  },
+  "uievents/constructors/inputevent-constructor.html": {
+    "total": 5
+  },
+  "uievents/focusevents/blur-relatedTarget.html": {
+    "total": 2
+  },
+  "uievents/getModifierState.html": {
+    "total": 7
+  },
+  "uievents/historical.html": {
+    "total": 2
+  },
+  "uievents/idlharness.window.js": {
+    "total": 163
+  },
+  "uievents/interface/click-event.htm": {
+    "total": 1
+  },
+  "uievents/interface/keyboard-accesskey-click-event.html": {
+    "total": 3
+  },
+  "uievents/interface/keyboard-click-event.html": {
+    "total": 4
+  },
+  "uievents/keyboard/keyboardevent-composed.html": {
+    "total": 3
+  },
+  "uievents/keyboard/keyboardevent-legacy.html": {
+    "total": 1
+  },
+  "uievents/keyboard/keydown-input-events.html": {
+    "total": 2
+  },
+  "uievents/keyboard/keypress-not-fired-for-modifier-shortcuts.html": {
+    "total": 3
+  },
+  "uievents/keyboard/modifier-keys-combinations.html": {
+    "total": 4
+  },
+  "uievents/keyboard/modifier-keys.html": {
+    "total": 4
+  },
+  "uievents/legacy-domevents-tests/approved/dispatchEvent.click.checkbox.html": {
+    "total": 2
+  },
+  "uievents/legacy-domevents-tests/approved/stopImmediatePropagation.effect.html": {
+    "total": 1
+  },
+  "uievents/legacy-domevents-tests/approved/stopPropagation.deferred.effect.html": {
+    "total": 1
+  },
+  "uievents/legacy-domevents-tests/submissions/Microsoft/converted/EventListener.dispatch.new.event.html": {
+    "total": 1
+  },
+  "uievents/legacy/Event-subclasses-init.html": {
+    "total": 4
+  },
+  "uievents/mouse/attributes.html": {
+    "total": 1
+  },
+  "uievents/mouse/cancel-mousedown-in-subframe.html": {
+    "total": 2
+  },
+  "uievents/mouse/layer-coords-transform.html": {
+    "total": 2,
+    "failures": {
+      "layer-coords-transform": "FAIL"
+    }
+  },
+  "uievents/mouse/layout_change_should_fire_mouseover.html": {
+    "total": 1
+  },
+  "uievents/mouse/mouse_boundary_events_after_reappending_last_over_target.tentative.html": {
+    "total": 11,
+    "failures": {
+      "After re-appending the last over element after mouseover, mouse boundary events should not be fired": "FAIL",
+      "After re-appending the last over element at mouseenter, mouse boundary events should not be fired": "FAIL",
+      "After re-appending the last over element at mouseover, mouse boundary events should be fired as just over on the target": "FAIL",
+      "After re-appending the last over element to outside the deepest mouseenter target (but keeps it as under the cursor) at mouseover, mouse boundary events should be fired on it again to correct the following mouseleave targets": "FAIL",
+      "After re-appending the last over element to outside the deepest mouseenter target at mouseover, mouse boundary events should be fired only on the element under the cursor": "FAIL",
+      "After re-appending the last over element to the deepest mouseenter target without the original parent after mouseover, mouse boundary events should not be fired": "FAIL",
+      "After re-appending the last over element to the deepest mouseenter target without the original parent at mouseover, mouse boundary events should not be fired": "FAIL",
+      "After removing and re-appending the last over element with flushing layout after mouseover, mouse boundary events should not be fired": "FAIL"
+    }
+  },
+  "uievents/mouse/mouse_boundary_events_after_removing_last_over_element.html": {
+    "total": 2
+  },
+  "uievents/mouse/mouse_boundary_events_modifier_no_mouse_movement.html?Alt": {
+    "total": 6
+  },
+  "uievents/mouse/mouse_boundary_events_modifier_no_mouse_movement.html?Control": {
+    "total": 6
+  },
+  "uievents/mouse/mouse_boundary_events_modifier_no_mouse_movement.html?Meta": {
+    "total": 6
+  },
+  "uievents/mouse/mouse_boundary_events_modifier_no_mouse_movement.html?Shift": {
+    "total": 6
+  },
+  "uievents/mouse/mouse_boundary_events_on_image_map.html": {
+    "total": 8
+  },
+  "uievents/mouse/mouse_buttons_back_forward.html": {
+    "total": 1
+  },
+  "uievents/mouse/mouseenter-mouseleave-on-drag.html": {
+    "total": 3
+  },
+  "uievents/mouse/mouseevent_move_button.html": {
+    "total": 1
+  },
+  "uievents/mouse/mousemove-action-interpolation.html": {
+    "total": 1
+  },
+  "uievents/mouse/mousemove_after_mouseover_target_removed.html": {
+    "total": 4
+  },
+  "uievents/mouse/mousemove_prevent_default_action.html": {
+    "total": 2
+  },
+  "uievents/mouse/mouseover-at-removing-mousedown-target.html?duration=16": {
+    "total": 30
+  },
+  "uievents/mouse/mouseover-at-removing-mousedown-target.html?duration=42": {
+    "total": 30
+  },
+  "uievents/mouse/offset_and_page_after_dispatch.tentative.html": {
+    "total": 7
+  },
+  "uievents/mouse/synthetic-mouse-enter-leave-over-out-button-state-after-target-removed.tentative.html?buttonType=LEFT&button=0&buttons=1": {
+    "total": 11,
+    "failures": {
+      "Removing an element at mousedown: mouseout and mouseleave should've been fired on the removed child": "FAIL",
+      "Removing an element at mouseup: mouseout and mouseleave should've been fired on the removed child": "FAIL"
+    }
+  },
+  "uievents/mouse/synthetic-mouse-enter-leave-over-out-button-state-after-target-removed.tentative.html?buttonType=MIDDLE&button=1&buttons=4": {
+    "total": 11,
+    "failures": {
+      "Removing an element at mousedown: mouseout and mouseleave should've been fired on the removed child": "FAIL",
+      "Removing an element at mouseup: mouseout and mouseleave should've been fired on the removed child": "FAIL"
+    }
+  },
+  "uievents/order-of-events/focus-events/focus-automated-blink-webkit.html": {
+    "total": 2,
+    "failures": {
+      "Focus-related events should fire in the correct order (different DocumentOwner)": "FAIL"
+    }
+  },
+  "uievents/order-of-events/focus-events/focus-contained.html": {
+    "total": 1
+  },
+  "uievents/order-of-events/focus-events/focus-management-expectations.html": {
+    "total": 1
+  },
+  "uievents/order-of-events/focus-events/focus.html": {
+    "total": 1
+  },
+  "uievents/order-of-events/mouse-events/click-cancel.html": {
+    "total": 1
+  },
+  "uievents/order-of-events/mouse-events/click-on-body.html": {
+    "total": 1
+  },
+  "uievents/order-of-events/mouse-events/click-on-div.html": {
+    "total": 1
+  },
+  "uievents/order-of-events/mouse-events/click-on-html.html": {
+    "total": 1
+  },
+  "uievents/order-of-events/mouse-events/click-order.html": {
+    "total": 1
+  },
+  "uievents/order-of-events/mouse-events/mouseevents-mousemove.htm": {
+    "total": 1
+  },
+  "uievents/order-of-events/mouse-events/mousemove-across.html": {
+    "total": 1
+  },
+  "uievents/order-of-events/mouse-events/mousemove-between.html": {
+    "total": 1
+  },
+  "uievents/order-of-events/mouse-events/mouseover-out.html": {
+    "total": 1
+  },
+  "uievents/order-of-events/mouse-events/wheel-basic.html": {
+    "total": 1
+  },
+  "uievents/order-of-events/mouse-events/wheel-multiple-sources-deadlock.html": {
+    "total": 1
+  },
+  "uievents/order-of-events/mouse-events/wheel-scrolling.html": {
+    "total": 1
+  },
+  "uievents/textInput/api.html": {
+    "total": 9
+  },
+  "uievents/textInput/backspace.html": {
+    "total": 3
+  },
+  "uievents/textInput/basic.html": {
+    "total": 3,
+    "failures": {
+      "textInput: basic, <div contenteditable=\"true\">": "FAIL",
+      "textInput: basic, <input>": "FAIL",
+      "textInput: basic, <textarea>": "FAIL"
+    }
+  },
+  "uievents/textInput/delete-selection.html": {
+    "total": 3
+  },
+  "uievents/textInput/delete.html": {
+    "total": 3
+  },
+  "uievents/textInput/enter-input.html": {
+    "total": 1
+  },
+  "uievents/textInput/enter-textarea-contenteditable.html": {
+    "total": 2,
+    "failures": {
+      "textInput: Enter key for textarea and contenteditable, <div contenteditable=\"true\">": "FAIL",
+      "textInput: Enter key for textarea and contenteditable, <textarea>": "FAIL"
+    }
+  },
+  "uievents/ui_event_pseudo_target.html": {
+    "total": 2
+  }
+}

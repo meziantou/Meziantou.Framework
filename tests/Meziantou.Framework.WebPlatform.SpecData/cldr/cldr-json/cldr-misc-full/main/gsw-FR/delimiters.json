@@ -1,0 +1,16 @@
+{
+  "main": {
+    "gsw-FR": {
+      "identity": {
+        "language": "gsw",
+        "territory": "FR"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "‹",
+        "alternateQuotationEnd": "›"
+      }
+    }
+  }
+}

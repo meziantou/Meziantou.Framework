@@ -1,0 +1,2463 @@
+{
+  "css/selectors/active-after-relayouts.html": {
+    "total": 1
+  },
+  "css/selectors/active-display-none-001.html": {
+    "total": 1
+  },
+  "css/selectors/active-inside-link.html": {
+    "total": 1
+  },
+  "css/selectors/active-observable.html": {
+    "total": 17
+  },
+  "css/selectors/active-toplayer-001.html": {
+    "total": 3
+  },
+  "css/selectors/attribute-selector-escape.html": {
+    "total": 1
+  },
+  "css/selectors/attribute-selectors/attribute-case/cssom.html": {
+    "total": 96
+  },
+  "css/selectors/attribute-selectors/attribute-case/semantics.html": {
+    "total": 955
+  },
+  "css/selectors/attribute-selectors/attribute-case/syntax.html": {
+    "total": 528
+  },
+  "css/selectors/attribute-selectors/attribute-case/value-case-sensitivity-svg.html": {
+    "total": 3
+  },
+  "css/selectors/attribute-selectors/style-attribute-selector.html": {
+    "total": 11
+  },
+  "css/selectors/caret-color-visited-inheritance.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/child-indexed-during-parse.html": {
+    "total": 6
+  },
+  "css/selectors/child-indexed-no-parent.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/child-indexed-pseudo-class.html": {
+    "total": 57
+  },
+  "css/selectors/class-prefix-selector-has-invalidation.tentative.html": {
+    "total": 8
+  },
+  "css/selectors/class-prefix-selector-has-matching.tentative.html": {
+    "total": 8
+  },
+  "css/selectors/class-prefix-selector-invalidation.tentative.html": {
+    "total": 3
+  },
+  "css/selectors/class-prefix-selector-matching-quirks.tentative.html": {
+    "total": 5
+  },
+  "css/selectors/class-prefix-selector-matching.tentative.html": {
+    "total": 18
+  },
+  "css/selectors/class-prefix-selector-queryselector.tentative.html": {
+    "total": 6
+  },
+  "css/selectors/class-selector-change.html": {
+    "total": 1
+  },
+  "css/selectors/class-selector-escape-exclamation.html": {
+    "total": 1
+  },
+  "css/selectors/dir-pseudo-in-has.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-pseudo-on-bdi-element.html": {
+    "total": 5
+  },
+  "css/selectors/dir-pseudo-on-input-element.html": {
+    "total": 20
+  },
+  "css/selectors/dir-pseudo-update-document-element.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-selector-auto-direction-change-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-selector-auto.html": {
+    "total": 22
+  },
+  "css/selectors/dir-selector-change-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-selector-change-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-selector-change-003.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-selector-change-004.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-selector-ltr-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-selector-ltr-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-selector-ltr-003.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-selector-querySelector.html": {
+    "total": 4
+  },
+  "css/selectors/dir-selector-rtl-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-selector-white-space-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-style-01a.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-style-01b.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-style-02a.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-style-02b.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-style-03a.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-style-03b.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/dir-style-04.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/featureless-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/featureless-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/featureless-003.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/featureless-004.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/featureless-005.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/first-child.html": {
+    "total": 5
+  },
+  "css/selectors/first-letter-flag-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/first-line-bidi-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/first-line-bidi-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/first-of-type.html": {
+    "total": 9
+  },
+  "css/selectors/floating-first-letter-05d0.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/floating-first-letter-feff.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-display-none-001.html": {
+    "total": 2
+  },
+  "css/selectors/focus-in-focus-event-001.html": {
+    "total": 3
+  },
+  "css/selectors/focus-in-focusin-event-001.html": {
+    "total": 3
+  },
+  "css/selectors/focus-visible-001.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-002.html": {
+    "total": 14
+  },
+  "css/selectors/focus-visible-003.html": {
+    "total": 12
+  },
+  "css/selectors/focus-visible-004.html": {
+    "total": 10
+  },
+  "css/selectors/focus-visible-005.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-006.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-007.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-008.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-009.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-010.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-011.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-012.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-013.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-014.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-015.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-016.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-017-2.html": {
+    "total": 38
+  },
+  "css/selectors/focus-visible-017.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-018-2.html": {
+    "total": 38
+  },
+  "css/selectors/focus-visible-018.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-019.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-020.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-021.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-022.tentative.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-023.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-024.html": {
+    "total": 3
+  },
+  "css/selectors/focus-visible-025.html": {
+    "total": 3
+  },
+  "css/selectors/focus-visible-026.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-027.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-028.html": {
+    "total": 1
+  },
+  "css/selectors/focus-visible-script-focus-001.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-002.tentative.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-003.tentative.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-004.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-005.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-006.tentative.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-007.tentative.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-008-b.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-008.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-009.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-010.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-011.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-012.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-013.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-014.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-015.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-016.tentative.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-017.tentative.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-018.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-019.html": {
+    "total": 2
+  },
+  "css/selectors/focus-visible-script-focus-020.html": {
+    "total": 2
+  },
+  "css/selectors/focus-within-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-003.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-004.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-005.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-006.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-007.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-008.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-009.html": {
+    "total": 12
+  },
+  "css/selectors/focus-within-010.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-011.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-012.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-013.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-display-none-001.html": {
+    "total": 2
+  },
+  "css/selectors/focus-within-focus-move.html": {
+    "total": 1
+  },
+  "css/selectors/focus-within-removal.html": {
+    "total": 1
+  },
+  "css/selectors/focus-within-shadow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-shadow-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-shadow-003.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-shadow-004.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-shadow-005.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-shadow-006.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-toplayer-001.html": {
+    "total": 3
+  },
+  "css/selectors/focus-within.html": {
+    "total": 2
+  },
+  "css/selectors/has-argument-with-explicit-scope.html": {
+    "total": 13
+  },
+  "css/selectors/has-basic.html": {
+    "total": 18
+  },
+  "css/selectors/has-display-none-checked.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-focus-display-change.html": {
+    "total": 1
+  },
+  "css/selectors/has-matches-to-uninserted-elements.html": {
+    "total": 12
+  },
+  "css/selectors/has-relative-argument.html": {
+    "total": 35
+  },
+  "css/selectors/has-specificity.html": {
+    "total": 8
+  },
+  "css/selectors/has-style-sharing-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-style-sharing-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-style-sharing-003.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-style-sharing-004.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-style-sharing-005.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-style-sharing-006.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-style-sharing-007.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-style-sharing-pseudo-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-style-sharing-pseudo-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-style-sharing-pseudo-003.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-style-sharing-pseudo-004.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-style-sharing-pseudo-005.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-style-sharing-pseudo-006.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-style-sharing-pseudo-007.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-style-sharing-pseudo-008.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-visited.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/has-where-computed.html": {
+    "total": 1
+  },
+  "css/selectors/hash-collision-cssom.html": {
+    "total": 1
+  },
+  "css/selectors/hash-collision.html": {
+    "total": 1
+  },
+  "css/selectors/heading-prefixed.html": {
+    "total": 6
+  },
+  "css/selectors/heading.html": {
+    "total": 182
+  },
+  "css/selectors/historical-xmlid.xht": {
+    "reftest": "PASS"
+  },
+  "css/selectors/hover-002.html": {
+    "total": 2
+  },
+  "css/selectors/hover-boundary-events.html": {
+    "total": 1
+  },
+  "css/selectors/hover-toplayer-001.html": {
+    "total": 3
+  },
+  "css/selectors/i18n/css3-selectors-lang-001.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-002.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-004.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-005.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-006.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-007.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-008.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-009.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-010.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-011.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-012.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-014.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-015.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-016.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-021.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-022.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-024.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-025.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-026.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-027.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-028.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-029.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-030.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-031.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-032.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-034.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-035.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-036.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-041.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-042.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-044.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-045.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-046.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-047.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-048.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-049.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-050.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-051.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-052.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-054.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-055.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/css3-selectors-lang-056.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/lang-pseudo-class-across-shadow-boundaries.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/i18n/lang-pseudo-class-disconnected.html": {
+    "total": 1
+  },
+  "css/selectors/i18n/lang-pseudo-class-empty-attribute.xhtml": {
+    "total": 1
+  },
+  "css/selectors/invalidation/any-link-attribute-removal.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/any-link-pseudo.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/attribute-or-elemental-selectors-in-has.html": {
+    "total": 31
+  },
+  "css/selectors/invalidation/attribute.html": {
+    "total": 6
+  },
+  "css/selectors/invalidation/child-indexed-pseudo-classes-in-has.html": {
+    "total": 66
+  },
+  "css/selectors/invalidation/class-id-attr.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/defined-in-has.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/defined.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/dir-pseudo-class-in-has.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/empty-pseudo-in-has-display-none.html": {
+    "total": 14
+  },
+  "css/selectors/invalidation/empty-pseudo-in-has.html": {
+    "total": 6
+  },
+  "css/selectors/invalidation/enabled-disabled.html": {
+    "total": 2
+  },
+  "css/selectors/invalidation/first-child-last-child.html": {
+    "total": 2
+  },
+  "css/selectors/invalidation/fullscreen-pseudo-class-in-has.html": {
+    "total": 2
+  },
+  "css/selectors/invalidation/has-append-first-node.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/has-complexity.html": {
+    "total": 7
+  },
+  "css/selectors/invalidation/has-css-nesting-shared.html": {
+    "total": 12
+  },
+  "css/selectors/invalidation/has-in-adjacent-position.html": {
+    "total": 295
+  },
+  "css/selectors/invalidation/has-in-ancestor-position.html": {
+    "total": 337
+  },
+  "css/selectors/invalidation/has-in-is-non-subject-compound.html": {
+    "total": 3
+  },
+  "css/selectors/invalidation/has-in-parent-position.html": {
+    "total": 211
+  },
+  "css/selectors/invalidation/has-in-sibling-position.html": {
+    "total": 295
+  },
+  "css/selectors/invalidation/has-invalidation-after-removing-non-first-element.html": {
+    "total": 2
+  },
+  "css/selectors/invalidation/has-invalidation-first-in-sibling-chain.html": {
+    "total": 12
+  },
+  "css/selectors/invalidation/has-invalidation-for-wiping-an-element.html": {
+    "total": 5
+  },
+  "css/selectors/invalidation/has-pseudo-element-subject-child-mutation.html": {
+    "total": 4
+  },
+  "css/selectors/invalidation/has-pseudo-element.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/has-pseudoclass-only.html": {
+    "total": 36
+  },
+  "css/selectors/invalidation/has-sibling-insertion-removal.html": {
+    "total": 28
+  },
+  "css/selectors/invalidation/has-sibling.html": {
+    "total": 71
+  },
+  "css/selectors/invalidation/has-side-effect.html": {
+    "total": 3
+  },
+  "css/selectors/invalidation/has-unstyled.html": {
+    "total": 9
+  },
+  "css/selectors/invalidation/has-with-is-child-combinator.html": {
+    "total": 10
+  },
+  "css/selectors/invalidation/has-with-nesting-parent-containing-complex.html": {
+    "total": 37
+  },
+  "css/selectors/invalidation/has-with-nesting-parent-containing-hover.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/has-with-not.html": {
+    "total": 21
+  },
+  "css/selectors/invalidation/has-with-nth-child-sibling-remove.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/has-with-nth-child.html": {
+    "total": 5
+  },
+  "css/selectors/invalidation/has-with-pseudo-class.html": {
+    "total": 41
+  },
+  "css/selectors/invalidation/heading-pseudo-class-in-has-with-headingoffset.html": {
+    "total": 56
+  },
+  "css/selectors/invalidation/heading-pseudo-class-in-has-with-slot-reassignment.html": {
+    "total": 39
+  },
+  "css/selectors/invalidation/heading-pseudo-class-in-has.html": {
+    "total": 72
+  },
+  "css/selectors/invalidation/host-context-pseudo-class-in-has.html": {
+    "total": 6
+  },
+  "css/selectors/invalidation/host-has-shadow-tree-element-at-nonsubject-position.html": {
+    "total": 26
+  },
+  "css/selectors/invalidation/host-has-shadow-tree-element-at-subject-position.html": {
+    "total": 26
+  },
+  "css/selectors/invalidation/host-pseudo-class-in-has.html": {
+    "total": 4
+  },
+  "css/selectors/invalidation/input-in-range-in-has-with-readonly.html": {
+    "total": 4
+  },
+  "css/selectors/invalidation/input-pseudo-classes-in-has.html": {
+    "total": 10
+  },
+  "css/selectors/invalidation/insert-sibling-001.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/insert-sibling-002.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/insert-sibling-003.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/insert-sibling-004.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/is-pseudo-containing-complex-in-has.html": {
+    "total": 476
+  },
+  "css/selectors/invalidation/is-pseudo-containing-sibling-relationship-in-has.html": {
+    "total": 21
+  },
+  "css/selectors/invalidation/is-where-pseudo-containing-hard-pseudo-and-never-matching.html": {
+    "total": 12
+  },
+  "css/selectors/invalidation/is-where-pseudo-containing-hard-pseudo.html": {
+    "total": 20
+  },
+  "css/selectors/invalidation/is.html": {
+    "total": 7
+  },
+  "css/selectors/invalidation/lang-pseudo-class-in-has-document-element.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/lang-pseudo-class-in-has-multiple-document-elements.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/lang-pseudo-class-in-has-xhtml.xhtml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/lang-pseudo-class-in-has.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/link-pseudo-class-in-has.html": {
+    "total": 2
+  },
+  "css/selectors/invalidation/link-pseudo-in-has.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/location-pseudo-classes-in-has.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/media-loading-pseudo-classes-in-has.sub.html": {
+    "total": 2
+  },
+  "css/selectors/invalidation/media-pseudo-classes-in-has.html": {
+    "total": 3
+  },
+  "css/selectors/invalidation/modal-pseudo-class-in-has.html": {
+    "total": 5
+  },
+  "css/selectors/invalidation/negated-always-matches-negated-first-of-type-when-ancestor-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/negated-always-matches-negated-last-of-type-when-ancestor-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/negated-first-of-type-in-nonsubject-position.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/negated-has-in-nonsubject-position.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/negated-is-always-matches-negated-first-of-type-when-ancestor-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/negated-is-always-matches-negated-last-of-type-when-ancestor-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/negated-is-never-matches-negated-first-of-type-when-ancestor-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/negated-is-never-matches-negated-last-of-type-when-ancestor-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/negated-last-of-type-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/negated-negated-first-of-type-when-ancestor-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/negated-negated-last-of-type-when-ancestor-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/negated-never-matches-negated-first-of-type-when-ancestor-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/negated-never-matches-negated-last-of-type-when-ancestor-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/negated-nth-child-when-ancestor-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/negated-nth-last-child-when-ancestor-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/not-001.html": {
+    "total": 2
+  },
+  "css/selectors/invalidation/not-002.html": {
+    "total": 6
+  },
+  "css/selectors/invalidation/not-pseudo-containing-complex-in-has.html": {
+    "total": 460
+  },
+  "css/selectors/invalidation/not-pseudo-containing-sibling-relationship-in-has.html": {
+    "total": 3
+  },
+  "css/selectors/invalidation/nth-child-containing-ancestor.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-in-shadow-root.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-of-attr-largedom.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-of-attr.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-of-class-prefix.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-of-class.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-of-has.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-of-id-prefix.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-of-ids.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-of-in-ancestor.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-of-in-is.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-of-in-shadow-root.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-of-is.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-of-pseudo-class.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-of-sibling.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-when-ancestor-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-when-sibling-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-child-whole-subtree.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/nth-last-child-containing-ancestor.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-in-shadow-root.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-of-attr.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-of-class-prefix.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-of-class.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-of-has.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-of-id-prefix.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-of-ids.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-of-in-ancestor.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-of-in-is.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-of-in-shadow-root.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-of-is.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-of-pseudo-class.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-of-sibling.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-when-ancestor-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/nth-last-child-when-sibling-changes.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/open-pseudo-class-in-has.html": {
+    "total": 9
+  },
+  "css/selectors/invalidation/option-disabled-when-ancestor-changes.html": {
+    "total": 4
+  },
+  "css/selectors/invalidation/part-dir.html": {
+    "total": 2
+  },
+  "css/selectors/invalidation/part-lang.html": {
+    "total": 2
+  },
+  "css/selectors/invalidation/part-pseudo.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/placeholder-shown.html": {
+    "total": 4
+  },
+  "css/selectors/invalidation/quirks-mode-stylesheet-dynamic-add-001.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/selectorText-dynamic-001.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/sheet-going-away-001.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/sheet-going-away-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/invalidation/sibling.html": {
+    "total": 7
+  },
+  "css/selectors/invalidation/state-in-has.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/subject-has-invalidation-with-display-none-anchor-element.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/target-pseudo-in-has.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/typed-child-indexed-pseudo-classes-in-has.html": {
+    "total": 102
+  },
+  "css/selectors/invalidation/user-action-pseudo-classes-in-has.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/user-valid-user-invalid.html": {
+    "total": 1
+  },
+  "css/selectors/invalidation/where.html": {
+    "total": 5
+  },
+  "css/selectors/is-default-ns-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/is-default-ns-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/is-default-ns-003.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/is-nested.html": {
+    "total": 2
+  },
+  "css/selectors/is-specificity-shadow.html": {
+    "total": 1
+  },
+  "css/selectors/is-specificity.html": {
+    "total": 1
+  },
+  "css/selectors/is-where-basic.html": {
+    "total": 15
+  },
+  "css/selectors/is-where-error-recovery.html": {
+    "total": 1
+  },
+  "css/selectors/is-where-not.html": {
+    "total": 18
+  },
+  "css/selectors/is-where-pseudo-classes.html": {
+    "total": 1
+  },
+  "css/selectors/is-where-pseudo-elements.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/is-where-shadow.html": {
+    "total": 3
+  },
+  "css/selectors/is-where-visited.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/last-child.html": {
+    "total": 5
+  },
+  "css/selectors/last-of-type.html": {
+    "total": 9
+  },
+  "css/selectors/media/media-loading-state-timing.sub.html": {
+    "total": 1
+  },
+  "css/selectors/media/media-loading-state.sub.html": {
+    "total": 3
+  },
+  "css/selectors/media/media-playback-state-timing.html": {
+    "total": 3
+  },
+  "css/selectors/media/media-playback-state.html": {
+    "total": 5
+  },
+  "css/selectors/media/media-playing-paused-style-invalidation.html": {
+    "total": 3
+  },
+  "css/selectors/media/sound-state.html": {
+    "total": 5
+  },
+  "css/selectors/missing-right-token.html": {
+    "total": 1
+  },
+  "css/selectors/modal-pseudo-class.html": {
+    "total": 2
+  },
+  "css/selectors/not-complex.html": {
+    "total": 20
+  },
+  "css/selectors/not-default-ns-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/not-default-ns-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/not-default-ns-003.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/not-links.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/not-specificity.html": {
+    "total": 8
+  },
+  "css/selectors/nth-child-and-nth-last-child.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-large-anplusb-clamp.html": {
+    "total": 3
+  },
+  "css/selectors/nth-child-of-attribute.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-of-classname-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-of-classname.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-of-complex-selector-many-children-2.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-of-complex-selector-many-children.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-of-complex-selector.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-of-compound-selector.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-of-has.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-of-nesting.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-of-no-space-after-of.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-of-not.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-of-nth-child.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-of-pseudo.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-of-tagname.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-of-universal-selector.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-specificity-1.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-specificity-2.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-specificity-3.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-child-specificity-4.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-last-child-invalid.html": {
+    "total": 1
+  },
+  "css/selectors/nth-last-child-of-classname.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-last-child-of-complex-selector.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-last-child-of-compound-selector.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-last-child-of-nesting.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-last-child-of-no-space-after-of.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-last-child-of-style-sharing-1.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-last-child-of-style-sharing-2.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-last-child-of-tagname.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-last-child-specificity-1.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-last-child-specificity-2.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-last-child-specificity-3.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-last-child-specificity-4.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-of-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-of-selector-before.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/nth-of-type-namespace.html": {
+    "total": 3
+  },
+  "css/selectors/of-type-selectors.xhtml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-1.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-10.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-100.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-100b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-101.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-101b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-102.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-102b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-103.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-103b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-104.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-104b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-105.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-105b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-106.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-106b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-107.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-107b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-108.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-108b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-109.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-109b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-11.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-110.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-110b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-111.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-111b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-112.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-112b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-113.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-113b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-114.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-114b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-115.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-115b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-116.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-116b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-117.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-117b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-118.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-119.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-120.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-121.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-122.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-123.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-123b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-124.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-124b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-125.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-125b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-126.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-126b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-127.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-127b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-128.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-128b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-129.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-129b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-13.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-130.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-130b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-131.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-131b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-132.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-132b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-133.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-133b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-134.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-134b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-135.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-135b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-136.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-136b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-137.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-137b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-138.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-138b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-139.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-139b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-14.xml": {
+    "total": 2
+  },
+  "css/selectors/old-tests/css3-modsel-140.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-140b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-141.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-141b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-142.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-142b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-143.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-143b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-144.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-145a.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-145b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-146a.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-146b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-147a.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-147b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-148.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-149.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-149b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-14b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-14c.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-14d.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-14e.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-15.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-150.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-151.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-152.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-153.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-154.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-155.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-155a.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-155b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-155c.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-155d.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-156.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-156b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-156c.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-157.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-158.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-159.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-15b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-160.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-161.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-166.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-166a.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-167.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-167a.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-168.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-168a.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-169.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-169a.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-170.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-170a.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-170b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-170c.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-170d.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-171.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-172a.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-172b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-173a.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-173b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-174a.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-174b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-175a.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-175b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-175c.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-176.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-177a.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-177b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-178.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-179.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-179a.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-18.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-180a.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-181.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-182.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-183.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-184a.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-184b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-184c.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-184d.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-184e.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-184f.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-18a.xml": {
+    "total": 4
+  },
+  "css/selectors/old-tests/css3-modsel-18b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-18c.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-19.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-19b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-2.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-20.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-21.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-21b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-21c.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-22.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-25.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-27.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-27b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-28.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-28b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-29.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-29b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-3.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-30.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-31.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-32.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-33.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-34.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-35.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-36.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-37.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-38.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-39.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-39a.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-39b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-39c.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-3a.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-4.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-41.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-41a.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-42.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-42a.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-43.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-43b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-44.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-44b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-44c.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-44d.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-45.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-45b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-45c.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-46.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-46b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-47.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-48.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-49.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-5.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-50.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-51.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-52.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-53.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-54.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-55.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-56.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-57.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-57b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-59.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-6.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-60.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-63.xml": {
+    "total": 2
+  },
+  "css/selectors/old-tests/css3-modsel-64.xml": {
+    "total": 2
+  },
+  "css/selectors/old-tests/css3-modsel-65.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-66.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-66b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-67.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-7.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-70.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-72.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-72b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-73.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-73b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-74.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-74b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-75.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-75b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-76.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-76b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-77.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-77b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-78.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-78b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-79.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-7b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-8.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-80.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-81.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-81b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-82.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-82b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-83.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-86.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-87.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-87b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-88.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-88b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-89.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-9.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-90.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-90b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-91.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-92.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-93.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-94.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-94b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-95.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-96.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-96b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-97.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-97b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-98.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-98b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-99.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-99b.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/old-tests/css3-modsel-d1.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-d1b.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-d2.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-d3.xml": {
+    "total": 1
+  },
+  "css/selectors/old-tests/css3-modsel-d4.xml": {
+    "total": 1
+  },
+  "css/selectors/only-child.html": {
+    "total": 5
+  },
+  "css/selectors/only-of-type.html": {
+    "total": 5
+  },
+  "css/selectors/open-pseudo.html": {
+    "total": 3
+  },
+  "css/selectors/parsing/invalid-pseudos.html": {
+    "total": 12
+  },
+  "css/selectors/parsing/parse-anplusb.html": {
+    "total": 112
+  },
+  "css/selectors/parsing/parse-attribute.html": {
+    "total": 16
+  },
+  "css/selectors/parsing/parse-child.html": {
+    "total": 2
+  },
+  "css/selectors/parsing/parse-class-prefix.tentative.html": {
+    "total": 16
+  },
+  "css/selectors/parsing/parse-class.html": {
+    "total": 4
+  },
+  "css/selectors/parsing/parse-descendant.html": {
+    "total": 3
+  },
+  "css/selectors/parsing/parse-focus-visible.html": {
+    "total": 3
+  },
+  "css/selectors/parsing/parse-has-class-prefix.tentative.html": {
+    "total": 15
+  },
+  "css/selectors/parsing/parse-has-disallow-nesting-has-inside-has.html": {
+    "total": 2
+  },
+  "css/selectors/parsing/parse-has-forgiving-selector.html": {
+    "total": 3
+  },
+  "css/selectors/parsing/parse-has-slotted.tentative.html": {
+    "total": 23,
+    "failures": {
+      "\":has-slotted(#id)\" should be a valid selector": "FAIL",
+      "\":has-slotted(*)\" should be a valid selector": "FAIL",
+      "\":has-slotted(.class)\" should be a valid selector": "FAIL",
+      "\":has-slotted(:first-child)\" should be a valid selector": "FAIL",
+      "\":has-slotted(:hover)\" should be a valid selector": "FAIL",
+      "\":has-slotted(:not(:nth-last-of-type(2)):not([slot=\\\"foo\\\"]))\" should be a valid selector": "FAIL",
+      "\":has-slotted(:not(foo))\" should be a valid selector": "FAIL",
+      "\":has-slotted([attr=\\\"foo\\\"])\" should be a valid selector": "FAIL",
+      "\":has-slotted(bar)\" should be a valid selector": "FAIL",
+      "\":has-slotted(div + div)\" should be a valid selector": "FAIL",
+      "\":has-slotted(div:has(> span))\" should be a valid selector": "FAIL",
+      "\":has-slotted(foo) + :has-slotted(bar)\" should be a valid selector": "FAIL",
+      "\":has-slotted(foo):dir(ltr)\" should be a valid selector": "FAIL",
+      "\":has-slotted(foo):first-child\" should be a valid selector": "FAIL",
+      "\":has-slotted(foo):focus\" should be a valid selector": "FAIL",
+      "\":has-slotted(foo):hover\" should be a valid selector": "FAIL",
+      "\":has-slotted(foo):lang(en)\" should be a valid selector": "FAIL",
+      "\":not(:has-slotted(foo))\" should be a valid selector": "FAIL"
+    }
+  },
+  "css/selectors/parsing/parse-has.html": {
+    "total": 29
+  },
+  "css/selectors/parsing/parse-heading.html": {
+    "total": 28
+  },
+  "css/selectors/parsing/parse-id.html": {
+    "total": 3
+  },
+  "css/selectors/parsing/parse-is-where.html": {
+    "total": 45
+  },
+  "css/selectors/parsing/parse-is.html": {
+    "total": 6
+  },
+  "css/selectors/parsing/parse-not.html": {
+    "total": 26
+  },
+  "css/selectors/parsing/parse-part.html": {
+    "total": 32
+  },
+  "css/selectors/parsing/parse-sibling.html": {
+    "total": 3
+  },
+  "css/selectors/parsing/parse-slotted.html": {
+    "total": 19
+  },
+  "css/selectors/parsing/parse-state.html": {
+    "total": 24
+  },
+  "css/selectors/parsing/parse-universal.html": {
+    "total": 3
+  },
+  "css/selectors/parsing/parse-where.html": {
+    "total": 6
+  },
+  "css/selectors/placeholder-shown.html": {
+    "total": 7
+  },
+  "css/selectors/popover-open-with-has-sibling-selector.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/pseudo-enabled-disabled.html": {
+    "total": 4
+  },
+  "css/selectors/query/query-is.html": {
+    "total": 6
+  },
+  "css/selectors/query/query-where.html": {
+    "total": 6
+  },
+  "css/selectors/quirks-mode-import.html": {
+    "total": 1
+  },
+  "css/selectors/remove-hovered-element.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/root-siblings.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/scope-selector.html": {
+    "total": 3
+  },
+  "css/selectors/scope-without-scoping.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selection-image-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/selectors/selection-image-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selector-after-font-family.html": {
+    "total": 1
+  },
+  "css/selectors/selector-placeholder-shown-emptify-placeholder.html": {
+    "total": 2
+  },
+  "css/selectors/selector-placeholder-shown-type-change-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selector-placeholder-shown-type-change-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selector-placeholder-shown-type-change-003.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selector-read-write-type-change-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selector-read-write-type-change-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selector-required-type-change-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selector-required-type-change-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selector-required.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selector-specificity.html": {
+    "total": 4
+  },
+  "css/selectors/selector-structural-pseudo-root.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/details-open-pseudo-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/details-open-pseudo-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/details-open-pseudo-003.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-000.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-002.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-003.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-004.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-005.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-006.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-007.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-008.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-009.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-010.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-011.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-012.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-013.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-014.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-015.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-016.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-017.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-018.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-019.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-020.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-021.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-022.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-023.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-024.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-025.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-4/lang-singleton-subtag-matching.html": {
+    "total": 10
+  },
+  "css/selectors/selectors-attr-many-2.html": {
+    "total": 1
+  },
+  "css/selectors/selectors-attr-many.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-attr-white-space-001.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-case-sensitive-001.html": {
+    "total": 3
+  },
+  "css/selectors/selectors-empty-001.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/selectors-namespace-001.xml": {
+    "reftest": "PASS"
+  },
+  "css/selectors/sharing-in-svg-use.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/text-emphasis-visited-inheritance.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/text-fill-color-visited-inheritance.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/text-stroke-color-visited-inheritance.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/toplayer-transition-001.html": {
+    "total": 2
+  },
+  "css/selectors/user-action-pseudo-top-layer.html": {
+    "total": 4
+  },
+  "css/selectors/user-invalid-form-submission-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/user-invalid.html": {
+    "total": 8,
+    "failures": {
+      "A required date should match :user-invalid if the user unchecks it and blurs.": "FAIL"
+    }
+  },
+  "css/selectors/user-valid-user-invalid-multifield-inputs.tentative.html": {
+    "total": 3,
+    "failures": {
+      "<input type=date> keyboard behavior for :user-valid/:user-invalid.": "FAIL",
+      "<input type=datetime-local> keyboard behavior for :user-valid/:user-invalid.": "FAIL",
+      "<input type=time> keyboard behavior for :user-valid/:user-invalid.": "FAIL"
+    }
+  },
+  "css/selectors/user-valid.html": {
+    "total": 5,
+    "failures": {
+      "Date inputs should match :user-valid after the user types a value into it.": "FAIL"
+    }
+  },
+  "css/selectors/valid-invalid-form-fieldset.html": {
+    "total": 1
+  },
+  "css/selectors/valid-invalid-pseudo.html": {
+    "total": 4
+  },
+  "css/selectors/visited-in-visited-compound.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/visited-inheritance.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/visited-nested.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/webkit-pseudo-element.html": {
+    "total": 6,
+    "failures": {
+      "webkit-prefixed pseudo-element selectors should be accessible from CSSOM": "FAIL"
+    }
+  },
+  "css/selectors/x-pseudo-element.html": {
+    "total": 1
+  },
+  "css/selectors/xml-class-selector.xml": {
+    "reftest": "PASS"
+  }
+}

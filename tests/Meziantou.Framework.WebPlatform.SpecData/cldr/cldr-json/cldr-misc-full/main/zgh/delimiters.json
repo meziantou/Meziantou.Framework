@@ -1,0 +1,15 @@
+{
+  "main": {
+    "zgh": {
+      "identity": {
+        "language": "zgh"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

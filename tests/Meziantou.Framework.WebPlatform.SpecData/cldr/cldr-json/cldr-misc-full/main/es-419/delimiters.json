@@ -1,0 +1,16 @@
+{
+  "main": {
+    "es-419": {
+      "identity": {
+        "language": "es",
+        "territory": "419"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

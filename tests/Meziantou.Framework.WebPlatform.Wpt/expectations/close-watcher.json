@@ -1,0 +1,197 @@
+{
+  "close-watcher/abortsignal.html": {
+    "total": 9
+  },
+  "close-watcher/basic.html": {
+    "total": 7
+  },
+  "close-watcher/esc-key/keydown.html": {
+    "total": 1
+  },
+  "close-watcher/esc-key/keypress.html": {
+    "total": 1
+  },
+  "close-watcher/esc-key/keyup.html": {
+    "total": 1
+  },
+  "close-watcher/esc-key/not-user-activation.html": {
+    "total": 1
+  },
+  "close-watcher/esc-key/synthetic-keyboard-event.html": {
+    "total": 1
+  },
+  "close-watcher/event-properties.html": {
+    "total": 1
+  },
+  "close-watcher/frame-removal.html": {
+    "total": 6
+  },
+  "close-watcher/iframes/dialog-same-origin-nn.html": {
+    "total": 1
+  },
+  "close-watcher/iframes/dialog-same-origin-ynn.html": {
+    "total": 1
+  },
+  "close-watcher/iframes/dialog-same-origin-ynyn.html": {
+    "total": 1
+  },
+  "close-watcher/inside-event-listeners.html": {
+    "total": 12
+  },
+  "close-watcher/user-activation/n-activate-preventDefault.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/n-activate-preventDefault.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/n-activate.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/n-activate.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/n-closerequest-n.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/n-closerequest-n.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/n-destroy-n.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/n-destroy-n.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/n.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/n.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nn-CloseWatcher.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nn-activate-CloseWatcher.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nn-activate-dialog.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nn-dialog.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nnn-CloseWatcher-dialog-popover.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nnn-CloseWatcher.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nnn-dialog.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nnn-popovers.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/ny-activate-preventDefault.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/ny-activate-preventDefault.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/ny.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/ny.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nyn-popovers.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nyn.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nyn.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nynn-destroy.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nynn-destroy.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nynn.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nynn.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nyyn-CloseWatcher.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nyyn-dialog.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nyyyn-CloseWatcher.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/nyyyn-dialog.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/y-dialog-disconnected.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/y-popover-disconnected.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/y.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/y.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/yn-activate.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/yn-activate.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/yn.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/yn.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/ynn-CloseWatcher.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/ynn-dialog.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/yy.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/yy.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/yyn.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/yyn.html?dialog": {
+    "total": 1
+  },
+  "close-watcher/user-activation/yyy-CloseWatcher-dialog-popover.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/yyy-activate-CloseWatcher-dialog-popover.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/yyy-popovers.html": {
+    "total": 1
+  },
+  "close-watcher/user-activation/yyy.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/yyy.html?dialog": {
+    "total": 1
+  }
+}

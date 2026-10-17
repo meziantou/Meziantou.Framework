@@ -1,0 +1,62 @@
+{
+  "pointerlock/constructor.html": {
+    "total": 2
+  },
+  "pointerlock/idlharness.window.js": {
+    "total": 49
+  },
+  "pointerlock/mouse_buttons_back_forward.html": {
+    "total": 1
+  },
+  "pointerlock/movementX_Y_basic.html": {
+    "total": 1
+  },
+  "pointerlock/pointerlock-maintains-mousedown.html?unadjustedmovement=false": {
+    "total": 1
+  },
+  "pointerlock/pointerlock-maintains-mousedown.html?unadjustedmovement=true": {
+    "total": 1
+  },
+  "pointerlock/pointerlock-requires-gesture.html": {
+    "total": 1
+  },
+  "pointerlock/pointerlock_all_mouse_events_to_locktarget.html": {
+    "total": 1
+  },
+  "pointerlock/pointerlock_api_behavior.html": {
+    "total": 2
+  },
+  "pointerlock/pointerlock_fullscreen-change.html": {
+    "total": 1
+  },
+  "pointerlock/pointerlock_promise.html": {
+    "total": 1
+  },
+  "pointerlock/pointerlock_remove_target.html": {
+    "total": 1
+  },
+  "pointerlock/pointerlock_remove_target_on_mouseup.html": {
+    "total": 1
+  },
+  "pointerlock/pointerlock_shadow.html": {
+    "total": 1
+  },
+  "pointerlock/pointerlock_suppress_mouse_boundary_events_when_locked.html": {
+    "total": 1
+  },
+  "pointerlock/pointerlock_target_change.html": {
+    "total": 1
+  },
+  "pointerlock/pointerlock_unadjustedMovement.html": {
+    "total": 1
+  },
+  "pointerlock/pointerlock_unadjustedMovement_update.html": {
+    "total": 2
+  },
+  "pointerlock/pointerlock_wheel_event_outside_target.html": {
+    "total": 2
+  },
+  "pointerlock/pointerlock_without_gesture.html": {
+    "total": 1
+  }
+}

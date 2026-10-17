@@ -1,0 +1,15 @@
+{
+  "main": {
+    "fil": {
+      "identity": {
+        "language": "fil"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

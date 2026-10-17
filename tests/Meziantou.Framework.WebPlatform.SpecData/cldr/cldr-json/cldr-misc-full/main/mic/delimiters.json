@@ -1,0 +1,15 @@
+{
+  "main": {
+    "mic": {
+      "identity": {
+        "language": "mic"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

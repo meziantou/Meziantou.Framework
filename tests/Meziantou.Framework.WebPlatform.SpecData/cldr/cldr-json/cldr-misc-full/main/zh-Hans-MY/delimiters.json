@@ -1,0 +1,17 @@
+{
+  "main": {
+    "zh-Hans-MY": {
+      "identity": {
+        "language": "zh",
+        "script": "Hans",
+        "territory": "MY"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "fa": {
+      "identity": {
+        "language": "fa"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "‹",
+        "alternateQuotationEnd": "›"
+      }
+    }
+  }
+}

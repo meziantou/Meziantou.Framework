@@ -1,0 +1,270 @@
+{
+  "spec": {
+    "title": "CSS Syntax Module Level 3",
+    "url": "https://drafts.csswg.org/css-syntax-3/"
+  },
+  "properties": [],
+  "atrules": [
+    {
+      "name": "@charset",
+      "prose": "However, there is no actual at-rule named @charset. When a stylesheet is actually parsed, any occurrences of an @charset rule must be treated as an unrecognized rule, and thus dropped as invalid when the stylesheet is grammar-checked.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#at-ruledef-charset",
+      "descriptors": []
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<ident-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-ident-token",
+      "type": "type"
+    },
+    {
+      "name": "<function-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-function-token",
+      "type": "type"
+    },
+    {
+      "name": "<at-keyword-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-at-keyword-token",
+      "type": "type"
+    },
+    {
+      "name": "<hash-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-hash-token",
+      "type": "type"
+    },
+    {
+      "name": "<string-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-string-token",
+      "type": "type"
+    },
+    {
+      "name": "<bad-string-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-bad-string-token",
+      "type": "type"
+    },
+    {
+      "name": "<url-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-url-token",
+      "type": "type"
+    },
+    {
+      "name": "<bad-url-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-bad-url-token",
+      "type": "type"
+    },
+    {
+      "name": "<delim-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-delim-token",
+      "type": "type"
+    },
+    {
+      "name": "<number-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-number-token",
+      "type": "type"
+    },
+    {
+      "name": "<percentage-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-percentage-token",
+      "type": "type"
+    },
+    {
+      "name": "<dimension-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-dimension-token",
+      "type": "type"
+    },
+    {
+      "name": "<unicode-range-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-unicode-range-token",
+      "type": "type"
+    },
+    {
+      "name": "<whitespace-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-whitespace-token",
+      "type": "type"
+    },
+    {
+      "name": "<CDO-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-cdo-token",
+      "type": "type"
+    },
+    {
+      "name": "<CDC-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-cdc-token",
+      "type": "type"
+    },
+    {
+      "name": "<colon-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-colon-token",
+      "type": "type"
+    },
+    {
+      "name": "<semicolon-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-semicolon-token",
+      "type": "type"
+    },
+    {
+      "name": "<comma-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-comma-token",
+      "type": "type"
+    },
+    {
+      "name": "<[-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#tokendef-open-square",
+      "type": "type"
+    },
+    {
+      "name": "<]-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#tokendef-close-square",
+      "type": "type"
+    },
+    {
+      "name": "<(-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#tokendef-open-paren",
+      "type": "type"
+    },
+    {
+      "name": "<)-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#tokendef-close-paren",
+      "type": "type"
+    },
+    {
+      "name": "<{-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#tokendef-open-curly",
+      "type": "type"
+    },
+    {
+      "name": "<}-token>",
+      "prose": "The output of tokenization step is a stream of zero or more of the following tokens: <ident-token>, <function-token>, <at-keyword-token>, <hash-token>, <string-token>, <bad-string-token>, <url-token>, <bad-url-token>, <delim-token>, <number-token>, <percentage-token>, <dimension-token>, <unicode-range-token>, <whitespace-token>, <CDO-token>, <CDC-token>, <colon-token>, <semicolon-token>, <comma-token>, <[-token>, <]-token>, <(-token>, <)-token>, <{-token>, and <}-token>.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#tokendef-close-curly",
+      "type": "type"
+    },
+    {
+      "name": "<eof-token>",
+      "prose": "An <eof-token> is a conceptual token, not actually produced by the tokenizer, used to indicate that the token stream has been exhausted.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-eof-token",
+      "type": "type"
+    },
+    {
+      "name": "<a-n-plus-b>",
+      "href": "https://drafts.csswg.org/css-syntax-3/#anb-production",
+      "type": "type",
+      "value": "odd | even | <integer> | <n-dimension> | '+'? n | -n | <ndashdigit-dimension> | '+'? <ndashdigit-ident> | <dashndashdigit-ident> | <n-dimension> <signed-integer> | '+'? n <signed-integer> | -n <signed-integer> | <ndash-dimension> <signless-integer> | '+'? n- <signless-integer> | -n- <signless-integer> | <n-dimension> ['+' | '-'] <signless-integer> | '+'? n ['+' | '-'] <signless-integer> | -n ['+' | '-'] <signless-integer>"
+    },
+    {
+      "name": "<n-dimension>",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-n-dimension",
+      "type": "type",
+      "value": "<dimension-token>"
+    },
+    {
+      "name": "<ndash-dimension>",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-ndash-dimension",
+      "type": "type",
+      "value": "<dimension-token>"
+    },
+    {
+      "name": "<ndashdigit-dimension>",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-ndashdigit-dimension",
+      "type": "type",
+      "value": "<dimension-token>"
+    },
+    {
+      "name": "<ndashdigit-ident>",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-ndashdigit-ident",
+      "type": "type",
+      "value": "<ident-token>"
+    },
+    {
+      "name": "<dashndashdigit-ident>",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-dashndashdigit-ident",
+      "type": "type",
+      "value": "<ident-token>"
+    },
+    {
+      "name": "<signed-integer>",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-signed-integer",
+      "type": "type",
+      "value": "<number-token>"
+    },
+    {
+      "name": "<signless-integer>",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-signless-integer",
+      "type": "type",
+      "value": "<number-token>"
+    },
+    {
+      "name": "<block-contents>",
+      "prose": "When writing a rule grammar, <block-contents> represents this agnostic parsing. It must only be used as the sole value in a block, and represents that no restrictions are implicitly placed on what the block can contain.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-block-contents",
+      "type": "type"
+    },
+    {
+      "name": "<declaration-list>",
+      "prose": "<declaration-list>: only declarations are allowed; at-rules and qualified rules are automatically invalid.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-declaration-list",
+      "type": "type"
+    },
+    {
+      "name": "<qualified-rule-list>",
+      "prose": "<qualified-rule-list>: only qualified rules are allowed; declarations and at-rules are automatically invalid.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-qualified-rule-list",
+      "type": "type"
+    },
+    {
+      "name": "<at-rule-list>",
+      "prose": "<at-rule-list>: only at-rules are allowed; declarations and qualified rules are automatically invalid.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-at-rule-list",
+      "type": "type"
+    },
+    {
+      "name": "<declaration-rule-list>",
+      "prose": "<declaration-rule-list>: declarations and at-rules are allowed; qualified rules are automatically invalid.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-declaration-rule-list",
+      "type": "type"
+    },
+    {
+      "name": "<rule-list>",
+      "prose": "<rule-list>: qualified rules and at-rules are allowed; declarations are automatically invalid.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-rule-list",
+      "type": "type"
+    },
+    {
+      "name": "<declaration-value>",
+      "prose": "The <declaration-value> production matches any sequence of one or more tokens, so long as the sequence does not contain <bad-string-token>, <bad-url-token>, unmatched <)-token>, <]-token>, or <}-token>, or top-level <semicolon-token> tokens or <delim-token> tokens with a value of \"!\". It represents the entirety of what a valid declaration can have as its value.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-declaration-value",
+      "type": "type"
+    },
+    {
+      "name": "<any-value>",
+      "prose": "The <any-value> production is identical to <declaration-value>, but also allows top-level <semicolon-token> tokens and <delim-token> tokens with a value of \"!\". It represents the entirety of what valid CSS can be in any context.",
+      "href": "https://drafts.csswg.org/css-syntax-3/#typedef-any-value",
+      "type": "type"
+    }
+  ]
+}

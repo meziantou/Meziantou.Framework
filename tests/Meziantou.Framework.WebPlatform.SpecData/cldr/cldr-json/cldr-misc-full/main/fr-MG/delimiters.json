@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-MG": {
+      "identity": {
+        "language": "fr",
+        "territory": "MG"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

@@ -1,0 +1,557 @@
+{
+  "spec": {
+    "title": "CSS Color Module Level 5",
+    "url": "https://drafts.csswg.org/css-color-5/"
+  },
+  "properties": [],
+  "atrules": [
+    {
+      "name": "@color-profile",
+      "prose": "The @color-profile rule defines and names a color profile which can later be used in the color() function to specify a color.",
+      "href": "https://drafts.csswg.org/css-color-5/#at-ruledef-profile",
+      "descriptors": [
+        {
+          "name": "src",
+          "href": "https://drafts.csswg.org/css-color-5/#descdef-color-profile-src",
+          "for": "@color-profile",
+          "value": "<url>",
+          "initial": "n/a"
+        },
+        {
+          "name": "rendering-intent",
+          "href": "https://drafts.csswg.org/css-color-5/#descdef-color-profile-rendering-intent",
+          "for": "@color-profile",
+          "value": "relative-colorimetric | absolute-colorimetric | perceptual | saturation",
+          "initial": "relative-colorimetric",
+          "values": [
+            {
+              "name": "relative-colorimetric",
+              "prose": "Media-relative colorimetric is required to leave source colors that fall inside the destination medium gamut unchanged relative to the respective media white points. Source colors that are out of the destination medium gamut are mapped to colors on the gamut boundary using a variety of different methods. The media-relative colorimetric rendering intent is often used with black point compensation, where the source medium black point is mapped to the destination medium black point as well. This method must map the source white point to the destination white point. If black point compensation is in use, the source black point must also be mapped to the destination black point. Adaptation algorithms should be used to adjust for the change in white point. Relative relationships of colors inside both source and destination gamuts should be preserved. Relative relationships of colors outside the destination gamut may be changed.",
+              "href": "https://drafts.csswg.org/css-color-5/#valdef-color-profile-rendering-intent-relative-colorimetric",
+              "type": "value",
+              "value": "relative-colorimetric"
+            },
+            {
+              "name": "absolute-colorimetric",
+              "prose": "ICC-absolute colorimetric is required to leave source colors that fall inside the destination medium gamut unchanged relative to the adopted white (a perfect reflecting diffuser). Source colors that are out of the destination medium gamut are mapped to colors on the gamut boundary using a variety of different methods. This method produces the most accurate color matching of in-gamut colors, but will result in highlight clipping if the destination medium white point is lower than the source medium white point. For this reason it is recommended for use only in applications that need exact color matching and where highlight clipping is not a concern. This method MUST disable white point matching and black point matching when converting colors. In general, this option is not recommended except for testing purposes.",
+              "href": "https://drafts.csswg.org/css-color-5/#valdef-color-profile-rendering-intent-absolute-colorimetric",
+              "type": "value",
+              "value": "absolute-colorimetric"
+            },
+            {
+              "name": "perceptual",
+              "prose": "This method is often the preferred choice for images, especially when there are substantial differences between the source and destination (such as a screen display image reproduced on a reflection print). It takes the colors of the source image and re-optimizes the appearance for the destination medium using proprietary methods. This re-optimization may result in colors within both the source and destination gamuts being changed, although perceptual transforms are supposed to maintain the basic artistic intent of the original in the reproduction. They will not attempt to correct errors in the source image. This method should maintain relative color values among the pixels as they are mapped to the target device gamut. This method may change pixel values that were originally within the target device gamut, in order to avoid hue shifts and discontinuities and to preserve as much as possible the overall appearance of the scene.",
+              "href": "https://drafts.csswg.org/css-color-5/#valdef-color-profile-rendering-intent-perceptual",
+              "type": "value",
+              "value": "perceptual"
+            },
+            {
+              "name": "saturation",
+              "prose": "This option was created to preserve the relative saturation (chroma) of the original, and to keep solid colors pure. However, it experienced interoperability problems like the perceptual intent, and as solid color preservation is not amenable to a reference medium solution using v4 profiles does not solve the problem. Use of this rendering intent is not recommended unless the specific source and destination profiles to be used have been checked to ensure the combination produces the desired result. This option should preserve the relative saturation (chroma) values of the original pixels. Out of gamut colors should be converted to colors that have the same saturation but fall just inside the gamut.",
+              "href": "https://drafts.csswg.org/css-color-5/#valdef-color-profile-rendering-intent-saturation",
+              "type": "value",
+              "value": "saturation"
+            }
+          ]
+        },
+        {
+          "name": "components",
+          "href": "https://drafts.csswg.org/css-color-5/#descdef-color-profile-components",
+          "for": "@color-profile",
+          "value": "<ident>#",
+          "initial": "n/a"
+        }
+      ],
+      "value": "@color-profile [<dashed-ident> | device-cmyk] { <declaration-list> }"
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<color>",
+      "prose": "Colors in CSS are represented by the <color> type:",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-color",
+      "type": "type",
+      "value": "<color-base> | currentColor | <system-color> | <contrast-color()> | <device-cmyk()> | <light-dark-color>"
+    },
+    {
+      "name": "<color-base>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-color-base",
+      "type": "type",
+      "value": "<hex-color> | <color-function> | <named-color> | <color-mix()> | transparent"
+    },
+    {
+      "name": "color-mix()",
+      "value": "color-mix( <color-interpolation-method>? , [ <color> && <percentage [0,100]>? ]#)",
+      "href": "https://drafts.csswg.org/css-color-5/#funcdef-color-mix",
+      "type": "function"
+    },
+    {
+      "name": "<modern-rgb-syntax>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-modern-rgb-syntax",
+      "type": "type",
+      "value": "rgb( [ from <color> ]? [ <number> | <percentage> | none]{3} [ / [<alpha-value> | none] ]? )"
+    },
+    {
+      "name": "<modern-rgba-syntax>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-modern-rgba-syntax",
+      "type": "type",
+      "value": "rgba( [ from <color> ]? [ <number> | <percentage> | none]{3} [ / [<alpha-value> | none] ]? )"
+    },
+    {
+      "name": "<modern-hsl-syntax>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-modern-hsl-syntax",
+      "type": "type",
+      "value": "hsl([from <color>]? [<hue> | none] [<percentage> | <number> | none] [<percentage> | <number> | none] [ / [<alpha-value> | none] ]? )"
+    },
+    {
+      "name": "<modern-hsla-syntax>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-modern-hsla-syntax",
+      "type": "type",
+      "value": "hsla([from <color>]? [<hue> | none] [<percentage> | <number> | none] [<percentage> | <number> | none] [ / [<alpha-value> | none] ]? )"
+    },
+    {
+      "name": "hwb()",
+      "value": "hwb([from <color>]? [<hue> | none] [<percentage> | <number> | none] [<percentage> | <number> | none] [ / [<alpha-value> | none] ]? )",
+      "href": "https://drafts.csswg.org/css-color-5/#funcdef-hwb",
+      "type": "function",
+      "values": [
+        {
+          "name": "h",
+          "prose": "h is a <number> that corresponds to the origin color’s HWB hue, in degrees, after conversion, if required to sRGB, normalized to a [0, 360] range. 90 is equivalent to 90deg.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-hwb-h",
+          "type": "value",
+          "value": "h"
+        },
+        {
+          "name": "w",
+          "prose": "w and b are <number>s that correspond to the origin color’s HWB whiteness and blackness after conversion, if required to sRGB. 100 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-hwb-w",
+          "type": "value",
+          "value": "w"
+        },
+        {
+          "name": "b",
+          "prose": "w and b are <number>s that correspond to the origin color’s HWB whiteness and blackness after conversion, if required to sRGB. 100 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-hwb-b",
+          "type": "value",
+          "value": "b"
+        },
+        {
+          "name": "alpha",
+          "prose": "alpha is a <number> that corresponds to the origin color’s alpha transparency. 1.0 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-hwb-alpha",
+          "type": "value",
+          "value": "alpha"
+        }
+      ]
+    },
+    {
+      "name": "lab()",
+      "value": "lab([from <color>]? [<percentage> | <number> | none] [<percentage> | <number> | none] [<percentage> | <number> | none] [ / [<alpha-value> | none] ]? )",
+      "href": "https://drafts.csswg.org/css-color-5/#funcdef-lab",
+      "type": "function",
+      "values": [
+        {
+          "name": "l",
+          "prose": "l is a <number> that corresponds to the origin color’s CIE Lightness after conversion, if required, to CIE Lab. 100 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-lab-l",
+          "type": "value",
+          "value": "l"
+        },
+        {
+          "name": "a",
+          "prose": "a and b are <number>s that correspond to the origin color’s CIE Lab a and b axes after conversion, if required, to CIE Lab. 125 is equivalent to 100%, while -125 is equivalent to -100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-lab-a",
+          "type": "value",
+          "value": "a"
+        },
+        {
+          "name": "b",
+          "prose": "a and b are <number>s that correspond to the origin color’s CIE Lab a and b axes after conversion, if required, to CIE Lab. 125 is equivalent to 100%, while -125 is equivalent to -100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-lab-b",
+          "type": "value",
+          "value": "b"
+        },
+        {
+          "name": "alpha",
+          "prose": "alpha is a <number> that corresponds to the origin color’s alpha transparency. 1.0 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-lab-alpha",
+          "type": "value",
+          "value": "alpha"
+        }
+      ]
+    },
+    {
+      "name": "oklab()",
+      "value": "oklab([from <color>]? [<percentage> | <number> | none] [<percentage> | <number> | none] [<percentage> | <number> | none] [ / [<alpha-value> | none] ]? )",
+      "href": "https://drafts.csswg.org/css-color-5/#funcdef-oklab",
+      "type": "function",
+      "values": [
+        {
+          "name": "l",
+          "prose": "l is a <number> that corresponds to the origin color’s Oklab Lightness after conversion, if required, to Oklab. 1.0 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-oklab-l",
+          "type": "value",
+          "value": "l"
+        },
+        {
+          "name": "a",
+          "prose": "a and b are <number>s that correspond to the origin color’s Oklab a and b axes after conversion, if required, to Oklab. 0.4 is equivalent to 100%, while -0.4 is equivalent to -100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-oklab-a",
+          "type": "value",
+          "value": "a"
+        },
+        {
+          "name": "b",
+          "prose": "a and b are <number>s that correspond to the origin color’s Oklab a and b axes after conversion, if required, to Oklab. 0.4 is equivalent to 100%, while -0.4 is equivalent to -100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-oklab-b",
+          "type": "value",
+          "value": "b"
+        },
+        {
+          "name": "alpha",
+          "prose": "alpha is a <number> that corresponds to the origin color’s alpha transparency. 1.0 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-oklab-alpha",
+          "type": "value",
+          "value": "alpha"
+        }
+      ]
+    },
+    {
+      "name": "lch()",
+      "value": "lch([from <color>]? [<percentage> | <number> | none] [<percentage> | <number> | none] [<hue> | none] [ / [<alpha-value> | none] ]? )",
+      "href": "https://drafts.csswg.org/css-color-5/#funcdef-lch",
+      "type": "function",
+      "values": [
+        {
+          "name": "l",
+          "prose": "l is a <number> that corresponds to the origin color’s CIE Lightness after conversion, if required, to CIE LCH. 100 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-lch-l",
+          "type": "value",
+          "value": "l"
+        },
+        {
+          "name": "c",
+          "prose": "c is a <number> that corresponds to the origin color’s LCH chroma after conversion, if required, to CIE LCH. 150 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-lch-c",
+          "type": "value",
+          "value": "c"
+        },
+        {
+          "name": "h",
+          "prose": "h is a <number> that corresponds to the origin color’s LCH hue, in degrees, after conversion, if required, to CIE LCH, normalized to a [0, 360] range. 90 is equivalent to 90deg.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-lch-h",
+          "type": "value",
+          "value": "h"
+        },
+        {
+          "name": "alpha",
+          "prose": "alpha is a <number> that corresponds to the origin color’s alpha transparency. 1.0 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-lch-alpha",
+          "type": "value",
+          "value": "alpha"
+        }
+      ]
+    },
+    {
+      "name": "oklch()",
+      "value": "oklch([from <color>]? [<percentage> | <number> | none] [<percentage> | <number> | none] [<hue> | none] [ / [<alpha-value> | none] ]? )",
+      "href": "https://drafts.csswg.org/css-color-5/#funcdef-oklch",
+      "type": "function",
+      "values": [
+        {
+          "name": "l",
+          "prose": "l is a <number> that corresponds to the origin color’s Oklab Lightness after conversion, if required, to OkLCh. 1.0 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-oklch-l",
+          "type": "value",
+          "value": "l"
+        },
+        {
+          "name": "c",
+          "prose": "c is a <number> that corresponds to the origin color’s OkLCh chroma after conversion, if required, to OkLCh. 0.4 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-oklch-c",
+          "type": "value",
+          "value": "c"
+        },
+        {
+          "name": "h",
+          "prose": "h is a <number> that corresponds to the origin color’s OkLCh hue, in degrees, after conversion, if required, to OkLCh, normalized to a [0, 360] range. 90 is equivalent to 90deg.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-oklch-h",
+          "type": "value",
+          "value": "h"
+        },
+        {
+          "name": "alpha",
+          "prose": "alpha is a <number> that corresponds to the origin color’s alpha transparency. 1.0 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-oklch-alpha",
+          "type": "value",
+          "value": "alpha"
+        }
+      ]
+    },
+    {
+      "name": "alpha()",
+      "value": "alpha([from <color>] [ / [<alpha-value> | none] ]? )",
+      "href": "https://drafts.csswg.org/css-color-5/#funcdef-alpha",
+      "type": "function",
+      "values": [
+        {
+          "name": "alpha",
+          "prose": "alpha is a <number> that corresponds to the origin color’s alpha transparency. 1.0 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-alpha-alpha",
+          "type": "value",
+          "value": "alpha"
+        }
+      ]
+    },
+    {
+      "name": "color()",
+      "value": "color( [from <color>]? <colorspace-params> [ / [ <alpha-value> | none ] ]? )",
+      "href": "https://drafts.csswg.org/css-color-5/#funcdef-color",
+      "type": "function",
+      "values": [
+        {
+          "name": "r",
+          "prose": "r, g, and b are all <number>s that correspond to the origin color’s red, green, and blue components after conversion, if required to the predefined RGB color space. The value 1.0 corresponds to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-color-r",
+          "type": "value",
+          "value": "r"
+        },
+        {
+          "name": "g",
+          "prose": "r, g, and b are all <number>s that correspond to the origin color’s red, green, and blue components after conversion, if required to the predefined RGB color space. The value 1.0 corresponds to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-color-g",
+          "type": "value",
+          "value": "g"
+        },
+        {
+          "name": "b",
+          "prose": "r, g, and b are all <number>s that correspond to the origin color’s red, green, and blue components after conversion, if required to the predefined RGB color space. The value 1.0 corresponds to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-color-b",
+          "type": "value",
+          "value": "b"
+        },
+        {
+          "name": "x",
+          "prose": "x, y, z are all <number>s that correspond to the origin color’s X, Y and Z components after conversion, if required to relative CIE XYZ color space adapted to the relevant white point. The value 1.0 corresponds to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-color-x",
+          "type": "value",
+          "value": "x"
+        },
+        {
+          "name": "y",
+          "prose": "x, y, z are all <number>s that correspond to the origin color’s X, Y and Z components after conversion, if required to relative CIE XYZ color space adapted to the relevant white point. The value 1.0 corresponds to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-color-y",
+          "type": "value",
+          "value": "y"
+        },
+        {
+          "name": "z",
+          "prose": "x, y, z are all <number>s that correspond to the origin color’s X, Y and Z components after conversion, if required to relative CIE XYZ color space adapted to the relevant white point. The value 1.0 corresponds to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-color-z",
+          "type": "value",
+          "value": "z"
+        },
+        {
+          "name": "alpha",
+          "prose": "alpha is a <number> that corresponds to the origin color’s alpha transparency. 1.0 is equivalent to 100%.",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-color-alpha",
+          "type": "value",
+          "value": "alpha"
+        }
+      ]
+    },
+    {
+      "name": "<colorspace-params>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-colorspace-params",
+      "type": "type",
+      "value": "[<custom-params> | <predefined-rgb-params> | <xyz-params>]"
+    },
+    {
+      "name": "<custom-params>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-custom-params",
+      "type": "type",
+      "value": "<dashed-ident> [ <number> | <percentage> | none ]+"
+    },
+    {
+      "name": "<predefined-rgb-params>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-predefined-rgb-params",
+      "type": "type",
+      "value": "<predefined-rgb> [ <number> | <percentage> | none ]{3}"
+    },
+    {
+      "name": "<xyz-params>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-xyz-params",
+      "type": "type",
+      "value": "<xyz-space> [ <number> | <percentage> | none ]{3}"
+    },
+    {
+      "name": "device-cmyk()",
+      "value": "<legacy-device-cmyk-syntax> | <modern-device-cmyk-syntax>",
+      "href": "https://drafts.csswg.org/css-color-5/#funcdef-device-cmyk",
+      "type": "function"
+    },
+    {
+      "name": "<legacy-device-cmyk-syntax>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-legacy-device-cmyk-syntax",
+      "type": "type",
+      "value": "device-cmyk( <number>#{4} )"
+    },
+    {
+      "name": "<modern-device-cmyk-syntax>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-modern-device-cmyk-syntax",
+      "type": "type",
+      "value": "device-cmyk( <cmyk-component>{4} [ / [ <alpha-value> | none ] ]? )"
+    },
+    {
+      "name": "<cmyk-component>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-cmyk-component",
+      "type": "type",
+      "value": "<number> | <percentage> | none"
+    },
+    {
+      "name": "light-dark()",
+      "value": "<light-dark-color> | <light-dark-image>",
+      "href": "https://drafts.csswg.org/css-color-5/#funcdef-light-dark",
+      "type": "function",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The none keyword computes to image(transparent) (a fully transparent image with no natural size).",
+          "href": "https://drafts.csswg.org/css-color-5/#valdef-light-dark-none",
+          "type": "value",
+          "value": "none"
+        }
+      ]
+    },
+    {
+      "name": "<light-dark-color>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-light-dark-color",
+      "type": "type",
+      "value": "light-dark(<color>, <color>)"
+    },
+    {
+      "name": "<light-dark-image>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-light-dark-image",
+      "type": "type",
+      "value": "light-dark( [ <image> | none ] , [ <image> | none ] )"
+    },
+    {
+      "name": "contrast-color()",
+      "value": "contrast-color( <color> )",
+      "href": "https://drafts.csswg.org/css-color-5/#funcdef-contrast-color",
+      "type": "function"
+    },
+    {
+      "name": "<color-space>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-color-space",
+      "type": "type",
+      "value": "<rectangular-color-space> | <polar-color-space> | <custom-color-space>"
+    },
+    {
+      "name": "<rectangular-color-space>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-rectangular-color-space",
+      "type": "type",
+      "value": "srgb | srgb-linear | display-p3 | display-p3-linear | a98-rgb | prophoto-rgb | rec2020 | lab | oklab | <xyz-space>"
+    },
+    {
+      "name": "<polar-color-space>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-polar-color-space",
+      "type": "type",
+      "value": "hsl | hwb | lch | oklch"
+    },
+    {
+      "name": "<custom-color-space>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-custom-color-space",
+      "type": "type",
+      "value": "<dashed-ident>"
+    },
+    {
+      "name": "<hue-interpolation-method>",
+      "href": "https://drafts.csswg.org/css-color-5/#typedef-hue-interpolation-method",
+      "type": "type",
+      "value": "[ shorter | longer | increasing | decreasing ] hue"
+    },
+    {
+      "name": "<color-interpolation-method>",
+      "href": "https://drafts.csswg.org/css-color-5/#color-interpolation-method",
+      "type": "type",
+      "value": "in [ <rectangular-color-space> | <polar-color-space> <hue-interpolation-method>? | <custom-color-space> ]"
+    }
+  ],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "r",
+      "prose": "r, g, and b are all <number>s that correspond to the origin color’s red, green, and blue components after conversion, if required to sRGB. 255.0 is equivalent to 100%.",
+      "href": "https://drafts.csswg.org/css-color-5/#valdef-rgb-r",
+      "type": "value",
+      "value": "r",
+      "for": "rgb()"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "g",
+      "prose": "r, g, and b are all <number>s that correspond to the origin color’s red, green, and blue components after conversion, if required to sRGB. 255.0 is equivalent to 100%.",
+      "href": "https://drafts.csswg.org/css-color-5/#valdef-rgb-g",
+      "type": "value",
+      "value": "g",
+      "for": "rgb()"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "b",
+      "prose": "r, g, and b are all <number>s that correspond to the origin color’s red, green, and blue components after conversion, if required to sRGB. 255.0 is equivalent to 100%.",
+      "href": "https://drafts.csswg.org/css-color-5/#valdef-rgb-b",
+      "type": "value",
+      "value": "b",
+      "for": "rgb()"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "alpha",
+      "prose": "alpha is a <number> that corresponds to the origin color’s alpha transparency. 1.0 is equivalent to 100%.",
+      "href": "https://drafts.csswg.org/css-color-5/#valdef-rgb-alpha",
+      "type": "value",
+      "value": "alpha",
+      "for": "rgb()"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "h",
+      "prose": "h is a <number> that corresponds to the origin color’s HSL hue, in degrees, after conversion, if required to sRGB, normalized to a [0, 360] range. 90 is equivalent to 90deg.",
+      "href": "https://drafts.csswg.org/css-color-5/#valdef-hsl-h",
+      "type": "value",
+      "value": "h",
+      "for": "hsl()"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "s",
+      "prose": "s and l are <number>s that correspond to the origin color’s HSL saturation and lightness, after conversion, if required to sRGB. 100 is equivalent to 100%.",
+      "href": "https://drafts.csswg.org/css-color-5/#valdef-hsl-s",
+      "type": "value",
+      "value": "s",
+      "for": "hsl()"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "l",
+      "prose": "s and l are <number>s that correspond to the origin color’s HSL saturation and lightness, after conversion, if required to sRGB. 100 is equivalent to 100%.",
+      "href": "https://drafts.csswg.org/css-color-5/#valdef-hsl-l",
+      "type": "value",
+      "value": "l",
+      "for": "hsl()"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "alpha",
+      "prose": "alpha is a <number> that corresponds to the origin color’s alpha transparency 1.0 is equivalent to 100%.",
+      "href": "https://drafts.csswg.org/css-color-5/#valdef-hsl-alpha",
+      "type": "value",
+      "value": "alpha",
+      "for": "hsl()"
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "spec": {
+    "title": "Filter Effects Module Level 1",
+    "url": "https://drafts.csswg.org/filter-effects-1/"
+  },
+  "elements": [
+    {
+      "name": "filter",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-filter",
+      "interface": "SVGFilterElement"
+    },
+    {
+      "name": "feBlend",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-feblend",
+      "interface": "SVGFEBlendElement"
+    },
+    {
+      "name": "feColorMatrix",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fecolormatrix",
+      "interface": "SVGFEColorMatrixElement"
+    },
+    {
+      "name": "feComponentTransfer",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fecomponenttransfer",
+      "interface": "SVGFEComponentTransferElement"
+    },
+    {
+      "name": "feFuncR",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fefuncr",
+      "interface": "SVGFEFuncRElement"
+    },
+    {
+      "name": "feFuncG",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fefuncg",
+      "interface": "SVGFEFuncGElement"
+    },
+    {
+      "name": "feFuncB",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fefuncb",
+      "interface": "SVGFEFuncBElement"
+    },
+    {
+      "name": "feFuncA",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fefunca",
+      "interface": "SVGFEFuncAElement"
+    },
+    {
+      "name": "feComposite",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fecomposite",
+      "interface": "SVGFECompositeElement"
+    },
+    {
+      "name": "feConvolveMatrix",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-feconvolvematrix",
+      "interface": "SVGFEConvolveMatrixElement"
+    },
+    {
+      "name": "feDiffuseLighting",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fediffuselighting",
+      "interface": "SVGFEDiffuseLightingElement"
+    },
+    {
+      "name": "feDisplacementMap",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fedisplacementmap",
+      "interface": "SVGFEDisplacementMapElement"
+    },
+    {
+      "name": "feDropShadow",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fedropshadow",
+      "interface": "SVGFEDropShadowElement"
+    },
+    {
+      "name": "feFlood",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-feflood",
+      "interface": "SVGFEFloodElement"
+    },
+    {
+      "name": "feGaussianBlur",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fegaussianblur",
+      "interface": "SVGFEGaussianBlurElement"
+    },
+    {
+      "name": "feImage",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-feimage",
+      "interface": "SVGFEImageElement"
+    },
+    {
+      "name": "feMerge",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-femerge",
+      "interface": "SVGFEMergeElement"
+    },
+    {
+      "name": "feMergeNode",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-femergenode",
+      "interface": "SVGFEMergeNodeElement"
+    },
+    {
+      "name": "feMorphology",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-femorphology",
+      "interface": "SVGFEMorphologyElement"
+    },
+    {
+      "name": "feOffset",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-feoffset",
+      "interface": "SVGFEOffsetElement"
+    },
+    {
+      "name": "feSpecularLighting",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fespecularlighting",
+      "interface": "SVGFESpecularLightingElement"
+    },
+    {
+      "name": "feTile",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fetile",
+      "interface": "SVGFETileElement"
+    },
+    {
+      "name": "feTurbulence",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-feturbulence",
+      "interface": "SVGFETurbulenceElement"
+    },
+    {
+      "name": "feDistantLight",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fedistantlight",
+      "interface": "SVGFEDistantLightElement"
+    },
+    {
+      "name": "fePointLight",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fepointlight",
+      "interface": "SVGFEPointLightElement"
+    },
+    {
+      "name": "feSpotLight",
+      "href": "https://drafts.csswg.org/filter-effects-1/#elementdef-fespotlight",
+      "interface": "SVGFESpotLightElement"
+    }
+  ]
+}

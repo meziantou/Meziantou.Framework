@@ -1,0 +1,840 @@
+{
+  "spec": {
+    "title": "Web Bluetooth Scanning",
+    "url": "https://bluetooth.spec.whatwg.org/scanning.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "BluetoothDataFilter",
+          "BluetoothManufacturerDataFilter",
+          "BluetoothServiceDataFilter",
+          "BluetoothLEScanFilter"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "BluetoothLEScan",
+          "BluetoothLEScanPermissionResult"
+        ]
+      }
+    },
+    "idlNames": {
+      "BluetoothLEScanOptions": {
+        "fragment": "dictionary BluetoothLEScanOptions {\n  sequence<BluetoothLEScanFilterInit> filters;\n  boolean keepRepeatedDevices = false;\n  boolean acceptAllAdvertisements = false;\n};",
+        "type": "dictionary",
+        "name": "BluetoothLEScanOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "filters",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothLEScanFilterInit"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescanoptions-filters"
+          },
+          {
+            "type": "field",
+            "name": "keepRepeatedDevices",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescanoptions-keeprepeateddevices"
+          },
+          {
+            "type": "field",
+            "name": "acceptAllAdvertisements",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescanoptions-acceptalladvertisements"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/scanning.html#dictdef-bluetoothlescanoptions"
+      },
+      "BluetoothDataFilter": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface BluetoothDataFilter {\n  constructor(optional BluetoothDataFilterInit init = {});\n  readonly attribute ArrayBuffer dataPrefix;\n  readonly attribute ArrayBuffer mask;\n};",
+        "type": "interface",
+        "name": "BluetoothDataFilter",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothDataFilterInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothdatafilter-bluetoothdatafilter"
+          },
+          {
+            "type": "attribute",
+            "name": "dataPrefix",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothdatafilter-dataprefix"
+          },
+          {
+            "type": "attribute",
+            "name": "mask",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothdatafilter-mask"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/scanning.html#bluetoothdatafilter"
+      },
+      "BluetoothManufacturerDataFilter": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface BluetoothManufacturerDataFilter {\n  constructor(optional object init);\n  readonly maplike<unsigned short, BluetoothDataFilter>;\n};",
+        "type": "interface",
+        "name": "BluetoothManufacturerDataFilter",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "object"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothmanufacturerdatafilter-bluetoothmanufacturerdatafilter"
+          },
+          {
+            "type": "maplike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned short"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "BluetoothDataFilter"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": true,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/scanning.html#bluetoothmanufacturerdatafilter"
+      },
+      "BluetoothServiceDataFilter": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface BluetoothServiceDataFilter {\n  constructor(optional object init);\n  readonly maplike<UUID, BluetoothDataFilter>;\n};",
+        "type": "interface",
+        "name": "BluetoothServiceDataFilter",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "object"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothservicedatafilter-bluetoothservicedatafilter"
+          },
+          {
+            "type": "maplike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "UUID"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "BluetoothDataFilter"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": true,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/scanning.html#bluetoothservicedatafilter"
+      },
+      "BluetoothLEScanFilter": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface BluetoothLEScanFilter {\n  constructor(optional BluetoothLEScanFilterInit init = {});\n  readonly attribute DOMString? name;\n  readonly attribute DOMString? namePrefix;\n  readonly attribute FrozenArray<UUID> services;\n  readonly attribute BluetoothManufacturerDataFilter manufacturerData;\n  readonly attribute BluetoothServiceDataFilter serviceData;\n};",
+        "type": "interface",
+        "name": "BluetoothLEScanFilter",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothLEScanFilterInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescanfilter-bluetoothlescanfilter"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescanfilter-name"
+          },
+          {
+            "type": "attribute",
+            "name": "namePrefix",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescanfilter-nameprefix"
+          },
+          {
+            "type": "attribute",
+            "name": "services",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "UUID"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescanfilter-services"
+          },
+          {
+            "type": "attribute",
+            "name": "manufacturerData",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothManufacturerDataFilter"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescanfilter-manufacturerdata"
+          },
+          {
+            "type": "attribute",
+            "name": "serviceData",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothServiceDataFilter"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescanfilter-servicedata"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/scanning.html#bluetoothlescanfilter"
+      },
+      "BluetoothLEScan": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface BluetoothLEScan {\n  readonly attribute FrozenArray<BluetoothLEScanFilter> filters;\n  readonly attribute boolean keepRepeatedDevices;\n  readonly attribute boolean acceptAllAdvertisements;\n\n  readonly attribute boolean active;\n\n  undefined stop();\n};",
+        "type": "interface",
+        "name": "BluetoothLEScan",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "filters",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothLEScanFilter"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescan-filters"
+          },
+          {
+            "type": "attribute",
+            "name": "keepRepeatedDevices",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescan-keeprepeateddevices"
+          },
+          {
+            "type": "attribute",
+            "name": "acceptAllAdvertisements",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescan-acceptalladvertisements"
+          },
+          {
+            "type": "attribute",
+            "name": "active",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescan-active"
+          },
+          {
+            "type": "operation",
+            "name": "stop",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescan-stop"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/scanning.html#bluetoothlescan"
+      },
+      "BluetoothLEScanPermissionDescriptor": {
+        "fragment": "dictionary BluetoothLEScanPermissionDescriptor : PermissionDescriptor {\n  // These match BluetoothLEScanOptions.\n  sequence<BluetoothLEScanFilterInit> filters;\n  boolean keepRepeatedDevices = false;\n  boolean acceptAllAdvertisements = false;\n};",
+        "type": "dictionary",
+        "name": "BluetoothLEScanPermissionDescriptor",
+        "inheritance": "PermissionDescriptor",
+        "members": [
+          {
+            "type": "field",
+            "name": "filters",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothLEScanFilterInit"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescanpermissiondescriptor-filters"
+          },
+          {
+            "type": "field",
+            "name": "keepRepeatedDevices",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescanpermissiondescriptor-keeprepeateddevices"
+          },
+          {
+            "type": "field",
+            "name": "acceptAllAdvertisements",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescanpermissiondescriptor-acceptalladvertisements"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/scanning.html#dictdef-bluetoothlescanpermissiondescriptor"
+      },
+      "BluetoothLEScanPermissionResult": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface BluetoothLEScanPermissionResult : PermissionStatus {\n  attribute FrozenArray<BluetoothLEScan> scans;\n};",
+        "type": "interface",
+        "name": "BluetoothLEScanPermissionResult",
+        "inheritance": "PermissionStatus",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "scans",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothLEScan"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetoothlescanpermissionresult-scans"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/scanning.html#bluetoothlescanpermissionresult"
+      }
+    },
+    "idlExtendedNames": {
+      "Bluetooth": [
+        {
+          "fragment": "partial interface Bluetooth {\n  [SecureContext]\n  Promise<BluetoothLEScan> requestLEScan(optional BluetoothLEScanOptions options = {});\n};",
+          "type": "interface",
+          "name": "Bluetooth",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "requestLEScan",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "BluetoothLEScan"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "BluetoothLEScanOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://bluetooth.spec.whatwg.org/scanning.html#dom-bluetooth-requestlescan"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "BluetoothDataFilter",
+        "BluetoothManufacturerDataFilter",
+        "BluetoothServiceDataFilter",
+        "BluetoothLEScanFilter",
+        "BluetoothLEScan",
+        "BluetoothLEScanPermissionResult"
+      ]
+    },
+    "dependencies": {
+      "BluetoothLEScanOptions": [
+        "BluetoothLEScanFilterInit"
+      ],
+      "Bluetooth": [
+        "BluetoothLEScan",
+        "BluetoothLEScanOptions"
+      ],
+      "BluetoothDataFilter": [
+        "BluetoothDataFilterInit",
+        "ArrayBuffer"
+      ],
+      "BluetoothManufacturerDataFilter": [
+        "BluetoothDataFilter"
+      ],
+      "BluetoothServiceDataFilter": [
+        "UUID",
+        "BluetoothDataFilter"
+      ],
+      "BluetoothLEScanFilter": [
+        "BluetoothLEScanFilterInit",
+        "UUID",
+        "BluetoothManufacturerDataFilter",
+        "BluetoothServiceDataFilter"
+      ],
+      "BluetoothLEScan": [
+        "BluetoothLEScanFilter"
+      ],
+      "BluetoothLEScanPermissionDescriptor": [
+        "PermissionDescriptor",
+        "BluetoothLEScanFilterInit"
+      ],
+      "BluetoothLEScanPermissionResult": [
+        "PermissionStatus",
+        "BluetoothLEScan"
+      ]
+    },
+    "externalDependencies": [
+      "BluetoothLEScanFilterInit",
+      "Bluetooth",
+      "BluetoothDataFilterInit",
+      "ArrayBuffer",
+      "UUID",
+      "PermissionDescriptor",
+      "PermissionStatus"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

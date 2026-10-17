@@ -1,0 +1,2622 @@
+{
+  "css/css-backgrounds/animations/background-color-animation-custom-property.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-custom-timing-function-reverse.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-custom-timing-function.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-element-not-visible-at-current-viewport.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-fallback-additive-keyframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-fallback-missing-0-percent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-fallback-missing-100-percent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-fallback-replace.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-fragmented.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-half-opaque.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-in-body.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-non-zero-size-element-change-to-zero.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-offset-position-not-stuck.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-pseudo-element.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-single-keyframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-three-keyframes1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-three-keyframes2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-three-keyframes3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-will-change-contents.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-with-blur.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-with-images.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-with-mask.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-with-table1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-with-table2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-with-table3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-with-table4.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-with-zero-playbackRate.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-zero-size-element-change-to-non-zero.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation-zero-size-element.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-animation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-interpolation.html": {
+    "total": 172,
+    "failures": {
+      "CSS Animations: property <background-color> from [currentcolor] to [rgba(0, 255, 0, 0.75)] at (0.75) should be [rgba(0, 208, 47, 0.69)]": "FAIL",
+      "CSS Transitions with transition: all: property <background-color> from [currentcolor] to [rgba(0, 255, 0, 0.75)] at (0.75) should be [rgba(0, 208, 47, 0.69)]": "FAIL",
+      "CSS Transitions: property <background-color> from [currentcolor] to [rgba(0, 255, 0, 0.75)] at (0.75) should be [rgba(0, 208, 47, 0.69)]": "FAIL",
+      "Web Animations: property <background-color> from [currentcolor] to [rgba(0, 255, 0, 0.75)] at (0.75) should be [rgba(0, 208, 47, 0.69)]": "FAIL"
+    }
+  },
+  "css/css-backgrounds/animations/background-color-scroll-into-viewport.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-transition-colormix.html": {
+    "total": 1
+  },
+  "css/css-backgrounds/animations/background-color-transition-currentcolor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-transition.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-color-transparent-animation-in-body.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/background-image-interpolation.html": {
+    "total": 288,
+    "failures": {
+      "CSS Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (-0.3) should be [url(../resources/blue-100.png)]": "FAIL",
+      "CSS Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0) should be [url(../resources/blue-100.png)]": "FAIL",
+      "CSS Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.3) should be [url(../resources/blue-100.png)]": "FAIL",
+      "CSS Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.6) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
+      "CSS Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
+      "CSS Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1.5) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
+      "CSS Transitions with transition: all: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (-0.3) should be [url(../resources/blue-100.png)]": "FAIL",
+      "CSS Transitions with transition: all: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0) should be [url(../resources/blue-100.png)]": "FAIL",
+      "CSS Transitions with transition: all: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.3) should be [url(../resources/blue-100.png)]": "FAIL",
+      "CSS Transitions with transition: all: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.6) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
+      "CSS Transitions with transition: all: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
+      "CSS Transitions with transition: all: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1.5) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
+      "CSS Transitions: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (-0.3) should be [url(../resources/blue-100.png)]": "FAIL",
+      "CSS Transitions: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0) should be [url(../resources/blue-100.png)]": "FAIL",
+      "CSS Transitions: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.3) should be [url(../resources/blue-100.png)]": "FAIL",
+      "CSS Transitions: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.6) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
+      "CSS Transitions: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
+      "CSS Transitions: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1.5) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
+      "Web Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (-0.3) should be [url(../resources/blue-100.png)]": "FAIL",
+      "Web Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0) should be [url(../resources/blue-100.png)]": "FAIL",
+      "Web Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.3) should be [url(../resources/blue-100.png)]": "FAIL",
+      "Web Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.6) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
+      "Web Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
+      "Web Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1.5) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL"
+    }
+  },
+  "css/css-backgrounds/animations/background-position-composition.html": {
+    "total": 70
+  },
+  "css/css-backgrounds/animations/background-position-interpolation.html": {
+    "total": 196
+  },
+  "css/css-backgrounds/animations/background-position-origin-interpolation.html": {
+    "total": 280
+  },
+  "css/css-backgrounds/animations/background-position-x-interpolation.html": {
+    "total": 112
+  },
+  "css/css-backgrounds/animations/background-position-y-interpolation.html": {
+    "total": 112
+  },
+  "css/css-backgrounds/animations/background-size-composition.html": {
+    "total": 84
+  },
+  "css/css-backgrounds/animations/background-size-interpolation.html": {
+    "total": 364
+  },
+  "css/css-backgrounds/animations/border-bottom-left-radius-composition.html": {
+    "total": 42
+  },
+  "css/css-backgrounds/animations/border-bottom-right-radius-composition.html": {
+    "total": 42
+  },
+  "css/css-backgrounds/animations/border-bottom-width-composition.html": {
+    "total": 40
+  },
+  "css/css-backgrounds/animations/border-color-interpolation.html": {
+    "total": 144
+  },
+  "css/css-backgrounds/animations/border-image-outset-composition.html": {
+    "total": 112
+  },
+  "css/css-backgrounds/animations/border-image-outset-interpolation.html": {
+    "total": 168
+  },
+  "css/css-backgrounds/animations/border-image-slice-composition.html": {
+    "total": 112
+  },
+  "css/css-backgrounds/animations/border-image-slice-interpolation-stability.html": {
+    "total": 1
+  },
+  "css/css-backgrounds/animations/border-image-slice-interpolation.html": {
+    "total": 434
+  },
+  "css/css-backgrounds/animations/border-image-source-interpolation.html": {
+    "total": 294
+  },
+  "css/css-backgrounds/animations/border-image-width-composition.html": {
+    "total": 112
+  },
+  "css/css-backgrounds/animations/border-image-width-interpolation.html": {
+    "total": 558
+  },
+  "css/css-backgrounds/animations/border-left-width-composition.html": {
+    "total": 40
+  },
+  "css/css-backgrounds/animations/border-radius-interpolation.html": {
+    "total": 196
+  },
+  "css/css-backgrounds/animations/border-right-width-composition.html": {
+    "total": 40
+  },
+  "css/css-backgrounds/animations/border-top-left-radius-composition.html": {
+    "total": 42
+  },
+  "css/css-backgrounds/animations/border-top-right-radius-composition.html": {
+    "total": 42
+  },
+  "css/css-backgrounds/animations/border-top-width-composition.html": {
+    "total": 40
+  },
+  "css/css-backgrounds/animations/border-width-interpolation.html": {
+    "total": 256
+  },
+  "css/css-backgrounds/animations/border-width-transition-with-style-change.html": {
+    "total": 1
+  },
+  "css/css-backgrounds/animations/box-shadow-composition.html": {
+    "total": 80
+  },
+  "css/css-backgrounds/animations/box-shadow-interpolation.html": {
+    "total": 402
+  },
+  "css/css-backgrounds/animations/discrete-no-interpolation.html": {
+    "total": 252
+  },
+  "css/css-backgrounds/animations/invalidation/background-color-animation-with-zero-alpha.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/invalidation/background-color-transition-obscured.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/invalidation/background-color-transition-with-delay.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/invalidation/background-color-transition-with-initially-transparent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/two-background-color-animation-diff-length1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/two-background-color-animation-diff-length2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/animations/two-background-color-animation-diff-length3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-331.html": {
+    "total": 8
+  },
+  "css/css-backgrounds/background-332.html": {
+    "total": 8
+  },
+  "css/css-backgrounds/background-333.html": {
+    "total": 8
+  },
+  "css/css-backgrounds/background-334.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-335.html": {
+    "total": 2
+  },
+  "css/css-backgrounds/background-336.html": {
+    "total": 2
+  },
+  "css/css-backgrounds/background-attachment-350.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-353.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-fixed-block-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-fixed-border-radius-offset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-fixed-inline-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-fixed-inline-scrolled.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-fixed-inside-transform-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local-block-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local-hidden.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local-inline-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-clipping-color-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-clipping-color-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-clipping-color-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-clipping-color-4.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-clipping-color-5.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-clipping-color-6.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-clipping-image-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-clipping-image-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-clipping-image-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-clipping-image-4.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-clipping-image-5.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-clipping-image-6.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-positioning-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-positioning-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-positioning-4.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-local-positioning-5.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-local/attachment-scroll-positioning-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-margin-root-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-attachment-margin-root-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-border-cssText.html": {
+    "total": 5
+  },
+  "css/css-backgrounds/background-clip-001.html": {
+    "total": 4
+  },
+  "css/css-backgrounds/background-clip-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-border-area-and-blend-mode.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-color-repaint.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-content-box-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-content-box-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-content-box-with-border-radius-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-content-box-with-border-radius-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-padding-box-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-padding-box-with-border-radius-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-padding-box-with-border-radius-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-padding-box-with-border-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip-text-and-blend-mode.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-background-geometry.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-border-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-border-on-top.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-border-shape-background-position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-border-shape-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-border-shape.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-box-decoration-break.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-complex.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-corner-shape.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-double.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-inset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-missing-border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-multiple-backgrounds.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-on-body-not-propagated-to-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-on-body-propagated-to-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-on-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-rounded.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-solid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-area-text.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-border-shape-table-part-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-rounded-corner.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-animated-text.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-background-table-cell.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/background-clip/clip-text-blend-mode.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-composited-descendant-with-bg-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-constrain-geometry.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/background-clip/clip-text-descendants.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-dynamic-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-dynamic-text-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-ellipsis.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-flex.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-fragmentation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-inline-block-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-multi-line.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-multiline-background-image.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/background-clip/clip-text-multiline-linebreak.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/background-clip/clip-text-on-body-not-propagated-to-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-on-body-propagated-to-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-on-body-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-on-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-out-of-flow-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-relative-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-scaled.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-stacking-context-child-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-stacking-context-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-text-align.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip/clip-text-text-decorations.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/background-clip/clip-text-text-emphasis.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-clip_padding-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-color-body-propagation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-color-body-propagation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-color-body-propagation-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-color-body-propagation-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-color-body-propagation-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-color-body-propagation-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-color-body-propagation-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-color-body-propagation-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-color-body-propagation-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-color-body-propagation-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-color-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-color-root-propagation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-color-root-propagation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-color-root-propagation-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-gradient-interpolation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-gradient-interpolation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-gradient-interpolation-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-gradient-subpixel-fills-area.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-centered-with-border-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-centered.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-cors-no-reload.html": {
+    "total": 1,
+    "failures": {
+      "CORS image from variable doesn't cause re-downloads": "FAIL"
+    }
+  },
+  "css/css-backgrounds/background-image-cover-zoomed-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-first-letter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-first-line.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-gradient-currentcolor-conic-repaint.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-gradient-currentcolor-linear-repaint.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-gradient-currentcolor-radial-repaint.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-gradient-currentcolor-visited.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-gradient-interpolation-repaint.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-large-with-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-none-gradient-repaint.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-shared-stylesheet.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-table-cells-straddling-no-repeat.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-table-cells-zoomed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-image-with-border-radius-fidelity.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-margin-iframe-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-margin-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-margin-transformed-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-margin-will-change-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-multiple-layers-table-cell.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-none-none-and-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin-001.html": {
+    "total": 4
+  },
+  "css/css-backgrounds/background-origin-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin/origin-border-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin/origin-border-box_with_position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin/origin-border-box_with_radius.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin/origin-border-box_with_size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin/origin-content-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin/origin-content-box_with_position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin/origin-content-box_with_radius.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin/origin-content-box_with_size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin/origin-padding-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin/origin-padding-box_with_position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-origin/origin-padding-box_with_radius.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/background-origin/origin-padding-box_with_size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-paint-order-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-position-calc-minmax-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-position-negative-percentage-comparison-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-position-negative-percentage-comparison.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-position-subpixel-at-border.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-position-three-four-values.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-position-xy-three-four-values-passthru.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-position/background-position-bottom-right-repeat-round.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-position/background-position-right-in-body.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-position/subpixel-position-center.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-round-1a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-round-1b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-round-1c.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-round-1d.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-round-1e.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-round-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-round-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-round-4.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-space-10.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-space-1a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-space-1b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-space-1c.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-space-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-space-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-space-4.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-space-5.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-space-6.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-space-7.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-space-8.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat-space-9.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat/background-repeat-no-repeat.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat/background-repeat-repeat-x.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat/background-repeat-repeat-y.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat/background-repeat-round-roundup.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat/background-repeat-round.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/background-repeat/background-repeat-space.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-repeat/gradient-repeat-spaced-with-borders.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-rounded-image-clip-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-rounded-image-clip-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-shorthand-clip.html": {
+    "total": 4
+  },
+  "css/css-backgrounds/background-shorthand-keyword.html": {
+    "total": 2
+  },
+  "css/css-backgrounds/background-size-001.html": {
+    "total": 20
+  },
+  "css/css-backgrounds/background-size-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-028.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-030.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-031.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-034.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-041.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-042.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-043.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-044.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-contain-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-contain-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-cover-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-cover-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-cover-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-one-value-1x1-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-percentage-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size-with-negative-value.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/background-size-contain-svg-view.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/background-size-contain.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/background-size/background-size-cover-contain-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/background-size-cover-contain-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/background-size-cover-svg-view.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/background-size-cover-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/background-size-cover.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/background-size-near-zero-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/background-size-near-zero-gradient.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/background-size-near-zero-png.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/background-size-near-zero-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-028.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/background-size-vector-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/diagonal-percentage-vector-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto--omitted-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto--percent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto--percent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto--percent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto--percent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto--percent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto--percent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--nonpercent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--nonpercent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--nonpercent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--nonpercent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--nonpercent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--nonpercent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--omitted-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--omitted-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--omitted-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--omitted-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--omitted-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--omitted-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--percent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--percent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--percent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--percent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--percent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--auto-32px--percent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--nonpercent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--nonpercent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--nonpercent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--nonpercent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--nonpercent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--nonpercent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--omitted-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--omitted-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--omitted-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--omitted-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--omitted-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--omitted-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--percent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--percent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--percent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--percent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--percent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--percent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--contain--width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--nonpercent-width-nonpercent-height--crisp.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--nonpercent-width-nonpercent-height-viewbox--crisp.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--nonpercent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--nonpercent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--nonpercent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--nonpercent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--nonpercent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--nonpercent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--omitted-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--omitted-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--omitted-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--omitted-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--omitted-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--omitted-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--percent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--percent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--percent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--percent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--percent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--percent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/tall--cover--width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--nonpercent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--nonpercent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--nonpercent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--nonpercent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--nonpercent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--nonpercent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--omitted-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--omitted-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--omitted-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--omitted-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--omitted-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--omitted-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--percent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--percent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--percent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--percent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--percent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--12px-auto--percent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--nonpercent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--nonpercent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--nonpercent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--nonpercent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--nonpercent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--nonpercent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--omitted-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--omitted-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--omitted-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--omitted-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--omitted-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--omitted-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--percent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--percent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--percent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--percent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--percent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto--percent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--nonpercent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--nonpercent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--nonpercent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--nonpercent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--nonpercent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--nonpercent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--omitted-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--omitted-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--omitted-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--omitted-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--omitted-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--omitted-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--percent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--percent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--percent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--percent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--percent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--auto-32px--percent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--nonpercent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--nonpercent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--nonpercent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--nonpercent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--nonpercent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--nonpercent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--omitted-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--omitted-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--omitted-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--omitted-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--omitted-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--omitted-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--percent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--percent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--percent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--percent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--percent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--percent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--contain--width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--nonpercent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--nonpercent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--nonpercent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--nonpercent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--nonpercent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--nonpercent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--omitted-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--omitted-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--omitted-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--omitted-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--omitted-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--omitted-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--percent-width-nonpercent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--percent-width-nonpercent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--percent-width-omitted-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--percent-width-omitted-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--percent-width-percent-height-viewbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--percent-width-percent-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/wide--cover--width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-height-ratio-5px-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-height-ratio-auto-5px.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-height-ratio-auto-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-height-ratio-contain.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-height-ratio-cover.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-ratio-no-dimensions-5px-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-ratio-no-dimensions-auto-5px.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-ratio-no-dimensions-auto-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-ratio-no-dimensions-contain.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-ratio-no-dimensions-cover.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-width-ratio-5px-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-width-ratio-auto-5px.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-width-ratio-auto-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-width-ratio-contain.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/background-size/vector/zero-width-ratio-cover.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/bg-color-with-gradient.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-left-radius-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-left-radius-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-left-radius-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-left-radius-010.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-left-radius-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-left-radius-014.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-right-radius-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-right-radius-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-right-radius-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-right-radius-010.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-right-radius-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-right-radius-014.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-width-medium.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-width-thick.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-bottom-width-thin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-color-currentcolor.html": {
+    "total": 1
+  },
+  "css/css-backgrounds/border-color.html": {
+    "total": 1
+  },
+  "css/css-backgrounds/border-image-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-017.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-018.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-019.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-020.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-calc.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-displayed-with-transparent-border-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-image-type-001.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-image-type-002.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-image-type-003.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-image-type-004.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-image-type-005.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-outset-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-outset-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-002.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-004.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-repeat-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-round-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-round-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-round-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-round-stretch-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-round.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-space-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-space-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-space-10.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-space-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-space-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-space-4-ref-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-space-4.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-space-5-ref-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-space-5.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-space-6.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-space-7.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-space-8.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-space-9.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat-stretch-round-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-repeat_repeatnegx_none_50px.html": {
+    "total": 1
+  },
+  "css/css-backgrounds/border-image-round-and-stretch.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-shorthand-001.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-shorthand-002.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-shorthand-003.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-slice-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-slice-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-slice-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-slice-004.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-slice-005.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-slice-006.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-slice-007.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-slice-fill-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-slice-fill-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-slice-fill-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-slice-percentage.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-slice-shorthand-reset.html": {
+    "total": 1
+  },
+  "css/css-backgrounds/border-image-space-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-width-001.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-width-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-width-006.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-width-007.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-width-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-width-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-image-width-should-extend-to-padding.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-left-width-medium.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-left-width-thick.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-left-width-thin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-006.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-007.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-008.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-009.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-010.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-clip-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-clip-002.htm": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/border-radius-clipping-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-clipping-with-transform-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-css-text.html": {
+    "total": 1
+  },
+  "css/css-backgrounds/border-radius-dynamic-from-no-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-horizontal-value-is-zero.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-shorthand-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-radius-shorthand.html": {
+    "total": 3
+  },
+  "css/css-backgrounds/border-right-width-medium.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-right-width-thick.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-right-width-thin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-shorthand-keyword.html": {
+    "total": 6
+  },
+  "css/css-backgrounds/border-shorthands.html": {
+    "total": 6
+  },
+  "css/css-backgrounds/border-style-length.html": {
+    "total": 2
+  },
+  "css/css-backgrounds/border-top-left-radius-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-top-left-radius-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-top-left-radius-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-top-left-radius-010.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-top-left-radius-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-top-left-radius-014.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-top-right-radius-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-top-right-radius-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-top-right-radius-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-top-right-radius-010.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-top-right-radius-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-top-right-radius-014.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-top-width-medium.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-top-width-thick.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-top-width-thin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-width-computed.html": {
+    "total": 6
+  },
+  "css/css-backgrounds/border-width-cssom.html": {
+    "total": 12
+  },
+  "css/css-backgrounds/border-width-pixel-snapping-001-a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-width-pixel-snapping-001-b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-width-small-values-001-a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-width-small-values-001-b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-width-small-values-001-c.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-width-small-values-001-d.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/border-width-small-values-001-e.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-039.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-040.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-041.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-042.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-body.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-border-radius-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-calc.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-currentcolor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-inset-without-border-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-invalid-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/box-shadow-multiple-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/box-shadow-outset-without-border-radius-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-overlapping-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-overlapping-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-overlapping-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-overlapping-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=10&height=10&spread=70&radius=100%": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=200&height=40&spread=50&radius=0%2050%%2050%": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=200&height=40&spread=50&radius=10%%2090%%205%%": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=200&height=40&spread=50&radius=100px%20/%2020px": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=200&height=40&spread=50&radius=20px%20/%204px": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=250&height=30&spread=100&radius=10px": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=300&height=50&spread=30&radius=15px": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=300&height=50&spread=30&radius=1px%201px%2049px%2049px": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=300&height=50&spread=30&radius=25px": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=300&height=50&spread=30&radius=50%": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=300&height=50&spread=30&radius=50%%2050%%201px%2050%": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=300&height=60&spread=30&radius=0px%200px%2030px%2030px": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=300&height=60&spread=30&radius=20px%2020px%2040px%2040px": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=50&height=50&spread=50&radius=0px": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-radius-generated.html?width=50&height=50&spread=50&radius=1px": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-svg-root-fixed-position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-table-border-collapse-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow-table-row-display.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow/box-shadow-table-row-display.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow/slice-block-fragmentation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow/slice-block-fragmentation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow/slice-block-fragmentation-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow/slice-inline-fragmentation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow/slice-inline-fragmentation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow/slice-inline-fragmentation-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/child-move-reveals-parent-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/color-mix-currentcolor-background-repaint-parent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/color-mix-currentcolor-background-repaint.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/color-mix-currentcolor-border-repaint-parent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/color-mix-currentcolor-border-repaint.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/color-mix-currentcolor-outline-repaint-parent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/color-mix-currentcolor-outline-repaint.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css-border-radius-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css-box-shadow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css3-background-clip-border-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css3-background-clip-content-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css3-background-clip-padding-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css3-background-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css3-background-origin-border-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css3-background-origin-content-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css3-background-origin-padding-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css3-background-size-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css3-background-size-contain.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css3-background-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css3-border-image-repeat-repeat.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css3-border-image-repeat-stretch.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css3-border-image-source.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/css3-box-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/currentcolor-border-repaint-parent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/document-canvas-remove-body.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/fieldset-inset-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/first-letter-space-not-selected.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-backgrounds/hidpi/simple-bg-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/inheritance.sub.html": {
+    "total": 64
+  },
+  "css/css-backgrounds/inline-background-rtl-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/inner-border-non-renderable.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/inset-box-shadow-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/inset-box-shadow-stacking-context-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/linear-gradient-currentcolor-first-line.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/local-attachment-content-box-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/local-attachment-flex-column-reverse-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/local-attachment-flex-row-reverse-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/local-attachment-rtl-and-flex-row-reverse-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/local-attachment-rtl-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/multiple-background-images.html": {
+    "total": 2
+  },
+  "css/css-backgrounds/order-of-images.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/parsing/background-attachment-computed.html": {
+    "total": 5
+  },
+  "css/css-backgrounds/parsing/background-attachment-invalid.html": {
+    "total": 2
+  },
+  "css/css-backgrounds/parsing/background-attachment-valid.html": {
+    "total": 2
+  },
+  "css/css-backgrounds/parsing/background-clip-computed.html": {
+    "total": 11
+  },
+  "css/css-backgrounds/parsing/background-clip-invalid.html": {
+    "total": 5
+  },
+  "css/css-backgrounds/parsing/background-clip-valid.html": {
+    "total": 9
+  },
+  "css/css-backgrounds/parsing/background-color-computed.html": {
+    "total": 7
+  },
+  "css/css-backgrounds/parsing/background-color-invalid.html": {
+    "total": 3
+  },
+  "css/css-backgrounds/parsing/background-color-valid.html": {
+    "total": 9
+  },
+  "css/css-backgrounds/parsing/background-computed.html": {
+    "total": 39
+  },
+  "css/css-backgrounds/parsing/background-image-computed.sub.html": {
+    "total": 48
+  },
+  "css/css-backgrounds/parsing/background-image-invalid.html": {
+    "total": 12
+  },
+  "css/css-backgrounds/parsing/background-image-valid.html": {
+    "total": 13
+  },
+  "css/css-backgrounds/parsing/background-invalid.html": {
+    "total": 2
+  },
+  "css/css-backgrounds/parsing/background-origin-computed.html": {
+    "total": 7
+  },
+  "css/css-backgrounds/parsing/background-origin-invalid.html": {
+    "total": 4
+  },
+  "css/css-backgrounds/parsing/background-origin-valid.html": {
+    "total": 4
+  },
+  "css/css-backgrounds/parsing/background-position-computed.html": {
+    "total": 32
+  },
+  "css/css-backgrounds/parsing/background-position-invalid.html": {
+    "total": 11
+  },
+  "css/css-backgrounds/parsing/background-position-valid.html": {
+    "total": 31
+  },
+  "css/css-backgrounds/parsing/background-position-x-computed.html": {
+    "total": 19,
+    "failures": {
+      "Property background-position-x value 'x-end'": "FAIL",
+      "Property background-position-x value 'x-start'": "FAIL"
+    }
+  },
+  "css/css-backgrounds/parsing/background-position-x-invalid.html": {
+    "total": 9
+  },
+  "css/css-backgrounds/parsing/background-position-x-valid.html": {
+    "total": 15
+  },
+  "css/css-backgrounds/parsing/background-position-y-computed.html": {
+    "total": 19,
+    "failures": {
+      "Property background-position-y value 'y-end'": "FAIL",
+      "Property background-position-y value 'y-start'": "FAIL"
+    }
+  },
+  "css/css-backgrounds/parsing/background-position-y-invalid.html": {
+    "total": 9
+  },
+  "css/css-backgrounds/parsing/background-position-y-valid.html": {
+    "total": 15
+  },
+  "css/css-backgrounds/parsing/background-repeat-computed.html": {
+    "total": 13
+  },
+  "css/css-backgrounds/parsing/background-repeat-invalid.html": {
+    "total": 3
+  },
+  "css/css-backgrounds/parsing/background-repeat-valid.html": {
+    "total": 4
+  },
+  "css/css-backgrounds/parsing/background-shorthand-serialization.html": {
+    "total": 11
+  },
+  "css/css-backgrounds/parsing/background-size-computed.html": {
+    "total": 16
+  },
+  "css/css-backgrounds/parsing/background-size-invalid.html": {
+    "total": 3
+  },
+  "css/css-backgrounds/parsing/background-size-valid.html": {
+    "total": 9
+  },
+  "css/css-backgrounds/parsing/background-valid.html": {
+    "total": 46,
+    "failures": {
+      "e.style['background'] = \"none\" should set background-color": "FAIL"
+    }
+  },
+  "css/css-backgrounds/parsing/border-color-computed.html": {
+    "total": 8
+  },
+  "css/css-backgrounds/parsing/border-color-invalid.html": {
+    "total": 3
+  },
+  "css/css-backgrounds/parsing/border-color-shorthand.html": {
+    "total": 20
+  },
+  "css/css-backgrounds/parsing/border-color-valid.html": {
+    "total": 7
+  },
+  "css/css-backgrounds/parsing/border-image-invalid.html": {
+    "total": 17
+  },
+  "css/css-backgrounds/parsing/border-image-outset-computed.html": {
+    "total": 7
+  },
+  "css/css-backgrounds/parsing/border-image-outset-invalid.html": {
+    "total": 5
+  },
+  "css/css-backgrounds/parsing/border-image-outset-valid.html": {
+    "total": 3
+  },
+  "css/css-backgrounds/parsing/border-image-repeat-computed.html": {
+    "total": 3
+  },
+  "css/css-backgrounds/parsing/border-image-repeat-invalid.html": {
+    "total": 2
+  },
+  "css/css-backgrounds/parsing/border-image-repeat-valid.html": {
+    "total": 3
+  },
+  "css/css-backgrounds/parsing/border-image-shorthand.sub.html": {
+    "total": 30
+  },
+  "css/css-backgrounds/parsing/border-image-slice-computed.html": {
+    "total": 7
+  },
+  "css/css-backgrounds/parsing/border-image-slice-invalid.html": {
+    "total": 6
+  },
+  "css/css-backgrounds/parsing/border-image-slice-valid.html": {
+    "total": 4
+  },
+  "css/css-backgrounds/parsing/border-image-source-computed.sub.html": {
+    "total": 10
+  },
+  "css/css-backgrounds/parsing/border-image-source-invalid.html": {
+    "total": 2
+  },
+  "css/css-backgrounds/parsing/border-image-source-valid.html": {
+    "total": 2
+  },
+  "css/css-backgrounds/parsing/border-image-valid.html": {
+    "total": 30
+  },
+  "css/css-backgrounds/parsing/border-image-width-computed.html": {
+    "total": 12
+  },
+  "css/css-backgrounds/parsing/border-image-width-invalid.html": {
+    "total": 5
+  },
+  "css/css-backgrounds/parsing/border-image-width-valid.html": {
+    "total": 5
+  },
+  "css/css-backgrounds/parsing/border-invalid.html": {
+    "total": 3
+  },
+  "css/css-backgrounds/parsing/border-radius-computed.html": {
+    "total": 14
+  },
+  "css/css-backgrounds/parsing/border-radius-invalid.html": {
+    "total": 11
+  },
+  "css/css-backgrounds/parsing/border-radius-valid.html": {
+    "total": 23
+  },
+  "css/css-backgrounds/parsing/border-shorthand.html": {
+    "total": 36
+  },
+  "css/css-backgrounds/parsing/border-style-computed.html": {
+    "total": 8
+  },
+  "css/css-backgrounds/parsing/border-style-invalid.html": {
+    "total": 2
+  },
+  "css/css-backgrounds/parsing/border-style-shorthand.html": {
+    "total": 20
+  },
+  "css/css-backgrounds/parsing/border-style-valid.html": {
+    "total": 8
+  },
+  "css/css-backgrounds/parsing/border-valid.html": {
+    "total": 6
+  },
+  "css/css-backgrounds/parsing/border-width-computed.html": {
+    "total": 11
+  },
+  "css/css-backgrounds/parsing/border-width-invalid.html": {
+    "total": 3
+  },
+  "css/css-backgrounds/parsing/border-width-shorthand.html": {
+    "total": 20
+  },
+  "css/css-backgrounds/parsing/border-width-valid.html": {
+    "total": 6
+  },
+  "css/css-backgrounds/parsing/box-shadow-computed.html": {
+    "total": 4
+  },
+  "css/css-backgrounds/parsing/box-shadow-invalid.html": {
+    "total": 40
+  },
+  "css/css-backgrounds/parsing/box-shadow-valid.html": {
+    "total": 38
+  },
+  "css/css-backgrounds/parsing/webkit-border-radius-valid.html": {
+    "total": 25
+  },
+  "css/css-backgrounds/scroll-positioned-multiple-background-images.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/subpixel-repeat-no-repeat-mix.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/table-cell-background-local-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/table-cell-background-local-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/table-cell-background-local.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/ttwf-reftest-borderRadius.html": {
+    "reftest": "PASS"
+  }
+}

@@ -1,0 +1,355 @@
+{
+  "spec": {
+    "title": "CSS Images Module Level 4",
+    "url": "https://drafts.csswg.org/css-images-4/"
+  },
+  "properties": [
+    {
+      "name": "object-fit",
+      "href": "https://drafts.csswg.org/css-images-4/#propdef-object-fit",
+      "value": "fill | none | [contain | cover] || scale-down",
+      "initial": "fill",
+      "appliesTo": "replaced elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "fill",
+          "prose": "The replaced content is sized to fill the element’s content box: the object’s concrete object size is the element’s used width and height.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-object-fit-fill",
+          "type": "value",
+          "value": "fill"
+        },
+        {
+          "name": "none",
+          "prose": "The replaced content is not resized to fit inside the element’s content box: determine the object’s concrete object size using the default sizing algorithm with no specified size, and a default object size equal to the replaced element’s used width and height.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-object-fit-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "contain",
+          "prose": "The replaced content is sized to maintain its aspect ratio while fitting within the element’s content box: its concrete object size is resolved as a contain constraint against the element’s used width and height. If the scale-down flag is used, size the content as if none or contain were specified, whichever would result in a smaller concrete object size.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-object-fit-contain",
+          "type": "value",
+          "value": "contain"
+        },
+        {
+          "name": "cover",
+          "prose": "The replaced content is sized to maintain its aspect ratio while filling the element’s entire content box: its concrete object size is resolved as a cover constraint against the element’s used width and height. If the scale-down flag is used, size the content as if none or cover were specified, whichever would result in a smaller concrete object size.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-object-fit-cover",
+          "type": "value",
+          "value": "cover"
+        },
+        {
+          "name": "scale-down",
+          "prose": "Equivalent to contain scale-down.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-object-fit-scale-down",
+          "type": "value",
+          "value": "scale-down"
+        }
+      ],
+      "styleDeclaration": [
+        "object-fit",
+        "objectFit"
+      ]
+    },
+    {
+      "name": "image-resolution",
+      "href": "https://drafts.csswg.org/css-images-4/#propdef-image-resolution",
+      "value": "[ from-image || <resolution> ] && snap?",
+      "initial": "1dppx",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s) and/or <resolution> (possibly adjusted for snap, see below)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "<resolution>",
+          "prose": "Specifies the preferred resolution explicitly. A \"dot\" in this case corresponds to a single image pixel.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-image-resolution-resolution",
+          "type": "value",
+          "value": "<resolution>"
+        },
+        {
+          "name": "from-image",
+          "prose": "The image’s preferred resolution is taken as that specified by the image format (the natural resolution). If the image does not specify its own resolution, the explicitly specified resolution is used (if given), else it defaults to 1dppx.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-image-resolution-from-image",
+          "type": "value",
+          "value": "from-image"
+        },
+        {
+          "name": "snap",
+          "prose": "If the \"snap\" keyword is provided, the computed <resolution> (if any) is the specified resolution rounded to the nearest value that would map one image pixel to an integer number of device pixels. If the resolution is taken from the image, then the used natural resolution is the image’s native resolution similarly adjusted.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-image-resolution-snap",
+          "type": "value",
+          "value": "snap"
+        }
+      ],
+      "styleDeclaration": [
+        "image-resolution",
+        "imageResolution"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<image>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-image",
+      "type": "type",
+      "value": "<url> | <image()> | <image-set()> | <cross-fade()> | <element()> | <gradient>"
+    },
+    {
+      "name": "image-set()",
+      "prose": "Delivering the most appropriate image resolution for a user’s device can be a difficult task. Ideally, images should be in the same resolution as the device they’re being viewed in, which can vary between users. However, other factors can factor into the decision of which image to send; for example, if the user is on a slow mobile connection, they may prefer to receive lower-res images rather than waiting for a large proper-res image to load. The image-set() function allows an author to ignore most of these issues, simply providing multiple resolutions of an image and letting the UA decide which is most appropriate in a given situation.",
+      "href": "https://drafts.csswg.org/css-images-4/#funcdef-image-set",
+      "type": "function",
+      "value": "image-set( <image-set-option># )",
+      "values": [
+        {
+          "name": "type()",
+          "value": "type( <string> )",
+          "href": "https://drafts.csswg.org/css-images-4/#funcdef-image-set-type",
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "name": "<image-set-option>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-image-set-option",
+      "type": "type",
+      "value": "[ <image> | <string> ] [ <resolution> || type(<string>) ]?"
+    },
+    {
+      "name": "image()",
+      "value": "image( <color> )",
+      "href": "https://drafts.csswg.org/css-images-4/#funcdef-image",
+      "type": "function"
+    },
+    {
+      "name": "cross-fade()",
+      "value": "cross-fade( <cf-image># )",
+      "href": "https://drafts.csswg.org/css-images-4/#funcdef-cross-fade",
+      "type": "function"
+    },
+    {
+      "name": "<cf-image>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-cf-image",
+      "type": "type",
+      "value": "[ <image> | <color> ] && <percentage [0,100]>?"
+    },
+    {
+      "name": "element()",
+      "value": "element( <id-selector> )",
+      "href": "https://drafts.csswg.org/css-images-4/#funcdef-element",
+      "type": "function"
+    },
+    {
+      "name": "<gradient>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-gradient",
+      "type": "type",
+      "value": "[ <linear-gradient()> | <repeating-linear-gradient()> | <radial-gradient()> | <repeating-radial-gradient()> | <conic-gradient()> | <repeating-conic-gradient()> ]"
+    },
+    {
+      "name": "<linear-gradient-syntax>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-linear-gradient-syntax",
+      "type": "type",
+      "value": "[ [ <angle> | <zero> | to <side-or-corner> ] || <color-interpolation-method> ]? , <color-stop-list>"
+    },
+    {
+      "name": "<side-or-corner>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-side-or-corner",
+      "type": "type",
+      "value": "[left | right] || [top | bottom]"
+    },
+    {
+      "name": "<radial-gradient-syntax>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-radial-gradient-syntax",
+      "type": "type",
+      "value": "[ [ [ <radial-shape> || <radial-size> ]? [ at <position> ]? ] || <color-interpolation-method>]? , <color-stop-list>"
+    },
+    {
+      "name": "conic-gradient()",
+      "value": "conic-gradient( [ <conic-gradient-syntax> ] )",
+      "href": "https://drafts.csswg.org/css-images-4/#funcdef-conic-gradient",
+      "type": "function",
+      "values": [
+        {
+          "name": "<angle> | <zero>",
+          "prose": "The entire gradient is rotated by this angle. If omitted, defaults to 0deg. The unit identifier may be omitted if the <angle> is zero.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-conic-gradient-angle--zero",
+          "type": "value",
+          "value": "<angle> | <zero>"
+        },
+        {
+          "name": "<position>",
+          "prose": "Determines the gradient center of the gradient. The <position> value type (which is also used for background-position) is defined in [CSS-VALUES-3], and is resolved using the center-point as the object area and the gradient box as the positioning area. If this argument is omitted, it defaults to center.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-conic-gradient-position",
+          "type": "value",
+          "value": "<position>"
+        }
+      ]
+    },
+    {
+      "name": "<conic-gradient-syntax>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-conic-gradient-syntax",
+      "type": "type",
+      "value": "[ [ [ from [ <angle> | <zero> ] ]? [ at <position> ]? ] || <color-interpolation-method> ]? , <angular-color-stop-list>"
+    },
+    {
+      "name": "repeating-linear-gradient()",
+      "prose": "In addition to linear-gradient(), radial-gradient(), and conic-gradient(), this specification defines repeating-linear-gradient(), repeating-radial-gradient(), and repeating-conic-gradient() values. These notations take the same values and are interpreted the same as their respective non-repeating siblings defined previously.",
+      "href": "https://drafts.csswg.org/css-images-4/#funcdef-repeating-linear-gradient",
+      "type": "function",
+      "value": "repeating-linear-gradient( [ <linear-gradient-syntax> ] )"
+    },
+    {
+      "name": "repeating-radial-gradient()",
+      "prose": "In addition to linear-gradient(), radial-gradient(), and conic-gradient(), this specification defines repeating-linear-gradient(), repeating-radial-gradient(), and repeating-conic-gradient() values. These notations take the same values and are interpreted the same as their respective non-repeating siblings defined previously.",
+      "href": "https://drafts.csswg.org/css-images-4/#funcdef-repeating-radial-gradient",
+      "type": "function",
+      "value": "repeating-radial-gradient( [ <radial-gradient-syntax> ] )"
+    },
+    {
+      "name": "repeating-conic-gradient()",
+      "prose": "In addition to linear-gradient(), radial-gradient(), and conic-gradient(), this specification defines repeating-linear-gradient(), repeating-radial-gradient(), and repeating-conic-gradient() values. These notations take the same values and are interpreted the same as their respective non-repeating siblings defined previously.",
+      "href": "https://drafts.csswg.org/css-images-4/#funcdef-repeating-conic-gradient",
+      "type": "function",
+      "value": "repeating-conic-gradient( [ <conic-gradient-syntax> ] )",
+      "values": [
+        {
+          "name": "<angle> | <zero>",
+          "prose": "The entire gradient is rotated by this angle. If omitted, defaults to 0deg. The unit identifier may be omitted if the <angle> is zero.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-conic-gradient-angle--zero",
+          "type": "value",
+          "value": "<angle> | <zero>"
+        },
+        {
+          "name": "<position>",
+          "prose": "Determines the gradient center of the gradient. The <position> value type (which is also used for background-position) is defined in [CSS-VALUES-3], and is resolved using the center-point as the object area and the gradient box as the positioning area. If this argument is omitted, it defaults to center.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-conic-gradient-position",
+          "type": "value",
+          "value": "<position>"
+        }
+      ]
+    },
+    {
+      "name": "<color-stop-list>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-color-stop-list",
+      "type": "type",
+      "value": "<linear-color-stop> , [ <linear-color-hint>? , <linear-color-stop> ]#?"
+    },
+    {
+      "name": "<linear-color-stop>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-linear-color-stop",
+      "type": "type",
+      "value": "<color> <color-stop-length>?"
+    },
+    {
+      "name": "<linear-color-hint>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-linear-color-hint",
+      "type": "type",
+      "value": "<length-percentage>"
+    },
+    {
+      "name": "<color-stop-length>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-color-stop-length",
+      "type": "type",
+      "value": "<length-percentage>{1,2}"
+    },
+    {
+      "name": "<angular-color-stop-list>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-angular-color-stop-list",
+      "type": "type",
+      "value": "<angular-color-stop> , [ <angular-color-hint>? , <angular-color-stop> ]#?"
+    },
+    {
+      "name": "<angular-color-stop>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-angular-color-stop",
+      "type": "type",
+      "value": "<color> <color-stop-angle>?"
+    },
+    {
+      "name": "<angular-color-hint>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-angular-color-hint",
+      "type": "type",
+      "value": "<angle-percentage> | <zero>"
+    },
+    {
+      "name": "<color-stop-angle>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-color-stop-angle",
+      "type": "type",
+      "value": "[ <angle-percentage> | <zero> ]{1,2}"
+    },
+    {
+      "name": "<color-stop>",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-color-stop",
+      "type": "type",
+      "value": "<color-stop-length> | <color-stop-angle>"
+    },
+    {
+      "name": "<image-1D>",
+      "prose": "While <image> values represent a 2-dimensional (2D) image, and <color> can be thought of as a 0-dimensional (0D) image (unvarying in either axis), some contexts require a 1-dimensional (1D) image, which specifies colors along an abstract, directionless, single-axis paint line. The <image-1D> type represents such 1D images, including the stripes() functional notation:",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-image-1d",
+      "type": "type",
+      "value": "<stripes()>"
+    },
+    {
+      "name": "stripes()",
+      "prose": "The stripes() function defines a 1D image as a comma-separated list of colored stripes, each placed end-to-end on the paint line in the order given.",
+      "href": "https://drafts.csswg.org/css-images-4/#funcdef-stripes",
+      "type": "function",
+      "value": "stripes( <color-stripe># )",
+      "values": [
+        {
+          "name": "<percentage [0,100]>",
+          "prose": "Percentage thicknesses are relative to the total width. Only values between 0% and 100% (inclusive) are valid.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-stripes-percentage-0-100",
+          "type": "value",
+          "value": "<percentage [0,100]>"
+        },
+        {
+          "name": "<length [0,∞]>",
+          "prose": "Negative length values are invalid.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-stripes-length-0",
+          "type": "value",
+          "value": "<length [0,∞]>"
+        },
+        {
+          "name": "<flex>",
+          "prose": "A <flex> is evaluated as a fraction of the total width relative to the total sum of <flex> entries in the function, after subtracting the thickness of any non-<flex> entries (flooring the subtraction result at zero). If the sum of <flex> values is less than 1fr, the result of the subtraction is multiplied by the sum’s value before being distributed.",
+          "href": "https://drafts.csswg.org/css-images-4/#valdef-stripes-flex",
+          "type": "value",
+          "value": "<flex>"
+        }
+      ]
+    },
+    {
+      "name": "<color-stripe>",
+      "prose": "Each <color-stripe> entry defines a solid-color stripe with the specified <color> and thickness. If the thickness is omitted, it defaults to 1fr. Thickness values are interpreted as follows:",
+      "href": "https://drafts.csswg.org/css-images-4/#typedef-color-stripe",
+      "type": "type",
+      "value": "<color> && [ <length-percentage> | <flex> ]?"
+    },
+    {
+      "name": "-webkit-image-set()",
+      "prose": "Implementations must accept -webkit-image-set() as a parse-time alias of image-set(). (It’s a valid value, with identical arguments to image-set(), and is turned into image-set() during parsing.)",
+      "href": "https://drafts.csswg.org/css-images-4/#funcdef--webkit-image-set",
+      "type": "function"
+    }
+  ],
+  "warnings": [
+    {
+      "msg": "Missing definition",
+      "name": "<radial-size>",
+      "value": "<radial-extent>{1,2} | <length-percentage [0,∞]>{1,2}"
+    }
+  ]
+}

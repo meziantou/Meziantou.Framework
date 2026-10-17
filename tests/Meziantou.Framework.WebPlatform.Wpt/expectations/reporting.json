@@ -1,0 +1,126 @@
+{
+  "reporting/bufferSize.html": {
+    "total": 1
+  },
+  "reporting/crashReport-test.html": {
+    "total": 10,
+    "failures": {
+      "Calling crashReport.initialize() a second time throws InvalidStateError": "FAIL",
+      "crashReport getter returns null in detached Documents": "FAIL",
+      "crashReport initialize() throws InvalidStateError in detached Documents": "FAIL",
+      "crashReport.delete() properly frees memory, and allows you to invoke set() again, assigning bytes to memory that was previously full": "FAIL",
+      "crashReport.delete() throws InvalidStateError in detached Documents": "FAIL",
+      "crashReport.initialize() with size > 5MB rejects with NotAllowedError": "FAIL",
+      "crashReport.set() and .remove() succeed after initialize() resolves": "FAIL",
+      "crashReport.set() throws InvalidStateError in detached Documents": "FAIL",
+      "crashReport.set() throws before initialize() resolves": "FAIL",
+      "crashReport.set() throws when there is not enough memory": "FAIL"
+    }
+  },
+  "reporting/cross-origin-report-no-credentials.https.sub.html": {
+    "total": 1
+  },
+  "reporting/cross-origin-reports-isolated.https.sub.html": {
+    "total": 1
+  },
+  "reporting/cross-origin-same-site-credentials.https.sub.html": {
+    "total": 1
+  },
+  "reporting/disconnect.html": {
+    "total": 1
+  },
+  "reporting/document-reporting-bypass-report-to.https.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Only the Reporting-Endpoints configured endpoint received reports.": "NOTRUN",
+      "document policy violation observed": "TIMEOUT"
+    }
+  },
+  "reporting/document-reporting-default-endpoint.https.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Reporting-Endpoints defined endpoint received reports.": "FAIL",
+      "report generated": "TIMEOUT"
+    }
+  },
+  "reporting/document-reporting-destroy-after-document-close.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "No more reports received after navigation to same document without endpoint header": "FAIL"
+    }
+  },
+  "reporting/document-reporting-named-endpoints.https.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "Reporting endpoints received reports.": "NOTRUN",
+      "document policy violation observed": "TIMEOUT"
+    }
+  },
+  "reporting/document-reporting-not-batch-different-document.https.html": {
+    "total": 1,
+    "failures": {
+      "Reports are not batched for same url in different document.": "FAIL"
+    }
+  },
+  "reporting/document-reporting-override-endpoint.https.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Only the second reporting endpoint received reports.": "NOTRUN",
+      "document policy violation observed": "TIMEOUT"
+    }
+  },
+  "reporting/document-reporting-path-absolute.https.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Reporting-Endpoints defined endpoint received reports.": "FAIL",
+      "report generated": "TIMEOUT"
+    }
+  },
+  "reporting/generateTestReport-honors-endpoint.https.sub.html": {
+    "total": 2
+  },
+  "reporting/generateTestReport-honors-loopback-endpoint.https.sub.html": {
+    "total": 1
+  },
+  "reporting/generateTestReport.html": {
+    "total": 1,
+    "failures": {
+      "Generate Test Report": "FAIL"
+    }
+  },
+  "reporting/idlharness.any.js": {
+    "total": 11
+  },
+  "reporting/idlharness.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "reporting/nestedReport.html": {
+    "total": 1
+  },
+  "reporting/order.html": {
+    "total": 1
+  },
+  "reporting/reporting-api-honors-limits.https.sub.html": {
+    "total": 6
+  },
+  "reporting/reporting-api-orders-reports-buffered.https.html": {
+    "total": 1
+  },
+  "reporting/reporting-isolated-across-navigations.https.sub.html": {
+    "total": 1
+  },
+  "reporting/same-origin-cross-site-credentials.https.sub.html": {
+    "total": 1
+  },
+  "reporting/same-origin-report-credentials.https.sub.html": {
+    "total": 1
+  },
+  "reporting/same-origin-same-site-credentials.https.sub.html": {
+    "total": 1
+  }
+}

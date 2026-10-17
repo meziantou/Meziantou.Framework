@@ -1,0 +1,151 @@
+{
+  "spec": {
+    "title": "EPUB Reading Systems 3.4",
+    "url": "https://w3c.github.io/epub-specs/epub34/rs/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "EpubReadingSystem"
+        ]
+      }
+    },
+    "idlNames": {
+      "EpubReadingSystem": {
+        "fragment": "[Exposed=(Window)]\ninterface EpubReadingSystem {\n    boolean hasFeature(DOMString feature, optional DOMString version);\n};",
+        "type": "interface",
+        "name": "EpubReadingSystem",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "hasFeature",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "feature",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "version",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/epub-specs/epub34/rs/#dom-epubreadingsystem-hasfeature"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/epub-specs/epub34/rs/#dom-epubreadingsystem"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n    [LegacyUnforgeable, SameObject] readonly attribute EpubReadingSystem epubReadingSystem;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "epubReadingSystem",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EpubReadingSystem"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyUnforgeable",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/epub-specs/epub34/rs/#dom-navigator-epubreadingsystem"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EpubReadingSystem"
+      ]
+    },
+    "dependencies": {
+      "EpubReadingSystem": [],
+      "Navigator": [
+        "EpubReadingSystem"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

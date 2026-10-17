@@ -1,0 +1,15 @@
+{
+  "main": {
+    "arn": {
+      "identity": {
+        "language": "arn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,827 @@
+{
+  "streams/idlharness.any.js": {
+    "total": 228
+  },
+  "streams/idlharness.any.js#dedicatedworker": {
+    "total": 228
+  },
+  "streams/idlharness.any.js#sharedworker": {
+    "total": 228
+  },
+  "streams/piping/abort.any.js": {
+    "total": 33
+  },
+  "streams/piping/abort.any.js#dedicatedworker": {
+    "total": 33
+  },
+  "streams/piping/abort.any.js#sharedworker": {
+    "total": 33
+  },
+  "streams/piping/close-propagation-backward.any.js": {
+    "total": 16
+  },
+  "streams/piping/close-propagation-backward.any.js#dedicatedworker": {
+    "total": 16
+  },
+  "streams/piping/close-propagation-backward.any.js#sharedworker": {
+    "total": 16
+  },
+  "streams/piping/close-propagation-forward.any.js": {
+    "total": 30
+  },
+  "streams/piping/close-propagation-forward.any.js#dedicatedworker": {
+    "total": 30
+  },
+  "streams/piping/close-propagation-forward.any.js#sharedworker": {
+    "total": 30
+  },
+  "streams/piping/error-propagation-backward.any.js": {
+    "total": 36
+  },
+  "streams/piping/error-propagation-backward.any.js#dedicatedworker": {
+    "total": 36
+  },
+  "streams/piping/error-propagation-backward.any.js#sharedworker": {
+    "total": 36
+  },
+  "streams/piping/error-propagation-forward.any.js": {
+    "total": 32
+  },
+  "streams/piping/error-propagation-forward.any.js#dedicatedworker": {
+    "total": 32
+  },
+  "streams/piping/error-propagation-forward.any.js#sharedworker": {
+    "total": 32
+  },
+  "streams/piping/flow-control.any.js": {
+    "total": 5
+  },
+  "streams/piping/flow-control.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "streams/piping/flow-control.any.js#sharedworker": {
+    "total": 5
+  },
+  "streams/piping/general-addition.any.js": {
+    "total": 1,
+    "failures": {
+      "enqueue() must not synchronously call write algorithm": "FAIL"
+    }
+  },
+  "streams/piping/general-addition.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "enqueue() must not synchronously call write algorithm": "FAIL"
+    }
+  },
+  "streams/piping/general-addition.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "enqueue() must not synchronously call write algorithm": "FAIL"
+    }
+  },
+  "streams/piping/general.any.js": {
+    "total": 14
+  },
+  "streams/piping/general.any.js#dedicatedworker": {
+    "total": 14
+  },
+  "streams/piping/general.any.js#sharedworker": {
+    "total": 14
+  },
+  "streams/piping/multiple-propagation.any.js": {
+    "total": 9
+  },
+  "streams/piping/multiple-propagation.any.js#dedicatedworker": {
+    "total": 9
+  },
+  "streams/piping/multiple-propagation.any.js#sharedworker": {
+    "total": 9
+  },
+  "streams/piping/pipe-through.any.js": {
+    "total": 43
+  },
+  "streams/piping/pipe-through.any.js#dedicatedworker": {
+    "total": 43
+  },
+  "streams/piping/pipe-through.any.js#sharedworker": {
+    "total": 43
+  },
+  "streams/piping/then-interception.any.js": {
+    "total": 2
+  },
+  "streams/piping/then-interception.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "streams/piping/then-interception.any.js#sharedworker": {
+    "total": 2
+  },
+  "streams/piping/throwing-options.any.js": {
+    "total": 8
+  },
+  "streams/piping/throwing-options.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "streams/piping/throwing-options.any.js#sharedworker": {
+    "total": 8
+  },
+  "streams/piping/transform-streams.any.js": {
+    "total": 1
+  },
+  "streams/piping/transform-streams.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "streams/piping/transform-streams.any.js#sharedworker": {
+    "total": 1
+  },
+  "streams/queuing-strategies-size-function-per-global.window.js": {
+    "total": 2
+  },
+  "streams/queuing-strategies.any.js": {
+    "total": 20
+  },
+  "streams/queuing-strategies.any.js#dedicatedworker": {
+    "total": 20
+  },
+  "streams/queuing-strategies.any.js#sharedworker": {
+    "total": 20
+  },
+  "streams/readable-byte-streams/bad-buffers-and-views.any.js": {
+    "total": 24
+  },
+  "streams/readable-byte-streams/bad-buffers-and-views.any.js#dedicatedworker": {
+    "total": 24
+  },
+  "streams/readable-byte-streams/bad-buffers-and-views.any.js#sharedworker": {
+    "total": 24
+  },
+  "streams/readable-byte-streams/construct-byob-request.any.js": {
+    "total": 16
+  },
+  "streams/readable-byte-streams/construct-byob-request.any.js#dedicatedworker": {
+    "total": 16
+  },
+  "streams/readable-byte-streams/construct-byob-request.any.js#sharedworker": {
+    "total": 16
+  },
+  "streams/readable-byte-streams/enqueue-with-detached-buffer.any.js": {
+    "total": 1
+  },
+  "streams/readable-byte-streams/enqueue-with-detached-buffer.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "streams/readable-byte-streams/enqueue-with-detached-buffer.any.js#sharedworker": {
+    "total": 1
+  },
+  "streams/readable-byte-streams/general.any.js": {
+    "total": 101
+  },
+  "streams/readable-byte-streams/general.any.js#dedicatedworker": {
+    "total": 101
+  },
+  "streams/readable-byte-streams/general.any.js#sharedworker": {
+    "total": 101
+  },
+  "streams/readable-byte-streams/non-transferable-buffers.any.js": {
+    "total": 4
+  },
+  "streams/readable-byte-streams/non-transferable-buffers.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "streams/readable-byte-streams/non-transferable-buffers.any.js#sharedworker": {
+    "total": 4
+  },
+  "streams/readable-byte-streams/patched-global.any.js": {
+    "total": 1
+  },
+  "streams/readable-byte-streams/patched-global.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "streams/readable-byte-streams/patched-global.any.js#sharedworker": {
+    "total": 1
+  },
+  "streams/readable-byte-streams/read-min.any.js": {
+    "total": 24
+  },
+  "streams/readable-byte-streams/read-min.any.js#dedicatedworker": {
+    "total": 24
+  },
+  "streams/readable-byte-streams/read-min.any.js#sharedworker": {
+    "total": 24
+  },
+  "streams/readable-byte-streams/respond-after-enqueue.any.js": {
+    "total": 3
+  },
+  "streams/readable-byte-streams/respond-after-enqueue.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "streams/readable-byte-streams/respond-after-enqueue.any.js#sharedworker": {
+    "total": 3
+  },
+  "streams/readable-byte-streams/tee.any.js": {
+    "total": 40
+  },
+  "streams/readable-byte-streams/tee.any.js#dedicatedworker": {
+    "total": 40
+  },
+  "streams/readable-byte-streams/tee.any.js#sharedworker": {
+    "total": 40
+  },
+  "streams/readable-byte-streams/templated.any.js": {
+    "total": 34
+  },
+  "streams/readable-byte-streams/templated.any.js#dedicatedworker": {
+    "total": 34
+  },
+  "streams/readable-byte-streams/templated.any.js#sharedworker": {
+    "total": 34
+  },
+  "streams/readable-streams/async-iterator.any.js": {
+    "total": 41
+  },
+  "streams/readable-streams/async-iterator.any.js#dedicatedworker": {
+    "total": 41
+  },
+  "streams/readable-streams/async-iterator.any.js#sharedworker": {
+    "total": 41
+  },
+  "streams/readable-streams/bad-strategies.any.js": {
+    "total": 8
+  },
+  "streams/readable-streams/bad-strategies.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "streams/readable-streams/bad-strategies.any.js#sharedworker": {
+    "total": 8
+  },
+  "streams/readable-streams/bad-underlying-sources.any.js": {
+    "total": 22
+  },
+  "streams/readable-streams/bad-underlying-sources.any.js#dedicatedworker": {
+    "total": 22
+  },
+  "streams/readable-streams/bad-underlying-sources.any.js#sharedworker": {
+    "total": 22
+  },
+  "streams/readable-streams/cancel.any.js": {
+    "total": 11
+  },
+  "streams/readable-streams/cancel.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "streams/readable-streams/cancel.any.js#sharedworker": {
+    "total": 11
+  },
+  "streams/readable-streams/constructor.any.js": {
+    "total": 1
+  },
+  "streams/readable-streams/constructor.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "streams/readable-streams/constructor.any.js#sharedworker": {
+    "total": 1
+  },
+  "streams/readable-streams/count-queuing-strategy-integration.any.js": {
+    "total": 4
+  },
+  "streams/readable-streams/count-queuing-strategy-integration.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "streams/readable-streams/count-queuing-strategy-integration.any.js#sharedworker": {
+    "total": 4
+  },
+  "streams/readable-streams/default-reader.any.js": {
+    "total": 29
+  },
+  "streams/readable-streams/default-reader.any.js#dedicatedworker": {
+    "total": 29
+  },
+  "streams/readable-streams/default-reader.any.js#sharedworker": {
+    "total": 29
+  },
+  "streams/readable-streams/floating-point-total-queue-size.any.js": {
+    "total": 4
+  },
+  "streams/readable-streams/floating-point-total-queue-size.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "streams/readable-streams/floating-point-total-queue-size.any.js#sharedworker": {
+    "total": 4
+  },
+  "streams/readable-streams/from.any.js": {
+    "total": 50
+  },
+  "streams/readable-streams/from.any.js#dedicatedworker": {
+    "total": 50
+  },
+  "streams/readable-streams/from.any.js#sharedworker": {
+    "total": 50
+  },
+  "streams/readable-streams/garbage-collection.any.js": {
+    "total": 5
+  },
+  "streams/readable-streams/garbage-collection.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "streams/readable-streams/garbage-collection.any.js#sharedworker": {
+    "total": 5
+  },
+  "streams/readable-streams/general.any.js": {
+    "total": 38
+  },
+  "streams/readable-streams/general.any.js#dedicatedworker": {
+    "total": 38
+  },
+  "streams/readable-streams/general.any.js#sharedworker": {
+    "total": 38
+  },
+  "streams/readable-streams/global.html": {
+    "total": 9,
+    "failures": {
+      "Reader objects in correct global": "FAIL"
+    }
+  },
+  "streams/readable-streams/owning-type-message-port.tentative.any.js": {
+    "total": 2,
+    "failures": {
+      "Second branch of owning ReadableStream tee should end up into errors with transfer only values": "FAIL",
+      "Transferred MessageChannel works as expected": "FAIL"
+    }
+  },
+  "streams/readable-streams/owning-type-message-port.tentative.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "Second branch of owning ReadableStream tee should end up into errors with transfer only values": "FAIL",
+      "Transferred MessageChannel works as expected": "FAIL"
+    }
+  },
+  "streams/readable-streams/owning-type-message-port.tentative.any.js#sharedworker": {
+    "total": 2,
+    "failures": {
+      "Second branch of owning ReadableStream tee should end up into errors with transfer only values": "FAIL",
+      "Transferred MessageChannel works as expected": "FAIL"
+    }
+  },
+  "streams/readable-streams/owning-type-video-frame.tentative.any.js": {
+    "total": 5,
+    "failures": {
+      "ReadableStream of type owning should clone JS Objects with serializables when teeing": "FAIL",
+      "ReadableStream of type owning should clone serializable objects when teeing": "FAIL",
+      "ReadableStream of type owning should close serialized chunks": "FAIL",
+      "ReadableStream of type owning should error when trying to enqueue not serializable values": "FAIL",
+      "ReadableStream of type owning should transfer JS chunks with transferred values": "FAIL"
+    }
+  },
+  "streams/readable-streams/owning-type-video-frame.tentative.any.js#dedicatedworker": {
+    "total": 5,
+    "failures": {
+      "ReadableStream of type owning should clone JS Objects with serializables when teeing": "FAIL",
+      "ReadableStream of type owning should clone serializable objects when teeing": "FAIL",
+      "ReadableStream of type owning should close serialized chunks": "FAIL",
+      "ReadableStream of type owning should error when trying to enqueue not serializable values": "FAIL",
+      "ReadableStream of type owning should transfer JS chunks with transferred values": "FAIL"
+    }
+  },
+  "streams/readable-streams/owning-type-video-frame.tentative.any.js#sharedworker": {
+    "total": 5,
+    "failures": {
+      "ReadableStream of type owning should clone JS Objects with serializables when teeing": "FAIL",
+      "ReadableStream of type owning should clone serializable objects when teeing": "FAIL",
+      "ReadableStream of type owning should close serialized chunks": "FAIL",
+      "ReadableStream of type owning should error when trying to enqueue not serializable values": "FAIL",
+      "ReadableStream of type owning should transfer JS chunks with transferred values": "FAIL"
+    }
+  },
+  "streams/readable-streams/owning-type.tentative.any.js": {
+    "total": 5,
+    "failures": {
+      "ReadableStream can be constructed with owning type": "FAIL",
+      "ReadableStream of type owning should call start with a ReadableStreamDefaultController": "FAIL",
+      "ReadableStream of type owning should transfer enqueued chunks": "FAIL",
+      "ReadableStream should be able to call enqueue with an empty transfer list": "FAIL",
+      "ReadableStream should check transfer parameter": "FAIL"
+    }
+  },
+  "streams/readable-streams/owning-type.tentative.any.js#dedicatedworker": {
+    "total": 5,
+    "failures": {
+      "ReadableStream can be constructed with owning type": "FAIL",
+      "ReadableStream of type owning should call start with a ReadableStreamDefaultController": "FAIL",
+      "ReadableStream of type owning should transfer enqueued chunks": "FAIL",
+      "ReadableStream should be able to call enqueue with an empty transfer list": "FAIL",
+      "ReadableStream should check transfer parameter": "FAIL"
+    }
+  },
+  "streams/readable-streams/owning-type.tentative.any.js#sharedworker": {
+    "total": 5,
+    "failures": {
+      "ReadableStream can be constructed with owning type": "FAIL",
+      "ReadableStream of type owning should call start with a ReadableStreamDefaultController": "FAIL",
+      "ReadableStream of type owning should transfer enqueued chunks": "FAIL",
+      "ReadableStream should be able to call enqueue with an empty transfer list": "FAIL",
+      "ReadableStream should check transfer parameter": "FAIL"
+    }
+  },
+  "streams/readable-streams/patched-global.any.js": {
+    "total": 5
+  },
+  "streams/readable-streams/patched-global.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "streams/readable-streams/patched-global.any.js#sharedworker": {
+    "total": 5
+  },
+  "streams/readable-streams/read-task-handling.window.js": {
+    "total": 1
+  },
+  "streams/readable-streams/reentrant-strategies.any.js": {
+    "total": 10
+  },
+  "streams/readable-streams/reentrant-strategies.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "streams/readable-streams/reentrant-strategies.any.js#sharedworker": {
+    "total": 10
+  },
+  "streams/readable-streams/tee.any.js": {
+    "total": 26
+  },
+  "streams/readable-streams/tee.any.js#dedicatedworker": {
+    "total": 26
+  },
+  "streams/readable-streams/tee.any.js#sharedworker": {
+    "total": 26
+  },
+  "streams/readable-streams/templated.any.js": {
+    "total": 91
+  },
+  "streams/readable-streams/templated.any.js#dedicatedworker": {
+    "total": 91
+  },
+  "streams/readable-streams/templated.any.js#sharedworker": {
+    "total": 91
+  },
+  "streams/transferable/deserialize-error.window.js": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "a ReadableStream deserialization failure should result in a DataCloneError": "TIMEOUT",
+      "a WritableStream deserialization failure should result in a DataCloneError": "TIMEOUT"
+    }
+  },
+  "streams/transferable/readable-stream.html": {
+    "total": 16,
+    "failures": {
+      "cancel should abort a pending read()": "FAIL",
+      "cancel should be propagated to the original": "FAIL",
+      "errors should be passed through": "FAIL",
+      "race between cancel() and close() should be benign": "FAIL",
+      "race between cancel() and enqueue() should be benign": "FAIL",
+      "race between cancel() and error() should leave sides in different states": "FAIL",
+      "sending one chunk through a transferred stream should work": "FAIL",
+      "sending ten chunks on demand should work": "FAIL",
+      "sending ten chunks one at a time should work": "FAIL",
+      "sending ten chunks through a transferred stream should work": "FAIL",
+      "serialization should not happen until the value is read": "FAIL",
+      "stream cancel should not wait for underlying source cancel": "FAIL",
+      "the extra queue from transferring is counted in chunks": "FAIL",
+      "transferring a non-serializable chunk should error both sides": "FAIL",
+      "transferring a stream should add one chunk to the queue size": "FAIL",
+      "transferring a stream should relieve backpressure": "FAIL"
+    }
+  },
+  "streams/transferable/reason.html": {
+    "total": 26,
+    "failures": {
+      "DOMException errors should be preserved": "FAIL",
+      "EvalError should be preserved": "FAIL",
+      "RangeError should be preserved": "FAIL",
+      "ReferenceError should be preserved": "FAIL",
+      "SyntaxError should be preserved": "FAIL",
+      "TypeError should be preserved": "FAIL",
+      "URIError should be preserved": "FAIL",
+      "a TypeError message should be converted to a string": "FAIL",
+      "a TypeError message should not be preserved if it is a getter": "FAIL",
+      "a TypeError message should not be preserved if it is inherited": "FAIL",
+      "objects that can be completely expressed in JSON should be preserved": "FAIL",
+      "objects that cannot be expressed in JSON should also be preserved": "FAIL",
+      "other attributes of a TypeError should not be preserved": "FAIL",
+      "reason with a simple value of '\t\r\n' should be preserved": "FAIL",
+      "reason with a simple value of '3' should be preserved": "FAIL",
+      "reason with a simple value of '7' should be preserved": "FAIL",
+      "reason with a simple value of 'Infinity' should be preserved": "FAIL",
+      "reason with a simple value of 'NaN' should be preserved": "FAIL",
+      "reason with a simple value of 'false' should be preserved": "FAIL",
+      "reason with a simple value of 'hi' should be preserved": "FAIL",
+      "reason with a simple value of 'null' should be preserved": "FAIL",
+      "reason with a simple value of 'true' should be preserved": "FAIL",
+      "reason with a simple value of 'undefined' should be preserved": "FAIL",
+      "the type and message of a TypeError should be preserved": "FAIL"
+    }
+  },
+  "streams/transferable/service-worker.https.html": {
+    "total": 3,
+    "failures": {
+      "postMessage in a service worker should be able to transfer ReadableStream": "FAIL",
+      "serviceWorker.controller.postMessage should be able to transfer a ReadableStream": "FAIL"
+    }
+  },
+  "streams/transferable/shared-worker.html": {
+    "total": 2,
+    "failures": {
+      "postMessage in a worker should be able to transfer a ReadableStream": "FAIL",
+      "worker.postMessage should be able to transfer a ReadableStream": "FAIL"
+    }
+  },
+  "streams/transferable/transfer-with-messageport.window.js": {
+    "total": 10,
+    "failures": {
+      "Transferring a MessagePort with a ReadableStream should set `.ports`": "FAIL",
+      "Transferring a MessagePort with a ReadableStream should set `.ports`, advanced": "FAIL",
+      "Transferring a MessagePort with a TransformStream should set `.ports`": "FAIL",
+      "Transferring a MessagePort with a TransformStream should set `.ports`, advanced": "FAIL",
+      "Transferring a MessagePort with a WritableStream should set `.ports`": "FAIL",
+      "Transferring a MessagePort with a WritableStream should set `.ports`, advanced": "FAIL",
+      "Transferring a MessagePort with multiple streams should set `.ports`": "FAIL"
+    }
+  },
+  "streams/transferable/transform-stream-members.any.js": {
+    "total": 4
+  },
+  "streams/transferable/transform-stream-members.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "streams/transferable/transform-stream.html": {
+    "total": 5,
+    "failures": {
+      "piping through transferred transforms should work": "FAIL",
+      "window.postMessage should be able to transfer a TransformStream": "FAIL"
+    }
+  },
+  "streams/transferable/window.html": {
+    "total": 4,
+    "failures": {
+      "port.postMessage should be able to transfer a ReadableStream": "FAIL",
+      "the same ReadableStream posted multiple times should arrive together": "FAIL",
+      "transfer to and from an iframe should work": "FAIL",
+      "window.postMessage should be able to transfer a ReadableStream": "FAIL"
+    }
+  },
+  "streams/transferable/worker.html": {
+    "total": 3,
+    "failures": {
+      "postMessage in a worker should be able to transfer a ReadableStream": "FAIL",
+      "terminating a worker should not error the stream": "FAIL",
+      "worker.postMessage should be able to transfer a ReadableStream": "FAIL"
+    }
+  },
+  "streams/transferable/writable-stream.html": {
+    "total": 8,
+    "failures": {
+      "abort() should work": "FAIL",
+      "desiredSize for a newly-transferred stream should be 1": "FAIL",
+      "effective queue size of a transferred writable should be 2": "FAIL",
+      "second write should wait for first underlying write to complete": "FAIL",
+      "window.postMessage should be able to transfer a WritableStream": "FAIL",
+      "window.postMessage should be able to transfer a {readable, writable} pair": "FAIL",
+      "writing a unclonable object should error the stream": "FAIL"
+    }
+  },
+  "streams/transform-streams/backpressure.any.js": {
+    "total": 14
+  },
+  "streams/transform-streams/backpressure.any.js#dedicatedworker": {
+    "total": 14
+  },
+  "streams/transform-streams/backpressure.any.js#sharedworker": {
+    "total": 14
+  },
+  "streams/transform-streams/cancel.any.js": {
+    "total": 11
+  },
+  "streams/transform-streams/cancel.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "streams/transform-streams/cancel.any.js#sharedworker": {
+    "total": 11
+  },
+  "streams/transform-streams/errors.any.js": {
+    "total": 21
+  },
+  "streams/transform-streams/errors.any.js#dedicatedworker": {
+    "total": 21
+  },
+  "streams/transform-streams/errors.any.js#sharedworker": {
+    "total": 21
+  },
+  "streams/transform-streams/flush.any.js": {
+    "total": 6
+  },
+  "streams/transform-streams/flush.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "streams/transform-streams/flush.any.js#sharedworker": {
+    "total": 6
+  },
+  "streams/transform-streams/general.any.js": {
+    "total": 26
+  },
+  "streams/transform-streams/general.any.js#dedicatedworker": {
+    "total": 26
+  },
+  "streams/transform-streams/general.any.js#sharedworker": {
+    "total": 26
+  },
+  "streams/transform-streams/invalid-realm.tentative.window.js": {
+    "total": 1
+  },
+  "streams/transform-streams/lipfuzz.any.js": {
+    "total": 20
+  },
+  "streams/transform-streams/lipfuzz.any.js#dedicatedworker": {
+    "total": 20
+  },
+  "streams/transform-streams/lipfuzz.any.js#sharedworker": {
+    "total": 20
+  },
+  "streams/transform-streams/patched-global.any.js": {
+    "total": 2
+  },
+  "streams/transform-streams/patched-global.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "streams/transform-streams/patched-global.any.js#sharedworker": {
+    "total": 2
+  },
+  "streams/transform-streams/properties.any.js": {
+    "total": 6
+  },
+  "streams/transform-streams/properties.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "streams/transform-streams/properties.any.js#sharedworker": {
+    "total": 6
+  },
+  "streams/transform-streams/reentrant-strategies.any.js": {
+    "total": 11
+  },
+  "streams/transform-streams/reentrant-strategies.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "streams/transform-streams/reentrant-strategies.any.js#sharedworker": {
+    "total": 11
+  },
+  "streams/transform-streams/strategies.any.js": {
+    "total": 10
+  },
+  "streams/transform-streams/strategies.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "streams/transform-streams/strategies.any.js#sharedworker": {
+    "total": 10
+  },
+  "streams/transform-streams/terminate.any.js": {
+    "total": 6
+  },
+  "streams/transform-streams/terminate.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "streams/transform-streams/terminate.any.js#sharedworker": {
+    "total": 6
+  },
+  "streams/writable-streams/aborting.any.js": {
+    "total": 65
+  },
+  "streams/writable-streams/aborting.any.js#dedicatedworker": {
+    "total": 65
+  },
+  "streams/writable-streams/aborting.any.js#sharedworker": {
+    "total": 65
+  },
+  "streams/writable-streams/bad-strategies.any.js": {
+    "total": 7
+  },
+  "streams/writable-streams/bad-strategies.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "streams/writable-streams/bad-strategies.any.js#sharedworker": {
+    "total": 7
+  },
+  "streams/writable-streams/bad-underlying-sinks.any.js": {
+    "total": 14
+  },
+  "streams/writable-streams/bad-underlying-sinks.any.js#dedicatedworker": {
+    "total": 14
+  },
+  "streams/writable-streams/bad-underlying-sinks.any.js#sharedworker": {
+    "total": 14
+  },
+  "streams/writable-streams/byte-length-queuing-strategy.any.js": {
+    "total": 1
+  },
+  "streams/writable-streams/byte-length-queuing-strategy.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "streams/writable-streams/byte-length-queuing-strategy.any.js#sharedworker": {
+    "total": 1
+  },
+  "streams/writable-streams/close.any.js": {
+    "total": 26
+  },
+  "streams/writable-streams/close.any.js#dedicatedworker": {
+    "total": 26
+  },
+  "streams/writable-streams/close.any.js#sharedworker": {
+    "total": 26
+  },
+  "streams/writable-streams/constructor.any.js": {
+    "total": 13
+  },
+  "streams/writable-streams/constructor.any.js#dedicatedworker": {
+    "total": 13
+  },
+  "streams/writable-streams/constructor.any.js#sharedworker": {
+    "total": 13
+  },
+  "streams/writable-streams/count-queuing-strategy.any.js": {
+    "total": 3
+  },
+  "streams/writable-streams/count-queuing-strategy.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "streams/writable-streams/count-queuing-strategy.any.js#sharedworker": {
+    "total": 3
+  },
+  "streams/writable-streams/error.any.js": {
+    "total": 5
+  },
+  "streams/writable-streams/error.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "streams/writable-streams/error.any.js#sharedworker": {
+    "total": 5
+  },
+  "streams/writable-streams/floating-point-total-queue-size.any.js": {
+    "total": 4
+  },
+  "streams/writable-streams/floating-point-total-queue-size.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "streams/writable-streams/floating-point-total-queue-size.any.js#sharedworker": {
+    "total": 4
+  },
+  "streams/writable-streams/garbage-collection.any.js": {
+    "total": 1
+  },
+  "streams/writable-streams/garbage-collection.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "streams/writable-streams/garbage-collection.any.js#sharedworker": {
+    "total": 1
+  },
+  "streams/writable-streams/general.any.js": {
+    "total": 16
+  },
+  "streams/writable-streams/general.any.js#dedicatedworker": {
+    "total": 16
+  },
+  "streams/writable-streams/general.any.js#sharedworker": {
+    "total": 16
+  },
+  "streams/writable-streams/properties.any.js": {
+    "total": 8
+  },
+  "streams/writable-streams/properties.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "streams/writable-streams/properties.any.js#sharedworker": {
+    "total": 8
+  },
+  "streams/writable-streams/reentrant-strategy.any.js": {
+    "total": 7
+  },
+  "streams/writable-streams/reentrant-strategy.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "streams/writable-streams/reentrant-strategy.any.js#sharedworker": {
+    "total": 7
+  },
+  "streams/writable-streams/start.any.js": {
+    "total": 8
+  },
+  "streams/writable-streams/start.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "streams/writable-streams/start.any.js#sharedworker": {
+    "total": 8
+  },
+  "streams/writable-streams/write.any.js": {
+    "total": 13
+  },
+  "streams/writable-streams/write.any.js#dedicatedworker": {
+    "total": 13
+  },
+  "streams/writable-streams/write.any.js#sharedworker": {
+    "total": 13
+  }
+}

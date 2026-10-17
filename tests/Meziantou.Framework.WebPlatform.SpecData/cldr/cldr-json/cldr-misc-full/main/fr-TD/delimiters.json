@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-TD": {
+      "identity": {
+        "language": "fr",
+        "territory": "TD"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "main": {
+    "ca-ES-valencia": {
+      "identity": {
+        "language": "ca",
+        "territory": "ES",
+        "variant": "VALENCIA"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

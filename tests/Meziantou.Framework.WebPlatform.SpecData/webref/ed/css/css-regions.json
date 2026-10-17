@@ -1,0 +1,95 @@
+{
+  "spec": {
+    "title": "CSS Regions Module Level 1",
+    "url": "https://drafts.csswg.org/css-regions-1/"
+  },
+  "properties": [
+    {
+      "name": "flow-into",
+      "href": "https://drafts.csswg.org/css-regions-1/#propdef-flow-into",
+      "value": "none | <custom-ident> [element | content]?",
+      "initial": "none",
+      "appliesTo": "All elements, but not pseudo-elements such as ::first-line, ::first-letter, ::before or ::after.",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The element is not moved to a named flow and normal CSS processing takes place.",
+          "href": "https://drafts.csswg.org/css-regions-1/#valdef-flow-into-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "element",
+          "href": "https://drafts.csswg.org/css-regions-1/#valdef-flow-into-element",
+          "type": "value",
+          "value": "element"
+        },
+        {
+          "name": "content",
+          "href": "https://drafts.csswg.org/css-regions-1/#valdef-flow-into-content",
+          "type": "value",
+          "value": "content"
+        },
+        {
+          "name": "specified flow",
+          "href": "https://drafts.csswg.org/css-regions-1/#specified-flow",
+          "type": "value",
+          "value": "specified flow"
+        }
+      ],
+      "styleDeclaration": [
+        "flow-into",
+        "flowInto"
+      ]
+    },
+    {
+      "name": "flow-from",
+      "href": "https://drafts.csswg.org/css-regions-1/#propdef-flow-from",
+      "value": "<custom-ident> | none",
+      "initial": "none",
+      "appliesTo": "Non-replaced block containers. This might be expanded in future versions of the specification to allow other types of containers to receive flow content.",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The block container is not a CSS Region.",
+          "href": "https://drafts.csswg.org/css-regions-1/#valdef-flow-from-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "flow-from",
+        "flowFrom"
+      ]
+    },
+    {
+      "name": "region-fragment",
+      "href": "https://drafts.csswg.org/css-regions-1/#propdef-region-fragment",
+      "value": "auto | break",
+      "initial": "auto",
+      "appliesTo": "CSS Regions",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "region-fragment",
+        "regionFragment"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

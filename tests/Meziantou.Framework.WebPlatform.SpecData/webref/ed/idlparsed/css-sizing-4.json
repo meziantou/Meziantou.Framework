@@ -1,0 +1,52 @@
+{
+  "spec": {
+    "title": "CSS Box Sizing Module Level 4",
+    "url": "https://drafts.csswg.org/css-sizing-4/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n  undefined requestResize();\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "requestResize",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://drafts.csswg.org/css-sizing-4/#dom-window-requestresize"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "Window": []
+    },
+    "externalDependencies": [
+      "Window"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

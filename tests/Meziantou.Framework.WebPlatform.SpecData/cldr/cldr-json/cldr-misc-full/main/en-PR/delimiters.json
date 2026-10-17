@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-PR": {
+      "identity": {
+        "language": "en",
+        "territory": "PR"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

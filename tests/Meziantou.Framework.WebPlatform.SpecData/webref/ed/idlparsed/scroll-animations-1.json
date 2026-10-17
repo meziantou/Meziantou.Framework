@@ -1,0 +1,411 @@
+{
+  "spec": {
+    "title": "Scroll-driven Animations Module Level 1",
+    "url": "https://drafts.csswg.org/scroll-animations-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "ScrollTimeline",
+          "ViewTimeline"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "ScrollAxis": {
+        "fragment": "enum ScrollAxis {\n  \"block\",\n  \"inline\",\n  \"x\",\n  \"y\"\n};",
+        "type": "enum",
+        "name": "ScrollAxis",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "block",
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-scrollaxis-block"
+          },
+          {
+            "type": "enum-value",
+            "value": "inline",
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-scrollaxis-inline"
+          },
+          {
+            "type": "enum-value",
+            "value": "x",
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-scrollaxis-x"
+          },
+          {
+            "type": "enum-value",
+            "value": "y",
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-scrollaxis-y"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/scroll-animations-1/#enumdef-scrollaxis"
+      },
+      "ScrollTimelineOptions": {
+        "fragment": "dictionary ScrollTimelineOptions {\n  Element? source;\n  ScrollAxis axis = \"block\";\n};",
+        "type": "dictionary",
+        "name": "ScrollTimelineOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "source",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Element"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimelineoptions-source"
+          },
+          {
+            "type": "field",
+            "name": "axis",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ScrollAxis"
+            },
+            "default": {
+              "type": "string",
+              "value": "block"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimelineoptions-axis"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/scroll-animations-1/#dictdef-scrolltimelineoptions"
+      },
+      "ScrollTimeline": {
+        "fragment": "[Exposed=Window]\ninterface ScrollTimeline : AnimationTimeline {\n  constructor(optional ScrollTimelineOptions options = {});\n  readonly attribute Element? source;\n  readonly attribute ScrollAxis axis;\n};",
+        "type": "interface",
+        "name": "ScrollTimeline",
+        "inheritance": "AnimationTimeline",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ScrollTimelineOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimeline-scrolltimeline"
+          },
+          {
+            "type": "attribute",
+            "name": "source",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Element"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimeline-source"
+          },
+          {
+            "type": "attribute",
+            "name": "axis",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ScrollAxis"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimeline-axis"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/scroll-animations-1/#scrolltimeline"
+      },
+      "ViewTimelineOptions": {
+        "fragment": "dictionary ViewTimelineOptions {\n  required Element subject;\n  ScrollAxis axis = \"block\";\n  (DOMString or sequence<(CSSNumericValue or CSSKeywordValue)>) inset = \"auto\";\n};",
+        "type": "dictionary",
+        "name": "ViewTimelineOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "subject",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Element"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-viewtimelineoptions-subject"
+          },
+          {
+            "type": "field",
+            "name": "axis",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ScrollAxis"
+            },
+            "default": {
+              "type": "string",
+              "value": "block"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-viewtimelineoptions-axis"
+          },
+          {
+            "type": "field",
+            "name": "inset",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": true,
+                      "idlType": [
+                        {
+                          "type": "dictionary-type",
+                          "extAttrs": [],
+                          "generic": "",
+                          "nullable": false,
+                          "union": false,
+                          "idlType": "CSSNumericValue"
+                        },
+                        {
+                          "type": "dictionary-type",
+                          "extAttrs": [],
+                          "generic": "",
+                          "nullable": false,
+                          "union": false,
+                          "idlType": "CSSKeywordValue"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": {
+              "type": "string",
+              "value": "auto"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-viewtimelineoptions-inset"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/scroll-animations-1/#dictdef-viewtimelineoptions"
+      },
+      "ViewTimeline": {
+        "fragment": "[Exposed=Window]\ninterface ViewTimeline : ScrollTimeline {\n  constructor(ViewTimelineOptions options);\n  readonly attribute Element subject;\n  readonly attribute CSSNumericValue startOffset;\n  readonly attribute CSSNumericValue endOffset;\n};",
+        "type": "interface",
+        "name": "ViewTimeline",
+        "inheritance": "ScrollTimeline",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ViewTimelineOptions"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-viewtimeline"
+          },
+          {
+            "type": "attribute",
+            "name": "subject",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Element"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-subject"
+          },
+          {
+            "type": "attribute",
+            "name": "startOffset",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSNumericValue"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-startoffset"
+          },
+          {
+            "type": "attribute",
+            "name": "endOffset",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSNumericValue"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-endoffset"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/scroll-animations-1/#viewtimeline"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "ScrollTimeline",
+        "ViewTimeline"
+      ]
+    },
+    "dependencies": {
+      "ScrollTimelineOptions": [
+        "Element",
+        "ScrollAxis"
+      ],
+      "ScrollTimeline": [
+        "AnimationTimeline",
+        "ScrollTimelineOptions",
+        "Element",
+        "ScrollAxis"
+      ],
+      "ViewTimelineOptions": [
+        "Element",
+        "ScrollAxis",
+        "CSSNumericValue",
+        "CSSKeywordValue"
+      ],
+      "ViewTimeline": [
+        "ScrollTimeline",
+        "ViewTimelineOptions",
+        "Element",
+        "CSSNumericValue"
+      ]
+    },
+    "externalDependencies": [
+      "Element",
+      "AnimationTimeline",
+      "CSSNumericValue",
+      "CSSKeywordValue"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,3776 @@
+{
+  "spec": {
+    "title": "Identifiers for WebRTC's Statistics API",
+    "url": "https://w3c.github.io/webrtc-stats/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "RTCStatsType": {
+        "fragment": "enum RTCStatsType {\n\"codec\",\n\"inbound-rtp\",\n\"outbound-rtp\",\n\"remote-inbound-rtp\",\n\"remote-outbound-rtp\",\n\"media-source\",\n\"media-playout\",\n\"peer-connection\",\n\"data-channel\",\n\"transport\",\n\"candidate-pair\",\n\"local-candidate\",\n\"remote-candidate\",\n\"certificate\"\n};",
+        "type": "enum",
+        "name": "RTCStatsType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "codec",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype-codec"
+          },
+          {
+            "type": "enum-value",
+            "value": "inbound-rtp",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype-inbound-rtp"
+          },
+          {
+            "type": "enum-value",
+            "value": "outbound-rtp",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype-outbound-rtp"
+          },
+          {
+            "type": "enum-value",
+            "value": "remote-inbound-rtp",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype-remote-inbound-rtp"
+          },
+          {
+            "type": "enum-value",
+            "value": "remote-outbound-rtp",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype-remote-outbound-rtp"
+          },
+          {
+            "type": "enum-value",
+            "value": "media-source",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype-media-source"
+          },
+          {
+            "type": "enum-value",
+            "value": "media-playout",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype-media-playout"
+          },
+          {
+            "type": "enum-value",
+            "value": "peer-connection",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype-peer-connection"
+          },
+          {
+            "type": "enum-value",
+            "value": "data-channel",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype-data-channel"
+          },
+          {
+            "type": "enum-value",
+            "value": "transport",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype-transport"
+          },
+          {
+            "type": "enum-value",
+            "value": "candidate-pair",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype-candidate-pair"
+          },
+          {
+            "type": "enum-value",
+            "value": "local-candidate",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype-local-candidate"
+          },
+          {
+            "type": "enum-value",
+            "value": "remote-candidate",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype-remote-candidate"
+          },
+          {
+            "type": "enum-value",
+            "value": "certificate",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype-certificate"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatstype"
+      },
+      "RTCRtpStreamStats": {
+        "fragment": "dictionary RTCRtpStreamStats : RTCStats {\n             required unsigned long       ssrc;\n             required DOMString           kind;\n             DOMString           transportId;\n             DOMString           codecId;\n};",
+        "type": "dictionary",
+        "name": "RTCRtpStreamStats",
+        "inheritance": "RTCStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "ssrc",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcrtpstreamstats-ssrc"
+          },
+          {
+            "type": "field",
+            "name": "kind",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcrtpstreamstats-kind"
+          },
+          {
+            "type": "field",
+            "name": "transportId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcrtpstreamstats-transportid"
+          },
+          {
+            "type": "field",
+            "name": "codecId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcrtpstreamstats-codecid"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcrtpstreamstats"
+      },
+      "RTCCodecStats": {
+        "fragment": "dictionary RTCCodecStats : RTCStats {\n             required unsigned long payloadType;\n             required DOMString     transportId;\n             required DOMString     mimeType;\n             unsigned long clockRate;\n             unsigned long channels;\n             DOMString     sdpFmtpLine;\n};",
+        "type": "dictionary",
+        "name": "RTCCodecStats",
+        "inheritance": "RTCStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "payloadType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtccodecstats-payloadtype"
+          },
+          {
+            "type": "field",
+            "name": "transportId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtccodecstats-transportid"
+          },
+          {
+            "type": "field",
+            "name": "mimeType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtccodecstats-mimetype"
+          },
+          {
+            "type": "field",
+            "name": "clockRate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtccodecstats-clockrate"
+          },
+          {
+            "type": "field",
+            "name": "channels",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtccodecstats-channels"
+          },
+          {
+            "type": "field",
+            "name": "sdpFmtpLine",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtccodecstats-sdpfmtpline"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtccodecstats"
+      },
+      "RTCReceivedRtpStreamStats": {
+        "fragment": "dictionary RTCReceivedRtpStreamStats : RTCRtpStreamStats {\n             unsigned long long   packetsReceived;\n             unsigned long long   packetsReceivedWithEct1;\n             unsigned long long   packetsReceivedWithCe;\n             unsigned long long   packetsReportedAsLost;\n             unsigned long long   packetsReportedAsLostButRecovered;\n             long long            packetsLost;\n             double               jitter;\n};",
+        "type": "dictionary",
+        "name": "RTCReceivedRtpStreamStats",
+        "inheritance": "RTCRtpStreamStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "packetsReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcreceivedrtpstreamstats-packetsreceived"
+          },
+          {
+            "type": "field",
+            "name": "packetsReceivedWithEct1",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcreceivedrtpstreamstats-packetsreceivedwithect1"
+          },
+          {
+            "type": "field",
+            "name": "packetsReceivedWithCe",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcreceivedrtpstreamstats-packetsreceivedwithce"
+          },
+          {
+            "type": "field",
+            "name": "packetsReportedAsLost",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcreceivedrtpstreamstats-packetsreportedaslost"
+          },
+          {
+            "type": "field",
+            "name": "packetsReportedAsLostButRecovered",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcreceivedrtpstreamstats-packetsreportedaslostbutrecovered"
+          },
+          {
+            "type": "field",
+            "name": "packetsLost",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcreceivedrtpstreamstats-packetslost"
+          },
+          {
+            "type": "field",
+            "name": "jitter",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcreceivedrtpstreamstats-jitter"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcreceivedrtpstreamstats"
+      },
+      "RTCInboundRtpStreamStats": {
+        "fragment": "dictionary RTCInboundRtpStreamStats : RTCReceivedRtpStreamStats {\n required DOMString   trackIdentifier;\n DOMString            mid;\n DOMString            remoteId;\n unsigned long        framesDecoded;\n unsigned long        keyFramesDecoded;\n unsigned long        framesRendered;\n unsigned long        framesDropped;\n unsigned long        frameWidth;\n unsigned long        frameHeight;\n double               framesPerSecond;\n unsigned long long   qpSum;\n double               totalDecodeTime;\n double               totalInterFrameDelay;\n double               totalSquaredInterFrameDelay;\n unsigned long        pauseCount;\n double               totalPausesDuration;\n unsigned long        freezeCount;\n double               totalFreezesDuration;\n DOMHighResTimeStamp  lastPacketReceivedTimestamp;\n unsigned long long   headerBytesReceived;\n unsigned long long   packetsDiscarded;\n unsigned long long   fecBytesReceived;\n unsigned long long   fecPacketsReceived;\n unsigned long long   fecPacketsDiscarded;\n unsigned long long   bytesReceived;\n unsigned long        nackCount;\n unsigned long        firCount;\n unsigned long        pliCount;\n double               totalProcessingDelay;\n DOMHighResTimeStamp  estimatedPlayoutTimestamp;\n double               jitterBufferDelay;\n double               jitterBufferTargetDelay;\n unsigned long long   jitterBufferEmittedCount;\n double               jitterBufferMinimumDelay;\n unsigned long long   totalSamplesReceived;\n unsigned long long   concealedSamples;\n unsigned long long   silentConcealedSamples;\n unsigned long long   concealmentEvents;\n unsigned long long   insertedSamplesForDeceleration;\n unsigned long long   removedSamplesForAcceleration;\n double               audioLevel;\n double               totalAudioEnergy;\n double               totalSamplesDuration;\n unsigned long        framesReceived;\n DOMString            decoderImplementation;\n DOMString            playoutId;\n boolean              powerEfficientDecoder;\n unsigned long        framesAssembledFromMultiplePackets;\n double               totalAssemblyTime;\n unsigned long long   retransmittedPacketsReceived;\n unsigned long long   retransmittedBytesReceived;\n unsigned long        rtxSsrc;\n unsigned long        fecSsrc;\n double               totalCorruptionProbability;\n double               totalSquaredCorruptionProbability;\n unsigned long long   corruptionMeasurements;\n};",
+        "type": "dictionary",
+        "name": "RTCInboundRtpStreamStats",
+        "inheritance": "RTCReceivedRtpStreamStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "trackIdentifier",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-trackidentifier"
+          },
+          {
+            "type": "field",
+            "name": "mid",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-mid"
+          },
+          {
+            "type": "field",
+            "name": "remoteId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-remoteid"
+          },
+          {
+            "type": "field",
+            "name": "framesDecoded",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-framesdecoded"
+          },
+          {
+            "type": "field",
+            "name": "keyFramesDecoded",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-keyframesdecoded"
+          },
+          {
+            "type": "field",
+            "name": "framesRendered",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-framesrendered"
+          },
+          {
+            "type": "field",
+            "name": "framesDropped",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-framesdropped"
+          },
+          {
+            "type": "field",
+            "name": "frameWidth",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-framewidth"
+          },
+          {
+            "type": "field",
+            "name": "frameHeight",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-frameheight"
+          },
+          {
+            "type": "field",
+            "name": "framesPerSecond",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-framespersecond"
+          },
+          {
+            "type": "field",
+            "name": "qpSum",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-qpsum"
+          },
+          {
+            "type": "field",
+            "name": "totalDecodeTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totaldecodetime"
+          },
+          {
+            "type": "field",
+            "name": "totalInterFrameDelay",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totalinterframedelay"
+          },
+          {
+            "type": "field",
+            "name": "totalSquaredInterFrameDelay",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totalsquaredinterframedelay"
+          },
+          {
+            "type": "field",
+            "name": "pauseCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-pausecount"
+          },
+          {
+            "type": "field",
+            "name": "totalPausesDuration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totalpausesduration"
+          },
+          {
+            "type": "field",
+            "name": "freezeCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-freezecount"
+          },
+          {
+            "type": "field",
+            "name": "totalFreezesDuration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totalfreezesduration"
+          },
+          {
+            "type": "field",
+            "name": "lastPacketReceivedTimestamp",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-lastpacketreceivedtimestamp"
+          },
+          {
+            "type": "field",
+            "name": "headerBytesReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-headerbytesreceived"
+          },
+          {
+            "type": "field",
+            "name": "packetsDiscarded",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-packetsdiscarded"
+          },
+          {
+            "type": "field",
+            "name": "fecBytesReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-fecbytesreceived"
+          },
+          {
+            "type": "field",
+            "name": "fecPacketsReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-fecpacketsreceived"
+          },
+          {
+            "type": "field",
+            "name": "fecPacketsDiscarded",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-fecpacketsdiscarded"
+          },
+          {
+            "type": "field",
+            "name": "bytesReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-bytesreceived"
+          },
+          {
+            "type": "field",
+            "name": "nackCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-nackcount"
+          },
+          {
+            "type": "field",
+            "name": "firCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-fircount"
+          },
+          {
+            "type": "field",
+            "name": "pliCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-plicount"
+          },
+          {
+            "type": "field",
+            "name": "totalProcessingDelay",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totalprocessingdelay"
+          },
+          {
+            "type": "field",
+            "name": "estimatedPlayoutTimestamp",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-estimatedplayouttimestamp"
+          },
+          {
+            "type": "field",
+            "name": "jitterBufferDelay",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-jitterbufferdelay"
+          },
+          {
+            "type": "field",
+            "name": "jitterBufferTargetDelay",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-jitterbuffertargetdelay"
+          },
+          {
+            "type": "field",
+            "name": "jitterBufferEmittedCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-jitterbufferemittedcount"
+          },
+          {
+            "type": "field",
+            "name": "jitterBufferMinimumDelay",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-jitterbufferminimumdelay"
+          },
+          {
+            "type": "field",
+            "name": "totalSamplesReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totalsamplesreceived"
+          },
+          {
+            "type": "field",
+            "name": "concealedSamples",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-concealedsamples"
+          },
+          {
+            "type": "field",
+            "name": "silentConcealedSamples",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-silentconcealedsamples"
+          },
+          {
+            "type": "field",
+            "name": "concealmentEvents",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-concealmentevents"
+          },
+          {
+            "type": "field",
+            "name": "insertedSamplesForDeceleration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-insertedsamplesfordeceleration"
+          },
+          {
+            "type": "field",
+            "name": "removedSamplesForAcceleration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-removedsamplesforacceleration"
+          },
+          {
+            "type": "field",
+            "name": "audioLevel",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-audiolevel"
+          },
+          {
+            "type": "field",
+            "name": "totalAudioEnergy",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totalaudioenergy"
+          },
+          {
+            "type": "field",
+            "name": "totalSamplesDuration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totalsamplesduration"
+          },
+          {
+            "type": "field",
+            "name": "framesReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-framesreceived"
+          },
+          {
+            "type": "field",
+            "name": "decoderImplementation",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-decoderimplementation"
+          },
+          {
+            "type": "field",
+            "name": "playoutId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-playoutid"
+          },
+          {
+            "type": "field",
+            "name": "powerEfficientDecoder",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-powerefficientdecoder"
+          },
+          {
+            "type": "field",
+            "name": "framesAssembledFromMultiplePackets",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-framesassembledfrommultiplepackets"
+          },
+          {
+            "type": "field",
+            "name": "totalAssemblyTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totalassemblytime"
+          },
+          {
+            "type": "field",
+            "name": "retransmittedPacketsReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-retransmittedpacketsreceived"
+          },
+          {
+            "type": "field",
+            "name": "retransmittedBytesReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-retransmittedbytesreceived"
+          },
+          {
+            "type": "field",
+            "name": "rtxSsrc",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-rtxssrc"
+          },
+          {
+            "type": "field",
+            "name": "fecSsrc",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-fecssrc"
+          },
+          {
+            "type": "field",
+            "name": "totalCorruptionProbability",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totalcorruptionprobability"
+          },
+          {
+            "type": "field",
+            "name": "totalSquaredCorruptionProbability",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totalsquaredcorruptionprobability"
+          },
+          {
+            "type": "field",
+            "name": "corruptionMeasurements",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-corruptionmeasurements"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats"
+      },
+      "RTCRemoteInboundRtpStreamStats": {
+        "fragment": "dictionary RTCRemoteInboundRtpStreamStats : RTCReceivedRtpStreamStats {\n             DOMString            localId;\n             double               roundTripTime;\n             double               totalRoundTripTime;\n             double               fractionLost;\n             unsigned long long   roundTripTimeMeasurements;\n             unsigned long long   packetsWithBleachedEct1Marking;\n};",
+        "type": "dictionary",
+        "name": "RTCRemoteInboundRtpStreamStats",
+        "inheritance": "RTCReceivedRtpStreamStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "localId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcremoteinboundrtpstreamstats-localid"
+          },
+          {
+            "type": "field",
+            "name": "roundTripTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcremoteinboundrtpstreamstats-roundtriptime"
+          },
+          {
+            "type": "field",
+            "name": "totalRoundTripTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcremoteinboundrtpstreamstats-totalroundtriptime"
+          },
+          {
+            "type": "field",
+            "name": "fractionLost",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcremoteinboundrtpstreamstats-fractionlost"
+          },
+          {
+            "type": "field",
+            "name": "roundTripTimeMeasurements",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcremoteinboundrtpstreamstats-roundtriptimemeasurements"
+          },
+          {
+            "type": "field",
+            "name": "packetsWithBleachedEct1Marking",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcremoteinboundrtpstreamstats-packetswithbleachedect1marking"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcremoteinboundrtpstreamstats"
+      },
+      "RTCSentRtpStreamStats": {
+        "fragment": "dictionary RTCSentRtpStreamStats : RTCRtpStreamStats {\n            unsigned long long packetsSent;\n            unsigned long long bytesSent;\n};",
+        "type": "dictionary",
+        "name": "RTCSentRtpStreamStats",
+        "inheritance": "RTCRtpStreamStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "packetsSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcsentrtpstreamstats-packetssent"
+          },
+          {
+            "type": "field",
+            "name": "bytesSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcsentrtpstreamstats-bytessent"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcsentrtpstreamstats"
+      },
+      "RTCOutboundRtpStreamStats": {
+        "fragment": "dictionary RTCOutboundRtpStreamStats : RTCSentRtpStreamStats {\n             DOMString            mid;\n             DOMString            mediaSourceId;\n             DOMString            remoteId;\n             DOMString            rid;\n             unsigned long        encodingIndex;\n             unsigned long long   headerBytesSent;\n             unsigned long long   retransmittedPacketsSent;\n             unsigned long long   retransmittedBytesSent;\n             unsigned long        rtxSsrc;\n             double               targetBitrate;\n             unsigned long long   totalEncodedBytesTarget;\n             unsigned long        frameWidth;\n             unsigned long        frameHeight;\n             double               framesPerSecond;\n             unsigned long        framesSent;\n             unsigned long        hugeFramesSent;\n             unsigned long        framesEncoded;\n             unsigned long        keyFramesEncoded;\n             unsigned long long   qpSum;\n             record<DOMString, double> psnrSum;\n             unsigned long long   psnrMeasurements;\n             double               totalEncodeTime;\n             double               totalPacketSendDelay;\n             RTCQualityLimitationReason                 qualityLimitationReason;\n             record<DOMString, double> qualityLimitationDurations;\n             unsigned long        qualityLimitationResolutionChanges;\n             unsigned long        nackCount;\n             unsigned long        firCount;\n             unsigned long        pliCount;\n             DOMString            encoderImplementation;\n             boolean              powerEfficientEncoder;\n             boolean              active;\n             DOMString            scalabilityMode;\n             unsigned long long   packetsSentWithEct1;\n};",
+        "type": "dictionary",
+        "name": "RTCOutboundRtpStreamStats",
+        "inheritance": "RTCSentRtpStreamStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "mid",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-mid"
+          },
+          {
+            "type": "field",
+            "name": "mediaSourceId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-mediasourceid"
+          },
+          {
+            "type": "field",
+            "name": "remoteId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-remoteid"
+          },
+          {
+            "type": "field",
+            "name": "rid",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-rid"
+          },
+          {
+            "type": "field",
+            "name": "encodingIndex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-encodingindex"
+          },
+          {
+            "type": "field",
+            "name": "headerBytesSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-headerbytessent"
+          },
+          {
+            "type": "field",
+            "name": "retransmittedPacketsSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-retransmittedpacketssent"
+          },
+          {
+            "type": "field",
+            "name": "retransmittedBytesSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-retransmittedbytessent"
+          },
+          {
+            "type": "field",
+            "name": "rtxSsrc",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-rtxssrc"
+          },
+          {
+            "type": "field",
+            "name": "targetBitrate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-targetbitrate"
+          },
+          {
+            "type": "field",
+            "name": "totalEncodedBytesTarget",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-totalencodedbytestarget"
+          },
+          {
+            "type": "field",
+            "name": "frameWidth",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-framewidth"
+          },
+          {
+            "type": "field",
+            "name": "frameHeight",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-frameheight"
+          },
+          {
+            "type": "field",
+            "name": "framesPerSecond",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-framespersecond"
+          },
+          {
+            "type": "field",
+            "name": "framesSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-framessent"
+          },
+          {
+            "type": "field",
+            "name": "hugeFramesSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-hugeframessent"
+          },
+          {
+            "type": "field",
+            "name": "framesEncoded",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-framesencoded"
+          },
+          {
+            "type": "field",
+            "name": "keyFramesEncoded",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-keyframesencoded"
+          },
+          {
+            "type": "field",
+            "name": "qpSum",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-qpsum"
+          },
+          {
+            "type": "field",
+            "name": "psnrSum",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "record",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-psnrsum"
+          },
+          {
+            "type": "field",
+            "name": "psnrMeasurements",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-psnrmeasurements"
+          },
+          {
+            "type": "field",
+            "name": "totalEncodeTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-totalencodetime"
+          },
+          {
+            "type": "field",
+            "name": "totalPacketSendDelay",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-totalpacketsenddelay"
+          },
+          {
+            "type": "field",
+            "name": "qualityLimitationReason",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCQualityLimitationReason"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-qualitylimitationreason"
+          },
+          {
+            "type": "field",
+            "name": "qualityLimitationDurations",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "record",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-qualitylimitationdurations"
+          },
+          {
+            "type": "field",
+            "name": "qualityLimitationResolutionChanges",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-qualitylimitationresolutionchanges"
+          },
+          {
+            "type": "field",
+            "name": "nackCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-nackcount"
+          },
+          {
+            "type": "field",
+            "name": "firCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-fircount"
+          },
+          {
+            "type": "field",
+            "name": "pliCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-plicount"
+          },
+          {
+            "type": "field",
+            "name": "encoderImplementation",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-encoderimplementation"
+          },
+          {
+            "type": "field",
+            "name": "powerEfficientEncoder",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-powerefficientencoder"
+          },
+          {
+            "type": "field",
+            "name": "active",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-active"
+          },
+          {
+            "type": "field",
+            "name": "scalabilityMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-scalabilitymode"
+          },
+          {
+            "type": "field",
+            "name": "packetsSentWithEct1",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-packetssentwithect1"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats"
+      },
+      "RTCQualityLimitationReason": {
+        "fragment": "enum RTCQualityLimitationReason {\n  \"none\",\n  \"cpu\",\n  \"bandwidth\",\n  \"other\",\n};",
+        "type": "enum",
+        "name": "RTCQualityLimitationReason",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcqualitylimitationreason-none"
+          },
+          {
+            "type": "enum-value",
+            "value": "cpu",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcqualitylimitationreason-cpu"
+          },
+          {
+            "type": "enum-value",
+            "value": "bandwidth",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcqualitylimitationreason-bandwidth"
+          },
+          {
+            "type": "enum-value",
+            "value": "other",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcqualitylimitationreason-other"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcqualitylimitationreason"
+      },
+      "RTCRemoteOutboundRtpStreamStats": {
+        "fragment": "dictionary RTCRemoteOutboundRtpStreamStats : RTCSentRtpStreamStats {\n             DOMString           localId;\n             DOMHighResTimeStamp remoteTimestamp;\n             unsigned long long  reportsSent;\n             double              roundTripTime;\n             double              totalRoundTripTime;\n             unsigned long long  roundTripTimeMeasurements;\n};",
+        "type": "dictionary",
+        "name": "RTCRemoteOutboundRtpStreamStats",
+        "inheritance": "RTCSentRtpStreamStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "localId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcremoteoutboundrtpstreamstats-localid"
+          },
+          {
+            "type": "field",
+            "name": "remoteTimestamp",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcremoteoutboundrtpstreamstats-remotetimestamp"
+          },
+          {
+            "type": "field",
+            "name": "reportsSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcremoteoutboundrtpstreamstats-reportssent"
+          },
+          {
+            "type": "field",
+            "name": "roundTripTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcremoteoutboundrtpstreamstats-roundtriptime"
+          },
+          {
+            "type": "field",
+            "name": "totalRoundTripTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcremoteoutboundrtpstreamstats-totalroundtriptime"
+          },
+          {
+            "type": "field",
+            "name": "roundTripTimeMeasurements",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcremoteoutboundrtpstreamstats-roundtriptimemeasurements"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcremoteoutboundrtpstreamstats"
+      },
+      "RTCMediaSourceStats": {
+        "fragment": "dictionary RTCMediaSourceStats : RTCStats {\n             required DOMString       trackIdentifier;\n             required DOMString       kind;\n};",
+        "type": "dictionary",
+        "name": "RTCMediaSourceStats",
+        "inheritance": "RTCStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "trackIdentifier",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcmediasourcestats-trackidentifier"
+          },
+          {
+            "type": "field",
+            "name": "kind",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcmediasourcestats-kind"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcmediasourcestats"
+      },
+      "RTCAudioSourceStats": {
+        "fragment": "dictionary RTCAudioSourceStats : RTCMediaSourceStats {\n              double              audioLevel;\n              double              totalAudioEnergy;\n              double              totalSamplesDuration;\n              double              echoReturnLoss;\n              double              echoReturnLossEnhancement;\n};",
+        "type": "dictionary",
+        "name": "RTCAudioSourceStats",
+        "inheritance": "RTCMediaSourceStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "audioLevel",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcaudiosourcestats-audiolevel"
+          },
+          {
+            "type": "field",
+            "name": "totalAudioEnergy",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcaudiosourcestats-totalaudioenergy"
+          },
+          {
+            "type": "field",
+            "name": "totalSamplesDuration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcaudiosourcestats-totalsamplesduration"
+          },
+          {
+            "type": "field",
+            "name": "echoReturnLoss",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcaudiosourcestats-echoreturnloss"
+          },
+          {
+            "type": "field",
+            "name": "echoReturnLossEnhancement",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcaudiosourcestats-echoreturnlossenhancement"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcaudiosourcestats"
+      },
+      "RTCVideoSourceStats": {
+        "fragment": "dictionary RTCVideoSourceStats : RTCMediaSourceStats {\n             unsigned long   width;\n             unsigned long   height;\n             unsigned long   frames;\n             double          framesPerSecond;\n};",
+        "type": "dictionary",
+        "name": "RTCVideoSourceStats",
+        "inheritance": "RTCMediaSourceStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "width",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcvideosourcestats-width"
+          },
+          {
+            "type": "field",
+            "name": "height",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcvideosourcestats-height"
+          },
+          {
+            "type": "field",
+            "name": "frames",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcvideosourcestats-frames"
+          },
+          {
+            "type": "field",
+            "name": "framesPerSecond",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcvideosourcestats-framespersecond"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcvideosourcestats"
+      },
+      "RTCAudioPlayoutStats": {
+        "fragment": "dictionary RTCAudioPlayoutStats : RTCStats {\n             required DOMString kind;\n             double             synthesizedSamplesDuration;\n             unsigned long      synthesizedSamplesEvents;\n             double             totalSamplesDuration;\n             double             totalPlayoutDelay;\n             unsigned long long totalSamplesCount;\n};",
+        "type": "dictionary",
+        "name": "RTCAudioPlayoutStats",
+        "inheritance": "RTCStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "kind",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcaudioplayoutstats-kind"
+          },
+          {
+            "type": "field",
+            "name": "synthesizedSamplesDuration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcaudioplayoutstats-synthesizedsamplesduration"
+          },
+          {
+            "type": "field",
+            "name": "synthesizedSamplesEvents",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcaudioplayoutstats-synthesizedsamplesevents"
+          },
+          {
+            "type": "field",
+            "name": "totalSamplesDuration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcaudioplayoutstats-totalsamplesduration"
+          },
+          {
+            "type": "field",
+            "name": "totalPlayoutDelay",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcaudioplayoutstats-totalplayoutdelay"
+          },
+          {
+            "type": "field",
+            "name": "totalSamplesCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcaudioplayoutstats-totalsamplescount"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcaudioplayoutstats"
+      },
+      "RTCPeerConnectionStats": {
+        "fragment": "dictionary RTCPeerConnectionStats : RTCStats {\n            unsigned long dataChannelsOpened;\n            unsigned long dataChannelsClosed;\n};",
+        "type": "dictionary",
+        "name": "RTCPeerConnectionStats",
+        "inheritance": "RTCStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "dataChannelsOpened",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcpeerconnectionstats-datachannelsopened"
+          },
+          {
+            "type": "field",
+            "name": "dataChannelsClosed",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcpeerconnectionstats-datachannelsclosed"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcpeerconnectionstats"
+      },
+      "RTCDataChannelStats": {
+        "fragment": "dictionary RTCDataChannelStats : RTCStats {\n             DOMString           label;\n             DOMString           protocol;\n             unsigned short      dataChannelIdentifier;\n             required RTCDataChannelState state;\n             unsigned long       messagesSent;\n             unsigned long long  bytesSent;\n             unsigned long       messagesReceived;\n             unsigned long long  bytesReceived;\n};",
+        "type": "dictionary",
+        "name": "RTCDataChannelStats",
+        "inheritance": "RTCStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "label",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcdatachannelstats-label"
+          },
+          {
+            "type": "field",
+            "name": "protocol",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcdatachannelstats-protocol"
+          },
+          {
+            "type": "field",
+            "name": "dataChannelIdentifier",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcdatachannelstats-datachannelidentifier"
+          },
+          {
+            "type": "field",
+            "name": "state",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCDataChannelState"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcdatachannelstats-state"
+          },
+          {
+            "type": "field",
+            "name": "messagesSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcdatachannelstats-messagessent"
+          },
+          {
+            "type": "field",
+            "name": "bytesSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcdatachannelstats-bytessent"
+          },
+          {
+            "type": "field",
+            "name": "messagesReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcdatachannelstats-messagesreceived"
+          },
+          {
+            "type": "field",
+            "name": "bytesReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcdatachannelstats-bytesreceived"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcdatachannelstats"
+      },
+      "RTCTransportStats": {
+        "fragment": "dictionary RTCTransportStats : RTCStats {\n             unsigned long long    packetsSent;\n             unsigned long long    packetsReceived;\n             unsigned long long    bytesSent;\n             unsigned long long    bytesReceived;\n             RTCIceRole            iceRole;\n             DOMString             iceLocalUsernameFragment;\n             required RTCDtlsTransportState dtlsState;\n             RTCIceTransportState  iceState;\n             DOMString             selectedCandidatePairId;\n             DOMString             localCertificateId;\n             DOMString             remoteCertificateId;\n             DOMString             tlsVersion;\n             DOMString             dtlsCipher;\n             RTCDtlsRole           dtlsRole;\n             DOMString             srtpCipher;\n             unsigned long         selectedCandidatePairChanges;\n             unsigned long         ccfbMessagesSent;\n       unsigned long         ccfbMessagesReceived;\n};",
+        "type": "dictionary",
+        "name": "RTCTransportStats",
+        "inheritance": "RTCStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "packetsSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-packetssent"
+          },
+          {
+            "type": "field",
+            "name": "packetsReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-packetsreceived"
+          },
+          {
+            "type": "field",
+            "name": "bytesSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-bytessent"
+          },
+          {
+            "type": "field",
+            "name": "bytesReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-bytesreceived"
+          },
+          {
+            "type": "field",
+            "name": "iceRole",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCIceRole"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-icerole"
+          },
+          {
+            "type": "field",
+            "name": "iceLocalUsernameFragment",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-icelocalusernamefragment"
+          },
+          {
+            "type": "field",
+            "name": "dtlsState",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCDtlsTransportState"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-dtlsstate"
+          },
+          {
+            "type": "field",
+            "name": "iceState",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCIceTransportState"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-icestate"
+          },
+          {
+            "type": "field",
+            "name": "selectedCandidatePairId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-selectedcandidatepairid"
+          },
+          {
+            "type": "field",
+            "name": "localCertificateId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-localcertificateid"
+          },
+          {
+            "type": "field",
+            "name": "remoteCertificateId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-remotecertificateid"
+          },
+          {
+            "type": "field",
+            "name": "tlsVersion",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-tlsversion"
+          },
+          {
+            "type": "field",
+            "name": "dtlsCipher",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-dtlscipher"
+          },
+          {
+            "type": "field",
+            "name": "dtlsRole",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCDtlsRole"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-dtlsrole"
+          },
+          {
+            "type": "field",
+            "name": "srtpCipher",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-srtpcipher"
+          },
+          {
+            "type": "field",
+            "name": "selectedCandidatePairChanges",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-selectedcandidatepairchanges"
+          },
+          {
+            "type": "field",
+            "name": "ccfbMessagesSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-ccfbmessagessent"
+          },
+          {
+            "type": "field",
+            "name": "ccfbMessagesReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats-ccfbmessagesreceived"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtctransportstats"
+      },
+      "RTCDtlsRole": {
+        "fragment": "enum RTCDtlsRole {\n      \"client\",\n      \"server\",\n      \"unknown\",\n};",
+        "type": "enum",
+        "name": "RTCDtlsRole",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "client",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcdtlsrole-client"
+          },
+          {
+            "type": "enum-value",
+            "value": "server",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcdtlsrole-server"
+          },
+          {
+            "type": "enum-value",
+            "value": "unknown",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcdtlsrole-unknown"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcdtlsrole"
+      },
+      "RTCIceCandidateStats": {
+        "fragment": "dictionary RTCIceCandidateStats : RTCStats {\n             required DOMString       transportId;\n             DOMString?               address;\n             long                     port;\n             DOMString                protocol;\n             required RTCIceCandidateType candidateType;\n             long                     priority;\n             DOMString                url;\n             RTCIceServerTransportProtocol relayProtocol;\n             DOMString                foundation;\n             DOMString                relatedAddress;\n             long                     relatedPort;\n             DOMString                usernameFragment;\n             RTCIceTcpCandidateType   tcpType;\n};",
+        "type": "dictionary",
+        "name": "RTCIceCandidateStats",
+        "inheritance": "RTCStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "transportId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatestats-transportid"
+          },
+          {
+            "type": "field",
+            "name": "address",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatestats-address"
+          },
+          {
+            "type": "field",
+            "name": "port",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatestats-port"
+          },
+          {
+            "type": "field",
+            "name": "protocol",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatestats-protocol"
+          },
+          {
+            "type": "field",
+            "name": "candidateType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCIceCandidateType"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatestats-candidatetype"
+          },
+          {
+            "type": "field",
+            "name": "priority",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatestats-priority"
+          },
+          {
+            "type": "field",
+            "name": "url",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatestats-url"
+          },
+          {
+            "type": "field",
+            "name": "relayProtocol",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCIceServerTransportProtocol"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatestats-relayprotocol"
+          },
+          {
+            "type": "field",
+            "name": "foundation",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatestats-foundation"
+          },
+          {
+            "type": "field",
+            "name": "relatedAddress",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatestats-relatedaddress"
+          },
+          {
+            "type": "field",
+            "name": "relatedPort",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatestats-relatedport"
+          },
+          {
+            "type": "field",
+            "name": "usernameFragment",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatestats-usernamefragment"
+          },
+          {
+            "type": "field",
+            "name": "tcpType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCIceTcpCandidateType"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatestats-tcptype"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatestats"
+      },
+      "RTCIceCandidatePairStats": {
+        "fragment": "dictionary RTCIceCandidatePairStats : RTCStats {\n             required DOMString            transportId;\n             required DOMString            localCandidateId;\n             required DOMString            remoteCandidateId;\n             required RTCStatsIceCandidatePairState state;\n             boolean                       nominated;\n             unsigned long long            packetsSent;\n             unsigned long long            packetsReceived;\n             unsigned long long            bytesSent;\n             unsigned long long            bytesReceived;\n             DOMHighResTimeStamp           lastPacketSentTimestamp;\n             DOMHighResTimeStamp           lastPacketReceivedTimestamp;\n             double                        totalRoundTripTime;\n             double                        currentRoundTripTime;\n             double                        availableOutgoingBitrate;\n             double                        availableIncomingBitrate;\n             unsigned long long            requestsReceived;\n             unsigned long long            requestsSent;\n             unsigned long long            responsesReceived;\n             unsigned long long            responsesSent;\n             unsigned long long            consentRequestsSent;\n             unsigned long                 packetsDiscardedOnSend;\n             unsigned long long            bytesDiscardedOnSend;\n};",
+        "type": "dictionary",
+        "name": "RTCIceCandidatePairStats",
+        "inheritance": "RTCStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "transportId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-transportid"
+          },
+          {
+            "type": "field",
+            "name": "localCandidateId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-localcandidateid"
+          },
+          {
+            "type": "field",
+            "name": "remoteCandidateId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-remotecandidateid"
+          },
+          {
+            "type": "field",
+            "name": "state",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCStatsIceCandidatePairState"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-state"
+          },
+          {
+            "type": "field",
+            "name": "nominated",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-nominated"
+          },
+          {
+            "type": "field",
+            "name": "packetsSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-packetssent"
+          },
+          {
+            "type": "field",
+            "name": "packetsReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-packetsreceived"
+          },
+          {
+            "type": "field",
+            "name": "bytesSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-bytessent"
+          },
+          {
+            "type": "field",
+            "name": "bytesReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-bytesreceived"
+          },
+          {
+            "type": "field",
+            "name": "lastPacketSentTimestamp",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-lastpacketsenttimestamp"
+          },
+          {
+            "type": "field",
+            "name": "lastPacketReceivedTimestamp",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-lastpacketreceivedtimestamp"
+          },
+          {
+            "type": "field",
+            "name": "totalRoundTripTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-totalroundtriptime"
+          },
+          {
+            "type": "field",
+            "name": "currentRoundTripTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-currentroundtriptime"
+          },
+          {
+            "type": "field",
+            "name": "availableOutgoingBitrate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-availableoutgoingbitrate"
+          },
+          {
+            "type": "field",
+            "name": "availableIncomingBitrate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-availableincomingbitrate"
+          },
+          {
+            "type": "field",
+            "name": "requestsReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-requestsreceived"
+          },
+          {
+            "type": "field",
+            "name": "requestsSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-requestssent"
+          },
+          {
+            "type": "field",
+            "name": "responsesReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-responsesreceived"
+          },
+          {
+            "type": "field",
+            "name": "responsesSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-responsessent"
+          },
+          {
+            "type": "field",
+            "name": "consentRequestsSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-consentrequestssent"
+          },
+          {
+            "type": "field",
+            "name": "packetsDiscardedOnSend",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-packetsdiscardedonsend"
+          },
+          {
+            "type": "field",
+            "name": "bytesDiscardedOnSend",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats-bytesdiscardedonsend"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcicecandidatepairstats"
+      },
+      "RTCStatsIceCandidatePairState": {
+        "fragment": "enum RTCStatsIceCandidatePairState {\n    \"frozen\",\n    \"waiting\",\n    \"in-progress\",\n    \"failed\",\n    \"succeeded\"\n};",
+        "type": "enum",
+        "name": "RTCStatsIceCandidatePairState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "frozen",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatsicecandidatepairstate-frozen"
+          },
+          {
+            "type": "enum-value",
+            "value": "waiting",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatsicecandidatepairstate-waiting"
+          },
+          {
+            "type": "enum-value",
+            "value": "in-progress",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatsicecandidatepairstate-in-progress"
+          },
+          {
+            "type": "enum-value",
+            "value": "failed",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatsicecandidatepairstate-failed"
+          },
+          {
+            "type": "enum-value",
+            "value": "succeeded",
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatsicecandidatepairstate-succeeded"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtcstatsicecandidatepairstate"
+      },
+      "RTCCertificateStats": {
+        "fragment": "dictionary RTCCertificateStats : RTCStats {\n             required DOMString fingerprint;\n             required DOMString fingerprintAlgorithm;\n             required DOMString base64Certificate;\n             DOMString issuerCertificateId;\n};",
+        "type": "dictionary",
+        "name": "RTCCertificateStats",
+        "inheritance": "RTCStats",
+        "members": [
+          {
+            "type": "field",
+            "name": "fingerprint",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtccertificatestats-fingerprint"
+          },
+          {
+            "type": "field",
+            "name": "fingerprintAlgorithm",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtccertificatestats-fingerprintalgorithm"
+          },
+          {
+            "type": "field",
+            "name": "base64Certificate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtccertificatestats-base64certificate"
+          },
+          {
+            "type": "field",
+            "name": "issuerCertificateId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-stats/#dom-rtccertificatestats-issuercertificateid"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-stats/#dom-rtccertificatestats"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "RTCRtpStreamStats": [
+        "RTCStats"
+      ],
+      "RTCCodecStats": [
+        "RTCStats"
+      ],
+      "RTCReceivedRtpStreamStats": [
+        "RTCRtpStreamStats"
+      ],
+      "RTCInboundRtpStreamStats": [
+        "RTCReceivedRtpStreamStats",
+        "DOMHighResTimeStamp"
+      ],
+      "RTCRemoteInboundRtpStreamStats": [
+        "RTCReceivedRtpStreamStats"
+      ],
+      "RTCSentRtpStreamStats": [
+        "RTCRtpStreamStats"
+      ],
+      "RTCOutboundRtpStreamStats": [
+        "RTCSentRtpStreamStats",
+        "RTCQualityLimitationReason"
+      ],
+      "RTCRemoteOutboundRtpStreamStats": [
+        "RTCSentRtpStreamStats",
+        "DOMHighResTimeStamp"
+      ],
+      "RTCMediaSourceStats": [
+        "RTCStats"
+      ],
+      "RTCAudioSourceStats": [
+        "RTCMediaSourceStats"
+      ],
+      "RTCVideoSourceStats": [
+        "RTCMediaSourceStats"
+      ],
+      "RTCAudioPlayoutStats": [
+        "RTCStats"
+      ],
+      "RTCPeerConnectionStats": [
+        "RTCStats"
+      ],
+      "RTCDataChannelStats": [
+        "RTCStats",
+        "RTCDataChannelState"
+      ],
+      "RTCTransportStats": [
+        "RTCStats",
+        "RTCIceRole",
+        "RTCDtlsTransportState",
+        "RTCIceTransportState",
+        "RTCDtlsRole"
+      ],
+      "RTCIceCandidateStats": [
+        "RTCStats",
+        "RTCIceCandidateType",
+        "RTCIceServerTransportProtocol",
+        "RTCIceTcpCandidateType"
+      ],
+      "RTCIceCandidatePairStats": [
+        "RTCStats",
+        "RTCStatsIceCandidatePairState",
+        "DOMHighResTimeStamp"
+      ],
+      "RTCCertificateStats": [
+        "RTCStats"
+      ]
+    },
+    "externalDependencies": [
+      "RTCStats",
+      "DOMHighResTimeStamp",
+      "RTCDataChannelState",
+      "RTCIceRole",
+      "RTCDtlsTransportState",
+      "RTCIceTransportState",
+      "RTCIceCandidateType",
+      "RTCIceServerTransportProtocol",
+      "RTCIceTcpCandidateType"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

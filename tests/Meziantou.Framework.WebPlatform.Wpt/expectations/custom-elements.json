@@ -1,0 +1,665 @@
+{
+  "custom-elements/CustomElementRegistry-constructor-and-callbacks-are-held-strongly.html": {
+    "total": 5
+  },
+  "custom-elements/CustomElementRegistry-getName.html": {
+    "total": 4
+  },
+  "custom-elements/CustomElementRegistry.html": {
+    "total": 46
+  },
+  "custom-elements/Document-createElement-customized-builtins.html": {
+    "total": 4
+  },
+  "custom-elements/Document-createElement-svg.svg": {
+    "total": 2
+  },
+  "custom-elements/Document-createElement.html": {
+    "total": 36
+  },
+  "custom-elements/Document-createElementNS-customized-builtins.html": {
+    "total": 3
+  },
+  "custom-elements/Document-createElementNS-prefix-timing.html": {
+    "total": 3
+  },
+  "custom-elements/Document-createElementNS.html": {
+    "total": 4
+  },
+  "custom-elements/ElementInternals-accessibility-values.html": {
+    "total": 49
+  },
+  "custom-elements/ElementInternals-accessibility.html": {
+    "total": 50
+  },
+  "custom-elements/ElementInternals-accessibility.tentative.html": {
+    "total": 3
+  },
+  "custom-elements/ElementInternals-role.html": {
+    "total": 68
+  },
+  "custom-elements/HTMLElement-attachInternals.html": {
+    "total": 4
+  },
+  "custom-elements/HTMLElement-constructor-customized-builtins.html": {
+    "total": 2
+  },
+  "custom-elements/HTMLElement-constructor.html": {
+    "total": 12
+  },
+  "custom-elements/adopted-callback.html": {
+    "total": 71
+  },
+  "custom-elements/append-children-to-new-parent-cycle.html": {
+    "total": 1
+  },
+  "custom-elements/attribute-changed-callback.html": {
+    "total": 13
+  },
+  "custom-elements/builtin-coverage.html": {
+    "total": 444
+  },
+  "custom-elements/connected-callbacks-html-fragment-parsing.html": {
+    "total": 8
+  },
+  "custom-elements/connected-callbacks-template.html": {
+    "total": 1
+  },
+  "custom-elements/connected-callbacks.html": {
+    "total": 40
+  },
+  "custom-elements/createElement-reentrant-construction.window.js": {
+    "total": 2
+  },
+  "custom-elements/cross-realm-callback-report-exception.html": {
+    "total": 5
+  },
+  "custom-elements/custom-element-reaction-queue.html": {
+    "total": 6
+  },
+  "custom-elements/customized-built-in-constructor-exceptions.html": {
+    "total": 5
+  },
+  "custom-elements/disconnected-callbacks.html": {
+    "total": 40
+  },
+  "custom-elements/element-internals-aria-element-reflection.html": {
+    "total": 9
+  },
+  "custom-elements/element-internals-behaviors.tentative.html": {
+    "total": 15,
+    "failures": {
+      "Behavior state is preserved across disconnect and reconnect": "FAIL",
+      "HTMLSubmitButtonBehavior cannot be subclassed": "FAIL",
+      "attachInternals throws TypeError for DOM element in behaviors array": "FAIL",
+      "attachInternals throws TypeError for duplicate behavior instance": "FAIL",
+      "attachInternals throws TypeError for multiple instances of same behavior type": "FAIL",
+      "attachInternals throws TypeError for null in behaviors array": "FAIL",
+      "attachInternals throws TypeError for number in behaviors array": "FAIL",
+      "attachInternals throws TypeError for plain object in behaviors array": "FAIL",
+      "attachInternals throws TypeError for string in behaviors array": "FAIL",
+      "attachInternals throws TypeError for undefined in behaviors array": "FAIL",
+      "attachInternals throws TypeError when behavior is already attached to another element": "FAIL",
+      "behaviors array cannot be modified after attachment": "FAIL",
+      "behaviors is a read-only frozen array": "FAIL",
+      "behaviors returns empty array when no behaviors configured": "FAIL"
+    }
+  },
+  "custom-elements/element-internals-shadowroot.html": {
+    "total": 7
+  },
+  "custom-elements/enqueue-custom-element-callback-reactions-inside-another-callback.html": {
+    "total": 8
+  },
+  "custom-elements/form-associated/ElementInternals-NotSupportedError.html": {
+    "total": 1
+  },
+  "custom-elements/form-associated/ElementInternals-behavior-accessibility.tentative.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "custom-elements/form-associated/ElementInternals-form.html": {
+    "total": 2
+  },
+  "custom-elements/form-associated/ElementInternals-labels.html": {
+    "total": 3
+  },
+  "custom-elements/form-associated/ElementInternals-reportValidity-bubble.html": {
+    "reftest": "FAIL"
+  },
+  "custom-elements/form-associated/ElementInternals-reportValidity-delegatesFocus.html": {
+    "reftest": "FAIL"
+  },
+  "custom-elements/form-associated/ElementInternals-setFormValue-nullish-value.html": {
+    "total": 2
+  },
+  "custom-elements/form-associated/ElementInternals-setFormValue.html": {
+    "total": 55
+  },
+  "custom-elements/form-associated/ElementInternals-setValidity-normalize-newlines.html": {
+    "total": 2
+  },
+  "custom-elements/form-associated/ElementInternals-submit-behavior-dialog.tentative.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "custom-elements/form-associated/ElementInternals-submit-behavior.tentative.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "custom-elements/form-associated/ElementInternals-target-element-is-held-strongly.html": {
+    "total": 1
+  },
+  "custom-elements/form-associated/ElementInternals-validation.html": {
+    "total": 14
+  },
+  "custom-elements/form-associated/disabled-delegatesFocus.html": {
+    "total": 1
+  },
+  "custom-elements/form-associated/fieldset-elements-after-upgrade.html": {
+    "total": 1
+  },
+  "custom-elements/form-associated/fieldset-elements-during-construction.html": {
+    "total": 1
+  },
+  "custom-elements/form-associated/fieldset-elements.html": {
+    "total": 1
+  },
+  "custom-elements/form-associated/focusability.html": {
+    "total": 1
+  },
+  "custom-elements/form-associated/form-associated-callback.html": {
+    "total": 5
+  },
+  "custom-elements/form-associated/form-disabled-callback.html": {
+    "total": 10
+  },
+  "custom-elements/form-associated/form-disabled-legend.html": {
+    "total": 6
+  },
+  "custom-elements/form-associated/form-elements-namedItem.html": {
+    "total": 3
+  },
+  "custom-elements/form-associated/form-reset-callback.html": {
+    "total": 3
+  },
+  "custom-elements/form-associated/label-delegatesFocus.html": {
+    "total": 2,
+    "failures": {
+      "Clicking on a label for a form associated custom element with delegatesFocus should focus the custom element's focus delegate.": "FAIL",
+      "Clicking on a span in a label for a form associated custom element with delegatesFocus should focus the custom element's focus delegate.": "FAIL"
+    }
+  },
+  "custom-elements/historical.html": {
+    "total": 3
+  },
+  "custom-elements/htmlconstructor/newtarget-customized-builtins.html": {
+    "total": 10
+  },
+  "custom-elements/htmlconstructor/newtarget.html": {
+    "total": 10
+  },
+  "custom-elements/microtasks-and-constructors.html": {
+    "total": 5
+  },
+  "custom-elements/overwritten-customElements-global.html": {
+    "total": 4
+  },
+  "custom-elements/parser/parser-constructs-custom-element-in-document-write.html": {
+    "total": 2,
+    "failures": {
+      "HTML parser should call connectedCallback before appending child nodes inside document.write": "FAIL"
+    }
+  },
+  "custom-elements/parser/parser-constructs-custom-element-synchronously.html": {
+    "total": 1
+  },
+  "custom-elements/parser/parser-constructs-custom-elements-with-is.html": {
+    "total": 2
+  },
+  "custom-elements/parser/parser-constructs-custom-elements.html": {
+    "total": 2
+  },
+  "custom-elements/parser/parser-custom-element-in-foreign-content.html": {
+    "total": 1
+  },
+  "custom-elements/parser/parser-fallsback-to-unknown-element.html": {
+    "total": 4
+  },
+  "custom-elements/parser/parser-sets-attributes-and-children.html": {
+    "total": 5
+  },
+  "custom-elements/parser/parser-uses-constructed-element.html": {
+    "total": 2
+  },
+  "custom-elements/parser/parser-uses-create-an-element-for-a-token-svg.svg": {
+    "total": 2
+  },
+  "custom-elements/parser/parser-uses-registry-of-owner-document.html": {
+    "total": 10
+  },
+  "custom-elements/parser/serializing-html-fragments-customized-builtins.html": {
+    "total": 3
+  },
+  "custom-elements/parser/xml-parser-custom-element-reparents-during-construction.xhtml": {
+    "total": 2
+  },
+  "custom-elements/perform-microtask-checkpoint-before-construction-xml-parser.xhtml": {
+    "total": 1
+  },
+  "custom-elements/perform-microtask-checkpoint-before-construction.html": {
+    "total": 2
+  },
+  "custom-elements/pseudo-class-defined-customized-builtins.html": {
+    "total": 16
+  },
+  "custom-elements/pseudo-class-defined-print.html": {
+    "reftest": "PASS"
+  },
+  "custom-elements/pseudo-class-defined.html": {
+    "total": 24
+  },
+  "custom-elements/range-and-constructors.html": {
+    "total": 2
+  },
+  "custom-elements/reaction-timing.html": {
+    "total": 3
+  },
+  "custom-elements/reactions/Animation.html": {
+    "total": 3,
+    "failures": {
+      "Animation.animate must enqueue an attributeChanged reaction when it adds the observed style attribute": "FAIL",
+      "Animation.animate must enqueue an attributeChanged reaction when it mutates the observed style attribute": "FAIL"
+    }
+  },
+  "custom-elements/reactions/AriaMixin-element-attributes.html": {
+    "total": 16
+  },
+  "custom-elements/reactions/AriaMixin-string-attributes.html": {
+    "total": 80
+  },
+  "custom-elements/reactions/AriaMixin-string-attributes.tentative.html": {
+    "total": 8
+  },
+  "custom-elements/reactions/Attr.html": {
+    "total": 2
+  },
+  "custom-elements/reactions/CSSStyleDeclaration.html": {
+    "total": 30
+  },
+  "custom-elements/reactions/ChildNode.html": {
+    "total": 7
+  },
+  "custom-elements/reactions/DOMStringMap.html": {
+    "total": 8
+  },
+  "custom-elements/reactions/DOMTokenList.html": {
+    "total": 19
+  },
+  "custom-elements/reactions/Document.html": {
+    "total": 12
+  },
+  "custom-elements/reactions/Element.html": {
+    "total": 47
+  },
+  "custom-elements/reactions/ElementContentEditable.html": {
+    "total": 2
+  },
+  "custom-elements/reactions/HTMLAnchorElement.html": {
+    "total": 1
+  },
+  "custom-elements/reactions/HTMLElement.html": {
+    "total": 22
+  },
+  "custom-elements/reactions/HTMLOptionElement.html": {
+    "total": 2
+  },
+  "custom-elements/reactions/HTMLOptionsCollection.html": {
+    "total": 6
+  },
+  "custom-elements/reactions/HTMLOutputElement.html": {
+    "total": 2
+  },
+  "custom-elements/reactions/HTMLSelectElement.html": {
+    "total": 7
+  },
+  "custom-elements/reactions/HTMLTableElement.html": {
+    "total": 10
+  },
+  "custom-elements/reactions/HTMLTableRowElement.html": {
+    "total": 1
+  },
+  "custom-elements/reactions/HTMLTableSectionElement.html": {
+    "total": 2
+  },
+  "custom-elements/reactions/HTMLTitleElement.html": {
+    "total": 1
+  },
+  "custom-elements/reactions/NamedNodeMap.html": {
+    "total": 14
+  },
+  "custom-elements/reactions/Node.html": {
+    "total": 14
+  },
+  "custom-elements/reactions/ParentNode.html": {
+    "total": 4
+  },
+  "custom-elements/reactions/Range.html": {
+    "total": 10
+  },
+  "custom-elements/reactions/Selection.html": {
+    "total": 1
+  },
+  "custom-elements/reactions/ShadowRoot.html": {
+    "total": 3
+  },
+  "custom-elements/reactions/customized-builtins/HTMLAreaElement.html": {
+    "total": 16
+  },
+  "custom-elements/reactions/customized-builtins/HTMLBaseElement.html": {
+    "total": 4
+  },
+  "custom-elements/reactions/customized-builtins/HTMLButtonElement.html": {
+    "total": 20
+  },
+  "custom-elements/reactions/customized-builtins/HTMLCanvasElement.html": {
+    "total": 4
+  },
+  "custom-elements/reactions/customized-builtins/HTMLDataElement.html": {
+    "total": 2
+  },
+  "custom-elements/reactions/customized-builtins/HTMLDetailsElement.html": {
+    "total": 2
+  },
+  "custom-elements/reactions/customized-builtins/HTMLEmbedElement.html": {
+    "total": 8
+  },
+  "custom-elements/reactions/customized-builtins/HTMLFieldSetElement.html": {
+    "total": 4
+  },
+  "custom-elements/reactions/customized-builtins/HTMLImageElement.html": {
+    "total": 22
+  },
+  "custom-elements/reactions/customized-builtins/HTMLInputElement.html": {
+    "total": 1
+  },
+  "custom-elements/reactions/customized-builtins/HTMLLIElement.html": {
+    "total": 6
+  },
+  "custom-elements/reactions/customized-builtins/HTMLLabelElement.html": {
+    "total": 2
+  },
+  "custom-elements/reactions/customized-builtins/HTMLMapElement.html": {
+    "total": 2
+  },
+  "custom-elements/reactions/customized-builtins/HTMLMediaElement.html": {
+    "total": 28
+  },
+  "custom-elements/reactions/customized-builtins/HTMLMetaElement.html": {
+    "total": 6
+  },
+  "custom-elements/reactions/customized-builtins/HTMLMeterElement.html": {
+    "total": 12
+  },
+  "custom-elements/reactions/customized-builtins/HTMLModElement.html": {
+    "total": 8
+  },
+  "custom-elements/reactions/customized-builtins/HTMLOListElement.html": {
+    "total": 6
+  },
+  "custom-elements/reactions/customized-builtins/HTMLOptGroupElement.html": {
+    "total": 4
+  },
+  "custom-elements/reactions/customized-builtins/HTMLParamElement.html": {
+    "total": 4
+  },
+  "custom-elements/reactions/customized-builtins/HTMLProgressElement.html": {
+    "total": 4
+  },
+  "custom-elements/reactions/customized-builtins/HTMLQuoteElement.html": {
+    "total": 4
+  },
+  "custom-elements/reactions/customized-builtins/HTMLSlotElement.html": {
+    "total": 2
+  },
+  "custom-elements/reactions/customized-builtins/HTMLSourceElement.html": {
+    "total": 10
+  },
+  "custom-elements/reactions/customized-builtins/HTMLStyleElement.html": {
+    "total": 2
+  },
+  "custom-elements/reactions/customized-builtins/HTMLTableCellElement.html": {
+    "total": 16
+  },
+  "custom-elements/reactions/customized-builtins/HTMLTableColElement.html": {
+    "total": 2
+  },
+  "custom-elements/reactions/customized-builtins/HTMLTimeElement.html": {
+    "total": 2
+  },
+  "custom-elements/reactions/with-exceptions.html": {
+    "total": 1
+  },
+  "custom-elements/registries/Construct.html": {
+    "total": 3
+  },
+  "custom-elements/registries/CustomElementRegistry-define.html": {
+    "total": 3
+  },
+  "custom-elements/registries/CustomElementRegistry-initialize.html": {
+    "total": 13,
+    "failures": {
+      "initialize sets registry on shadow root descendants with no registry": "FAIL"
+    }
+  },
+  "custom-elements/registries/CustomElementRegistry-multi-register.html": {
+    "total": 2
+  },
+  "custom-elements/registries/CustomElementRegistry-upgrade.html": {
+    "total": 5,
+    "failures": {
+      "upgrade is a no-op when called on a shadow root with no association": "FAIL",
+      "upgrade should not upgrade a candidate element not associated with a registry": "FAIL",
+      "upgrade should upgrade a candidate element when called on a shadow root with an association": "FAIL"
+    }
+  },
+  "custom-elements/registries/Document-createElement.html": {
+    "total": 10
+  },
+  "custom-elements/registries/Document-createElementNS.html": {
+    "total": 10
+  },
+  "custom-elements/registries/Document-customElementRegistry.html": {
+    "total": 4
+  },
+  "custom-elements/registries/Document-importNode-cross-document.window.js": {
+    "total": 15
+  },
+  "custom-elements/registries/Document-importNode.html": {
+    "total": 20
+  },
+  "custom-elements/registries/Element-customElementRegistry-exceptions.html": {
+    "total": 3
+  },
+  "custom-elements/registries/Element-customElementRegistry.html": {
+    "total": 11
+  },
+  "custom-elements/registries/Element-innerHTML.html": {
+    "total": 12,
+    "failures": {
+      "createContextualFragment on a range inside a template should use null registry even when the template has a scoped registry": "FAIL",
+      "insertAdjacentHTML should use the element's registry even when the registry is null": "FAIL",
+      "nested descendants in innerHTML should use the null registry when the container element has null registry": "FAIL"
+    }
+  },
+  "custom-elements/registries/ShadowRoot-init-customElementRegistry.html": {
+    "total": 12
+  },
+  "custom-elements/registries/ShadowRoot-init-declarative.html": {
+    "total": 3
+  },
+  "custom-elements/registries/ShadowRoot-innerHTML.html": {
+    "total": 4
+  },
+  "custom-elements/registries/adoption.window.js": {
+    "total": 36
+  },
+  "custom-elements/registries/constructor-direct-call-fallback-registry.window.js": {
+    "total": 2
+  },
+  "custom-elements/registries/constructor-reentry-createElement.window.js": {
+    "total": 4
+  },
+  "custom-elements/registries/constructor-reentry-with-different-definition.html": {
+    "total": 4
+  },
+  "custom-elements/registries/define-customized-builtins.html": {
+    "total": 15
+  },
+  "custom-elements/registries/define.html": {
+    "total": 70
+  },
+  "custom-elements/registries/element-mutation-null-registry-removal.html": {
+    "total": 1
+  },
+  "custom-elements/registries/element-mutation.html": {
+    "total": 15
+  },
+  "custom-elements/registries/global.window.js": {
+    "total": 5
+  },
+  "custom-elements/registries/initial-about-blank.window.js": {
+    "total": 1
+  },
+  "custom-elements/registries/per-document.html": {
+    "total": 3
+  },
+  "custom-elements/registries/pseudo-class-defined.window.js": {
+    "total": 3
+  },
+  "custom-elements/registries/scoped-custom-element-registry-customelementregistry-attribute-in-xhtml.xhtml": {
+    "total": 4,
+    "failures": {
+      "XHTML fragment parser should create a custom element candidate with null registry if customelementregistry is set": "FAIL",
+      "XHTML fragment parser should create a defined custom element with null registry if customelementregistry is set": "FAIL",
+      "XHTML parser should create a custom element candidate with null registry if customelementregistry is set": "FAIL",
+      "XHTML parser should create a defined custom element with null registry if customelementregistry is set": "FAIL"
+    }
+  },
+  "custom-elements/registries/scoped-custom-element-registry-customelementregistry-attribute.html": {
+    "total": 23,
+    "failures": {
+      "Body with customelementregistry attribute during initial parse should have null registry and propagate to children": "FAIL",
+      "Body with customelementregistry in a complete document structure should have null registry": "FAIL",
+      "Cloning a builtin element with null regsitry should create an element with null registry": "FAIL",
+      "Cloning a custom element candidate with null regsitry should create an element with null registry": "FAIL",
+      "Cloning a custom element with null regsitry should create an element with null registry": "FAIL",
+      "Custom element candidate child of body with customelementregistry should have null registry during initial parse": "FAIL",
+      "Descendants of an element with customelementregistry should use null registry": "FAIL",
+      "Descendants of body with customelementregistry should all have null registry during initial parse": "FAIL",
+      "HTML parser should create a builtin element with null registry if customelementregistry is set": "FAIL",
+      "HTML parser should create a custom element candidate with null registry if customelementregistry is set": "FAIL",
+      "HTML parser should create a custom element with null registry if customelementregistry is set": "FAIL",
+      "Initial parse: built-in element with customelementregistry has null registry": "FAIL",
+      "Initial parse: child of element with customelementregistry inherits null registry": "FAIL",
+      "Initial parse: custom element candidate child inherits null registry from parent": "FAIL",
+      "Initial parse: custom element candidate with customelementregistry has null registry": "FAIL",
+      "Initial parse: deeply nested descendant inherits null registry": "FAIL",
+      "Initial parse: global registry define only upgrades elements without customelementregistry": "FAIL"
+    }
+  },
+  "custom-elements/registries/scoped-registry-append.html": {
+    "total": 16,
+    "failures": {
+      "Global registry element should gain effective global registry of scoped registry from its parent upon adoption.": "FAIL"
+    }
+  },
+  "custom-elements/registries/scoped-registry-define-upgrade-criteria.html": {
+    "total": 14
+  },
+  "custom-elements/registries/scoped-registry-define-upgrade-order.html": {
+    "total": 7
+  },
+  "custom-elements/registries/scoped-registry-effective-global-registry.html": {
+    "total": 66
+  },
+  "custom-elements/registries/scoped-registry-initialize-upgrades.html": {
+    "total": 12
+  },
+  "custom-elements/registries/scoped-registry-initialize.html": {
+    "total": 27,
+    "failures": {
+      "Document: customElementRegistry of an element created after calling CustomElementRegistry.prototype.initialize should return the registry": "FAIL",
+      "XHTMLDocument: customElementRegistry of an element created after calling CustomElementRegistry.prototype.initialize should return the registry": "FAIL"
+    }
+  },
+  "custom-elements/registries/scoped-registry-registry-define-get-etc.html": {
+    "total": 7
+  },
+  "custom-elements/registries/template.window.js": {
+    "total": 10
+  },
+  "custom-elements/registries/upgrade.html": {
+    "total": 5
+  },
+  "custom-elements/registries/valid-custom-element-names.html": {
+    "total": 1975
+  },
+  "custom-elements/shadow-descendant-lifecycle-order.html": {
+    "total": 2
+  },
+  "custom-elements/state/ElementInternals-states.html": {
+    "total": 4
+  },
+  "custom-elements/state/custom-state-set-strong-ref.html": {
+    "total": 1
+  },
+  "custom-elements/state/state-css-selector-nth-of.html": {
+    "total": 3
+  },
+  "custom-elements/state/state-css-selector-shadow-dom.html": {
+    "total": 3
+  },
+  "custom-elements/state/state-css-selector.html": {
+    "total": 10
+  },
+  "custom-elements/state/state-pseudo-class.html": {
+    "total": 8
+  },
+  "custom-elements/throw-on-dynamic-markup-insertion-counter-construct-xml-parser.xhtml": {
+    "total": 11
+  },
+  "custom-elements/throw-on-dynamic-markup-insertion-counter-construct.html": {
+    "total": 11
+  },
+  "custom-elements/throw-on-dynamic-markup-insertion-counter-reactions-xml-parser.xhtml": {
+    "total": 11
+  },
+  "custom-elements/throw-on-dynamic-markup-insertion-counter-reactions.html": {
+    "total": 11
+  },
+  "custom-elements/upgrading.html": {
+    "total": 28
+  },
+  "custom-elements/upgrading/Document-importNode-customized-builtins.html": {
+    "total": 2
+  },
+  "custom-elements/upgrading/Document-importNode.html": {
+    "total": 2
+  },
+  "custom-elements/upgrading/Node-cloneNode-customized-builtins.html": {
+    "total": 1
+  },
+  "custom-elements/upgrading/Node-cloneNode.html": {
+    "total": 9
+  },
+  "custom-elements/upgrading/upgrade-custom-element-error-event.html": {
+    "total": 4
+  },
+  "custom-elements/upgrading/upgrading-enqueue-reactions.html": {
+    "total": 5
+  },
+  "custom-elements/upgrading/upgrading-parser-created-element.html": {
+    "total": 6
+  }
+}

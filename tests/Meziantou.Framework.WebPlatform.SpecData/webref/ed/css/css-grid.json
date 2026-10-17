@@ -1,0 +1,858 @@
+{
+  "spec": {
+    "title": "CSS Grid Layout Module Level 2",
+    "url": "https://drafts.csswg.org/css-grid-2/"
+  },
+  "properties": [
+    {
+      "name": "grid-template-columns",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid-template-columns",
+      "value": "none | <track-list> | <auto-track-list> | subgrid <line-name-list>?",
+      "initial": "none",
+      "appliesTo": "grid containers",
+      "inherited": "no",
+      "percentages": "refer to corresponding dimension of the content area",
+      "computedValue": "the keyword none or a computed track list",
+      "canonicalOrder": "per grammar",
+      "animationType": "if the list lengths match, by computed value type per item in the computed track list (see § 7.2.5 Computed Value of a Track Listing and § 7.2.3.3 Interpolation/Combination of repeat()); discrete otherwise",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Indicates that no explicit grid tracks are created by this property (though explicit grid tracks could still be created by grid-template-areas).",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-rows-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<track-list> | <auto-track-list>",
+          "prose": "Specifies the track list as a series of track sizing functions and line names. Each track sizing function can be specified as a length, a percentage of the grid container’s size, a measurement of the contents occupying the column or row, or a fraction of the free space in the grid. It can also be specified as a range using the minmax() notation, which can combine any of the previously mentioned mechanisms to specify separate min and max track sizing functions for the column or row.",
+          "href": "https://drafts.csswg.org/css-grid-2/#track-listing",
+          "type": "value",
+          "value": "<track-list> | <auto-track-list>"
+        },
+        {
+          "name": "subgrid <line-name-list>?",
+          "prose": "The subgrid value indicates that the grid will adopt the spanned portion of its parent grid in that axis (the subgridded axis). Rather than being specified explicitly, the sizes of the grid rows/columns will be taken from the parent grid’s definition, and the subgrid’s items will participate in the intrinsic size calculations (CSS Grid Layout 1 § 11.5 Resolve Intrinsic Track Sizes) of any tracks shared with the parent grid. Essentially, subgrids provide the ability to pass grid parameters down through nested elements, and content-based sizing information back up to their parent grid. The <line-name-list> argument allows local naming of the grid lines shared with the parent grid: if a <line-name-list> is given, the specified <line-names>s are assigned to the lines of the subgrid’s explicit grid, one per line, starting with line 1. Excess <line-names> are ignored. If there is no parent grid, or if the grid container is otherwise forced to establish an independent formatting context (for example, due to layout containment [CSS-CONTAIN-2] or absolute positioning [CSS-POSITION-3]), the used value is the initial value, none, and the grid container is not a subgrid. An axis that is not subgridded is a standalone axis.",
+          "href": "https://drafts.csswg.org/css-grid-2/#subgrid-listing",
+          "type": "value",
+          "value": "subgrid <line-name-list>?"
+        },
+        {
+          "name": "subgrid",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-rows-subgrid",
+          "type": "value",
+          "value": "subgrid"
+        },
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "A non-negative length or percentage, as defined by CSS3 Values. [CSS-VALUES-3] <percentage> values are relative to the inner inline size of the grid container in column grid tracks, and the inner block size of the grid container in row grid tracks. If the size of the grid container depends on the size of its tracks, then the <percentage> must be treated as auto, for the purpose of calculating the intrinsic sizes of the grid container and then resolve against that resulting grid container size for the purpose of laying out the grid and its items.",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-columns-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "<flex [0,∞]>",
+          "prose": "A non-negative dimension with the unit fr specifying the track’s flex factor. Each <flex>-sized track takes a share of the remaining space in proportion to its flex factor. For example, given a track listing of 1fr 2fr, the tracks will take up ⅓ and ⅔ of the leftover space, respectively. See § 7.2.4 Flexible Lengths: the fr unit for more details. When appearing outside a minmax() notation, implies an automatic minimum (i.e. minmax(auto, <flex>)).",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-columns-flex-0",
+          "type": "value",
+          "value": "<flex [0,∞]>"
+        },
+        {
+          "name": "minmax()",
+          "value": "minmax(min, max)",
+          "href": "https://drafts.csswg.org/css-grid-2/#funcdef-grid-template-columns-minmax",
+          "type": "function"
+        },
+        {
+          "name": "auto",
+          "prose": "As a maximum: represents the largest max-content contribution of the grid items occupying the grid track; however, unlike max-content, allows expansion of the track by the align-content and justify-content properties. As a minimum: represents the largest minimum size (specified by min-width/min-height) of the grid items occupying the grid track. (This initially is often, but not always, equal to a min-content minimum—​see § 6.6 Automatic Minimum Size of Grid Items.) When appearing outside a minmax() notation: equivalent to minmax(auto, auto), representing the range between the minimum and maximum described above. (This behaves similar to minmax(min-content, max-content) in the most basic cases, but with extra abilities.)",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-columns-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "max-content",
+          "prose": "Represents the largest max-content contribution of the grid items occupying the grid track.",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-columns-max-content",
+          "type": "value",
+          "value": "max-content"
+        },
+        {
+          "name": "min-content",
+          "prose": "Represents the largest min-content contribution of the grid items occupying the grid track.",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-columns-min-content",
+          "type": "value",
+          "value": "min-content"
+        },
+        {
+          "name": "fit-content()",
+          "value": "fit-content( <length-percentage> )",
+          "href": "https://drafts.csswg.org/css-grid-2/#funcdef-grid-template-columns-fit-content",
+          "type": "function"
+        }
+      ],
+      "styleDeclaration": [
+        "grid-template-columns",
+        "gridTemplateColumns"
+      ]
+    },
+    {
+      "name": "grid-template-rows",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid-template-rows",
+      "value": "none | <track-list> | <auto-track-list> | subgrid <line-name-list>?",
+      "initial": "none",
+      "appliesTo": "grid containers",
+      "inherited": "no",
+      "percentages": "refer to corresponding dimension of the content area",
+      "computedValue": "the keyword none or a computed track list",
+      "canonicalOrder": "per grammar",
+      "animationType": "if the list lengths match, by computed value type per item in the computed track list (see § 7.2.5 Computed Value of a Track Listing and § 7.2.3.3 Interpolation/Combination of repeat()); discrete otherwise",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Indicates that no explicit grid tracks are created by this property (though explicit grid tracks could still be created by grid-template-areas).",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-rows-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<track-list> | <auto-track-list>",
+          "prose": "Specifies the track list as a series of track sizing functions and line names. Each track sizing function can be specified as a length, a percentage of the grid container’s size, a measurement of the contents occupying the column or row, or a fraction of the free space in the grid. It can also be specified as a range using the minmax() notation, which can combine any of the previously mentioned mechanisms to specify separate min and max track sizing functions for the column or row.",
+          "href": "https://drafts.csswg.org/css-grid-2/#track-listing",
+          "type": "value",
+          "value": "<track-list> | <auto-track-list>"
+        },
+        {
+          "name": "subgrid <line-name-list>?",
+          "prose": "The subgrid value indicates that the grid will adopt the spanned portion of its parent grid in that axis (the subgridded axis). Rather than being specified explicitly, the sizes of the grid rows/columns will be taken from the parent grid’s definition, and the subgrid’s items will participate in the intrinsic size calculations (CSS Grid Layout 1 § 11.5 Resolve Intrinsic Track Sizes) of any tracks shared with the parent grid. Essentially, subgrids provide the ability to pass grid parameters down through nested elements, and content-based sizing information back up to their parent grid. The <line-name-list> argument allows local naming of the grid lines shared with the parent grid: if a <line-name-list> is given, the specified <line-names>s are assigned to the lines of the subgrid’s explicit grid, one per line, starting with line 1. Excess <line-names> are ignored. If there is no parent grid, or if the grid container is otherwise forced to establish an independent formatting context (for example, due to layout containment [CSS-CONTAIN-2] or absolute positioning [CSS-POSITION-3]), the used value is the initial value, none, and the grid container is not a subgrid. An axis that is not subgridded is a standalone axis.",
+          "href": "https://drafts.csswg.org/css-grid-2/#subgrid-listing",
+          "type": "value",
+          "value": "subgrid <line-name-list>?"
+        },
+        {
+          "name": "subgrid",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-rows-subgrid",
+          "type": "value",
+          "value": "subgrid"
+        },
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "A non-negative length or percentage, as defined by CSS3 Values. [CSS-VALUES-3] <percentage> values are relative to the inner inline size of the grid container in column grid tracks, and the inner block size of the grid container in row grid tracks. If the size of the grid container depends on the size of its tracks, then the <percentage> must be treated as auto, for the purpose of calculating the intrinsic sizes of the grid container and then resolve against that resulting grid container size for the purpose of laying out the grid and its items.",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-columns-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "<flex [0,∞]>",
+          "prose": "A non-negative dimension with the unit fr specifying the track’s flex factor. Each <flex>-sized track takes a share of the remaining space in proportion to its flex factor. For example, given a track listing of 1fr 2fr, the tracks will take up ⅓ and ⅔ of the leftover space, respectively. See § 7.2.4 Flexible Lengths: the fr unit for more details. When appearing outside a minmax() notation, implies an automatic minimum (i.e. minmax(auto, <flex>)).",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-columns-flex-0",
+          "type": "value",
+          "value": "<flex [0,∞]>"
+        },
+        {
+          "name": "minmax()",
+          "value": "minmax(min, max)",
+          "href": "https://drafts.csswg.org/css-grid-2/#funcdef-grid-template-columns-minmax",
+          "type": "function"
+        },
+        {
+          "name": "auto",
+          "prose": "As a maximum: represents the largest max-content contribution of the grid items occupying the grid track; however, unlike max-content, allows expansion of the track by the align-content and justify-content properties. As a minimum: represents the largest minimum size (specified by min-width/min-height) of the grid items occupying the grid track. (This initially is often, but not always, equal to a min-content minimum—​see § 6.6 Automatic Minimum Size of Grid Items.) When appearing outside a minmax() notation: equivalent to minmax(auto, auto), representing the range between the minimum and maximum described above. (This behaves similar to minmax(min-content, max-content) in the most basic cases, but with extra abilities.)",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-columns-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "max-content",
+          "prose": "Represents the largest max-content contribution of the grid items occupying the grid track.",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-columns-max-content",
+          "type": "value",
+          "value": "max-content"
+        },
+        {
+          "name": "min-content",
+          "prose": "Represents the largest min-content contribution of the grid items occupying the grid track.",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-columns-min-content",
+          "type": "value",
+          "value": "min-content"
+        },
+        {
+          "name": "fit-content()",
+          "value": "fit-content( <length-percentage> )",
+          "href": "https://drafts.csswg.org/css-grid-2/#funcdef-grid-template-columns-fit-content",
+          "type": "function"
+        }
+      ],
+      "styleDeclaration": [
+        "grid-template-rows",
+        "gridTemplateRows"
+      ]
+    },
+    {
+      "name": "grid-template-areas",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid-template-areas",
+      "value": "none | <string>+",
+      "initial": "none",
+      "appliesTo": "grid containers",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the keyword none or a list of string values",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Indicates that no named grid areas, and likewise no explicit grid tracks, are defined by this property (though explicit grid tracks could still be created by grid-template-columns or grid-template-rows).",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-areas-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<string>+",
+          "prose": "A row is created for every separate string listed for the grid-template-areas property, and a column is created for each cell in the string, when parsed as follows: Tokenize the string into a list of the following tokens, using longest-match semantics: A sequence of ident code points, representing a named cell token with a name consisting of its code points. A sequence of one or more \".\" (U+002E FULL STOP), representing a null cell token. A sequence of whitespace, representing nothing (do not produce a token). A sequence of any other characters, representing a trash token. A null cell token represents an unnamed area in the grid container. A named cell token creates a named grid area with the same name. Multiple named cell tokens within and between rows create a single named grid area that spans the corresponding grid cells. A trash token is a syntax error, and makes the declaration invalid. All strings must define the same number of cell tokens (named cell tokens and/or null cell tokens), and at least one cell token, or else the declaration is invalid. If a named grid area spans multiple grid cells, but those cells do not form a single filled-in rectangle, the declaration is invalid.",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-areas-string",
+          "type": "value",
+          "value": "<string>+"
+        }
+      ],
+      "styleDeclaration": [
+        "grid-template-areas",
+        "gridTemplateAreas"
+      ]
+    },
+    {
+      "name": "grid-template",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid-template",
+      "value": "none | [ <'grid-template-rows'> / <'grid-template-columns'> ] | [ <line-names>? <string> <track-size>? <line-names>? ]+ [ / <explicit-track-list> ]?",
+      "initial": "none",
+      "appliesTo": "grid containers",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Sets all three properties to their initial values (none).",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-template-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<'grid-template-rows'> / <'grid-template-columns'>",
+          "prose": "Sets grid-template-rows and grid-template-columns to the specified values, respectively, and sets grid-template-areas to none. grid-template: auto 1fr / auto 1fr auto; is equivalent to grid-template-rows: auto 1fr; grid-template-columns: auto 1fr auto; grid-template-areas: none;",
+          "href": "https://drafts.csswg.org/css-grid-2/#grid-template-rowcol",
+          "type": "value",
+          "value": "<'grid-template-rows'> / <'grid-template-columns'>"
+        },
+        {
+          "name": "[ <line-names>? <string> <track-size>? <line-names>? ]+ [ / <explicit-track-list> ]?",
+          "prose": "Sets grid-template-areas to the strings listed. Sets grid-template-rows to the <track-size>s following each string (filling in auto for any missing sizes), and splicing in the named lines defined before/after each size. Sets grid-template-columns to the track listing specified after the slash (or none, if not specified). This syntax allows the author to align track names and sizes inline with their respective grid areas. grid-template: [header-top] \"a a a\" [header-bottom] [main-top] \"b b b\" 1fr [main-bottom] / auto 1fr auto; is equivalent to grid-template-areas: \"a a a\" \"b b b\"; grid-template-rows: [header-top] auto [header-bottom main-top] 1fr [main-bottom]; grid-template-columns: auto 1fr auto; and creates the following grid: Three columns, sized auto, 1fr, and auto, respectively Two rows sized as auto and 1fr, respectively. A line named both “header-top” and “a-start” at the top, a line with four names—​“header-bottom”, “main-top”, “a-end”, and “b-start”—​in the middle, a line named “main-bottom” and “b-end” at the bottom. A line named “a-start” and “b-start” on the left edge, and a line named “a-end” and “b-end” on the right edge. The grid created by the declarations above. (The “a/b-start/end” names are implicitly assigned by the named grid areas.)",
+          "href": "https://drafts.csswg.org/css-grid-2/#grid-template-ascii",
+          "type": "value",
+          "value": "[ <line-names>? <string> <track-size>? <line-names>? ]+ [ / <explicit-track-list> ]?"
+        }
+      ],
+      "styleDeclaration": [
+        "grid-template",
+        "gridTemplate"
+      ],
+      "longhands": [
+        "grid-template-rows",
+        "grid-template-columns",
+        "grid-template-areas"
+      ]
+    },
+    {
+      "name": "grid-auto-columns",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid-auto-columns",
+      "value": "<track-size>+",
+      "initial": "auto",
+      "appliesTo": "grid containers",
+      "inherited": "no",
+      "percentages": "see Track Sizing",
+      "computedValue": "see Track Sizing",
+      "canonicalOrder": "per grammar",
+      "animationType": "if the list lengths match, by computed value type per item; discrete otherwise",
+      "styleDeclaration": [
+        "grid-auto-columns",
+        "gridAutoColumns"
+      ]
+    },
+    {
+      "name": "grid-auto-rows",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid-auto-rows",
+      "value": "<track-size>+",
+      "initial": "auto",
+      "appliesTo": "grid containers",
+      "inherited": "no",
+      "percentages": "see Track Sizing",
+      "computedValue": "see Track Sizing",
+      "canonicalOrder": "per grammar",
+      "animationType": "if the list lengths match, by computed value type per item; discrete otherwise",
+      "styleDeclaration": [
+        "grid-auto-rows",
+        "gridAutoRows"
+      ]
+    },
+    {
+      "name": "grid-auto-flow",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid-auto-flow",
+      "value": "[ row | column ] || dense",
+      "initial": "row",
+      "appliesTo": "grid containers",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "row",
+          "prose": "The auto-placement algorithm places items by filling each row in turn, adding new rows as necessary. If neither row nor column is provided, row is assumed.",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-auto-flow-row",
+          "type": "value",
+          "value": "row"
+        },
+        {
+          "name": "column",
+          "prose": "The auto-placement algorithm places items by filling each column in turn, adding new columns as necessary.",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-auto-flow-column",
+          "type": "value",
+          "value": "column"
+        },
+        {
+          "name": "dense",
+          "prose": "If specified, the auto-placement algorithm uses a “dense” packing algorithm, which attempts to fill in holes earlier in the grid if smaller items come up later. This may cause items to appear out-of-order, when doing so would fill in holes left by larger items. If omitted, a “sparse” algorithm is used, where the placement algorithm only ever moves “forward” in the grid when placing items, never backtracking to fill holes. This ensures that all of the auto-placed items appear “in order”, even if this leaves holes that could have been filled by later items.",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-grid-auto-flow-dense",
+          "type": "value",
+          "value": "dense"
+        }
+      ],
+      "styleDeclaration": [
+        "grid-auto-flow",
+        "gridAutoFlow"
+      ]
+    },
+    {
+      "name": "grid",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid",
+      "value": "<'grid-template'> | <'grid-template-rows'> / [ auto-flow && dense? ] <'grid-auto-columns'>? | [ auto-flow && dense? ] <'grid-auto-rows'>? / <'grid-template-columns'>",
+      "initial": "none",
+      "appliesTo": "grid containers",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "<'grid-template-rows'> / [ auto-flow && dense? ] <'grid-auto-columns'>?",
+          "prose": "Sets up auto-flow, by setting the tracks in one axis explicitly (setting either grid-template-rows or grid-template-columns as specified, and setting the other to none), and specifying how to auto-repeat the tracks in the other axis (setting either grid-auto-rows or grid-auto-columns as specified, and setting the other to auto). grid-auto-flow is also set to either row or column accordingly, with dense if it’s specified. All other grid sub-properties are reset to their initial values.",
+          "href": "https://drafts.csswg.org/css-grid-2/#grid-s-auto-row",
+          "type": "value",
+          "value": "<'grid-template-rows'> / [ auto-flow && dense? ] <'grid-auto-columns'>?"
+        },
+        {
+          "name": "[ auto-flow && dense? ] <'grid-auto-rows'>? / <'grid-template-columns'>",
+          "prose": "Sets up auto-flow, by setting the tracks in one axis explicitly (setting either grid-template-rows or grid-template-columns as specified, and setting the other to none), and specifying how to auto-repeat the tracks in the other axis (setting either grid-auto-rows or grid-auto-columns as specified, and setting the other to auto). grid-auto-flow is also set to either row or column accordingly, with dense if it’s specified. All other grid sub-properties are reset to their initial values.",
+          "href": "https://drafts.csswg.org/css-grid-2/#grid-s-auto-column",
+          "type": "value",
+          "value": "[ auto-flow && dense? ] <'grid-auto-rows'>? / <'grid-template-columns'>"
+        }
+      ],
+      "styleDeclaration": [
+        "grid"
+      ],
+      "longhands": [
+        "grid-template-rows",
+        "grid-template-columns",
+        "grid-template-areas",
+        "grid-auto-rows",
+        "grid-auto-columns",
+        "grid-auto-flow"
+      ]
+    },
+    {
+      "name": "grid-row-start",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid-row-start",
+      "value": "<grid-line>",
+      "initial": "auto",
+      "appliesTo": "grid items and absolutely-positioned boxes whose containing block is a grid container",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword, identifier, and/or integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "<grid-line>",
+          "href": "https://drafts.csswg.org/css-grid-2/#typedef-grid-row-start-grid-line",
+          "type": "type",
+          "value": "auto | <custom-ident> | [ [ <integer [-∞,-1]> | <integer [1,∞]> ] && <custom-ident>? ] | [ span && [ <integer [1,∞]> || <custom-ident> ] ]",
+          "values": [
+            {
+              "name": "<custom-ident>",
+              "prose": "First attempt to match the grid area’s edge to a named grid area: if there is a grid line whose line name is <custom-ident>-start (for grid-*-start) / <custom-ident>-end (for grid-*-end), contributes the first such line to the grid item’s placement. Otherwise, treat this as if the integer 1 had been specified along with the <custom-ident>.",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-slot",
+              "type": "value",
+              "value": "<custom-ident>"
+            },
+            {
+              "name": "[ <integer [-∞,-1]> | <integer [1,∞]> ] && <custom-ident>?",
+              "prose": "Contributes the Nth grid line to the grid item’s placement. If a negative integer is given, it instead counts in reverse, starting from the end edge of the explicit grid. If a name is given as a <custom-ident>, only lines with that name are counted. If not enough lines with that name exist, all implicit grid lines are assumed to have that name for the purpose of finding this position. An <integer> value of zero makes the declaration invalid.",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-int",
+              "type": "value",
+              "value": "[ <integer [-∞,-1]> | <integer [1,∞]> ] && <custom-ident>?"
+            },
+            {
+              "name": "span && [ <integer [1,∞]> || <custom-ident> ]",
+              "prose": "Contributes a grid span to the grid item’s placement such that the corresponding edge of the grid item’s grid area is N lines from its opposite edge in the corresponding direction. For example, grid-column-end: span 2 indicates the second grid line in the endward direction from the grid-column-start line. If a name is given as a <custom-ident>, only lines with that name are counted. If not enough lines with that name exist, all implicit grid lines on the side of the explicit grid corresponding to the search direction are assumed to have that name for the purpose of counting this span. For example, given the following declarations: .grid { grid-template-columns: 100px; } .griditem { grid-column: span foo / 4; } The grid container has an explicit grid with two grid lines, numbered 1 and 2. The grid item’s column-end edge is specified to be at line 4, so two lines are generated in the endward side of the implicit grid. Its column-start edge must be the first \"foo\" line it can find startward of that. There is no \"foo\" line in the grid, though, so the only possibility is a line in the implicit grid. Line 3 is not a candidate, because it’s on the endward side of the explicit grid, while the grid-column-start span forces it to search startward. So, the only option is for the implicit grid to generate a line on the startward side of the explicit grid. An illustration of the result. If the <integer> is omitted, it defaults to 1. Negative integers or zero are invalid.",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-span-int",
+              "type": "value",
+              "value": "span && [ <integer [1,∞]> || <custom-ident> ]"
+            },
+            {
+              "name": "auto",
+              "prose": "The property contributes nothing to the grid item’s placement, indicating auto-placement or a default span of one. (See § 8 Placing Grid Items, above.)",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-auto",
+              "type": "value",
+              "value": "auto"
+            }
+          ]
+        }
+      ],
+      "styleDeclaration": [
+        "grid-row-start",
+        "gridRowStart"
+      ]
+    },
+    {
+      "name": "grid-column-start",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid-column-start",
+      "value": "<grid-line>",
+      "initial": "auto",
+      "appliesTo": "grid items and absolutely-positioned boxes whose containing block is a grid container",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword, identifier, and/or integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "<grid-line>",
+          "href": "https://drafts.csswg.org/css-grid-2/#typedef-grid-row-start-grid-line",
+          "type": "type",
+          "value": "auto | <custom-ident> | [ [ <integer [-∞,-1]> | <integer [1,∞]> ] && <custom-ident>? ] | [ span && [ <integer [1,∞]> || <custom-ident> ] ]",
+          "values": [
+            {
+              "name": "<custom-ident>",
+              "prose": "First attempt to match the grid area’s edge to a named grid area: if there is a grid line whose line name is <custom-ident>-start (for grid-*-start) / <custom-ident>-end (for grid-*-end), contributes the first such line to the grid item’s placement. Otherwise, treat this as if the integer 1 had been specified along with the <custom-ident>.",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-slot",
+              "type": "value",
+              "value": "<custom-ident>"
+            },
+            {
+              "name": "[ <integer [-∞,-1]> | <integer [1,∞]> ] && <custom-ident>?",
+              "prose": "Contributes the Nth grid line to the grid item’s placement. If a negative integer is given, it instead counts in reverse, starting from the end edge of the explicit grid. If a name is given as a <custom-ident>, only lines with that name are counted. If not enough lines with that name exist, all implicit grid lines are assumed to have that name for the purpose of finding this position. An <integer> value of zero makes the declaration invalid.",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-int",
+              "type": "value",
+              "value": "[ <integer [-∞,-1]> | <integer [1,∞]> ] && <custom-ident>?"
+            },
+            {
+              "name": "span && [ <integer [1,∞]> || <custom-ident> ]",
+              "prose": "Contributes a grid span to the grid item’s placement such that the corresponding edge of the grid item’s grid area is N lines from its opposite edge in the corresponding direction. For example, grid-column-end: span 2 indicates the second grid line in the endward direction from the grid-column-start line. If a name is given as a <custom-ident>, only lines with that name are counted. If not enough lines with that name exist, all implicit grid lines on the side of the explicit grid corresponding to the search direction are assumed to have that name for the purpose of counting this span. For example, given the following declarations: .grid { grid-template-columns: 100px; } .griditem { grid-column: span foo / 4; } The grid container has an explicit grid with two grid lines, numbered 1 and 2. The grid item’s column-end edge is specified to be at line 4, so two lines are generated in the endward side of the implicit grid. Its column-start edge must be the first \"foo\" line it can find startward of that. There is no \"foo\" line in the grid, though, so the only possibility is a line in the implicit grid. Line 3 is not a candidate, because it’s on the endward side of the explicit grid, while the grid-column-start span forces it to search startward. So, the only option is for the implicit grid to generate a line on the startward side of the explicit grid. An illustration of the result. If the <integer> is omitted, it defaults to 1. Negative integers or zero are invalid.",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-span-int",
+              "type": "value",
+              "value": "span && [ <integer [1,∞]> || <custom-ident> ]"
+            },
+            {
+              "name": "auto",
+              "prose": "The property contributes nothing to the grid item’s placement, indicating auto-placement or a default span of one. (See § 8 Placing Grid Items, above.)",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-auto",
+              "type": "value",
+              "value": "auto"
+            }
+          ]
+        }
+      ],
+      "styleDeclaration": [
+        "grid-column-start",
+        "gridColumnStart"
+      ]
+    },
+    {
+      "name": "grid-row-end",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid-row-end",
+      "value": "<grid-line>",
+      "initial": "auto",
+      "appliesTo": "grid items and absolutely-positioned boxes whose containing block is a grid container",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword, identifier, and/or integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "<grid-line>",
+          "href": "https://drafts.csswg.org/css-grid-2/#typedef-grid-row-start-grid-line",
+          "type": "type",
+          "value": "auto | <custom-ident> | [ [ <integer [-∞,-1]> | <integer [1,∞]> ] && <custom-ident>? ] | [ span && [ <integer [1,∞]> || <custom-ident> ] ]",
+          "values": [
+            {
+              "name": "<custom-ident>",
+              "prose": "First attempt to match the grid area’s edge to a named grid area: if there is a grid line whose line name is <custom-ident>-start (for grid-*-start) / <custom-ident>-end (for grid-*-end), contributes the first such line to the grid item’s placement. Otherwise, treat this as if the integer 1 had been specified along with the <custom-ident>.",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-slot",
+              "type": "value",
+              "value": "<custom-ident>"
+            },
+            {
+              "name": "[ <integer [-∞,-1]> | <integer [1,∞]> ] && <custom-ident>?",
+              "prose": "Contributes the Nth grid line to the grid item’s placement. If a negative integer is given, it instead counts in reverse, starting from the end edge of the explicit grid. If a name is given as a <custom-ident>, only lines with that name are counted. If not enough lines with that name exist, all implicit grid lines are assumed to have that name for the purpose of finding this position. An <integer> value of zero makes the declaration invalid.",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-int",
+              "type": "value",
+              "value": "[ <integer [-∞,-1]> | <integer [1,∞]> ] && <custom-ident>?"
+            },
+            {
+              "name": "span && [ <integer [1,∞]> || <custom-ident> ]",
+              "prose": "Contributes a grid span to the grid item’s placement such that the corresponding edge of the grid item’s grid area is N lines from its opposite edge in the corresponding direction. For example, grid-column-end: span 2 indicates the second grid line in the endward direction from the grid-column-start line. If a name is given as a <custom-ident>, only lines with that name are counted. If not enough lines with that name exist, all implicit grid lines on the side of the explicit grid corresponding to the search direction are assumed to have that name for the purpose of counting this span. For example, given the following declarations: .grid { grid-template-columns: 100px; } .griditem { grid-column: span foo / 4; } The grid container has an explicit grid with two grid lines, numbered 1 and 2. The grid item’s column-end edge is specified to be at line 4, so two lines are generated in the endward side of the implicit grid. Its column-start edge must be the first \"foo\" line it can find startward of that. There is no \"foo\" line in the grid, though, so the only possibility is a line in the implicit grid. Line 3 is not a candidate, because it’s on the endward side of the explicit grid, while the grid-column-start span forces it to search startward. So, the only option is for the implicit grid to generate a line on the startward side of the explicit grid. An illustration of the result. If the <integer> is omitted, it defaults to 1. Negative integers or zero are invalid.",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-span-int",
+              "type": "value",
+              "value": "span && [ <integer [1,∞]> || <custom-ident> ]"
+            },
+            {
+              "name": "auto",
+              "prose": "The property contributes nothing to the grid item’s placement, indicating auto-placement or a default span of one. (See § 8 Placing Grid Items, above.)",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-auto",
+              "type": "value",
+              "value": "auto"
+            }
+          ]
+        }
+      ],
+      "styleDeclaration": [
+        "grid-row-end",
+        "gridRowEnd"
+      ]
+    },
+    {
+      "name": "grid-column-end",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid-column-end",
+      "value": "<grid-line>",
+      "initial": "auto",
+      "appliesTo": "grid items and absolutely-positioned boxes whose containing block is a grid container",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword, identifier, and/or integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "<grid-line>",
+          "href": "https://drafts.csswg.org/css-grid-2/#typedef-grid-row-start-grid-line",
+          "type": "type",
+          "value": "auto | <custom-ident> | [ [ <integer [-∞,-1]> | <integer [1,∞]> ] && <custom-ident>? ] | [ span && [ <integer [1,∞]> || <custom-ident> ] ]",
+          "values": [
+            {
+              "name": "<custom-ident>",
+              "prose": "First attempt to match the grid area’s edge to a named grid area: if there is a grid line whose line name is <custom-ident>-start (for grid-*-start) / <custom-ident>-end (for grid-*-end), contributes the first such line to the grid item’s placement. Otherwise, treat this as if the integer 1 had been specified along with the <custom-ident>.",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-slot",
+              "type": "value",
+              "value": "<custom-ident>"
+            },
+            {
+              "name": "[ <integer [-∞,-1]> | <integer [1,∞]> ] && <custom-ident>?",
+              "prose": "Contributes the Nth grid line to the grid item’s placement. If a negative integer is given, it instead counts in reverse, starting from the end edge of the explicit grid. If a name is given as a <custom-ident>, only lines with that name are counted. If not enough lines with that name exist, all implicit grid lines are assumed to have that name for the purpose of finding this position. An <integer> value of zero makes the declaration invalid.",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-int",
+              "type": "value",
+              "value": "[ <integer [-∞,-1]> | <integer [1,∞]> ] && <custom-ident>?"
+            },
+            {
+              "name": "span && [ <integer [1,∞]> || <custom-ident> ]",
+              "prose": "Contributes a grid span to the grid item’s placement such that the corresponding edge of the grid item’s grid area is N lines from its opposite edge in the corresponding direction. For example, grid-column-end: span 2 indicates the second grid line in the endward direction from the grid-column-start line. If a name is given as a <custom-ident>, only lines with that name are counted. If not enough lines with that name exist, all implicit grid lines on the side of the explicit grid corresponding to the search direction are assumed to have that name for the purpose of counting this span. For example, given the following declarations: .grid { grid-template-columns: 100px; } .griditem { grid-column: span foo / 4; } The grid container has an explicit grid with two grid lines, numbered 1 and 2. The grid item’s column-end edge is specified to be at line 4, so two lines are generated in the endward side of the implicit grid. Its column-start edge must be the first \"foo\" line it can find startward of that. There is no \"foo\" line in the grid, though, so the only possibility is a line in the implicit grid. Line 3 is not a candidate, because it’s on the endward side of the explicit grid, while the grid-column-start span forces it to search startward. So, the only option is for the implicit grid to generate a line on the startward side of the explicit grid. An illustration of the result. If the <integer> is omitted, it defaults to 1. Negative integers or zero are invalid.",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-span-int",
+              "type": "value",
+              "value": "span && [ <integer [1,∞]> || <custom-ident> ]"
+            },
+            {
+              "name": "auto",
+              "prose": "The property contributes nothing to the grid item’s placement, indicating auto-placement or a default span of one. (See § 8 Placing Grid Items, above.)",
+              "href": "https://drafts.csswg.org/css-grid-2/#grid-placement-auto",
+              "type": "value",
+              "value": "auto"
+            }
+          ]
+        }
+      ],
+      "styleDeclaration": [
+        "grid-column-end",
+        "gridColumnEnd"
+      ]
+    },
+    {
+      "name": "grid-row",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid-row",
+      "value": "<grid-line> [ / <grid-line> ]?",
+      "initial": "auto",
+      "appliesTo": "grid items and absolutely-positioned boxes whose containing block is a grid container",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "discrete",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "grid-row",
+        "gridRow"
+      ],
+      "longhands": [
+        "grid-row-start",
+        "grid-row-end"
+      ]
+    },
+    {
+      "name": "grid-column",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid-column",
+      "value": "<grid-line> [ / <grid-line> ]?",
+      "initial": "auto",
+      "appliesTo": "grid items and absolutely-positioned boxes whose containing block is a grid container",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "discrete",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "grid-column",
+        "gridColumn"
+      ],
+      "longhands": [
+        "grid-column-start",
+        "grid-column-end"
+      ]
+    },
+    {
+      "name": "grid-area",
+      "href": "https://drafts.csswg.org/css-grid-2/#propdef-grid-area",
+      "value": "<grid-line> [ / <grid-line> ]{0,3}",
+      "initial": "auto",
+      "appliesTo": "grid items and absolutely-positioned boxes whose containing block is a grid container",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "discrete",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "grid-area",
+        "gridArea"
+      ],
+      "longhands": [
+        "grid-row-start",
+        "grid-column-start",
+        "grid-row-end",
+        "grid-column-end"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<track-list>",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-track-list",
+      "type": "type",
+      "value": "[ <line-names>? [ <track-size> | <track-repeat> ] ]+ <line-names>?"
+    },
+    {
+      "name": "<auto-track-list>",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-auto-track-list",
+      "type": "type",
+      "value": "[ <line-names>? [ <fixed-size> | <fixed-repeat> ] ]* <line-names>? <auto-repeat> [ <line-names>? [ <fixed-size> | <fixed-repeat> ] ]* <line-names>?"
+    },
+    {
+      "name": "<explicit-track-list>",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-explicit-track-list",
+      "type": "type",
+      "value": "[ <line-names>? <track-size> ]+ <line-names>?"
+    },
+    {
+      "name": "<line-name-list>",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-line-name-list",
+      "type": "type",
+      "value": "[ <line-names> | <name-repeat> ]+"
+    },
+    {
+      "name": "<track-size>",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-track-size",
+      "type": "type",
+      "value": "<track-breadth> | minmax( <inflexible-breadth> , <track-breadth> ) | fit-content( <length-percentage [0,∞]> )"
+    },
+    {
+      "name": "<fixed-size>",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-fixed-size",
+      "type": "type",
+      "value": "<fixed-breadth> | minmax( <fixed-breadth> , <track-breadth> ) | minmax( <inflexible-breadth> , <fixed-breadth> )"
+    },
+    {
+      "name": "<track-breadth>",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-track-breadth",
+      "type": "type",
+      "value": "<length-percentage [0,∞]> | <flex [0,∞]> | min-content | max-content | auto"
+    },
+    {
+      "name": "<inflexible-breadth>",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-inflexible-breadth",
+      "type": "type",
+      "value": "<length-percentage [0,∞]> | min-content | max-content | auto"
+    },
+    {
+      "name": "<fixed-breadth>",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-fixed-breadth",
+      "type": "type",
+      "value": "<length-percentage [0,∞]>"
+    },
+    {
+      "name": "<line-names>",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-line-names",
+      "type": "type",
+      "value": "'[' <custom-ident>* ']'"
+    },
+    {
+      "name": "<track-repeat>",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-track-repeat",
+      "type": "type",
+      "value": "repeat( [ <integer [1,∞]> ] , [ <line-names>? <track-size> ]+ <line-names>? )",
+      "values": [
+        {
+          "name": "repeat()",
+          "prose": "The repeat() notation represents a repeated fragment of the track list, allowing a large number of columns or rows that exhibit a recurring pattern to be written in a more compact form.",
+          "href": "https://drafts.csswg.org/css-grid-2/#funcdef-track-repeat-repeat",
+          "type": "function",
+          "values": [
+            {
+              "name": "auto-fill",
+              "prose": "Otherwise on a standalone axis, when auto-fill is given as the repetition number, if the grid container has a definite preferred size or maximum size in the relevant axis, then the number of repetitions is the largest possible positive integer that does not cause the grid to overflow the content box of its grid container taking gap into account; if any number of repetitions would overflow, then 1 repetition. Otherwise, if the grid container has a definite minimum size in the relevant axis, the number of repetitions is the smallest possible positive integer that fulfills that minimum requirement. Otherwise, the specified track list repeats only once.",
+              "href": "https://drafts.csswg.org/css-grid-2/#valdef-repeat-auto-fill",
+              "type": "value",
+              "value": "auto-fill"
+            },
+            {
+              "name": "auto-fit",
+              "prose": "The auto-fit keyword behaves the same as auto-fill, except that after grid item placement any empty repeated tracks are collapsed. An empty track is one with no in-flow grid items placed into or spanning across it. (This can result in all tracks being collapsed, if they’re all empty.)",
+              "href": "https://drafts.csswg.org/css-grid-2/#valdef-repeat-auto-fit",
+              "type": "value",
+              "value": "auto-fit"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "<auto-repeat>",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-auto-repeat",
+      "type": "type",
+      "value": "repeat( [ auto-fill | auto-fit ] , [ <line-names>? <fixed-size> ]+ <line-names>? )",
+      "values": [
+        {
+          "name": "repeat()",
+          "prose": "The repeat() notation represents a repeated fragment of the track list, allowing a large number of columns or rows that exhibit a recurring pattern to be written in a more compact form.",
+          "href": "https://drafts.csswg.org/css-grid-2/#funcdef-track-repeat-repeat",
+          "type": "function",
+          "values": [
+            {
+              "name": "auto-fill",
+              "prose": "Otherwise on a standalone axis, when auto-fill is given as the repetition number, if the grid container has a definite preferred size or maximum size in the relevant axis, then the number of repetitions is the largest possible positive integer that does not cause the grid to overflow the content box of its grid container taking gap into account; if any number of repetitions would overflow, then 1 repetition. Otherwise, if the grid container has a definite minimum size in the relevant axis, the number of repetitions is the smallest possible positive integer that fulfills that minimum requirement. Otherwise, the specified track list repeats only once.",
+              "href": "https://drafts.csswg.org/css-grid-2/#valdef-repeat-auto-fill",
+              "type": "value",
+              "value": "auto-fill"
+            },
+            {
+              "name": "auto-fit",
+              "prose": "The auto-fit keyword behaves the same as auto-fill, except that after grid item placement any empty repeated tracks are collapsed. An empty track is one with no in-flow grid items placed into or spanning across it. (This can result in all tracks being collapsed, if they’re all empty.)",
+              "href": "https://drafts.csswg.org/css-grid-2/#valdef-repeat-auto-fit",
+              "type": "value",
+              "value": "auto-fit"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "<fixed-repeat>",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-fixed-repeat",
+      "type": "type",
+      "value": "repeat( [ <integer [1,∞]> ] , [ <line-names>? <fixed-size> ]+ <line-names>? )",
+      "values": [
+        {
+          "name": "repeat()",
+          "prose": "The repeat() notation represents a repeated fragment of the track list, allowing a large number of columns or rows that exhibit a recurring pattern to be written in a more compact form.",
+          "href": "https://drafts.csswg.org/css-grid-2/#funcdef-track-repeat-repeat",
+          "type": "function",
+          "values": [
+            {
+              "name": "auto-fill",
+              "prose": "Otherwise on a standalone axis, when auto-fill is given as the repetition number, if the grid container has a definite preferred size or maximum size in the relevant axis, then the number of repetitions is the largest possible positive integer that does not cause the grid to overflow the content box of its grid container taking gap into account; if any number of repetitions would overflow, then 1 repetition. Otherwise, if the grid container has a definite minimum size in the relevant axis, the number of repetitions is the smallest possible positive integer that fulfills that minimum requirement. Otherwise, the specified track list repeats only once.",
+              "href": "https://drafts.csswg.org/css-grid-2/#valdef-repeat-auto-fill",
+              "type": "value",
+              "value": "auto-fill"
+            },
+            {
+              "name": "auto-fit",
+              "prose": "The auto-fit keyword behaves the same as auto-fill, except that after grid item placement any empty repeated tracks are collapsed. An empty track is one with no in-flow grid items placed into or spanning across it. (This can result in all tracks being collapsed, if they’re all empty.)",
+              "href": "https://drafts.csswg.org/css-grid-2/#valdef-repeat-auto-fit",
+              "type": "value",
+              "value": "auto-fit"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "<name-repeat>",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-name-repeat",
+      "type": "type",
+      "value": "repeat( [ <integer [1,∞]> | auto-fill ], <line-names>+)"
+    },
+    {
+      "name": "<flex>",
+      "prose": "A flexible length or <flex> is a dimension with the fr unit, which represents a fraction of the leftover space in the grid container. Tracks sized with fr units are called flexible tracks as they flex in response to leftover space similar to how flex items with a zero base size fill space in a flex container.",
+      "href": "https://drafts.csswg.org/css-grid-2/#typedef-flex",
+      "type": "type",
+      "values": [
+        {
+          "name": "fr",
+          "prose": "A flexible length or <flex> is a dimension with the fr unit, which represents a fraction of the leftover space in the grid container. Tracks sized with fr units are called flexible tracks as they flex in response to leftover space similar to how flex items with a zero base size fill space in a flex container.",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-flex-fr",
+          "type": "value",
+          "value": "fr"
+        },
+        {
+          "name": "fr unit",
+          "prose": "A flexible length or <flex> is a dimension with the fr unit, which represents a fraction of the leftover space in the grid container. Tracks sized with fr units are called flexible tracks as they flex in response to leftover space similar to how flex items with a zero base size fill space in a flex container.",
+          "href": "https://drafts.csswg.org/css-grid-2/#valdef-flex-fr",
+          "type": "value",
+          "value": "fr unit"
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "grid",
+      "prose": "This value causes an element to generate a grid container box that is block-level when placed in flow layout.",
+      "href": "https://drafts.csswg.org/css-grid-2/#valdef-display-grid",
+      "type": "value",
+      "value": "grid",
+      "for": "display"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "inline-grid",
+      "prose": "This value causes an element to generate a grid container box that is inline-level when placed in flow layout.",
+      "href": "https://drafts.csswg.org/css-grid-2/#valdef-display-inline-grid",
+      "type": "value",
+      "value": "inline-grid",
+      "for": "display"
+    }
+  ]
+}

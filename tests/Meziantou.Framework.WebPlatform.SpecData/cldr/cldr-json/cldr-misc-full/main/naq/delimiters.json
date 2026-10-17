@@ -1,0 +1,15 @@
+{
+  "main": {
+    "naq": {
+      "identity": {
+        "language": "naq"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

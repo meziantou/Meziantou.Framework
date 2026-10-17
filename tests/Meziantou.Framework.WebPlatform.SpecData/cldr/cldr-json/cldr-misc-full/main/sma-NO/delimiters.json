@@ -1,0 +1,16 @@
+{
+  "main": {
+    "sma-NO": {
+      "identity": {
+        "language": "sma",
+        "territory": "NO"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

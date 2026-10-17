@@ -1,0 +1,799 @@
+{
+  "html/editing/activation/click-bail-on-disabled.html": {
+    "total": 4
+  },
+  "html/editing/activation/click.html": {
+    "total": 1
+  },
+  "html/editing/activation/click_checkbox.html": {
+    "total": 1
+  },
+  "html/editing/dnd/canvas/001.html": {
+    "total": 1
+  },
+  "html/editing/dnd/canvas/002.html": {
+    "total": 1
+  },
+  "html/editing/dnd/canvas/003.html": {
+    "total": 1
+  },
+  "html/editing/dnd/canvas/005.html": {
+    "total": 1
+  },
+  "html/editing/dnd/canvas/007.html": {
+    "total": 1
+  },
+  "html/editing/dnd/datastore/datatransfer-constructor-001.html": {
+    "total": 1
+  },
+  "html/editing/dnd/datastore/datatransfer-getdata-url.html": {
+    "total": 11
+  },
+  "html/editing/dnd/datastore/datatransfer-types.html": {
+    "total": 5
+  },
+  "html/editing/dnd/datastore/datatransferitem-disabled-mode.html": {
+    "total": 5
+  },
+  "html/editing/dnd/datastore/datatransferitemlist-clear-read-only.html": {
+    "total": 1
+  },
+  "html/editing/dnd/datastore/datatransferitemlist-clear.html": {
+    "total": 2
+  },
+  "html/editing/dnd/datastore/datatransferitemlist-indexed-getter.html": {
+    "total": 6
+  },
+  "html/editing/dnd/datastore/datatransferitemlist-remove.html": {
+    "total": 2
+  },
+  "html/editing/dnd/dom/draggable.html": {
+    "total": 27
+  },
+  "html/editing/dnd/dom/events.html": {
+    "total": 7
+  },
+  "html/editing/dnd/dom/specials.html": {
+    "total": 21
+  },
+  "html/editing/dnd/drop/001.xhtml": {
+    "total": 3
+  },
+  "html/editing/dnd/drop/002.xhtml": {
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "Text input selection drag and drop: allowed effects\n    'copy','move','link'": "TIMEOUT",
+      "Text input selection drag and drop: allowed effects\n    'copy','move','link' 1": "NOTRUN",
+      "Text input selection drag and drop: allowed effects\n    'copy','move','link' 2": "NOTRUN"
+    }
+  },
+  "html/editing/dnd/drop/003.xhtml": {
+    "total": 3
+  },
+  "html/editing/dnd/drop/004.xhtml": {
+    "total": 3
+  },
+  "html/editing/dnd/drop/005.xhtml": {
+    "total": 3
+  },
+  "html/editing/dnd/drop/006.xhtml": {
+    "total": 3
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=copy&effectallowed=all": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=copy&effectallowed=copy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=copy&effectallowed=copyLink": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=copy&effectallowed=copyMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=copy&effectallowed=dummy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=copy&effectallowed=link": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=copy&effectallowed=linkMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=copy&effectallowed=move": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=copy&effectallowed=none": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=copy&effectallowed=undefined": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=copy&effectallowed=uninitialized": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=dummy&effectallowed=all": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=dummy&effectallowed=copy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=dummy&effectallowed=copyLink": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=dummy&effectallowed=copyMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=dummy&effectallowed=dummy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=dummy&effectallowed=link": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=dummy&effectallowed=linkMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=dummy&effectallowed=move": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=dummy&effectallowed=none": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=dummy&effectallowed=undefined": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=dummy&effectallowed=uninitialized": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=link&effectallowed=all": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=link&effectallowed=copy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=link&effectallowed=copyLink": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=link&effectallowed=copyMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=link&effectallowed=dummy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=link&effectallowed=link": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=link&effectallowed=linkMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=link&effectallowed=move": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=link&effectallowed=none": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=link&effectallowed=undefined": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=link&effectallowed=uninitialized": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=move&effectallowed=all": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=move&effectallowed=copy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=move&effectallowed=copyLink": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=move&effectallowed=copyMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=move&effectallowed=dummy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=move&effectallowed=link": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=move&effectallowed=linkMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=move&effectallowed=move": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=move&effectallowed=none": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=move&effectallowed=undefined": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=move&effectallowed=uninitialized": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=none&effectallowed=all": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=none&effectallowed=copy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=none&effectallowed=copyLink": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=none&effectallowed=copyMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=none&effectallowed=dummy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=none&effectallowed=link": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=none&effectallowed=linkMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=none&effectallowed=move": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=none&effectallowed=none": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=none&effectallowed=undefined": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/029.html?dropeffect=none&effectallowed=uninitialized": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=copy&effectallowed=all": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=copy&effectallowed=copy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=copy&effectallowed=copyLink": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=copy&effectallowed=copyMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=copy&effectallowed=dummy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=copy&effectallowed=link": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=copy&effectallowed=linkMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=copy&effectallowed=move": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=copy&effectallowed=none": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=copy&effectallowed=undefined": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=copy&effectallowed=uninitialized": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=dummy&effectallowed=all": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=dummy&effectallowed=copy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=dummy&effectallowed=copyLink": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=dummy&effectallowed=copyMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=dummy&effectallowed=dummy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=dummy&effectallowed=link": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=dummy&effectallowed=linkMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=dummy&effectallowed=move": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=dummy&effectallowed=none": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=dummy&effectallowed=undefined": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=dummy&effectallowed=uninitialized": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=link&effectallowed=all": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=link&effectallowed=copy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=link&effectallowed=copyLink": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=link&effectallowed=copyMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=link&effectallowed=dummy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=link&effectallowed=link": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=link&effectallowed=linkMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=link&effectallowed=move": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=link&effectallowed=none": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=link&effectallowed=undefined": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=link&effectallowed=uninitialized": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=move&effectallowed=all": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=move&effectallowed=copy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=move&effectallowed=copyLink": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=move&effectallowed=copyMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=move&effectallowed=dummy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=move&effectallowed=link": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=move&effectallowed=linkMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=move&effectallowed=move": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=move&effectallowed=none": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=move&effectallowed=undefined": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=move&effectallowed=uninitialized": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=none&effectallowed=all": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=none&effectallowed=copy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=none&effectallowed=copyLink": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=none&effectallowed=copyMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=none&effectallowed=dummy": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=none&effectallowed=link": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=none&effectallowed=linkMove": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=none&effectallowed=move": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=none&effectallowed=none": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=none&effectallowed=undefined": {
+    "total": 1
+  },
+  "html/editing/dnd/drop/030.html?dropeffect=none&effectallowed=uninitialized": {
+    "total": 1
+  },
+  "html/editing/dnd/events/dragenter-dragleave-related-target.html": {
+    "total": 1
+  },
+  "html/editing/dnd/events/pointer-suppression.html": {
+    "total": 1
+  },
+  "html/editing/dnd/historical.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/001.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/002.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/004.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/005.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/006.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/007.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/008.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/009.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/010.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/011.xhtml": {
+    "total": 1
+  },
+  "html/editing/dnd/images/012.xhtml": {
+    "total": 1
+  },
+  "html/editing/dnd/images/013.xhtml": {
+    "total": 1
+  },
+  "html/editing/dnd/images/014.xhtml": {
+    "total": 1
+  },
+  "html/editing/dnd/images/015.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/016.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/017.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/018.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/021.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/022.xhtml": {
+    "total": 1
+  },
+  "html/editing/dnd/images/023.html": {
+    "total": 1
+  },
+  "html/editing/dnd/images/024.html": {
+    "total": 1
+  },
+  "html/editing/dnd/interactiveelements/button_inside_draggable_element.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/contenteditable_inside_draggable_element.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/disabled_input_text_inside_draggable_element.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Disabled text input with inside draggable element should not be draggable from border": "TIMEOUT",
+      "Disabled text input with inside draggable element should not be draggable while attempting to select text": "NOTRUN"
+    }
+  },
+  "html/editing/dnd/interactiveelements/draggable_button.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/draggable_contenteditable.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/draggable_disabled_input_text.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Disabled draggable text input should not be draggable from border": "TIMEOUT",
+      "Disabled draggable text input should not be draggable while attempting to select text": "NOTRUN"
+    }
+  },
+  "html/editing/dnd/interactiveelements/draggable_input_button.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/draggable_input_image.html": {
+    "total": 3
+  },
+  "html/editing/dnd/interactiveelements/draggable_input_reset.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/draggable_input_submit.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/draggable_input_text.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/draggable_readonly_input_text.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/draggable_select.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/draggable_select_multiple.html": {
+    "total": 1
+  },
+  "html/editing/dnd/interactiveelements/draggable_textarea.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/input_button_inside_draggable_element.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/input_image_inside_draggable_element.html": {
+    "total": 3
+  },
+  "html/editing/dnd/interactiveelements/input_reset_inside_draggable_element.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/input_submit_inside_draggable_element.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/input_text_inside_draggable_element.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/readonly_input_text_inside_draggable_element.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/select_inside_draggable_element.html": {
+    "total": 2
+  },
+  "html/editing/dnd/interactiveelements/select_multiple_inside_draggable_element.html": {
+    "total": 1
+  },
+  "html/editing/dnd/interactiveelements/textarea_inside_draggable_element.html": {
+    "total": 2
+  },
+  "html/editing/dnd/js-file-fallback-text-only.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "JS File falls back to text/plain filename when DragAndDropJSFileObjects is disabled": "FAIL"
+    }
+  },
+  "html/editing/dnd/js-file-image-drag.html": {
+    "total": 1
+  },
+  "html/editing/dnd/layoutshift/001.html": {
+    "total": 1
+  },
+  "html/editing/dnd/platform/mousedown-drag-select-input-display-change.html": {
+    "total": 3
+  },
+  "html/editing/dnd/platform/mousedown-move-inner-when-dragging-1.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "dragstart should still fire when the mousedown event moves the inner element around": "TIMEOUT"
+    }
+  },
+  "html/editing/dnd/platform/mousedown-move-inner-when-dragging-2.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "dragstart should still fire when the mousedown event moves the container of the inner element around": "TIMEOUT"
+    }
+  },
+  "html/editing/dnd/platform/pointerdown-add-display-none.html": {
+    "total": 1
+  },
+  "html/editing/dnd/platform/pointerdown-add-overflow-hidden.html": {
+    "total": 1
+  },
+  "html/editing/dnd/remove/001.html": {
+    "total": 1
+  },
+  "html/editing/dnd/synthetic/001.html": {
+    "total": 16
+  },
+  "html/editing/dnd/target-origin/202.html": {
+    "total": 1,
+    "failures": {
+      "allowTargetOrigin with fake dataTransfer should block events": "FAIL"
+    }
+  },
+  "html/editing/dnd/the-draggable-attribute/draggable-enumerated-ascii-case-insensitive.html": {
+    "total": 1
+  },
+  "html/editing/dnd/the-draggable-attribute/draggable_attribute.html": {
+    "total": 302
+  },
+  "html/editing/dnd/the-dropzone-attribute/dropzone_attribute.html": {
+    "total": 4,
+    "failures": {
+      "div dropzone idl attribute must reflect the content attribute of the same name": "FAIL",
+      "div.dropzone should not be null": "FAIL"
+    }
+  },
+  "html/editing/editing-0/autocapitalization/autocapitalize.html": {
+    "total": 8
+  },
+  "html/editing/editing-0/autocorrection/autocorrection.html": {
+    "total": 9
+  },
+  "html/editing/editing-0/contenteditable/contentEditable-slotted-inherit.html": {
+    "total": 2
+  },
+  "html/editing/editing-0/contenteditable/contenteditable-enumerated-ascii-case-insensitive.html": {
+    "total": 24
+  },
+  "html/editing/editing-0/contenteditable/contenteditable-overflow-height.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/editing-0/contenteditable/contenteditable-with-empty-block.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/editing-0/contenteditable/selection-in-contentEditable-at-turning-designMode-on-off.tentative.html": {
+    "total": 1
+  },
+  "html/editing/editing-0/contenteditable/user-interaction-editing-contenteditable.html": {
+    "total": 9
+  },
+  "html/editing/editing-0/making-entire-documents-editable-the-designmode-idl-attribute/contenteditable-false-in-design-mode.html": {
+    "total": 2
+  },
+  "html/editing/editing-0/making-entire-documents-editable-the-designmode-idl-attribute/user-interaction-editing-designMode-svg.svg": {
+    "total": 3
+  },
+  "html/editing/editing-0/making-entire-documents-editable-the-designmode-idl-attribute/user-interaction-editing-designMode-xml.xml": {
+    "total": 3
+  },
+  "html/editing/editing-0/making-entire-documents-editable-the-designmode-idl-attribute/user-interaction-editing-designMode.html": {
+    "total": 3
+  },
+  "html/editing/editing-0/spelling-and-grammar-checking/spellcheck-enumerated-ascii-case-insensitive.html": {
+    "total": 1
+  },
+  "html/editing/editing-0/spelling-and-grammar-checking/spelling-markers-001.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/editing-0/spelling-and-grammar-checking/spelling-markers-002.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/editing-0/spelling-and-grammar-checking/spelling-markers-003.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/editing-0/spelling-and-grammar-checking/spelling-markers-004.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/editing-0/spelling-and-grammar-checking/spelling-markers-005.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/editing-0/spelling-and-grammar-checking/spelling-markers-006.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/editing-0/spelling-and-grammar-checking/spelling-markers-007.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/editing-0/spelling-and-grammar-checking/spelling-markers-008.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/editing-0/spelling-and-grammar-checking/spelling-markers-009.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/editing-0/spelling-and-grammar-checking/spelling-markers-010.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/editing-0/spelling-and-grammar-checking/user-interaction-editing-spellcheck.html": {
+    "total": 3
+  },
+  "html/editing/editing-0/writing-suggestions/writingsuggestions.html": {
+    "total": 80
+  },
+  "html/editing/focus/focus-management/active-element.html": {
+    "total": 3
+  },
+  "html/editing/focus/focus-management/focus-blur.html": {
+    "total": 1
+  },
+  "html/editing/focus/focus-management/focus-on-all-elements.html": {
+    "total": 1
+  },
+  "html/editing/focus/focus-management/focused-area-removal.html": {
+    "total": 1
+  },
+  "html/editing/focus/focus-management/focusing-disconnected-noop.html": {
+    "total": 1,
+    "failures": {
+      "focusing a focused element must not dispatch focus events or change activeElement": "FAIL"
+    }
+  },
+  "html/editing/focus/focus-management/focusing-focused-noop.html": {
+    "total": 1
+  },
+  "html/editing/focus/sequential-focus-navigation-and-the-tabindex-attribute/focus-tabindex-event.html": {
+    "total": 2
+  },
+  "html/editing/the-hidden-attribute/beforematch-attribute-removal-001.html": {
+    "total": 1
+  },
+  "html/editing/the-hidden-attribute/beforematch-attribute-removal-002.html": {
+    "total": 1
+  },
+  "html/editing/the-hidden-attribute/beforematch-element-fragment-navigation.html": {
+    "total": 10
+  },
+  "html/editing/the-hidden-attribute/beforematch-element-removal-001.html": {
+    "total": 1
+  },
+  "html/editing/the-hidden-attribute/beforematch-element-removal-002.html": {
+    "total": 1
+  },
+  "html/editing/the-hidden-attribute/beforematch-infinite-loop.html": {
+    "total": 1
+  },
+  "html/editing/the-hidden-attribute/beforematch-scroll-to-text-fragment.html": {
+    "total": 3
+  },
+  "html/editing/the-hidden-attribute/hidden-1a.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/the-hidden-attribute/hidden-1b.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/the-hidden-attribute/hidden-1c.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/the-hidden-attribute/hidden-1d.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/the-hidden-attribute/hidden-1e.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/the-hidden-attribute/hidden-1f.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/the-hidden-attribute/hidden-1g.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/the-hidden-attribute/hidden-2.svg": {
+    "reftest": "PASS"
+  },
+  "html/editing/the-hidden-attribute/hidden-idl.html": {
+    "total": 17
+  },
+  "html/editing/the-hidden-attribute/hidden-ua-stylesheet.html": {
+    "total": 8
+  },
+  "html/editing/the-hidden-attribute/hidden-until-found-001.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/the-hidden-attribute/hidden-until-found-002.html": {
+    "total": 1
+  },
+  "html/editing/the-hidden-attribute/hidden-until-found-004.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/the-hidden-attribute/hidden-until-found-007.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/the-hidden-attribute/hidden-until-found-and-details.html": {
+    "total": 1
+  },
+  "html/editing/the-hidden-attribute/hidden-until-found-idl.html": {
+    "total": 1
+  },
+  "html/editing/the-hidden-attribute/hidden-until-found-text-fragment.html": {
+    "total": 1
+  }
+}

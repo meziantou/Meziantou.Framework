@@ -1,0 +1,495 @@
+{
+  "preload/avoid-delaying-onload-link-modulepreload-exec.html": {
+    "total": 1
+  },
+  "preload/avoid-delaying-onload-link-modulepreload.html": {
+    "total": 1
+  },
+  "preload/avoid-delaying-onload-link-preload-style.html": {
+    "total": 1
+  },
+  "preload/avoid-delaying-onload-link-preload.html": {
+    "total": 1
+  },
+  "preload/avoid-prefetching-on-text-plain.html": {
+    "total": 1
+  },
+  "preload/cross-origin-link-header-on-subresource.sub.html": {
+    "total": 1,
+    "failures": {
+      "Link headers on a cross-origin subresource resolve relative URLs against the subresource's URL, not the document's": "FAIL"
+    }
+  },
+  "preload/delaying-onload-link-preload-after-discovery.html": {
+    "total": 1
+  },
+  "preload/download-resources.html": {
+    "total": 1
+  },
+  "preload/dynamic-adding-preload-imagesrcset.html": {
+    "total": 1
+  },
+  "preload/dynamic-adding-preload-nonce.html": {
+    "total": 2
+  },
+  "preload/dynamic-adding-preload.html": {
+    "total": 1
+  },
+  "preload/link-header-modulepreload.html": {
+    "total": 1
+  },
+  "preload/link-header-on-subresource.html": {
+    "total": 1,
+    "failures": {
+      "Makes sure that Link headers on subresources preload resources": "FAIL"
+    }
+  },
+  "preload/link-header-preload-delay-onload.html": {
+    "total": 1
+  },
+  "preload/link-header-preload-imagesrcset.html": {
+    "total": 1
+  },
+  "preload/link-header-preload-non-html.html": {
+    "total": 5
+  },
+  "preload/link-header-preload-nonce.html": {
+    "total": 2
+  },
+  "preload/link-header-preload.html": {
+    "total": 1
+  },
+  "preload/link-preload-as-case-insensitive.html": {
+    "total": 7
+  },
+  "preload/modulepreload-already-in-module-map.html": {
+    "total": 5
+  },
+  "preload/modulepreload-as.html": {
+    "total": 28
+  },
+  "preload/modulepreload-consumed-by-script.html": {
+    "total": 1
+  },
+  "preload/modulepreload-fires-before-dependencies.html": {
+    "total": 3
+  },
+  "preload/modulepreload-json.html": {
+    "total": 1
+  },
+  "preload/modulepreload-multiple.html": {
+    "total": 3
+  },
+  "preload/modulepreload-sri-importmap.html": {
+    "total": 1
+  },
+  "preload/modulepreload-sri.html": {
+    "total": 1
+  },
+  "preload/modulepreload-style.html": {
+    "total": 1
+  },
+  "preload/modulepreload-text.html": {
+    "total": 1
+  },
+  "preload/modulepreload.html": {
+    "total": 55
+  },
+  "preload/onerror-event.html": {
+    "total": 1,
+    "failures": {
+      "Makes sure that preloaded resources trigger the onerror event": "FAIL"
+    }
+  },
+  "preload/onload-event.html": {
+    "total": 1,
+    "failures": {
+      "Makes sure that preloaded resources trigger the onload event": "FAIL"
+    }
+  },
+  "preload/preconnect-onerror-event.html": {
+    "total": 3
+  },
+  "preload/preconnect.html": {
+    "total": 1
+  },
+  "preload/prefetch-accept.html": {
+    "total": 1
+  },
+  "preload/prefetch-cache.html": {
+    "total": 4,
+    "failures": {
+      "Prefetch should populate the HTTP cache": "FAIL"
+    }
+  },
+  "preload/prefetch-document.html": {
+    "total": 5,
+    "failures": {
+      "same origin document prefetch without 'as' should be consumed": "FAIL"
+    }
+  },
+  "preload/prefetch-events.html": {
+    "total": 9
+  },
+  "preload/prefetch-headers.https.html": {
+    "total": 3
+  },
+  "preload/prefetch-load-event.html": {
+    "total": 1
+  },
+  "preload/prefetch-time-to-fetch.https.html": {
+    "total": 2
+  },
+  "preload/prefetch-types.https.html": {
+    "total": 25
+  },
+  "preload/preload-connect-to-doc.html": {
+    "total": 5
+  },
+  "preload/preload-csp.sub.html": {
+    "total": 1
+  },
+  "preload/preload-default-csp.sub.html": {
+    "total": 1
+  },
+  "preload/preload-dynamic-csp.html": {
+    "total": 1
+  },
+  "preload/preload-error.sub.html": {
+    "total": 68
+  },
+  "preload/preload-font-crossorigin.html": {
+    "total": 4
+  },
+  "preload/preload-imagesrcset-in-markup.html": {
+    "total": 2
+  },
+  "preload/preload-imagesrcset-no-href.html": {
+    "total": 3
+  },
+  "preload/preload-in-data-doc.html": {
+    "reftest": "PASS"
+  },
+  "preload/preload-invalid-resources.html": {
+    "total": 2
+  },
+  "preload/preload-link-cached-stylesheet-different-doc.html": {
+    "total": 1
+  },
+  "preload/preload-nonce.sub.html": {
+    "total": 2
+  },
+  "preload/preload-referrer-policy-subresource-header.tentative.html?isCrossOriginPreload=false&isCrossOriginResource=false": {
+    "total": 49,
+    "failures": {
+      "referrer policy ( -> , same-origin, same-origin)": "FAIL",
+      "referrer policy ( -> no-referrer, same-origin, same-origin)": "FAIL",
+      "referrer policy ( -> origin, same-origin, same-origin)": "FAIL",
+      "referrer policy ( -> origin-when-cross-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy ( -> same-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy ( -> strict-origin-when-cross-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy ( -> unsafe-url, same-origin, same-origin)": "FAIL",
+      "referrer policy (no-referrer -> , same-origin, same-origin)": "FAIL",
+      "referrer policy (no-referrer -> no-referrer, same-origin, same-origin)": "FAIL",
+      "referrer policy (no-referrer -> origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (no-referrer -> origin-when-cross-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (no-referrer -> same-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (no-referrer -> strict-origin-when-cross-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (no-referrer -> unsafe-url, same-origin, same-origin)": "FAIL",
+      "referrer policy (origin -> , same-origin, same-origin)": "FAIL",
+      "referrer policy (origin -> no-referrer, same-origin, same-origin)": "FAIL",
+      "referrer policy (origin -> origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (origin -> origin-when-cross-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (origin -> same-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (origin -> strict-origin-when-cross-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (origin -> unsafe-url, same-origin, same-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> , same-origin, same-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> no-referrer, same-origin, same-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> origin-when-cross-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> same-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> strict-origin-when-cross-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> unsafe-url, same-origin, same-origin)": "FAIL",
+      "referrer policy (same-origin -> , same-origin, same-origin)": "FAIL",
+      "referrer policy (same-origin -> no-referrer, same-origin, same-origin)": "FAIL",
+      "referrer policy (same-origin -> origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (same-origin -> origin-when-cross-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (same-origin -> same-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (same-origin -> strict-origin-when-cross-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (same-origin -> unsafe-url, same-origin, same-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> , same-origin, same-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> no-referrer, same-origin, same-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> origin-when-cross-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> same-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> strict-origin-when-cross-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> unsafe-url, same-origin, same-origin)": "FAIL",
+      "referrer policy (unsafe-url -> , same-origin, same-origin)": "FAIL",
+      "referrer policy (unsafe-url -> no-referrer, same-origin, same-origin)": "FAIL",
+      "referrer policy (unsafe-url -> origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (unsafe-url -> origin-when-cross-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (unsafe-url -> same-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (unsafe-url -> strict-origin-when-cross-origin, same-origin, same-origin)": "FAIL",
+      "referrer policy (unsafe-url -> unsafe-url, same-origin, same-origin)": "FAIL"
+    }
+  },
+  "preload/preload-referrer-policy-subresource-header.tentative.html?isCrossOriginPreload=false&isCrossOriginResource=true": {
+    "total": 49,
+    "failures": {
+      "referrer policy ( -> , same-origin, cross-origin)": "FAIL",
+      "referrer policy ( -> no-referrer, same-origin, cross-origin)": "FAIL",
+      "referrer policy ( -> origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy ( -> origin-when-cross-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy ( -> same-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy ( -> strict-origin-when-cross-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy ( -> unsafe-url, same-origin, cross-origin)": "FAIL",
+      "referrer policy (no-referrer -> , same-origin, cross-origin)": "FAIL",
+      "referrer policy (no-referrer -> no-referrer, same-origin, cross-origin)": "FAIL",
+      "referrer policy (no-referrer -> origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (no-referrer -> origin-when-cross-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (no-referrer -> same-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (no-referrer -> strict-origin-when-cross-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (no-referrer -> unsafe-url, same-origin, cross-origin)": "FAIL",
+      "referrer policy (origin -> , same-origin, cross-origin)": "FAIL",
+      "referrer policy (origin -> no-referrer, same-origin, cross-origin)": "FAIL",
+      "referrer policy (origin -> origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (origin -> origin-when-cross-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (origin -> same-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (origin -> strict-origin-when-cross-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (origin -> unsafe-url, same-origin, cross-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> , same-origin, cross-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> no-referrer, same-origin, cross-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> origin-when-cross-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> same-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> strict-origin-when-cross-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> unsafe-url, same-origin, cross-origin)": "FAIL",
+      "referrer policy (same-origin -> , same-origin, cross-origin)": "FAIL",
+      "referrer policy (same-origin -> no-referrer, same-origin, cross-origin)": "FAIL",
+      "referrer policy (same-origin -> origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (same-origin -> origin-when-cross-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (same-origin -> same-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (same-origin -> strict-origin-when-cross-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (same-origin -> unsafe-url, same-origin, cross-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> , same-origin, cross-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> no-referrer, same-origin, cross-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> origin-when-cross-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> same-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> strict-origin-when-cross-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> unsafe-url, same-origin, cross-origin)": "FAIL",
+      "referrer policy (unsafe-url -> , same-origin, cross-origin)": "FAIL",
+      "referrer policy (unsafe-url -> no-referrer, same-origin, cross-origin)": "FAIL",
+      "referrer policy (unsafe-url -> origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (unsafe-url -> origin-when-cross-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (unsafe-url -> same-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (unsafe-url -> strict-origin-when-cross-origin, same-origin, cross-origin)": "FAIL",
+      "referrer policy (unsafe-url -> unsafe-url, same-origin, cross-origin)": "FAIL"
+    }
+  },
+  "preload/preload-referrer-policy-subresource-header.tentative.html?isCrossOriginPreload=true&isCrossOriginResource=false": {
+    "total": 49,
+    "failures": {
+      "referrer policy ( -> , cross-origin, same-origin)": "FAIL",
+      "referrer policy ( -> no-referrer, cross-origin, same-origin)": "FAIL",
+      "referrer policy ( -> origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy ( -> origin-when-cross-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy ( -> same-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy ( -> strict-origin-when-cross-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy ( -> unsafe-url, cross-origin, same-origin)": "FAIL",
+      "referrer policy (no-referrer -> , cross-origin, same-origin)": "FAIL",
+      "referrer policy (no-referrer -> no-referrer, cross-origin, same-origin)": "FAIL",
+      "referrer policy (no-referrer -> origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (no-referrer -> origin-when-cross-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (no-referrer -> same-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (no-referrer -> strict-origin-when-cross-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (no-referrer -> unsafe-url, cross-origin, same-origin)": "FAIL",
+      "referrer policy (origin -> , cross-origin, same-origin)": "FAIL",
+      "referrer policy (origin -> no-referrer, cross-origin, same-origin)": "FAIL",
+      "referrer policy (origin -> origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (origin -> origin-when-cross-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (origin -> same-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (origin -> strict-origin-when-cross-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (origin -> unsafe-url, cross-origin, same-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> , cross-origin, same-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> no-referrer, cross-origin, same-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> origin-when-cross-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> same-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> strict-origin-when-cross-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> unsafe-url, cross-origin, same-origin)": "FAIL",
+      "referrer policy (same-origin -> , cross-origin, same-origin)": "FAIL",
+      "referrer policy (same-origin -> no-referrer, cross-origin, same-origin)": "FAIL",
+      "referrer policy (same-origin -> origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (same-origin -> origin-when-cross-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (same-origin -> same-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (same-origin -> strict-origin-when-cross-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (same-origin -> unsafe-url, cross-origin, same-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> , cross-origin, same-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> no-referrer, cross-origin, same-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> origin-when-cross-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> same-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> strict-origin-when-cross-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> unsafe-url, cross-origin, same-origin)": "FAIL",
+      "referrer policy (unsafe-url -> , cross-origin, same-origin)": "FAIL",
+      "referrer policy (unsafe-url -> no-referrer, cross-origin, same-origin)": "FAIL",
+      "referrer policy (unsafe-url -> origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (unsafe-url -> origin-when-cross-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (unsafe-url -> same-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (unsafe-url -> strict-origin-when-cross-origin, cross-origin, same-origin)": "FAIL",
+      "referrer policy (unsafe-url -> unsafe-url, cross-origin, same-origin)": "FAIL"
+    }
+  },
+  "preload/preload-referrer-policy-subresource-header.tentative.html?isCrossOriginPreload=true&isCrossOriginResource=true": {
+    "total": 49,
+    "failures": {
+      "referrer policy ( -> , cross-origin, cross-origin)": "FAIL",
+      "referrer policy ( -> no-referrer, cross-origin, cross-origin)": "FAIL",
+      "referrer policy ( -> origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy ( -> origin-when-cross-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy ( -> same-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy ( -> strict-origin-when-cross-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy ( -> unsafe-url, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (no-referrer -> , cross-origin, cross-origin)": "FAIL",
+      "referrer policy (no-referrer -> no-referrer, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (no-referrer -> origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (no-referrer -> origin-when-cross-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (no-referrer -> same-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (no-referrer -> strict-origin-when-cross-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (no-referrer -> unsafe-url, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (origin -> , cross-origin, cross-origin)": "FAIL",
+      "referrer policy (origin -> no-referrer, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (origin -> origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (origin -> origin-when-cross-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (origin -> same-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (origin -> strict-origin-when-cross-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (origin -> unsafe-url, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> , cross-origin, cross-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> no-referrer, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> origin-when-cross-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> same-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> strict-origin-when-cross-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (origin-when-cross-origin -> unsafe-url, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (same-origin -> , cross-origin, cross-origin)": "FAIL",
+      "referrer policy (same-origin -> no-referrer, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (same-origin -> origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (same-origin -> origin-when-cross-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (same-origin -> same-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (same-origin -> strict-origin-when-cross-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (same-origin -> unsafe-url, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> , cross-origin, cross-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> no-referrer, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> origin-when-cross-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> same-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> strict-origin-when-cross-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (strict-origin-when-cross-origin -> unsafe-url, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (unsafe-url -> , cross-origin, cross-origin)": "FAIL",
+      "referrer policy (unsafe-url -> no-referrer, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (unsafe-url -> origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (unsafe-url -> origin-when-cross-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (unsafe-url -> same-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (unsafe-url -> strict-origin-when-cross-origin, cross-origin, cross-origin)": "FAIL",
+      "referrer policy (unsafe-url -> unsafe-url, cross-origin, cross-origin)": "FAIL"
+    }
+  },
+  "preload/preload-referrer-policy.html": {
+    "total": 196
+  },
+  "preload/preload-resource-match.https.html": {
+    "total": 58,
+    "failures": {
+      "Loading font (anonymous) with link (no-cors) should discard the preloaded response": "FAIL",
+      "Loading font (anonymous) with link (use-credentials) should discard the preloaded response": "FAIL"
+    }
+  },
+  "preload/preload-strict-dynamic.sub.html": {
+    "total": 3
+  },
+  "preload/preload-time-to-fetch.https.html": {
+    "total": 10
+  },
+  "preload/preload-type-match.html": {
+    "total": 45
+  },
+  "preload/preload-with-type.html": {
+    "total": 1
+  },
+  "preload/preload-with-unsupported-type.html": {
+    "total": 1
+  },
+  "preload/preload-xhr.html": {
+    "total": 2
+  },
+  "preload/reflected-as-value.html": {
+    "total": 13
+  },
+  "preload/single-download-late-used-preload.html": {
+    "total": 1
+  },
+  "preload/single-download-preload.html": {
+    "total": 1
+  },
+  "preload/subresource-integrity-font.html": {
+    "total": 23,
+    "failures": {
+      "<crossorigin=\"anonymous\"> Cross-origin with correct sha256 hash, ACAO: *.": "FAIL",
+      "<crossorigin=\"anonymous\"> Same-origin with correct sha256 hash, options.": "FAIL",
+      "<crossorigin=\"anonymous\"> Same-origin with correct sha256 hash.": "FAIL",
+      "<crossorigin=\"anonymous\"> Same-origin with correct sha384 hash.": "FAIL",
+      "<crossorigin=\"anonymous\"> Same-origin with correct sha512 hash.": "FAIL",
+      "<crossorigin=\"anonymous\"> Same-origin with multiple sha256 hashes, including correct.": "FAIL",
+      "<crossorigin=\"anonymous\"> Same-origin with multiple sha256 hashes, including unknown algorithm.": "FAIL",
+      "<crossorigin=\"anonymous\"> Same-origin with sha256 mismatch, sha512 match.": "FAIL",
+      "<crossorigin=\"use-credentials\"> Cross-origin with correct sha256 hash, CORS-eligible.": "FAIL",
+      "Same-origin, not CORS request, with correct sha256 hash.": "FAIL"
+    }
+  },
+  "preload/subresource-integrity-partial-image.html": {
+    "total": 1
+  },
+  "preload/subresource-integrity.html": {
+    "total": 77
+  },
+  "preload/supported-as-values.html?as=audio&expected=0": {
+    "total": 1
+  },
+  "preload/supported-as-values.html?as=fetch&expected=1": {
+    "total": 1
+  },
+  "preload/supported-as-values.html?as=font&expected=1": {
+    "total": 1
+  },
+  "preload/supported-as-values.html?as=garbagefoobar&expected=0": {
+    "total": 1
+  },
+  "preload/supported-as-values.html?as=iframe&expected=0": {
+    "total": 1
+  },
+  "preload/supported-as-values.html?as=image&expected=1": {
+    "total": 1
+  },
+  "preload/supported-as-values.html?as=json&expected=0": {
+    "total": 1
+  },
+  "preload/supported-as-values.html?as=object&expected=0": {
+    "total": 1
+  },
+  "preload/supported-as-values.html?as=script&expected=1": {
+    "total": 1
+  },
+  "preload/supported-as-values.html?as=style&expected=1": {
+    "total": 1
+  },
+  "preload/supported-as-values.html?as=track&expected=1": {
+    "total": 1
+  },
+  "preload/supported-as-values.html?as=video&expected=0": {
+    "total": 1
+  },
+  "preload/supported-as-values.html?as=worklet&expected=0": {
+    "total": 1
+  }
+}

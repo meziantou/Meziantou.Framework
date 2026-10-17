@@ -1,0 +1,113 @@
+{
+  "png/apng/acTL-plays-one.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/acTL-plays-two.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fDAT-inherits-cICP.html": {
+    "reftest": "FAIL"
+  },
+  "png/apng/fcTL-acTL-ordering.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-blend-over-repeatedly.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-blend-over-solid.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-blend-source-nearly-transparent.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-blend-source-solid.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-blend-source-transparent.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-dispose-background-final.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-dispose-background.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-dispose-before-region-background.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-dispose-in-region-background.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-dispose-in-region-none.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-dispose-in-region-previous.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-dispose-none.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-dispose-previous-final.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-dispose-previous-first.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fcTL-dispose-previous.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fdAT-16bit.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fdAT-1bit-PLTE-tRNS.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fdAT-1bit-PLTE.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fdAT-2bit-PLTE-tRNS.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fdAT-8bit-gray-alpha.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fdAT-8bit-gray.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fdAT-split-basic.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/fdAT-split-zero-length.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/first-frame-IDAT.html": {
+    "reftest": "PASS"
+  },
+  "png/apng/first-frame-not-IDAT.html": {
+    "reftest": "PASS"
+  },
+  "png/cICP-wins.html": {
+    "reftest": "FAIL"
+  },
+  "png/cicp-chunk.html": {
+    "total": 1,
+    "failures": {
+      "test pixel values of a display-p3 PNG": "FAIL"
+    }
+  },
+  "png/errors/idat-crc-error-recovery.html": {
+    "total": 1
+  },
+  "png/errors/unknown-ancillary-error-recovery-2.html": {
+    "reftest": "PASS"
+  },
+  "png/errors/unknown-ancillary-error-recovery.html": {
+    "reftest": "PASS"
+  },
+  "png/exif-chunk.html": {
+    "total": 1
+  },
+  "png/trns-chunk.html": {
+    "total": 1
+  }
+}

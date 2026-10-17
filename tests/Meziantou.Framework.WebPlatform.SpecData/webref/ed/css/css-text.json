@@ -1,0 +1,672 @@
+{
+  "spec": {
+    "title": "CSS Text Module Level 3",
+    "url": "https://drafts.csswg.org/css-text-3/"
+  },
+  "properties": [
+    {
+      "name": "text-transform",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-text-transform",
+      "value": "none | [capitalize | uppercase | lowercase ] || full-width || full-size-kana",
+      "initial": "none",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "n/a",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No effects.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-transform-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "capitalize",
+          "prose": "Puts the first typographic letter unit of each word, if lowercase, in titlecase; other characters are unaffected.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-transform-capitalize",
+          "type": "value",
+          "value": "capitalize"
+        },
+        {
+          "name": "uppercase",
+          "prose": "Puts all letters in uppercase.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-transform-uppercase",
+          "type": "value",
+          "value": "uppercase"
+        },
+        {
+          "name": "lowercase",
+          "prose": "Puts all letters in lowercase.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-transform-lowercase",
+          "type": "value",
+          "value": "lowercase"
+        },
+        {
+          "name": "full-width",
+          "prose": "Puts all typographic character units in full-width form. If a character does not have a corresponding full-width form, it is left as is. This value is typically used to typeset Latin letters and digits as if they were ideographic characters.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-transform-full-width",
+          "type": "value",
+          "value": "full-width"
+        },
+        {
+          "name": "full-size-kana",
+          "prose": "Converts all small Kana characters to the equivalent full-size Kana. This value is typically used for ruby annotation text, where authors may want all small Kana to be drawn as large Kana to compensate for legibility issues at the small font sizes typically used in ruby.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-transform-full-size-kana",
+          "type": "value",
+          "value": "full-size-kana"
+        }
+      ],
+      "styleDeclaration": [
+        "text-transform",
+        "textTransform"
+      ]
+    },
+    {
+      "name": "white-space",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-white-space",
+      "value": "normal | pre | nowrap | pre-wrap | break-spaces | pre-line",
+      "initial": "normal",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "n/a",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "This value directs user agents to collapse sequences of white space into a single character (or in some cases, no character). Lines may wrap at allowed soft wrap opportunities, as determined by the line-breaking rules in effect, in order to minimize inline-axis overflow.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-white-space-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "pre",
+          "prose": "This value prevents user agents from collapsing sequences of white space. Segment breaks such as line feeds are preserved as forced line breaks. Lines only break at forced line breaks; content that does not fit within the block container overflows it.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-white-space-pre",
+          "type": "value",
+          "value": "pre"
+        },
+        {
+          "name": "nowrap",
+          "prose": "Like normal, this value collapses white space; but like pre, it does not allow wrapping.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-white-space-nowrap",
+          "type": "value",
+          "value": "nowrap"
+        },
+        {
+          "name": "pre-wrap",
+          "prose": "Like pre, this value preserves white space; but like normal, it allows wrapping.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-white-space-pre-wrap",
+          "type": "value",
+          "value": "pre-wrap"
+        },
+        {
+          "name": "break-spaces",
+          "prose": "The behavior is identical to that of pre-wrap, except that: Any sequence of preserved white space or other space separators always takes up space, including at the end of the line. A soft wrap opportunity exists after every preserved white space character and after every other space separator (including between adjacent spaces).",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-white-space-break-spaces",
+          "type": "value",
+          "value": "break-spaces"
+        },
+        {
+          "name": "pre-line",
+          "prose": "Like normal, this value collapses consecutive white space characters and allows wrapping, but it preserves segment breaks in the source as forced line breaks.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-white-space-pre-line",
+          "type": "value",
+          "value": "pre-line"
+        }
+      ],
+      "styleDeclaration": [
+        "white-space",
+        "whiteSpace"
+      ],
+      "longhands": [
+        "white-space-collapse",
+        "text-wrap-mode"
+      ]
+    },
+    {
+      "name": "tab-size",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-tab-size",
+      "value": "<number [0,∞]> | <length [0,∞]>",
+      "initial": "8",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "the specified number or absolute length",
+      "canonicalOrder": "n/a",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "tab-size",
+        "tabSize"
+      ]
+    },
+    {
+      "name": "word-break",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-word-break",
+      "value": "normal | keep-all | break-all | break-word",
+      "initial": "normal",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "n/a",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "Words break according to their customary rules, as described above. Korean, which commonly exhibits two different behaviors, allows breaks between any two consecutive Hangul/Hanja. For Ethiopic, which also exhibits two different behaviors, such breaks within words are not allowed.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-word-break-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "break-all",
+          "prose": "Breaking is allowed within “words”: specifically, in addition to soft wrap opportunities allowed for normal, any typographic letter units (and any typographic character units resolving to the NU (“numeric”), AL (“alphabetic”), or SA (“Southeast Asian”) line breaking classes [UAX14]) are instead treated as ID (“ideographic characters”) for the purpose of line-breaking. Hyphenation is not applied.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-word-break-break-all",
+          "type": "value",
+          "value": "break-all"
+        },
+        {
+          "name": "keep-all",
+          "prose": "Breaking is forbidden within “words”: implicit soft wrap opportunities between typographic letter units (or other typographic character units belonging to the NU, AL, AI, or ID Unicode line breaking classes [UAX14]) are suppressed, i.e. breaks are prohibited between pairs of such characters (regardless of line-break settings other than anywhere) except where opportunities exist due to dictionary-based breaking. Otherwise this option is equivalent to normal. In this style, sequences of CJK characters do not break.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-word-break-keep-all",
+          "type": "value",
+          "value": "keep-all"
+        },
+        {
+          "name": "break-word",
+          "prose": "For compatibility with legacy content, the word-break property also supports a deprecated break-word keyword. When specified, this has the same effect as word-break: normal and overflow-wrap: anywhere, regardless of the actual value of the overflow-wrap property.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-word-break-break-word",
+          "type": "value",
+          "value": "break-word"
+        }
+      ],
+      "styleDeclaration": [
+        "word-break",
+        "wordBreak"
+      ]
+    },
+    {
+      "name": "line-break",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-line-break",
+      "value": "auto | loose | normal | strict | anywhere",
+      "initial": "auto",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "n/a",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The UA determines the set of line-breaking restrictions to use, and it may vary the restrictions based on the length of the line; e.g., use a less restrictive set of line-break rules for short lines.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-line-break-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "loose",
+          "prose": "Breaks text using the least restrictive set of line-breaking rules. Typically used for short lines, such as in newspapers.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-line-break-loose",
+          "type": "value",
+          "value": "loose"
+        },
+        {
+          "name": "normal",
+          "prose": "Breaks text using the most common set of line-breaking rules.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-line-break-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "strict",
+          "prose": "Breaks text using the most stringent set of line-breaking rules.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-line-break-strict",
+          "type": "value",
+          "value": "strict"
+        },
+        {
+          "name": "anywhere",
+          "prose": "There is a soft wrap opportunity around every typographic character unit, including around any punctuation character or preserved white spaces, or in the middle of words, disregarding any prohibition against line breaks, even those introduced by characters with the GL, WJ, or ZWJ line breaking classes or mandated by the word-break property. [UAX14] The different wrapping opportunities must not be prioritized. Hyphenation is not applied.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-line-break-anywhere",
+          "type": "value",
+          "value": "anywhere"
+        }
+      ],
+      "styleDeclaration": [
+        "line-break",
+        "lineBreak"
+      ]
+    },
+    {
+      "name": "hyphens",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-hyphens",
+      "value": "none | manual | auto",
+      "initial": "manual",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "n/a",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Words are not hyphenated, even if characters inside the word explicitly define hyphenation opportunities.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-hyphens-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "manual",
+          "prose": "Words are only hyphenated where there are characters inside the word that explicitly suggest hyphenation opportunities. The UA must use the appropriate language-specific hyphenation character(s) and should apply any appropriate spelling changes just as for automatic hyphenation at the same point. In Unicode, U+00AD is a conditional \"soft hyphen\" and U+2010 is an unconditional hyphen. Unicode Standard Annex #14 describes the role of soft hyphens in Unicode line breaking. [UAX14] In HTML, &shy; represents the soft hyphen character, which suggests a hyphenation opportunity. ex&shy;ample",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-hyphens-manual",
+          "type": "value",
+          "value": "manual"
+        },
+        {
+          "name": "auto",
+          "prose": "Words may be broken at hyphenation opportunities determined automatically by a language-appropriate hyphenation resource in addition to those indicated explicitly by a conditional hyphen. Automatic hyphenation opportunities elsewhere within a word must be ignored if the word contains a conditional hyphen (&shy; or U+00AD SOFT HYPHEN), in favor of the conditional hyphen(s). However, if, even after breaking at such opportunities, a portion of that word is still too long to fit on one line, an automatic hyphenation opportunity may be used.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-hyphens-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "hyphens"
+      ]
+    },
+    {
+      "name": "overflow-wrap",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-overflow-wrap",
+      "value": "normal | break-word | anywhere",
+      "initial": "normal",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "n/a",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "Lines may break only at allowed break points. However, the restrictions introduced by word-break: keep-all may be relaxed to match word-break: normal if there are no otherwise-acceptable break points in the line.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-overflow-wrap-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "anywhere",
+          "prose": "An otherwise unbreakable sequence of characters may be broken at an arbitrary point if there are no otherwise-acceptable break points in the line. Shaping characters are still shaped as if the word were not broken, and grapheme clusters must stay together as one unit. No hyphenation character is inserted at the break point. Soft wrap opportunities introduced by anywhere are considered when calculating min-content intrinsic sizes.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-overflow-wrap-anywhere",
+          "type": "value",
+          "value": "anywhere"
+        },
+        {
+          "name": "break-word",
+          "prose": "As for anywhere except that soft wrap opportunities introduced by break-word are not considered when calculating min-content intrinsic sizes.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-overflow-wrap-break-word",
+          "type": "value",
+          "value": "break-word"
+        }
+      ],
+      "styleDeclaration": [
+        "overflow-wrap",
+        "overflowWrap"
+      ]
+    },
+    {
+      "name": "text-align",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-text-align",
+      "value": "start | end | left | right | center | justify | match-parent | justify-all",
+      "initial": "start",
+      "appliesTo": "block containers",
+      "inherited": "yes",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "discrete",
+      "canonicalOrder": "n/a",
+      "values": [
+        {
+          "name": "start",
+          "prose": "Inline-level content is aligned to the start edge of the line box.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-align-start",
+          "type": "value",
+          "value": "start"
+        },
+        {
+          "name": "end",
+          "prose": "Inline-level content is aligned to the end edge of the line box.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-align-end",
+          "type": "value",
+          "value": "end"
+        },
+        {
+          "name": "left",
+          "prose": "Inline-level content is aligned to the line-left edge of the line box. (In vertical writing modes, this can be either the physical top or bottom, depending on writing-mode.) [CSS-WRITING-MODES-4]",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-align-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "Inline-level content is aligned to the line-right edge of the line box. (In vertical writing modes, this can be either the physical top or bottom, depending on writing-mode.) [CSS-WRITING-MODES-4]",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-align-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "center",
+          "prose": "Inline-level content is centered within the line box.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-align-center",
+          "type": "value",
+          "value": "center"
+        },
+        {
+          "name": "justify",
+          "prose": "Text is justified according to the method specified by the text-justify property, in order to exactly fill the line box. Unless otherwise specified by text-align-last, the last line before a forced line break is start-aligned.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-align-justify",
+          "type": "value",
+          "value": "justify"
+        },
+        {
+          "name": "justify-all",
+          "prose": "Sets both text-align-all and text-align-last to justify, forcing the last line to justify as well.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-align-justify-all",
+          "type": "value",
+          "value": "justify-all"
+        },
+        {
+          "name": "match-parent",
+          "prose": "This value behaves the same as inherit (computes to its parent’s computed value) except that an inherited value of start or end is interpreted against the parent’s direction value and results in a computed value of either left or right. Computes to start when specified on the root element. When specified on the text-align shorthand, sets both text-align-all and text-align-last to match-parent.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-align-match-parent",
+          "type": "value",
+          "value": "match-parent"
+        }
+      ],
+      "styleDeclaration": [
+        "text-align",
+        "textAlign"
+      ],
+      "longhands": [
+        "text-align-all",
+        "text-align-last"
+      ]
+    },
+    {
+      "name": "text-align-all",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-text-align-all",
+      "value": "start | end | left | right | center | justify | match-parent",
+      "initial": "start",
+      "appliesTo": "block containers",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "keyword as specified, except for match-parent which computes as defined above",
+      "canonicalOrder": "n/a",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "text-align-all",
+        "textAlignAll"
+      ]
+    },
+    {
+      "name": "text-align-last",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-text-align-last",
+      "value": "auto | start | end | left | right | center | justify | match-parent",
+      "initial": "auto",
+      "appliesTo": "block containers",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "keyword as specified, except for match-parent which computes as defined above",
+      "canonicalOrder": "n/a",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "If auto is specified, content on the affected line is aligned per text-align-all unless text-align-all is set to justify, in which case it is start-aligned. All other values are interpreted as described for text-align.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-align-last-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "text-align-last",
+        "textAlignLast"
+      ]
+    },
+    {
+      "name": "text-justify",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-text-justify",
+      "value": "auto | none | inter-word | inter-character",
+      "initial": "auto",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword (except for the distribute legacy value)",
+      "canonicalOrder": "n/a",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The UA determines the justification algorithm to follow, based on a balance between performance and adequate presentation quality. Since justification rules vary by writing system and language, UAs should, where possible, use a justification algorithm appropriate to the text. For example, the UA could use by default a justification method that is a simple universal compromise for all writing systems—​such as primarily expanding word separators and between CJK typographic letter units along with secondarily expanding between Southeast Asian typographic letter units. Then, in cases where the content language of the paragraph is known, it could choose a more language-tailored justification behavior e.g. following the Requirements for Japanese Text Layout for Japanese [JLREQ], using cursive elongation for Arabic, using inter-word for German, etc. An example of cursively-justified Arabic text, rendered by Tasmeem. Like English, Arabic can be justified by adjusting the spacing between words, but in most styles it can also be justified by calligraphically elongating or compressing the letterforms themselves. In this example, the upper text is extended to fill the line by the use of elongated (kashida) forms and swash forms, while the bottom line is compressed slightly by using a stacked combination for the characters between ت and م. By employing traditional calligraphic techniques, a typesetter can justify the line while preserving flow and color, providing a very high quality justification effect. However, this is by its nature a very script-specific effect. Mixed-script text with text-justify: auto: this interpretation uses a universal-compromise justification method, expanding at spaces as well as between CJK and Southeast Asian letters. This effectively uses inter-word + inter-ideograph spacing for lines that have word-separators and/or CJK characters and falls back to inter-cluster behavior for lines that don’t or for which the space stretches too far.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-justify-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "none",
+          "prose": "Justification is disabled: there are no justification opportunities within the text. Mixed-script text with text-justify: none",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-justify-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "inter-word",
+          "prose": "Justification adjusts spacing at word separators only (effectively varying the used word-spacing on the line). This behavior is typical for languages that separate words using spaces, like English or Korean. Mixed-script text with text-justify: inter-word",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-justify-inter-word",
+          "type": "value",
+          "value": "inter-word"
+        },
+        {
+          "name": "inter-character",
+          "prose": "Justification adjusts spacing between each pair of adjacent typographic character units (effectively varying the used letter-spacing on the line). This value is sometimes used in East Asian systems such as Japanese. Mixed-script text with text-justify: inter-character For legacy reasons, UAs must also support the alternate keyword distribute which must compute to inter-character, thus having the exact same meaning and behavior. UAs may treat this as a legacy value alias.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-justify-inter-character",
+          "type": "value",
+          "value": "inter-character"
+        },
+        {
+          "name": "distribute",
+          "prose": "For legacy reasons, UAs must also support the alternate keyword distribute which must compute to inter-character, thus having the exact same meaning and behavior. UAs may treat this as a legacy value alias.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-justify-distribute",
+          "type": "value",
+          "value": "distribute"
+        }
+      ],
+      "styleDeclaration": [
+        "text-justify",
+        "textJustify"
+      ]
+    },
+    {
+      "name": "word-spacing",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-word-spacing",
+      "value": "normal | <length>",
+      "initial": "normal",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "an absolute length",
+      "canonicalOrder": "n/a",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "No additional spacing is applied. Computes to zero.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-word-spacing-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "<length>",
+          "prose": "Specifies extra spacing in addition to the intrinsic inter-word spacing defined by the font.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-word-spacing-length",
+          "type": "value",
+          "value": "<length>"
+        }
+      ],
+      "styleDeclaration": [
+        "word-spacing",
+        "wordSpacing"
+      ]
+    },
+    {
+      "name": "letter-spacing",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-letter-spacing",
+      "value": "normal | <length>",
+      "initial": "normal",
+      "appliesTo": "inline boxes and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "an absolute length",
+      "canonicalOrder": "n/a",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "No additional spacing is applied. Computes to zero.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-letter-spacing-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "<length>",
+          "prose": "Specifies additional spacing between typographic character units. Values may be negative, but there may be implementation-dependent limits.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-letter-spacing-length",
+          "type": "value",
+          "value": "<length>"
+        }
+      ],
+      "styleDeclaration": [
+        "letter-spacing",
+        "letterSpacing"
+      ]
+    },
+    {
+      "name": "text-indent",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-text-indent",
+      "value": "[ <length-percentage> ] && hanging? && each-line?",
+      "initial": "0",
+      "appliesTo": "block containers",
+      "inherited": "yes",
+      "percentages": "refers to block container’s own inline-axis inner size",
+      "computedValue": "computed <length-percentage> value, plus any specified keywords",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<length>",
+          "prose": "Gives the amount of the indent as an absolute length.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-indent-length",
+          "type": "value",
+          "value": "<length>"
+        },
+        {
+          "name": "<percentage>",
+          "prose": "Gives the amount of the indent as a percentage of the block container’s own logical width. Percentages must be treated as 0 for the purpose of calculating intrinsic size contributions, but are always resolved normally when performing layout.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-indent-percentage",
+          "type": "value",
+          "value": "<percentage>"
+        },
+        {
+          "name": "each-line",
+          "prose": "Indentation affects the first line of each block container and each line after a forced line break (but not lines after a soft wrap break).",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-indent-each-line",
+          "type": "value",
+          "value": "each-line"
+        },
+        {
+          "name": "hanging",
+          "prose": "Inverts which lines are affected.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-text-indent-hanging",
+          "type": "value",
+          "value": "hanging"
+        }
+      ],
+      "styleDeclaration": [
+        "text-indent",
+        "textIndent"
+      ]
+    },
+    {
+      "name": "hanging-punctuation",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-hanging-punctuation",
+      "value": "none | [ first || [ force-end | allow-end ] || last ]",
+      "initial": "none",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No punctuation character is made to hang.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-hanging-punctuation-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "first",
+          "prose": "An opening bracket, quote, or ideographic space at the start of the first formatted line of an element hangs. This applies to all characters in the Unicode categories Ps, Pf, Pi plus the ASCII quote marks U+0027 ' APOSTROPHE and U+0022 \" QUOTATION MARK and the IDEOGRAPHIC SPACE U+3000.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-hanging-punctuation-first",
+          "type": "value",
+          "value": "first"
+        },
+        {
+          "name": "last",
+          "prose": "A closing bracket or quote at the end of the last formatted line of an element hangs. This applies to all characters in the Unicode categories Pe, Pf, Pi plus the ASCII quote marks U+0027 ' APOSTROPHE and U+0022 \" QUOTATION MARK.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-hanging-punctuation-last",
+          "type": "value",
+          "value": "last"
+        },
+        {
+          "name": "force-end",
+          "prose": "A stop or comma at the end of a line hangs.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-hanging-punctuation-force-end",
+          "type": "value",
+          "value": "force-end"
+        },
+        {
+          "name": "allow-end",
+          "prose": "A stop or comma at the end of a line conditionally hangs.",
+          "href": "https://drafts.csswg.org/css-text-3/#valdef-hanging-punctuation-allow-end",
+          "type": "value",
+          "value": "allow-end"
+        }
+      ],
+      "styleDeclaration": [
+        "hanging-punctuation",
+        "hangingPunctuation"
+      ]
+    },
+    {
+      "name": "word-wrap",
+      "href": "https://drafts.csswg.org/css-text-3/#propdef-word-wrap",
+      "legacyAliasOf": "overflow-wrap",
+      "styleDeclaration": [
+        "word-wrap",
+        "wordWrap"
+      ],
+      "value": "normal | break-word | anywhere"
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

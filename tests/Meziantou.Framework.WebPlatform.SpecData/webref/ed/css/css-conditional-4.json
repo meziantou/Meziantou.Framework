@@ -1,0 +1,23 @@
+{
+  "spec": {
+    "title": "CSS Conditional Rules Module Level 4",
+    "url": "https://drafts.csswg.org/css-conditional-4/"
+  },
+  "properties": [],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<supports-feature>",
+      "href": "https://drafts.csswg.org/css-conditional-4/#typedef-supports-feature",
+      "type": "type",
+      "value": "<supports-selector-fn> | <supports-decl>"
+    },
+    {
+      "name": "<supports-selector-fn>",
+      "href": "https://drafts.csswg.org/css-conditional-4/#typedef-supports-selector-fn",
+      "type": "type",
+      "value": "selector( <complex-selector> )"
+    }
+  ]
+}

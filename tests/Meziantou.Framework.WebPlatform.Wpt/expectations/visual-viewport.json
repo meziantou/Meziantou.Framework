@@ -1,0 +1,68 @@
+{
+  "visual-viewport/page-and-offset-in-iframe.html": {
+    "total": 1,
+    "failures": {
+      "VisualViewport page and offset values in iframe": "FAIL"
+    }
+  },
+  "visual-viewport/resize-event-order.html": {
+    "total": 2,
+    "failures": {
+      "Popup: DOMWindow resize fired before VisualViewport.": "FAIL"
+    }
+  },
+  "visual-viewport/scroll-event-order.html": {
+    "total": 1,
+    "failures": {
+      "Scroll event ordering": "FAIL"
+    }
+  },
+  "visual-viewport/viewport-no-resize-event-on-overflow-recalc.html": {
+    "total": 1
+  },
+  "visual-viewport/viewport-read-size-causes-layout.html": {
+    "total": 1
+  },
+  "visual-viewport/viewport-read-size-in-iframe-causes-layout.html": {
+    "total": 1
+  },
+  "visual-viewport/viewport-resize-event-on-iframe-show.html": {
+    "total": 1
+  },
+  "visual-viewport/viewport-resize-event-on-iframe-size-change.html": {
+    "total": 1
+  },
+  "visual-viewport/viewport-resize-event-on-load-overflowing-page.html": {
+    "total": 1
+  },
+  "visual-viewport/viewport-scale-clamped.html": {
+    "total": 1
+  },
+  "visual-viewport/viewport-scrollbars-cause-resize-in-iframe.html": {
+    "total": 1
+  },
+  "visual-viewport/viewport-scrollbars-cause-resize.html": {
+    "total": 3
+  },
+  "visual-viewport/viewport-type.html": {
+    "total": 2
+  },
+  "visual-viewport/viewport-unscaled-scale-iframe.html": {
+    "total": 1
+  },
+  "visual-viewport/viewport-unscaled-scale.html": {
+    "total": 1
+  },
+  "visual-viewport/viewport-unscaled-scroll-iframe.html": {
+    "total": 4
+  },
+  "visual-viewport/viewport-unscaled-scroll.html": {
+    "total": 4
+  },
+  "visual-viewport/viewport-unscaled-size-iframe.html": {
+    "total": 4
+  },
+  "visual-viewport/viewport-unscaled-size.html": {
+    "total": 4
+  }
+}

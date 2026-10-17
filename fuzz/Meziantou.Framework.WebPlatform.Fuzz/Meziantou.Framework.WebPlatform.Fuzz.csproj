@@ -1,0 +1,19 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.WebPlatform. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The seeds of the text targets (Seeds/<target>/*) and the bundled fonts of the library (the font target) -->
+    <EmbeddedResource Include="Seeds\**\*" LogicalName="Seeds/%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\src\Meziantou.Framework.WebPlatform\Css\Fonts\Bundled\*.ttf;..\..\src\Meziantou.Framework.WebPlatform\Css\Fonts\Bundled\*.woff2" Exclude="..\..\src\Meziantou.Framework.WebPlatform\Css\Fonts\Bundled\STIXTwoMath-*" LogicalName="Seeds/font/%(Filename)%(Extension)" Link="Seeds\font\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+  </ItemGroup>
+</Project>

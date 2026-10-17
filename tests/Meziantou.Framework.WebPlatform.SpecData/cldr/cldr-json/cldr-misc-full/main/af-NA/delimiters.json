@@ -1,0 +1,16 @@
+{
+  "main": {
+    "af-NA": {
+      "identity": {
+        "language": "af",
+        "territory": "NA"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

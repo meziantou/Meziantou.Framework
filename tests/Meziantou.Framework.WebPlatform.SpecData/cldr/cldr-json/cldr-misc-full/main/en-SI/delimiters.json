@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-SI": {
+      "identity": {
+        "language": "en",
+        "territory": "SI"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

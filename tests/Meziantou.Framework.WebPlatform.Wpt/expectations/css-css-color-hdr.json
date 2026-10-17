@@ -1,0 +1,55 @@
+{
+  "css/css-color-hdr/computed.html": {
+    "total": 21
+  },
+  "css/css-color-hdr/inheritance.html": {
+    "total": 2
+  },
+  "css/css-color-hdr/interpolation.html": {
+    "total": 64,
+    "failures": {
+      "CSS Animations: property <dynamic-range-limit> from [constrained] to [standard] at (0.5) should be [dynamic-range-limit-mix(standard 50%, constrained 50%)]": "FAIL",
+      "CSS Animations: property <dynamic-range-limit> from [dynamic-range-limit-mix(constrained 90%, standard 10%)] to [dynamic-range-limit-mix(no-limit 10%, standard 90%)] at (0.5) should be [dynamic-range-limit-mix(standard 50%, constrained 45%, no-limit 5%)]": "FAIL",
+      "CSS Animations: property <dynamic-range-limit> from [dynamic-range-limit-mix(standard 50%, no-limit 50%)] to [standard] at (0.75) should be [dynamic-range-limit-mix(standard 87.5%, no-limit 12.5%)]": "FAIL",
+      "CSS Animations: property <dynamic-range-limit> from [dynamic-range-limit-mix(standard 90%, no-limit 10%)] to [dynamic-range-limit-mix(standard 10%, no-limit 90%)] at (0.5) should be [dynamic-range-limit-mix(standard 50%, no-limit 50%)]": "FAIL",
+      "CSS Animations: property <dynamic-range-limit> from [no-limit] to [standard] at (0.25) should be [dynamic-range-limit-mix(standard 25%, no-limit 75%)]": "FAIL",
+      "CSS Animations: property <dynamic-range-limit> from [no-limit] to [standard] at (0.75) should be [dynamic-range-limit-mix(standard 75%, no-limit 25%)]": "FAIL",
+      "CSS Transitions with transition: all: property <dynamic-range-limit> from [constrained] to [standard] at (0) should be [constrained]": "FAIL",
+      "CSS Transitions with transition: all: property <dynamic-range-limit> from [constrained] to [standard] at (0.5) should be [dynamic-range-limit-mix(standard 50%, constrained 50%)]": "FAIL",
+      "CSS Transitions with transition: all: property <dynamic-range-limit> from [dynamic-range-limit-mix(constrained 90%, standard 10%)] to [dynamic-range-limit-mix(no-limit 10%, standard 90%)] at (0) should be [dynamic-range-limit-mix(standard 10%, constrained 90%)]": "FAIL",
+      "CSS Transitions with transition: all: property <dynamic-range-limit> from [dynamic-range-limit-mix(constrained 90%, standard 10%)] to [dynamic-range-limit-mix(no-limit 10%, standard 90%)] at (0.5) should be [dynamic-range-limit-mix(standard 50%, constrained 45%, no-limit 5%)]": "FAIL",
+      "CSS Transitions with transition: all: property <dynamic-range-limit> from [dynamic-range-limit-mix(standard 50%, no-limit 50%)] to [standard] at (0) should be [dynamic-range-limit-mix(standard 50%, no-limit 50%)]": "FAIL",
+      "CSS Transitions with transition: all: property <dynamic-range-limit> from [dynamic-range-limit-mix(standard 50%, no-limit 50%)] to [standard] at (0.75) should be [dynamic-range-limit-mix(standard 87.5%, no-limit 12.5%)]": "FAIL",
+      "CSS Transitions with transition: all: property <dynamic-range-limit> from [dynamic-range-limit-mix(standard 90%, no-limit 10%)] to [dynamic-range-limit-mix(standard 10%, no-limit 90%)] at (0) should be [dynamic-range-limit-mix(standard 90%, no-limit 10%)]": "FAIL",
+      "CSS Transitions with transition: all: property <dynamic-range-limit> from [dynamic-range-limit-mix(standard 90%, no-limit 10%)] to [dynamic-range-limit-mix(standard 10%, no-limit 90%)] at (0.5) should be [dynamic-range-limit-mix(standard 50%, no-limit 50%)]": "FAIL",
+      "CSS Transitions with transition: all: property <dynamic-range-limit> from [no-limit] to [standard] at (0) should be [no-limit]": "FAIL",
+      "CSS Transitions with transition: all: property <dynamic-range-limit> from [no-limit] to [standard] at (0.25) should be [dynamic-range-limit-mix(standard 25%, no-limit 75%)]": "FAIL",
+      "CSS Transitions with transition: all: property <dynamic-range-limit> from [no-limit] to [standard] at (0.75) should be [dynamic-range-limit-mix(standard 75%, no-limit 25%)]": "FAIL",
+      "CSS Transitions: property <dynamic-range-limit> from [constrained] to [standard] at (0) should be [constrained]": "FAIL",
+      "CSS Transitions: property <dynamic-range-limit> from [constrained] to [standard] at (0.5) should be [dynamic-range-limit-mix(standard 50%, constrained 50%)]": "FAIL",
+      "CSS Transitions: property <dynamic-range-limit> from [dynamic-range-limit-mix(constrained 90%, standard 10%)] to [dynamic-range-limit-mix(no-limit 10%, standard 90%)] at (0) should be [dynamic-range-limit-mix(standard 10%, constrained 90%)]": "FAIL",
+      "CSS Transitions: property <dynamic-range-limit> from [dynamic-range-limit-mix(constrained 90%, standard 10%)] to [dynamic-range-limit-mix(no-limit 10%, standard 90%)] at (0.5) should be [dynamic-range-limit-mix(standard 50%, constrained 45%, no-limit 5%)]": "FAIL",
+      "CSS Transitions: property <dynamic-range-limit> from [dynamic-range-limit-mix(standard 50%, no-limit 50%)] to [standard] at (0) should be [dynamic-range-limit-mix(standard 50%, no-limit 50%)]": "FAIL",
+      "CSS Transitions: property <dynamic-range-limit> from [dynamic-range-limit-mix(standard 50%, no-limit 50%)] to [standard] at (0.75) should be [dynamic-range-limit-mix(standard 87.5%, no-limit 12.5%)]": "FAIL",
+      "CSS Transitions: property <dynamic-range-limit> from [dynamic-range-limit-mix(standard 90%, no-limit 10%)] to [dynamic-range-limit-mix(standard 10%, no-limit 90%)] at (0) should be [dynamic-range-limit-mix(standard 90%, no-limit 10%)]": "FAIL",
+      "CSS Transitions: property <dynamic-range-limit> from [dynamic-range-limit-mix(standard 90%, no-limit 10%)] to [dynamic-range-limit-mix(standard 10%, no-limit 90%)] at (0.5) should be [dynamic-range-limit-mix(standard 50%, no-limit 50%)]": "FAIL",
+      "CSS Transitions: property <dynamic-range-limit> from [no-limit] to [standard] at (0) should be [no-limit]": "FAIL",
+      "CSS Transitions: property <dynamic-range-limit> from [no-limit] to [standard] at (0.25) should be [dynamic-range-limit-mix(standard 25%, no-limit 75%)]": "FAIL",
+      "CSS Transitions: property <dynamic-range-limit> from [no-limit] to [standard] at (0.75) should be [dynamic-range-limit-mix(standard 75%, no-limit 25%)]": "FAIL",
+      "Web Animations: property <dynamic-range-limit> from [constrained] to [standard] at (0.5) should be [dynamic-range-limit-mix(standard 50%, constrained 50%)]": "FAIL",
+      "Web Animations: property <dynamic-range-limit> from [dynamic-range-limit-mix(constrained 90%, standard 10%)] to [dynamic-range-limit-mix(no-limit 10%, standard 90%)] at (0.5) should be [dynamic-range-limit-mix(standard 50%, constrained 45%, no-limit 5%)]": "FAIL",
+      "Web Animations: property <dynamic-range-limit> from [dynamic-range-limit-mix(standard 50%, no-limit 50%)] to [standard] at (0.75) should be [dynamic-range-limit-mix(standard 87.5%, no-limit 12.5%)]": "FAIL",
+      "Web Animations: property <dynamic-range-limit> from [dynamic-range-limit-mix(standard 90%, no-limit 10%)] to [dynamic-range-limit-mix(standard 10%, no-limit 90%)] at (0.5) should be [dynamic-range-limit-mix(standard 50%, no-limit 50%)]": "FAIL",
+      "Web Animations: property <dynamic-range-limit> from [no-limit] to [standard] at (0.25) should be [dynamic-range-limit-mix(standard 25%, no-limit 75%)]": "FAIL",
+      "Web Animations: property <dynamic-range-limit> from [no-limit] to [standard] at (0.75) should be [dynamic-range-limit-mix(standard 75%, no-limit 25%)]": "FAIL"
+    }
+  },
+  "css/css-color-hdr/parsing.html": {
+    "total": 29,
+    "failures": {
+      "e.style['dynamic-range-limit'] = \"dynamic-range-limit-mix(dynamic-range-limit-mix(no-limit 1%, standard 2%) 3%, dynamic-range-limit-mix(constrained 0%, no-limit 0%) 6%)\" should not set the property value": "FAIL",
+      "e.style['dynamic-range-limit'] = \"dynamic-range-limit-mix(no-limit 0%, standard 0%)\" should not set the property value": "FAIL",
+      "e.style['dynamic-range-limit'] = \"dynamic-range-limit-mix(no-limit 1%)\" should not set the property value": "FAIL"
+    }
+  }
+}

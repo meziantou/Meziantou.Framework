@@ -1,0 +1,886 @@
+{
+  "spec": {
+    "title": "Intersection Observer",
+    "url": "https://w3c.github.io/IntersectionObserver/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "IntersectionObserver",
+          "IntersectionObserverEntry"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "IntersectionObserverCallback": {
+        "fragment": "callback IntersectionObserverCallback = undefined (sequence<IntersectionObserverEntry> entries, IntersectionObserver observer);",
+        "type": "callback",
+        "name": "IntersectionObserverCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "entries",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IntersectionObserverEntry"
+                }
+              ]
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "observer",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IntersectionObserver"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/IntersectionObserver/#callbackdef-intersectionobservercallback"
+      },
+      "IntersectionObserver": {
+        "fragment": "[Exposed=Window]\ninterface IntersectionObserver {\n  constructor(IntersectionObserverCallback callback, optional IntersectionObserverInit options = {});\n  readonly attribute (Element or Document)? root;\n  readonly attribute DOMString rootMargin;\n  readonly attribute DOMString scrollMargin;\n  readonly attribute FrozenArray<double> thresholds;\n  readonly attribute long delay;\n  readonly attribute boolean trackVisibility;\n  undefined observe(Element target);\n  undefined unobserve(Element target);\n  undefined disconnect();\n  sequence<IntersectionObserverEntry> takeRecords();\n};",
+        "type": "interface",
+        "name": "IntersectionObserver",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "callback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IntersectionObserverCallback"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IntersectionObserverInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-intersectionobserver"
+          },
+          {
+            "type": "attribute",
+            "name": "root",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                },
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Document"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-root"
+          },
+          {
+            "type": "attribute",
+            "name": "rootMargin",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-rootmargin"
+          },
+          {
+            "type": "attribute",
+            "name": "scrollMargin",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-scrollmargin"
+          },
+          {
+            "type": "attribute",
+            "name": "thresholds",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-thresholds"
+          },
+          {
+            "type": "attribute",
+            "name": "delay",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-delay"
+          },
+          {
+            "type": "attribute",
+            "name": "trackVisibility",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-trackvisibility"
+          },
+          {
+            "type": "operation",
+            "name": "observe",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "target",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-observe"
+          },
+          {
+            "type": "operation",
+            "name": "unobserve",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "target",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-unobserve"
+          },
+          {
+            "type": "operation",
+            "name": "disconnect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-disconnect"
+          },
+          {
+            "type": "operation",
+            "name": "takeRecords",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IntersectionObserverEntry"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-takerecords"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/IntersectionObserver/#intersectionobserver"
+      },
+      "IntersectionObserverEntry": {
+        "fragment": "[Exposed=Window]\ninterface IntersectionObserverEntry {\n  constructor(IntersectionObserverEntryInit intersectionObserverEntryInit);\n  readonly attribute DOMHighResTimeStamp time;\n  readonly attribute DOMRectReadOnly? rootBounds;\n  readonly attribute DOMRectReadOnly boundingClientRect;\n  readonly attribute DOMRectReadOnly intersectionRect;\n  readonly attribute boolean isIntersecting;\n  readonly attribute boolean isVisible;\n  readonly attribute double intersectionRatio;\n  readonly attribute Element target;\n};",
+        "type": "interface",
+        "name": "IntersectionObserverEntry",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "intersectionObserverEntryInit",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "IntersectionObserverEntryInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-intersectionobserverentry"
+          },
+          {
+            "type": "attribute",
+            "name": "time",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-time"
+          },
+          {
+            "type": "attribute",
+            "name": "rootBounds",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMRectReadOnly"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-rootbounds"
+          },
+          {
+            "type": "attribute",
+            "name": "boundingClientRect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRectReadOnly"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-boundingclientrect"
+          },
+          {
+            "type": "attribute",
+            "name": "intersectionRect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRectReadOnly"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-intersectionrect"
+          },
+          {
+            "type": "attribute",
+            "name": "isIntersecting",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-isintersecting"
+          },
+          {
+            "type": "attribute",
+            "name": "isVisible",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-isvisible"
+          },
+          {
+            "type": "attribute",
+            "name": "intersectionRatio",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-intersectionratio"
+          },
+          {
+            "type": "attribute",
+            "name": "target",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Element"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-target"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/IntersectionObserver/#intersectionobserverentry"
+      },
+      "IntersectionObserverEntryInit": {
+        "fragment": "dictionary IntersectionObserverEntryInit {\n  required DOMHighResTimeStamp time;\n  required DOMRectInit? rootBounds;\n  required DOMRectInit boundingClientRect;\n  required DOMRectInit intersectionRect;\n  required boolean isIntersecting;\n  required boolean isVisible;\n  required double intersectionRatio;\n  required Element target;\n};",
+        "type": "dictionary",
+        "name": "IntersectionObserverEntryInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "time",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-time"
+          },
+          {
+            "type": "field",
+            "name": "rootBounds",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMRectInit"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-rootbounds"
+          },
+          {
+            "type": "field",
+            "name": "boundingClientRect",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRectInit"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-boundingclientrect"
+          },
+          {
+            "type": "field",
+            "name": "intersectionRect",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRectInit"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-intersectionrect"
+          },
+          {
+            "type": "field",
+            "name": "isIntersecting",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-isintersecting"
+          },
+          {
+            "type": "field",
+            "name": "isVisible",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-isvisible"
+          },
+          {
+            "type": "field",
+            "name": "intersectionRatio",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-intersectionratio"
+          },
+          {
+            "type": "field",
+            "name": "target",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Element"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-target"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/IntersectionObserver/#dictdef-intersectionobserverentryinit"
+      },
+      "IntersectionObserverInit": {
+        "fragment": "dictionary IntersectionObserverInit {\n  (Element or Document)?  root = null;\n  DOMString rootMargin = \"0px\";\n  DOMString scrollMargin = \"0px\";\n  (double or sequence<double>) threshold = 0;\n  long delay = 0;\n  boolean trackVisibility = false;\n};",
+        "type": "dictionary",
+        "name": "IntersectionObserverInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "root",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Document"
+                }
+              ]
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-root"
+          },
+          {
+            "type": "field",
+            "name": "rootMargin",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "0px"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-rootmargin"
+          },
+          {
+            "type": "field",
+            "name": "scrollMargin",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "0px"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-scrollmargin"
+          },
+          {
+            "type": "field",
+            "name": "threshold",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "double"
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-threshold"
+          },
+          {
+            "type": "field",
+            "name": "delay",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-delay"
+          },
+          {
+            "type": "field",
+            "name": "trackVisibility",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-trackvisibility"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/IntersectionObserver/#dictdef-intersectionobserverinit"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "IntersectionObserver",
+        "IntersectionObserverEntry"
+      ]
+    },
+    "dependencies": {
+      "IntersectionObserver": [
+        "IntersectionObserverCallback",
+        "IntersectionObserverInit",
+        "Element",
+        "Document",
+        "IntersectionObserverEntry"
+      ],
+      "IntersectionObserverEntry": [
+        "IntersectionObserverEntryInit",
+        "DOMHighResTimeStamp",
+        "DOMRectReadOnly",
+        "Element"
+      ],
+      "IntersectionObserverEntryInit": [
+        "DOMHighResTimeStamp",
+        "DOMRectInit",
+        "Element"
+      ],
+      "IntersectionObserverInit": [
+        "Element",
+        "Document"
+      ]
+    },
+    "externalDependencies": [
+      "Element",
+      "Document",
+      "DOMHighResTimeStamp",
+      "DOMRectReadOnly",
+      "DOMRectInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

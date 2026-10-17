@@ -1,0 +1,299 @@
+{
+  "eventsource/dedicated-worker/eventsource-close.htm": {
+    "total": 1
+  },
+  "eventsource/dedicated-worker/eventsource-close2.htm": {
+    "total": 1
+  },
+  "eventsource/dedicated-worker/eventsource-constructor-no-new.any.js": {
+    "total": 1
+  },
+  "eventsource/dedicated-worker/eventsource-constructor-no-new.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/dedicated-worker/eventsource-constructor-non-same-origin.htm": {
+    "total": 4
+  },
+  "eventsource/dedicated-worker/eventsource-eventtarget.worker.js": {
+    "total": 1
+  },
+  "eventsource/dedicated-worker/eventsource-onmessage.htm": {
+    "total": 1
+  },
+  "eventsource/dedicated-worker/eventsource-onopen.htm": {
+    "total": 1
+  },
+  "eventsource/dedicated-worker/eventsource-prototype.htm": {
+    "total": 1
+  },
+  "eventsource/dedicated-worker/eventsource-url.htm": {
+    "total": 1
+  },
+  "eventsource/event-data.any.js": {
+    "total": 1
+  },
+  "eventsource/event-data.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/eventsource-close.window.js": {
+    "total": 2
+  },
+  "eventsource/eventsource-constructor-document-domain.window.js": {
+    "total": 1
+  },
+  "eventsource/eventsource-constructor-empty-url.any.js": {
+    "total": 1
+  },
+  "eventsource/eventsource-constructor-empty-url.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/eventsource-constructor-empty-url.any.js#sharedworker": {
+    "total": 1
+  },
+  "eventsource/eventsource-constructor-non-same-origin.window.js": {
+    "total": 4
+  },
+  "eventsource/eventsource-constructor-stringify.window.js": {
+    "total": 4
+  },
+  "eventsource/eventsource-constructor-url-bogus.any.js": {
+    "total": 1
+  },
+  "eventsource/eventsource-constructor-url-bogus.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/eventsource-constructor-url-bogus.any.js#sharedworker": {
+    "total": 1
+  },
+  "eventsource/eventsource-constructor-url-multi-window.htm": {
+    "total": 1
+  },
+  "eventsource/eventsource-cross-origin-redirect-origin.any.js": {
+    "total": 1
+  },
+  "eventsource/eventsource-cross-origin-redirect-origin.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/eventsource-cross-origin.window.js": {
+    "total": 6
+  },
+  "eventsource/eventsource-eventtarget.any.js": {
+    "total": 1
+  },
+  "eventsource/eventsource-eventtarget.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/eventsource-onmessage-realm.htm": {
+    "total": 1
+  },
+  "eventsource/eventsource-onmessage-trusted.any.js": {
+    "total": 1
+  },
+  "eventsource/eventsource-onmessage-trusted.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/eventsource-onmessage.any.js": {
+    "total": 1
+  },
+  "eventsource/eventsource-onmessage.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/eventsource-onopen.any.js": {
+    "total": 1
+  },
+  "eventsource/eventsource-onopen.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/eventsource-prototype.any.js": {
+    "total": 1
+  },
+  "eventsource/eventsource-prototype.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/eventsource-reconnect.window.js": {
+    "total": 2
+  },
+  "eventsource/eventsource-request-cancellation.window.js": {
+    "total": 1
+  },
+  "eventsource/eventsource-url.any.js": {
+    "total": 1
+  },
+  "eventsource/eventsource-url.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-bom-2.any.js": {
+    "total": 1
+  },
+  "eventsource/format-bom-2.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-bom.any.js": {
+    "total": 1
+  },
+  "eventsource/format-bom.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-comments.any.js": {
+    "total": 1
+  },
+  "eventsource/format-comments.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-data-before-final-empty-line.any.js": {
+    "total": 1
+  },
+  "eventsource/format-data-before-final-empty-line.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-field-data.any.js": {
+    "total": 1
+  },
+  "eventsource/format-field-data.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-field-event-empty.any.js": {
+    "total": 1
+  },
+  "eventsource/format-field-event-empty.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-field-event.any.js": {
+    "total": 1
+  },
+  "eventsource/format-field-event.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-field-id-2.any.js": {
+    "total": 1
+  },
+  "eventsource/format-field-id-2.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-field-id-3.window.js": {
+    "total": 3
+  },
+  "eventsource/format-field-id-null.window.js": {
+    "total": 5
+  },
+  "eventsource/format-field-id.any.js": {
+    "total": 1
+  },
+  "eventsource/format-field-id.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-field-parsing.any.js": {
+    "total": 1
+  },
+  "eventsource/format-field-parsing.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-field-retry-bogus.any.js": {
+    "total": 1
+  },
+  "eventsource/format-field-retry-bogus.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-field-retry-empty.any.js": {
+    "total": 1
+  },
+  "eventsource/format-field-retry-empty.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-field-retry.any.js": {
+    "total": 1
+  },
+  "eventsource/format-field-retry.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-field-unknown.any.js": {
+    "total": 1
+  },
+  "eventsource/format-field-unknown.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-leading-space.any.js": {
+    "total": 1
+  },
+  "eventsource/format-leading-space.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-mime-bogus.any.js": {
+    "total": 1
+  },
+  "eventsource/format-mime-bogus.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-mime-trailing-semicolon.any.js": {
+    "total": 1
+  },
+  "eventsource/format-mime-trailing-semicolon.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-mime-valid-bogus.any.js": {
+    "total": 1
+  },
+  "eventsource/format-mime-valid-bogus.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-newlines.any.js": {
+    "total": 1
+  },
+  "eventsource/format-newlines.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-null-character.any.js": {
+    "total": 1
+  },
+  "eventsource/format-null-character.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/format-utf-8.any.js": {
+    "total": 1
+  },
+  "eventsource/format-utf-8.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/request-accept.any.js": {
+    "total": 1
+  },
+  "eventsource/request-accept.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "eventsource/request-cache-control.any.js": {
+    "total": 4
+  },
+  "eventsource/request-cache-control.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "eventsource/request-credentials.window.js": {
+    "total": 3
+  },
+  "eventsource/request-redirect.window.js": {
+    "total": 4
+  },
+  "eventsource/request-status-error.window.js": {
+    "total": 7
+  },
+  "eventsource/shared-worker/eventsource-close.htm": {
+    "total": 1
+  },
+  "eventsource/shared-worker/eventsource-constructor-non-same-origin.htm": {
+    "total": 4
+  },
+  "eventsource/shared-worker/eventsource-eventtarget.htm": {
+    "total": 1
+  },
+  "eventsource/shared-worker/eventsource-onmessage.htm": {
+    "total": 1
+  },
+  "eventsource/shared-worker/eventsource-onopen.htm": {
+    "total": 1
+  },
+  "eventsource/shared-worker/eventsource-prototype.htm": {
+    "total": 1
+  },
+  "eventsource/shared-worker/eventsource-url.htm": {
+    "total": 1
+  }
+}

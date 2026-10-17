@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ee-TG": {
+      "identity": {
+        "language": "ee",
+        "territory": "TG"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

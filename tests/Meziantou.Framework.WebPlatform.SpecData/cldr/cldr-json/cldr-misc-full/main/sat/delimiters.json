@@ -1,0 +1,15 @@
+{
+  "main": {
+    "sat": {
+      "identity": {
+        "language": "sat"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

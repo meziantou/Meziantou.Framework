@@ -1,0 +1,16 @@
+{
+  "main": {
+    "pt-TL": {
+      "identity": {
+        "language": "pt",
+        "territory": "TL"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

@@ -1,0 +1,1060 @@
+{
+  "spec": {
+    "title": "CSS Fonts Module Level 5",
+    "url": "https://drafts.csswg.org/css-fonts-5/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "CSSFontFaceDescriptors",
+          "CSSFontFaceRule"
+        ]
+      }
+    },
+    "idlNames": {
+      "CSSFontFaceDescriptors": {
+        "fragment": "[Exposed=Window]\ninterface CSSFontFaceDescriptors : CSSStyleDeclaration {\n  attribute [LegacyNullToEmptyString] CSSOMString src;\n  attribute [LegacyNullToEmptyString] CSSOMString fontFamily;\n  attribute [LegacyNullToEmptyString] CSSOMString font-family;\n  attribute [LegacyNullToEmptyString] CSSOMString fontStyle;\n  attribute [LegacyNullToEmptyString] CSSOMString font-style;\n  attribute [LegacyNullToEmptyString] CSSOMString fontWeight;\n  attribute [LegacyNullToEmptyString] CSSOMString font-weight;\n  attribute [LegacyNullToEmptyString] CSSOMString fontStretch;\n  attribute [LegacyNullToEmptyString] CSSOMString font-stretch;\n  attribute [LegacyNullToEmptyString] CSSOMString fontWidth;\n  attribute [LegacyNullToEmptyString] CSSOMString font-width;\n  attribute [LegacyNullToEmptyString] CSSOMString fontSize;\n  attribute [LegacyNullToEmptyString] CSSOMString font-size;\n  attribute [LegacyNullToEmptyString] CSSOMString sizeAdjust;\n  attribute [LegacyNullToEmptyString] CSSOMString size-adjust;\n  attribute [LegacyNullToEmptyString] CSSOMString unicodeRange;\n  attribute [LegacyNullToEmptyString] CSSOMString unicode-range;\n  attribute [LegacyNullToEmptyString] CSSOMString fontFeatureSettings;\n  attribute [LegacyNullToEmptyString] CSSOMString font-feature-settings;\n  attribute [LegacyNullToEmptyString] CSSOMString fontVariationSettings;\n  attribute [LegacyNullToEmptyString] CSSOMString font-variation-settings;\n  attribute [LegacyNullToEmptyString] CSSOMString fontNamedInstance;\n  attribute [LegacyNullToEmptyString] CSSOMString font-named-instance;\n  attribute [LegacyNullToEmptyString] CSSOMString fontDisplay;\n  attribute [LegacyNullToEmptyString] CSSOMString font-display;\n  attribute [LegacyNullToEmptyString] CSSOMString fontLanguageOverride;\n  attribute [LegacyNullToEmptyString] CSSOMString font-language-override;\n  attribute [LegacyNullToEmptyString] CSSOMString ascentOverride;\n  attribute [LegacyNullToEmptyString] CSSOMString ascent-override;\n  attribute [LegacyNullToEmptyString] CSSOMString descentOverride;\n  attribute [LegacyNullToEmptyString] CSSOMString descent-override;\n  attribute [LegacyNullToEmptyString] CSSOMString lineGapOverride;\n  attribute [LegacyNullToEmptyString] CSSOMString line-gap-override;\n  attribute [LegacyNullToEmptyString] CSSOMString superscriptPositionOverride;\n  attribute [LegacyNullToEmptyString] CSSOMString superscript-position-override;\n  attribute [LegacyNullToEmptyString] CSSOMString subscriptPositionOverride;\n  attribute [LegacyNullToEmptyString] CSSOMString subscript-position-override;\n  attribute [LegacyNullToEmptyString] CSSOMString superscriptSizeOverride;\n  attribute [LegacyNullToEmptyString] CSSOMString superscript-size-override;\n  attribute [LegacyNullToEmptyString] CSSOMString subscriptSizeOverride;\n  attribute [LegacyNullToEmptyString] CSSOMString subscript-size-override;\n};",
+        "type": "interface",
+        "name": "CSSFontFaceDescriptors",
+        "inheritance": "CSSStyleDeclaration",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "src",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-src"
+          },
+          {
+            "type": "attribute",
+            "name": "fontFamily",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontfamily"
+          },
+          {
+            "type": "attribute",
+            "name": "font-family",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-family"
+          },
+          {
+            "type": "attribute",
+            "name": "fontStyle",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontstyle"
+          },
+          {
+            "type": "attribute",
+            "name": "font-style",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-style"
+          },
+          {
+            "type": "attribute",
+            "name": "fontWeight",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontweight"
+          },
+          {
+            "type": "attribute",
+            "name": "font-weight",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-weight"
+          },
+          {
+            "type": "attribute",
+            "name": "fontStretch",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontstretch"
+          },
+          {
+            "type": "attribute",
+            "name": "font-stretch",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-stretch"
+          },
+          {
+            "type": "attribute",
+            "name": "fontWidth",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontwidth"
+          },
+          {
+            "type": "attribute",
+            "name": "font-width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-width"
+          },
+          {
+            "type": "attribute",
+            "name": "fontSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontsize"
+          },
+          {
+            "type": "attribute",
+            "name": "font-size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-size"
+          },
+          {
+            "type": "attribute",
+            "name": "sizeAdjust",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-sizeadjust"
+          },
+          {
+            "type": "attribute",
+            "name": "size-adjust",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-size-adjust"
+          },
+          {
+            "type": "attribute",
+            "name": "unicodeRange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-unicoderange"
+          },
+          {
+            "type": "attribute",
+            "name": "unicode-range",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-unicode-range"
+          },
+          {
+            "type": "attribute",
+            "name": "fontFeatureSettings",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontfeaturesettings"
+          },
+          {
+            "type": "attribute",
+            "name": "font-feature-settings",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-feature-settings"
+          },
+          {
+            "type": "attribute",
+            "name": "fontVariationSettings",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontvariationsettings"
+          },
+          {
+            "type": "attribute",
+            "name": "font-variation-settings",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-variation-settings"
+          },
+          {
+            "type": "attribute",
+            "name": "fontNamedInstance",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontnamedinstance"
+          },
+          {
+            "type": "attribute",
+            "name": "font-named-instance",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-named-instance"
+          },
+          {
+            "type": "attribute",
+            "name": "fontDisplay",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontdisplay"
+          },
+          {
+            "type": "attribute",
+            "name": "font-display",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-display"
+          },
+          {
+            "type": "attribute",
+            "name": "fontLanguageOverride",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontlanguageoverride"
+          },
+          {
+            "type": "attribute",
+            "name": "font-language-override",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-language-override"
+          },
+          {
+            "type": "attribute",
+            "name": "ascentOverride",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-ascentoverride"
+          },
+          {
+            "type": "attribute",
+            "name": "ascent-override",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-ascent-override"
+          },
+          {
+            "type": "attribute",
+            "name": "descentOverride",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-descentoverride"
+          },
+          {
+            "type": "attribute",
+            "name": "descent-override",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-descent-override"
+          },
+          {
+            "type": "attribute",
+            "name": "lineGapOverride",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-linegapoverride"
+          },
+          {
+            "type": "attribute",
+            "name": "line-gap-override",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-line-gap-override"
+          },
+          {
+            "type": "attribute",
+            "name": "superscriptPositionOverride",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-superscriptpositionoverride"
+          },
+          {
+            "type": "attribute",
+            "name": "superscript-position-override",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-superscript-position-override"
+          },
+          {
+            "type": "attribute",
+            "name": "subscriptPositionOverride",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-subscriptpositionoverride"
+          },
+          {
+            "type": "attribute",
+            "name": "subscript-position-override",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-subscript-position-override"
+          },
+          {
+            "type": "attribute",
+            "name": "superscriptSizeOverride",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-superscriptsizeoverride"
+          },
+          {
+            "type": "attribute",
+            "name": "superscript-size-override",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-superscript-size-override"
+          },
+          {
+            "type": "attribute",
+            "name": "subscriptSizeOverride",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-subscriptsizeoverride"
+          },
+          {
+            "type": "attribute",
+            "name": "subscript-size-override",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-subscript-size-override"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-fonts-5/#cssfontfacedescriptors"
+      },
+      "CSSFontFaceRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSFontFaceRule : CSSRule {\n  [SameObject, PutForwards=cssText] readonly attribute CSSFontFaceDescriptors style;\n};",
+        "type": "interface",
+        "name": "CSSFontFaceRule",
+        "inheritance": "CSSRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "style",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSFontFaceDescriptors"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "PutForwards",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "cssText"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacerule-style"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-fonts-5/#cssfontfacerule"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CSSFontFaceDescriptors",
+        "CSSFontFaceRule"
+      ]
+    },
+    "dependencies": {
+      "CSSFontFaceDescriptors": [
+        "CSSStyleDeclaration",
+        "CSSOMString"
+      ],
+      "CSSFontFaceRule": [
+        "CSSRule",
+        "CSSFontFaceDescriptors"
+      ]
+    },
+    "externalDependencies": [
+      "CSSStyleDeclaration",
+      "CSSOMString",
+      "CSSRule"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

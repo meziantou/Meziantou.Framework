@@ -1,0 +1,8 @@
+{
+  "avif/animated-avif-timeout.html": {
+    "reftest": "PASS"
+  },
+  "avif/lsel-layer-id-ffff.html": {
+    "reftest": "PASS"
+  }
+}

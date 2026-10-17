@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-GB": {
+      "identity": {
+        "language": "en",
+        "territory": "GB"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

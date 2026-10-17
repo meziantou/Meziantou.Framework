@@ -1,0 +1,633 @@
+{
+  "spec": {
+    "title": "Storage Buckets API",
+    "url": "https://wicg.github.io/storage-buckets/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "StorageBucketManager",
+          "StorageBucket"
+        ],
+        "Worker": [
+          "StorageBucketManager",
+          "StorageBucket"
+        ]
+      }
+    },
+    "idlNames": {
+      "NavigatorStorageBuckets": {
+        "fragment": "[SecureContext]\ninterface mixin NavigatorStorageBuckets {\n  [SameObject] readonly attribute StorageBucketManager storageBuckets;\n};",
+        "type": "interface mixin",
+        "name": "NavigatorStorageBuckets",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "storageBuckets",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "StorageBucketManager"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/storage-buckets/#dom-navigatorstoragebuckets-storagebuckets"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/storage-buckets/#navigatorstoragebuckets"
+      },
+      "StorageBucketManager": {
+        "fragment": "[Exposed=(Window,Worker),\n SecureContext]\ninterface StorageBucketManager {\n    Promise<StorageBucket> open(DOMString name, optional StorageBucketOptions options = {});\n    Promise<sequence<DOMString>> keys();\n    Promise<undefined> delete(DOMString name);\n};",
+        "type": "interface",
+        "name": "StorageBucketManager",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "open",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "StorageBucket"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "StorageBucketOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucketmanager-open"
+          },
+          {
+            "type": "operation",
+            "name": "keys",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucketmanager-keys"
+          },
+          {
+            "type": "operation",
+            "name": "delete",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucketmanager-delete"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/storage-buckets/#storagebucketmanager"
+      },
+      "StorageBucketOptions": {
+        "fragment": "dictionary StorageBucketOptions {\n  boolean persisted = false;\n  unsigned long long quota;\n  DOMHighResTimeStamp expires;\n};",
+        "type": "dictionary",
+        "name": "StorageBucketOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "persisted",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucketoptions-persisted"
+          },
+          {
+            "type": "field",
+            "name": "quota",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucketoptions-quota"
+          },
+          {
+            "type": "field",
+            "name": "expires",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucketoptions-expires"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/storage-buckets/#dictdef-storagebucketoptions"
+      },
+      "StorageBucket": {
+        "fragment": "[Exposed=(Window,Worker),\n SecureContext]\ninterface StorageBucket {\n  readonly attribute DOMString name;\n\n  [Exposed=Window] Promise<boolean> persist();\n  Promise<boolean> persisted();\n\n  Promise<StorageEstimate> estimate();\n\n  Promise<undefined> setExpires(DOMHighResTimeStamp expires);\n  Promise<DOMHighResTimeStamp?> expires();\n\n  [SameObject] readonly attribute IDBFactory indexedDB;\n\n  [SameObject] readonly attribute CacheStorage caches;\n\n  Promise<FileSystemDirectoryHandle> getDirectory();\n};",
+        "type": "interface",
+        "name": "StorageBucket",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucket-name"
+          },
+          {
+            "type": "operation",
+            "name": "persist",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucket-persist"
+          },
+          {
+            "type": "operation",
+            "name": "persisted",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucket-persisted"
+          },
+          {
+            "type": "operation",
+            "name": "estimate",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "StorageEstimate"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucket-estimate"
+          },
+          {
+            "type": "operation",
+            "name": "setExpires",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "expires",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMHighResTimeStamp"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucket-setexpires"
+          },
+          {
+            "type": "operation",
+            "name": "expires",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "DOMHighResTimeStamp"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucket-expires"
+          },
+          {
+            "type": "attribute",
+            "name": "indexedDB",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBFactory"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucket-indexeddb"
+          },
+          {
+            "type": "attribute",
+            "name": "caches",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CacheStorage"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucket-caches"
+          },
+          {
+            "type": "operation",
+            "name": "getDirectory",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemDirectoryHandle"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/storage-buckets/#dom-storagebucket-getdirectory"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/storage-buckets/#storagebucket"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "Navigator includes NavigatorStorageBuckets;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Navigator",
+          "includes": "NavigatorStorageBuckets"
+        }
+      ],
+      "WorkerNavigator": [
+        {
+          "fragment": "WorkerNavigator includes NavigatorStorageBuckets;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "WorkerNavigator",
+          "includes": "NavigatorStorageBuckets"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "StorageBucketManager",
+        "StorageBucket"
+      ],
+      "Worker": [
+        "StorageBucketManager",
+        "StorageBucket"
+      ]
+    },
+    "dependencies": {
+      "NavigatorStorageBuckets": [
+        "StorageBucketManager"
+      ],
+      "Navigator": [
+        "NavigatorStorageBuckets"
+      ],
+      "WorkerNavigator": [
+        "NavigatorStorageBuckets"
+      ],
+      "StorageBucketManager": [
+        "StorageBucket",
+        "StorageBucketOptions"
+      ],
+      "StorageBucketOptions": [
+        "DOMHighResTimeStamp"
+      ],
+      "StorageBucket": [
+        "StorageEstimate",
+        "DOMHighResTimeStamp",
+        "IDBFactory",
+        "CacheStorage",
+        "FileSystemDirectoryHandle"
+      ]
+    },
+    "externalDependencies": [
+      "DOMHighResTimeStamp",
+      "StorageEstimate",
+      "IDBFactory",
+      "CacheStorage",
+      "FileSystemDirectoryHandle"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

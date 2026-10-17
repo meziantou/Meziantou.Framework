@@ -1,0 +1,233 @@
+{
+  "spec": {
+    "title": "Soft Navigations and Interaction Contentful Paint",
+    "url": "https://wicg.github.io/soft-navigations/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "InteractionContentfulPaint",
+          "PerformanceSoftNavigation"
+        ]
+      }
+    },
+    "idlNames": {
+      "InteractionContentfulPaint": {
+        "fragment": "[Exposed=Window]\ninterface InteractionContentfulPaint : PerformanceEntry {\n    readonly attribute LargestContentfulPaint largestContentfulPaint;\n    readonly attribute unsigned long long interactionId;\n\n    [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "InteractionContentfulPaint",
+        "inheritance": "PerformanceEntry",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "largestContentfulPaint",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LargestContentfulPaint"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/soft-navigations/#dom-interactioncontentfulpaint-largestcontentfulpaint"
+          },
+          {
+            "type": "attribute",
+            "name": "interactionId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/soft-navigations/#dom-interactioncontentfulpaint-interactionid"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://wicg.github.io/soft-navigations/#dom-interactioncontentfulpaint-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/soft-navigations/#interactioncontentfulpaint"
+      },
+      "PerformanceSoftNavigation": {
+        "fragment": "[Exposed=Window]\ninterface PerformanceSoftNavigation : PerformanceEntry {\n    readonly attribute NavigationType navigationType;\n    readonly attribute unsigned long long interactionId;\n    InteractionContentfulPaint? getLargestInteractionContentfulPaint();\n\n    [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "PerformanceSoftNavigation",
+        "inheritance": "PerformanceEntry",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "navigationType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NavigationType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/soft-navigations/#dom-performancesoftnavigation-navigationtype"
+          },
+          {
+            "type": "attribute",
+            "name": "interactionId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/soft-navigations/#dom-performancesoftnavigation-interactionid"
+          },
+          {
+            "type": "operation",
+            "name": "getLargestInteractionContentfulPaint",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "InteractionContentfulPaint"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/soft-navigations/#dom-performancesoftnavigation-getlargestinteractioncontentfulpaint"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://wicg.github.io/soft-navigations/#dom-performancesoftnavigation-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/soft-navigations/#performancesoftnavigation"
+      }
+    },
+    "idlExtendedNames": {
+      "InteractionContentfulPaint": [
+        {
+          "fragment": "InteractionContentfulPaint includes PaintTimingMixin;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "InteractionContentfulPaint",
+          "includes": "PaintTimingMixin"
+        }
+      ],
+      "PerformanceSoftNavigation": [
+        {
+          "fragment": "PerformanceSoftNavigation includes PaintTimingMixin;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "PerformanceSoftNavigation",
+          "includes": "PaintTimingMixin"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "InteractionContentfulPaint",
+        "PerformanceSoftNavigation"
+      ]
+    },
+    "dependencies": {
+      "InteractionContentfulPaint": [
+        "PerformanceEntry",
+        "LargestContentfulPaint",
+        "PaintTimingMixin"
+      ],
+      "PerformanceSoftNavigation": [
+        "PerformanceEntry",
+        "NavigationType",
+        "InteractionContentfulPaint",
+        "PaintTimingMixin"
+      ]
+    },
+    "externalDependencies": [
+      "PerformanceEntry",
+      "LargestContentfulPaint",
+      "NavigationType"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

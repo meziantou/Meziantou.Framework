@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-DG": {
+      "identity": {
+        "language": "en",
+        "territory": "DG"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

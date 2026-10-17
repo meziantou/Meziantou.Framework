@@ -1,0 +1,475 @@
+{
+  "css/css-cascade/all-prop-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/all-prop-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/all-prop-inherit-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/all-prop-initial-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/all-prop-initial-visited.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/all-prop-initial-xml.html": {
+    "total": 599
+  },
+  "css/css-cascade/all-prop-revert-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/all-prop-revert-layer-noop.html?include=0": {
+    "total": 15
+  },
+  "css/css-cascade/all-prop-revert-layer-noop.html?include=1": {
+    "total": 15
+  },
+  "css/css-cascade/all-prop-revert-layer-noop.html?include=2": {
+    "total": 14
+  },
+  "css/css-cascade/all-prop-revert-layer-noop.html?include=3": {
+    "total": 14
+  },
+  "css/css-cascade/all-prop-revert-layer-noop.html?include=4": {
+    "total": 14
+  },
+  "css/css-cascade/all-prop-revert-layer-noop.html?include=5": {
+    "total": 14
+  },
+  "css/css-cascade/all-prop-revert-layer-noop.html?include=6": {
+    "total": 14
+  },
+  "css/css-cascade/all-prop-revert-layer-noop.html?include=7": {
+    "total": 14
+  },
+  "css/css-cascade/all-prop-revert-layer.html": {
+    "total": 378
+  },
+  "css/css-cascade/all-prop-revert-noop.html?include=0": {
+    "total": 15
+  },
+  "css/css-cascade/all-prop-revert-noop.html?include=1": {
+    "total": 15
+  },
+  "css/css-cascade/all-prop-revert-noop.html?include=2": {
+    "total": 14
+  },
+  "css/css-cascade/all-prop-revert-noop.html?include=3": {
+    "total": 14
+  },
+  "css/css-cascade/all-prop-revert-noop.html?include=4": {
+    "total": 14
+  },
+  "css/css-cascade/all-prop-revert-noop.html?include=5": {
+    "total": 14
+  },
+  "css/css-cascade/all-prop-revert-noop.html?include=6": {
+    "total": 14
+  },
+  "css/css-cascade/all-prop-revert-noop.html?include=7": {
+    "total": 14
+  },
+  "css/css-cascade/all-prop-revert-visited.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/all-prop-unset-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/all-prop-unset-visited.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/at-scope-parsing.html": {
+    "total": 43
+  },
+  "css/css-cascade/at-scope-relative-syntax.html": {
+    "total": 8
+  },
+  "css/css-cascade/idlharness.html": {
+    "total": 34
+  },
+  "css/css-cascade/import-conditional-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/import-conditional-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/import-conditions.html": {
+    "total": 29
+  },
+  "css/css-cascade/import-mime-type-quirks.html": {
+    "total": 7
+  },
+  "css/css-cascade/import-removal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/important-prop.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/important-vs-inline-001.html": {
+    "total": 4
+  },
+  "css/css-cascade/important-vs-inline-002.html": {
+    "total": 4
+  },
+  "css/css-cascade/important-vs-inline-003.html": {
+    "total": 1
+  },
+  "css/css-cascade/inherit-initial.html": {
+    "total": 4
+  },
+  "css/css-cascade/initial-background-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/initial-color-background-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/inline-style-background.html": {
+    "total": 1
+  },
+  "css/css-cascade/layer-basic.html": {
+    "total": 34
+  },
+  "css/css-cascade/layer-counter-style-override.html": {
+    "total": 4
+  },
+  "css/css-cascade/layer-cssom-order-reverse-at-property.html": {
+    "total": 2
+  },
+  "css/css-cascade/layer-cssom-order-reverse.html": {
+    "total": 4
+  },
+  "css/css-cascade/layer-font-face-override.html": {
+    "total": 4
+  },
+  "css/css-cascade/layer-import.html": {
+    "total": 24
+  },
+  "css/css-cascade/layer-important.html": {
+    "total": 9
+  },
+  "css/css-cascade/layer-keyframes-override.html": {
+    "total": 4
+  },
+  "css/css-cascade/layer-media-query.html": {
+    "total": 8
+  },
+  "css/css-cascade/layer-media-toggle.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/layer-property-override.html": {
+    "total": 4
+  },
+  "css/css-cascade/layer-replaceSync-clears-stale.html": {
+    "total": 1
+  },
+  "css/css-cascade/layer-rule-invalid-name.html": {
+    "total": 4
+  },
+  "css/css-cascade/layer-rules-cssom.html": {
+    "total": 9
+  },
+  "css/css-cascade/layer-slotted-rule.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/layer-statement-before-import.html": {
+    "total": 7
+  },
+  "css/css-cascade/layer-stylesheet-multi-adoption.html": {
+    "total": 1
+  },
+  "css/css-cascade/layer-stylesheet-sharing-important.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/layer-stylesheet-sharing.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/layer-vs-inline-style.html": {
+    "total": 4
+  },
+  "css/css-cascade/layers-basic.html": {
+    "total": 1
+  },
+  "css/css-cascade/parsing/all-invalid.html": {
+    "total": 7
+  },
+  "css/css-cascade/parsing/all-valid.html": {
+    "total": 3
+  },
+  "css/css-cascade/parsing/layer-import-parsing.html": {
+    "total": 13
+  },
+  "css/css-cascade/parsing/layer.html": {
+    "total": 11
+  },
+  "css/css-cascade/parsing/supports-import-parsing.html": {
+    "total": 24
+  },
+  "css/css-cascade/presentational-hints-cascade.html": {
+    "total": 3
+  },
+  "css/css-cascade/presentational-hints-rollback.html": {
+    "total": 16,
+    "failures": {
+      "#tests > * 11": "FAIL",
+      "#tests > * 3": "FAIL"
+    }
+  },
+  "css/css-cascade/revert-layer-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-layer-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-layer-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-layer-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-layer-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-layer-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-layer-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-layer-008.html": {
+    "total": 1
+  },
+  "css/css-cascade/revert-layer-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-layer-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-layer-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-layer-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-layer-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-layer-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-layer-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-rule-basic.html": {
+    "total": 4
+  },
+  "css/css-cascade/revert-rule-custom-property.html": {
+    "total": 1
+  },
+  "css/css-cascade/revert-rule-cycle.tentative.html": {
+    "total": 2
+  },
+  "css/css-cascade/revert-rule-important.html": {
+    "total": 3
+  },
+  "css/css-cascade/revert-rule-layer.html": {
+    "total": 2
+  },
+  "css/css-cascade/revert-rule-revert-layer.html": {
+    "total": 5
+  },
+  "css/css-cascade/revert-rule-shadow.html": {
+    "total": 12
+  },
+  "css/css-cascade/revert-val-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-val-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/revert-val-003.html": {
+    "total": 1
+  },
+  "css/css-cascade/revert-val-004.html": {
+    "total": 1
+  },
+  "css/css-cascade/revert-val-005.html": {
+    "total": 2
+  },
+  "css/css-cascade/revert-val-006.html": {
+    "total": 1,
+    "failures": {
+      "The revert keyword works with @keyframes": "FAIL"
+    }
+  },
+  "css/css-cascade/revert-val-007.html": {
+    "total": 1,
+    "failures": {
+      "A @keyframe animation with revert works when applied to multiple identical elements": "FAIL"
+    }
+  },
+  "css/css-cascade/revert-val-008.html": {
+    "total": 1
+  },
+  "css/css-cascade/revert-val-009.html": {
+    "total": 1
+  },
+  "css/css-cascade/revert-val-010.html": {
+    "total": 1
+  },
+  "css/css-cascade/revert-val-011.html": {
+    "total": 3
+  },
+  "css/css-cascade/scope-container.html": {
+    "total": 1
+  },
+  "css/css-cascade/scope-cssom.html": {
+    "total": 13
+  },
+  "css/css-cascade/scope-declarations.html": {
+    "total": 5
+  },
+  "css/css-cascade/scope-deep.html": {
+    "total": 1
+  },
+  "css/css-cascade/scope-evaluation.html": {
+    "total": 26
+  },
+  "css/css-cascade/scope-featureless.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/scope-focus.html": {
+    "total": 4
+  },
+  "css/css-cascade/scope-hover.html": {
+    "total": 4
+  },
+  "css/css-cascade/scope-implicit-001-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/scope-implicit-002-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/scope-implicit-003-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/scope-implicit-004-print.xhtml": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/scope-implicit-005-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/scope-implicit-006-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/scope-implicit-crash-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/scope-implicit-external.html": {
+    "total": 2
+  },
+  "css/css-cascade/scope-implicit-remove-sheet.html": {
+    "total": 2
+  },
+  "css/css-cascade/scope-implicit-sibling-mutations.html": {
+    "total": 1
+  },
+  "css/css-cascade/scope-implicit.html": {
+    "total": 11
+  },
+  "css/css-cascade/scope-import-implicit.html": {
+    "total": 2
+  },
+  "css/css-cascade/scope-import-inner-scope.html": {
+    "total": 2
+  },
+  "css/css-cascade/scope-import-multiple.html": {
+    "total": 2
+  },
+  "css/css-cascade/scope-import-parent-pseudo.html": {
+    "total": 2
+  },
+  "css/css-cascade/scope-import-scope-end.html": {
+    "total": 2
+  },
+  "css/css-cascade/scope-import-scope-pseudo.html": {
+    "total": 1
+  },
+  "css/css-cascade/scope-import-scope-start.html": {
+    "total": 2
+  },
+  "css/css-cascade/scope-invalidation.html": {
+    "total": 29
+  },
+  "css/css-cascade/scope-layer.html": {
+    "total": 1
+  },
+  "css/css-cascade/scope-media.html": {
+    "total": 1
+  },
+  "css/css-cascade/scope-name-defining-rules.html": {
+    "total": 4,
+    "failures": {
+      "@keyframes is unaffected by @scope": "FAIL",
+      "@keyframes is unaffected by non-matching @scope": "FAIL"
+    }
+  },
+  "css/css-cascade/scope-nesting.html": {
+    "total": 24
+  },
+  "css/css-cascade/scope-overlapping-has.html": {
+    "total": 1
+  },
+  "css/css-cascade/scope-part.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/scope-proximity.html": {
+    "total": 5
+  },
+  "css/css-cascade/scope-pseudo-element.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/scope-rule-attr-with-colons.html": {
+    "total": 1
+  },
+  "css/css-cascade/scope-shadow-sharing.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/scope-shadow.html": {
+    "total": 9
+  },
+  "css/css-cascade/scope-specificity.html": {
+    "total": 11
+  },
+  "css/css-cascade/scope-starting-style.html": {
+    "total": 1
+  },
+  "css/css-cascade/scope-style-sharing-001.html": {
+    "total": 13
+  },
+  "css/css-cascade/scope-style-sharing-002.html": {
+    "total": 17
+  },
+  "css/css-cascade/scope-supports.html": {
+    "total": 1
+  },
+  "css/css-cascade/scope-ua-shadow-host.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/scope-visited-cssom.html": {
+    "total": 16
+  },
+  "css/css-cascade/scope-visited.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/unset-val-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/unset-val-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-cascade/unset-value-storage.html": {
+    "total": 1
+  }
+}

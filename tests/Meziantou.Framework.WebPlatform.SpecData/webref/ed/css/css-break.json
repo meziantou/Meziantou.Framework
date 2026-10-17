@@ -1,0 +1,444 @@
+{
+  "spec": {
+    "title": "CSS Fragmentation Module Level 4",
+    "url": "https://drafts.csswg.org/css-break-4/"
+  },
+  "properties": [
+    {
+      "name": "break-before",
+      "href": "https://drafts.csswg.org/css-break-4/#propdef-break-before",
+      "value": "auto | avoid | always | all | avoid-page | page | left | right | recto | verso | avoid-column | column | avoid-region | region",
+      "initial": "auto",
+      "appliesTo": "block-level boxes, grid items, flex items, table row groups, table rows (but see prose)",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Neither force nor forbid a break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "avoid",
+          "prose": "Avoid a break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-avoid",
+          "type": "value",
+          "value": "avoid"
+        },
+        {
+          "name": "always",
+          "prose": "Always force a break before/after the principal box. The type of this break is that of the immediately-containing fragmentation context. For example, in a multi-column container forces a column break; in paged media not inside a multi-column container, forces a page break.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-always",
+          "type": "value",
+          "value": "always"
+        },
+        {
+          "name": "all",
+          "prose": "Always force a break before/after the principal box. This value breaks through all containing fragmentation contexts. For example, inside a multi-column container in a region in a multi-column container in paged media, it forces simultaneously a column break in the inner multi-column container, a region break, a column break in the outer multi-column container, and a page break. It’s unclear if this value is needed.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-all",
+          "type": "value",
+          "value": "all"
+        },
+        {
+          "name": "avoid-page",
+          "prose": "Avoid a page break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-avoid-page",
+          "type": "value",
+          "value": "avoid-page"
+        },
+        {
+          "name": "page",
+          "prose": "Always force a page break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-page",
+          "type": "value",
+          "value": "page"
+        },
+        {
+          "name": "left",
+          "prose": "Force one or two page breaks before/after the principal box so that the next page is formatted as a left page.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "Force one or two page breaks before/after the principal box so that the next page is formatted as a right page.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "recto",
+          "prose": "Force one or two page breaks before/after the principal box so that the next page is formatted as either a left page or a right page, whichever is second (according to the page progression) in a page spread.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-recto",
+          "type": "value",
+          "value": "recto"
+        },
+        {
+          "name": "verso",
+          "prose": "Force one or two page breaks before/after the principal box so that the next page is formatted as either a left page or a right page, whichever is first (according to the page progression) in a page spread.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-verso",
+          "type": "value",
+          "value": "verso"
+        },
+        {
+          "name": "avoid-column",
+          "prose": "Avoid a column break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-avoid-column",
+          "type": "value",
+          "value": "avoid-column"
+        },
+        {
+          "name": "column",
+          "prose": "Always force a column break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-column",
+          "type": "value",
+          "value": "column"
+        },
+        {
+          "name": "avoid-region",
+          "prose": "Avoid a region break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-avoid-region",
+          "type": "value",
+          "value": "avoid-region"
+        },
+        {
+          "name": "region",
+          "prose": "Always force a region break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-region",
+          "type": "value",
+          "value": "region"
+        }
+      ],
+      "styleDeclaration": [
+        "break-before",
+        "breakBefore"
+      ]
+    },
+    {
+      "name": "break-after",
+      "href": "https://drafts.csswg.org/css-break-4/#propdef-break-after",
+      "value": "auto | avoid | always | all | avoid-page | page | left | right | recto | verso | avoid-column | column | avoid-region | region",
+      "initial": "auto",
+      "appliesTo": "block-level boxes, grid items, flex items, table row groups, table rows (but see prose)",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Neither force nor forbid a break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "avoid",
+          "prose": "Avoid a break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-avoid",
+          "type": "value",
+          "value": "avoid"
+        },
+        {
+          "name": "always",
+          "prose": "Always force a break before/after the principal box. The type of this break is that of the immediately-containing fragmentation context. For example, in a multi-column container forces a column break; in paged media not inside a multi-column container, forces a page break.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-always",
+          "type": "value",
+          "value": "always"
+        },
+        {
+          "name": "all",
+          "prose": "Always force a break before/after the principal box. This value breaks through all containing fragmentation contexts. For example, inside a multi-column container in a region in a multi-column container in paged media, it forces simultaneously a column break in the inner multi-column container, a region break, a column break in the outer multi-column container, and a page break. It’s unclear if this value is needed.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-all",
+          "type": "value",
+          "value": "all"
+        },
+        {
+          "name": "avoid-page",
+          "prose": "Avoid a page break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-avoid-page",
+          "type": "value",
+          "value": "avoid-page"
+        },
+        {
+          "name": "page",
+          "prose": "Always force a page break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-page",
+          "type": "value",
+          "value": "page"
+        },
+        {
+          "name": "left",
+          "prose": "Force one or two page breaks before/after the principal box so that the next page is formatted as a left page.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "Force one or two page breaks before/after the principal box so that the next page is formatted as a right page.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "recto",
+          "prose": "Force one or two page breaks before/after the principal box so that the next page is formatted as either a left page or a right page, whichever is second (according to the page progression) in a page spread.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-recto",
+          "type": "value",
+          "value": "recto"
+        },
+        {
+          "name": "verso",
+          "prose": "Force one or two page breaks before/after the principal box so that the next page is formatted as either a left page or a right page, whichever is first (according to the page progression) in a page spread.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-verso",
+          "type": "value",
+          "value": "verso"
+        },
+        {
+          "name": "avoid-column",
+          "prose": "Avoid a column break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-avoid-column",
+          "type": "value",
+          "value": "avoid-column"
+        },
+        {
+          "name": "column",
+          "prose": "Always force a column break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-column",
+          "type": "value",
+          "value": "column"
+        },
+        {
+          "name": "avoid-region",
+          "prose": "Avoid a region break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-avoid-region",
+          "type": "value",
+          "value": "avoid-region"
+        },
+        {
+          "name": "region",
+          "prose": "Always force a region break before/after the principal box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-before-region",
+          "type": "value",
+          "value": "region"
+        }
+      ],
+      "styleDeclaration": [
+        "break-after",
+        "breakAfter"
+      ]
+    },
+    {
+      "name": "break-inside",
+      "href": "https://drafts.csswg.org/css-break-4/#propdef-break-inside",
+      "value": "auto | avoid | avoid-page | avoid-column | avoid-region",
+      "initial": "auto",
+      "appliesTo": "all elements except inline-level boxes, internal ruby boxes, table column boxes, table column group boxes, absolutely-positioned boxes",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Impose no additional breaking constraints within the box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-inside-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "avoid",
+          "prose": "Avoid breaks within the box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-inside-avoid",
+          "type": "value",
+          "value": "avoid"
+        },
+        {
+          "name": "avoid-page",
+          "prose": "Avoid a page break within the box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-inside-avoid-page",
+          "type": "value",
+          "value": "avoid-page"
+        },
+        {
+          "name": "avoid-column",
+          "prose": "Avoid a column break within the box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-inside-avoid-column",
+          "type": "value",
+          "value": "avoid-column"
+        },
+        {
+          "name": "avoid-region",
+          "prose": "Avoid a region break within the box.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-break-inside-avoid-region",
+          "type": "value",
+          "value": "avoid-region"
+        }
+      ],
+      "styleDeclaration": [
+        "break-inside",
+        "breakInside"
+      ]
+    },
+    {
+      "name": "orphans",
+      "href": "https://drafts.csswg.org/css-break-4/#propdef-orphans",
+      "value": "<integer [1,∞]>",
+      "initial": "2",
+      "appliesTo": "block containers that establish an inline formatting context",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "orphans"
+      ]
+    },
+    {
+      "name": "widows",
+      "href": "https://drafts.csswg.org/css-break-4/#propdef-widows",
+      "value": "<integer [1,∞]>",
+      "initial": "2",
+      "appliesTo": "block containers that establish an inline formatting context",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "widows"
+      ]
+    },
+    {
+      "name": "margin-break",
+      "href": "https://drafts.csswg.org/css-break-4/#propdef-margin-break",
+      "value": "auto | keep | discard",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "When an unforced break occurs before or after the box, any margins adjoining the break truncate to the remaining fragmentainer extent before the break, and are truncated to zero after the break. When a forced break occurs there, adjoining margins before the break are truncated, but margins after the break are preserved. Cloned margins are always truncated to zero.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-margin-break-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "keep",
+          "prose": "Margins adjoining a fragmentation break are not truncated.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-margin-break-keep",
+          "type": "value",
+          "value": "keep"
+        },
+        {
+          "name": "discard",
+          "prose": "Margins adjoining a fragmentation break are always truncated, including at the start and end of a fragmentation context.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-margin-break-discard",
+          "type": "value",
+          "value": "discard"
+        }
+      ],
+      "styleDeclaration": [
+        "margin-break",
+        "marginBreak"
+      ]
+    },
+    {
+      "name": "box-decoration-break",
+      "href": "https://drafts.csswg.org/css-break-4/#propdef-box-decoration-break",
+      "value": "slice | clone",
+      "initial": "slice",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "clone",
+          "prose": "Each box fragment is independently wrapped with the border, padding, and margin. The border-radius and border-image and box-shadow, if any, are applied to each fragment independently. The background is drawn independently in each fragment of the element. A no-repeat background image will thus be rendered once in each fragment of the element.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-box-decoration-break-clone",
+          "type": "value",
+          "value": "clone"
+        },
+        {
+          "name": "slice",
+          "prose": "The effect is as though the element were rendered with no breaks present, and then sliced by the breaks afterward: no border and no padding are inserted at a break; no box-shadow is drawn at a broken edge; and backgrounds, border-radius, and the border-image are applied to the geometry of the whole box as if it were unbroken.",
+          "href": "https://drafts.csswg.org/css-break-4/#valdef-box-decoration-break-slice",
+          "type": "value",
+          "value": "slice"
+        }
+      ],
+      "styleDeclaration": [
+        "box-decoration-break",
+        "boxDecorationBreak"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "auto",
+      "prose": "Impose no additional breaking constraints within the box.",
+      "href": "https://drafts.csswg.org/css-break-4/#valdef-break-inside-auto",
+      "type": "value",
+      "value": "auto",
+      "for": "page-break-inside"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "avoid",
+      "prose": "Avoid breaks within the box.",
+      "href": "https://drafts.csswg.org/css-break-4/#valdef-break-inside-avoid",
+      "type": "value",
+      "value": "avoid",
+      "for": "page-break-inside"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "avoid-page",
+      "prose": "Avoid a page break within the box.",
+      "href": "https://drafts.csswg.org/css-break-4/#valdef-break-inside-avoid-page",
+      "type": "value",
+      "value": "avoid-page",
+      "for": "page-break-inside"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "avoid-column",
+      "prose": "Avoid a column break within the box.",
+      "href": "https://drafts.csswg.org/css-break-4/#valdef-break-inside-avoid-column",
+      "type": "value",
+      "value": "avoid-column",
+      "for": "page-break-inside"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "avoid-region",
+      "prose": "Avoid a region break within the box.",
+      "href": "https://drafts.csswg.org/css-break-4/#valdef-break-inside-avoid-region",
+      "type": "value",
+      "value": "avoid-region",
+      "for": "page-break-inside"
+    }
+  ]
+}

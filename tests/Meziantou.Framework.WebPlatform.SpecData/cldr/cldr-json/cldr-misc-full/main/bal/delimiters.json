@@ -1,0 +1,15 @@
+{
+  "main": {
+    "bal": {
+      "identity": {
+        "language": "bal"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

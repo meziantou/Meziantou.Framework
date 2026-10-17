@@ -1,0 +1,26 @@
+{
+  "secure-contexts/basic-dedicated-worker.html": {
+    "total": 7
+  },
+  "secure-contexts/basic-dedicated-worker.https.html": {
+    "total": 7
+  },
+  "secure-contexts/basic-popup-and-iframe-tests.html": {
+    "total": 20
+  },
+  "secure-contexts/basic-popup-and-iframe-tests.https.html": {
+    "total": 18
+  },
+  "secure-contexts/basic-shared-worker.html": {
+    "total": 5
+  },
+  "secure-contexts/basic-shared-worker.https.html": {
+    "total": 5
+  },
+  "secure-contexts/shared-worker-insecure-first.https.html": {
+    "total": 4
+  },
+  "secure-contexts/shared-worker-secure-first.https.html": {
+    "total": 4
+  }
+}

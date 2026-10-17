@@ -1,0 +1,111 @@
+{
+  "css/css-rhythm/block-step-size-establishes-block-formatting-context-list-item.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/block-step-size-establishes-block-formatting-context.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/block-step-size-establishes-independent-formatting-context-list-item.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/block-step-size-establishes-independent-formatting-context.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/block-step-size-none-does-not-establish-block-formatting-context.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/block-step-size-none-does-not-establish-indepdendent-formatting-context.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/computedstyle/block-level-replaced-elements-affected-by-block-step-size.html": {
+    "total": 14
+  },
+  "css/css-rhythm/computedstyle/inline-level-replaced-elements-not-affected-by-block-step-size.html": {
+    "total": 14,
+    "failures": {
+      ".test 11": "FAIL",
+      ".test 12": "FAIL"
+    }
+  },
+  "css/css-rhythm/content-based-height-rounds-up-to-step-unit.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/definite-height-rounds-up-to-next-multiple-of-step-unit.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/definite-height-rounds-up-to-step-unit.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/definite-height-same-as-step-unit.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/parsing/block-step-align-computed.html": {
+    "total": 4
+  },
+  "css/css-rhythm/parsing/block-step-align-invalid.html": {
+    "total": 13
+  },
+  "css/css-rhythm/parsing/block-step-align-valid.html": {
+    "total": 4
+  },
+  "css/css-rhythm/parsing/block-step-computed.html": {
+    "total": 34
+  },
+  "css/css-rhythm/parsing/block-step-insert-computed.html": {
+    "total": 3
+  },
+  "css/css-rhythm/parsing/block-step-insert-invalid.html": {
+    "total": 12
+  },
+  "css/css-rhythm/parsing/block-step-insert-valid.html": {
+    "total": 3
+  },
+  "css/css-rhythm/parsing/block-step-invalid.html": {
+    "total": 7
+  },
+  "css/css-rhythm/parsing/block-step-round-computed.html": {
+    "total": 3
+  },
+  "css/css-rhythm/parsing/block-step-round-invalid.html": {
+    "total": 18
+  },
+  "css/css-rhythm/parsing/block-step-round-valid.html": {
+    "total": 3
+  },
+  "css/css-rhythm/parsing/block-step-size-computed.html": {
+    "total": 6
+  },
+  "css/css-rhythm/parsing/block-step-size-invalid.html": {
+    "total": 5
+  },
+  "css/css-rhythm/parsing/block-step-size-valid.html": {
+    "total": 6
+  },
+  "css/css-rhythm/parsing/block-step-valid.html": {
+    "total": 34
+  },
+  "css/css-rhythm/replaced-elements/block-level-canvas-margins-affected-by-block-step-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/replaced-elements/block-level-embed-margins-affected-by-block-step-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/replaced-elements/block-level-iframe-margins-affected-by-block-step-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/replaced-elements/block-level-img-margins-affected-by-block-step-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/replaced-elements/block-level-object-margins-affected-by-block-step-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/replaced-elements/block-level-svg-margins-affected-by-block-step-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/replaced-elements/block-level-video-margins-affected-by-block-step-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-rhythm/zero-outer-size-rounded-up-to-block-step-size.html": {
+    "reftest": "PASS"
+  }
+}

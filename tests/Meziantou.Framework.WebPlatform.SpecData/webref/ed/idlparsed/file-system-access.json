@@ -1,0 +1,868 @@
+{
+  "spec": {
+    "title": "File System Access",
+    "url": "https://wicg.github.io/file-system-access/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "FileSystemHandle"
+        ],
+        "Worker": [
+          "FileSystemHandle"
+        ]
+      }
+    },
+    "idlNames": {
+      "FileSystemPermissionMode": {
+        "fragment": "enum FileSystemPermissionMode {\n  \"read\",\n  \"readwrite\"\n};",
+        "type": "enum",
+        "name": "FileSystemPermissionMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "read",
+            "href": "https://wicg.github.io/file-system-access/#dom-filesystempermissionmode-read"
+          },
+          {
+            "type": "enum-value",
+            "value": "readwrite",
+            "href": "https://wicg.github.io/file-system-access/#dom-filesystempermissionmode-readwrite"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/file-system-access/#enumdef-filesystempermissionmode"
+      },
+      "FileSystemPermissionDescriptor": {
+        "fragment": "dictionary FileSystemPermissionDescriptor : PermissionDescriptor {\n  required FileSystemHandle handle;\n  FileSystemPermissionMode mode = \"read\";\n};",
+        "type": "dictionary",
+        "name": "FileSystemPermissionDescriptor",
+        "inheritance": "PermissionDescriptor",
+        "members": [
+          {
+            "type": "field",
+            "name": "handle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FileSystemHandle"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/file-system-access/#dom-filesystempermissiondescriptor-handle"
+          },
+          {
+            "type": "field",
+            "name": "mode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FileSystemPermissionMode"
+            },
+            "default": {
+              "type": "string",
+              "value": "read"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/file-system-access/#dom-filesystempermissiondescriptor-mode"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/file-system-access/#dictdef-filesystempermissiondescriptor"
+      },
+      "FileSystemHandlePermissionDescriptor": {
+        "fragment": "dictionary FileSystemHandlePermissionDescriptor {\n  FileSystemPermissionMode mode = \"read\";\n};",
+        "type": "dictionary",
+        "name": "FileSystemHandlePermissionDescriptor",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "mode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FileSystemPermissionMode"
+            },
+            "default": {
+              "type": "string",
+              "value": "read"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/file-system-access/#dom-filesystemhandlepermissiondescriptor-mode"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/file-system-access/#dictdef-filesystemhandlepermissiondescriptor"
+      },
+      "WellKnownDirectory": {
+        "fragment": "enum WellKnownDirectory {\n  \"desktop\",\n  \"documents\",\n  \"downloads\",\n  \"music\",\n  \"pictures\",\n  \"videos\",\n};",
+        "type": "enum",
+        "name": "WellKnownDirectory",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "desktop",
+            "href": "https://wicg.github.io/file-system-access/#dom-wellknowndirectory-desktop"
+          },
+          {
+            "type": "enum-value",
+            "value": "documents",
+            "href": "https://wicg.github.io/file-system-access/#dom-wellknowndirectory-documents"
+          },
+          {
+            "type": "enum-value",
+            "value": "downloads",
+            "href": "https://wicg.github.io/file-system-access/#dom-wellknowndirectory-downloads"
+          },
+          {
+            "type": "enum-value",
+            "value": "music",
+            "href": "https://wicg.github.io/file-system-access/#dom-wellknowndirectory-music"
+          },
+          {
+            "type": "enum-value",
+            "value": "pictures",
+            "href": "https://wicg.github.io/file-system-access/#dom-wellknowndirectory-pictures"
+          },
+          {
+            "type": "enum-value",
+            "value": "videos",
+            "href": "https://wicg.github.io/file-system-access/#dom-wellknowndirectory-videos"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/file-system-access/#enumdef-wellknowndirectory"
+      },
+      "StartInDirectory": {
+        "fragment": "typedef (WellKnownDirectory or FileSystemHandle) StartInDirectory;",
+        "type": "typedef",
+        "name": "StartInDirectory",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WellKnownDirectory"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FileSystemHandle"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://wicg.github.io/file-system-access/#typedefdef-startindirectory"
+      },
+      "FilePickerAcceptType": {
+        "fragment": "dictionary FilePickerAcceptType {\n    USVString description = \"\";\n    record<USVString, (USVString or sequence<USVString>)> accept;\n};",
+        "type": "dictionary",
+        "name": "FilePickerAcceptType",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "description",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://wicg.github.io/file-system-access/#dom-filepickeraccepttype-description"
+          },
+          {
+            "type": "field",
+            "name": "accept",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "record",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "USVString"
+                    },
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "sequence",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": [
+                        {
+                          "type": "dictionary-type",
+                          "extAttrs": [],
+                          "generic": "",
+                          "nullable": false,
+                          "union": false,
+                          "idlType": "USVString"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/file-system-access/#dom-filepickeraccepttype-accept"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/file-system-access/#dictdef-filepickeraccepttype"
+      },
+      "FilePickerOptions": {
+        "fragment": "dictionary FilePickerOptions {\n    sequence<FilePickerAcceptType> types;\n    boolean excludeAcceptAllOption = false;\n    DOMString id;\n    StartInDirectory startIn;\n};",
+        "type": "dictionary",
+        "name": "FilePickerOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "types",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FilePickerAcceptType"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/file-system-access/#dom-filepickeroptions-types"
+          },
+          {
+            "type": "field",
+            "name": "excludeAcceptAllOption",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/file-system-access/#dom-filepickeroptions-excludeacceptalloption"
+          },
+          {
+            "type": "field",
+            "name": "id",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/file-system-access/#dom-filepickeroptions-id"
+          },
+          {
+            "type": "field",
+            "name": "startIn",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "StartInDirectory"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/file-system-access/#dom-filepickeroptions-startin"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/file-system-access/#dictdef-filepickeroptions"
+      },
+      "OpenFilePickerOptions": {
+        "fragment": "dictionary OpenFilePickerOptions : FilePickerOptions {\n    boolean multiple = false;\n};",
+        "type": "dictionary",
+        "name": "OpenFilePickerOptions",
+        "inheritance": "FilePickerOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "multiple",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/file-system-access/#dom-openfilepickeroptions-multiple"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/file-system-access/#dictdef-openfilepickeroptions"
+      },
+      "SaveFilePickerOptions": {
+        "fragment": "dictionary SaveFilePickerOptions : FilePickerOptions {\n    USVString? suggestedName;\n};",
+        "type": "dictionary",
+        "name": "SaveFilePickerOptions",
+        "inheritance": "FilePickerOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "suggestedName",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/file-system-access/#dom-savefilepickeroptions-suggestedname"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/file-system-access/#dictdef-savefilepickeroptions"
+      },
+      "DirectoryPickerOptions": {
+        "fragment": "dictionary DirectoryPickerOptions {\n    DOMString id;\n    StartInDirectory startIn;\n    FileSystemPermissionMode mode = \"read\";\n};",
+        "type": "dictionary",
+        "name": "DirectoryPickerOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "id",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/file-system-access/#dom-directorypickeroptions-id"
+          },
+          {
+            "type": "field",
+            "name": "startIn",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "StartInDirectory"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/file-system-access/#dom-directorypickeroptions-startin"
+          },
+          {
+            "type": "field",
+            "name": "mode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FileSystemPermissionMode"
+            },
+            "default": {
+              "type": "string",
+              "value": "read"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/file-system-access/#dom-directorypickeroptions-mode"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/file-system-access/#dictdef-directorypickeroptions"
+      }
+    },
+    "idlExtendedNames": {
+      "FileSystemHandle": [
+        {
+          "fragment": "[Exposed=(Window,Worker), SecureContext, Serializable]\npartial interface FileSystemHandle {\n  Promise<PermissionState> queryPermission(optional FileSystemHandlePermissionDescriptor descriptor = {});\n  Promise<PermissionState> requestPermission(optional FileSystemHandlePermissionDescriptor descriptor = {});\n};",
+          "type": "interface",
+          "name": "FileSystemHandle",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "queryPermission",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "PermissionState"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "descriptor",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "FileSystemHandlePermissionDescriptor"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/file-system-access/#dom-filesystemhandle-querypermission"
+            },
+            {
+              "type": "operation",
+              "name": "requestPermission",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "PermissionState"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "descriptor",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "FileSystemHandlePermissionDescriptor"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/file-system-access/#dom-filesystemhandle-requestpermission"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "Window"
+                  },
+                  {
+                    "value": "Worker"
+                  }
+                ]
+              },
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "Serializable",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "Window": [
+        {
+          "fragment": "[SecureContext]\npartial interface Window {\n    Promise<sequence<FileSystemFileHandle>> showOpenFilePicker(optional OpenFilePickerOptions options = {});\n    Promise<FileSystemFileHandle> showSaveFilePicker(optional SaveFilePickerOptions options = {});\n    Promise<FileSystemDirectoryHandle> showDirectoryPicker(optional DirectoryPickerOptions options = {});\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "showOpenFilePicker",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "return-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "FileSystemFileHandle"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "OpenFilePickerOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/file-system-access/#dom-window-showopenfilepicker"
+            },
+            {
+              "type": "operation",
+              "name": "showSaveFilePicker",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "FileSystemFileHandle"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SaveFilePickerOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/file-system-access/#dom-window-showsavefilepicker"
+            },
+            {
+              "type": "operation",
+              "name": "showDirectoryPicker",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "FileSystemDirectoryHandle"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DirectoryPickerOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/file-system-access/#dom-window-showdirectorypicker"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "DataTransferItem": [
+        {
+          "fragment": "partial interface DataTransferItem {\n    Promise<FileSystemHandle?> getAsFileSystemHandle();\n};",
+          "type": "interface",
+          "name": "DataTransferItem",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getAsFileSystemHandle",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": true,
+                    "union": false,
+                    "idlType": "FileSystemHandle"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/file-system-access/#dom-datatransferitem-getasfilesystemhandle"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "FileSystemHandle"
+      ],
+      "Worker": [
+        "FileSystemHandle"
+      ]
+    },
+    "dependencies": {
+      "FileSystemPermissionDescriptor": [
+        "PermissionDescriptor",
+        "FileSystemHandle",
+        "FileSystemPermissionMode"
+      ],
+      "FileSystemHandlePermissionDescriptor": [
+        "FileSystemPermissionMode"
+      ],
+      "FileSystemHandle": [
+        "PermissionState",
+        "FileSystemHandlePermissionDescriptor"
+      ],
+      "FilePickerAcceptType": [],
+      "FilePickerOptions": [
+        "FilePickerAcceptType",
+        "StartInDirectory"
+      ],
+      "OpenFilePickerOptions": [
+        "FilePickerOptions"
+      ],
+      "SaveFilePickerOptions": [
+        "FilePickerOptions"
+      ],
+      "DirectoryPickerOptions": [
+        "StartInDirectory",
+        "FileSystemPermissionMode"
+      ],
+      "Window": [
+        "FileSystemFileHandle",
+        "OpenFilePickerOptions",
+        "SaveFilePickerOptions",
+        "FileSystemDirectoryHandle",
+        "DirectoryPickerOptions"
+      ],
+      "DataTransferItem": [
+        "FileSystemHandle"
+      ]
+    },
+    "externalDependencies": [
+      "PermissionDescriptor",
+      "FileSystemHandle",
+      "PermissionState",
+      "Window",
+      "FileSystemFileHandle",
+      "FileSystemDirectoryHandle",
+      "DataTransferItem"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

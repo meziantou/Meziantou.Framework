@@ -1,0 +1,2395 @@
+{
+  "spec": {
+    "title": "WebTransport",
+    "url": "https://w3c.github.io/webtransport/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "WebTransport",
+          "WebTransportError"
+        ],
+        "Worker": [
+          "WebTransport",
+          "WebTransportError"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "WebTransportDatagramsWritable",
+          "WebTransportDatagramDuplexStream",
+          "WebTransportSendStream",
+          "WebTransportSendGroup",
+          "WebTransportReceiveStream",
+          "WebTransportBidirectionalStream"
+        ],
+        "Worker": [
+          "WebTransportDatagramsWritable",
+          "WebTransportDatagramDuplexStream",
+          "WebTransportSendStream",
+          "WebTransportSendGroup",
+          "WebTransportReceiveStream",
+          "WebTransportBidirectionalStream"
+        ],
+        "*": [
+          "WebTransportWriter"
+        ]
+      }
+    },
+    "idlNames": {
+      "WebTransportDatagramsWritable": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext, Transferable]\ninterface WebTransportDatagramsWritable : WritableStream {\n  attribute WebTransportSendGroup? sendGroup;\n  attribute long long sendOrder;\n};",
+        "type": "interface",
+        "name": "WebTransportDatagramsWritable",
+        "inheritance": "WritableStream",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "sendGroup",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "WebTransportSendGroup"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportdatagramswritable-sendgroup"
+          },
+          {
+            "type": "attribute",
+            "name": "sendOrder",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportdatagramswritable-sendorder"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Transferable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#webtransportdatagramswritable"
+      },
+      "WebTransportDatagramDuplexStream": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface WebTransportDatagramDuplexStream {\n  WebTransportDatagramsWritable createWritable(\n      optional WebTransportSendOptions options = {});\n  readonly attribute ReadableStream readable;\n\n  readonly attribute unsigned long maxDatagramSize;\n  attribute unrestricted double? incomingMaxAge;\n  attribute unrestricted double? outgoingMaxAge;\n  attribute unsigned long incomingMaxBufferedDatagrams;\n  attribute unsigned long outgoingMaxBufferedDatagrams;\n};",
+        "type": "interface",
+        "name": "WebTransportDatagramDuplexStream",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "createWritable",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WebTransportDatagramsWritable"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebTransportSendOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportdatagramduplexstream-createwritable"
+          },
+          {
+            "type": "attribute",
+            "name": "readable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportdatagramduplexstream-readable"
+          },
+          {
+            "type": "attribute",
+            "name": "maxDatagramSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportdatagramduplexstream-maxdatagramsize"
+          },
+          {
+            "type": "attribute",
+            "name": "incomingMaxAge",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportdatagramduplexstream-incomingmaxage"
+          },
+          {
+            "type": "attribute",
+            "name": "outgoingMaxAge",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportdatagramduplexstream-outgoingmaxage"
+          },
+          {
+            "type": "attribute",
+            "name": "incomingMaxBufferedDatagrams",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportdatagramduplexstream-incomingmaxbuffereddatagrams"
+          },
+          {
+            "type": "attribute",
+            "name": "outgoingMaxBufferedDatagrams",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportdatagramduplexstream-outgoingmaxbuffereddatagrams"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#webtransportdatagramduplexstream"
+      },
+      "WebTransport": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface WebTransport {\n  constructor(USVString url, optional WebTransportOptions options = {});\n\n  Promise<WebTransportConnectionStats> getStats();\n  [NewObject] Promise<Uint8Array> exportKeyingMaterial(\n      BufferSource label, BufferSource context, unsigned long outputLength);\n  readonly attribute Promise<undefined> ready;\n  readonly attribute WebTransportReliabilityMode reliability;\n  readonly attribute WebTransportCongestionControl congestionControl;\n  attribute [EnforceRange] unsigned short? anticipatedConcurrentIncomingUnidirectionalStreams;\n  attribute [EnforceRange] unsigned short? anticipatedConcurrentIncomingBidirectionalStreams;\n  [SameObject] readonly attribute Headers? responseHeaders;\n  readonly attribute DOMString protocol;\n\n  readonly attribute Promise<WebTransportCloseInfo> closed;\n  readonly attribute Promise<undefined> draining;\n  undefined close(optional WebTransportCloseInfo closeInfo = {});\n\n  readonly attribute WebTransportDatagramDuplexStream datagrams;\n\n  Promise<WebTransportBidirectionalStream> createBidirectionalStream(\n      optional WebTransportSendStreamOptions options = {});\n  /* a ReadableStream of WebTransportBidirectionalStream objects */\n  readonly attribute ReadableStream incomingBidirectionalStreams;\n\n  Promise<WebTransportSendStream> createUnidirectionalStream(\n      optional WebTransportSendStreamOptions options = {});\n  /* a ReadableStream of WebTransportReceiveStream objects */\n  readonly attribute ReadableStream incomingUnidirectionalStreams;\n  WebTransportSendGroup createSendGroup();\n\n  static readonly attribute boolean supportsReliableOnly;\n};",
+        "type": "interface",
+        "name": "WebTransport",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "url",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebTransportOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-webtransport"
+          },
+          {
+            "type": "operation",
+            "name": "getStats",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebTransportConnectionStats"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-getstats"
+          },
+          {
+            "type": "operation",
+            "name": "exportKeyingMaterial",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Uint8Array"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "label",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "context",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "outputLength",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-exportkeyingmaterial"
+          },
+          {
+            "type": "attribute",
+            "name": "ready",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-ready"
+          },
+          {
+            "type": "attribute",
+            "name": "reliability",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WebTransportReliabilityMode"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-reliability"
+          },
+          {
+            "type": "attribute",
+            "name": "congestionControl",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WebTransportCongestionControl"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-congestioncontrol"
+          },
+          {
+            "type": "attribute",
+            "name": "anticipatedConcurrentIncomingUnidirectionalStreams",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-anticipatedconcurrentincomingunidirectionalstreams"
+          },
+          {
+            "type": "attribute",
+            "name": "anticipatedConcurrentIncomingBidirectionalStreams",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-anticipatedconcurrentincomingbidirectionalstreams"
+          },
+          {
+            "type": "attribute",
+            "name": "responseHeaders",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Headers"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-responseheaders"
+          },
+          {
+            "type": "attribute",
+            "name": "protocol",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-protocol"
+          },
+          {
+            "type": "attribute",
+            "name": "closed",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebTransportCloseInfo"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-closed"
+          },
+          {
+            "type": "attribute",
+            "name": "draining",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-draining"
+          },
+          {
+            "type": "operation",
+            "name": "close",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "closeInfo",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebTransportCloseInfo"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-close"
+          },
+          {
+            "type": "attribute",
+            "name": "datagrams",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WebTransportDatagramDuplexStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-datagrams"
+          },
+          {
+            "type": "operation",
+            "name": "createBidirectionalStream",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebTransportBidirectionalStream"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebTransportSendStreamOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-createbidirectionalstream"
+          },
+          {
+            "type": "attribute",
+            "name": "incomingBidirectionalStreams",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-incomingbidirectionalstreams"
+          },
+          {
+            "type": "operation",
+            "name": "createUnidirectionalStream",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebTransportSendStream"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebTransportSendStreamOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-createunidirectionalstream"
+          },
+          {
+            "type": "attribute",
+            "name": "incomingUnidirectionalStreams",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-incomingunidirectionalstreams"
+          },
+          {
+            "type": "operation",
+            "name": "createSendGroup",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WebTransportSendGroup"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-createsendgroup"
+          },
+          {
+            "type": "attribute",
+            "name": "supportsReliableOnly",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "static",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransport-supportsreliableonly"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#webtransport"
+      },
+      "WebTransportReliabilityMode": {
+        "fragment": "enum WebTransportReliabilityMode {\n  \"pending\",\n  \"reliable-only\",\n  \"supports-unreliable\",\n};",
+        "type": "enum",
+        "name": "WebTransportReliabilityMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "pending",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportreliabilitymode-pending"
+          },
+          {
+            "type": "enum-value",
+            "value": "reliable-only",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportreliabilitymode-reliable-only"
+          },
+          {
+            "type": "enum-value",
+            "value": "supports-unreliable",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportreliabilitymode-supports-unreliable"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webtransport/#enumdef-webtransportreliabilitymode"
+      },
+      "WebTransportHash": {
+        "fragment": "dictionary WebTransportHash {\n  required DOMString algorithm;\n  required BufferSource value;\n};",
+        "type": "dictionary",
+        "name": "WebTransportHash",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "algorithm",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransporthash-algorithm"
+          },
+          {
+            "type": "field",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransporthash-value"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#dictdef-webtransporthash"
+      },
+      "WebTransportOptions": {
+        "fragment": "dictionary WebTransportOptions {\n  boolean allowPooling = false;\n  boolean requireUnreliable = false;\n  HeadersInit headers = {};\n  sequence<WebTransportHash> serverCertificateHashes = [];\n  WebTransportCongestionControl congestionControl = \"default\";\n  [EnforceRange] unsigned short? anticipatedConcurrentIncomingUnidirectionalStreams = null;\n  [EnforceRange] unsigned short? anticipatedConcurrentIncomingBidirectionalStreams = null;\n  sequence<DOMString> protocols = [];\n  ReadableStreamType datagramsReadableType;\n};",
+        "type": "dictionary",
+        "name": "WebTransportOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "allowPooling",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportoptions-allowpooling"
+          },
+          {
+            "type": "field",
+            "name": "requireUnreliable",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportoptions-requireunreliable"
+          },
+          {
+            "type": "field",
+            "name": "headers",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HeadersInit"
+            },
+            "default": {
+              "type": "dictionary"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportoptions-headers"
+          },
+          {
+            "type": "field",
+            "name": "serverCertificateHashes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebTransportHash"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportoptions-servercertificatehashes"
+          },
+          {
+            "type": "field",
+            "name": "congestionControl",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WebTransportCongestionControl"
+            },
+            "default": {
+              "type": "string",
+              "value": "default"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportoptions-congestioncontrol"
+          },
+          {
+            "type": "field",
+            "name": "anticipatedConcurrentIncomingUnidirectionalStreams",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportoptions-anticipatedconcurrentincomingunidirectionalstreams"
+          },
+          {
+            "type": "field",
+            "name": "anticipatedConcurrentIncomingBidirectionalStreams",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportoptions-anticipatedconcurrentincomingbidirectionalstreams"
+          },
+          {
+            "type": "field",
+            "name": "protocols",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportoptions-protocols"
+          },
+          {
+            "type": "field",
+            "name": "datagramsReadableType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStreamType"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportoptions-datagramsreadabletype"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#dictdef-webtransportoptions"
+      },
+      "WebTransportCongestionControl": {
+        "fragment": "enum WebTransportCongestionControl {\n  \"default\",\n  \"throughput\",\n  \"low-latency\",\n};",
+        "type": "enum",
+        "name": "WebTransportCongestionControl",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "default",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportcongestioncontrol-default"
+          },
+          {
+            "type": "enum-value",
+            "value": "throughput",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportcongestioncontrol-throughput"
+          },
+          {
+            "type": "enum-value",
+            "value": "low-latency",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportcongestioncontrol-low-latency"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webtransport/#enumdef-webtransportcongestioncontrol"
+      },
+      "WebTransportCloseInfo": {
+        "fragment": "dictionary WebTransportCloseInfo {\n  unsigned long closeCode = 0;\n  USVString reason = \"\";\n};",
+        "type": "dictionary",
+        "name": "WebTransportCloseInfo",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "closeCode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportcloseinfo-closecode"
+          },
+          {
+            "type": "field",
+            "name": "reason",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportcloseinfo-reason"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#dictdef-webtransportcloseinfo"
+      },
+      "WebTransportSendOptions": {
+        "fragment": "dictionary WebTransportSendOptions {\n  WebTransportSendGroup? sendGroup = null;\n  long long sendOrder = 0;\n};",
+        "type": "dictionary",
+        "name": "WebTransportSendOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "sendGroup",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "WebTransportSendGroup"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportsendoptions-sendgroup"
+          },
+          {
+            "type": "field",
+            "name": "sendOrder",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportsendoptions-sendorder"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#dictdef-webtransportsendoptions"
+      },
+      "WebTransportSendStreamOptions": {
+        "fragment": "dictionary WebTransportSendStreamOptions : WebTransportSendOptions {\n  boolean waitUntilAvailable = false;\n};",
+        "type": "dictionary",
+        "name": "WebTransportSendStreamOptions",
+        "inheritance": "WebTransportSendOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "waitUntilAvailable",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportsendstreamoptions-waituntilavailable"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#dictdef-webtransportsendstreamoptions"
+      },
+      "WebTransportConnectionStats": {
+        "fragment": "dictionary WebTransportConnectionStats {\n  unsigned long long bytesSent;\n  unsigned long long bytesSentOverhead;\n  unsigned long long bytesAcknowledged;\n  unsigned long long packetsSent;\n  unsigned long long bytesLost;\n  unsigned long long packetsLost;\n  unsigned long long bytesReceived;\n  unsigned long long packetsReceived;\n  DOMHighResTimeStamp smoothedRtt;\n  DOMHighResTimeStamp rttVariation;\n  DOMHighResTimeStamp minRtt;\n  required WebTransportDatagramStats datagrams;\n  unsigned long long? estimatedSendRate = null;\n  boolean atSendCapacity = false;\n};",
+        "type": "dictionary",
+        "name": "WebTransportConnectionStats",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "bytesSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportconnectionstats-bytessent"
+          },
+          {
+            "type": "field",
+            "name": "bytesSentOverhead",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportconnectionstats-bytessentoverhead"
+          },
+          {
+            "type": "field",
+            "name": "bytesAcknowledged",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportconnectionstats-bytesacknowledged"
+          },
+          {
+            "type": "field",
+            "name": "packetsSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportconnectionstats-packetssent"
+          },
+          {
+            "type": "field",
+            "name": "bytesLost",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportconnectionstats-byteslost"
+          },
+          {
+            "type": "field",
+            "name": "packetsLost",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportconnectionstats-packetslost"
+          },
+          {
+            "type": "field",
+            "name": "bytesReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportconnectionstats-bytesreceived"
+          },
+          {
+            "type": "field",
+            "name": "packetsReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportconnectionstats-packetsreceived"
+          },
+          {
+            "type": "field",
+            "name": "smoothedRtt",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportconnectionstats-smoothedrtt"
+          },
+          {
+            "type": "field",
+            "name": "rttVariation",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportconnectionstats-rttvariation"
+          },
+          {
+            "type": "field",
+            "name": "minRtt",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportconnectionstats-minrtt"
+          },
+          {
+            "type": "field",
+            "name": "datagrams",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WebTransportDatagramStats"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportconnectionstats-datagrams"
+          },
+          {
+            "type": "field",
+            "name": "estimatedSendRate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportconnectionstats-estimatedsendrate"
+          },
+          {
+            "type": "field",
+            "name": "atSendCapacity",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportconnectionstats-atsendcapacity"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#dictdef-webtransportconnectionstats"
+      },
+      "WebTransportDatagramStats": {
+        "fragment": "dictionary WebTransportDatagramStats {\n  unsigned long long droppedIncoming;\n  unsigned long long expiredIncoming;\n  unsigned long long expiredOutgoing;\n  unsigned long long lostOutgoing;\n};",
+        "type": "dictionary",
+        "name": "WebTransportDatagramStats",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "droppedIncoming",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportdatagramstats-droppedincoming"
+          },
+          {
+            "type": "field",
+            "name": "expiredIncoming",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportdatagramstats-expiredincoming"
+          },
+          {
+            "type": "field",
+            "name": "expiredOutgoing",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportdatagramstats-expiredoutgoing"
+          },
+          {
+            "type": "field",
+            "name": "lostOutgoing",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportdatagramstats-lostoutgoing"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#dictdef-webtransportdatagramstats"
+      },
+      "WebTransportSendStream": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext, Transferable]\ninterface WebTransportSendStream : WritableStream {\n  attribute WebTransportSendGroup? sendGroup;\n  attribute long long sendOrder;\n  Promise<WebTransportSendStreamStats> getStats();\n  WebTransportWriter getWriter();\n};",
+        "type": "interface",
+        "name": "WebTransportSendStream",
+        "inheritance": "WritableStream",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "sendGroup",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "WebTransportSendGroup"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportsendstream-sendgroup"
+          },
+          {
+            "type": "attribute",
+            "name": "sendOrder",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportsendstream-sendorder"
+          },
+          {
+            "type": "operation",
+            "name": "getStats",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebTransportSendStreamStats"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportsendstream-getstats"
+          },
+          {
+            "type": "operation",
+            "name": "getWriter",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WebTransportWriter"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportsendstream-getwriter"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Transferable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#webtransportsendstream"
+      },
+      "WebTransportSendStreamStats": {
+        "fragment": "dictionary WebTransportSendStreamStats {\n  unsigned long long bytesWritten;\n  unsigned long long bytesSent;\n  unsigned long long bytesAcknowledged;\n};",
+        "type": "dictionary",
+        "name": "WebTransportSendStreamStats",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "bytesWritten",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportsendstreamstats-byteswritten"
+          },
+          {
+            "type": "field",
+            "name": "bytesSent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportsendstreamstats-bytessent"
+          },
+          {
+            "type": "field",
+            "name": "bytesAcknowledged",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportsendstreamstats-bytesacknowledged"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#dictdef-webtransportsendstreamstats"
+      },
+      "WebTransportSendGroup": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface WebTransportSendGroup {\n  Promise<WebTransportSendStreamStats> getStats();\n};",
+        "type": "interface",
+        "name": "WebTransportSendGroup",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "getStats",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebTransportSendStreamStats"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportsendgroup-getstats"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#webtransportsendgroup"
+      },
+      "WebTransportReceiveStream": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext, Transferable]\ninterface WebTransportReceiveStream : ReadableStream {\n  Promise<WebTransportReceiveStreamStats> getStats();\n};",
+        "type": "interface",
+        "name": "WebTransportReceiveStream",
+        "inheritance": "ReadableStream",
+        "members": [
+          {
+            "type": "operation",
+            "name": "getStats",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebTransportReceiveStreamStats"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportreceivestream-getstats"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Transferable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#webtransportreceivestream"
+      },
+      "WebTransportReceiveStreamStats": {
+        "fragment": "dictionary WebTransportReceiveStreamStats {\n  unsigned long long bytesReceived;\n  unsigned long long bytesRead;\n};",
+        "type": "dictionary",
+        "name": "WebTransportReceiveStreamStats",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "bytesReceived",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportreceivestreamstats-bytesreceived"
+          },
+          {
+            "type": "field",
+            "name": "bytesRead",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportreceivestreamstats-bytesread"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#dictdef-webtransportreceivestreamstats"
+      },
+      "WebTransportBidirectionalStream": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface WebTransportBidirectionalStream {\n  readonly attribute WebTransportReceiveStream readable;\n  readonly attribute WebTransportSendStream writable;\n};",
+        "type": "interface",
+        "name": "WebTransportBidirectionalStream",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "readable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WebTransportReceiveStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportbidirectionalstream-readable"
+          },
+          {
+            "type": "attribute",
+            "name": "writable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WebTransportSendStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportbidirectionalstream-writable"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#webtransportbidirectionalstream"
+      },
+      "WebTransportWriter": {
+        "fragment": "[Exposed=*, SecureContext]\ninterface WebTransportWriter : WritableStreamDefaultWriter {\n  Promise<undefined> atomicWrite(optional any chunk);\n  undefined commit();\n};",
+        "type": "interface",
+        "name": "WebTransportWriter",
+        "inheritance": "WritableStreamDefaultWriter",
+        "members": [
+          {
+            "type": "operation",
+            "name": "atomicWrite",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "chunk",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportwriter-atomicwrite"
+          },
+          {
+            "type": "operation",
+            "name": "commit",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransportwriter-commit"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#webtransportwriter"
+      },
+      "WebTransportError": {
+        "fragment": "[Exposed=(Window,Worker), Serializable, SecureContext]\ninterface WebTransportError : DOMException {\n  constructor(optional DOMString message = \"\", optional WebTransportErrorOptions options = {});\n\n  readonly attribute WebTransportErrorSource source;\n  readonly attribute unsigned long? streamErrorCode;\n};",
+        "type": "interface",
+        "name": "WebTransportError",
+        "inheritance": "DOMException",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "message",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": ""
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WebTransportErrorOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/webtransport/#dom-webtransporterror-webtransporterror"
+          },
+          {
+            "type": "attribute",
+            "name": "source",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WebTransportErrorSource"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransporterror-source"
+          },
+          {
+            "type": "attribute",
+            "name": "streamErrorCode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransporterror-streamerrorcode"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#webtransporterror"
+      },
+      "WebTransportErrorOptions": {
+        "fragment": "dictionary WebTransportErrorOptions {\n  WebTransportErrorSource source = \"stream\";\n  [Clamp] unsigned long? streamErrorCode = null;\n};",
+        "type": "dictionary",
+        "name": "WebTransportErrorOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "source",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WebTransportErrorSource"
+            },
+            "default": {
+              "type": "string",
+              "value": "stream"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransporterroroptions-source"
+          },
+          {
+            "type": "field",
+            "name": "streamErrorCode",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Clamp",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webtransport/#dom-webtransporterroroptions-streamerrorcode"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webtransport/#dictdef-webtransporterroroptions"
+      },
+      "WebTransportErrorSource": {
+        "fragment": "enum WebTransportErrorSource {\n  \"stream\",\n  \"session\",\n};",
+        "type": "enum",
+        "name": "WebTransportErrorSource",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "stream",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransporterrorsource-stream"
+          },
+          {
+            "type": "enum-value",
+            "value": "session",
+            "href": "https://w3c.github.io/webtransport/#dom-webtransporterrorsource-session"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webtransport/#enumdef-webtransporterrorsource"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WebTransportDatagramsWritable",
+        "WebTransportDatagramDuplexStream",
+        "WebTransport",
+        "WebTransportSendStream",
+        "WebTransportSendGroup",
+        "WebTransportReceiveStream",
+        "WebTransportBidirectionalStream",
+        "WebTransportError"
+      ],
+      "Worker": [
+        "WebTransportDatagramsWritable",
+        "WebTransportDatagramDuplexStream",
+        "WebTransport",
+        "WebTransportSendStream",
+        "WebTransportSendGroup",
+        "WebTransportReceiveStream",
+        "WebTransportBidirectionalStream",
+        "WebTransportError"
+      ],
+      "*": [
+        "WebTransportWriter"
+      ]
+    },
+    "dependencies": {
+      "WebTransportDatagramsWritable": [
+        "WritableStream",
+        "WebTransportSendGroup"
+      ],
+      "WebTransportDatagramDuplexStream": [
+        "WebTransportDatagramsWritable",
+        "WebTransportSendOptions",
+        "ReadableStream"
+      ],
+      "WebTransport": [
+        "WebTransportOptions",
+        "WebTransportConnectionStats",
+        "Uint8Array",
+        "BufferSource",
+        "WebTransportReliabilityMode",
+        "WebTransportCongestionControl",
+        "Headers",
+        "WebTransportCloseInfo",
+        "WebTransportDatagramDuplexStream",
+        "WebTransportBidirectionalStream",
+        "WebTransportSendStreamOptions",
+        "ReadableStream",
+        "WebTransportSendStream",
+        "WebTransportSendGroup"
+      ],
+      "WebTransportHash": [
+        "BufferSource"
+      ],
+      "WebTransportOptions": [
+        "HeadersInit",
+        "WebTransportHash",
+        "WebTransportCongestionControl",
+        "ReadableStreamType"
+      ],
+      "WebTransportCloseInfo": [],
+      "WebTransportSendOptions": [
+        "WebTransportSendGroup"
+      ],
+      "WebTransportSendStreamOptions": [
+        "WebTransportSendOptions"
+      ],
+      "WebTransportConnectionStats": [
+        "DOMHighResTimeStamp",
+        "WebTransportDatagramStats"
+      ],
+      "WebTransportDatagramStats": [],
+      "WebTransportSendStream": [
+        "WritableStream",
+        "WebTransportSendGroup",
+        "WebTransportSendStreamStats",
+        "WebTransportWriter"
+      ],
+      "WebTransportSendStreamStats": [],
+      "WebTransportSendGroup": [
+        "WebTransportSendStreamStats"
+      ],
+      "WebTransportReceiveStream": [
+        "ReadableStream",
+        "WebTransportReceiveStreamStats"
+      ],
+      "WebTransportReceiveStreamStats": [],
+      "WebTransportBidirectionalStream": [
+        "WebTransportReceiveStream",
+        "WebTransportSendStream"
+      ],
+      "WebTransportWriter": [
+        "WritableStreamDefaultWriter"
+      ],
+      "WebTransportError": [
+        "DOMException",
+        "WebTransportErrorOptions",
+        "WebTransportErrorSource"
+      ],
+      "WebTransportErrorOptions": [
+        "WebTransportErrorSource"
+      ]
+    },
+    "externalDependencies": [
+      "WritableStream",
+      "ReadableStream",
+      "Uint8Array",
+      "BufferSource",
+      "Headers",
+      "HeadersInit",
+      "ReadableStreamType",
+      "DOMHighResTimeStamp",
+      "WritableStreamDefaultWriter",
+      "DOMException"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

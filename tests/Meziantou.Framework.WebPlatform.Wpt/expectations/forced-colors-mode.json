@@ -1,0 +1,195 @@
+{
+  "forced-colors-mode/backplate/forced-colors-mode-backplate-01.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/backplate/forced-colors-mode-backplate-02.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/backplate/forced-colors-mode-backplate-03.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/backplate/forced-colors-mode-backplate-04.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/backplate/forced-colors-mode-backplate-05.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/backplate/forced-colors-mode-backplate-06.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/backplate/forced-colors-mode-backplate-08.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/backplate/forced-colors-mode-backplate-09.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/backplate/forced-colors-mode-backplate-10.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/backplate/forced-colors-mode-backplate-11.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-01.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-02.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-03.html": {
+    "total": 1
+  },
+  "forced-colors-mode/forced-colors-mode-05.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-06.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-07.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-08.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-09.html": {
+    "total": 1
+  },
+  "forced-colors-mode/forced-colors-mode-10.html": {
+    "total": 1
+  },
+  "forced-colors-mode/forced-colors-mode-11.html": {
+    "total": 1
+  },
+  "forced-colors-mode/forced-colors-mode-14.html": {
+    "reftest": "FAIL"
+  },
+  "forced-colors-mode/forced-colors-mode-17.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-18.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-19.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-20.html": {
+    "total": 1
+  },
+  "forced-colors-mode/forced-colors-mode-21.html": {
+    "total": 1
+  },
+  "forced-colors-mode/forced-colors-mode-23.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-25.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-26.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-27.html": {
+    "total": 1
+  },
+  "forced-colors-mode/forced-colors-mode-28.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-29.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-30.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-31.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-33.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-34.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-35.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-36.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-37.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-38.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-39.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-40.html": {
+    "total": 17,
+    "failures": {
+      "Forced colors aren't applied at computed value time for -webkit-tap-highlight-color": "FAIL",
+      "Forced colors aren't applied at computed value time for -webkit-text-emphasis-color": "FAIL"
+    }
+  },
+  "forced-colors-mode/forced-colors-mode-41.html": {
+    "total": 9
+  },
+  "forced-colors-mode/forced-colors-mode-42.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-43.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-44.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-45.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-46.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-47.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-48.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-49.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-50.html": {
+    "total": 1
+  },
+  "forced-colors-mode/forced-colors-mode-51.html": {
+    "total": 1
+  },
+  "forced-colors-mode/forced-colors-mode-52.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-53.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-54.html": {
+    "total": 1
+  },
+  "forced-colors-mode/forced-colors-mode-55.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-56.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-57.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-58.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-59.html": {
+    "reftest": "PASS"
+  },
+  "forced-colors-mode/forced-colors-mode-60.html": {
+    "total": 1
+  },
+  "forced-colors-mode/forced-colors-mode-61.html": {
+    "total": 1
+  }
+}

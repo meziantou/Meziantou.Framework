@@ -1,0 +1,748 @@
+{
+  "spec": {
+    "title": "CSS Text Decoration Module Level 4",
+    "url": "https://drafts.csswg.org/css-text-decor-4/"
+  },
+  "properties": [
+    {
+      "name": "text-decoration-line",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-line",
+      "value": "none | [ underline || overline || line-through || blink ] | spelling-error | grammar-error",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no (but see prose, above)",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Neither produces nor inhibits text decoration.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-line-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "underline",
+          "prose": "Each line of text is underlined.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-line-underline",
+          "type": "value",
+          "value": "underline"
+        },
+        {
+          "name": "overline",
+          "prose": "Each line of text has a line over it (i.e. on the opposite side from an underline).",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-line-overline",
+          "type": "value",
+          "value": "overline"
+        },
+        {
+          "name": "line-through",
+          "prose": "Each line of text has a line through the middle.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-line-line-through",
+          "type": "value",
+          "value": "line-through"
+        },
+        {
+          "name": "blink",
+          "prose": "The text blinks (alternates between visible and invisible). Conforming user agents may simply not blink the text. Note that not blinking the text is one technique to satisfy checkpoint 3.3 of WAI-UAAG. This value is deprecated in favor of Animations [CSS3-ANIMATIONS].",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-line-blink",
+          "type": "value",
+          "value": "blink"
+        },
+        {
+          "name": "spelling-error",
+          "prose": "This value indicates the type of text decoration used by the user agent to highlight spelling mistakes. Its appearance is UA-defined, and may be platform-dependent.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-line-spelling-error",
+          "type": "value",
+          "value": "spelling-error"
+        },
+        {
+          "name": "grammar-error",
+          "prose": "This value indicates the type of text decoration used by the user agent to highlight grammar mistakes. Its appearance is UA defined, and may be platform-dependent.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-line-grammar-error",
+          "type": "value",
+          "value": "grammar-error"
+        }
+      ],
+      "styleDeclaration": [
+        "text-decoration-line",
+        "textDecorationLine"
+      ]
+    },
+    {
+      "name": "text-decoration-style",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-style",
+      "value": "solid | double | dotted | dashed | wavy",
+      "initial": "solid",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "wavy",
+          "prose": "Values have the same meaning as for the border-style properties [CSS-BACKGROUNDS-3]. wavy indicates a wavy line.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-style-wavy",
+          "type": "value",
+          "value": "wavy"
+        }
+      ],
+      "styleDeclaration": [
+        "text-decoration-style",
+        "textDecorationStyle"
+      ]
+    },
+    {
+      "name": "text-decoration-color",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-color",
+      "value": "<color>",
+      "initial": "currentcolor",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "computed color",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "text-decoration-color",
+        "textDecorationColor"
+      ]
+    },
+    {
+      "name": "text-decoration-thickness",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-thickness",
+      "value": "auto | from-font | <length-percentage> | <line-width>",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The UA chooses an appropriate thickness for text decoration lines; see below.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-thickness-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "from-font",
+          "prose": "If the first available font has metrics indicating a preferred underline width, use that width, otherwise behaves as auto.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-thickness-from-font",
+          "type": "value",
+          "value": "from-font"
+        },
+        {
+          "name": "<length-percentage>",
+          "prose": "A length value specifies the thickness of text decoration lines as a fixed length. A percentage value specifies the thickness of text decoration lines as a percentage of the used font-size. The UA should round the actual value to the nearest integer device pixel, and ensure it is at least one device pixel.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-thickness-length-percentage",
+          "type": "value",
+          "value": "<length-percentage>"
+        },
+        {
+          "name": "<line-width>",
+          "prose": "A length value specifies the thickness of text decoration lines as a fixed length. A percentage value specifies the thickness of text decoration lines as a percentage of the used font-size. The UA should round the actual value to the nearest integer device pixel, and ensure it is at least one device pixel.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-thickness-line-width",
+          "type": "value",
+          "value": "<line-width>"
+        }
+      ],
+      "styleDeclaration": [
+        "text-decoration-thickness",
+        "textDecorationThickness"
+      ]
+    },
+    {
+      "name": "text-decoration",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration",
+      "value": "<'text-decoration-line'> || <'text-decoration-thickness'> || <'text-decoration-style'> || <'text-decoration-color'>",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "text-decoration",
+        "textDecoration"
+      ],
+      "longhands": [
+        "text-decoration-line",
+        "text-decoration-thickness",
+        "text-decoration-style",
+        "text-decoration-color"
+      ]
+    },
+    {
+      "name": "text-underline-position",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-underline-position",
+      "value": "auto | [ from-font | under ] || [ left | right ]",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The user agent may use any algorithm to determine the underline’s position; however it must be placed at or under the alphabetic baseline. A typical “alphabetic” underline is positioned just below the alphabetic baseline",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#underline-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "from-font",
+          "prose": "If the first available font has metrics indicating a preferred underline offset, use that offset, otherwise behaves as auto.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-underline-position-from-font",
+          "type": "value",
+          "value": "from-font"
+        },
+        {
+          "name": "under",
+          "prose": "The underline is positioned under the element’s text content. In this case the underline usually does not cross the descenders. (This is sometimes called “accounting” underline.) This value can be combined with left or right if a particular side is preferred in vertical typographic modes. text-underline-position: under Because text-underline-position inherits, and is not reset by the text-decoration shorthand, the following example switches the document to use under underlining, which can be more appropriate for writing systems with long, complicated descenders. It is also often useful for mathematical or chemical texts that use many subscripts. :root { text-underline-position: under; }",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#underline-under",
+          "type": "value",
+          "value": "under"
+        },
+        {
+          "name": "left",
+          "prose": "In vertical typographic modes, the underline is aligned as for under, except it is always aligned to the left edge of the text. If this causes the underline to be drawn on the \"over\" side of the text, then an overline also switches sides and is drawn on the \"under\" side.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#underline-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "In vertical typographic modes, the underline is aligned as for under, except it is always aligned to the right edge of the text. If this causes the underline to be drawn on the \"over\" side of the text, then an overline also switches sides and is drawn on the \"under\" side.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#underline-right",
+          "type": "value",
+          "value": "right"
+        }
+      ],
+      "styleDeclaration": [
+        "text-underline-position",
+        "textUnderlinePosition"
+      ]
+    },
+    {
+      "name": "text-underline-offset",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-underline-offset",
+      "value": "auto | <length-percentage>",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The UA chooses an appropriate offset for underlines. However, this offset must be zero if the computed value of text-underline-position is from-font and the UA was able to extract an appropriate metric to use from the font.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-underline-offset-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "<length-percentage>",
+          "prose": "A length value specifies the offset of underlines as a fixed length. A percentage value specifies the offset of underlines as a percentage of the used font-size.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-underline-offset-length-percentage",
+          "type": "value",
+          "value": "<length-percentage>"
+        }
+      ],
+      "styleDeclaration": [
+        "text-underline-offset",
+        "textUnderlineOffset"
+      ]
+    },
+    {
+      "name": "text-decoration-inset",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-inset",
+      "value": "<length-percentage>{1,2} | auto",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "Depending on the value of box-decoration-break, either refer to the inline size of the decorating box or of each individual box fragment",
+      "computedValue": "specified keyword or absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "<length-percentage>",
+          "prose": "Adjusts the start or end endpoint of the affected line decorations. Positive values move the endpoint inward (trimming), negative values move it outward (extending). Percentage values either refer to the total inline size of the decorating box, if box-decoration-break is set to slice, or to the inline size of each individual box fragment, if it is set to clone. The following example offsets an extra thick underline 1em endwards with respect to the text h1 { text-decoration: underline 0.3em rgb(36 148 187 / 0.25); text-decoration-inset: 1em -1em; } In this example, the underline is inset 10% of the inline size of the decorating box from the start and end of it. h1 { text-decoration: underline 0.2em rgb(216 148 23); text-decoration-inset: 10%; } This results in the orange underline being inset by 10 percent from the start and end of the headline. In this example, the underline is inset 10% of the inline size of each box fragment from the end of that fragment. h1 { text-decoration: underline 0.2em rgb(216 148 23); text-decoration-inset: 0 10%; box-decoration-break: clone; } This results in the orange underline of each line being inset by 10 percent from the end.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-inset-length-percentage",
+          "type": "value",
+          "value": "<length-percentage>"
+        },
+        {
+          "name": "auto",
+          "prose": "The UA chooses an inset amount that ensures that if two identical underlined elements appear side-by-side they do not appear to have a single underline. (This is important in Chinese, where underlining is a form of punctuation.) text-decoration-inset: auto for <u>石井</u><u>艾俐俐</u>",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-inset-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "text-decoration-inset",
+        "textDecorationInset"
+      ]
+    },
+    {
+      "name": "text-decoration-skip",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-skip",
+      "value": "none | auto",
+      "initial": "See individual properties",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "See individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The text-decoration-skip property and its sub-properties (text-decoration-skip-self, text-decoration-skip-box, text-decoration-skip-spaces, text-decoration-skip-ink) control interruptions in line decorations for which the element or an ancestor is the decorating box. The none value sets all sub-properties to none, and the auto value sets all sub-properties to their initial values.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "auto",
+          "prose": "The text-decoration-skip property and its sub-properties (text-decoration-skip-self, text-decoration-skip-box, text-decoration-skip-spaces, text-decoration-skip-ink) control interruptions in line decorations for which the element or an ancestor is the decorating box. The none value sets all sub-properties to none, and the auto value sets all sub-properties to their initial values.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "text-decoration-skip",
+        "textDecorationSkip"
+      ],
+      "longhands": [
+        "text-decoration-skip-self",
+        "text-decoration-skip-box",
+        "text-decoration-skip-spaces",
+        "text-decoration-skip-ink"
+      ]
+    },
+    {
+      "name": "text-decoration-skip-self",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-skip-self",
+      "value": "auto | skip-all | [ skip-underline || skip-overline || skip-line-through ] | no-skip",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword(s) except for skip-all, see below",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Skip this element (its entire margin box) if it is an atomic inline (such as an image or inline-block).",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-self-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "skip-all",
+          "prose": "Skip this element (its entire margin box) unconditionally. Don’t draw across it, don’t propagate to it.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-self-skip-all",
+          "type": "value",
+          "value": "skip-all"
+        },
+        {
+          "name": "skip-underline",
+          "prose": "Skip this element (its entire margin box) unconditionally when drawing ancestor underlines.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-self-skip-underline",
+          "type": "value",
+          "value": "skip-underline"
+        },
+        {
+          "name": "skip-overline",
+          "prose": "Skip this element (its entire margin box) unconditionally when drawing ancestor overlines.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-self-skip-overline",
+          "type": "value",
+          "value": "skip-overline"
+        },
+        {
+          "name": "skip-line-through",
+          "prose": "Skip this element (its entire margin box) unconditionally when drawing ancestor line-throughs.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-self-skip-line-through",
+          "type": "value",
+          "value": "skip-line-through"
+        },
+        {
+          "name": "no-skip",
+          "prose": "Line decorations from ancestor decorating boxes are applied to this box unconditionally: drawn across it as if it were text if it is an atomic inline, or propagated to it according to the usual rules if it is not.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-self-no-skip",
+          "type": "value",
+          "value": "no-skip"
+        }
+      ],
+      "styleDeclaration": [
+        "text-decoration-skip-self",
+        "textDecorationSkipSelf"
+      ]
+    },
+    {
+      "name": "text-decoration-skip-box",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-skip-box",
+      "value": "none | all",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Skip nothing: line decorations from ancestor decorating boxes are drawn from margin edge to margin edge.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-box-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "all",
+          "prose": "When drawing text decoration lines applied to an ancestor decorating box, skip over the box’s own margin, border, and padding areas and only draw line decorations within its content area. This value only has an effect for decorations imposed by an ancestor; a decorating box never draws over its own box decoration.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-box-all",
+          "type": "value",
+          "value": "all"
+        }
+      ],
+      "styleDeclaration": [
+        "text-decoration-skip-box",
+        "textDecorationSkipBox"
+      ]
+    },
+    {
+      "name": "text-decoration-skip-spaces",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-skip-spaces",
+      "value": "none | all | [ start || end ]",
+      "initial": "start end",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Spacers are not skipped. They are decorated just like any other character.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-spaces-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "all",
+          "prose": "Skip all spacers and all word separators plus any adjacent letter-spacing or word-spacing.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-spaces-all",
+          "type": "value",
+          "value": "all"
+        },
+        {
+          "name": "start",
+          "prose": "Skip all spacers, plus any adjacent letter-spacing or word-spacing, when located at the start of the line.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-spaces-start",
+          "type": "value",
+          "value": "start"
+        },
+        {
+          "name": "end",
+          "prose": "Skip all spacers, plus any adjacent letter-spacing or word-spacing, when located at the end of the line.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-spaces-end",
+          "type": "value",
+          "value": "end"
+        }
+      ],
+      "styleDeclaration": [
+        "text-decoration-skip-spaces",
+        "textDecorationSkipSpaces"
+      ]
+    },
+    {
+      "name": "text-decoration-skip-ink",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-skip-ink",
+      "value": "auto | none | all",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "UAs may interrupt underlines and overlines where the line would cross glyph ink and to some distance to either side of the glyph outline. UAs should consider the script of the text (see note below) when determining whether to apply ink-skipping behavior to a given range of content.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-ink-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "all",
+          "prose": "UAs must interrupt underlines and overlines where the line would cross glyph ink and to some distance to either side of the glyph outline.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-ink-all",
+          "type": "value",
+          "value": "all"
+        },
+        {
+          "name": "none",
+          "prose": "UA must draw continuous underlines and overlines, without interruptions when they cross over a glyph.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-decoration-skip-ink-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "text-decoration-skip-ink",
+        "textDecorationSkipInk"
+      ]
+    },
+    {
+      "name": "text-emphasis-style",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-emphasis-style",
+      "value": "none | [ [ filled | open ] || [ dot | circle | double-circle | triangle | sesame ] ] | <string>",
+      "initial": "none",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "the keyword none, a pair of keywords representing the shape and fill, or a string",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No emphasis marks.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-style-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "filled",
+          "prose": "The shape is filled with solid color.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-style-filled",
+          "type": "value",
+          "value": "filled"
+        },
+        {
+          "name": "dot",
+          "prose": "Display small circles as marks. The filled dot is U+2022 '•', and the open dot is U+25E6 '◦'.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-style-dot",
+          "type": "value",
+          "value": "dot"
+        },
+        {
+          "name": "circle",
+          "prose": "Display large circles as marks. The filled circle is U+25CF '●', and the open circle is U+25CB '○'.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-style-circle",
+          "type": "value",
+          "value": "circle"
+        },
+        {
+          "name": "double-circle",
+          "prose": "Display double circles as marks. The filled double-circle is U+25C9 '◉', and the open double-circle is U+25CE '◎'.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-style-double-circle",
+          "type": "value",
+          "value": "double-circle"
+        },
+        {
+          "name": "triangle",
+          "prose": "Display triangles as marks. The filled triangle is U+25B2 '▲', and the open triangle is U+25B3 '△'.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-style-triangle",
+          "type": "value",
+          "value": "triangle"
+        },
+        {
+          "name": "sesame",
+          "prose": "Display sesames as marks. The filled sesame is U+FE45 '﹅', and the open sesame is U+FE46 '﹆'.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-style-sesame",
+          "type": "value",
+          "value": "sesame"
+        },
+        {
+          "name": "<string>",
+          "prose": "Display the given string as marks. Authors should not specify more than one character in <string>. The UA may truncate or ignore strings consisting of more than one grapheme cluster.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-style-string",
+          "type": "value",
+          "value": "<string>"
+        }
+      ],
+      "styleDeclaration": [
+        "text-emphasis-style",
+        "textEmphasisStyle"
+      ]
+    },
+    {
+      "name": "text-emphasis-color",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-emphasis-color",
+      "value": "<color>",
+      "initial": "currentcolor",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "computed color",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "text-emphasis-color",
+        "textEmphasisColor"
+      ]
+    },
+    {
+      "name": "text-emphasis",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-emphasis",
+      "value": "<'text-emphasis-style'> || <'text-emphasis-color'>",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "text-emphasis",
+        "textEmphasis"
+      ],
+      "longhands": [
+        "text-emphasis-style",
+        "text-emphasis-color"
+      ]
+    },
+    {
+      "name": "text-emphasis-position",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-emphasis-position",
+      "value": "[ over | under ] && [ right | left ]?",
+      "initial": "over right",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "over",
+          "prose": "Draw marks over the text in horizontal typographic modes.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-position-over",
+          "type": "value",
+          "value": "over"
+        },
+        {
+          "name": "under",
+          "prose": "Draw marks under the text in horizontal typographic modes.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-position-under",
+          "type": "value",
+          "value": "under"
+        },
+        {
+          "name": "right",
+          "prose": "Draw marks to the right of the text in vertical typographic modes.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-position-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "left",
+          "prose": "Draw marks to the left of the text in vertical typographic modes.",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-position-left",
+          "type": "value",
+          "value": "left"
+        }
+      ],
+      "styleDeclaration": [
+        "text-emphasis-position",
+        "textEmphasisPosition"
+      ]
+    },
+    {
+      "name": "text-emphasis-skip",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-emphasis-skip",
+      "value": "spaces || punctuation || symbols || narrow",
+      "initial": "spaces punctuation",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "spaces",
+          "prose": "Skip word separators or other characters belonging to the Unicode separator category (Z*). (But note that emphasis marks are drawn for a space that combines with any combining characters.)",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-skip-spaces",
+          "type": "value",
+          "value": "spaces"
+        },
+        {
+          "name": "punctuation",
+          "prose": "Skip punctuation. Punctuation in this definition includes characters belonging to the Unicode P* category that are not defined as symbols (see below).",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-skip-punctuation",
+          "type": "value",
+          "value": "punctuation"
+        },
+        {
+          "name": "symbols",
+          "prose": "Skip symbols. Symbols in this definition includes all typographic character units belonging to the Unicode S* general category as well as any which are NFKD-equivalent [UAX15] to the following characters from the Unicode Po category: # U+0023 NUMBER SIGN % U+0025 PERCENT SIGN ‰ U+2030 PER MILLE SIGN ‱ U+2031 PER TEN THOUSAND SIGN ٪ U+066A ARABIC PERCENT SIGN ؉ U+0609 ARABIC-INDIC PER MILLE SIGN ؊ U+060A ARABIC-INDIC PER TEN THOUSAND SIGN & U+0026 AMPERSAND ⁊ U+204A TIRONIAN SIGN ET @ U+0040 COMMERCIAL AT § U+00A7 SECTION SIGN ¶ U+00B6 PILCROW SIGN ⁋ U+204B REVERSED PILCROW SIGN ⁓ U+2053 SWUNG DASH 〽️ U+303D PART ALTERNATION MARK",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-skip-symbols",
+          "type": "value",
+          "value": "symbols"
+        },
+        {
+          "name": "narrow",
+          "prose": "Skip characters where the East_Asian_Width property [UAX11] of the Unicode database [UAX44] is not F (Fullwidth) or W (Wide).",
+          "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-skip-narrow",
+          "type": "value",
+          "value": "narrow"
+        }
+      ],
+      "styleDeclaration": [
+        "text-emphasis-skip",
+        "textEmphasisSkip"
+      ]
+    },
+    {
+      "name": "text-shadow",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#propdef-text-shadow",
+      "value": "none | <shadow>#",
+      "initial": "none",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "either the keyword none or a list, each item consisting of four absolute lengths plus a computed color and optionally also an inset keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "as shadow list",
+      "styleDeclaration": [
+        "text-shadow",
+        "textShadow"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "open",
+      "prose": "The shape is hollow.",
+      "href": "https://drafts.csswg.org/css-text-decor-4/#valdef-text-text-emphasis-open",
+      "type": "value",
+      "value": "open",
+      "for": "text-text-emphasis"
+    }
+  ]
+}

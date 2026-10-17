@@ -1,0 +1,83 @@
+{
+  "spec": {
+    "title": "VP9 WebCodecs Registration",
+    "url": "https://w3c.github.io/webcodecs/vp9_codec_registration.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "VideoEncoderEncodeOptionsForVp9": {
+        "fragment": "dictionary VideoEncoderEncodeOptionsForVp9 {\n  unsigned short? quantizer;\n};",
+        "type": "dictionary",
+        "name": "VideoEncoderEncodeOptionsForVp9",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "quantizer",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/vp9_codec_registration.html#dom-videoencoderencodeoptionsforvp9-quantizer"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcodecs/vp9_codec_registration.html#dictdef-videoencoderencodeoptionsforvp9"
+      }
+    },
+    "idlExtendedNames": {
+      "VideoEncoderEncodeOptions": [
+        {
+          "fragment": "partial dictionary VideoEncoderEncodeOptions {\n  VideoEncoderEncodeOptionsForVp9 vp9;\n};",
+          "type": "dictionary",
+          "name": "VideoEncoderEncodeOptions",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "vp9",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "VideoEncoderEncodeOptionsForVp9"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webcodecs/vp9_codec_registration.html#dom-videoencoderencodeoptions-vp9"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "VideoEncoderEncodeOptions": [
+        "VideoEncoderEncodeOptionsForVp9"
+      ],
+      "VideoEncoderEncodeOptionsForVp9": []
+    },
+    "externalDependencies": [
+      "VideoEncoderEncodeOptions"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

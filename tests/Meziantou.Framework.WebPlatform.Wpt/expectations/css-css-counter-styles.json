@@ -1,0 +1,779 @@
+{
+  "css/css-counter-styles/arabic-indic/css3-counter-styles-101.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/arabic-indic/css3-counter-styles-102.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/arabic-indic/css3-counter-styles-103.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/armenian/css3-counter-styles-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/armenian/css3-counter-styles-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/armenian/css3-counter-styles-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/armenian/css3-counter-styles-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/bengali/css3-counter-styles-116.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/bengali/css3-counter-styles-117.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/bengali/css3-counter-styles-118.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cambodian/css3-counter-styles-158.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cambodian/css3-counter-styles-159.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cambodian/css3-counter-styles-160.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cjk-decimal/counter-cjk-decimal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cjk-decimal/css3-counter-styles-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cjk-decimal/css3-counter-styles-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cjk-decimal/css3-counter-styles-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cjk-earthly-branch/css3-counter-styles-201.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cjk-earthly-branch/css3-counter-styles-202.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cjk-earthly-branch/css3-counter-styles-203.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cjk-heavenly-stem/css3-counter-styles-204.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cjk-heavenly-stem/css3-counter-styles-205.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cjk-heavenly-stem/css3-counter-styles-206.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-name-case-sensitive.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/access-from-shadow-dom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/additive-symbols-syntax.html": {
+    "total": 8
+  },
+  "css/css-counter-styles/counter-style-at-rule/broken-symbols.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/dependent-builtin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-calc.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-fallback-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-fallback.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-negative-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-negative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-pad-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-pad.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-prefix-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-prefix.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-range-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-range.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-suffix-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-suffix.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-symbols-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/descriptor-symbols.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/disclosure-closed-extends-direction-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/disclosure-closed-extends-direction-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/disclosure-closed-extends-direction-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/disclosure-open-vs-closed-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/disclosure-open-vs-closed-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/disclosure-styles.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/empty-string-symbol.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/fallback.html": {
+    "total": 7
+  },
+  "css/css-counter-styles/counter-style-at-rule/fallbacks-in-shadow-dom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/name-case-sensitivity.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/name-syntax.html": {
+    "total": 17
+  },
+  "css/css-counter-styles/counter-style-at-rule/negative-syntax.html": {
+    "total": 3
+  },
+  "css/css-counter-styles/counter-style-at-rule/override-in-shadow-dom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/pad-syntax.html": {
+    "total": 9
+  },
+  "css/css-counter-styles/counter-style-at-rule/prefix-suffix-syntax.html": {
+    "total": 26
+  },
+  "css/css-counter-styles/counter-style-at-rule/range-syntax.html": {
+    "total": 8
+  },
+  "css/css-counter-styles/counter-style-at-rule/redefine-attr-mapping.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/redefine-builtin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/shadow-dom-part.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/speak-as-syntax.html": {
+    "total": 12
+  },
+  "css/css-counter-styles/counter-style-at-rule/symbols-syntax.html": {
+    "total": 11
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-additive-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-additive.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-alphabetic-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-alphabetic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-cyclic-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-cyclic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-extends-fixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-extends-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-extends.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-fixed-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-fixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-numeric-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-numeric.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-symbolic-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-symbolic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/counter-style-at-rule/system-syntax.html": {
+    "total": 16
+  },
+  "css/css-counter-styles/counter-suffix.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-additive-symbols-setter-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-additive-symbols-setter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-fallback-setter-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-fallback-setter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-name-setter-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-name-setter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-negative-setter-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-negative-setter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-pad-setter-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-pad-setter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-prefix-suffix-setter-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-prefix-suffix-setter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-range-setter-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-range-setter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-symbols-setter-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-symbols-setter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-system-setter-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-system-setter-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/cssom/cssom-system-setter-invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/devanagari/css3-counter-styles-119.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/devanagari/css3-counter-styles-120.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/devanagari/css3-counter-styles-121.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/ethiopic-numeric/counter-ethiopic-numeric.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/georgian/css3-counter-styles-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/georgian/css3-counter-styles-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/georgian/css3-counter-styles-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/georgian/css3-counter-styles-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/gujarati/css3-counter-styles-122.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/gujarati/css3-counter-styles-123.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/gujarati/css3-counter-styles-124.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/gurmukhi/css3-counter-styles-125.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/gurmukhi/css3-counter-styles-126.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/gurmukhi/css3-counter-styles-127.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/hebrew/counter-hebrew-nested.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-counter-styles/hebrew/css3-counter-styles-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/hebrew/css3-counter-styles-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/hebrew/css3-counter-styles-016a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/hebrew/css3-counter-styles-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/hiragana-iroha/css3-counter-styles-033.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/hiragana-iroha/css3-counter-styles-034.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/hiragana-iroha/css3-counter-styles-035.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/hiragana/css3-counter-styles-030.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/hiragana/css3-counter-styles-031.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/hiragana/css3-counter-styles-032.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/idlharness.html": {
+    "total": 37
+  },
+  "css/css-counter-styles/japanese-formal/counter-japanese-formal-extended.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-counter-styles/japanese-formal/counter-japanese-formal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/japanese-formal/css3-counter-styles-047.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/japanese-formal/css3-counter-styles-048.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/japanese-formal/css3-counter-styles-049.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/japanese-formal/css3-counter-styles-050.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/japanese-formal/css3-counter-styles-051.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/japanese-informal/counter-japanese-informal-extended.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-counter-styles/japanese-informal/counter-japanese-informal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/japanese-informal/css3-counter-styles-042.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/japanese-informal/css3-counter-styles-043.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/japanese-informal/css3-counter-styles-044.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/japanese-informal/css3-counter-styles-045.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/japanese-informal/css3-counter-styles-046.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/kannada/css3-counter-styles-128.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/kannada/css3-counter-styles-129.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/kannada/css3-counter-styles-130.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/katakana-iroha/css3-counter-styles-039.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/katakana-iroha/css3-counter-styles-040.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/katakana-iroha/css3-counter-styles-041.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/katakana/css3-counter-styles-036.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/katakana/css3-counter-styles-037.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/katakana/css3-counter-styles-038.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/khmer/css3-counter-styles-161.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/khmer/css3-counter-styles-162.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/khmer/css3-counter-styles-163.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hangul-formal/counter-korean-hangul-formal-extended.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-counter-styles/korean-hangul-formal/counter-korean-hangul-formal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hangul-formal/css3-counter-styles-052.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hangul-formal/css3-counter-styles-053.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hangul-formal/css3-counter-styles-054.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hangul-formal/css3-counter-styles-055.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hangul-formal/css3-counter-styles-056.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hanja-formal/counter-korean-hanja-formal-extended.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-counter-styles/korean-hanja-formal/counter-korean-hanja-formal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hanja-formal/css3-counter-styles-062.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hanja-formal/css3-counter-styles-063.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hanja-formal/css3-counter-styles-064.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hanja-formal/css3-counter-styles-065.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hanja-formal/css3-counter-styles-066.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hanja-informal/counter-korean-hanja-informal-extended.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-counter-styles/korean-hanja-informal/counter-korean-hanja-informal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hanja-informal/css3-counter-styles-057.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hanja-informal/css3-counter-styles-058.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hanja-informal/css3-counter-styles-059.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hanja-informal/css3-counter-styles-060.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hanja-informal/css3-counter-styles-061.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lao/css3-counter-styles-131.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lao/css3-counter-styles-132.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lao/css3-counter-styles-133.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lower-armenian/css3-counter-styles-111.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lower-armenian/css3-counter-styles-112.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lower-armenian/css3-counter-styles-114.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lower-armenian/css3-counter-styles-115.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lower-greek/css3-counter-styles-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lower-greek/css3-counter-styles-028.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lower-greek/css3-counter-styles-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lower-roman/css3-counter-styles-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lower-roman/css3-counter-styles-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lower-roman/css3-counter-styles-020a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lower-roman/css3-counter-styles-020b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lower-roman/css3-counter-styles-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/lower-roman/css3-counter-styles-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/malayalam/css3-counter-styles-134.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/malayalam/css3-counter-styles-135.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/malayalam/css3-counter-styles-136.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/mongolian/css3-counter-styles-137.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/mongolian/css3-counter-styles-138.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/mongolian/css3-counter-styles-139.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/myanmar/css3-counter-styles-140.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/myanmar/css3-counter-styles-141.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/myanmar/css3-counter-styles-142.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/oriya/css3-counter-styles-143.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/oriya/css3-counter-styles-144.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/oriya/css3-counter-styles-145.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/persian/css3-counter-styles-104.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/persian/css3-counter-styles-105.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/persian/css3-counter-styles-106.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/simp-chinese-formal/counter-simp-chinese-formal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/simp-chinese-formal/css3-counter-styles-076.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/simp-chinese-formal/css3-counter-styles-077.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/simp-chinese-formal/css3-counter-styles-078.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/simp-chinese-formal/css3-counter-styles-079.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/simp-chinese-formal/css3-counter-styles-080.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/simp-chinese-informal/counter-simp-chinese-informal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/simp-chinese-informal/css3-counter-styles-071.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/simp-chinese-informal/css3-counter-styles-072.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/simp-chinese-informal/css3-counter-styles-073.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/simp-chinese-informal/css3-counter-styles-074.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/simp-chinese-informal/css3-counter-styles-075.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/symbols-function/dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/symbols-function/invalid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/symbols-function/system-alphabetic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/symbols-function/system-cyclic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/symbols-function/system-default.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/symbols-function/system-fixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/symbols-function/system-numeric.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/symbols-function/system-symbolic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/symbols-function/used-in-counter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/symbols-function/used-in-counters.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/tamil/css3-counter-styles-146.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/tamil/css3-counter-styles-147.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/tamil/css3-counter-styles-148.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/telugu/css3-counter-styles-149.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/telugu/css3-counter-styles-150.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/telugu/css3-counter-styles-151.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/thai/css3-counter-styles-152.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/thai/css3-counter-styles-153.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/thai/css3-counter-styles-154.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/tibetan/css3-counter-styles-155.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/tibetan/css3-counter-styles-156.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/tibetan/css3-counter-styles-157.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/trad-chinese-formal/counter-trad-chinese-formal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/trad-chinese-formal/css3-counter-styles-086.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/trad-chinese-formal/css3-counter-styles-087.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/trad-chinese-formal/css3-counter-styles-088.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/trad-chinese-formal/css3-counter-styles-089.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/trad-chinese-formal/css3-counter-styles-090.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/trad-chinese-informal/counter-trad-chinese-informal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/trad-chinese-informal/css3-counter-styles-081.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/trad-chinese-informal/css3-counter-styles-082.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/trad-chinese-informal/css3-counter-styles-083.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/trad-chinese-informal/css3-counter-styles-084.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/trad-chinese-informal/css3-counter-styles-085.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/upper-armenian/css3-counter-styles-107.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/upper-armenian/css3-counter-styles-108.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/upper-armenian/css3-counter-styles-109.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/upper-armenian/css3-counter-styles-110.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/upper-roman/css3-counter-styles-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/upper-roman/css3-counter-styles-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/upper-roman/css3-counter-styles-024a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/upper-roman/css3-counter-styles-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/upper-roman/css3-counter-styles-026.html": {
+    "reftest": "PASS"
+  }
+}

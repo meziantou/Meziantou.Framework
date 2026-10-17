@@ -1,0 +1,1463 @@
+{
+  "css/css-view-transitions/3d-transform-incoming.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/3d-transform-outgoing.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/active-view-transition-on-non-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/active-view-transition-pseudo-class-match.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/active-view-transition-type-on-non-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/animating-new-content-subset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/animating-new-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/animation-name-ua-prefix.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-view-transitions/auto-name-from-id-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/auto-name-from-id.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/auto-name-get-animations.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/auto-name.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/backdrop-filter-animated.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/backdrop-filter-captured.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/backdrop-filter-while-promise-pending.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/block-with-overflowing-text.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/break-inside-avoid-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/capture-old-state-error-flag-cleanup.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/capture-with-offscreen-child-translated.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/capture-with-offscreen-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/capture-with-opacity-zero-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/capture-with-visibility-hidden-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/capture-with-visibility-mixed-descendants.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/class-specificity.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/clip-path-larger-than-border-box-on-child-of-named-element.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/column-span-during-transition-doesnt-skip.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/composite-accumulate.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/computed-style-no-active-transition.html": {
+    "total": 3
+  },
+  "css/css-view-transitions/content-smaller-than-box-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/content-visibility-auto-ancestor-skipped-after-finish.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/content-visibility-auto-shared-element.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/content-visibility-hidden-name.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/content-with-child-with-transparent-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/content-with-clip-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/content-with-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/content-with-inline-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/content-with-transform-new-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/content-with-transform-old-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/content-with-transparent-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/css-tags-paint-order-with-entry.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/css-tags-paint-order.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/css-tags-shared-element.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/dialog-in-rtl-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/dialog-in-top-layer-during-transition-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/dialog-in-top-layer-during-transition-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/document-active-view-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/duplicate-tag-rejects-capture.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/duplicate-tag-rejects-start.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/dynamic-stylesheet-animations-timing-function.html": {
+    "total": 3
+  },
+  "css/css-view-transitions/dynamic-stylesheet-animations.html": {
+    "total": 3
+  },
+  "css/css-view-transitions/element-is-grouping-during-animation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/element-stops-grouping-after-animation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/element-with-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/elements-at-point.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/empty-render-target-capture.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/escaped-name.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/event-pseudo-name.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/exit-transition-with-anonymous-layout-object.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/far-away-capture.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/finished-promise-defers-cleanup.tentative.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/fractional-box-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/fractional-box-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/fractional-box-with-overflow-children-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/fractional-box-with-overflow-children-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/fractional-box-with-shadow-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/fractional-box-with-shadow-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/fractional-translation-from-position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/fractional-translation-from-transform-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/fractional-translation-from-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/fragmented-at-start-ignored.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/fragmented-during-transition-skips.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/group-animation-for-root-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/group-transform-preserves-subpixel.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/hit-test-pseudo-element-element-from-point.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/hit-test-unpainted-element-from-point.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/hit-test-unpainted-element.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/hit-test-unrelated-element.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/html-becomes-fixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/idlharness.html": {
+    "total": 66
+  },
+  "css/css-view-transitions/iframe-and-main-frame-transition-new-main-new-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/iframe-and-main-frame-transition-new-main-old-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/iframe-and-main-frame-transition-old-main-new-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/iframe-and-main-frame-transition-old-main-old-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/iframe-and-main-frame-transition-old-main.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/iframe-and-main-frame-transition-with-name-on-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/iframe-new-has-scrollbar.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/iframe-old-has-scrollbar.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/iframe-transition.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/inline-child-with-composited-filter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/inline-child-with-filter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/inline-child-with-overflow-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/inline-element-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/inline-with-offset-from-containing-block.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/input-pointer-capture-while-render-blocked.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/input-targets-root-while-render-blocked.html": {
+    "total": 2
+  },
+  "css/css-view-transitions/input-touch-while-render-blocked.html": {
+    "total": 2
+  },
+  "css/css-view-transitions/japanese-tag.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-view-transitions/massive-element-below-and-on-top-of-viewport-partially-onscreen-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-below-and-on-top-of-viewport-partially-onscreen-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-below-viewport-offscreen-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-below-viewport-offscreen-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-below-viewport-partially-onscreen-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-below-viewport-partially-onscreen-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-left-of-viewport-offscreen-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-left-of-viewport-offscreen-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-left-of-viewport-partially-onscreen-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-left-of-viewport-partially-onscreen-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-on-top-of-viewport-offscreen-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-on-top-of-viewport-offscreen-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-on-top-of-viewport-partially-onscreen-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-on-top-of-viewport-partially-onscreen-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-right-and-left-of-viewport-partially-onscreen-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-right-and-left-of-viewport-partially-onscreen-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-right-of-viewport-offscreen-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-right-of-viewport-offscreen-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-right-of-viewport-partially-onscreen-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/massive-element-right-of-viewport-partially-onscreen-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/match-element-name.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/mix-blend-mode-only-on-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/modify-style-via-cssom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/multiline-span-with-overflowing-text-and-box-decorations.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-view-transitions/named-element-with-fix-pos-child-new.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/named-element-with-fix-pos-child-old.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/names-are-tree-scoped.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-view-transitions/navigation/at-rule-cssom.html": {
+    "total": 9
+  },
+  "css/css-view-transitions/navigation/at-rule-in-layer-cascade-external-stylesheet.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/at-rule-in-layer-cascade.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/at-rule-in-layer.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/at-rule-in-matching-media.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/at-rule-in-non-matching-media.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/at-rule-in-shadow-dom.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/at-rule-multiple-rules.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/at-rule-opt-in-auto.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/at-rule-opt-in-change-with-script.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/at-rule-opt-in-none-in-new.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/at-rule-opt-in-none-in-old.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/chromium-paint-holding-timeout.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-view-transitions/navigation/hide-before-reveal.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/mismatched-snapshot-containing-block-size-skips.html": {
+    "total": 1,
+    "failures": {
+      "\n  View transitions: mismatched snapshot containing block size skips transition.\n": "FAIL"
+    }
+  },
+  "css/css-view-transitions/navigation/navigation-auto-excludes-reload.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/no-view-transition-with-cross-origin-redirect.sub.html": {
+    "total": 1,
+    "failures": {
+      "navigation with a  same-origin final url with cross-origin redirects": "FAIL"
+    }
+  },
+  "css/css-view-transitions/navigation/old_vt_promises_bfcache.html": {
+    "total": 1,
+    "failures": {
+      "VT object created on the old Document is skipped before persisting in BFCache": "PRECONDITION_FAILED"
+    }
+  },
+  "css/css-view-transitions/navigation/opt-in-removed-during-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pagereveal-ctor.html": {
+    "total": 5
+  },
+  "css/css-view-transitions/navigation/pagereveal-finished-promise.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pagereveal-microtask-sequence.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pagereveal-no-view-transition-new-opt-out.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pagereveal-no-view-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pagereveal-ready-promise.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pagereveal-setup-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pagereveal-updatecallbackdone-promise.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pagereveal-with-view-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pageswap-ctor.html": {
+    "total": 6
+  },
+  "css/css-view-transitions/navigation/pageswap-fired-before-old-state-capture.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pageswap-long-delay.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pageswap-push-from-click.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pageswap-push-navigation.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pageswap-push-with-redirect.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pageswap-replace-navigation.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pageswap-skip-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pageswap-traverse-navigation-no-bfcache.https.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/prerender-coop.https.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/prerender-removed-during-navigation.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/reveal-after-aborted-navigation.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/root-element-transition-iframe-cross-origin.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/navigation/root-element-transition-iframe-with-startVT-on-main.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/navigation/root-element-transition-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/navigation/root-element-transition-no-opt-in-on-new.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/root-element-transition-opt-in-removed-on-new.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/root-element-transition-opt-in-removed-on-old.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/skip-outbound-vt-before-reveal.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/transition-to-prerender.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/two-phase/preview-finished-before-swap.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "View transitions: a preview transition runs until its end": "FAIL"
+    }
+  },
+  "css/css-view-transitions/navigation/two-phase/preview-navigation-query.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "View transitions: a preview transition runs until its end": "FAIL"
+    }
+  },
+  "css/css-view-transitions/navigation/two-phase/swap-continues-when-skipping-preview.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "View transitions: aborting a preview triggers pageswap": "FAIL"
+    }
+  },
+  "css/css-view-transitions/navigation/with-types/at-rule-last-rule-wins.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/with-types/at-rule-opt-in-auto-with-types-no-cascade.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/with-types/at-rule-opt-in-auto-with-types.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/with-types/at-rule-with-types-parsing.html": {
+    "total": 16
+  },
+  "css/css-view-transitions/navigation/with-types/navigation-supersedes-types-same-rule.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/with-types/navigation-supersedes-types-when-after.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/with-types/types-in-pagereveal-and-pageswap.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/zero-named-elements.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/nested-elements-in-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/adjust-transform-with-scale.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/adjust-transform.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/compute-explicit-name-direct.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/compute-explicit-name-nested-vt-names.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/compute-explicit-name-nested.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/compute-explicit-name-non-ancestor.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/compute-explicit-name-non-existent.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/compute-explicit-name-self.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/contain-direct.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/contain-nested.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/contain-on-self.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/custom-ident-implies-contain.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/group-children-animations.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/nested/group-children-sizing-with-border-props.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-view-transitions/nested/group-children-sizing-with-border.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-view-transitions/nested/group-children-sizing.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/nearest-direct.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/nearest-ignores-nearest-name.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/nearest-implies-contain.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/nearest-nested.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/nested-exit.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/nested-group-display-none.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/nested-group-in-pseudo-basic.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/nested-parent-changes-transform-twice.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/nested-parent-changes-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/nested-position-with-border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/nested-root-capture-with-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/normal-goes-up.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/render-element.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/rotated-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nested/rounded-border-clipper.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-and-old-sizes-match.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-ancestor-clipped-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-ancestor-clipped.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-captures-clip-path.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-captures-different-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-captures-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-captures-positioned-spans.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-captures-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-captures-spans.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-changes-overflow-left.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-changes-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-container-writing-modes.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-element-writing-modes.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-escapes-clip-with-abspos-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-flat-transform-ancestor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-from-root-display-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-has-scrollbars.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-inline-with-offset-from-containing-block-clipped.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-intrinsic-aspect-ratio.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-is-empty-div.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-is-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-object-fit-fill.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-object-fit-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-object-view-box-clip-path-reference.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-object-view-box-clip-path.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-object-view-box-overflow-clipped.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-object-view-box-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-preserve-3d-ancestor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-root-scrollbar-with-fixed-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-scaling.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-subpixel-last-frame.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-transform-change-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-transform-position-fixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-with-object-view-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-with-overflow-zoomed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-content-with-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-element-on-start.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/new-root-vertical-writing-mode.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/no-crash-set-exception.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/no-crash-view-transition-in-massive-iframe.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/no-css-animation-while-render-blocked.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/no-named-elements.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/no-painting-while-render-blocked.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/no-raf-while-render-blocked.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/no-root-capture.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/no-white-flash-before-activation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/nothing-captured.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/object-view-box-new-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/object-view-box-old-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/offscreen-element-modified-before-coming-onscreen.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-captures-clip-path.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-captures-different-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-captures-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-captures-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-container-writing-modes.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-element-writing-modes.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-escapes-clip-with-abspos-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-has-scrollbars.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-inline-with-offset-from-containing-block-clipped.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-intrinsic-aspect-ratio.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-is-empty-div.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-is-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-object-fit-fill.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-object-fit-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-object-view-box-clip-path-reference.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-object-view-box-clip-path.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-object-view-box-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-root-scrollbar-with-fixed-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-with-object-view-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-with-overflow-zoomed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-content-with-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/old-root-vertical-writing-mode.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/only-child-group.html": {
+    "total": 4
+  },
+  "css/css-view-transitions/only-child-image-pair.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/only-child-new.html": {
+    "total": 6
+  },
+  "css/css-view-transitions/only-child-no-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/only-child-old.html": {
+    "total": 6
+  },
+  "css/css-view-transitions/only-child-on-root-element-with-view-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/only-child-view-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/outer-padding-inner-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/paint-holding-in-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/parsing/pseudo-elements-invalid-with-classes.html": {
+    "total": 20
+  },
+  "css/css-view-transitions/parsing/pseudo-elements-invalid.html": {
+    "total": 675
+  },
+  "css/css-view-transitions/parsing/pseudo-elements-valid-with-classes.html": {
+    "total": 228
+  },
+  "css/css-view-transitions/parsing/pseudo-elements-valid.html": {
+    "total": 132
+  },
+  "css/css-view-transitions/parsing/view-transition-class-computed.html": {
+    "total": 11
+  },
+  "css/css-view-transitions/parsing/view-transition-class-invalid.html": {
+    "total": 7
+  },
+  "css/css-view-transitions/parsing/view-transition-class-valid.html": {
+    "total": 6
+  },
+  "css/css-view-transitions/parsing/view-transition-group-invalid.tentative.html": {
+    "total": 7
+  },
+  "css/css-view-transitions/parsing/view-transition-group-valid.tentative.html": {
+    "total": 7
+  },
+  "css/css-view-transitions/parsing/view-transition-name-computed.html": {
+    "total": 11
+  },
+  "css/css-view-transitions/parsing/view-transition-name-invalid.html": {
+    "total": 11
+  },
+  "css/css-view-transitions/parsing/view-transition-name-valid.html": {
+    "total": 5
+  },
+  "css/css-view-transitions/paused-animation-at-end.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/pseudo-computed-style-stays-in-sync-with-new-element.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/pseudo-element-animations-rerun.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/pseudo-element-animations.html": {
+    "total": 3
+  },
+  "css/css-view-transitions/pseudo-element-overflow-clip-with-border-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-element-overflow-hidden.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-element-preserve-3d.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-escaped-star-specificity.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-escaped-star-view-transition-group.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-get-computed-style-clean-style.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/pseudo-get-computed-style-escaped-star.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/pseudo-get-computed-style.html": {
+    "total": 2
+  },
+  "css/css-view-transitions/pseudo-match-escaped-star.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-mismatch-escaped-star.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-rendering-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-entry.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-exit.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-match-ident.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-match-multiple-wildcard.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-match-multiple.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-match-wildcard-no-star.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-match-wildcard.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-mismatch-ident.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-mismatch-partial.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-mismatch-wildcard.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-multiple-vt-classes.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-new-with-class-old-without.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-old-with-class-new-without.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-view-transition-group.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/pseudo-with-classes-view-transition-image-pair.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/ready_resolves_after_dom_before_raf.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/reset-state-after-scrolled-view-transition.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/root-captured-as-different-tag.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/root-style-change-during-animation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/root-to-shared-animation-end.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/root-to-shared-animation-incoming.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/root-to-shared-animation-start.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/rotated-cat-off-top-edge.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/rtl-with-scrollbar.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/active-pseudo.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/ancestor-display-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/auto-name-on-descendant.html": {
+    "total": 1,
+    "failures": {
+      "Scoped view transition with name auto on the scoped element": "FAIL"
+    }
+  },
+  "css/css-view-transitions/scoped/auto-name.html": {
+    "total": 1,
+    "failures": {
+      "Scoped view transition with name auto on the scoped element": "FAIL"
+    }
+  },
+  "css/css-view-transitions/scoped/auto-nesting.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-view-transitions/scoped/box-decoration-painting.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/callback-order.tentative.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scoped/capture.html": {
+    "total": 2
+  },
+  "css/css-view-transitions/scoped/centered-paint-offset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/clip-on-target-in-callback-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/clip-on-target-in-callback.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/clipper-non-containing-block.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/collision.html": {
+    "total": 1,
+    "failures": {
+      "collision": "FAIL"
+    }
+  },
+  "css/css-view-transitions/scoped/display-change-during-transition.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/display-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/display-inline-block.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scoped/display-none-during-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scoped/document-element-start-view-transition.html": {
+    "total": 2
+  },
+  "css/css-view-transitions/scoped/element-active-view-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scoped/element-moved-to-new-document.html": {
+    "total": 5
+  },
+  "css/css-view-transitions/scoped/element-scoped-containment-invalid-state.html": {
+    "total": 5
+  },
+  "css/css-view-transitions/scoped/fill-forwards.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scoped/fractional-border-shift.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/from-scale-zero.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-view-transitions/scoped/hit-test-vt-overlay.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scoped/hit-testing.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scoped/implicit-contain.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/ink-overflow-on-target.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/missing-view-transition-name.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scoped/negative-playback-rate.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scoped/nested-scope.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/new-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/old-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/overflow-excludes-pseudo.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/paint-order.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/pause-rendering-resize.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/pause-rendering.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/rotation-on-scoped-element.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/run_in_parallel.html": {
+    "total": 3
+  },
+  "css/css-view-transitions/scoped/scope-containment-during-capture.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scoped/scope-containment-pseudo-border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/scope-containment-sibling-offset.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scoped/scope-display-none.html": {
+    "total": 4
+  },
+  "css/css-view-transitions/scoped/scope-during-transition-1.html": {
+    "total": 3
+  },
+  "css/css-view-transitions/scoped/scope-during-transition-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/scrolled-target-position-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/scrolled-target-position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/scroller-with-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/shadow-dom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/start-view-transition-on-disconnected-element.html": {
+    "total": 4
+  },
+  "css/css-view-transitions/scoped/start-view-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scoped/target-in-scrolled-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/to-scale-zero.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/transform-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/view-transition-scope-added-during-callback.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scoped/view-transition-scope-display-contents.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scoped/view-transition-scope-name-discovery.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/scroller-child-abspos.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scroller-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scroller.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/set-current-time-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/set-current-time.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/set-universal-specificity.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/shadow-part-with-class-inside-shadow-important.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/shadow-part-with-class-inside-shadow.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-view-transitions/shadow-part-with-class.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/shadow-part-with-name-nested.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/shadow-part-with-name-overridden-by-important.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/shadow-part-with-name.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/sibling-frames-transition.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/small-scale.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/snapshot-containing-block-absolute.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/snapshot-containing-block-includes-scrollbar-gutter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/snapshot-containing-block-static-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/snapshot-containing-block-static.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/span-with-overflowing-text-and-box-decorations.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/span-with-overflowing-text-hidden.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/span-with-overflowing-text.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/start-skip-start.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/start-view-transtion-skips-active.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/style-inheritance.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/synchronous-callback-skipped-before-run.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/table-caption.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/to-keyframe-values.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/transform-origin-view-transition-group.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/transformed-element-scroll-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/transition-in-empty-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/transition-in-hidden-page.html": {
+    "total": 3
+  },
+  "css/css-view-transitions/transition-in-removed-iframe.html": {
+    "total": 2
+  },
+  "css/css-view-transitions/transition-skipped-after-animation-started.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/transition-skipped-callback-from-detached-iframe.html": {
+    "total": 1,
+    "failures": {
+      "Using a callback from a detached iframe should not crash": "FAIL"
+    }
+  },
+  "css/css-view-transitions/transition-skipped-from-invalid-callback.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/unhandled-rejection.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "If the promise returned by updateCallback rejects, the transition is skipped.": "TIMEOUT",
+      "Reference error in callback triggers rejection of view-transition promises": "NOTRUN"
+    }
+  },
+  "css/css-view-transitions/unset-and-initial-view-transition-name.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/update-callback-called-once.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/update-callback-timeout.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/view-transition-name-is-backdrop-filter-root.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-view-transitions/view-transition-name-is-grouping.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/view-transition-name-on-document-root.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/view-transition-name-on-removed-element.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/view-transition-name-removed-mid-transition.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/view-transition-name-stacking-context-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/view-transition-types-match-early-mutation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/view-transition-types-match-early.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/view-transition-types-match-late-mutation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/view-transition-types-matches-case-sensitive.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/view-transition-types-matches.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/view-transition-types-mutable-no-document-element-crashtest.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/view-transition-types-mutable.html": {
+    "total": 3
+  },
+  "css/css-view-transitions/view-transition-types-removed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/view-transition-types-reserved-mutation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/view-transition-types-reserved.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/view-transition-types-stay.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/view-transition-waituntil-animation-manipulation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/view-transition-waituntil-finished-promise.html": {
+    "total": 3
+  },
+  "css/css-view-transitions/web-animation-pseudo-incorrect-name.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/web-animations-api-parse-pseudo-argument.html?first-pseudo=::view-transition-group(      first )": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/web-animations-api-parse-pseudo-argument.html?first-pseudo=::view-transition-group( first": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/web-animations-api-parse-pseudo-argument.html?first-pseudo=::view-transition-group( first)": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/web-animations-api-parse-pseudo-argument.html?first-pseudo=::view-transition-group(first": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/web-animations-api-parse-pseudo-argument.html?first-pseudo=::view-transition-group(first )": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/web-animations-api-parse-pseudo-argument.html?first-pseudo=::view-transition-group(first)": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/web-animations-api.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/window-resize-aborts-transition-before-ready.html": {
+    "total": 1,
+    "failures": {
+      "\nView transitions: Resizing viewport before animating rejects the ready promise.\n": "FAIL"
+    }
+  },
+  "css/css-view-transitions/window-resize-aborts-transition.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "View transitions: Resizing viewport skips the transition": "TIMEOUT"
+    }
+  },
+  "css/css-view-transitions/writing-mode-container-resize.html": {
+    "reftest": "PASS"
+  }
+}

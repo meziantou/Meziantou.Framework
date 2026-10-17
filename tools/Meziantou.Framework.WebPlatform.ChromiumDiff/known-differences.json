@@ -1,0 +1,6 @@
+{
+  "html5test-com.dat#14": "Chromium deviation: <![CDATA[ in an SVG title (an HTML integration point) is parsed as a bogus comment. The markup declaration open state only checks that the adjusted current node is not in the HTML namespace (the html5lib test expects a text node)",
+  "html5test-com.dat#15": "Chromium deviation: <![CDATA[ in an SVG foreignObject (an HTML integration point) is parsed as a bogus comment (the html5lib test expects a text node)",
+  "html5test-com.dat#18": "Chromium deviation: <![CDATA[ in a MathML mtext (a MathML text integration point) is parsed as a bogus comment (the html5lib test expects a text node)",
+  "noscript01.dat#13": "Chromium deviation: a comment after an ignored <head> start tag in the 'in head noscript' insertion mode is inserted after the noscript element instead of in it (processed with the 'in head' rules, it is inserted in the current node)"
+}

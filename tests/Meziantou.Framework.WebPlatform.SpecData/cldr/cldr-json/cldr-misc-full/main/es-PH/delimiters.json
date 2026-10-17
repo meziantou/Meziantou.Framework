@@ -1,0 +1,16 @@
+{
+  "main": {
+    "es-PH": {
+      "identity": {
+        "language": "es",
+        "territory": "PH"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

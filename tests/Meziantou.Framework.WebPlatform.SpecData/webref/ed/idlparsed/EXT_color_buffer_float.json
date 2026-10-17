@@ -1,0 +1,68 @@
+{
+  "spec": {
+    "title": "WebGL EXT_color_buffer_float Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/EXT_color_buffer_float/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "EXT_color_buffer_float"
+        ],
+        "Worker": [
+          "EXT_color_buffer_float"
+        ]
+      }
+    },
+    "idlNames": {
+      "EXT_color_buffer_float": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface EXT_color_buffer_float {\n};",
+        "type": "interface",
+        "name": "EXT_color_buffer_float",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EXT_color_buffer_float"
+      ],
+      "Worker": [
+        "EXT_color_buffer_float"
+      ]
+    },
+    "dependencies": {
+      "EXT_color_buffer_float": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

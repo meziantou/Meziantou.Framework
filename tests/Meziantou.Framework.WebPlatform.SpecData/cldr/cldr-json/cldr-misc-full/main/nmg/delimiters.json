@@ -1,0 +1,15 @@
+{
+  "main": {
+    "nmg": {
+      "identity": {
+        "language": "nmg"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

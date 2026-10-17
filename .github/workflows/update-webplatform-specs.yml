@@ -1,0 +1,100 @@
+# Updates the specification data of Meziantou.Framework.WebPlatform (tests/Meziantou.Framework.WebPlatform.SpecData) and
+# the pinned external test suites, regenerates the code, and opens a pull request (see
+# src/Meziantou.Framework.WebPlatform/docs/updating-specs.md):
+# - specs: every source except the web-platform-tests (eng/webplatform/update-specs.sh --except wpt)
+# - wpt: the web-platform-tests, with their expectations and their coverage (eng/webplatform/update-wpt.sh)
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 6 * * 1' # once a week
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  update:
+    name: update (${{ matrix.id }})
+    runs-on: ubuntu-26.04
+    timeout-minutes: 180
+    permissions:
+      contents: write
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: specs
+            script: ./eng/webplatform/update-specs.sh --except wpt
+            branch: update-webplatform-specs
+            title: Update WebPlatform specification data and test suites
+            description: "Automated update of `tests/Meziantou.Framework.WebPlatform.SpecData` and of the pinned external test suites except WPT (`eng/webplatform/update-specs.sh --except wpt`)."
+            failure: The tests of Meziantou.Framework.WebPlatform fail after the update
+          - id: wpt
+            script: ./eng/webplatform/update-wpt.sh
+            branch: update-webplatform-wpt
+            title: Update WebPlatform web-platform-tests
+            description: "Automated update of the pinned web-platform-tests to the latest release (`eng/webplatform/update-wpt.sh`). The expectations are rewritten from the new results, so their diff lists the tests whose result changed."
+            failure: The tests of Meziantou.Framework.WebPlatform fail, or a test that does not pass has no reason in `wpt-reasons.json`
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup .NET
+        uses: $/.github/actions/setup-dotnet
+      - name: Restore the external test suites
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.WebPlatform.External
+          key: webplatform-external-tests-${{ hashFiles('tests/Meziantou.Framework.WebPlatform.SpecData/versions.json', 'tests/Meziantou.Framework.WebPlatform.SpecData/sources.json') }}
+          restore-keys: webplatform-external-tests-
+      - name: Update and open a pull request
+        run: |
+          # The script reports the test failures through its exit code: the pull request is still opened, as a draft,
+          # so that the update is not lost
+          bash -c "${{ matrix.script }}"
+          $checksPassed = $LASTEXITCODE -eq 0
+
+          git add .
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            if (-not $checksPassed) {
+              throw "The update failed and changed nothing"
+            }
+
+            Write-Host "Everything is up to date"
+            exit 0
+          }
+
+          $branch = "${{ matrix.branch }}"
+          $title = "${{ matrix.title }}"
+          git config --global user.email "git@meziantou.net"
+          git config --global user.name "meziantou"
+          git checkout -b $branch
+          git commit -m $title
+          git push origin $branch --force
+          $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          $body = '${{ matrix.description }}'
+          if (-not $checksPassed) {
+            $body += "`n`n**" + '${{ matrix.failure }}' + "**: see the output of the run."
+          }
+          $body += "`n`nCreated by: $runUrl"
+
+          # The branch is reused every week, so update the pull request when one is already open
+          $openPr = gh pr list --head $branch --state open --json number --jq '.[0].number // empty'
+          if ($openPr) {
+            gh pr edit $openPr --title $title --body $body
+            if ($checksPassed) {
+              gh pr ready $openPr
+            } else {
+              gh pr ready $openPr --undo
+            }
+          } elseif ($checksPassed) {
+            gh pr create --title $title --body $body --base main --head $branch
+          } else {
+            gh pr create --title $title --body $body --base main --head $branch --draft
+          }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,252 @@
+{
+  "spec": {
+    "title": "Autofill Event",
+    "url": "https://wicg.github.io/autofill-event/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "AutofillEvent"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "AutofillEvent": {
+        "fragment": "[Exposed=Window]\ninterface AutofillEvent : Event {\n  constructor(DOMString type, optional AutofillEventInit eventInitDict = {});\n  readonly attribute FrozenArray<AutofillValueEntry> autofillValues;\n  readonly attribute RefillCallback? refill;\n};",
+        "type": "interface",
+        "name": "AutofillEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AutofillEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/autofill-event/#dom-autofillevent-autofillevent"
+          },
+          {
+            "type": "attribute",
+            "name": "autofillValues",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AutofillValueEntry"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/autofill-event/#dom-autofillevent-autofillvalues"
+          },
+          {
+            "type": "attribute",
+            "name": "refill",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "RefillCallback"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/autofill-event/#dom-autofillevent-refill"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/autofill-event/#autofillevent"
+      },
+      "RefillCallback": {
+        "fragment": "callback RefillCallback = Promise<undefined> ();",
+        "type": "callback",
+        "name": "RefillCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "Promise",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            }
+          ]
+        },
+        "arguments": [],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/autofill-event/#callbackdef-refillcallback"
+      },
+      "AutofillEventInit": {
+        "fragment": "dictionary AutofillEventInit : EventInit {\n  sequence<AutofillValueEntry> autofillValues = [];\n  boolean allowRefill = true;\n};",
+        "type": "dictionary",
+        "name": "AutofillEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "autofillValues",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AutofillValueEntry"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://wicg.github.io/autofill-event/#dom-autofilleventinit-autofillvalues"
+          },
+          {
+            "type": "field",
+            "name": "allowRefill",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://wicg.github.io/autofill-event/#dom-autofilleventinit-allowrefill"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/autofill-event/#dictdef-autofilleventinit"
+      },
+      "AutofillValueEntry": {
+        "fragment": "typedef sequence<any> AutofillValueEntry;",
+        "type": "typedef",
+        "name": "AutofillValueEntry",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "sequence",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://wicg.github.io/autofill-event/#typedefdef-autofillvalueentry"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "AutofillEvent"
+      ]
+    },
+    "dependencies": {
+      "AutofillEvent": [
+        "Event",
+        "AutofillEventInit",
+        "AutofillValueEntry",
+        "RefillCallback"
+      ],
+      "AutofillEventInit": [
+        "EventInit",
+        "AutofillValueEntry"
+      ]
+    },
+    "externalDependencies": [
+      "Event",
+      "EventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

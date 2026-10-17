@@ -1,0 +1,1039 @@
+{
+  "css/css-pseudo/CSSPseudoElement-convertPoint.tentative.html": {
+    "total": 7
+  },
+  "css/css-pseudo/CSSPseudoElement-geometry-edge-cases.tentative.html": {
+    "total": 23
+  },
+  "css/css-pseudo/CSSPseudoElement-getBoxQuads.tentative.html": {
+    "total": 8,
+    "failures": {
+      "getBoxQuads with box=\"margin\" returns margin box dimensions": "FAIL"
+    }
+  },
+  "css/css-pseudo/CSSPseudoElement-identity.html": {
+    "total": 1
+  },
+  "css/css-pseudo/CSSPseudoElement-scroll-button.html": {
+    "total": 12
+  },
+  "css/css-pseudo/CSSPseudoElement-selectorText.html": {
+    "total": 4
+  },
+  "css/css-pseudo/CSSPseudoElement-view-transitions-scoped.tentative.html": {
+    "total": 2
+  },
+  "css/css-pseudo/CSSPseudoElement-view-transitions.tentative.html": {
+    "total": 5
+  },
+  "css/css-pseudo/active-selection-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-031.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-041.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/active-selection-043.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-045.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-051.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-052.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-053.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-054.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-056.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-057.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/active-selection-063.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/backdrop-animate-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/backdrop-animate.html": {
+    "total": 1
+  },
+  "css/css-pseudo/backdrop-pseudo-element-click.html": {
+    "total": 1
+  },
+  "css/css-pseudo/before-after-dynamic-custom-property-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/before-as-flex-container.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/before-dynamic-display-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/before-in-display-none-thcrash.html": {
+    "total": 1
+  },
+  "css/css-pseudo/before-preceding-whitespace-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/chrome-486467574.html": {
+    "total": 1
+  },
+  "css/css-pseudo/events-on-after-before-marker.tentative.html": {
+    "total": 4,
+    "failures": {
+      "click from ::after::marker to ::after fires on ::after with pseudoTarget": "FAIL",
+      "nested ::after::marker: click sets pseudoTarget and parent chain is correct": "FAIL"
+    }
+  },
+  "css/css-pseudo/events-on-pseudo-element-mutation.tentative.html": {
+    "total": 1
+  },
+  "css/css-pseudo/events-on-pseudo-element-shadow-dom.html": {
+    "total": 6,
+    "failures": {
+      "event.pseudoTarget is null when clicking ::after::marker retargeted across shadow boundary": "FAIL",
+      "event.pseudoTarget is null when clicking ::before::marker retargeted across shadow boundary": "FAIL",
+      "event.pseudoTarget is preserved when clicking host ::after::marker pseudo-element": "FAIL",
+      "event.pseudoTarget is preserved when clicking host ::before::marker pseudo-element": "FAIL"
+    }
+  },
+  "css/css-pseudo/events-on-pseudo-element.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "CSS Test: event.pseudoTarget tests with different events ": "TIMEOUT"
+    }
+  },
+  "css/css-pseudo/events-on-view-transition-pseudos.tentative.html": {
+    "total": 2
+  },
+  "css/css-pseudo/file-selector-button-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/file-selector-button-after-part.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/file-selector-button-float.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/file-selector-button-inherit.html": {
+    "total": 1
+  },
+  "css/css-pseudo/first-letter-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/first-letter-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-allowed-properties.html": {
+    "total": 36
+  },
+  "css/css-pseudo/first-letter-and-sibling-display-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-and-whitespace.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-background-image-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-background-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-block-to-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-c0.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-capitalize-supplementary-char.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-digraph-document-lang-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-digraph-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-digraph.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-exclude-block-child-marker.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-exclude-inline-child-marker.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-exclude-inline-marker.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-hi-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-hi-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-input-textarea.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-insert-text-node-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-list-item-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-of-html-root-refcrash.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-opacity-001-ref.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-opacity-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-opacity-float-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-punctuation-and-space.html": {
+    "total": 43
+  },
+  "css/css-pseudo/first-letter-punctuation-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-require-first-formatted-line.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-skip-empty-span-nested.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-skip-empty-span.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-skip-marker.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-text-and-display-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-trailing-punctuation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-width-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-with-before-after.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-with-preceding-new-line.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-with-quote.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-with-span.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-allowed-properties.html": {
+    "total": 112
+  },
+  "css/css-pseudo/first-line-and-marker.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-and-placeholder.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-below-float.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-change-inline-color-nested.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-change-inline-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-font-relative-units-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/first-line-inherited-no-transition.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-inherited-with-transition.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-inherited.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-input-textarea.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-insert-text-node-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-line-height-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-line-height-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-nested-gcs.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-on-ancestor-block.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-on-list-item-with-block-children.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-opacity-001-ref.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-opacity-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/first-line-replaced-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-with-before-after.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-with-inline-block-before.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-with-inline-block.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-with-out-of-flow-and-nested-div.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-with-out-of-flow-and-nested-span.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-with-out-of-flow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/focus-visible-originating-element.html": {
+    "total": 1
+  },
+  "css/css-pseudo/grammar-error-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/grammar-spelling-errors-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/grammar-spelling-errors-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/highlight-cascade/cascade-highlight-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/cascade-highlight-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/cascade-highlight-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/cascade-highlight-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-cascade-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-cascade-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-cascade-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-cascade-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-cascade-006.xhtml": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-cascade-007.html": {
+    "total": 12
+  },
+  "css/css-pseudo/highlight-cascade/highlight-cascade-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-cascade-009.html": {
+    "total": 5
+  },
+  "css/css-pseudo/highlight-cascade/highlight-cascade-010.html": {
+    "total": 1
+  },
+  "css/css-pseudo/highlight-cascade/highlight-cascade-011.html": {
+    "total": 2
+  },
+  "css/css-pseudo/highlight-cascade/highlight-cascade-parent-style-change.html": {
+    "total": 1
+  },
+  "css/css-pseudo/highlight-cascade/highlight-cascade-shadow-boundary.html": {
+    "total": 2
+  },
+  "css/css-pseudo/highlight-cascade/highlight-currentcolor-computed-inheritance.html": {
+    "total": 6
+  },
+  "css/css-pseudo/highlight-cascade/highlight-currentcolor-computed-visited.html": {
+    "total": 12
+  },
+  "css/css-pseudo/highlight-cascade/highlight-currentcolor-computed.html": {
+    "total": 12
+  },
+  "css/css-pseudo/highlight-cascade/highlight-currentcolor-painting-properties-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-currentcolor-painting-properties-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-currentcolor-painting-text-shadow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-currentcolor-painting-text-shadow-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-currentcolor-root-explicit-default-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-currentcolor-root-explicit-default-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-currentcolor-root-implicit-default-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-currentcolor-root-implicit-default-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-paired-cascade-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-paired-cascade-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-paired-cascade-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-paired-cascade-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-paired-cascade-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-paired-cascade-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-cascade/highlight-pseudos-computed-search-text.tentative.html": {
+    "total": 8
+  },
+  "css/css-pseudo/highlight-cascade/highlight-pseudos-computed.html": {
+    "total": 41
+  },
+  "css/css-pseudo/highlight-cascade/highlight-pseudos-inheritance-computed-001.html": {
+    "total": 12
+  },
+  "css/css-pseudo/highlight-cascade/highlight-pseudos-visited-computed-001.html": {
+    "total": 12
+  },
+  "css/css-pseudo/highlight-custom-properties-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-fill-color-ignores-stroke-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/highlight-painting-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/highlight-painting-004.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/highlight-painting-currentcolor-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-currentcolor-001a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-currentcolor-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-currentcolor-002a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-currentcolor-002b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-currentcolor-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-currentcolor-003a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-currentcolor-003b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-currentcolor-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-currentcolor-004a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-currentcolor-004b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-currentcolor-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-shadows-horizontal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-shadows-vertical.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-painting-soft-hyphens-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-styling-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-styling-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-styling-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-styling-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-styling-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-z-index-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/highlight-z-index-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/hit-testing-active-pseudo-layout-on-mouseup.html": {
+    "total": 1
+  },
+  "css/css-pseudo/hover-on-pseudo-elements.tentative.html": {
+    "total": 1
+  },
+  "css/css-pseudo/idlharness.html": {
+    "total": 29,
+    "failures": {
+      "CSSPseudoElement interface: beforeElements.item(0) must inherit property \"element\" with the proper type": "FAIL",
+      "CSSPseudoElement interface: beforeElements.item(0) must inherit property \"parent\" with the proper type": "FAIL",
+      "CSSPseudoElement interface: beforeElements.item(0) must inherit property \"pseudo(CSSOMString)\" with the proper type": "FAIL",
+      "CSSPseudoElement interface: beforeElements.item(0) must inherit property \"selectorText\" with the proper type": "FAIL",
+      "CSSPseudoElement interface: beforeElements.item(0) must inherit property \"type\" with the proper type": "FAIL",
+      "CSSPseudoElement interface: calling pseudo(CSSOMString) on beforeElements.item(0) with too few arguments must throw TypeError": "FAIL",
+      "CSSPseudoElement must be primary interface of beforeElements.item(0)": "FAIL",
+      "Stringification of beforeElements.item(0)": "FAIL",
+      "idl_test setup": "FAIL"
+    }
+  },
+  "css/css-pseudo/input-element-pseudo-open-click.optional.html": {
+    "total": 7,
+    "failures": {
+      "CSS :open for <input type=color>": "FAIL",
+      "CSS :open for <input type=date>": "FAIL",
+      "CSS :open for <input type=datetime-local>": "FAIL",
+      "CSS :open for <input type=month>": "FAIL",
+      "CSS :open for <input type=text list=datalist>": "FAIL",
+      "CSS :open for <input type=time>": "FAIL",
+      "CSS :open for <input type=week>": "FAIL"
+    }
+  },
+  "css/css-pseudo/input-element-pseudo-open.optional.html": {
+    "total": 7,
+    "failures": {
+      "CSS :open for <input type=color>": "FAIL",
+      "CSS :open for <input type=date>": "FAIL",
+      "CSS :open for <input type=datetime-local>": "FAIL",
+      "CSS :open for <input type=month>": "FAIL",
+      "CSS :open for <input type=text list=datalist>": "FAIL",
+      "CSS :open for <input type=time>": "FAIL",
+      "CSS :open for <input type=week>": "FAIL"
+    }
+  },
+  "css/css-pseudo/marker-and-other-pseudo-elements.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-animate-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-animate.html": {
+    "total": 3
+  },
+  "css/css-pseudo/marker-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-computed-content.html": {
+    "total": 10
+  },
+  "css/css-pseudo/marker-computed-size.html": {
+    "total": 8
+  },
+  "css/css-pseudo/marker-content-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-001b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-001c.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-003b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-008.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/marker-content-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-content-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-default-styles.html": {
+    "total": 32
+  },
+  "css/css-pseudo/marker-display-computed.html": {
+    "total": 8
+  },
+  "css/css-pseudo/marker-display-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-font-properties.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-font-variant-numeric-default-ref.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-font-variant-numeric-default.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-font-variant-numeric-normal-ref.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-font-variant-numeric-normal.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/marker-hit-testing.html": {
+    "total": 20
+  },
+  "css/css-pseudo/marker-hyphens.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-inherit-line-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-inherit-values.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-intrinsic-contribution-001.html": {
+    "total": 8
+  },
+  "css/css-pseudo/marker-intrinsic-contribution-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-letter-spacing.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/marker-line-break.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/marker-line-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-list-style-position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-overflow-wrap.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/marker-reverted-styles.html": {
+    "total": 8
+  },
+  "css/css-pseudo/marker-tab-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-text-align-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-text-align-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-text-align-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-text-combine-upright.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-text-decoration-skip-ink.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-text-emphasis.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-text-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-text-transform-default.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-text-transform-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-text-transform-uppercase.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-unicode-bidi-default-ref.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-unicode-bidi-default.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-unicode-bidi-normal-ref.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-unicode-bidi-normal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-variable-computed-style.html": {
+    "total": 2
+  },
+  "css/css-pseudo/marker-variable.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/marker-word-break.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/marker-word-spacing.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/outside-marker-paint-order.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/parsing/highlight-pseudos-search-text.tentative.html": {
+    "total": 39
+  },
+  "css/css-pseudo/parsing/highlight-pseudos.html": {
+    "total": 40
+  },
+  "css/css-pseudo/parsing/marker-supported-properties-in-animation.html": {
+    "total": 98,
+    "failures": {
+      "Animation of list-style in ::marker": "FAIL",
+      "Animation of quotes in ::marker": "FAIL",
+      "Transition of list-style in ::marker": "FAIL",
+      "Transition of quotes in ::marker": "FAIL"
+    }
+  },
+  "css/css-pseudo/parsing/marker-supported-properties.html": {
+    "total": 68,
+    "failures": {
+      "Property list-style value 'inside url('foo') decimal' in ::marker": "FAIL",
+      "Property quotes value '\"«\" \"»\"' in ::marker": "FAIL"
+    }
+  },
+  "css/css-pseudo/parsing/tree-abiding-pseudo-elements.html": {
+    "total": 41
+  },
+  "css/css-pseudo/placeholder-excluded-properties.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/placeholder-inherit.html": {
+    "total": 1
+  },
+  "css/css-pseudo/placeholder-input-number.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/placeholder-vertical-align.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/pseudo-element-removal.html": {
+    "total": 1
+  },
+  "css/css-pseudo/pseudo-replaced-elements.html": {
+    "total": 24
+  },
+  "css/css-pseudo/relative-box-order-of-pseudo-elements.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/scroll-button-pseudo-element-click.html": {
+    "total": 1
+  },
+  "css/css-pseudo/selection-background-color-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-background-color-non-applicable-properties.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-background-color-revert.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-background-color-transparent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-background-painting-order.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/selection-contenteditable-011.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/selection-input-011.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/selection-intercharacter-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-intercharacter-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-link-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-link-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-link-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-originating-decoration-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-originating-strikethrough-order.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-originating-underline-order.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-over-highlight-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/selection-overlay-and-grammar-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/selection-overlay-and-spelling-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/selection-paint-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-text-decoration-currentcolor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-textarea-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-universal-shadow-dom.html": {
+    "total": 1
+  },
+  "css/css-pseudo/slider/slider-fill-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/slider/slider-fill-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/slider/slider-fill-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/slider/slider-thumb-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/slider/slider-track-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/slider/slider-track-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/slider/slider-track-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/spelling-error-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-pseudo/spelling-error-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/svg-text-selection-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/svg-text-selection-fill-only.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/svg-text-selection-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/svg-text-selection-stroke-only.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/svg-text-selection-transparent-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-dynamic-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-dynamic-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-dynamic-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-shadow-horizontal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-shadow-vertical.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-text-decoration-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/target-text-text-decoration-currentcolor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/text-selection.html": {
+    "total": 6
+  },
+  "css/css-pseudo/textpath-selection-011.html": {
+    "reftest": "PASS"
+  }
+}

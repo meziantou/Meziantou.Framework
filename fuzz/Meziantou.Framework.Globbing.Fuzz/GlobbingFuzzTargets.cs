@@ -273,13 +273,13 @@ public static class GlobbingFuzzTargets
     {
         using var document = FuzzResources.ReadJson(typeof(GlobbingFuzzTargets).Assembly, "gitignore-conformance.json");
         var entries = document.RootElement.GetProperty("entries").EnumerateArray()
-            .Select(entry => entry.GetProperty("path").GetString()! + (entry.GetProperty("directory").GetBoolean() ? "/" : ""))
+            .Select(entry => entry.GetProperty("path").GetString() + (entry.GetProperty("directory").GetBoolean() ? "/" : ""))
             .ToArray();
 
         var index = 0;
         foreach (var testCase in document.RootElement.GetProperty("cases").EnumerateArray())
         {
-            var content = testCase.GetProperty("gitignore").GetString()!;
+            var content = testCase.GetProperty("gitignore").GetString();
 
             // The ignored entries, then a few others, within the number of paths a target reads
             var ignored = testCase.GetProperty("ignored").EnumerateArray().Select(item => entries[item.GetInt32()]);

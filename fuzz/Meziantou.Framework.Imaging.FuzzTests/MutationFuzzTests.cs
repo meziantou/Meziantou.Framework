@@ -16,7 +16,7 @@ public sealed class MutationFuzzTests
 {
     private const int MaxReportedFailures = 4;
 
-    public static TheoryData<string> Groups => [.. FuzzSeeds.Groups.Where(group => FuzzSettings.Groups?.Contains(group, StringComparer.Ordinal) ?? true)];
+    public static TheoryData<string> Groups => [.. FuzzSeeds.Groups.Where((group, index) => (FuzzSettings.Groups?.Contains(group, StringComparer.Ordinal) ?? true) && (FuzzSettings.Shard is not { } shard || index % shard.Count == shard.Index))];
 
     [Theory]
     [MemberData(nameof(Groups))]

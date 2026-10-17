@@ -21,7 +21,7 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
     public override ImageEncoderSession CreateSession(ImageEncoderSessionOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return new Session(options);
+        return options.Encoder is PngEncoder { Optimization: PngOptimization.MinimumSize } ? new PngOptimizedEncoderSession(options) : new Session(options);
     }
 
     /// <summary>Throws when an APNG sequence number exceeds the PNG integer limit.</summary>
@@ -31,6 +31,92 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
     {
         if (sequenceNumber > MaxSequenceNumber)
             throw new UnsupportedImageFeatureException("The APNG output needs more than 2^31 fcTL and fdAT chunks, beyond the largest sequence number of the format.", ImageFormat.Png, "APNG sequence number");
+    }
+
+    /// <summary>Writes <c>IHDR</c>.</summary>
+    /// <param name="output">The output buffer.</param>
+    /// <param name="size">The image size.</param>
+    /// <param name="bitDepth">The bit depth.</param>
+    /// <param name="colorType">The color type.</param>
+    /// <param name="interlaced">Whether Adam7 interlacing is used.</param>
+    internal static void WriteHeader(ImageOutputBuffer output, Size size, byte bitDepth, byte colorType, bool interlaced)
+    {
+        Span<byte> header = stackalloc byte[13];
+        BinaryPrimitives.WriteUInt32BigEndian(header, (uint)size.Width);
+        BinaryPrimitives.WriteUInt32BigEndian(header[4..], (uint)size.Height);
+        header[8] = bitDepth;
+        header[9] = colorType;
+        header[10] = 0; // compression method 0 (zlib)
+        header[11] = 0; // filter method 0
+        header[12] = interlaced ? (byte)1 : (byte)0;
+        PngChunkWriter.Write(output, PngChunkWriter.Ihdr, header);
+    }
+
+    /// <summary>
+    /// Writes <c>PLTE</c> and, when an entry is not opaque, <c>tRNS</c>. The entries are sorted by alpha first, so the
+    /// entries that are not opaque are the first ones and <c>tRNS</c> only stores their alpha values.
+    /// </summary>
+    /// <param name="output">The output buffer.</param>
+    /// <param name="colors">The entries as <c>(A &lt;&lt; 24) | (R &lt;&lt; 16) | (G &lt;&lt; 8) | B</c> keys, in palette order.</param>
+    internal static void WritePalette(ImageOutputBuffer output, ReadOnlySpan<uint> colors)
+    {
+        Span<byte> palette = stackalloc byte[3 * ExactPaletteCollector.MaxColors];
+        Span<byte> transparency = stackalloc byte[ExactPaletteCollector.MaxColors];
+        var transparencyCount = 0;
+        for (var i = 0; i < colors.Length; i++)
+        {
+            var color = colors[i];
+            palette[3 * i] = (byte)(color >> 16);
+            palette[(3 * i) + 1] = (byte)(color >> 8);
+            palette[(3 * i) + 2] = (byte)color;
+            var alpha = (byte)(color >> 24);
+            if (alpha != byte.MaxValue)
+            {
+                transparency[transparencyCount++] = alpha;
+            }
+        }
+
+        PngChunkWriter.Write(output, PngChunkWriter.Plte, palette[..(3 * colors.Length)]);
+        if (transparencyCount > 0)
+        {
+            PngChunkWriter.Write(output, PngChunkWriter.Trns, transparency[..transparencyCount]);
+        }
+    }
+
+    /// <summary>Writes <c>acTL</c>.</summary>
+    /// <param name="output">The output buffer.</param>
+    /// <param name="frameCount">The number of displayed frames (a separate poster is not counted).</param>
+    /// <param name="totalPlays">The total plays of the animation settings.</param>
+    internal static void WriteAnimationControl(ImageOutputBuffer output, int frameCount, int? totalPlays)
+    {
+        // acTL: num_frames, num_plays (0 = infinite)
+        Span<byte> data = stackalloc byte[8];
+        BinaryPrimitives.WriteUInt32BigEndian(data, (uint)frameCount);
+        BinaryPrimitives.WriteUInt32BigEndian(data[4..], AnimationTiming.ToApngNumPlays(totalPlays));
+        PngChunkWriter.Write(output, PngChunkWriter.Actl, data);
+    }
+
+    /// <summary>Writes <c>fcTL</c>.</summary>
+    /// <param name="output">The output buffer.</param>
+    /// <param name="sequenceNumber">The sequence number of the chunk.</param>
+    /// <param name="region">The frame region, inside the canvas.</param>
+    /// <param name="delay">The frame delay.</param>
+    /// <param name="disposeOp">The <c>dispose_op</c> of the frame.</param>
+    /// <param name="blendOp">The <c>blend_op</c> of the frame.</param>
+    internal static void WriteFrameControl(ImageOutputBuffer output, uint sequenceNumber, Rectangle region, (ushort Numerator, ushort Denominator) delay, byte disposeOp, byte blendOp)
+    {
+        EnsureSequenceNumber(sequenceNumber);
+        Span<byte> data = stackalloc byte[FrameControlLength];
+        BinaryPrimitives.WriteUInt32BigEndian(data, sequenceNumber);
+        BinaryPrimitives.WriteUInt32BigEndian(data[4..], (uint)region.Width);
+        BinaryPrimitives.WriteUInt32BigEndian(data[8..], (uint)region.Height);
+        BinaryPrimitives.WriteUInt32BigEndian(data[12..], (uint)region.X);
+        BinaryPrimitives.WriteUInt32BigEndian(data[16..], (uint)region.Y);
+        BinaryPrimitives.WriteUInt16BigEndian(data[20..], delay.Numerator);
+        BinaryPrimitives.WriteUInt16BigEndian(data[22..], delay.Denominator); // never 0 (0/1 for a zero delay)
+        data[24] = disposeOp;
+        data[25] = blendOp;
+        PngChunkWriter.Write(output, PngChunkWriter.Fctl, data);
     }
 
     /// <summary>
@@ -211,7 +297,7 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
                     // The palette follows every metadata chunk (iCCP must precede PLTE) and precedes the first image
                     if (_indexedRows is not null)
                     {
-                        WritePalette(output, _indexedRows.Colors);
+                        PngEncoderCodec.WritePalette(output, _indexedRows.Colors);
                     }
 
                     _step = Step.FrameControl;
@@ -289,46 +375,7 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
         }
 
         private void WriteHeader(ImageOutputBuffer output)
-        {
-            Span<byte> header = stackalloc byte[13];
-            BinaryPrimitives.WriteUInt32BigEndian(header, (uint)Options.CanvasSize.Width);
-            BinaryPrimitives.WriteUInt32BigEndian(header[4..], (uint)Options.CanvasSize.Height);
-            header[8] = _layout.BitDepth;
-            header[9] = _layout.ColorType;
-            header[10] = 0; // compression method 0 (zlib)
-            header[11] = 0; // filter method 0
-            header[12] = _encoder.Interlaced ? (byte)1 : (byte)0;
-            PngChunkWriter.Write(output, PngChunkWriter.Ihdr, header);
-        }
-
-        /// <summary>
-        /// Writes <c>PLTE</c> and, when an entry is not opaque, <c>tRNS</c>. The entries are sorted by alpha first, so the
-        /// entries that are not opaque are the first ones and <c>tRNS</c> only stores their alpha values.
-        /// </summary>
-        private static void WritePalette(ImageOutputBuffer output, ReadOnlySpan<uint> colors)
-        {
-            Span<byte> palette = stackalloc byte[3 * ExactPaletteCollector.MaxColors];
-            Span<byte> transparency = stackalloc byte[ExactPaletteCollector.MaxColors];
-            var transparencyCount = 0;
-            for (var i = 0; i < colors.Length; i++)
-            {
-                var color = colors[i];
-                palette[3 * i] = (byte)(color >> 16);
-                palette[(3 * i) + 1] = (byte)(color >> 8);
-                palette[(3 * i) + 2] = (byte)color;
-                var alpha = (byte)(color >> 24);
-                if (alpha != byte.MaxValue)
-                {
-                    transparency[transparencyCount++] = alpha;
-                }
-            }
-
-            PngChunkWriter.Write(output, PngChunkWriter.Plte, palette[..(3 * colors.Length)]);
-            if (transparencyCount > 0)
-            {
-                PngChunkWriter.Write(output, PngChunkWriter.Trns, transparency[..transparencyCount]);
-            }
-        }
+            => PngEncoderCodec.WriteHeader(output, Options.CanvasSize, _layout.BitDepth, _layout.ColorType, _encoder.Interlaced);
 
         /// <summary>
         /// Adds the colors of a frame to the palette, or checks them against it once the palette is written. A frame that
@@ -364,28 +411,14 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
         };
 
         private void WriteAnimationControl(ImageOutputBuffer output)
-        {
-            // acTL: num_frames (the displayed frames; a separate poster is not counted), num_plays (0 = infinite)
-            Span<byte> data = stackalloc byte[8];
-            BinaryPrimitives.WriteUInt32BigEndian(data, (uint)_expectedFrameCount);
-            BinaryPrimitives.WriteUInt32BigEndian(data[4..], AnimationTiming.ToApngNumPlays(Options.Animation?.TotalPlays));
-            PngChunkWriter.Write(output, PngChunkWriter.Actl, data);
-        }
+            => PngEncoderCodec.WriteAnimationControl(output, _expectedFrameCount, Options.Animation?.TotalPlays);
 
         private void WriteFrameControl(ImageOutputBuffer output, (ushort Numerator, ushort Denominator) delay)
         {
-            EnsureSequenceNumber(_sequenceNumber);
-            Span<byte> data = stackalloc byte[FrameControlLength];
-            BinaryPrimitives.WriteUInt32BigEndian(data, _sequenceNumber++);
-            BinaryPrimitives.WriteUInt32BigEndian(data[4..], (uint)Options.CanvasSize.Width);
-            BinaryPrimitives.WriteUInt32BigEndian(data[8..], (uint)Options.CanvasSize.Height);
-            BinaryPrimitives.WriteUInt32BigEndian(data[12..], 0); // x_offset
-            BinaryPrimitives.WriteUInt32BigEndian(data[16..], 0); // y_offset
-            BinaryPrimitives.WriteUInt16BigEndian(data[20..], delay.Numerator);
-            BinaryPrimitives.WriteUInt16BigEndian(data[22..], delay.Denominator); // never 0 (0/1 for a zero delay)
-            data[24] = 0; // dispose_op APNG_DISPOSE_OP_NONE: the next frame replaces the whole canvas anyway
-            data[25] = 0; // blend_op APNG_BLEND_OP_SOURCE: the region (the canvas) is replaced, alpha included
-            PngChunkWriter.Write(output, PngChunkWriter.Fctl, data);
+            // Full-canvas SOURCE frames: APNG_DISPOSE_OP_NONE (the next frame replaces the whole canvas anyway) and
+            // APNG_BLEND_OP_SOURCE (the region, the canvas, is replaced, alpha included)
+            var region = new Rectangle(0, 0, Options.CanvasSize.Width, Options.CanvasSize.Height);
+            PngEncoderCodec.WriteFrameControl(output, _sequenceNumber++, region, delay, PngFrameControl.DisposeNone, PngFrameControl.BlendSource);
         }
     }
 }

@@ -27,6 +27,12 @@ public sealed class ApngEncoderConformanceTests
         new PngEncoder { AnimationMode = PngAnimationMode.Animated, Filter = PngFilter.None, CompressionLevel = System.IO.Compression.CompressionLevel.NoCompression },
     ];
 
+    private static readonly PngEncoder[] MinimumSizeEncoders =
+    [
+        new PngEncoder { AnimationMode = PngAnimationMode.Animated, Optimization = PngOptimization.MinimumSize },
+        new PngEncoder { AnimationMode = PngAnimationMode.Animated, Optimization = PngOptimization.MinimumSize, Interlaced = true },
+    ];
+
     public static TheoryData<string, string> Cases()
     {
         var data = new TheoryData<string, string>();
@@ -52,7 +58,7 @@ public sealed class ApngEncoderConformanceTests
         var reference = ReferencePng.Parse(data);
         if (reference is { ColorType: 2, BitDepth: 16 })
         {
-            Assert.Throws<NotSupportedException>(() => reference.Layout); // 16-bit RGB is outside the reader's scope (never written by the encoder)
+            Assert.Throws<NotSupportedException>(() => reference.Layout); // 16-bit RGB has no raw layout: only the canonical 16-bit RGBA decoding reads it
             return;
         }
 
@@ -120,6 +126,28 @@ public sealed class ApngEncoderConformanceTests
             {
                 AssertSame(frames[i].Pixels, reference.DecodeDisplayedFrame(i), $"{context}, {frames[i].Name}");
             }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Cases))]
+    public void CorpusReferencesEncodeAsMinimumSizeAnimations(string id, string format)
+    {
+        // Regions, blending and disposals of any kind: the reader composites the frames, then compares them exactly
+        var fixture = GoldenCorpus.Default.Get(id);
+        var pixelFormat = Enum.Parse<PixelFormat>(format);
+        using var image = CreateAnimation(fixture, pixelFormat, out _, out _);
+        foreach (var encoder in MinimumSizeEncoders)
+        {
+            using var stream = new MemoryStream();
+            image.Save(stream, encoder);
+            var context = $"{id} as {pixelFormat} (minimum size, interlaced {encoder.Interlaced})";
+            OptimizedPngOutputVerifier.VerifyAnimation(stream.ToArray(), image, context);
+
+            // Not a guarantee for animations (the frames are chosen one at a time), but the regression this suite watches
+            using var unoptimized = new MemoryStream();
+            image.Save(unoptimized, new PngEncoder { AnimationMode = PngAnimationMode.Animated, Interlaced = encoder.Interlaced });
+            Assert.True(stream.Length <= unoptimized.Length, $"{context}: {stream.Length} bytes, {unoptimized.Length} without optimization.");
         }
     }
 

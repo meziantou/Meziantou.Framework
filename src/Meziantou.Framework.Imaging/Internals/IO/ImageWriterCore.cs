@@ -120,11 +120,11 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     /// Runs the frame preflight (the metadata policy of the frame settings, then <see cref="ImageEncoderSession.ValidateFrame"/>)
     /// on every image of an eager save before any output, so that an unrepresentable frame (for example a duration that does
     /// not fit the format, or a cursor hotspot the format cannot store) fails before the first byte instead of after the
-    /// preceding frames were written.
+    /// preceding frames were written. The session then receives all of them (<see cref="ImageEncoderSession.PlanFrames"/>).
     /// </summary>
     /// <param name="poster">The separate poster, if any.</param>
     /// <param name="frames">The displayed frames.</param>
-    public void PreflightFrames(ImageFrame? poster, IEnumerable<ImageFrame> frames)
+    public void PreflightFrames(ImageFrame? poster, IReadOnlyList<ImageFrame> frames)
     {
         ArgumentNullException.ThrowIfNull(frames);
         var session = _session ?? throw new InvalidOperationException("The writer has no active encoding session.");
@@ -137,6 +137,8 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         {
             Preflight(session, frame, isPoster: false);
         }
+
+        session.PlanFrames(poster, frames);
     }
 
     public void WritePosterFrame(ImageFrame frame)

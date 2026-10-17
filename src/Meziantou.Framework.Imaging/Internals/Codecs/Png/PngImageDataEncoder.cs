@@ -33,6 +33,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Indexed output uses filter type 0 instead, as the same section recommends for palette images and for bit depths below 8:
 /// the difference between two indexes is unrelated to the difference between their colors.
 /// </para>
+/// <para>
+/// The encoder of <see cref="Formats.PngOptimization.MinimumSize"/> output takes its scanlines from a
+/// <see cref="PngScanlineSource"/> instead (<see cref="StartSource"/>), with a size, a filter strategy and a source per
+/// datastream. Such a datastream can also be counted instead of written: its compressed bytes and the overhead of their
+/// chunks are added up (<see cref="CountedBytes"/>) and nothing reaches an output, which is how the candidate encodings
+/// are compared.
+/// </para>
 /// </remarks>
 internal sealed class PngImageDataEncoder : IDisposable
 {
@@ -43,12 +50,14 @@ internal sealed class PngImageDataEncoder : IDisposable
     public const int BandBytes = 64 * 1024;
 
     private readonly PngIndexedRows? _indexedRows;
-    private readonly int _width;
-    private readonly int _height;
     private readonly int _passCount;
-    private readonly int _fixedFilter;
-    private readonly CompressionLevel _compressionLevel;
+    private readonly int _maxScanlineLength;
+    private CompressionLevel _compressionLevel;
+    private int _width;
+    private int _height;
+    private int _fixedFilter;
     private PngEncodedLayout _layout;
+    private PngScanlineSource? _source;
     private PooledBuffer? _current;
     private PooledBuffer? _previous;
     private PooledBuffer? _filtered;
@@ -84,6 +93,7 @@ internal sealed class PngImageDataEncoder : IDisposable
         // The bit depth of indexed output follows the palette: until it is final, the layout is the widest one
         _indexedRows = indexedRows;
         _layout = indexedRows is null ? PngEncodedLayout.Get(pixelFormat) : PngEncodedLayout.GetIndexed(pixelFormat, bitDepth: 8);
+        _maxScanlineLength = -1;
         _width = width;
         _height = height;
         _passCount = interlaced ? PngInterlace.PassCount : 1;
@@ -126,6 +136,44 @@ internal sealed class PngImageDataEncoder : IDisposable
     }
 
     /// <summary>
+    /// Creates the encoder of the datastreams of scanline sources (<see cref="StartSource"/>), and rents its working buffers.
+    /// </summary>
+    /// <param name="scope">The writer scope, charged for every buffer.</param>
+    /// <param name="maxScanlineLength">The length of the longest scanline of every source, without its filter type byte.</param>
+    /// <param name="interlaced">Whether Adam7 interlacing is used.</param>
+    /// <exception cref="ImageResourceLimitException">The working buffers exceed the allocation limit.</exception>
+    public PngImageDataEncoder(AllocationScope scope, int maxScanlineLength, bool interlaced)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxScanlineLength);
+        if ((long)maxScanlineLength + 1 > CheckedSizes.MaxBufferLength)
+            throw CheckedSizes.CreateOverflowException(scope.Limits);
+
+        _layout = PngEncodedLayout.Get(PixelFormat.Rgba32);
+        _maxScanlineLength = maxScanlineLength;
+        _passCount = interlaced ? PngInterlace.PassCount : 1;
+        try
+        {
+            _current = scope.Rent(maxScanlineLength, AllocationKind.Temporary, clear: false);
+            _previous = scope.Rent(maxScanlineLength, AllocationKind.Temporary);
+            _filtered = scope.Rent(maxScanlineLength + 1, AllocationKind.Temporary, clear: false);
+            _chunkBuffer = scope.Rent(ChunkCapacity, AllocationKind.Temporary, clear: false);
+            _chunks = new ChunkStream(_chunkBuffer.RawBuffer.AsMemory(0, ChunkCapacity));
+        }
+        catch
+        {
+            Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets the number of bytes the last counted datastream (<see cref="StartSource"/>) would write: its compressed bytes and
+    /// the length, type, CRC and sequence number fields of their chunks.
+    /// </summary>
+    public long CountedBytes => _chunks?.CountedBytes ?? 0;
+
+    /// <summary>
     /// Gets the sequence number of the next <c>fdAT</c> chunk: the value given to <see cref="StartFrameData"/>, incremented
     /// for every emitted chunk.
     /// </summary>
@@ -153,13 +201,54 @@ internal sealed class PngImageDataEncoder : IDisposable
     /// <param name="sequenceNumber">The sequence number of the first <c>fdAT</c> chunk; read <see cref="NextSequenceNumber"/> once the datastream is finished.</param>
     public void StartFrameData(uint sequenceNumber) => StartCore(frameData: true, sequenceNumber);
 
-    private void StartCore(bool frameData, uint sequenceNumber)
+    /// <summary>Starts a new datastream of the scanlines of a source (the previous one, if any, must be complete).</summary>
+    /// <param name="source">The scanlines, borrowed until the datastream is finished.</param>
+    /// <param name="filter">The filter strategy; <see cref="PngFilter.Adaptive"/> is the heuristic, whatever the samples.</param>
+    /// <param name="compressionLevel">The zlib compression level.</param>
+    /// <param name="frameData">Whether the datastream is emitted as APNG <c>fdAT</c> chunks.</param>
+    /// <param name="sequenceNumber">The sequence number of the first <c>fdAT</c> chunk.</param>
+    /// <param name="count">Whether the datastream is only counted (<see cref="CountedBytes"/>): nothing is written.</param>
+    public void StartSource(PngScanlineSource source, PngFilter filter, CompressionLevel compressionLevel, bool frameData, uint sequenceNumber, bool count)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ObjectDisposedException.ThrowIf(_chunks is null, this);
+        if (_maxScanlineLength < 0)
+            throw new InvalidOperationException("This PNG datastream encoder reads stored rows, not scanline sources.");
+
+        if (_started)
+            throw new InvalidOperationException("The previous PNG datastream is not complete.");
+
+        if (source.GetScanlineLength(source.Width) > _maxScanlineLength)
+            throw new ArgumentException("The scanlines of the source are longer than the buffers of the encoder.", nameof(source));
+
+        _source = source;
+        _width = source.Width;
+        _height = source.Height;
+        _fixedFilter = GetFilterType(filter);
+        _compressionLevel = compressionLevel;
+        StartCore(frameData, sequenceNumber, count);
+    }
+
+    /// <summary>Gets the filter type of a strategy that uses one type for every scanline, or -1 for the heuristic.</summary>
+    /// <param name="filter">The filter strategy.</param>
+    /// <returns>The filter type, or -1.</returns>
+    private static int GetFilterType(PngFilter filter) => filter switch
+    {
+        PngFilter.None => PngFilters.None,
+        PngFilter.Sub => PngFilters.Sub,
+        PngFilter.Up => PngFilters.Up,
+        PngFilter.Average => PngFilters.Average,
+        PngFilter.Paeth => PngFilters.Paeth,
+        _ => -1, // Adaptive
+    };
+
+    private void StartCore(bool frameData, uint sequenceNumber, bool count = false)
     {
         ObjectDisposedException.ThrowIf(_chunks is null, this);
         if (_started)
             throw new InvalidOperationException("The previous PNG datastream is not complete.");
 
-        _chunks.Reset(frameData, sequenceNumber);
+        _chunks.Reset(frameData, sequenceNumber, count);
         _zlib = new ZLibStream(_chunks, _compressionLevel, leaveOpen: true);
         _pass = -1;
         _started = true;
@@ -174,6 +263,9 @@ internal sealed class PngImageDataEncoder : IDisposable
     {
         ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(output);
+        if (_source is not null)
+            throw new InvalidOperationException("The PNG datastream in progress reads a scanline source.");
+
         var zlib = _zlib ?? throw new InvalidOperationException("No PNG datastream is in progress.");
         var chunks = _chunks!;
         chunks.Output = output;
@@ -196,6 +288,45 @@ internal sealed class PngImageDataEncoder : IDisposable
             zlib.Dispose();
             chunks.FlushChunk();
             _started = false;
+            return true;
+        }
+        finally
+        {
+            chunks.Output = null;
+        }
+    }
+
+    /// <summary>
+    /// Encodes the next band of scanlines of the source of the datastream (<see cref="StartSource"/>), appending complete
+    /// chunks to <paramref name="output"/>.
+    /// </summary>
+    /// <param name="output">The output buffer, or <see langword="null"/> for a counted datastream.</param>
+    /// <returns><see langword="true"/> when the datastream is finished (its last chunk written or counted).</returns>
+    public bool EncodeSource(ImageOutputBuffer? output)
+    {
+        var source = _source ?? throw new InvalidOperationException("No PNG datastream of a scanline source is in progress.");
+        var zlib = _zlib!;
+        var chunks = _chunks!;
+        if (output is null && !chunks.Counting)
+            throw new ArgumentNullException(nameof(output), "A PNG datastream that is written needs an output.");
+
+        chunks.Output = output;
+        try
+        {
+            long processed = 0;
+            while (_pass < _passCount)
+            {
+                if (processed >= BandBytes || (processed > 0 && output is { ShouldFlush: true }))
+                    return false;
+
+                processed += EncodeSourceScanline(source, zlib);
+            }
+
+            _zlib = null;
+            zlib.Dispose();
+            chunks.FlushChunk();
+            _started = false;
+            _source = null;
             return true;
         }
         finally
@@ -291,6 +422,38 @@ internal sealed class PngImageDataEncoder : IDisposable
         return (_indexedRows is null ? length : _passWidth) + 1;
     }
 
+    private int EncodeSourceScanline(PngScanlineSource source, ZLibStream zlib)
+    {
+        var length = source.GetScanlineLength(_passWidth);
+        var current = _current!.RawBuffer.AsSpan(0, length);
+        var previous = _previous!.RawBuffer.AsSpan(0, length);
+        var (x0, y0, dx, dy) = _passCount == 1 ? (0, 0, 1, 1) : PngInterlace.GetPass(_pass);
+        source.WriteScanline(y0 + (_passRow * dy), x0, dx, _passWidth, current);
+
+        var bytesPerPixel = source.FilterDistance;
+        var filtered = _filtered!.RawBuffer.AsSpan(0, length + 1);
+        if (_fixedFilter >= 0)
+        {
+            filtered[0] = (byte)_fixedFilter;
+            PngFilters.Filter((byte)_fixedFilter, current, previous, bytesPerPixel, filtered[1..]);
+        }
+        else
+        {
+            filtered = FilterAdaptive(current, previous, bytesPerPixel, length);
+        }
+
+        zlib.Write(filtered);
+        (_current, _previous) = (_previous, _current);
+        _passRow++;
+        if (_passRow == _passHeight)
+        {
+            StartNextPass();
+        }
+
+        // The work of a scanline follows its pixels, whatever their packing
+        return Math.Max(length, _passWidth) + 1;
+    }
+
     private Span<byte> FilterAdaptive(ReadOnlySpan<byte> current, ReadOnlySpan<byte> previous, int bytesPerPixel, int length)
     {
         // The filter of the smallest cost, the lowest type on a tie; only the winner is written
@@ -320,7 +483,7 @@ internal sealed class PngImageDataEncoder : IDisposable
                 continue; // empty pass: no scanline at all, not even filter bytes
 
             _passRow = 0;
-            _previous!.RawBuffer.AsSpan(0, _layout.GetScanlineLength(_passWidth)).Clear();
+            _previous!.RawBuffer.AsSpan(0, _source?.GetScanlineLength(_passWidth) ?? _layout.GetScanlineLength(_passWidth)).Clear();
             return;
         }
     }
@@ -353,13 +516,21 @@ internal sealed class PngImageDataEncoder : IDisposable
         /// <summary>Gets the sequence number of the next <c>fdAT</c> chunk.</summary>
         public uint SequenceNumber { get; private set; }
 
+        /// <summary>Gets a value indicating whether the chunks are counted instead of written.</summary>
+        public bool Counting { get; private set; }
+
+        /// <summary>Gets the bytes of the chunks counted since the datastream started.</summary>
+        public long CountedBytes { get; private set; }
+
         private bool FrameData { get; set; }
 
-        public void Reset(bool frameData, uint sequenceNumber)
+        public void Reset(bool frameData, uint sequenceNumber, bool counting)
         {
             _length = 0;
             FrameData = frameData;
             SequenceNumber = sequenceNumber;
+            Counting = counting;
+            CountedBytes = 0;
         }
 
         public override void Write(byte[] buffer, int offset, int count) => Write(buffer.AsSpan(offset, count));
@@ -389,6 +560,15 @@ internal sealed class PngImageDataEncoder : IDisposable
         {
             if (Discard || _length == 0)
                 return;
+
+            if (Counting)
+            {
+                // Length, type and CRC fields, plus the sequence number of fdAT
+                CountedBytes += _length + 12 + (FrameData ? 4 : 0);
+                SequenceNumber++;
+                _length = 0;
+                return;
+            }
 
             var output = Output ?? throw new InvalidOperationException("Compressed PNG data was produced outside an encoding step.");
             if (FrameData)

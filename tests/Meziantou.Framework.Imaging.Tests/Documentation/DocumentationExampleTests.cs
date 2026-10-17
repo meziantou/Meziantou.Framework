@@ -1295,6 +1295,34 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveSmallestPngStoresTheAnimationExactlyInFewerBytes()
+    {
+        // Two frames of one color each: a palette, and a second frame of one pixel (nothing else changes)
+        var (apngPath, _) = BuildAnimation();
+        var smallest = GetPath("smallest.png");
+        Examples.SaveSmallestPng(apngPath, smallest);
+
+        var data = File.ReadAllBytes(smallest);
+        Assert.Equal(3, data[25]); // IHDR color type: indexed
+        Assert.HasCountLessThan(File.ReadAllBytes(apngPath).Length, data);
+        using var expected = Image.Load<Rgba32>(apngPath);
+        using var image = Image.Load<Rgba32>(smallest);
+        Assert.Equal(expected.Frames.Count, image.Frames.Count);
+        Assert.Equal(expected.Animation!.TotalPlays, image.Animation!.TotalPlays);
+        for (var i = 0; i < image.Frames.Count; i++)
+        {
+            Assert.Equal(expected.Frames[i].Metadata.Duration, image.Frames[i].Metadata.Duration);
+            for (var y = 0; y < image.Height; y++)
+            {
+                for (var x = 0; x < image.Width; x++)
+                {
+                    Assert.Equal(expected.Frames[i][x, y], image.Frames[i][x, y]);
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void SaveIndexedBmpWritesARunLengthEncodedPalettedBitmap()
     {
         var (apngPath, _) = BuildAnimation();

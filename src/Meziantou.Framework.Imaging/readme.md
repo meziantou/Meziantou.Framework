@@ -2841,7 +2841,7 @@ output.
 | Output | `ExpectedFrameCount` |
 | --- | --- |
 | PNG (static) | Required, 1 |
-| APNG | Required (the count precedes the image data and seeking is never used). With `PngPixelLayout.Indexed`, the palette also precedes the image data: it holds the colors of the first image written (the poster, or the first frame), and every later frame must use them |
+| APNG | Required (the count precedes the image data and seeking is never used). With `PngPixelLayout.Indexed`, the palette also precedes the image data: it holds the colors of the first image written (the poster, or the first frame), and every later frame must use them. With `PngOptimization.MinimumSize`, the layout comes from the first image written in the same way, and each frame is written when the next one (or the completion) is given |
 | GIF | Optional: unknown counts are supported with fixed memory (local palettes, no global prepass) |
 | WebP | Optional; an animation (any count other than 1) needs a seekable destination |
 | JPEG XL | Optional; any count, without seeking (a frame is written when the next one, or the completion, tells whether it is the last) |
@@ -3016,18 +3016,57 @@ public static bool SaveIndexedPng(string inputPath, string outputPath)
 }
 ```
 
+`PngEncoder.Optimization`: `None` (the default) follows the settings. `MinimumSize` searches the lossless options and
+writes the smallest file it finds, several times slower; the pixels (alpha and the color of fully transparent pixels
+included), the frames, their durations, the poster and the metadata stay exact:
+
+- **Layout.** The color type and bit depth the pixels need: grayscale at 1, 2, 4, 8 or 16 bits, grayscale with alpha, RGB
+  or RGBA at 8 or 16 bits (16-bit samples are written at 8 bits only when both of their bytes are equal), a `tRNS` color
+  key when every transparent pixel has one color that no opaque pixel has, or a palette. The candidates are compressed
+  and the smallest total wins; `PngPixelLayout.Indexed` restricts them to palettes. An ICC profile keeps its color space
+  (an RGB profile never gets a grayscale layout).
+- **Filters and zlib.** Every filter strategy (or only the fixed one `Filter` selects) at `SmallestSize`, `Optimal` and
+  `Fastest`; `CompressionLevel` is ignored, `Interlaced` is respected.
+- **Animation frames.** Each frame stores the rectangle that differs from the canvas it is drawn on, with `SOURCE` or
+  `OVER` blending (only where the result is exact: opaque pixels, or visible pixels on a transparent canvas, the
+  unchanged ones transparent) and the disposal of the previous frame (`NONE`, `BACKGROUND` or `PREVIOUS`) that give the
+  smallest data. For an animation saved at once, the layout trial compresses the frames as the regions that changed, and
+  also tries an unused `tRNS` color key (or a transparent palette entry) that lets opaque frames skip their unchanged
+  pixels: it is kept only when it saves more than it costs. The samples and palette indexes of an animation have 8 bits
+  at least: some decoders (FFmpeg among them) misplace the packed pixels of a frame region.
+
+A file has one layout, written before its first image: `Save` chooses it from every frame and the poster, a sequential
+writer from the first image, and it rejects a later frame that the layout cannot store (`UnsupportedImageFeatureException`
+before anything of the frame is written). A sequential writer also writes each frame when it is given the next one (or
+when it completes), because a frame's control data holds the disposal chosen for the next one. The file may load with
+another pixel format than the one it was written from (`Rgb24` for an opaque `Rgba32` image, `Rgba32` for a color key or
+a palette), with the same pixel values.
+
+<!-- snippet: save-png-minimum-size -->
+```csharp
+public static void SaveSmallestPng(string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // The layout the pixels need (grayscale, a color key, a palette, 8 instead of 16 bits...), the best filters and
+    // zlib level, and for an animation the frame regions that changed. The pixels, alpha values, frames, durations and
+    // metadata are stored exactly; only the encoding changes, and it takes several times longer.
+    image.Save(outputPath, new PngEncoder { Optimization = PngOptimization.MinimumSize });
+}
+```
+
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
-| Grayscale 1/2/4/8/16-bit | Sub-byte samples scaled exactly to `Gray8`; 16-bit kept in `Gray16`; a `tRNS` key gives `Rgba32`/`Rgba64` | `Gray8` → gray 8, `Gray16` → gray 16 (all 16 bits kept) |
-| RGB / RGBA 8/16-bit, gray+alpha | 16-bit precision preserved, gray+alpha expanded to RGBA | `Rgb24` → RGB 8, `Rgba32`/`Bgra32` → RGBA 8, `Rgba64` → RGBA 16; fixed mapping, no data-dependent reduction; RGB 16 and gray+alpha are not produced |
-| Palette + `tRNS` | 1/2/4/8-bit, partial `tRNS`, out-of-range indices rejected | `PngPixelLayout.Indexed`, from any pixel format: exact palette of at most 256 colors with per-entry alpha (`tRNS` only for the entries that are not opaque), smallest bit depth, one palette per file; never selected automatically and never reducing colors |
+| Grayscale 1/2/4/8/16-bit | Sub-byte samples scaled exactly to `Gray8`; 16-bit kept in `Gray16`; a `tRNS` key gives `Rgba32`/`Rgba64` | `Gray8` → gray 8, `Gray16` → gray 16 (all 16 bits kept); `PngOptimization.MinimumSize`: every bit depth, and a `tRNS` key, for the gray pixels of any pixel format |
+| RGB / RGBA 8/16-bit, gray+alpha | 16-bit precision preserved, gray+alpha expanded to RGBA | `Rgb24` → RGB 8, `Rgba32`/`Bgra32` → RGBA 8, `Rgba64` → RGBA 16; fixed mapping, no data-dependent reduction; `PngOptimization.MinimumSize` chooses the layout from the pixels instead (RGB 16, gray+alpha 8/16, 8-bit samples of 16-bit pixel formats, RGB with a `tRNS` key), exactly |
+| Palette + `tRNS` | 1/2/4/8-bit, partial `tRNS`, out-of-range indices rejected | `PngPixelLayout.Indexed`, from any pixel format: exact palette of at most 256 colors with per-entry alpha (`tRNS` only for the entries that are not opaque), smallest bit depth, one palette per file; never reducing colors, and selected automatically only by `PngOptimization.MinimumSize` (which keeps 8-bit indexes when they compress smaller, and in an animation) |
 | Adam7 interlacing | Empty passes, pass rows scattered directly into the frame (no intermediate image); with `ReadFrameRefinementInto`, a rendering of the passes completed by each piece of the data, every other pixel taking the value of the top left pixel of its block in them (the passes are then decoded into an image of the decoder, from which the renderings and the frame are written) | Option; pass rows gathered from the frame storage, empty passes have no scanline |
-| Filters | All five; invalid types rejected | Adaptive minimum-sum-of-absolute-differences heuristic, or one fixed type for every scanline; indexed output uses type 0 (None) instead of the heuristic, as the specification recommends |
-| zlib datastream | Truncation, extra data, Adler-32 and expansion (bounded by the image size) validated; streamed with bounded memory | BCL zlib at the four `CompressionLevel` values; `IDAT` chunks of at most 32 KiB, streamed in bounded bands |
+| Filters | All five; invalid types rejected | Adaptive minimum-sum-of-absolute-differences heuristic, or one fixed type for every scanline; indexed output uses type 0 (None) instead of the heuristic, as the specification recommends; `PngOptimization.MinimumSize` compresses every strategy and keeps the smallest |
+| zlib datastream | Truncation, extra data, Adler-32 and expansion (bounded by the image size) validated; streamed with bounded memory | BCL zlib at the four `CompressionLevel` values (`PngOptimization.MinimumSize` tries `Fastest`, `Optimal` and `SmallestSize`); `IDAT` chunks of at most 32 KiB, streamed in bounded bands |
 | Metadata (`iCCP`, `cICP`, `mDCV`, `cLLI`, `eXIf`, XMP `iTXt`, `tEXt`/`zTXt`/`iTXt`, `pHYs`) | Bounded; metadata after `IDAT` included; a `cICP` chunk takes precedence over `iCCP` (the profile is not adopted), one whose matrix coefficients are not 0 is skipped, and narrow-range samples are rejected with `UnsupportedImageFeatureException` | Written before `IDAT`; `cICP` (matrix coefficients 0, full range) when no ICC profile is written; typed orientation and canvas reconciled into EXIF; incompatible ICC profiles and invalid text entries follow `MetadataHandling`; long texts compressed |
-| APNG animations | Full-canvas displayed frames from one compositor (SOURCE/OVER blending with an exact rounding contract at 8 and 16 bits, NONE/BACKGROUND/PREVIOUS disposal; BACKGROUND clears to transparent black), every color type and bit depth, Adam7 frame regions, partial rectangles, split `fdAT` chunks, exact rational delays, total plays; control-data errors are never reported as a clean end or a still image | Every displayed frame written as a full-canvas `SOURCE` frame with freshly computed control data, so decoded delta/disposal/blend data never survives an edit; exact delays (`RequireExact`, default) or `RoundToNearest` (nearest 16-bit fraction, ties to the longer delay); writers require `ExpectedFrameCount` and stream to non-seekable outputs |
+| APNG animations | Full-canvas displayed frames from one compositor (SOURCE/OVER blending with an exact rounding contract at 8 and 16 bits, NONE/BACKGROUND/PREVIOUS disposal; BACKGROUND clears to transparent black), every color type and bit depth, Adam7 frame regions, partial rectangles, split `fdAT` chunks, exact rational delays, total plays; control-data errors are never reported as a clean end or a still image | Every displayed frame written as a full-canvas `SOURCE` frame (the changed region with `PngOptimization.MinimumSize`) with freshly computed control data, so decoded delta/disposal/blend data never survives an edit; exact delays (`RequireExact`, default) or `RoundToNearest` (nearest 16-bit fraction, ties to the longer delay); writers require `ExpectedFrameCount` and stream to non-seekable outputs |
 | APNG poster frame | `PosterFrame`, excluded from `Frames.Count`; a default image with an `fcTL` is frame zero | The `IDAT` image without a preceding `fcTL`, written once before frame zero, not counted in `num_frames` |
-| APNG delta-rectangle optimization | — | Not supported (full-canvas frames) |
+| APNG delta-rectangle optimization | — | `PngOptimization.MinimumSize`: the region that changed, `SOURCE` or exact `OVER` blending, and the disposal of the previous frame, chosen per frame by compressing the candidates |
 | Unknown critical chunks (e.g. Apple `CgBI`) | Not supported (`UnsupportedImageFeatureException`) | — |
 | Unknown ancillary chunks | Skipped, not round-tripped | Not written |
 

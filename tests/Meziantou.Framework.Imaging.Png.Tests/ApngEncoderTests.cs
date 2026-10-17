@@ -650,6 +650,302 @@ public sealed class ApngEncoderTests
         Assert.Equal(IndexedPngExpectation.Create(ImageSnapshots.CaptureFrame(image.Frames[0])).Palette.ToArray(), reference.Palette.ToArray());
     }
 
+    [Theory]
+    [MemberData(nameof(LayoutCases))]
+    public void MinimumSizeComposesEveryFrameExactly(PixelFormat format, bool poster, bool interlaced)
+    {
+        using var image = CreateAnimation(format, 13, 9, frameCount: 4, poster, seed: (int)format * 7);
+        image.Animation = new AnimationMetadata { TotalPlays = 2 };
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize, Interlaced = interlaced });
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(png, image);
+        Assert.Equal(interlaced ? 1 : 0, reference.InterlaceMethod);
+        Assert.Equal(["1/10", "1/3", "0/1", "1/10"], EncodedFieldInspector.Inspect("png", png).FrameDelays.Select(delay => $"{delay!.Numerator}/{delay.Denominator}"));
+        AssertRoundTripsThroughLibraryDecoder(png, image);
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Rgb24)]
+    [InlineData(PixelFormat.Rgba64)]
+    [InlineData(PixelFormat.Gray8)]
+    public void MinimumSizeWritesTheRegionsThatChange(PixelFormat format)
+    {
+        // A static scene with a small square that moves: the later frames store the part of the canvas that changed
+        using var image = CreateScene(format, 48, 32, frameCount: 5, transparentBackground: false, seed: 3);
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize });
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(png, image);
+        var frames = reference.Animation!.Frames;
+        Assert.True(frames[0].IsFullCanvasSource(48, 32));
+        Assert.All(frames.Skip(1), frame => Assert.True(frame.Width * frame.Height < 48 * 32 / 2, $"region {frame.Width}x{frame.Height}"));
+        Assert.HasCountLessThan(Encode(image, new PngEncoder()).Length / 2, png);
+        AssertRoundTripsThroughLibraryDecoder(png, image);
+    }
+
+    [Fact]
+    public void MinimumSizeAddsAColorKeySoThatOpaqueFramesSkipTheirUnchangedPixels()
+    {
+        // Every pixel is opaque: an unused color becomes the tRNS key, the transparent value of OVER frames
+        using var image = CreateScene(PixelFormat.Rgb24, 64, 48, frameCount: 4, transparentBackground: false, seed: 9, changes: 2);
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize });
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(png, image);
+        Assert.Equal((byte)2, reference.ColorType);
+        Assert.Contains("tRNS", reference.ChunkTypes);
+        Assert.Contains((byte)1, reference.Animation!.Frames.Select(frame => frame.BlendOp).ToList());
+        AssertRoundTripsThroughLibraryDecoder(png, image);
+    }
+
+    [Fact]
+    public void MinimumSizeClearsTheRegionOfAFrameWhenTheNextOneDoesNotDrawThere()
+    {
+        // A square on a transparent background jumps across the canvas: BACKGROUND erases it, so the next frame only
+        // draws the new square
+        using var image = new Image<Rgba32>(40, 40);
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        FillSquare(image.Frames[0], 2, 2, 6, new Rgba32(200, 30, 30, 255));
+        using (var next = new Image<Rgba32>(40, 40))
+        {
+            FillSquare(next.Frames[0], 30, 30, 6, new Rgba32(200, 30, 30, 255));
+            next.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+            image.AppendFrame(next.Frames[0]);
+        }
+
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize });
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(png, image);
+        var frames = reference.Animation!.Frames;
+        Assert.Equal((byte)1, frames[0].DisposeOp);
+        Assert.Equal((30, 30, 6, 6), (frames[1].XOffset, frames[1].YOffset, frames[1].Width, frames[1].Height));
+        AssertRoundTripsThroughLibraryDecoder(png, image);
+    }
+
+    [Fact]
+    public void MinimumSizeRestoresTheCanvasWhenAFrameIsAnOverlay()
+    {
+        // A background, then two frames that each add a square far from the other: PREVIOUS restores the background,
+        // so the third frame only draws its own square
+        var background = new Rgba32(10, 120, 200, 255);
+        using var image = new Image<Rgba32>(40, 40);
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        FillSquare(image.Frames[0], 0, 0, 40, background);
+        foreach (var (x, y) in new[] { (2, 2), (30, 30) })
+        {
+            using var overlay = new Image<Rgba32>(40, 40);
+            FillSquare(overlay.Frames[0], 0, 0, 40, background);
+            FillSquare(overlay.Frames[0], x, y, 6, new Rgba32(250, 250, 10, 255));
+            overlay.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+            image.AppendFrame(overlay.Frames[0]);
+        }
+
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize });
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(png, image);
+        var frames = reference.Animation!.Frames;
+        Assert.Equal((byte)2, frames[1].DisposeOp);
+        Assert.Equal((30, 30, 6, 6), (frames[2].XOffset, frames[2].YOffset, frames[2].Width, frames[2].Height));
+        AssertRoundTripsThroughLibraryDecoder(png, image);
+    }
+
+    [Fact]
+    public void MinimumSizeNeverBlendsWhatOverWouldRound()
+    {
+        // Partially transparent pixels that change on a visible canvas: OVER would depend on rounding, so SOURCE is used
+        using var image = new Image<Rgba32>(16, 16);
+        FillSquare(image.Frames[0], 0, 0, 16, new Rgba32(90, 90, 90, 255));
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        for (var i = 1; i < 4; i++)
+        {
+            using var frame = new Image<Rgba32>(16, 16);
+            FillSquare(frame.Frames[0], 0, 0, 16, new Rgba32(90, 90, 90, 255));
+            FillSquare(frame.Frames[0], i * 3, 4, 5, new Rgba32(200, 10, 10, (byte)(60 * i)));
+            frame.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+            image.AppendFrame(frame.Frames[0]);
+        }
+
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize });
+        OptimizedPngOutputVerifier.VerifyAnimation(png, image);
+        AssertRoundTripsThroughLibraryDecoder(png, image);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MinimumSizeStoresAnUnchangedFrameAsOnePixel(bool poster)
+    {
+        using var image = CreateScene(PixelFormat.Rgba32, 30, 20, frameCount: 1, transparentBackground: true, seed: 4);
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        image.AppendFrame(image.Frames[0]);
+        image.Frames[1].Metadata.Duration = new FrameDuration(1, 3);
+        if (poster)
+        {
+            using var posterSource = PngEncoderTests.CreateRandom<Rgba32>(30, 20, seed: 5);
+            image.SetPosterFrame(posterSource.Frames[0]);
+        }
+
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize });
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(png, image);
+        Assert.Equal((1, 1), (reference.Animation!.Frames[1].Width, reference.Animation.Frames[1].Height));
+        AssertRoundTripsThroughLibraryDecoder(png, image);
+    }
+
+    [Fact]
+    public void MinimumSizeChoosesTheLayoutFromEveryFrameOfAnEagerSave()
+    {
+        // The first frame is opaque and the second has alpha: a save sees both, so the layout has alpha
+        using var image = (Image<Rgba32>)CreateScene(PixelFormat.Rgba32, 20, 20, frameCount: 2, transparentBackground: false, seed: 6);
+        image.Frames[1].ProcessPixelRows(rows => rows.GetRowSpan(3)[5] = new Rgba32(1, 2, 3, 128));
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize });
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(png, image);
+        Assert.Equal((byte)6, reference.ColorType);
+    }
+
+    [Fact]
+    public void MinimumSizeSequentialWritersDecideTheLayoutFromTheFirstImageAndDeferEachFrame()
+    {
+        using var image = (Image<Rgba32>)CreateScene(PixelFormat.Rgba32, 20, 20, frameCount: 3, transparentBackground: false, seed: 6);
+        using var alpha = image.CloneAs<Rgba32>();
+        alpha.Frames[1].ProcessPixelRows(rows => rows.GetRowSpan(3)[5] = new Rgba32(1, 2, 3, 128));
+        using var stream = new TestOutputStream();
+        using (var writer = Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(20, 20) { Encoder = new PngEncoder { Optimization = PngOptimization.MinimumSize, AnimationMode = PngAnimationMode.Animated }, ExpectedFrameCount = 3 }))
+        {
+            writer.WriteFrame(image.Frames[0]);
+
+            // The header is written, but frame zero waits for the disposal the next frame chooses
+            var written = stream.ToArray();
+            Assert.Equal(-1, written.AsSpan().IndexOf("fcTL"u8));
+
+            // The layout of the first image (opaque RGB) cannot store alpha: the frame is rejected and nothing is written
+            var length = stream.BytesWritten;
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => writer.WriteFrame(alpha.Frames[1]));
+            Assert.Equal("Alpha removal", exception.Feature);
+            Assert.Equal(length, stream.BytesWritten);
+
+            writer.WriteFrame(image.Frames[1]);
+            writer.WriteFrame(image.Frames[2]);
+            writer.Complete();
+            Assert.Equal(0, writer.Core.Scope.LiveBytes);
+        }
+
+        image.Animation = new AnimationMetadata();
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(stream.ToArray(), image);
+        Assert.Equal((byte)2, reference.ColorType);
+    }
+
+    [Fact]
+    public void MinimumSizeSequentialWritersAddNoColorKey()
+    {
+        // A later frame could use any color: only an eager save, which sees every frame, adds an unused color key
+        using var image = (Image<Rgb24>)CreateScene(PixelFormat.Rgb24, 24, 16, frameCount: 2, transparentBackground: false, seed: 2);
+        using var stream = new TestOutputStream();
+        using (var writer = Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(24, 16) { Encoder = new PngEncoder { Optimization = PngOptimization.MinimumSize, AnimationMode = PngAnimationMode.Animated }, ExpectedFrameCount = 2 }))
+        {
+            writer.WriteFrame(image.Frames[0]);
+            writer.WriteFrame(image.Frames[1]);
+            writer.Complete();
+        }
+
+        image.Animation = new AnimationMetadata();
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(stream.ToArray(), image);
+        Assert.DoesNotContain("tRNS", reference.ChunkTypes);
+        Assert.All(reference.Animation!.Frames, frame => Assert.Equal((byte)0, frame.BlendOp));
+    }
+
+    [Fact]
+    public void MinimumSizeIndexedAnimationsAddATransparentEntryWhenOverFramesPayForIt()
+    {
+        // A noisy background of 200 colors with two small squares that change in opposite corners: the region of each frame
+        // covers the canvas, and OVER skips its unchanged pixels with a transparent palette entry
+        using var image = PngEncoderTests.CreateWithColors<Rgba32>(40, 30, colors: 200, seed: 8);
+        MakeOpaque(image.Frames[0]);
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        Rgba32[] colors = [new(250, 0, 0, 255), new(0, 250, 0, 255), new(0, 0, 250, 255)];
+        for (var i = 1; i < 4; i++)
+        {
+            using var frame = image.CloneAs<Rgba32>();
+            FillSquare(frame.Frames[0], 0, 0, 2, colors[i % 3]);
+            FillSquare(frame.Frames[0], 38, 28, 2, colors[(i + 1) % 3]);
+            image.AppendFrame(frame.Frames[0]).Metadata.Duration = new FrameDuration(1, 10);
+        }
+
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize, PixelLayout = PngPixelLayout.Indexed });
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(png, image);
+        Assert.Equal((byte)3, reference.ColorType);
+        Assert.Equal((byte)8, reference.BitDepth); // the frame regions of an animation keep whole bytes per index
+        Assert.Equal((byte)0, reference.Transparency.Span[0]);
+        Assert.Contains((byte)1, reference.Animation!.Frames.Select(frame => frame.BlendOp).ToList());
+        AssertRoundTripsThroughLibraryDecoder(png, image);
+
+        // Frames that share no pixel: OVER cannot skip anything, so the palette gets no transparent entry
+        using var random = CreateIndexedAnimation(18, 12, frameCount: 3, poster: true, colorsPerImage: 5, seed: 8);
+        MakeOpaque(random.Frames[0]);
+        MakeOpaque(random.Frames[1]);
+        MakeOpaque(random.Frames[2]);
+        MakeOpaque(random.PosterFrame!);
+        png = Encode(random, new PngEncoder { Optimization = PngOptimization.MinimumSize, PixelLayout = PngPixelLayout.Indexed });
+        reference = OptimizedPngOutputVerifier.VerifyAnimation(png, random);
+        Assert.Equal(0, reference.Transparency.Length);
+    }
+
+    /// <summary>
+    /// Creates an animation of a seeded background (transparent, or random opaque colors) with small squares that move
+    /// between frames (durations of 1/10).
+    /// </summary>
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static Image CreateScene(PixelFormat format, int width, int height, int frameCount, bool transparentBackground, int seed, int changes = 1)
+    {
+        var random = new Random(seed);
+        using var background = transparentBackground ? new Image<Rgba32>(width, height) : PngEncoderTests.CreateRandom<Rgba32>(width, height, seed);
+        MakeOpaque(background.Frames[0]);
+        var frames = new List<Image<Rgba32>>();
+        try
+        {
+            for (var i = 0; i < frameCount; i++)
+            {
+                var frame = background.CloneAs<Rgba32>();
+                frames.Add(frame);
+                for (var j = 0; j < changes; j++)
+                {
+                    var color = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256), 255);
+                    FillSquare(frame.Frames[0], random.Next(width - 4), random.Next(height - 4), 4, color);
+                }
+
+                frame.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+            }
+
+            var result = Convert(frames[0], format);
+            for (var i = 1; i < frameCount; i++)
+            {
+                using var converted = Convert(frames[i], format);
+                result.AppendFrame(converted.Frames[0]);
+                result.Frames[i].Metadata.Duration = new FrameDuration(1, 10);
+            }
+
+            result.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+            return result;
+        }
+        finally
+        {
+            foreach (var frame in frames)
+            {
+                frame.Dispose();
+            }
+        }
+
+        static Image Convert(Image<Rgba32> image, PixelFormat format) => format switch
+        {
+            PixelFormat.Rgba32 => image.CloneAs<Rgba32>(),
+            PixelFormat.Rgb24 => image.CloneAs<Rgb24>(),
+            PixelFormat.Rgba64 => image.CloneAs<Rgba64>(),
+            _ => image.CloneAs<Gray8>(),
+        };
+    }
+
+    private static void FillSquare(ImageFrame<Rgba32> frame, int x, int y, int size, Rgba32 color)
+        => frame.ProcessPixelRows(rows =>
+        {
+            for (var row = y; row < y + size; row++)
+            {
+                rows.GetRowSpan(row).Slice(x, size).Fill(color);
+            }
+        });
+
     private static void MakeOpaque(ImageFrame frame)
     {
         var bytesPerPixel = PixelFormats.GetBytesPerPixel(frame.PixelFormat);

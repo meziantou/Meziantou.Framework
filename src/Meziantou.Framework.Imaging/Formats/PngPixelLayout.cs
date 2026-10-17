@@ -7,7 +7,8 @@ public enum PngPixelLayout
     /// The color type and the bit depth follow the pixel format, losslessly: grayscale for
     /// <see cref="PixelFormat.Gray8"/>/<see cref="PixelFormat.Gray16"/>, RGB for <see cref="PixelFormat.Rgb24"/> and RGBA
     /// for the pixel formats with alpha, with 16-bit samples for the 16-bit pixel formats. This is the default: the
-    /// mapping never depends on the pixels, and a palette is never written.
+    /// mapping never depends on the pixels, and a palette is never written. With <see cref="PngOptimization.MinimumSize"/>,
+    /// the layout is the smallest exact one instead, a palette included.
     /// </summary>
     Auto = 0,
 
@@ -28,6 +29,11 @@ public enum PngPixelLayout
     /// <para>
     /// An indexed file is read back as <see cref="PixelFormat.Rgba32"/>, whatever the pixel format it was written from. An
     /// ICC profile must be an RGB profile, also for a grayscale pixel format.
+    /// </para>
+    /// <para>
+    /// With <see cref="PngOptimization.MinimumSize"/>, the palette holds the same colors (plus a transparent entry for an
+    /// animation), and the indexes are 8-bit when they compress smaller than at the smallest bit depth, and always in an
+    /// animation.
     /// </para>
     /// </summary>
     Indexed = 1,

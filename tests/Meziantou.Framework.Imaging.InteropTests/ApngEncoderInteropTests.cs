@@ -56,6 +56,65 @@ public sealed class ApngEncoderInteropTests
     }
 
     [Theory]
+    [MemberData(nameof(Cases))]
+    public async Task MinimumSizeAnimationsDecodeExactlyWithFFmpeg(PixelFormat format, bool poster, bool interlaced)
+    {
+        // Frame regions, OVER blending and every disposal: FFmpeg composites them, compared exactly in 16-bit RGBA
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = CreateAnimation(format, poster, seed: ((int)format * 11) + (poster ? 1 : 0));
+        var name = $"minimum-size-{format}-{(poster ? "poster" : "frame0")}-{(interlaced ? "adam7" : "progressive")}";
+        var path = await SaveAsync(image, new PngEncoder { Optimization = PngOptimization.MinimumSize, Interlaced = interlaced }, name);
+        OptimizedPngOutputVerifier.VerifyAnimation(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, name);
+        await AssertFFmpegDecodesRgba16Async(ffmpeg, path, image, name);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task MinimumSizeDeltaAnimationsDecodeExactlyWithFFmpeg(bool transparentBackground)
+    {
+        // A square that moves on a transparent or an opaque background: frame regions, the color key of the opaque frames
+        // and the disposals that clear or restore the previous square
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var background = transparentBackground ? default : new Rgba32(20, 140, 60, 255);
+        FrameDuration[] durations = [new(1, 10), new(1, 5), new(3, 10), new(1, 10)];
+        (int X, int Y)[] squares = [(1, 1), (20, 15), (5, 18), (30, 2)];
+        using var image = CreateFrame(0);
+        for (var i = 1; i < squares.Length; i++)
+        {
+            using var frame = CreateFrame(i);
+            image.AppendFrame(frame.Frames[0]);
+        }
+
+        Image<Rgba32> CreateFrame(int index)
+        {
+            var frame = new Image<Rgba32>(Width * 3, Height * 3);
+            frame.Frames[0].ProcessPixelRows(rows =>
+            {
+                for (var y = 0; y < rows.Height; y++)
+                {
+                    var row = rows.GetRowSpan(y);
+                    row.Fill(background);
+                    if (y >= squares[index].Y && y < squares[index].Y + 5)
+                    {
+                        row.Slice(squares[index].X, 5).Fill(new Rgba32((byte)(60 * index), 20, 200, 255));
+                    }
+                }
+            });
+
+            frame.Frames[0].Metadata.Duration = durations[index];
+            return frame;
+        }
+
+        image.Animation = new AnimationMetadata();
+        var name = $"minimum-size-delta-{(transparentBackground ? "transparent" : "opaque")}";
+        var path = await SaveAsync(image, new PngEncoder { Optimization = PngOptimization.MinimumSize }, name);
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, name);
+        Assert.All(reference.Animation!.Frames.Skip(1), frame => Assert.False(frame.IsFullCanvasSource(Width * 3, Height * 3)));
+        await AssertFFmpegDecodesRgba16Async(ffmpeg, path, image, name);
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(false, true)]
@@ -211,6 +270,32 @@ public sealed class ApngEncoderInteropTests
         await File.WriteAllBytesAsync(staticPath, ReferencePng.RemoveAnimationChunks(await File.ReadAllBytesAsync(path, XunitCancellationToken)), XunitCancellationToken);
         var still = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(staticPath, rawFormat, image.Width, image.Height, XunitCancellationToken));
         AssertSame(ImageSnapshots.CaptureFrame(image.PosterFrame ?? image.Frames[0]), still, $"{name} {(image.PosterFrame is null ? "frame 0" : "poster")} as a static PNG decoded by ffmpeg {ffmpeg.Version}");
+    }
+
+    private static async Task AssertFFmpegDecodesRgba16Async(FFmpegTool ffmpeg, FullPath path, Image image, string name)
+    {
+        // The output layout follows the pixels, not the pixel format: FFmpeg decodes it without converting the samples,
+        // and every frame is compared in 16-bit RGBA
+        var data = await File.ReadAllBytesAsync(path, XunitCancellationToken);
+        var (rawFormat, layout) = PngEncoderInteropTests.GetNativeRawFormat(ReferencePng.Parse(data));
+        var decoded = await ffmpeg.DecodeToRawFramesAsync(path, rawFormat, image.Width, image.Height, ignoreLoop: true, XunitCancellationToken);
+        if (decoded.Count != image.Frames.Count)
+            Assert.Fail($"{name}: FFmpeg {ffmpeg.Version} decoded {decoded.Count} frames, {image.Frames.Count} displayed frames expected (a poster is not displayed).");
+        for (var i = 0; i < decoded.Count; i++)
+        {
+            AssertSameRgba16(image.Frames[i], RawPixelBuffer.Create(image.Width, image.Height, layout, decoded[i]), $"{name} frame {i} decoded by ffmpeg {ffmpeg.Version} as {rawFormat}");
+        }
+
+        var staticPath = path.ChangeExtension(".static.png");
+        await File.WriteAllBytesAsync(staticPath, ReferencePng.RemoveAnimationChunks(data), XunitCancellationToken);
+        var still = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(staticPath, rawFormat, image.Width, image.Height, XunitCancellationToken));
+        AssertSameRgba16(image.PosterFrame ?? image.Frames[0], RawPixelBuffer.Create(image.Width, image.Height, layout, still), $"{name} {(image.PosterFrame is null ? "frame 0" : "poster")} as a static PNG decoded by ffmpeg {ffmpeg.Version}");
+    }
+
+    private static void AssertSameRgba16(ImageFrame expected, RawPixelBuffer decoded, string context)
+    {
+        var result = PixelBufferComparer.Compare(ReferencePng.ToRgba16(ImageSnapshots.CaptureFrame(expected)), ReferencePng.ToRgba16(decoded), ComparisonPolicy.Exact, context);
+        Assert.True(result.IsMatch, result.Describe());
     }
 
     private static void AssertSame(RawPixelBuffer expected, byte[] decoded, string context)

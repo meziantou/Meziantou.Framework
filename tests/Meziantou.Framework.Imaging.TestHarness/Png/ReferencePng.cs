@@ -34,7 +34,7 @@ namespace Meziantou.Framework.Imaging.TestHarness.Png;
 /// output without depending on compositing.
 /// </para>
 /// </remarks>
-public sealed class ReferencePng
+public sealed partial class ReferencePng
 {
     private static readonly byte[] Signature = [0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A];
     private static readonly (int X0, int Y0, int Dx, int Dy)[] Adam7 = [(0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4), (0, 2, 2, 4), (1, 0, 2, 2), (0, 1, 1, 2)];

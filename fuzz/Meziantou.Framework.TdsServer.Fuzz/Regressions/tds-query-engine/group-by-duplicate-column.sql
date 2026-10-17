@@ -1,0 +1,1 @@
+SELECT Region, Amount, COUNT(*) AS Count FROM orders GROUP BY Region, Amount, Amount

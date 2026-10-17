@@ -1,0 +1,1 @@
+SELECT Id FROM customers c1 INNER JOIN customers c2 ON c1.Id = c2.Id

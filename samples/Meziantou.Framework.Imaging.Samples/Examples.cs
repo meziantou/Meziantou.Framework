@@ -97,6 +97,30 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>Image comparison: two files look the same when every frame is similar enough to the expected one.</summary>
+    // begin-snippet: image-similarity
+    public static bool LookTheSame(string expectedPath, string actualPath)
+    {
+        using var expected = Image.Load(expectedPath);
+        using var actual = Image.Load(actualPath);
+        if (expected.Size != actual.Size || expected.Frames.Count != actual.Frames.Count)
+            return false;
+
+        for (var i = 0; i < expected.Frames.Count; i++)
+        {
+            // 1 for identical pixels; small differences, such as anti-aliasing, keep the score close to 1
+            if (ImageSimilarity.ComputeSsim(expected.Frames[i], actual.Frames[i]) < 0.99)
+                return false;
+
+            // 0 for the same structure and brightness, up to 64; the pHash is the most tolerant to small changes
+            if (ImageSimilarity.ComputePerceptualHashDistance(expected.Frames[i], actual.Frames[i]) > 4)
+                return false;
+        }
+
+        return true;
+    }
+    // end-snippet
+
     /// <summary>Drawing: gradients, a disk, a filled and stroked curve and a frame on a new image.</summary>
     // begin-snippet: draw-shapes
     public static void DrawLandscape(string outputPath)

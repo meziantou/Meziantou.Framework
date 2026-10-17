@@ -66,6 +66,7 @@ compiled and run by the test suite.
   - [Failure atomicity](#failure-atomicity)
   - [Pixel formats, precision and alpha](#pixel-formats-precision-and-alpha)
   - [Processing](#processing)
+  - [Comparing images](#comparing-images)
   - [Drawing](#drawing)
   - [Fonts](#fonts)
   - [Text](#text)
@@ -730,6 +731,53 @@ public static void ApplyColorFilters(string photoPath, string iconPath, string o
 ```
 
 There is no HDR processing or custom processor.
+
+### Comparing images
+
+`ImageSimilarity` measures how similar two frames look, for visual regression tests, deduplication or quality checks.
+It never changes the frames.
+
+- `ComputeSsim` returns the mean Structural Similarity Index of two frames of the same size, from -1 to 1 (identical
+  pixels). It is computed in every 7x7 window, moved one pixel at a time, with the parameters of scikit-image's
+  `structural_similarity(data_range=255, channel_axis=-1)`: for opaque frames, the score is the mean over the three
+  color channels of what scikit-image computes. Color channels are premultiplied by alpha, so a fully transparent pixel
+  scores the same whatever color it hides. Alpha is scored on its own, and the result is the lower of the two scores. A
+  localized difference lowers the score in proportion to its area.
+- `ComputeDifferenceHash` (dHash) and `ComputePerceptualHash` (pHash) return a 64-bit hash of the structure of a
+  frame, computed from an exact, area-weighted luminance thumbnail. Every pixel counts, and differences smaller than a
+  luminance level never set a bit.
+- `ComputeDifferenceHashDistance` and `ComputePerceptualHashDistance` compare two frames of the same size, from 0 to
+  `ImageSimilarity.MaxHashDistance` (64). The distance is the number of hash bits that differ, plus the difference
+  between the mean luminances (about 4 levels out of 255 per unit), since hashes ignore brightness. Frames that are not
+  fully opaque are compared over a black and over a white background, and the larger distance is kept.
+
+Every pixel format is read as 8-bit RGBA, with the conversion of `CloneAs<Rgba32>` (16-bit samples are rounded), so
+frames of different pixel formats can be compared. The results depend only on the pixels, not on the hardware. The
+members compare frames: compare an animation frame by frame.
+
+<!-- snippet: image-similarity -->
+```csharp
+public static bool LookTheSame(string expectedPath, string actualPath)
+{
+    using var expected = Image.Load(expectedPath);
+    using var actual = Image.Load(actualPath);
+    if (expected.Size != actual.Size || expected.Frames.Count != actual.Frames.Count)
+        return false;
+
+    for (var i = 0; i < expected.Frames.Count; i++)
+    {
+        // 1 for identical pixels; small differences, such as anti-aliasing, keep the score close to 1
+        if (ImageSimilarity.ComputeSsim(expected.Frames[i], actual.Frames[i]) < 0.99)
+            return false;
+
+        // 0 for the same structure and brightness, up to 64; the pHash is the most tolerant to small changes
+        if (ImageSimilarity.ComputePerceptualHashDistance(expected.Frames[i], actual.Frames[i]) > 4)
+            return false;
+    }
+
+    return true;
+}
+```
 
 ### Drawing
 

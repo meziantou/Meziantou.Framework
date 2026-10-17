@@ -1,0 +1,17 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <Import Project="../../src/Meziantou.Framework.SnapshotTesting/build/Meziantou.Framework.SnapshotTesting.targets" />
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting.Imaging/Meziantou.Framework.SnapshotTesting.Imaging.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="TestAssets/*.*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -698,6 +698,48 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void LookTheSameAcceptsInvisibleChangesAndRejectsVisibleOnes()
+    {
+        // A white image with a black square, in PNG and in 16-bit TIFF: the same pixels in two formats
+        var expected = GetPath("expected.png");
+        var sameInTiff = GetPath("same.tiff");
+        using (var image = new Image<Rgba32>(64, 64, Colors.White))
+        {
+            image.Draw(canvas => canvas.FillRectangle(Colors.Black, new Rectangle(16, 16, 32, 32)));
+            image.Save(expected);
+            using var wide = image.CloneAs<Rgba64>();
+            wide.Save(sameInTiff);
+        }
+
+        // One pixel one level darker: invisible
+        var invisible = GetPath("invisible.png");
+        using (var image = Image.Load<Rgba32>(expected))
+        {
+            image.Frames[0][2, 2] = new Rgba32(254, 255, 255);
+            image.Save(invisible);
+        }
+
+        // The square moved by 8 pixels
+        var moved = GetPath("moved.png");
+        using (var image = new Image<Rgba32>(64, 64, Colors.White))
+        {
+            image.Draw(canvas => canvas.FillRectangle(Colors.Black, new Rectangle(24, 16, 32, 32)));
+            image.Save(moved);
+        }
+
+        var smaller = GetPath("smaller.png");
+        using (var image = new Image<Rgba32>(32, 32, Colors.White))
+        {
+            image.Save(smaller);
+        }
+
+        Assert.True(Examples.LookTheSame(expected, sameInTiff));
+        Assert.True(Examples.LookTheSame(expected, invisible));
+        Assert.False(Examples.LookTheSame(expected, moved));
+        Assert.False(Examples.LookTheSame(expected, smaller));
+    }
+
+    [Fact]
     public void TrimBackgroundCropsToTheContentAndKeepsTheMargin()
     {
         // A 40x30 white image with a 10x6 red block at (2, 12)

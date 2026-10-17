@@ -740,6 +740,16 @@ namespace Meziantou.Framework.Imaging
         public int MaxWidth { get => throw null; init { } }
     }
 
+    public static class ImageSimilarity
+    {
+        public const int MaxHashDistance = 64;
+        public static ulong ComputeDifferenceHash(Meziantou.Framework.Imaging.ImageFrame frame, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static int ComputeDifferenceHashDistance(Meziantou.Framework.Imaging.ImageFrame expected, Meziantou.Framework.Imaging.ImageFrame actual, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static ulong ComputePerceptualHash(Meziantou.Framework.Imaging.ImageFrame frame, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static int ComputePerceptualHashDistance(Meziantou.Framework.Imaging.ImageFrame expected, Meziantou.Framework.Imaging.ImageFrame actual, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static double ComputeSsim(Meziantou.Framework.Imaging.ImageFrame expected, Meziantou.Framework.Imaging.ImageFrame actual, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
     public sealed class ImageWriterOptions
     {
         public Meziantou.Framework.Imaging.Metadata.AnimationMetadata? Animation { get => throw null; init { } }

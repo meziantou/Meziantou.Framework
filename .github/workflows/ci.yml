@@ -677,7 +677,9 @@ jobs:
         uses: $/.github/actions/setup-dotnet
 
       - name: Install dotnet-coverage
-        run: dotnet tool update --global dotnet-coverage
+        uses: $/.github/actions/install-dotnet-tool
+        with:
+          package: dotnet-coverage
       # Delta builds can legitimately produce no .coverage files. In that case,
       # skip merge commands and allow the upload step to warn instead of failing.
       - name: Wait for background steps

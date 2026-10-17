@@ -1030,6 +1030,11 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 - Remove unnecessary decodes, conversions and copies before micro-optimizing. Profile first and keep the evidence.
 - Scalar kernels are the numerical reference. A vectorized kernel keeps its scalar version (`...Scalar`) and needs a
   test proving identical results (`VectorizedKernelTests`). No fused multiply-add in the DCTs.
+- A function that encodes a value with `Math.Pow` and rounds it to an 8-bit sample is replaced by its thresholds
+  (`QuantizationThresholds`, built lazily from the scalar function and compared with it around every threshold): the
+  linear-light `Store` of `WorkingSamples` and the linear-light compositing of drawing use it. A function that is not
+  monotone at the scale of the last bits of its input (PQ) gets no table and keeps the scalar path. 16-bit samples are
+  not covered: 65,535 thresholds cost more evaluations than most images.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize` and `Convolve` are
   parallel, and their result must not depend on the worker count. Decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).

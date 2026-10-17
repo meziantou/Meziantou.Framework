@@ -15,6 +15,9 @@ internal static class WorkingSamples
     /// <summary>The rounding offset: one half plus the tie bias <c>2^-20</c> (about 9.5e-7 sample units), exactly representable.</summary>
     internal const double RoundingOffset = 0.5 + (1.0 / (1 << 20));
 
+    // The thresholds of the encoding of linear light to 8-bit samples, by code point of the transfer characteristics
+    private static readonly QuantizationThresholds?[] Thresholds8 = new QuantizationThresholds?[19];
+
     /// <summary>
     /// Converts stored samples to working samples: the encoded value <c>v</c> (encoded) or <c>Decode(v / max)</c> (linear
     /// light, with the function of the transfer characteristics <paramref name="transfer"/> of <see cref="CicpTransfer"/>;
@@ -106,16 +109,27 @@ internal static class WorkingSamples
     /// <remarks>
     /// With 128-bit hardware vectors, encoded samples without alpha or with premultiplied alpha are rounded 4 at a time with
     /// the same IEEE operations (division, addition, floor) as <see cref="StoreScalar"/>, so the results are identical.
+    /// Linear light is encoded to 8-bit samples with the thresholds of the encoding (<see cref="QuantizationThresholds"/>),
+    /// which give the samples of <see cref="StoreScalar"/> without evaluating the transfer function.
     /// </remarks>
     public static void Store<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, WorkingAlpha alpha, byte transfer, int max)
         where TSample : unmanaged
     {
         var done = transfer is 0 && alpha != WorkingAlpha.Preserved && Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar ? StoreVector(values, samples, alpha == WorkingAlpha.Premultiplied, max) : 0;
-        StoreScalar(values[done..], samples[done..], alpha, transfer, max);
+        var thresholds = typeof(TSample) == typeof(byte) && max == byte.MaxValue && transfer is not 0 and not CicpTransfer.Linear && transfer < Thresholds8.Length && !Resampler.TestForceScalar ? GetThresholds8(transfer) : null;
+        StoreCore(values[done..], samples[done..], alpha, transfer, max, thresholds);
     }
 
     /// <summary>The scalar reference of <see cref="Store"/>.</summary>
     internal static void StoreScalar<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, WorkingAlpha alpha, byte transfer, int max)
+        where TSample : unmanaged
+        => StoreCore(values, samples, alpha, transfer, max, thresholds: null);
+
+    /// <summary>Gets the thresholds of the encoding of linear light to 8-bit samples (<see cref="EncodeColor"/>), or <see langword="null"/> when they do not give its samples.</summary>
+    internal static QuantizationThresholds? GetThresholds8(byte transfer)
+        => QuantizationThresholds.GetOrCreate(Thresholds8, transfer, value => EncodeColor(value, byte.MaxValue, transfer, thresholds: null), byte.MaxValue);
+
+    private static void StoreCore<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, WorkingAlpha alpha, byte transfer, int max, QuantizationThresholds? thresholds)
         where TSample : unmanaged
     {
         Debug.Assert(samples.Length == values.Length);
@@ -131,9 +145,9 @@ internal static class WorkingSamples
                     continue;
                 }
 
-                samples[i] = FromInt<TSample>(EncodeColor(values[i] / a, max, transfer));
-                samples[i + 1] = FromInt<TSample>(EncodeColor(values[i + 1] / a, max, transfer));
-                samples[i + 2] = FromInt<TSample>(EncodeColor(values[i + 2] / a, max, transfer));
+                samples[i] = FromInt<TSample>(EncodeColor(values[i] / a, max, transfer, thresholds));
+                samples[i + 1] = FromInt<TSample>(EncodeColor(values[i + 1] / a, max, transfer, thresholds));
+                samples[i + 2] = FromInt<TSample>(EncodeColor(values[i + 2] / a, max, transfer, thresholds));
                 samples[i + 3] = FromInt<TSample>(roundedAlpha);
             }
         }
@@ -141,16 +155,16 @@ internal static class WorkingSamples
         {
             for (var i = 0; i < samples.Length; i += 4)
             {
-                samples[i] = FromInt<TSample>(EncodeColor(values[i], max, transfer));
-                samples[i + 1] = FromInt<TSample>(EncodeColor(values[i + 1], max, transfer));
-                samples[i + 2] = FromInt<TSample>(EncodeColor(values[i + 2], max, transfer));
+                samples[i] = FromInt<TSample>(EncodeColor(values[i], max, transfer, thresholds));
+                samples[i + 1] = FromInt<TSample>(EncodeColor(values[i + 1], max, transfer, thresholds));
+                samples[i + 2] = FromInt<TSample>(EncodeColor(values[i + 2], max, transfer, thresholds));
             }
         }
         else
         {
             for (var i = 0; i < samples.Length; i++)
             {
-                samples[i] = FromInt<TSample>(EncodeColor(values[i], max, transfer));
+                samples[i] = FromInt<TSample>(EncodeColor(values[i], max, transfer, thresholds));
             }
         }
     }
@@ -266,10 +280,13 @@ internal static class WorkingSamples
         where TSample : unmanaged
         => typeof(TSample) == typeof(byte) ? unsafe(Unsafe.As<TSample, byte>(ref value)) : unsafe(Unsafe.As<TSample, ushort>(ref value));
 
-    private static int EncodeColor(double value, int max, byte transfer)
+    private static int EncodeColor(double value, int max, byte transfer, QuantizationThresholds? thresholds)
     {
         if (transfer is 0)
             return Round(value, max);
+
+        if (thresholds is not null)
+            return thresholds.Quantize(value);
 
         var clamped = value <= 0 ? 0 : value >= 1 ? 1 : value;
         return Round(max * (transfer is CicpTransfer.Srgb ? SrgbTransfer.Encode(clamped) : CicpTransfer.Encode(transfer, clamped)), max);

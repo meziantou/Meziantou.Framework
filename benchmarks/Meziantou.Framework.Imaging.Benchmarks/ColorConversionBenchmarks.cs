@@ -58,7 +58,7 @@ public class ColorConversionBenchmarks
     }
 
     [Benchmark]
-    [Workload("1920x1080 RGB 8-bit, linear sRGB to sRGB (encoding curve evaluated)")]
+    [Workload("1920x1080 RGB 8-bit, linear sRGB to sRGB (encoding curve from threshold tables)")]
     public int LinearToSrgb8()
     {
         _linearToSrgb.Convert(_rgb8, _converted8);

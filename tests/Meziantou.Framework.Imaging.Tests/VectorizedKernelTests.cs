@@ -3993,6 +3993,91 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ColorConversionOutputTablesMatchTheScalarReference()
+    {
+        // The 8-bit samples of the last stage (one inverse tone curve per destination channel) come from threshold tables
+        // once a pipeline has converted enough colors: parametric, gamma and sampled inverse curves, gray destinations,
+        // with and without a lookup table, give the samples of the stage-by-stage reference. A decreasing curve has no
+        // table; identity curves and the output curves of a lookup table are evaluated
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        (Metadata.IccProfile Source, Metadata.IccProfile Destination, bool? HasTables)[] pairs =
+        [
+            (Metadata.IccProfile.Srgb, displayP3, true),
+            (displayP3, Metadata.IccProfile.Srgb, true),
+            (BuiltInIccProfiles.LinearSrgb, Metadata.IccProfile.Srgb, true),
+            (Metadata.IccProfile.Srgb, IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.Gamma(563)), true),
+            (Metadata.IccProfile.Srgb, IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.Curve(0, 4096, 16384, 36864, 65535)), true),
+            (Metadata.IccProfile.Srgb, IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.Parametric(4, 2.4, 1 / 1.055, 0.055 / 1.055, 1 / 12.92, 0.04045, 0.005, 0.005), IccTestProfiles.Parametric(1, 1.8, 1.1, -0.1), IccTestProfiles.Parametric(2, 2.2, 0.9, 0.1, 0.05)), true),
+            (Metadata.IccProfile.Srgb, IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.Curve(65535, 30000, 0)), false),
+            (Metadata.IccProfile.Srgb, Metadata.IccProfile.SrgbGray, true),
+            (IccTestProfiles.GrayPaper(), IccTestProfiles.Gray(IccTestProfiles.Gamma(563)), true),
+            (IccTestProfiles.RgbLabLut8(), Metadata.IccProfile.Srgb, true),
+            (IccTestProfiles.CmykLabLut16(), displayP3, true),
+            (Metadata.IccProfile.Srgb, BuiltInIccProfiles.LinearSrgb, null),
+            (Metadata.IccProfile.Srgb, IccTestProfiles.RgbXyzLut16(), null),
+            (Metadata.IccProfile.Srgb, IccTestProfiles.CmykLabLut16(), null),
+        ];
+
+        var random = new Random(31415);
+        foreach (var (source, destination, hasTables) in pairs)
+        {
+            var pipeline = IccPipeline.Create(source, destination, Metadata.IccRenderingIntent.RelativeColorimetric, blackPointCompensation: false);
+            var curves = pipeline.OutputCurves;
+            Assert.Equal(hasTables is not null, curves is not null);
+            Assert.NotNull(pipeline.ByteInputTables);
+
+            // The tables are built once the colors of the calls reach the threshold
+            Assert.Null(pipeline.GetByteOutputTables(IccPipeline.ByteOutputTablesThreshold - 1));
+            var tables = pipeline.GetByteOutputTables(1);
+            Assert.Equal(hasTables is true, tables is not null);
+            Assert.Same(tables, pipeline.GetByteOutputTables(1));
+            for (var channel = 0; tables is not null && channel < tables.Length; channel++)
+            {
+                var curve = curves![channel];
+                foreach (var value in GetQuantizationInputs(tables[channel]))
+                {
+                    Assert.Equal(IccByteSample.Store(curve.Evaluate(value)), tables[channel].Quantize(value));
+                }
+            }
+
+            var sourceChannels = pipeline.SourceChannelCount;
+            var destinationChannels = pipeline.DestinationChannelCount;
+            foreach (var (extra, reverse) in new[] { (0, false), (1, false), (1, true) })
+            {
+                if (reverse && (sourceChannels != 3 || destinationChannels != 3))
+                    continue;
+
+                // Each channel takes every value, then random colors
+                var stride = sourceChannels + extra;
+                var colors = (256 * sourceChannels) + 20_000;
+                var samples = new byte[colors * stride];
+                random.NextBytes(samples);
+                for (var channel = 0; channel < sourceChannels; channel++)
+                {
+                    for (var value = 0; value < 256; value++)
+                    {
+                        samples[(((channel * 256) + value) * stride) + channel] = (byte)value;
+                    }
+                }
+
+                var expected = new byte[colors * (destinationChannels + extra)];
+                var actual = new byte[expected.Length];
+                ColorConversionKernels.ConvertScalar<byte, IccByteSample>(pipeline, samples, expected, stride, destinationChannels + extra, reverse);
+                ColorConversionKernels.Convert<byte, IccByteSample>(pipeline, samples, actual, stride, destinationChannels + extra, reverse);
+                Assert.Equal(expected, actual);
+
+                // In place, when the strides are equal
+                if (sourceChannels == destinationChannels)
+                {
+                    ColorConversionKernels.Convert<byte, IccByteSample>(pipeline, samples, samples, stride, stride, reverse);
+                    Assert.Equal(expected, samples);
+                }
+            }
+        }
+    }
+
     [Theory]
     [InlineData(0, 0)]
     [InlineData(1, 0)]

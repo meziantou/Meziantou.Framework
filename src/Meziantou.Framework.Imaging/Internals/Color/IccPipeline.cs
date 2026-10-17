@@ -5,14 +5,34 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// An ICC color conversion between two profiles: the ordered stages converting the normalized device values of the
 /// source profile to those of the destination profile, through the profile connection space. The source may also be a
-/// CICP color space, whose stages give the same connection space. Immutable and thread-safe.
+/// CICP color space, whose stages give the same connection space. Thread-safe: the conversion is immutable, and the
+/// only state is the 8-bit output tables, built once (<see cref="GetByteOutputTables"/>).
 /// </summary>
 internal sealed class IccPipeline
 {
     /// <summary>The largest number of components a stage reads or writes.</summary>
     public const int MaxChannels = 4;
 
+    /// <summary>
+    /// The colors whose output curves are evaluated before <see cref="GetByteOutputTables"/> builds the tables: building
+    /// the table of a curve costs about 40,000 evaluations of the curve (0.3 to 1 ms), which saves 4 to 45 ns per sample
+    /// depending on the curve, so the tables pay from 17,000 to 165,000 colors. Small images never pay for them, and
+    /// large ones pay at most about twice the cheaper of both.
+    /// </summary>
+    internal const int ByteOutputTablesThreshold = 65_536;
+
+    // The value of _byteOutputTables when a curve does not match its thresholds: the last stage is evaluated
+    private static readonly QuantizationThresholds[] NoByteOutputTables = [];
+
     private readonly IccStage[] _stages;
+
+    // The inverse tone curves of the last stage, one per destination channel, when it is not the first stage and not
+    // only identities (cheaper to evaluate than to look up)
+    private readonly IccInverseCurve[]? _outputCurves;
+
+    // The colors counted by GetByteOutputTables before the tables were built, then the tables (or NoByteOutputTables)
+    private long _outputCurveColors;
+    private QuantizationThresholds[]? _byteOutputTables;
 
     private IccPipeline(IccStage[] stages, int sourceChannelCount, int destinationChannelCount, bool isIdentity)
     {
@@ -54,6 +74,12 @@ internal sealed class IccPipeline
             tables.AsSpan().Fill(table);
             ByteInputTables = tables;
         }
+
+        // The last stage of a matrix-based destination is one inverse tone curve per destination channel
+        if (stages.Length > 1 && stages[^1] is IccInverseCurvesStage { Curves: var outputCurves } && outputCurves.Length == destinationChannelCount && !Array.TrueForAll(outputCurves, curve => curve.IsIdentity))
+        {
+            _outputCurves = outputCurves;
+        }
     }
 
     /// <summary>
@@ -67,6 +93,9 @@ internal sealed class IccPipeline
     /// than a matrix-based one, so remembering the colors already converted pays (<see cref="ColorConversionKernels"/>).
     /// </summary>
     public bool HasLookupTable { get; }
+
+    /// <summary>Gets the inverse tone curves of the last stage that <see cref="GetByteOutputTables"/> replaces, one per destination channel; <see langword="null"/> when it does not.</summary>
+    internal IccInverseCurve[]? OutputCurves => _outputCurves;
 
     /// <summary>Gets the number of device channels of the source profile.</summary>
     public int SourceChannelCount { get; }
@@ -215,11 +244,66 @@ internal sealed class IccPipeline
         }
     }
 
+    /// <summary>
+    /// Gets, when the last stage is one inverse tone curve per destination channel, the tables that give the 8-bit
+    /// destination sample of each channel from the value before that stage (<see cref="ApplyBetweenCurves"/>): the same
+    /// sample as evaluating the curve then <see cref="IccByteSample.Store"/>. The tables are built once the pipeline has
+    /// converted <see cref="ByteOutputTablesThreshold"/> colors, counting the colors of this call.
+    /// </summary>
+    /// <param name="colors">The number of colors the caller is about to convert.</param>
+    /// <returns>The table of each destination channel, or <see langword="null"/> when the last stage is evaluated.</returns>
+    public QuantizationThresholds[]? GetByteOutputTables(int colors)
+    {
+        if (_outputCurves is not { } curves)
+            return null;
+
+        var tables = Volatile.Read(ref _byteOutputTables);
+        if (tables is null)
+        {
+            if (Interlocked.Add(ref _outputCurveColors, colors) < ByteOutputTablesThreshold)
+                return null;
+
+            tables = CreateByteOutputTables(curves);
+            tables = Interlocked.CompareExchange(ref _byteOutputTables, tables, null) ?? tables;
+        }
+
+        return ReferenceEquals(tables, NoByteOutputTables) ? null : tables;
+    }
+
+    // A table per channel when every curve matches its thresholds, NoByteOutputTables otherwise
+    private static QuantizationThresholds[] CreateByteOutputTables(IccInverseCurve[] curves)
+    {
+        var tables = new QuantizationThresholds[curves.Length];
+        for (var channel = 0; channel < tables.Length; channel++)
+        {
+            var curve = curves[channel];
+            if (QuantizationThresholds.Create(value => IccByteSample.Store(curve.Evaluate(value)), byte.MaxValue) is not { } table)
+                return NoByteOutputTables;
+
+            tables[channel] = table;
+        }
+
+        return tables;
+    }
+
     /// <summary>Converts one color in place, starting after the first stage: the values come from <see cref="ByteInputTables"/>.</summary>
     /// <param name="values">At least <see cref="MaxChannels"/> elements: the output of the first stage on input, the normalized destination device values on output.</param>
     public void ApplyAfterInputCurves(Span<double> values)
     {
         for (var i = 1; i < _stages.Length; i++)
+        {
+            _stages[i].Apply(values);
+        }
+    }
+
+    /// <summary>
+    /// Converts one color in place, from the values of <see cref="ByteInputTables"/> to the values before the last stage,
+    /// whose 8-bit samples come from <see cref="GetByteOutputTables"/>.
+    /// </summary>
+    /// <param name="values">At least <see cref="MaxChannels"/> elements: the output of the first stage on input, the input of the last stage on output.</param>
+    public void ApplyBetweenCurves(Span<double> values)
+    {
+        for (var i = 1; i < _stages.Length - 1; i++)
         {
             _stages[i].Apply(values);
         }

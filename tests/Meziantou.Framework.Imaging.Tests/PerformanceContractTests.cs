@@ -285,11 +285,12 @@ public sealed class PerformanceContractTests
     {
         // A transform is built once; converting samples allocates nothing, whatever the sample type, the profile model
         // (matrix-based with the 8-bit input tables, table-based with black point compensation) or the number of colors
+        // (enough for the 8-bit output tables, which are built once)
         var cmyk = IccTestProfiles.CmykLabLut16();
         var toDisplayP3 = IccColorTransform.Create(Metadata.IccProfile.Srgb, IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve()));
         var toCmyk = IccColorTransform.Create(Metadata.IccProfile.Srgb, cmyk);
         var fromCmyk = IccColorTransform.Create(cmyk, Metadata.IccProfile.SrgbGray);
-        foreach (var colors in new[] { 1, 5000 })
+        foreach (var colors in new[] { 1, 5000, IccPipeline.ByteOutputTablesThreshold })
         {
             var bytes = new byte[colors * 3];
             var words = new ushort[colors * 3];

@@ -110,6 +110,17 @@
       "defect": "A progressive JPEG file whose only scan is a DC scan, with a single Huffman table: JpegXlTranscoder.RecompressJpeg threw InvalidOperationException because the JPEG reconstruction data encode the number of Huffman tables from 2. Fixed in JpegXlJpegReconstructionData.Write, which refuses the file with UnsupportedImageFeatureException.",
       "expectedIdentify": "success",
       "expectedLoad": "success"
+    },
+    {
+      "id": "jxl/frame-beyond-image-min",
+      "file": "jxl-frame-beyond-image.min.jxl",
+      "sha256": "89e1b81fb83731115995b0167bdf4b70e1d630199a2b9bc8c8dfb7092b24621d",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests groups jxl-lossless and jxl-animated, weekly campaign (run 39012479568), base seed 39012479568, 420 s, mutation 92274 of limit/jxl/total-pixels-hidden-layer (reader variant 191) and mutation 67326 of jxl/anim-layers (reader variant 179); minimized by FuzzMinimizer from 62 to 42 bytes",
+      "defect": "A shown frame that covers the image and extends beyond it: the decoder wrote its samples as stored, rows wider than the image, and threw IndexOutOfRangeException. Fixed in JpegXlFrameRenderer.NeedsBlending: a frame that does not have the origin and the size of the image is cropped to it, as libjxl does for a frame with a custom size or origin.",
+      "expectedIdentify": "success",
+      "expectedLoad": "success"
     }
   ]
 }

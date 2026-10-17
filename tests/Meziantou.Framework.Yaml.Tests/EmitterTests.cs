@@ -360,6 +360,26 @@ public class EmitterTests : YamlTest
         Assert.Equal("!", ((YamlValue)((YamlSequence)reloaded[0].Contents!)[0]).Tag);
     }
 
+    [Theory]
+    [InlineData("!%21", "--- !%21 \n...\n", "!!")]
+    [InlineData("!<!!>", "--- !%21 \n...\n", "!!")]
+    [InlineData("--- !<!a!b> x\n", "--- !a%21b x\n...\n", "!a!b")]
+    [InlineData("--- !<!a,[b]> x\n", "--- !a%2C%5Bb%5D x\n...\n", "!a,[b]")]
+    [InlineData("--- !<tag:yaml.org,2002:> x\n", "--- !<tag:yaml.org,2002:> x\n...\n", "tag:yaml.org,2002:")]
+    [InlineData("%TAG !e! tag:example.com,2000:\n--- !<!e!> x\n", "%TAG !e! tag:example.com,2000:\n--- !e%21 x\n...\n", "!e!")]
+    [InlineData("%TAG ! tag:example.com,2000:\n--- ! x\n", "%TAG ! tag:example.com,2000:\n--- ! x\n...\n", "!")]
+    [InlineData("%TAG ! tag:example.com,2000:\n--- !<tag:example.com,2000:> x\n", "%TAG ! tag:example.com,2000:\n--- !<tag:example.com,2000:> x\n...\n", "tag:example.com,2000:")]
+    [InlineData("%TAG ! tag:example.com,2000:\n--- !<!foo> x\n", "%TAG ! tag:example.com,2000:\n--- !<!foo> x\n...\n", "!foo")]
+    [InlineData("!foo \"bar\"\n...\n%TAG ! tag:example.lue\n--- !\n", "!foo \"bar\"\n...\n%TAG ! tag:example.lue\n--- ! \n...\n", "!")]
+    public void WriteTo_TagWithoutValidShorthand_RoundTrips(string input, string expected, string expectedTag)
+    {
+        var yaml = SaveAndReload(input, out var reloaded);
+
+        Assert.Equal(expected, yaml);
+        Assert.Equal(expectedTag, ((YamlElement)reloaded[^1].Contents!).Tag);
+        Assert.Equal(yaml, Save(reloaded));
+    }
+
     [Fact]
     public void WriteTo_DefaultTagDirectives_AreNotWritten()
     {

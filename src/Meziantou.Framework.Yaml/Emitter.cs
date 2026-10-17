@@ -534,11 +534,22 @@ public partial class Emitter : IEmitter
         // produce text such as "tag:example.com,2000:app/foo", which reads as a plain scalar.
         _tagData.Handle = null;
         _tagData.Suffix = tag;
+
+        // The non-specific tag is always written as "!", even when a %TAG directive redefines the primary handle. Its
+        // verbatim form "!<!>" is invalid.
+        if (tag == "!")
+        {
+            _tagData.Handle = tag;
+            _tagData.Suffix = null;
+            return;
+        }
+
+        // A shorthand needs a non-empty suffix: "!!" alone is invalid, and "!" alone is the non-specific tag.
         if (tag.StartsWith("!", StringComparison.Ordinal))
         {
             foreach (var directive in _tagDirectives)
             {
-                if (directive.Handle.Length > 1 && tag.StartsWith(directive.Handle, StringComparison.Ordinal))
+                if (directive.Handle.Length > 1 && tag.Length > directive.Handle.Length && tag.StartsWith(directive.Handle, StringComparison.Ordinal))
                 {
                     _tagData.Handle = directive.Handle;
                     _tagData.Suffix = tag.Substring(directive.Handle.Length);
@@ -549,7 +560,7 @@ public partial class Emitter : IEmitter
 
         foreach (var tagDirective in _tagDirectives)
         {
-            if (tag.StartsWith(tagDirective.Prefix, StringComparison.Ordinal))
+            if (tag.Length > tagDirective.Prefix.Length && tag.StartsWith(tagDirective.Prefix, StringComparison.Ordinal))
             {
                 _tagData.Handle = tagDirective.Handle;
                 _tagData.Suffix = tag.Substring(tagDirective.Prefix.Length);

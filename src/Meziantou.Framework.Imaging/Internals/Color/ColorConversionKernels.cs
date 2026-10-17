@@ -6,7 +6,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// The kernels of ICC color conversion: they evaluate the stages of an <see cref="IccPipeline"/> for each color of a row,
 /// in <see cref="double"/>. <see cref="ConvertScalar"/> is the numerical reference; <see cref="Convert"/> reads the first
-/// stage of 8-bit conversions from precomputed tables, with bit-identical results.
+/// stage of 8-bit conversions, and the 8-bit samples of their last stage, from precomputed tables, with bit-identical
+/// results.
 /// </summary>
 internal static class ColorConversionKernels
 {
@@ -94,7 +95,8 @@ internal static class ColorConversionKernels
 
     /// <summary>
     /// Converts interleaved 8-bit colors like <see cref="ConvertScalar"/>, reading the first stage (one curve per source
-    /// channel) from the tables of the pipeline instead of evaluating the curves for each sample.
+    /// channel) from the tables of the pipeline instead of evaluating the curves for each sample, and, once the pipeline
+    /// has them, the 8-bit samples of the last stage (one curve per destination channel) from its threshold tables.
     /// </summary>
     private static void ConvertBytes(IccPipeline pipeline, double[][] tables, ReadOnlySpan<byte> source, Span<byte> destination, int sourceStride, int destinationStride, bool reverseColorOrder)
     {
@@ -105,6 +107,7 @@ internal static class ColorConversionKernels
         Span<byte> kept = stackalloc byte[IccPipeline.MaxChannels];
         kept = kept[..copied];
         var count = source.Length / sourceStride;
+        var outputTables = pipeline.GetByteOutputTables(count);
         for (var i = 0; i < count; i++)
         {
             // The whole source color is read before the destination is written: the spans may be the same
@@ -115,12 +118,22 @@ internal static class ColorConversionKernels
             }
 
             input[sourceChannels..].CopyTo(kept);
-            pipeline.ApplyAfterInputCurves(values);
-
             var output = destination.Slice(i * destinationStride, destinationStride);
-            for (var channel = 0; channel < destinationChannels; channel++)
+            if (outputTables is null)
             {
-                output[reverseColorOrder ? 2 - channel : channel] = IccByteSample.Store(values[channel]);
+                pipeline.ApplyAfterInputCurves(values);
+                for (var channel = 0; channel < destinationChannels; channel++)
+                {
+                    output[reverseColorOrder ? 2 - channel : channel] = IccByteSample.Store(values[channel]);
+                }
+            }
+            else
+            {
+                pipeline.ApplyBetweenCurves(values);
+                for (var channel = 0; channel < destinationChannels; channel++)
+                {
+                    output[reverseColorOrder ? 2 - channel : channel] = (byte)outputTables[channel].Quantize(values[channel]);
+                }
             }
 
             kept.CopyTo(output[destinationChannels..]);
@@ -149,6 +162,7 @@ internal static class ColorConversionKernels
         Span<uint> cachedResults = stackalloc uint[CacheSize];
         kept = kept[..copied];
         var count = source.Length / sourceStride;
+        var outputTables = pipeline.GetByteOutputTables(count);
         for (var i = 0; i < count; i++)
         {
             // The whole source color is read before the destination is written: the spans may be the same
@@ -174,11 +188,22 @@ internal static class ColorConversionKernels
                     values[channel] = tables[channel][(byte)(color >> (8 * channel))];
                 }
 
-                pipeline.ApplyAfterInputCurves(values);
                 result = 0;
-                for (var channel = 0; channel < destinationChannels; channel++)
+                if (outputTables is null)
                 {
-                    result |= (uint)IccByteSample.Store(values[channel]) << (8 * channel);
+                    pipeline.ApplyAfterInputCurves(values);
+                    for (var channel = 0; channel < destinationChannels; channel++)
+                    {
+                        result |= (uint)IccByteSample.Store(values[channel]) << (8 * channel);
+                    }
+                }
+                else
+                {
+                    pipeline.ApplyBetweenCurves(values);
+                    for (var channel = 0; channel < destinationChannels; channel++)
+                    {
+                        result |= (uint)outputTables[channel].Quantize(values[channel]) << (8 * channel);
+                    }
                 }
 
                 cachedColors[slot] = entry;

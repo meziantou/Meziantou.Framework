@@ -1052,9 +1052,13 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
   test proving identical results (`VectorizedKernelTests`). No fused multiply-add in the DCTs.
 - A function that encodes a value with `Math.Pow` and rounds it to an 8-bit sample is replaced by its thresholds
   (`QuantizationThresholds`, built lazily from the scalar function and compared with it around every threshold): the
-  linear-light `Store` of `WorkingSamples` and the linear-light compositing of drawing use it. A function that is not
-  monotone at the scale of the last bits of its input (PQ) gets no table and keeps the scalar path. 16-bit samples are
-  not covered: 65,535 thresholds cost more evaluations than most images.
+  linear-light `Store` of `WorkingSamples` and the linear-light compositing of drawing use it, and so do the 8-bit ICC
+  conversions whose last stage is the inverse tone curves of a matrix-based destination
+  (`IccPipeline.GetByteOutputTables`, one table per channel and per pipeline, built once the pipeline has converted
+  `ByteOutputTablesThreshold` colors so that small images never pay for them; identity curves are cheaper than a table
+  and are evaluated). A function that is not monotone at the scale of the last bits of its input (PQ, a decreasing tone
+  curve) gets no table and keeps the scalar path. 16-bit samples are not covered: 65,535 thresholds cost more
+  evaluations than most images.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize` and `Convolve` are
   parallel, and their result must not depend on the worker count. Decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).

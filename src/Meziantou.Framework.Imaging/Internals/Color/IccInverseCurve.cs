@@ -47,6 +47,9 @@ internal sealed class IccInverseCurve
     /// <summary>Gets the inverse of the identity curve.</summary>
     public static IccInverseCurve Identity { get; } = new(FunctionIdentity, 0, 0, 0, 0, 0, 0, 0);
 
+    /// <summary>Gets a value indicating whether the inverse is <see cref="Identity"/>.</summary>
+    public bool IsIdentity => _function == FunctionIdentity;
+
     /// <summary>Creates the closed-form inverse of an increasing parametric curve (validated by the caller).</summary>
     public static IccInverseCurve CreateParametric(int function, double g, double a, double b, double c, double d, double e, double f)
     {

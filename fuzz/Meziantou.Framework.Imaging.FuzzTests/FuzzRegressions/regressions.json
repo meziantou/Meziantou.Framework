@@ -77,6 +77,94 @@
       "defect": "An animation whose first frame is a layer (no duration), without JPEG reconstruction data: JpegXlTranscoder.TryReconstructJpeg stops at the first frame, before any frame is counted, and JpegXlStructureParser built an ImageInfo with a frame count of 0, which threw ArgumentOutOfRangeException instead of returning false. Fixed in JpegXlStructureParser.CreateInfo (the count is unknown).",
       "expectedIdentify": "InvalidImageContentException",
       "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "jp2/missing-tiles-min",
+      "file": "jp2-missing-tiles.min.j2k",
+      "sha256": "f6b7c5b601aa1b9181dd24d5b0f14726ef45d163059a66a7ee1637c4bdf4ef8f",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group jp2-reversible, weekly campaign (run 39012479568), base seed 39012479568, 420 s, mutation 13013 of jp2/tiles-offsets (reader variant 235); minimized by FuzzMinimizer from 2437 to 132 bytes",
+      "defect": "A codestream of 8 tiles has the tile-parts of only 1 tile, the last one extending to the EOC marker: full identification threw InvalidImageContentException while the loads decoded the image. The walker reported its walk complete from the EOC marker on, so the decoder finished before the tiles the EOC marker completes were handed over and before the check that every tile is there. Fixed in Jpeg2000CodestreamWalker.IsComplete, which waits for the End event.",
+      "expectedIdentify": "InvalidImageContentException",
+      "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "jp2/ht-missing-tiles-min",
+      "file": "jp2-ht-missing-tiles.min.j2k",
+      "sha256": "bfee3184c2fbb6c2c14a48a3cd7698735034630082255e244755dc6caf49a78a",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group jp2-ht, weekly campaign (run 39012479568), base seed 39012479568, 420 s, mutation 272963 of jp2/ht-tiles (reader variant 235); minimized by FuzzMinimizer from 2599 to 2307 bytes",
+      "defect": "Same defect as jp2/missing-tiles-min with an HTJ2K codestream that has the tile-parts of 4 of its 6 tiles.",
+      "expectedIdentify": "InvalidImageContentException",
+      "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "jpeg/recompress-single-huffman-table-min",
+      "file": "jpeg-recompress-single-huffman-table.min.jpg",
+      "sha256": "f2823bc21c48cccfd81276f676db5f79cbaf97ddb10024fd1382e473e1217fff",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group jpeg-progressive, weekly campaign (run 39012479568), base seed 39012479568, 420 s, mutation 49426 of jpeg/progressive-rgb-adobe (reader variant 143); minimized by FuzzMinimizer from 837 to 160 bytes",
+      "defect": "A progressive JPEG file whose only scan is a DC scan, with a single Huffman table: JpegXlTranscoder.RecompressJpeg threw InvalidOperationException because the JPEG reconstruction data encode the number of Huffman tables from 2. Fixed in JpegXlJpegReconstructionData.Write, which refuses the file with UnsupportedImageFeatureException.",
+      "expectedIdentify": "success",
+      "expectedLoad": "success"
+    },
+    {
+      "id": "jxl/frame-beyond-image-min",
+      "file": "jxl-frame-beyond-image.min.jxl",
+      "sha256": "89e1b81fb83731115995b0167bdf4b70e1d630199a2b9bc8c8dfb7092b24621d",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests groups jxl-lossless and jxl-animated, weekly campaign (run 39012479568), base seed 39012479568, 420 s, mutation 92274 of limit/jxl/total-pixels-hidden-layer (reader variant 191) and mutation 67326 of jxl/anim-layers (reader variant 179); minimized by FuzzMinimizer from 62 to 42 bytes",
+      "defect": "A shown frame that covers the image and extends beyond it: the decoder wrote its samples as stored, rows wider than the image, and threw IndexOutOfRangeException. Fixed in JpegXlFrameRenderer.NeedsBlending: a frame that does not have the origin and the size of the image is cropped to it, as libjxl does for a frame with a custom size or origin.",
+      "expectedIdentify": "success",
+      "expectedLoad": "success"
+    },
+    {
+      "id": "avif/stts-beyond-samples",
+      "file": "avif-stts-beyond-samples.avifs",
+      "sha256": "86d94d8bebd10f70c522554afb8db2a2a7cde2d67d3826f9be6ec14a5b57d594",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group avif-sequence, weekly campaign (run 39012479568), base seed 39012479568, 420 s, mutation 8399 of avif/sequence-8-frames-444-slow (reader variant 158); not reducible by FuzzMinimizer, which moves the offsets of the container",
+      "defect": "The runs of the 'stts' box of the track describe 24 samples, the 'stsz' box 8: the identification counted the 13 images the edit list shows over the 24 durations while the loads decoded the 8 samples. Fixed in HeifMovieBox.ParseSampleTable: a run that goes beyond the last sample describes no other sample (ISO/IEC 14496-12, section 8.6.1.2).",
+      "expectedIdentify": "success",
+      "expectedLoad": "success"
+    },
+    {
+      "id": "avif/stts-beyond-samples-edit-shows-nothing",
+      "file": "avif-stts-beyond-samples-edit-shows-nothing.avifs",
+      "sha256": "738f5244ab1a31fe206aa865dc24eeaaa13707433f0cad370b5b65735f052c0c",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group avif-sequence, weekly campaign (run 39012479568), base seed 39012479568, 420 s, mutation 40785 of invalid/avif/sequence-edit-shows-nothing (reader variant 57); not reducible by FuzzMinimizer, which moves the offsets of the container",
+      "defect": "Same defect as avif/stts-beyond-samples: a run of 1,048,577 samples for a track of 3 made the identification count 2 images in an edit that starts after the last sample, and the loads threw InvalidOperationException (no displayed frame). The edit list now shows no image, which identification and loads report.",
+      "expectedIdentify": "InvalidImageContentException",
+      "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "avif/stts-beyond-samples-edits",
+      "file": "avif-stts-beyond-samples-edits.avifs",
+      "sha256": "6809245b7b00883a47bdb557294ace193600bc85600550fcb4c6088227f504ca",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group avif-sequence, weekly campaign (run 39012479568), base seed 39012479568, 420 s, mutation 94258 of avif/sequence-edits-fraction (reader variant 111); not reducible by FuzzMinimizer, which moves the offsets of the container",
+      "defect": "Same defect as avif/stts-beyond-samples: a run of 1,728,053,249 samples for a track of 6 under an edit list that selects parts of the media made full identification exceed the frame limit while the loads decoded 6 images.",
+      "expectedIdentify": "success",
+      "expectedLoad": "success"
+    },
+    {
+      "id": "heic/ctts-first-presentation-not-first-sample",
+      "file": "heic-ctts-first-presentation-not-first-sample.heics",
+      "sha256": "8b5c528eed3459893675e7244f11554a0fd37480d4534a5921b73e3b6d58716d",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group heic-sequence, weekly campaign (run 39012479568), base seed 39012479568, 420 s, mutation 69864 of invalid/heic/sequence-ctts-collision (reader variant 64); not reducible by FuzzMinimizer, which moves the offsets of the container",
+      "defect": "The first sample of the track is presented last (composition offset 67,108,868) and the only edit starts at the presentation time of the second one: header identification, which locates the first sample only, took its time for the first presentation time and threw UnsupportedImageFeatureException while full identification and the loads accepted the edit list. Fixed in HeifMovieBox: the first presentation time is the smallest one of every sample, located or not.",
+      "expectedIdentify": "success",
+      "expectedLoad": "success"
     }
   ]
 }

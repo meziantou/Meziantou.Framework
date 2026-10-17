@@ -618,7 +618,9 @@ internal sealed class HeifMovieBox : IDisposable
         ulong mediaDuration = 0;
         for (uint i = 0; i < durationCount; i++)
         {
-            var count = timeToSample.ReadUInt32();
+            // The counts of the runs add up to the number of samples: a run that goes beyond the last sample describes
+            // no other sample
+            var count = (uint)Math.Min(timeToSample.ReadUInt32(), sampleCount - covered);
             var delta = timeToSample.ReadUInt32();
             if (count is 0)
                 continue;
@@ -639,7 +641,10 @@ internal sealed class HeifMovieBox : IDisposable
             throw binding.Invalid("the sample table of a track does not give the duration of every sample.");
 
         if (hasCompositionOffsets && track.Binding is { MaxReorderedSamples: > 0 })
+        {
             ReadPresentationTimes(compositionOffsets, track, scope);
+            track.FirstPresentationTime = ReadFirstPresentationTime(compositionOffsets, track);
+        }
 
         // The location of the samples (sections 8.7.4 "Sample To Chunk Box" and 8.7.5 "Chunk Offset Box")
         sampleToChunk.ReadFullBoxHeader();
@@ -698,6 +703,46 @@ internal sealed class HeifMovieBox : IDisposable
             if (firstChunk is 0)
                 throw binding.Invalid("the sample table of a track is not valid.");
         }
+    }
+
+    // The presentation time of the first image of a track: the smallest one of all its samples, located or not, so that
+    // it does not depend on the number of samples an operation locates. The decoding times increase within a run of
+    // composition offsets: the first sample of a run is presented before the others of the run
+    private static long ReadFirstPresentationTime(HeifBoxReader reader, HeifTrack track)
+    {
+        var (version, _) = reader.ReadFullBoxHeader();
+        var runCount = reader.ReadUInt32();
+        var durations = track.Durations;
+        var durationRun = 0;
+        long durationsLeft = durations.Count > 0 ? durations[0].Count : 0;
+        Int128 decodingTime = 0;
+        var first = Int128.MaxValue;
+        for (uint run = 0; run < runCount && durationRun < durations.Count && reader.Remaining >= 8; run++)
+        {
+            long count = reader.ReadUInt32();
+            long offset = version is 0 ? reader.ReadUInt32() : reader.ReadInt32();
+            if (count is 0)
+                continue;
+
+            first = Int128.Min(first, decodingTime + offset);
+            while (count > 0 && durationRun < durations.Count)
+            {
+                var samples = Math.Min(count, durationsLeft);
+                decodingTime += (Int128)samples * durations[durationRun].Delta;
+                count -= samples;
+                durationsLeft -= samples;
+                if (durationsLeft is 0 && ++durationRun < durations.Count)
+                {
+                    durationsLeft = durations[durationRun].Count;
+                }
+            }
+
+            // A later sample is decoded after this time, and its offset is not below -2^31: it is presented later
+            if (decodingTime + int.MinValue > first)
+                break;
+        }
+
+        return first == Int128.MaxValue ? 0 : (long)Int128.Clamp(first, long.MinValue, long.MaxValue);
     }
 
     // ISO/IEC 14496-12, section 8.6.1.3 "Composition Time to Sample Box": the presentation time of a sample is its

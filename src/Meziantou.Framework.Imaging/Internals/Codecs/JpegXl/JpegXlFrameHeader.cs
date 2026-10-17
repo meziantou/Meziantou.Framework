@@ -88,6 +88,9 @@ internal sealed class JpegXlFrameHeader
     /// <summary>Gets a value indicating whether the frame covers the whole image: it has no custom size or origin, or they cover the image.</summary>
     public bool IsFullFrame { get; private init; } = true;
 
+    /// <summary>Gets a value indicating whether the frame has the origin and the size of the image: a full frame may also start before it or extend beyond it.</summary>
+    public bool IsImageArea { get; private init; } = true;
+
     /// <summary>Gets how the color channels are blended with a reference frame.</summary>
     public JpegXlBlendingInfo Blending { get; private init; }
 
@@ -335,6 +338,7 @@ internal sealed class JpegXlFrameHeader
             Width = width,
             Height = height,
             IsFullFrame = !isPartialFrame,
+            IsImageArea = x0 == 0 && y0 == 0 && width == defaultWidth && height == defaultHeight,
             Blending = blending,
             ExtraChannelBlending = extraChannelBlending,
             Duration = duration,

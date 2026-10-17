@@ -58,7 +58,8 @@ internal sealed class JpegXlFrameRenderer : IDisposable
         if (!frame.IsRegular)
             return false;
 
-        if (!frame.IsFullFrame)
+        // A frame that covers the image but extends beyond it is cropped to the image
+        if (!frame.IsFullFrame || !frame.IsImageArea)
             return true;
 
         if (frame.Blending.Mode != JpegXlBlendingInfo.ModeReplace)

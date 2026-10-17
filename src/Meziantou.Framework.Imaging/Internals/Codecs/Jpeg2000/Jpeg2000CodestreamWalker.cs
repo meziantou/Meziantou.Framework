@@ -83,8 +83,11 @@ internal sealed class Jpeg2000CodestreamWalker : IDisposable
     /// <summary>Gets the parameters of the main header.</summary>
     public Jpeg2000HeaderSet MainHeader => _main ?? throw new InvalidOperationException("The SIZ marker segment was not read.");
 
-    /// <summary>Gets a value indicating whether the EOC marker was read.</summary>
-    public bool IsComplete => _state is State.Draining or State.Done;
+    /// <summary>
+    /// Gets a value indicating whether the walk ended: the EOC marker was read, every tile was handed over and the tiles of
+    /// the image were checked to be all there (<see cref="Jpeg2000CodestreamEvent.End"/>).
+    /// </summary>
+    public bool IsComplete => _state is State.Done;
 
     /// <summary>Gets the features the codestream used so far.</summary>
     public Jpeg2000Tools Tools { get; private set; }

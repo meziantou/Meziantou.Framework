@@ -230,50 +230,65 @@ internal abstract class GreenNode
         return SetAnnotations(remaining.Length == 0 ? null : remaining);
     }
 
-    /// <summary>Returns the leftmost node with no children, which is this node when it is itself a terminal.</summary>
-    public GreenNode? GetFirstTerminal()
+    /// <summary>
+    /// Returns the leftmost token below this node, which is this node when it is itself a terminal, or
+    /// <see langword="null"/> when no token is below it.
+    /// </summary>
+    public GreenNode? GetFirstTerminal() => FindTerminal(fromEnd: false);
+
+    /// <summary>
+    /// Returns the rightmost token below this node, which is this node when it is itself a terminal, or
+    /// <see langword="null"/> when no token is below it.
+    /// </summary>
+    public GreenNode? GetLastTerminal() => FindTerminal(fromEnd: true);
+
+    private GreenNode? FindTerminal(bool fromEnd)
     {
+        if (IsToken || IsTrivia)
+            return this;
+
+        // A child may be a node with no token below it, whose search ends empty-handed and must resume at its next
+        // sibling. Only a child with no width can be such a node, since width only comes from terminals, so the places
+        // to resume at are remembered for those children alone, and forgotten once the search enters a child with width.
+        List<(GreenNode Node, int Slot)>? resumePoints = null;
+        var step = fromEnd ? -1 : 1;
         var node = this;
-        while (node.SlotCount > 0)
+        var slot = fromEnd ? node.SlotCount - 1 : 0;
+        while (true)
         {
             GreenNode? child = null;
-            for (var i = 0; i < node.SlotCount; i++)
+            for (; slot >= 0 && slot < node.SlotCount; slot += step)
             {
-                child = node.GetSlot(i);
+                child = node.GetSlot(slot);
                 if (child is not null)
                     break;
             }
 
             if (child is null)
-                return null;
-
-            node = child;
-        }
-
-        return node;
-    }
-
-    /// <summary>Returns the rightmost node with no children, which is this node when it is itself a terminal.</summary>
-    public GreenNode? GetLastTerminal()
-    {
-        var node = this;
-        while (node.SlotCount > 0)
-        {
-            GreenNode? child = null;
-            for (var i = node.SlotCount - 1; i >= 0; i--)
             {
-                child = node.GetSlot(i);
-                if (child is not null)
-                    break;
+                if (resumePoints is not { Count: > 0 })
+                    return null;
+
+                (node, slot) = resumePoints[^1];
+                resumePoints.RemoveAt(resumePoints.Count - 1);
+                continue;
             }
 
-            if (child is null)
-                return null;
+            if (child.IsToken)
+                return child;
+
+            if (child.FullWidth == 0)
+            {
+                (resumePoints ??= []).Add((node, slot + step));
+            }
+            else
+            {
+                resumePoints?.Clear();
+            }
 
             node = child;
+            slot = fromEnd ? node.SlotCount - 1 : 0;
         }
-
-        return node;
     }
 
     /// <summary>Gets the source text of a terminal, or <see langword="null"/> when this node has children.</summary>

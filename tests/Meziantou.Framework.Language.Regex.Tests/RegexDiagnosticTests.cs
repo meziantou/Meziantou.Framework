@@ -99,7 +99,7 @@ public sealed class RegexDiagnosticTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("(a|b[c", RegexDialect.Net);
 
-        Assert.Equal(["REGEX0003", "REGEX0002"], tree.GetDiagnostics().Select(d => d.Id));
+        Assert.Equal(["REGEX0002", "REGEX0003"], tree.GetDiagnostics().Select(d => d.Id));
         var group = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexCapturingGroupSyntax>());
         Assert.True(group.CloseParenToken.IsMissing);
         Assert.Equal(2, group.Alternation.Branches.Count);

@@ -1073,4 +1073,14 @@ public sealed class TomlSyntaxTreeTests
             }
         }
     }
+
+    [Fact]
+    public void PropertyWithAMissingValue_SpanEndsAtTheEqualsSign()
+    {
+        var tree = TomlSyntaxTree.ParseText("k = \f\n");
+        var property = tree.GetRoot().DescendantNodes().OfType<TomlPropertySyntax>().Single();
+
+        Assert.Equal(TextSpan.FromBounds(0, 3), property.Span);
+        Assert.Equal("=", property.GetLastToken().Text);
+    }
 }

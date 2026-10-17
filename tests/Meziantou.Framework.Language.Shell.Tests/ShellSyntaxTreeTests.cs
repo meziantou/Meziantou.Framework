@@ -424,4 +424,13 @@ public sealed class ShellSyntaxTreeTests
         Assert.Same(tree.GetText(), diagnostic.Location.SourceText);
         Assert.Equal(1, diagnostic.Location.GetLineSpan().Start.Line);
     }
+
+    [Fact]
+    public void OnlyAComment_RootSpanExcludesTheComment()
+    {
+        var root = ShellSyntaxTree.ParseText("#", ShellDialect.Bash).GetRoot();
+
+        Assert.Equal(new TextSpan(1, 0), root.Span);
+        Assert.Equal(new TextSpan(0, 1), root.FullSpan);
+    }
 }

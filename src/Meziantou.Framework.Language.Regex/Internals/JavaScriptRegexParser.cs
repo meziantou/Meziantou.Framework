@@ -397,9 +397,11 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
             return (default, default, default);
         }
 
+        // The body is meant to stop at the closing delimiter. Should a construct read past it anyway, what is left is
+        // kept as trailing content, so the tree still covers every character.
         var slashStart = Scanner.Position;
         if (slashStart >= Text.Length || Text[slashStart] != '/')
-            return (default, default, default);
+            return (default, default, ReadTrailingContent());
 
         Scanner.Position++;
         var closeSlashToken = Scanner.Token(SyntaxKind.SlashToken, slashStart);

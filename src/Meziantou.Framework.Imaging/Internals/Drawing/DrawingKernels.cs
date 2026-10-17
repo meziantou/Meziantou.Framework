@@ -471,14 +471,20 @@ internal static class DrawingKernels
 
     /// <summary>
     /// Composites a paint over pixels of four 8-bit samples (color then alpha) with source-over: four pixels at a time
-    /// when they are opaque, the others with <see cref="CompositeOverScalar"/>.
+    /// when they are all opaque or all transparent, the others with <see cref="CompositeOverScalar"/>.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// On an opaque pixel the color is <c>floor(x / S)</c> with <c>x = sc E + dc (S - E) + S / 2</c>, <c>S = 255 Q</c>
     /// and <c>E = sa q</c>, and the alpha stays 255. That formula also leaves the pixel as it is when <c>E</c> is 0 and
     /// writes the paint when <c>E</c> is <c>S</c>, as the scalar path does. <c>x</c> is below <c>255.5 S &lt; 2^32</c>;
     /// <c>floor(x / S) = floor(floor(x / 2^16) / 255)</c>, and <c>floor(y / 255) = (y 32897) >> 23</c> for every
     /// <c>y &lt; 2^16</c>, whose product is below 2^32.
+    /// </para>
+    /// <para>
+    /// A transparent pixel gets the color of the paint and the alpha <c>(E + Q / 2) >> 16</c> (<c>E + Q / 2</c> is
+    /// below 2^24), or stays as it is when that alpha is 0.
+    /// </para>
     /// </remarks>
     internal static void CompositeOver8(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
     {
@@ -488,6 +494,7 @@ internal static class DrawingKernels
         var transpose = Vector128.Create((byte)0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15);
         var colorMask = Vector128.Create((byte)255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0);
         var half = Vector128.Create(Scale / 2);
+        var halfCoverage = Vector128.Create(CoverageRasterizer.FullCoverage / 2);
         var scale = Vector128.Create(Scale);
         var reciprocal = Vector128.Create(32897u);
         var red = Vector128.Create((uint)color.C0);
@@ -501,37 +508,50 @@ internal static class DrawingKernels
         {
             var block = samples.Slice(i * 4, 16);
             var pixels = Vector128.Create(block);
-            if ((pixels | colorMask) != Vector128<byte>.AllBitsSet)
-                continue;
-
-            if (pending < i)
+            if ((pixels | colorMask) == Vector128<byte>.AllBitsSet)
             {
-                CompositeOverScalarRange(samples, coverage, source, pending, i);
-            }
+                if (pending < i)
+                {
+                    CompositeOverScalarRange(samples, coverage, source, pending, i);
+                }
 
-            if (!colors.IsEmpty)
+                if (!colors.IsEmpty)
+                {
+                    LoadPaint(colors.Slice(i * 4, 16), transpose, out red, out green, out blue, out alpha);
+                }
+
+                var effective = Vector128.Create(coverage.Slice(i, 4)) * alpha;
+                var inverse = scale - effective;
+                var planar = Vector128.Shuffle(pixels, transpose);
+                var low = Vector128.WidenLower(planar);
+                var high = Vector128.WidenUpper(planar);
+                var r = Blend(red, Vector128.WidenLower(low), effective, inverse, half, reciprocal);
+                var g = Blend(green, Vector128.WidenUpper(low), effective, inverse, half, reciprocal);
+                var b = Blend(blue, Vector128.WidenLower(high), effective, inverse, half, reciprocal);
+                var result = Vector128.Narrow(Vector128.Narrow(r, g), Vector128.Narrow(b, Vector128.WidenUpper(high)));
+                Vector128.Shuffle(result, transpose).CopyTo(block);
+                pending = i + 4;
+            }
+            else if (Vector128.AndNot(pixels, colorMask) == Vector128<byte>.Zero)
             {
-                var paint = colors.Slice(i * 4, 16);
-                var paintBytes = Vector128.Shuffle(Vector128.Narrow(Vector128.Create(paint[..8]), Vector128.Create(paint[8..])), transpose);
-                var paintLow = Vector128.WidenLower(paintBytes);
-                var paintHigh = Vector128.WidenUpper(paintBytes);
-                red = Vector128.WidenLower(paintLow);
-                green = Vector128.WidenUpper(paintLow);
-                blue = Vector128.WidenLower(paintHigh);
-                alpha = Vector128.WidenUpper(paintHigh);
-            }
+                if (pending < i)
+                {
+                    CompositeOverScalarRange(samples, coverage, source, pending, i);
+                }
 
-            var effective = Vector128.Create(coverage.Slice(i, 4)) * alpha;
-            var inverse = scale - effective;
-            var planar = Vector128.Shuffle(pixels, transpose);
-            var low = Vector128.WidenLower(planar);
-            var high = Vector128.WidenUpper(planar);
-            var r = Blend(red, Vector128.WidenLower(low), effective, inverse, half, reciprocal);
-            var g = Blend(green, Vector128.WidenUpper(low), effective, inverse, half, reciprocal);
-            var b = Blend(blue, Vector128.WidenLower(high), effective, inverse, half, reciprocal);
-            var result = Vector128.Narrow(Vector128.Narrow(r, g), Vector128.Narrow(b, Vector128.WidenUpper(high)));
-            Vector128.Shuffle(result, transpose).CopyTo(block);
-            pending = i + 4;
+                if (!colors.IsEmpty)
+                {
+                    LoadPaint(colors.Slice(i * 4, 16), transpose, out red, out green, out blue, out alpha);
+                }
+
+                // The paint with the alpha of its coverage, where that alpha is not 0
+                var resultAlpha = Vector128.ShiftRightLogical((Vector128.Create(coverage.Slice(i, 4)) * alpha) + halfCoverage, 16);
+                var painted = Vector128.Shuffle(Vector128.Narrow(Vector128.Narrow(red, green), Vector128.Narrow(blue, resultAlpha)), transpose);
+                var unchanged = Vector128.Equals(resultAlpha, Vector128<uint>.Zero);
+                var keep = Vector128.Shuffle(Vector128.Narrow(Vector128.Narrow(unchanged, unchanged), Vector128.Narrow(unchanged, unchanged)), transpose);
+                Vector128.ConditionalSelect(keep, pixels, painted).CopyTo(block);
+                pending = i + 4;
+            }
         }
 
         if (pending < coverage.Length)
@@ -543,6 +563,18 @@ internal static class DrawingKernels
         {
             var x = (paint * effective) + (pixel * inverse) + half;
             return Vector128.ShiftRightLogical(Vector128.ShiftRightLogical(x, 16) * reciprocal, 23);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void LoadPaint(ReadOnlySpan<ushort> paint, Vector128<byte> transpose, out Vector128<uint> red, out Vector128<uint> green, out Vector128<uint> blue, out Vector128<uint> alpha)
+        {
+            var paintBytes = Vector128.Shuffle(Vector128.Narrow(Vector128.Create(paint[..8]), Vector128.Create(paint[8..])), transpose);
+            var paintLow = Vector128.WidenLower(paintBytes);
+            var paintHigh = Vector128.WidenUpper(paintBytes);
+            red = Vector128.WidenLower(paintLow);
+            green = Vector128.WidenUpper(paintLow);
+            blue = Vector128.WidenLower(paintHigh);
+            alpha = Vector128.WidenUpper(paintHigh);
         }
     }
 
@@ -615,6 +647,23 @@ internal static class DrawingKernels
                     pixel[c] = TSample.CreateTruncating(((paint[c] * effective) + (ulong.CreateTruncating(pixel[c]) * inverse) + half) / scale);
                 }
 
+                continue;
+            }
+
+            if (destinationAlpha == 0)
+            {
+                // The formulas below without the pixel: the color is the paint (the rounding E M / 2 is below the
+                // total E M), and the alpha (E M + S / 2) / S is (E + Q / 2) / Q since S = M Q with Q even
+                var coverageAlpha = (effective + (CoverageRasterizer.FullCoverage / 2)) / CoverageRasterizer.FullCoverage;
+                if (coverageAlpha == 0)
+                    continue;
+
+                for (var c = 0; c < 3; c++)
+                {
+                    pixel[c] = TSample.CreateTruncating(paint[c]);
+                }
+
+                pixel[3] = TSample.CreateTruncating(coverageAlpha);
                 continue;
             }
 

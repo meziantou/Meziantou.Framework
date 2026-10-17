@@ -25,8 +25,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// <b>Method.</b> The pixels are blurred in place, from the first row to the last one. The blurred rows a row needs
 /// (as many as the blur has weights) are kept in a ring: each row of the pixels is read once, before the rows that are
-/// written reach it. The working storage is rented before a pixel changes, from the allocation scope of the image,
-/// and kept until the session ends.
+/// written reach it, and only where the blur of the area reaches. The working storage is rented before a pixel
+/// changes, from the allocation scope of the image, and kept until the session ends.
 /// </para>
 /// </remarks>
 internal sealed partial class DrawingSession
@@ -188,15 +188,20 @@ internal sealed partial class DrawingSession
         var ring = unsafe(MemoryMarshal.Cast<byte, float>(_blurRing!.Span));
         var ringIndexes = unsafe(MemoryMarshal.Cast<byte, int>(_blurRows!.Span))[..ringRows];
         ringIndexes.Fill(int.MinValue);
+
+        // The pixel of the bounds the first weight of the first pixel of the area applies to, and the pixels of a row
+        // the blur along it reads: beyond the bounds, those on their edges
+        var firstColumn = area.Left - radius - bounds.Left;
+        var readColumn = Math.Clamp(firstColumn, 0, bounds.Width - 1);
+        var readCount = Math.Clamp(firstColumn + width + taps - 2, 0, bounds.Width - 1) - readColumn + 1;
         var scratch = unsafe(MemoryMarshal.Cast<byte, double>(_blurScratch!.Span));
-        var premultiplied = scratch[..(4 * bounds.Width)];
+        var premultiplied = scratch[..(4 * readCount)];
         var sums = scratch.Slice(4 * Width, 4 * width);
         var pixels = unsafe(MemoryMarshal.Cast<byte, Rgba64>(_blurPixels!.Span));
-        var source = pixels[..bounds.Width];
+        var source = pixels[..readCount];
         var samples = pixels.Slice(Width, width);
         var colors = unsafe(MemoryMarshal.Cast<byte, ushort>(_blurColors!.Span))[..(4 * width)];
         ReadOnlySpan<uint> full = unsafe(MemoryMarshal.Cast<byte, uint>(_blurCoverage!.Span))[..width];
-        var firstColumn = area.Left - radius - bounds.Left;
 
         // In linear light, the light of every 16-bit sample of each channel; none on the stored values
         var transfer = _transfer;
@@ -236,11 +241,11 @@ internal sealed partial class DrawingSession
                 var blurred = ring.Slice(slot * width * 4, width * 4);
                 if (ringIndexes[slot] != row && ringIndexes[slot] != ~row)
                 {
-                    frame.ReadRgba64(storage, row, bounds.Left, source);
-                    ringIndexes[slot] = BlurRow(source, premultiplied, weights, firstColumn, blurred, decodeRed, decodeGreen, decodeBlue) ? row : ~row;
+                    frame.ReadRgba64(storage, row, bounds.Left + readColumn, source);
+                    ringIndexes[slot] = BlurRow(source, premultiplied, weights, firstColumn - readColumn, blurred, decodeRed, decodeGreen, decodeBlue) ? row : ~row;
                 }
 
-                // A row without any opacity adds nothing
+                // A row without any opacity where it is read adds nothing
                 if (ringIndexes[slot] != row)
                     continue;
 

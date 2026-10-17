@@ -1513,6 +1513,22 @@ public sealed class VectorizedKernelTests
             Assert.Equal(y / 255, (y * 32897) >> 23);
         }
 
+        // Over a transparent pixel, the general formulas give the paint and the alpha (E + Q / 2) >> 16
+        var mismatches = 0;
+        for (ulong paintAlpha = 1; paintAlpha <= 255; paintAlpha++)
+        {
+            for (ulong q = 1; q <= CoverageRasterizer.FullCoverage; q++)
+            {
+                var total = paintAlpha * q * 255;
+                var isSame = (total + (scale / 2)) / scale == ((paintAlpha * q) + (CoverageRasterizer.FullCoverage / 2)) >> 16
+                    && ((255 * total) + (total / 2)) / total == 255
+                    && (total + (total / 2)) / total == 1;
+                mismatches += isSame ? 0 : 1;
+            }
+        }
+
+        Assert.Equal(0, mismatches);
+
         var random = new Random(20261014);
         int[] lengths = [4, 5, 7, 8, 9, 15, 16, 17, 33, 64, 101];
         foreach (var length in lengths)
@@ -1522,10 +1538,11 @@ public sealed class VectorizedKernelTests
                 var pixels = new byte[length * 4];
                 random.NextBytes(pixels);
                 var opaqueShare = round % 4;
+                var backdrop = round / 16 % 2 == 0 ? (byte)255 : (byte)0;
                 for (var i = 0; i < length; i++)
                 {
-                    // Runs of opaque pixels, translucent and transparent ones
-                    pixels[(i * 4) + 3] = opaqueShare == 0 || random.Next(4) < opaqueShare ? (byte)255 : random.Next(3) == 0 ? (byte)0 : (byte)random.Next(256);
+                    // Runs of opaque pixels (or of transparent ones, as on a layer), translucent and transparent ones
+                    pixels[(i * 4) + 3] = opaqueShare == 0 || random.Next(4) < opaqueShare ? backdrop : random.Next(3) == 0 ? (byte)0 : (byte)random.Next(256);
                 }
 
                 var coverage = new uint[length];

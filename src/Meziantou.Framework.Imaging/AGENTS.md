@@ -580,6 +580,7 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   with that evaluator: no brush is allocated. `ImageSampling.Smooth` is the bilinear paths themselves when the image
   is not reduced; when it is, `ReduceRows` and `ReducePixels` add the same terms in the same order (rows, then
   columns), so that the row-by-row path and the pixel-by-pixel one give the same bits: keep them in step.
+  `ReduceRows` computes the columns of the pixels of a run and their weights once, not once per row of the image.
 - A clip is a stack of levels in the session (`DrawingSession.Clipping.cs`): bounds in whole pixels and, unless the clip
   is a rectangle of whole pixels, a mask of coverages rasterized once, when the clip starts, by the same rasterizer.
   Draw calls multiply their coverage by the mask row by row (`ApplyClip`), into a row of the session: they rent nothing.
@@ -596,7 +597,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
 - A shadow (`DrawingSession.Shadows.cs`) is a layer whose alpha is blurred, moved and painted before the layer is
   drawn: the layer covers a margin around the bounds of the clip (the reach of the blur and of the offset), and the
   blur reads beyond it as its edge pixels (a shape that leaves the canvas keeps its shadow along the edge). The
-  weights are those of `GaussianKernel`, shared with `GaussianBlur`: computed without `Math.Exp`.
+  weights are those of `GaussianKernel`, shared with `GaussianBlur`: computed without `Math.Exp`. A shadow and a blur
+  read only the rows and the columns of the layer their passes reach; a row that is transparent there adds nothing
+  and is skipped, which is exact because compositing a zero coverage, or a transparent paint with `Source` over a
+  transparent pixel, changes nothing.
 - A filter whose reach goes beyond the canvas draws on a bounded layer larger than the canvas (`TryGetFilterExtent`,
   `PushBoundedLevel`): `_canvasBounds` is the canvas in the coordinates of such a session (filling the canvas fills
   only it), the edge modes other than transparent still apply at the canvas, and `FilterProcessor.Extent` is what the

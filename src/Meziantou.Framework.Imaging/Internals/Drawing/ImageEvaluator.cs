@@ -70,6 +70,9 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     /// <summary>The values kept for each pixel of a run of a reduced image: the sums of the alpha and of the three colors, and the sum of the weights of its columns.</summary>
     private const int ValuesPerSum = 5;
 
+    /// <summary>The most columns of the image kept with their weights for the pixels of a run of a reduced image, unless a single pixel reads more.</summary>
+    private const int MaxColumnTaps = 1 << 16;
+
     private readonly AllocationScope _scope;
     private PooledBuffer? _colors;
     private PooledBuffer? _samples;
@@ -121,7 +124,11 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private double _h7;
     private double _h8;
     private PooledBuffer? _sums;
+    private PooledBuffer? _tapCounts;
     private int _sumCapacity;
+    private PooledBuffer? _tapWeights;
+    private PooledBuffer? _tapColumns;
+    private long _tapCapacity;
 
     public ImageEvaluator(AllocationScope scope)
     {
@@ -216,13 +223,32 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             _width = width;
         }
 
-        if (_isReduced && _keepsRows && width > _sumCapacity)
+        if (_isReduced && _keepsRows)
         {
-            _sums?.Dispose();
-            _sums = null;
-            _sumCapacity = 0;
-            _sums = ResampleWeights.Rent<double>(_scope, (long)ValuesPerSum * width);
-            _sumCapacity = width;
+            if (width > _sumCapacity)
+            {
+                _sums?.Dispose();
+                _tapCounts?.Dispose();
+                _sums = _tapCounts = null;
+                _sumCapacity = 0;
+                _sums = ResampleWeights.Rent<double>(_scope, (long)ValuesPerSum * width);
+                _tapCounts = ResampleWeights.Rent<int>(_scope, width);
+                _sumCapacity = width;
+            }
+
+            // A pixel reads at most ceil(2 sx) + 2 columns, fewer with a box
+            var pixelTaps = (long)Math.Ceiling(2 * _spanX) + 2;
+            var taps = Math.Min(pixelTaps * width, Math.Max(pixelTaps, MaxColumnTaps));
+            if (taps > _tapCapacity)
+            {
+                _tapWeights?.Dispose();
+                _tapColumns?.Dispose();
+                _tapWeights = _tapColumns = null;
+                _tapCapacity = 0;
+                _tapWeights = ResampleWeights.Rent<double>(_scope, taps);
+                _tapColumns = ResampleWeights.Rent<int>(_scope, taps);
+                _tapCapacity = taps;
+            }
         }
 
         if (_keepsRows && !_isEmpty && _regionWidth > _rowCapacity)
@@ -395,10 +421,14 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         _samples?.Dispose();
         _rows?.Dispose();
         _sums?.Dispose();
-        _colors = _samples = _rows = _sums = null;
+        _tapCounts?.Dispose();
+        _tapWeights?.Dispose();
+        _tapColumns?.Dispose();
+        _colors = _samples = _rows = _sums = _tapCounts = _tapWeights = _tapColumns = null;
         _width = 0;
         _rowCapacity = 0;
         _sumCapacity = 0;
+        _tapCapacity = 0;
         _source = null;
         _destination = null;
         _storage = null;
@@ -685,6 +715,10 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     }
 
     /// <summary>Evaluates a run of a reduced image whose pixels all read the same rows of the image: one row at a time, for the whole run.</summary>
+    /// <remarks>
+    /// The columns each pixel reads and their weights do not depend on the row: they are computed once, for as many
+    /// pixels as the working storage holds, and the rows are read for those pixels. A row is read only where they read it.
+    /// </remarks>
     private void ReduceRows(int y, int x, Span<Rgba64> samples)
     {
         var centerY = y + 0.5;
@@ -692,47 +726,90 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         GetSupport(v, _spanY, out var firstRow, out var lastRow);
         var sums = unsafe(MemoryMarshal.Cast<byte, double>(_sums!.Span))[..(samples.Length * ValuesPerSum)];
         sums.Clear();
+        var counts = unsafe(MemoryMarshal.Cast<byte, int>(_tapCounts!.Span))[..samples.Length];
+        var weights = unsafe(MemoryMarshal.Cast<byte, double>(_tapWeights!.Span))[..(int)_tapCapacity];
+        var columns = unsafe(MemoryMarshal.Cast<byte, int>(_tapColumns!.Span))[..(int)_tapCapacity];
         var rows = unsafe(MemoryMarshal.Cast<byte, Rgba64>(_rows!.Span))[.._regionWidth];
         _cachedRow0 = _cachedRow1 = int.MinValue;
         var totalY = 0d;
-        for (var row = firstRow; row <= lastRow; row++)
+        for (var start = 0; start < samples.Length;)
         {
-            var weightY = GetWeight(row, v, _spanY);
-            if (!(weightY > 0))
-                continue;
-
-            totalY += weightY;
-            var hasRow = TryWrap(row, _top, _regionHeight, _wrapModeY, out var wrapped);
-            if (hasRow)
+            // The columns of the pixels from 'start' to 'end' with a positive weight, -1 for those without a pixel, and
+            // the first and the last column of the region they read
+            var end = start;
+            var tapCount = 0;
+            var firstColumn = int.MaxValue;
+            var lastColumn = -1;
+            for (; end < samples.Length; end++)
             {
-                _source!.ReadRgba64(_storage!, _top + wrapped, _left, rows);
-            }
+                var u = Limit(_inverse.TransformX(x + end + 0.5, centerY));
+                GetSupport(u, _spanX, out var first, out var last);
+                if (end > start && tapCount + (last - first + 1) > weights.Length)
+                    break;
 
-            for (var i = 0; i < samples.Length; i++)
-            {
-                var u = Limit(_inverse.TransformX(x + i + 0.5, centerY));
-                GetSupport(u, _spanX, out var firstColumn, out var lastColumn);
-                var sum = default(RowSum);
-                for (var column = firstColumn; column <= lastColumn; column++)
+                var total = 0d;
+                var count = 0;
+                for (var column = first; column <= last; column++)
                 {
                     var weightX = GetWeight(column, u, _spanX);
                     if (!(weightX > 0))
                         continue;
 
-                    sum.Total += weightX;
-                    if (hasRow && TryWrap(column, _left, _regionWidth, _wrapModeX, out var index))
+                    total += weightX;
+                    var index = -1;
+                    if (TryWrap(column, _left, _regionWidth, _wrapModeX, out var wrapped))
                     {
-                        sum.Add(rows[index], weightX);
+                        index = wrapped;
+                        firstColumn = Math.Min(firstColumn, index);
+                        lastColumn = Math.Max(lastColumn, index);
                     }
+
+                    weights[tapCount + count] = weightX;
+                    columns[tapCount + count] = index;
+                    count++;
                 }
 
-                var entry = sums.Slice(i * ValuesPerSum, ValuesPerSum);
-                entry[0] += weightY * sum.Alpha;
-                entry[1] += weightY * sum.Red;
-                entry[2] += weightY * sum.Green;
-                entry[3] += weightY * sum.Blue;
-                entry[4] = sum.Total;
+                counts[end] = count;
+                tapCount += count;
+                sums[(end * ValuesPerSum) + 4] = total;
             }
+
+            totalY = 0;
+            for (var row = firstRow; row <= lastRow; row++)
+            {
+                var weightY = GetWeight(row, v, _spanY);
+                if (!(weightY > 0))
+                    continue;
+
+                // A row without pixels, or whose pixels are not read, adds zeros
+                totalY += weightY;
+                if (lastColumn < firstColumn || !TryWrap(row, _top, _regionHeight, _wrapModeY, out var wrapped))
+                    continue;
+
+                _source!.ReadRgba64(_storage!, _top + wrapped, _left + firstColumn, rows[firstColumn..(lastColumn + 1)]);
+                var tap = 0;
+                for (var i = start; i < end; i++)
+                {
+                    var sum = default(RowSum);
+                    var tapEnd = tap + counts[i];
+                    for (; tap < tapEnd; tap++)
+                    {
+                        var index = columns[tap];
+                        if (index >= 0)
+                        {
+                            sum.Add(rows[index], weights[tap]);
+                        }
+                    }
+
+                    var entry = sums.Slice(i * ValuesPerSum, ValuesPerSum);
+                    entry[0] += weightY * sum.Alpha;
+                    entry[1] += weightY * sum.Red;
+                    entry[2] += weightY * sum.Green;
+                    entry[3] += weightY * sum.Blue;
+                }
+            }
+
+            start = end;
         }
 
         for (var i = 0; i < samples.Length; i++)

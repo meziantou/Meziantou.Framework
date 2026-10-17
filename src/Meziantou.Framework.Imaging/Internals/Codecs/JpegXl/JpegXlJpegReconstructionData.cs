@@ -404,7 +404,9 @@ internal sealed class JpegXlJpegReconstructionData
             writer.WriteBits((uint)component.QuantizationTable, 2);
         }
 
-        if (model.HuffmanTables.Count is < 1 or > 26 + 63)
+        // The encoding of the count starts at 2: a file with a single Huffman table (the DC scans of a progressive file
+        // only need one) cannot be described
+        if (model.HuffmanTables.Count is < 2 or > 26 + 63)
             throw TooMuch("that number of Huffman tables");
 
         writer.WriteU32((uint)model.HuffmanTables.Count, 4, 0, 2, 3, 10, 4, 26, 6);

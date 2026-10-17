@@ -99,6 +99,17 @@
       "defect": "Same defect as jp2/missing-tiles-min with an HTJ2K codestream that has the tile-parts of 4 of its 6 tiles.",
       "expectedIdentify": "InvalidImageContentException",
       "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "jpeg/recompress-single-huffman-table-min",
+      "file": "jpeg-recompress-single-huffman-table.min.jpg",
+      "sha256": "f2823bc21c48cccfd81276f676db5f79cbaf97ddb10024fd1382e473e1217fff",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group jpeg-progressive, weekly campaign (run 39012479568), base seed 39012479568, 420 s, mutation 49426 of jpeg/progressive-rgb-adobe (reader variant 143); minimized by FuzzMinimizer from 837 to 160 bytes",
+      "defect": "A progressive JPEG file whose only scan is a DC scan, with a single Huffman table: JpegXlTranscoder.RecompressJpeg threw InvalidOperationException because the JPEG reconstruction data encode the number of Huffman tables from 2. Fixed in JpegXlJpegReconstructionData.Write, which refuses the file with UnsupportedImageFeatureException.",
+      "expectedIdentify": "success",
+      "expectedLoad": "success"
     }
   ]
 }

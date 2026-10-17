@@ -147,6 +147,38 @@ internal sealed class PngIndexedRows : IDisposable
         return PngIndexedRowStatus.Ok;
     }
 
+    /// <summary>Adds a color to the palette, if it is not in it yet.</summary>
+    /// <param name="key">The color, <c>(A &lt;&lt; 24) | (R &lt;&lt; 16) | (G &lt;&lt; 8) | B</c>.</param>
+    /// <returns><see langword="false"/> when the color is new and the palette is full.</returns>
+    public bool TryAdd(uint key) => Palette.TryAdd(key);
+
+    /// <summary>Creates a palette of the same colors plus one, not final yet.</summary>
+    /// <param name="scope">The writer scope, charged for the working memory of the copy.</param>
+    /// <param name="key">The added color.</param>
+    /// <returns>The copy, which the caller disposes.</returns>
+    /// <exception cref="InvalidOperationException">The palette is full and the color is new.</exception>
+    public PngIndexedRows CreateCopy(AllocationScope scope, uint key)
+    {
+        var copy = new PngIndexedRows(scope, _pixelFormat, _width);
+        try
+        {
+            foreach (var color in Colors)
+            {
+                _ = copy.TryAdd(color);
+            }
+
+            if (!copy.TryAdd(key))
+                throw new InvalidOperationException("The palette has no room for another color.");
+
+            return copy;
+        }
+        catch
+        {
+            copy.Dispose();
+            throw;
+        }
+    }
+
     /// <summary>Removes the colors added since the palette held <paramref name="count"/> entries.</summary>
     /// <param name="count">A previous value of <see cref="Count"/>.</param>
     public void Rollback(int count) => Palette.Rollback(count);

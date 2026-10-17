@@ -21,6 +21,34 @@ public sealed class PngEncoderTests
 {
     private static readonly PixelFormat[] AllFormats = [PixelFormat.Rgba32, PixelFormat.Bgra32, PixelFormat.Rgb24, PixelFormat.Rgba64, PixelFormat.Gray8, PixelFormat.Gray16];
 
+    private static readonly (string Content, PixelFormat Format, int ColorType, int BitDepth, bool ColorKey)[] MinimumSizeLayouts =
+    [
+        // Content, pixel format, expected color type, expected bit depth, expected tRNS color key
+        ("random", PixelFormat.Rgba32, 6, 8, false),
+        ("random", PixelFormat.Bgra32, 6, 8, false),
+        ("random", PixelFormat.Rgb24, 2, 8, false),
+        ("random", PixelFormat.Rgba64, 6, 16, false),
+        ("opaque", PixelFormat.Rgba32, 2, 8, false),
+        ("opaque", PixelFormat.Bgra32, 2, 8, false),
+        ("opaque", PixelFormat.Rgba64, 2, 16, false),
+        ("eight-bit", PixelFormat.Rgba64, 6, 8, false),
+        ("gray", PixelFormat.Rgba64, 0, 16, false),
+        ("gray-alpha", PixelFormat.Rgba32, 4, 8, false),
+        ("gray-alpha", PixelFormat.Rgba64, 4, 16, false),
+        ("key", PixelFormat.Rgba32, 2, 8, true),
+        ("key", PixelFormat.Rgba64, 2, 16, true),
+        ("gray-key", PixelFormat.Rgba32, 0, 8, true),
+        ("transparent-colors", PixelFormat.Rgba32, 6, 8, false),
+        ("levels-1", PixelFormat.Gray8, 0, 1, false),
+        ("levels-2", PixelFormat.Gray8, 0, 2, false),
+        ("levels-4", PixelFormat.Gray8, 0, 4, false),
+        ("levels-1", PixelFormat.Gray16, 0, 1, false),
+        ("levels-4", PixelFormat.Gray16, 0, 4, false),
+        ("levels-4", PixelFormat.Rgb24, 0, 4, false),
+        ("colors-12", PixelFormat.Rgba32, 3, 4, false),
+        ("colors-12", PixelFormat.Rgba64, 3, 4, false),
+    ];
+
     public static TheoryData<PixelFormat, PngFilter, bool> FilterCases()
     {
         var data = new TheoryData<PixelFormat, PngFilter, bool>();
@@ -1001,6 +1029,306 @@ public sealed class PngEncoderTests
         Assert.True(image.Frames[0].Storage.Layout.Stride > image.Frames[0].Storage.RowLength);
         AssertDecodesIndependently(Encode(image, new PngEncoder { Interlaced = true }), image, interlaced: true);
         AssertDecodesIndependently(Encode(image, new PngEncoder()), image, interlaced: false);
+    }
+
+    public static TheoryData<string, PixelFormat, int, int, bool, bool> MinimumSizeLayoutCases()
+    {
+        var data = new TheoryData<string, PixelFormat, int, int, bool, bool>();
+        foreach (var (content, format, colorType, bitDepth, colorKey) in MinimumSizeLayouts)
+        {
+            data.Add(content, format, colorType, bitDepth, colorKey, false);
+            data.Add(content, format, colorType, bitDepth, colorKey, true);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(MinimumSizeLayoutCases))]
+    public void MinimumSizeStoresThePixelsExactlyInTheLayoutTheyNeed(string content, PixelFormat format, int colorType, int bitDepth, bool colorKey, bool interlaced)
+    {
+        using var image = CreateMinimumSizeContent(content, format, 37, 23, seed: content.Length + (int)format);
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize, Interlaced = interlaced });
+        var reference = OptimizedPngOutputVerifier.VerifyStill(png, image, $"{content} {format} interlaced={interlaced}");
+        Assert.Equal((byte)colorType, reference.ColorType);
+
+        // Packed samples sometimes compress worse than bytes: 8 bits is a candidate too, the smallest output wins
+        Assert.True(reference.BitDepth == bitDepth || (bitDepth < 8 && reference.BitDepth == 8), $"bit depth {reference.BitDepth}, {bitDepth} expected");
+        Assert.Equal(interlaced ? (byte)1 : (byte)0, reference.InterlaceMethod);
+        Assert.Equal(colorKey, reference.ChunkTypes.Contains("tRNS") && colorType != 3);
+        if (colorType == 3)
+        {
+            Assert.True(reference.ArePaddingBitsZero());
+        }
+
+        // Supplementary: the library decodes the same pixels
+        using var decoded = Image.Load<Rgba64>(png);
+        using var expected = image.CloneAs<Rgba64>();
+        var result = PixelBufferComparer.Compare(ImageSnapshots.CaptureFrame(expected.Frames[0]), ImageSnapshots.CaptureFrame(decoded.Frames[0]), ComparisonPolicy.Exact, "library decoder round trip");
+        Assert.True(result.IsMatch, result.Describe());
+    }
+
+    [Theory]
+    [InlineData("photo", PixelFormat.Rgb24)]
+    [InlineData("photo", PixelFormat.Rgba32)]
+    [InlineData("photo", PixelFormat.Rgba64)]
+    [InlineData("photo", PixelFormat.Gray8)]
+    [InlineData("colors-12", PixelFormat.Rgba32)]
+    [InlineData("colors-200", PixelFormat.Rgb24)]
+    [InlineData("levels-2", PixelFormat.Gray16)]
+    [InlineData("key", PixelFormat.Rgba32)]
+    [InlineData("random", PixelFormat.Rgb24)]
+    public void MinimumSizeIsNoLargerThanTheOtherSettings(string content, PixelFormat format)
+    {
+        using var image = CreateMinimumSizeContent(content, format, 61, 47, seed: 5);
+        var optimized = Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize });
+        OptimizedPngOutputVerifier.VerifyStill(optimized, image, $"{content} {format}");
+        foreach (var layout in Enum.GetValues<PngPixelLayout>())
+        {
+            foreach (var filter in Enum.GetValues<PngFilter>())
+            {
+                foreach (var level in Enum.GetValues<CompressionLevel>())
+                {
+                    byte[] other;
+                    try
+                    {
+                        other = Encode(image, new PngEncoder { PixelLayout = layout, Filter = filter, CompressionLevel = level });
+                    }
+                    catch (UnsupportedImageFeatureException)
+                    {
+                        // More than 256 colors for the indexed layout
+                        continue;
+                    }
+
+                    Assert.HasCountLessThanOrEqual(other.Length, optimized, $"MinimumSize wrote {optimized.Length} bytes; {layout}, {filter} and {level} wrote {other.Length}.");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void MinimumSizeWithAFixedFilterUsesItForEveryScanline()
+    {
+        using var image = CreateMinimumSizeContent("photo", PixelFormat.Rgb24, 31, 17, seed: 3);
+        foreach (var filter in new[] { PngFilter.None, PngFilter.Sub, PngFilter.Up, PngFilter.Average, PngFilter.Paeth })
+        {
+            var png = Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize, Filter = filter });
+            var reference = OptimizedPngOutputVerifier.VerifyStill(png, image, filter.ToString());
+            Assert.All(reference.GetFilterTypes(), type => Assert.Equal((byte)(filter - PngFilter.None), type));
+        }
+    }
+
+    [Fact]
+    public void MinimumSizeWithTheIndexedLayoutOnlyWritesPalettes()
+    {
+        using var gray = CreateMinimumSizeContent("levels-2", PixelFormat.Gray8, 23, 9, seed: 1);
+        var png = Encode(gray, new PngEncoder { Optimization = PngOptimization.MinimumSize, PixelLayout = PngPixelLayout.Indexed });
+        var reference = OptimizedPngOutputVerifier.VerifyStill(png, gray);
+        Assert.Equal((byte)3, reference.ColorType);
+        Assert.Equal((byte)2, reference.BitDepth);
+
+        using var many = CreateMinimumSizeContent("random", PixelFormat.Rgb24, 23, 19, seed: 1);
+        using var stream = new TestOutputStream();
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => many.Save(stream, new PngEncoder { Optimization = PngOptimization.MinimumSize, PixelLayout = PngPixelLayout.Indexed }));
+        Assert.Equal("Color reduction", exception.Feature);
+        Assert.Equal(0, stream.BytesWritten);
+    }
+
+    [Fact]
+    public void MinimumSizeKeepsTheColorSpaceOfTheProfile()
+    {
+        // A gray image labeled with an RGB profile stays RGB: an iCCP profile must describe the color type of the file
+        using var image = CreateMinimumSizeContent("levels-4", PixelFormat.Rgb24, 19, 11, seed: 4);
+        var rgb = new IccProfile(new MetadataBlob(IccTestBlobs.Create("RGB ")));
+        image.Metadata.IccProfile = rgb;
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize });
+        var reference = OptimizedPngOutputVerifier.VerifyStill(png, image);
+        Assert.True(reference.ColorType is 2 or 3, $"color type {reference.ColorType}");
+        Assert.Equal(rgb.Data.ToArray(), EncodedFieldInspector.Inspect("png", png).Icc!.Value.ToArray());
+
+        using var gray = CreateMinimumSizeContent("levels-4", PixelFormat.Gray8, 19, 11, seed: 4);
+        gray.Metadata.IccProfile = new IccProfile(new MetadataBlob(IccTestBlobs.Create("GRAY")));
+        reference = OptimizedPngOutputVerifier.VerifyStill(Encode(gray, new PngEncoder { Optimization = PngOptimization.MinimumSize }), gray);
+        Assert.Equal((byte)0, reference.ColorType);
+    }
+
+    [Fact]
+    public void MinimumSizeWritesThroughASequentialWriter()
+    {
+        using var image = (Image<Rgba32>)CreateMinimumSizeContent("key", PixelFormat.Rgba32, 40, 30, seed: 8);
+        using var stream = new TestOutputStream();
+        using (var writer = Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(40, 30) { Encoder = new PngEncoder { Optimization = PngOptimization.MinimumSize }, ExpectedFrameCount = 1 }))
+        {
+            writer.WriteFrame(image.Frames[0]);
+            writer.Complete();
+            Assert.Equal(0, writer.Core.Scope.LiveBytes);
+        }
+
+        var reference = OptimizedPngOutputVerifier.VerifyStill(stream.ToArray(), image);
+        Assert.Equal((byte)2, reference.ColorType);
+        Assert.Equal(Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize }), stream.ToArray());
+    }
+
+    [Fact]
+    public void MinimumSizeStreamsLargeImagesWithBoundedMemory()
+    {
+        // The candidates are compressed from the frame, row by row: no copy of the image, whatever its size
+        const int SourceWidth = 1500;
+        const int SourceHeight = 1100;
+        using var image = CreateWithColors<Rgba32>(SourceWidth, SourceHeight, colors: 200, seed: 6);
+        using var stream = new TestOutputStream();
+        var options = new ImageWriterOptions(SourceWidth, SourceHeight) { Encoder = new PngEncoder { Optimization = PngOptimization.MinimumSize, Filter = PngFilter.None }, ExpectedFrameCount = 1 };
+        long peak;
+        using (var writer = Image.CreateWriter<Rgba32>(stream, options))
+        {
+            writer.WriteFrame(image.Frames[0]);
+            peak = writer.Core.Scope.GetDiagnostics().PeakLiveBytes;
+            writer.Complete();
+        }
+
+        // The analysis (palette and the 2 MiB set of opaque colors) and a few rows, far below the 6.6 MB of pixels
+        Assert.InRange(peak, 1, 4 * 1024 * 1024);
+        OptimizedPngOutputVerifier.VerifyStill(stream.ToArray(), image);
+    }
+
+    [Fact]
+    public async Task CancellationDuringTheSearchFaultsTheWriter()
+    {
+        using var image = (Image<Rgba64>)CreateMinimumSizeContent("photo", PixelFormat.Rgba64, 600, 400, seed: 2);
+        using var source = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+        using var stream = new TestOutputStream();
+        await using var writer = Image.CreateWriter<Rgba64>(stream, new ImageWriterOptions(600, 400) { Encoder = new PngEncoder { Optimization = PngOptimization.MinimumSize }, ExpectedFrameCount = 1 });
+        source.CancelAfter(TimeSpan.FromMilliseconds(50));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => writer.WriteFrameAsync(image.Frames[0], source.Token).AsTask());
+        Assert.Equal(0, writer.Core.Scope.LiveBytes);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => writer.CompleteAsync(XunitCancellationToken).AsTask());
+    }
+
+    /// <summary>
+    /// Creates seeded content whose smallest exact PNG layout is known: <c>random</c> samples; <c>opaque</c> random colors;
+    /// <c>eight-bit</c> random 16-bit samples that are 8-bit values; <c>gray</c> random 16-bit gray levels; <c>gray-alpha</c>
+    /// random gray levels and alpha values; <c>key</c> random opaque colors with fully transparent pixels of one color
+    /// (<c>gray-key</c>: gray levels); <c>transparent-colors</c> the same with two transparent colors; <c>levels-N</c> random
+    /// gray levels of N bits; <c>colors-N</c> N distinct colors; <c>photo</c> smooth gradients with noise.
+    /// </summary>
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    internal static Image CreateMinimumSizeContent(string content, PixelFormat format, int width, int height, int seed)
+    {
+        if (content.StartsWith("colors-", StringComparison.Ordinal))
+            return CreateWithColors(format, width, height, int.Parse(content["colors-".Length..], CultureInfo.InvariantCulture), seed);
+
+        var random = new Random(seed);
+        var levels = content.StartsWith("levels-", StringComparison.Ordinal) ? (1 << int.Parse(content["levels-".Length..], CultureInfo.InvariantCulture)) - 1 : 0;
+        var samples = new ushort[width * height * 4];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var pixel = samples.AsSpan(((y * width) + x) * 4, 4);
+                int Random16() => random.Next(65536);
+                int Random8() => random.Next(256) * 257;
+                switch (content)
+                {
+                    case "random":
+                        (pixel[0], pixel[1], pixel[2], pixel[3]) = ((ushort)Random16(), (ushort)Random16(), (ushort)Random16(), (ushort)Random16());
+                        break;
+                    case "opaque":
+                        (pixel[0], pixel[1], pixel[2], pixel[3]) = ((ushort)Random16(), (ushort)Random16(), (ushort)Random16(), ushort.MaxValue);
+                        break;
+                    case "eight-bit":
+                        (pixel[0], pixel[1], pixel[2], pixel[3]) = ((ushort)Random8(), (ushort)Random8(), (ushort)Random8(), (ushort)Random8());
+                        break;
+                    case "gray":
+                        pixel[0] = pixel[1] = pixel[2] = (ushort)Random16();
+                        pixel[3] = ushort.MaxValue;
+                        break;
+                    case "gray-alpha":
+                        pixel[0] = pixel[1] = pixel[2] = (ushort)Random16();
+                        pixel[3] = (ushort)Random16();
+                        break;
+                    case "key" or "gray-key" or "transparent-colors":
+                        if (random.Next(5) == 0)
+                        {
+                            var second = content == "transparent-colors" && random.Next(2) == 0;
+                            (pixel[0], pixel[1], pixel[2], pixel[3]) = second ? ((ushort)0, (ushort)0, (ushort)0, (ushort)0) : ((ushort)(7 * 257), (ushort)(7 * 257), (ushort)(7 * 257), (ushort)0);
+                        }
+                        else if (content == "gray-key")
+                        {
+                            pixel[0] = pixel[1] = pixel[2] = (ushort)(random.Next(8, 256) * 257);
+                            pixel[3] = ushort.MaxValue;
+                        }
+                        else
+                        {
+                            (pixel[0], pixel[1], pixel[2], pixel[3]) = ((ushort)Random16(), (ushort)Random16(), (ushort)(Random16() | 0x0100), ushort.MaxValue);
+                        }
+
+                        break;
+                    case "photo":
+                        var noise = random.Next(-6, 7);
+                        (pixel[0], pixel[1], pixel[2]) = ((ushort)Math.Clamp(((x * 255 / width) + noise) * 257, 0, 65535), (ushort)Math.Clamp(((y * 255 / height) + noise) * 257, 0, 65535), (ushort)Math.Clamp((((x + y) * 127 / (width + height)) + 64 + noise) * 257, 0, 65535));
+                        pixel[3] = ushort.MaxValue;
+                        break;
+                    default:
+                        pixel[0] = pixel[1] = pixel[2] = (ushort)(random.Next(levels + 1) * (65535 / levels));
+                        pixel[3] = ushort.MaxValue;
+                        break;
+                }
+            }
+        }
+
+        // The samples of the 8-bit pixel formats are the high bytes, those of the pixel formats without alpha are opaque and
+        // those of the grayscale ones are the red samples: the content is made exact for the pixel format first
+        var eightBit = PixelFormats.GetBitsPerComponent(format) == 8;
+        var bytesPerPixel = PixelFormats.GetBytesPerPixel(format);
+        var data = new byte[width * height * bytesPerPixel];
+        for (var i = 0; i < width * height; i++)
+        {
+            var pixel = samples.AsSpan(i * 4, 4);
+            if (eightBit)
+            {
+                for (var c = 0; c < 4; c++)
+                {
+                    pixel[c] = (ushort)(pixel[c] / 257 * 257);
+                }
+            }
+
+            var target = data.AsSpan(i * bytesPerPixel, bytesPerPixel);
+            switch (format)
+            {
+                case PixelFormat.Rgba32:
+                    (target[0], target[1], target[2], target[3]) = ((byte)(pixel[0] >> 8), (byte)(pixel[1] >> 8), (byte)(pixel[2] >> 8), (byte)(pixel[3] >> 8));
+                    break;
+                case PixelFormat.Bgra32:
+                    (target[0], target[1], target[2], target[3]) = ((byte)(pixel[2] >> 8), (byte)(pixel[1] >> 8), (byte)(pixel[0] >> 8), (byte)(pixel[3] >> 8));
+                    break;
+                case PixelFormat.Rgb24:
+                    (target[0], target[1], target[2]) = ((byte)(pixel[0] >> 8), (byte)(pixel[1] >> 8), (byte)(pixel[2] >> 8));
+                    break;
+                case PixelFormat.Gray8:
+                    target[0] = (byte)(pixel[0] >> 8);
+                    break;
+                case PixelFormat.Gray16:
+                    BitConverter.TryWriteBytes(target, pixel[0]);
+                    break;
+                default:
+                    for (var c = 0; c < 4; c++)
+                    {
+                        BitConverter.TryWriteBytes(target[(c * 2)..], pixel[c]);
+                    }
+
+                    break;
+            }
+        }
+
+        return format switch
+        {
+            PixelFormat.Rgba32 => Image.ImportPixelBytes<Rgba32>(data, width, height),
+            PixelFormat.Bgra32 => Image.ImportPixelBytes<Bgra32>(data, width, height),
+            PixelFormat.Rgb24 => Image.ImportPixelBytes<Rgb24>(data, width, height),
+            PixelFormat.Rgba64 => Image.ImportPixelBytes<Rgba64>(data, width, height),
+            PixelFormat.Gray8 => Image.ImportPixelBytes<Gray8>(data, width, height),
+            _ => Image.ImportPixelBytes<Gray16>(data, width, height),
+        };
     }
 
     internal static Image CreateRandom(PixelFormat format, int width, int height, int seed)

@@ -6,7 +6,8 @@ public enum PngFilter
     /// <summary>
     /// Chooses a filter per row with a heuristic. This is the default. Indexed output
     /// (<see cref="PngPixelLayout.Indexed"/>) uses filter type 0 (None) for every row instead, as the PNG specification
-    /// recommends: differences between palette indexes say nothing about the colors.
+    /// recommends: differences between palette indexes say nothing about the colors. With
+    /// <see cref="PngOptimization.MinimumSize"/>, every strategy is compressed and the smallest is kept.
     /// </summary>
     Adaptive = 0,
 

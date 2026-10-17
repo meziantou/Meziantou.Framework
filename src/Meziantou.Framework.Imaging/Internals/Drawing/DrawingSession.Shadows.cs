@@ -18,7 +18,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <b>Method.</b> The blur and the interpolation are one row of weights and one column of weights
 /// (<c>k(m) = (1 - f) w(m) + f w(m + 1)</c>, with <c>f</c> the fractional part of the offset), applied to the rows of
 /// the layer, then to the columns of the result, in double precision. The intermediate values are kept in single
-/// precision; a row of the layer without any opacity is not read again.
+/// precision. Only the rows and the columns of the layer the two passes reach are read, and a row without any opacity
+/// in those columns is not read again: its values would all be zero.
 /// </para>
 /// <para>
 /// <b>Inner shadows.</b> The shadow cast on a drawing by what is around it is computed the same way from
@@ -89,14 +90,22 @@ internal sealed partial class DrawingSession
             _shadowWeightCapacity = weightCount;
         }
 
-        var rowCount = (long)layerHeight * width;
-        if (rowCount > _shadowRowCapacity)
+        // The pixel of the layer the first weight of a pixel of the canvas applies to, from the first one of the layer,
+        // and the rows and the columns of the layer the two passes read: beyond the layer, those on its edges
+        var originX = left - (int)wholeX - radius - 1 - level.Left;
+        var originY = top - (int)wholeY - radius - 1 - level.Top;
+        var firstColumn = Math.Clamp(originX, 0, layerWidth - 1);
+        var columnCount = Math.Clamp(originX + width + taps - 2, 0, layerWidth - 1) - firstColumn + 1;
+        var firstRow = Math.Clamp(originY, 0, layerHeight - 1);
+        var rowCount = Math.Clamp(originY + height + taps - 2, 0, layerHeight - 1) - firstRow + 1;
+        var rowSize = (long)rowCount * width;
+        if (rowSize > _shadowRowCapacity)
         {
             _shadowRows?.Dispose();
             _shadowRows = null;
             _shadowRowCapacity = 0;
-            _shadowRows = ResampleWeights.Rent<float>(scope, rowCount);
-            _shadowRowCapacity = rowCount;
+            _shadowRows = ResampleWeights.Rent<float>(scope, rowSize);
+            _shadowRowCapacity = rowSize;
         }
 
         _shadowScratch ??= ResampleWeights.Rent<double>(scope, 2L * Width);
@@ -112,28 +121,25 @@ internal sealed partial class DrawingSession
         Shift(blur, level.ShadowOffsetX - wholeX, horizontal);
         Shift(blur, level.ShadowOffsetY - wholeY, vertical);
 
-        // The pixel of the layer the first weight of a pixel of the canvas applies to, from the first one of the layer
-        var originX = left - (int)wholeX - radius - 1 - level.Left;
-        var originY = top - (int)wholeY - radius - 1 - level.Top;
         var rows = unsafe(MemoryMarshal.Cast<byte, float>(_shadowRows!.Span));
         var scratch = unsafe(MemoryMarshal.Cast<byte, double>(_shadowScratch!.Span));
-        var alpha = scratch[..layerWidth];
+        var alpha = scratch[..columnCount];
         var sums = scratch.Slice(Width, width);
-        var hasOpacity = _shadowFlags!.Span[..layerHeight];
+        var hasOpacity = _shadowFlags!.Span[..rowCount];
         var storage = level.Storages![0];
         var isWide = storage.BytesPerPixel == 8;
-        for (var row = 0; row < layerHeight; row++)
+        for (var row = 0; row < rowCount; row++)
         {
             if ((row & 15) == 0)
             {
                 _cancellationToken.ThrowIfCancellationRequested();
             }
 
-            hasOpacity[row] = ReadAlpha(storage.GetRowSpanCore(level.Top + row), isWide, level.Left, alpha, isInner) ? (byte)1 : (byte)0;
+            hasOpacity[row] = ReadAlpha(storage.GetRowSpanCore(level.Top + firstRow + row), isWide, level.Left + firstColumn, alpha, isInner) ? (byte)1 : (byte)0;
             if (hasOpacity[row] == 0)
                 continue;
 
-            BlurKernels.BlurValues(alpha, horizontal, originX, rows.Slice(row * width, width));
+            BlurKernels.BlurValues(alpha, horizontal, originX - firstColumn, rows.Slice(row * width, width));
         }
 
         if (!isInner && !_thumbnailRemoved)
@@ -161,7 +167,7 @@ internal sealed partial class DrawingSession
             for (var tap = 0; tap < taps; tap++)
             {
                 var row = originY + y + tap;
-                row = row < 0 ? 0 : row >= layerHeight ? layerHeight - 1 : row;
+                row = (row < 0 ? 0 : row >= layerHeight ? layerHeight - 1 : row) - firstRow;
                 if (hasOpacity[row] == 0)
                     continue;
 

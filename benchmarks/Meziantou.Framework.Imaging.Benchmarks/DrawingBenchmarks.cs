@@ -23,6 +23,7 @@ public class DrawingBenchmarks : IDisposable
     private Image<Rgba32> _image = null!;
     private Image<Rgba64> _image64 = null!;
     private Image<Rgba32> _source = null!;
+    private Image<Rgba32> _photo = null!;
     private VectorPath _clipPath = null!;
     private Brush _linear = null!;
     private Brush _vertical = null!;
@@ -40,6 +41,13 @@ public class DrawingBenchmarks : IDisposable
         {
             canvas.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(320, 240), Stops));
             canvas.FillCircle(new Rgba32(20, 40, 200, 180), new PointD(160, 120), 90);
+        });
+
+        _photo = new Image<Rgba32>(2048, 1536);
+        _photo.Draw(static canvas =>
+        {
+            canvas.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(2048, 1536), Stops));
+            canvas.FillCircle(new Rgba32(20, 40, 200, 180), new PointD(1024, 768), 600);
         });
 
         _clipPath = new VectorPathBuilder().AddEllipse(new PointD(512, 384), 480, 340).Build();
@@ -69,6 +77,7 @@ public class DrawingBenchmarks : IDisposable
         _image?.Dispose();
         _image64?.Dispose();
         _source?.Dispose();
+        _photo?.Dispose();
         GC.SuppressFinalize(this);
     }
 
@@ -85,6 +94,14 @@ public class DrawingBenchmarks : IDisposable
     public int FillLargeTranslucent()
     {
         _image.Draw(static canvas => canvas.FillEllipse(new Rgba32(30, 120, 200, 100), new PointD(512, 384), 500, 370));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Translucent ellipse covering most of a 1024x768 Rgba32 canvas: fill, composited in linear sRGB")]
+    public int FillLargeTranslucentLinear()
+    {
+        _image.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static canvas => canvas.FillEllipse(new Rgba32(30, 120, 200, 100), new PointD(512, 384), 500, 370)));
         return _image.Width;
     }
 
@@ -163,6 +180,14 @@ public class DrawingBenchmarks : IDisposable
     public int DrawImage()
     {
         _image.Draw(_source.Frames[0], static (canvas, source) => canvas.DrawImage(source, new RectangleD(12, 14, 1000, 740)));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 Rgba32 image reduced to 512x384, smooth: draw")]
+    public int DrawImageReduced()
+    {
+        _image.Draw(_photo.Frames[0], static (canvas, source) => canvas.DrawImage(source, new RectangleD(100, 80, 512, 384), ImageSampling.Smooth));
         return _image.Width;
     }
 

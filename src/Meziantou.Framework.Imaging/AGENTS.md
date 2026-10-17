@@ -108,6 +108,22 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   the format reference of `readme.md`. A format that is also written adds an encoder codec in `ImageEncoderRegistry`, a
   public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (none
   today) makes `ImageEncoder.FromPath` reject its extensions with a message that says so.
+- **PNG `MinimumSize`** (`PngOptimizedEncoderSession`, a session of its own): the default session must keep writing the
+  same bytes, so the search never goes through it. Candidates are compressed to a byte counter
+  (`PngImageDataEncoder.StartSource` with `count: true`), in bands, and the winner is compressed again for real; nothing
+  is buffered. Every still image keeps the layout of the pixel format among the candidates and the level of the default
+  encoder among the trials, so it is never larger than the default output (the conformance suite asserts it for the
+  corpus, animations included). Keep these findings:
+  - A lower zlib level is sometimes smaller than `SmallestSize` (zlib-ng uses other match strategies): the last stage
+    tries `Fastest`, `Optimal` and `SmallestSize`.
+  - FFmpeg 9 misplaces the packed samples (1, 2 and 4 bits) of an APNG frame region that does not start at column 0, even
+    on a byte boundary; full-canvas frames are fine. Animations therefore use 8-bit samples at least.
+  - FFmpeg's conversion of 8-bit PNG output to `rgba64le` is not exact (errors of a few units): the interoperability
+    tests ask FFmpeg for the native layout of the file (`PngEncoderInteropTests.GetNativeRawFormat`) and widen it
+    themselves.
+  - The harness reader decodes every color type and bit depth to 16-bit RGBA and composites APNG frames
+    (`ReferencePng.Canonical.cs`), rejecting any OVER pixel whose result depends on the rounding of a decoder; verify
+    `MinimumSize` output with `OptimizedPngOutputVerifier`, never with `ApngOutputVerifier` (full-canvas frames only).
 - **HEIF container** (`Internals/Codecs/Heif`), shared by AVIF and HEIC: there is one implementation of the container
   rules. The walker (`HeifStructureParser`) resolves the image (`HeifImagePlan`, from the `meta` box) or the image
   sequence (`HeifMovieBox`, from the `moov` box) before any data is read, then captures the items or samples as their
@@ -580,6 +596,7 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   with that evaluator: no brush is allocated. `ImageSampling.Smooth` is the bilinear paths themselves when the image
   is not reduced; when it is, `ReduceRows` and `ReducePixels` add the same terms in the same order (rows, then
   columns), so that the row-by-row path and the pixel-by-pixel one give the same bits: keep them in step.
+  `ReduceRows` computes the columns of the pixels of a run and their weights once, not once per row of the image.
 - A clip is a stack of levels in the session (`DrawingSession.Clipping.cs`): bounds in whole pixels and, unless the clip
   is a rectangle of whole pixels, a mask of coverages rasterized once, when the clip starts, by the same rasterizer.
   Draw calls multiply their coverage by the mask row by row (`ApplyClip`), into a row of the session: they rent nothing.
@@ -596,7 +613,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
 - A shadow (`DrawingSession.Shadows.cs`) is a layer whose alpha is blurred, moved and painted before the layer is
   drawn: the layer covers a margin around the bounds of the clip (the reach of the blur and of the offset), and the
   blur reads beyond it as its edge pixels (a shape that leaves the canvas keeps its shadow along the edge). The
-  weights are those of `GaussianKernel`, shared with `GaussianBlur`: computed without `Math.Exp`.
+  weights are those of `GaussianKernel`, shared with `GaussianBlur`: computed without `Math.Exp`. A shadow and a blur
+  read only the rows and the columns of the layer their passes reach; a row that is transparent there adds nothing
+  and is skipped, which is exact because compositing a zero coverage, or a transparent paint with `Source` over a
+  transparent pixel, changes nothing.
 - A filter whose reach goes beyond the canvas draws on a bounded layer larger than the canvas (`TryGetFilterExtent`,
   `PushBoundedLevel`): `_canvasBounds` is the canvas in the coordinates of such a session (filling the canvas fills
   only it), the edge modes other than transparent still apply at the canvas, and `FilterProcessor.Extent` is what the
@@ -1034,6 +1054,11 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
   `IAv1Simd`: `Av1AdvSimd` on Arm64, `Av1PortableSimd` (SSE where x64 has the instruction, `Vector128` otherwise)
   elsewhere. The tests call the `Av1PortableSimd` instantiation directly, so Arm64 checks its `Vector128` form and x64
   its SSE form.
+- A function that encodes a value with `Math.Pow` and rounds it to an 8-bit sample is replaced by its thresholds
+  (`QuantizationThresholds`, built lazily from the scalar function and compared with it around every threshold): the
+  linear-light `Store` of `WorkingSamples` and the linear-light compositing of drawing use it. A function that is not
+  monotone at the scale of the last bits of its input (PQ) gets no table and keeps the scalar path. 16-bit samples are
+  not covered: 65,535 thresholds cost more evaluations than most images.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize` and `Convolve` are
   parallel, and their result must not depend on the worker count. Decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).

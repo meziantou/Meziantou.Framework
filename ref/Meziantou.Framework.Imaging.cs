@@ -2266,6 +2266,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Formats.PngFilter Filter { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public bool Interlaced { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.PngOptimization Optimization { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.PngPixelLayout PixelLayout { get => throw null; init { } }
     }
 
@@ -2277,6 +2278,12 @@ namespace Meziantou.Framework.Imaging.Formats
         Up = 3,
         Average = 4,
         Paeth = 5,
+    }
+
+    public enum PngOptimization
+    {
+        None = 0,
+        MinimumSize = 1,
     }
 
     public enum PngPixelLayout

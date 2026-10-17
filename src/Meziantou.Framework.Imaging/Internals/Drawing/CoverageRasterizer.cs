@@ -279,9 +279,10 @@ internal sealed class CoverageRasterizer : IDisposable
             order[rowCounts[GetFirstRow(list[i])]++] = i;
         }
 
-        // Every slot is free; the first ones are taken first
+        // Every slot a row can need is free; the first ones are taken first. The edges of a row take their slots before
+        // those that end in it release theirs: no more slots are taken at once than edges cross a row
         var free = FreeSlots;
-        _freeCount = _sweepCapacity;
+        _freeCount = maxActive;
         for (var i = 0; i < _freeCount; i++)
         {
             free[i] = _freeCount - 1 - i;

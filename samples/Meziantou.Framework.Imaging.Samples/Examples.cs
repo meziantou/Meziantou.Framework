@@ -771,6 +771,19 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>The smallest lossless PNG or APNG: the encoder compresses the candidate encodings and keeps the smallest.</summary>
+    // begin-snippet: save-png-minimum-size
+    public static void SaveSmallestPng(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // The layout the pixels need (grayscale, a color key, a palette, 8 instead of 16 bits...), the best filters and
+        // zlib level, and for an animation the frame regions that changed. The pixels, alpha values, frames, durations and
+        // metadata are stored exactly; only the encoding changes, and it takes several times longer.
+        image.Save(outputPath, new PngEncoder { Optimization = PngOptimization.MinimumSize });
+    }
+    // end-snippet
+
     /// <summary>A multi-page TIFF document: pages may differ in size and pixel format, and are read one at a time.</summary>
     // begin-snippet: tiff-pages
     public static Size WriteAndReadTiffDocument(string inputPath, string documentPath)

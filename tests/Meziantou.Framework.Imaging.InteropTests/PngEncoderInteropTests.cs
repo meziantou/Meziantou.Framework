@@ -145,6 +145,51 @@ public sealed class PngEncoderInteropTests
         Assert.Equal((3, bitDepth, interlaced ? 1 : 0), (reference.ColorType, reference.BitDepth, reference.InterlaceMethod));
     }
 
+    public static TheoryData<PixelFormat, int, bool> MinimumSizeCases()
+    {
+        var data = new TheoryData<PixelFormat, int, bool>();
+        foreach (var format in AllFormats)
+        {
+            foreach (var colors in new[] { 2, 4, 16, 300 })
+            {
+                data.Add(format, colors, false);
+                data.Add(format, colors, true);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(MinimumSizeCases))]
+    public async Task MinimumSizeOutputDecodesExactlyWithFFmpeg(PixelFormat format, int colors, bool interlaced)
+    {
+        // Palettes, grayscale, color keys and reduced bit depths: FFmpeg decodes them, compared exactly in 16-bit RGBA
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = CreateWithColors(format, 23, 17, colors, seed: (int)format + colors);
+        await AssertMinimumSizeDecodesExactlyAsync(ffmpeg, image, $"minimum-size-{format}-{colors}-{(interlaced ? "adam7" : "progressive")}", interlaced);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(4)]
+    public async Task MinimumSizeGrayLevelsDecodeExactlyWithFFmpeg(int bitDepth)
+    {
+        // Gray levels of 1, 2 or 4 bits, with a color key on one of them: sub-byte grayscale and its tRNS
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var step = 255 / ((1 << bitDepth) - 1);
+        var pixels = new Rgba32[29 * 13];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var level = (byte)(i * 7 % (1 << bitDepth) * step);
+            pixels[i] = i % 11 == 0 ? new Rgba32(0, 0, 0, 0) : new Rgba32(level, level, level, (byte)(level == 0 ? 0 : 255));
+        }
+
+        using var image = Image.ImportPixelData<Rgba32>(pixels, 29, 13);
+        await AssertMinimumSizeDecodesExactlyAsync(ffmpeg, image, $"minimum-size-gray-{bitDepth}", interlaced: false);
+    }
+
     [Theory]
     [MemberData(nameof(CorpusCases))]
     public async Task IndexedCorpusReferencesDecodeExactlyWithFFmpeg(string id, string format)
@@ -248,6 +293,38 @@ public sealed class PngEncoderInteropTests
         var decoded = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(path, GetRawFormat(image.PixelFormat), image.Width, image.Height, XunitCancellationToken));
         var result = PixelBufferComparer.Compare(expected, RawPixelBuffer.Create(image.Width, image.Height, expected.Layout, decoded), ComparisonPolicy.Exact, $"{path.Name} decoded by ffmpeg {ffmpeg.Version}");
         Assert.True(result.IsMatch, result.Describe());
+    }
+
+    private static async Task AssertMinimumSizeDecodesExactlyAsync(FFmpegTool ffmpeg, Image image, string name, bool interlaced)
+    {
+        var path = await EncodeToFileAsync(image, new PngEncoder { Optimization = PngOptimization.MinimumSize, Interlaced = interlaced }, name);
+        var reference = OptimizedPngOutputVerifier.VerifyStill(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, name);
+        var (rawFormat, layout) = GetNativeRawFormat(reference);
+        var decoded = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(path, rawFormat, image.Width, image.Height, XunitCancellationToken));
+        var expected = ReferencePng.ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[0]));
+        var result = PixelBufferComparer.Compare(expected, ReferencePng.ToRgba16(RawPixelBuffer.Create(image.Width, image.Height, layout, decoded)), ComparisonPolicy.Exact, $"{name} decoded by ffmpeg {ffmpeg.Version} as {rawFormat}");
+        Assert.True(result.IsMatch, result.Describe());
+    }
+
+    /// <summary>
+    /// Gets the raw layout FFmpeg decodes a PNG to without converting its samples (its pixel format conversions to wider
+    /// layouts are not exact): gray, gray and alpha (a gray color key), RGB, or RGBA (an RGB color key, a palette).
+    /// </summary>
+    /// <param name="reference">The parsed file.</param>
+    /// <returns>The FFmpeg pixel format and the matching harness layout.</returns>
+    internal static (string RawFormat, RawPixelLayout Layout) GetNativeRawFormat(ReferencePng reference)
+    {
+        var key = reference.ChunkTypes.Contains("tRNS") && reference.ColorType is 0 or 2;
+        return (reference.ColorType, reference.BitDepth == 16, key) switch
+        {
+            (0, false, false) => ("gray", RawPixelLayout.Gray8),
+            (0, true, false) => ("gray16le", RawPixelLayout.Gray16Le),
+            (0, false, true) or (4, false, _) => ("ya8", RawPixelLayout.GrayAlpha8),
+            (0, true, true) or (4, true, _) => ("ya16le", RawPixelLayout.GrayAlpha16Le),
+            (2, false, false) => ("rgb24", RawPixelLayout.Rgb8),
+            (2, false, true) or (3, _, _) or (6, false, _) => ("rgba", RawPixelLayout.Rgba8),
+            _ => ("rgba64le", RawPixelLayout.Rgba16Le),
+        };
     }
 
     private static async Task AssertFFmpegDecodesIndexedExactlyAsync(FFmpegTool ffmpeg, FullPath path, RawPixelBuffer source, string context)

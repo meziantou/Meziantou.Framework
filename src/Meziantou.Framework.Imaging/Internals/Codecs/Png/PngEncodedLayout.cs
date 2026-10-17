@@ -86,17 +86,22 @@ internal sealed class PngEncodedLayout
     /// <summary>Packs palette indexes into a scanline of the indexed layout.</summary>
     /// <param name="indexes">One index per pixel, each below <c>2^BitDepth</c>.</param>
     /// <param name="destination">The scanline, <see cref="GetScanlineLength"/> bytes; the unused bits of its last byte are zero.</param>
-    public void PackIndexes(ReadOnlySpan<byte> indexes, Span<byte> destination)
+    public void PackIndexes(ReadOnlySpan<byte> indexes, Span<byte> destination) => Pack(indexes, BitDepth, destination);
+
+    /// <summary>Packs samples of one byte each into a scanline of 1-, 2-, 4- or 8-bit samples.</summary>
+    /// <param name="indexes">One sample per byte, each below <c>2^bitDepth</c>.</param>
+    /// <param name="bitDepth">The bits per sample: 1, 2, 4 or 8.</param>
+    /// <param name="destination">The scanline; the unused bits of its last byte are zero.</param>
+    public static void Pack(ReadOnlySpan<byte> indexes, int bitDepth, Span<byte> destination)
     {
-        if (BitDepth == 8)
+        if (bitDepth == 8)
         {
             indexes.CopyTo(destination);
             return;
         }
 
         // The leftmost pixel is in the high-order bits of a byte (PNG specification, section 7.2)
-        int bitDepth = BitDepth;
-        destination.Clear();
+        destination[..(int)((((long)indexes.Length * bitDepth) + 7) / 8)].Clear();
         for (var i = 0; i < indexes.Length; i++)
         {
             var bit = (long)i * bitDepth;

@@ -38,6 +38,12 @@ public sealed class PngEncoderConformanceTests
         new PngEncoder { PixelLayout = PngPixelLayout.Indexed, Filter = PngFilter.Sub, CompressionLevel = System.IO.Compression.CompressionLevel.NoCompression },
     ];
 
+    private static readonly PngEncoder[] MinimumSizeEncoders =
+    [
+        new PngEncoder { Optimization = PngOptimization.MinimumSize },
+        new PngEncoder { Optimization = PngOptimization.MinimumSize, Interlaced = true, Filter = PngFilter.Paeth },
+    ];
+
     public static TheoryData<string> PaletteFixtures => [.. GoldenCorpus.Default.GetIds(format: "png", kind: FixtureKinds.Valid, feature: "png.colorType=3").Where(id => id.StartsWith("png/", StringComparison.Ordinal))];
 
     public static TheoryData<string, string> Cases()
@@ -146,6 +152,34 @@ public sealed class PngEncoderConformanceTests
                 Assert.True(reference.ArePaddingBitsZero(), context + ": padding bits are set.");
                 var result = PixelBufferComparer.Compare(IndexedPngExpectation.ToRgba8(expected), reference.DecodePixels(), ComparisonPolicy.Exact, context);
                 Assert.True(result.IsMatch, result.Describe());
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Cases))]
+    public void MinimumSizeStoresTheCorpusReferencesExactly(string id, string format)
+    {
+        // Any color type and bit depth: the reader decodes the file to 16-bit RGBA, compared with the reference itself
+        var fixture = GoldenCorpus.Default.Get(id);
+        var pixelFormat = Enum.Parse<PixelFormat>(format);
+        foreach (var (name, expected) in EncoderSources.GetStills(fixture, pixelFormat))
+        {
+            using var image = EncoderSources.CreateImage(expected, pixelFormat);
+            foreach (var encoder in MinimumSizeEncoders)
+            {
+                var context = $"{id} {name} as {pixelFormat} (minimum size, filter {encoder.Filter}, interlaced {encoder.Interlaced})";
+                using var stream = new MemoryStream();
+                image.Save(stream, encoder);
+                var reference = OptimizedPngOutputVerifier.VerifyStill(stream.ToArray(), image, context);
+                Assert.Equal(encoder.Interlaced ? 1 : 0, reference.InterlaceMethod);
+                var result = PixelBufferComparer.Compare(ReferencePng.ToRgba16(expected), reference.DecodeImageRgba16(), ComparisonPolicy.Exact, context);
+                Assert.True(result.IsMatch, result.Describe());
+
+                // The encoding without optimization, with the same filter strategy and Adam7, is one of the candidates
+                using var unoptimized = new MemoryStream();
+                image.Save(unoptimized, new PngEncoder { Filter = encoder.Filter, Interlaced = encoder.Interlaced });
+                Assert.True(stream.Length <= unoptimized.Length, $"{context}: {stream.Length} bytes, {unoptimized.Length} without optimization.");
             }
         }
     }

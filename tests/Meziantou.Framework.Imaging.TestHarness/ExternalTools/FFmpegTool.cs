@@ -226,6 +226,8 @@ public sealed partial class FFmpegTool
             "rgba64le" => 8,
             "gray" => 1,
             "gray16le" => 2,
+            "ya8" => 2,
+            "ya16le" => 4,
             "rgb24" => 3,
             "rgb565le" => 2,
             "rgb555le" => 2,
